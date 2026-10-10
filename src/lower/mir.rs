@@ -882,6 +882,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Discriminant(..) => return Err(self.unsupported(span, "an enum's discriminant read as a value")),
             Value::Place(e) => e,
             Value::Branch(..) => return Err(self.unsupported(span, "what `?` made, read as a value, from its MIR")),
+            // Kept or given: a handle on its place, which reads and writes it
+            // (ADR 0099), where the place is always the same one.
+            // A handle on the `value` of what a variable holds, a box, a handle
+            // or a cell, is that: what it's read and written through.
+            Value::Ref(ref place)
+                if let js::ExprKind::Member(holder, field) = &place.kind
+                    && field == "value"
+                    && matches!(holder.kind, js::ExprKind::Var(_)) =>
+            {
+                (**holder).clone()
+            }
+            Value::Ref(place) if fixed_place(&place) => Expr::handle(place),
             Value::Ref(_) => return Err(self.unsupported(span, "a `&mut` of a number kept or given, from its MIR")),
         })
     }
@@ -966,6 +978,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
+    /// Whether `place` reads through a `&mut` to a number its local holds,
+    /// a handle or a box, `*r`.
+    fn derefs_handle(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>) -> bool {
+        place.projection.first() == Some(&PlaceElem::Deref)
+            && matches!(body.local_decls[place.local].ty.kind(),
+                ty::Ref(_, pointee, ty::Mutability::Mut) if self.boxed_by_ref(*pointee))
+    }
+
     /// Whether a `&mut` to a `pointee` is its place, not a JS value: one JS
     /// can't change in place, a number's, as a closure's isn't.
     fn boxed_by_ref(&self, pointee: Ty<'tcx>) -> bool {
@@ -1002,7 +1022,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // What it returns can hold the borrow: a box would be copied back
             // before it's used.
             if self.result_borrows(def_id, i) {
-                return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
+                if !fixed_place(&place) {
+                    return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
+                }
+                exprs.push(Expr::handle(place));
+                continue;
             }
             self.flush(state, out)?;
             for expr in &mut exprs {
@@ -1050,6 +1074,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Err(self.unsupported(span, "this part of what `?` made, from its MIR")),
             };
         }
+        let mut placed = false;
         let mut value = if place.projection.is_empty() {
             match state.locals.names[place.local].as_str() {
                 "" => Expr::undefined(),
@@ -1065,12 +1090,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             match self.read_local_value(state, place.local, out)? {
                 // Through a `&mut` to a place: the place.
-                Value::Ref(place) => place,
+                Value::Ref(place) => {
+                    placed = true;
+                    place
+                }
                 value => self.value_expr(value, span)?,
             }
         };
         let mut ty = mir::PlaceTy::from_ty(state.body.local_decls[place.local].ty);
         for elem in place.projection {
+            // Through a handle, or a box, of a `&mut` to a number: its
+            // `value`, but where the place is already named.
+            if elem == PlaceElem::Deref
+                && let ty::Ref(_, pointee, ty::Mutability::Mut) = ty.ty.kind()
+                && self.boxed_by_ref(*pointee)
+            {
+                if !std::mem::take(&mut placed) {
+                    value = Expr::member(value, "value");
+                }
+                ty = ty.projection_ty(self.tcx, elem);
+                continue;
+            }
+            placed = false;
             value = match (ty.ty.peel_refs().kind(), elem) {
                 // Of a closure's environment, `(*_1).0`: what it captured.
                 (ty::Closure(..), PlaceElem::Field(field, _)) if !state.captures.is_empty() => {
@@ -1176,6 +1217,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match self.read_local_value(state, place.local, out)? {
                     // Through a `&mut` to a place: what the place holds.
                     Value::Ref(target) if place.is_indirect() => Ok(Value::Expr(target)),
+                    // Through a handle a variable holds: its `value`.
+                    Value::Expr(handle) if self.derefs_handle(state.body, place) => {
+                        Ok(Value::Expr(Expr::member(handle, "value")))
+                    }
                     value => Ok(value),
                 }
             }
@@ -1365,7 +1410,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
                 let pointee = place.ty(decls, tcx).ty;
-                if matches!(kind, BorrowKind::Mut { .. }) && !place.is_indirect() && self.boxed_by_ref(pointee) {
+                if matches!(kind, BorrowKind::Mut { .. }) && self.boxed_by_ref(pointee) {
                     return Ok(Value::Ref(self.mir_place(state, *place, span, out)?));
                 }
                 if self.through_values(state.body, place, true) {
@@ -1784,7 +1829,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
         {
             let mut values = values.into_iter();
-            let callee = self.value_expr(values.next().expect("the closure"), span)?;
+            let callee = match values.next().expect("the closure") {
+                Value::Ref(closure) => closure,
+                value => self.value_expr(value, span)?,
+            };
             let list = match values.next() {
                 Some(Value::List(items)) => items,
                 Some(Value::Expr(e)) if matches!(e.kind, js::ExprKind::Undefined) => Vec::new(),
@@ -2037,6 +2085,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?
+            }
+            // An iterator's combinator: THIR's, of a JS iterator, lazy as Rust's;
+            // one a `&mut` lends, stepped through what can't close it.
+            Std::IterComb(comb) => {
+                let iter_ty = arg_tys[0].peel_refs();
+                let lent = matches!(arg_tys[0].kind(), ty::Ref(_, _, ty::Mutability::Mut));
+                let mut exprs = values
+                    .map(|v| match v {
+                        Value::Ref(place) => Ok(place),
+                        v => self.value_expr(v, span),
+                    })
+                    .collect::<R<Vec<_>>>()?;
+                let receiver = exprs.remove(0);
+                let it = self.as_js_iterator(receiver, iter_ty, span)?;
+                let it = match lent {
+                    true => self.lent_iterator(it),
+                    false => it,
+                };
+                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
             }
             // A string's or a slice's method, but one of a range or a part of
             // it, which THIR lowers from its place.
@@ -2396,4 +2463,18 @@ fn is_return(body: &mir::Body<'_>, mut block: BasicBlock) -> bool {
         }
     }
     false
+}
+
+/// Whether `place` is one a handle can read and write wherever it's read:
+/// variables, their fields, and elements at a constant index or one a
+/// variable holds, which an index is read into where it's checked.
+fn fixed_place(place: &Expr) -> bool {
+    match &place.kind {
+        js::ExprKind::Var(_) => true,
+        js::ExprKind::Member(object, _) => fixed_place(object),
+        js::ExprKind::Index(object, index) => {
+            fixed_place(object) && (index.is_constant() || matches!(index.kind, js::ExprKind::Var(_)))
+        }
+        _ => false,
+    }
 }

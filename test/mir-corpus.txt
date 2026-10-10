@@ -1,5 +1,6 @@
 array_repeat.rs
 assert_failure.rs
+assignment_order_compound.rs
 associated_consts.rs
 associated_type_fields.rs
 begin_panic_str.rs
@@ -10,12 +11,14 @@ bitwise_operators.rs
 block_modules.rs
 boxed_str.rs
 byte_strings.rs
+cell_const.rs
 char_from_code.rs
 clamp_reversed.rs
 closure_clone_shared.rs
 combinators_owned_drops.rs
 conditional_move_drops.rs
 conditional_regions.rs
+const_block_values.rs
 const_blocks_and_let_guards.rs
 const_generic_traits.rs
 const_generic_values.rs
@@ -35,6 +38,7 @@ drop_temporaries.rs
 drop_temporary_operands.rs
 duration_overflow.rs
 dyn_drops.rs
+dyn_mut.rs
 early_bound_method_lifetime.rs
 empty_pattern.rs
 evaluation_order.rs
@@ -57,6 +61,7 @@ impl_names.rs
 index_out_of_bounds.rs
 int_error_kind.rs
 integer_families.rs
+iter_flatten.rs
 kept_element_ref.rs
 labeled_blocks.rs
 lazy_effects.rs
@@ -66,12 +71,14 @@ map_index_missing.rs
 marker_traits.rs
 match_index.rs
 mut_number_args.rs
+mut_number_handles.rs
 nested_generic_types.rs
 nested_type_chain.rs
 number_methods.rs
 once_cell_reentrant.rs
 option_as_deref.rs
 option_rest_pattern.rs
+or_bindings.rs
 overflowing_literals.rs
 panic_display.rs
 parse_error_order.rs
