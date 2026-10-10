@@ -538,4 +538,20 @@ export const mutations: Mutation[] = [
     replace: "Expr::array(vec![Expr::int(1), Expr::undefined()])",
     tests: ["test/mir.test.ts","-t","size_hint"],
   },
+  {
+    name: "mir-entry-number-unhandled",
+    breaks: "`*m.entry(k).or_insert(0) += 1` adds to the value read, writing nothing back",
+    file: "src/lower/mir.rs",
+    find: "            if !self.is_cell(output) {\n",
+    replace: "            if true || !self.is_cell(output) {\n",
+    tests: ["test/mir.test.ts","-t","entry_counts"],
+  },
+  {
+    name: "mir-kept-entry-parts",
+    breaks: "an entry kept in a variable is taken apart as `[m, k]`, not `$entry`'s `_0`",
+    file: "src/lower/mir.rs",
+    find: "                    let parts = Expr::member(entry, \"_0\");\n",
+    replace: "                    let parts = entry;\n",
+    tests: ["test/mir.test.ts","-t","entry_kept"],
+  },
 ];

@@ -81,6 +81,8 @@ dyn_iterators.rs
 dyn_mut.rs
 early_bound_method_lifetime.rs
 empty_pattern.rs
+entry_counts.rs
+entry_kept.rs
 enum_order.rs
 evaluation_order.rs
 evidence_paths.rs
@@ -140,6 +142,7 @@ lent_iterators.rs
 linked_lists.rs
 loop_values.rs
 map_collect_drops.rs
+map_drops.rs
 map_entry_match.rs
 map_index_missing.rs
 marker_traits.rs

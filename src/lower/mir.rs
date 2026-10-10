@@ -2331,6 +2331,68 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(check).at(self.js_span(span)));
             return Ok(Value::Ref(Expr::index(items, index)));
         }
+        // `m.entry(k).or_insert(v)`: the value put in if the key's missing,
+        // THIR's `$orInsert`, which is the value, an object; of a number,
+        // `*m.entry(k).or_insert(0) += 1`, a handle on the key's value,
+        // `$mutGet`'s (ADR 0152). The entry is `$entry(m, k)`, `{ TAG, _0: [m, k] }`.
+        if let Std::Map(op @ (MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault)) = known {
+            let mut exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?
+                .into_iter();
+            let entry = exprs.next().expect("the entry");
+            let (map, key) = match entry.kind {
+                js::ExprKind::Call(callee, parts)
+                    if parts.len() == 2 && matches!(&callee.kind, js::ExprKind::Var(v) if v == "$entry") =>
+                {
+                    let [map, key]: [Expr; 2] = parts.try_into().ok().expect("two");
+                    (map, key)
+                }
+                kind => {
+                    let entry = self.spill("entry", Expr { kind, span: entry.span }, out);
+                    let parts = Expr::member(entry, "_0");
+                    (
+                        Expr::index(parts.clone(), Expr::int(0)),
+                        Expr::index(parts, Expr::int(1)),
+                    )
+                }
+            };
+            let map = if map.reads_same() {
+                map
+            } else {
+                self.spill("map", map, out)
+            };
+            let key = if key.reads_same() {
+                key
+            } else {
+                self.spill("key", key, out)
+            };
+            let default = match op {
+                MapOp::OrDefault => {
+                    let value = generic_args
+                        .types()
+                        .nth(1)
+                        .ok_or_else(|| self.unsupported(span, "this entry"))?;
+                    let value = self.default_value(value, span)?;
+                    Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
+                }
+                _ => exprs.next().expect("the value"),
+            };
+            let (helper, name) = match op {
+                MapOp::OrInsert => (Helper::OrInsert, "$orInsert"),
+                _ => (Helper::OrInsertWith, "$orInsertWith"),
+            };
+            self.runtime.insert(helper);
+            let inserted = Expr::call(Expr::var(name), vec![map.clone(), key.clone(), default]);
+            if !self.is_cell(output) {
+                return Ok(Value::Expr(inserted));
+            }
+            self.flush(state, out)?;
+            out.push(StmtKind::Expr(inserted).at(self.js_span(span)));
+            self.runtime.insert(Helper::MutGet);
+            return Ok(Value::Expr(Expr::call(Expr::var("$mutGet"), vec![map, key])));
+        }
         // A `&mut` it made to an item JS can't change in place: a handle on
         // each, as THIR's `item_handles` makes (ADR 0152).
         if let Some(cell) = self.makes_items_of(output, generic_args, arg_tys) {
