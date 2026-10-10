@@ -474,4 +474,20 @@ export const mutations: Mutation[] = [
     replace: "                if false && matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {\n",
     tests: ["test/mir.test.ts","-t","generic_iterator_rest_lazy"],
   },
+  {
+    name: "mir-escape-iterator-wrapped",
+    breaks: "`escape_ascii()`'s text is made a JS iterator, and shown as one",
+    file: "src/lower/mir.rs",
+    find: "                        && !super::recognition::is_text_escape(tcx, output)\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","slice_bytes_text"],
+  },
+  {
+    name: "mir-made-before-block-scoped",
+    breaks: "what's made before a labeled block and read after it is declared inside it",
+    file: "src/lower/mir.rs",
+    find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
+    replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
+    tests: ["test/mir.test.ts","-t","matrix_floats"],
+  },
 ];

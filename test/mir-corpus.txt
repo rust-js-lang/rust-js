@@ -135,6 +135,7 @@ map_index_missing.rs
 marker_traits.rs
 match_index.rs
 matrix_chars.rs
+matrix_floats.rs
 matrix_integers.rs
 moved_closure.rs
 mut_number_args.rs
@@ -188,6 +189,7 @@ returned_references.rs
 rotate_past_end.rs
 scope_temporaries.rs
 size_of.rs
+slice_bytes_text.rs
 slice_from_past_len.rs
 slice_prefixes.rs
 slice_split.rs

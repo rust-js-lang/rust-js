@@ -513,6 +513,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some((&merge, inner)) = merges.split_first() else {
             return self.mir_terminator(state, block);
         };
+        // What's made here and read after the block, where its branches meet,
+        // is declared here, not in the block: all but those the branch reads
+        // last, which it reads where it's written.
+        let read = terminator_reads(state.body.basic_blocks[block].terminator());
+        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {
+            let rest = state.pending.split_off(last + 1);
+            let mut out = Vec::new();
+            self.flush(state, &mut out)?;
+            state.pending = rest;
+            out.extend(self.mir_within(state, block, merges)?);
+            return Ok(out);
+        }
         state.labels.push(merge);
         let mut within = self.mir_within(state, block, inner)?;
         state.labels.pop();
@@ -2117,12 +2129,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out,
             )?;
             // A std iterator THIR's lowering makes an array of, `bytes()`'s:
-            // a JS iterator, which MIR steps.
+            // a JS iterator, which MIR steps. Not one that's the string it
+            // shows, an escape's.
             return Ok(match value {
                 Value::Expr(e)
                     if self.implements_iterator(output)
                         && self.range_kind(output).is_none()
                         && !self.is_user_iterator(output)
+                        && !super::recognition::is_text_escape(tcx, output)
                         && !is_js_iterator(&e) =>
                 {
                     Value::Expr(self.js_iterator(e))
@@ -2945,5 +2959,20 @@ fn is_js_iterator(e: &Expr) -> bool {
                 || (name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator"))
         }
         _ => false,
+    }
+}
+
+/// The locals a terminator reads, as its operands.
+fn terminator_reads(terminator: &mir::Terminator<'_>) -> Vec<Local> {
+    let operand = |o: &Operand<'_>| o.place().map(|p| p.local);
+    match &terminator.kind {
+        TerminatorKind::SwitchInt { discr, .. } => operand(discr).into_iter().collect(),
+        TerminatorKind::Call { func, args, .. } => std::iter::once(func)
+            .chain(args.iter().map(|a| &a.node))
+            .filter_map(operand)
+            .collect(),
+        TerminatorKind::Assert { cond, .. } => operand(cond).into_iter().collect(),
+        TerminatorKind::Drop { place, .. } => vec![place.local],
+        _ => Vec::new(),
     }
 }
