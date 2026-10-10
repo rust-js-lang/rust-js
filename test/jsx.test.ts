@@ -1818,8 +1818,9 @@ pub fn Chip(ChipProps { label, size, target }: ChipProps) -> JSX::Element {
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(Chip, { label: "x" }))).toBe('<a class="md" target="_self">x</a>');
   expect(renderToStaticMarkup(createElement(Chip, { label: "y", size: "lg", target: "_blank" }))).toBe('<a class="lg" target="_blank">y</a>');
-  // Props not taken apart where they're given would have no default.
-  const whole = compile(chip + "pub fn Whole(props: ChipProps) -> JSX::Element {\n    jsx! { <b>{props.label}</b> }\n}\n");
+  // A defaulted field read of props not taken apart where they're given
+  // would have no default.
+  const whole = compile(chip + "pub fn Whole(props: ChipProps) -> JSX::Element {\n    jsx! { <b>{props.target}</b> }\n}\n");
   const failed = Bun.spawnSync(whole.args, { cwd: whole.dir });
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("taken apart where they're given")]);
   // A default that's made, not written, is said: a literal is JS's.
@@ -1854,6 +1855,25 @@ pub fn Anchor(AnchorProps { label, is_page_anchor, level }: AnchorProps) -> JSX:
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(Anchor, { label: "x" }))).toBe('<h2 title="x" data-level="3">#</h2>');
   expect(renderToStaticMarkup(createElement(Anchor, { label: "y", isPageAnchor: false, level: 4 }))).toBe('<h2 title="y" data-level="4"></h2>');
+  // Taken whole, they're passed on as given, `<Anchor {...props} />`, as
+  // react.dev's SandpackClient passes its props to SandpackRoot, and a field
+  // with no default is read; the one taker that applies a default is the
+  // component they're passed to. A field with one read of them would have
+  // none where a JS caller left it out, so that's refused.
+  const whole = compile(anchor + `pub fn Wrapper(props: AnchorProps) -> JSX::Element {
+    let label = props.label;
+    jsx! { <section title={label}><Anchor {..props} /></section> }
+}
+`);
+  run(whole.args);
+  const wholeJsx = readFileSync(join(whole.dir, "lib.jsx"), "utf8");
+  expect(wholeJsx).toContain("export function Wrapper(props) {");
+  expect(wholeJsx).toContain("<Anchor {...props} />");
+  const { Wrapper } = await import(join(whole.dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(Wrapper, { label: "z" }))).toBe('<section title="z"><h2 title="z" data-level="3">#</h2></section>');
+  const reads = compile(anchor + "pub fn Reads(props: AnchorProps) -> JSX::Element {\n    jsx! { <b>{props.level}</b> }\n}\n");
+  const readFailed = Bun.spawnSync(reads.args, { cwd: reads.dir });
+  expect([readFailed.exitCode === 0, readFailed.stderr.toString()]).toEqual([false, expect.stringContaining("props with a default taken whole")]);
   // One that isn't of the field's type is said.
   const wrong = compile(anchor.replace("rust_js::default = 3", 'rust_js::default = "3"'));
   const failed = Bun.spawnSync(wrong.args, { cwd: wrong.dir });

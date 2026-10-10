@@ -73,3 +73,15 @@ export interface ButtonLinkProps<C> {
 
 - **A default other than a type's `Default` is a string's**, as an
   attribute holds no other value Rust can check.
+
+## Since
+
+- **Props taken whole that are only passed on, or read of a field with
+  no default, are let through** (2026-10-10): `fn Wrapper(props: Props)`
+  that renders `<Inner {..props} />` and reads `props.label`, as
+  react.dev's SandpackClient passes its props on to SandpackRoot. The
+  component they're passed to gives a missing field its default; one
+  with a default read of them would have none, and is refused still. A
+  JSX test renders such a wrapper, its inner component's default given,
+  and refuses a defaulted field read; mutations refuse it whole, and let
+  the read through.

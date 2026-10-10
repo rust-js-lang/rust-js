@@ -8,6 +8,7 @@ use rustc_middle::thir::{self, BodyTy, ExprId, ExprKind, Pat, PatKind};
 use rustc_middle::ty;
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
+use std::collections::HashSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn lower_fn(&mut self, body: &Body<'tcx>) -> R<LoweredFn> {
@@ -221,12 +222,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 param.pat.as_deref()
             };
             // A props field's default is where JS takes them apart (ADR 0212):
-            // a component's props taken whole would have none.
+            // a component's props taken whole would have none, but where
+            // they're passed on as given or read of a field with none.
             if super::bindings::is_component(self.tcx, self.body_owner)
                 && let ty::Adt(adt, _) = param.ty.kind()
                 && adt.is_struct()
                 && (adt.non_enum_variant().fields.iter()).any(|f| super::bindings::field_default(self.tcx, f).is_some())
                 && !peeled.is_some_and(|p| matches!(p.kind, PatKind::Leaf { .. }))
+                && !peeled.is_some_and(|p| self.passed_on_whole(p, *adt))
             {
                 return Err(self.unsupported(
                     span,
@@ -762,5 +765,31 @@ fn taken_apart_where_given(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
         }
         *param = pattern;
         body.drain(..reads.len());
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether props of `adt` bound whole, `props`, are only passed on as
+    /// given, `<Inner {..props} />`, whose component applies its defaults,
+    /// or read of a field with no default (ADR 0212).
+    fn passed_on_whole(&self, pat: &Pat<'tcx>, adt: ty::AdtDef<'tcx>) -> bool {
+        let PatKind::Binding { var, .. } = pat.kind else {
+            return false;
+        };
+        let names = |e: ExprId| matches!(self.thir[e].kind, ExprKind::VarRef { id } if id == var);
+        let (given, bases) = super::body_queries::jsx_given_props(self.tcx, self.thir);
+        let mut allowed: HashSet<ExprId> = given.union(&bases).copied().collect();
+        for expr in self.thir.exprs.iter() {
+            if let ExprKind::Field { lhs, name, .. } = expr.kind
+                && names(self.strip(lhs))
+                && super::bindings::field_default(self.tcx, &adt.non_enum_variant().fields[name]).is_none()
+            {
+                allowed.insert(self.strip(lhs));
+            }
+        }
+        self.thir
+            .exprs
+            .iter_enumerated()
+            .all(|(e, _)| !names(e) || allowed.contains(&e))
     }
 }
