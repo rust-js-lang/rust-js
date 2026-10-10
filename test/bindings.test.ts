@@ -801,6 +801,73 @@ pub fn spread(parts: &[&str]) -> String {
   expect(lib.spread(["x", "y"])).toBe(path.join("x", "y"));
 });
 
+// ADR 0272: `querystring`, a query's text from a dictionary of values and
+// back, each value one text or a list of them.
+test("node's querystring module is bound whole", async () => {
+  const dir = fixture("node-querystring");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::js::dict;
+use node::querystring::{
+    self, ParseOptions, ParsedUrlQuery, ParsedUrlQueryInput, ParsedUrlQueryInputItem, ParsedUrlQueryInputValue,
+    ParsedUrlQueryValue, StringifyOptions,
+};
+
+fn shown(query: &ParsedUrlQuery) -> String {
+    dict::entries(query)
+        .into_iter()
+        .map(|(key, value)| match value {
+            ParsedUrlQueryValue::One(one) => format!("{key}={one}"),
+            ParsedUrlQueryValue::Many(many) => format!("{key}=[{}]", many.join(",")),
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+pub fn all() -> Vec<String> {
+    let input: &ParsedUrlQueryInput = dict::new();
+    dict::set(input, "name", Some(ParsedUrlQueryInputValue::Str("a b".to_string())));
+    dict::set(input, "n", Some(ParsedUrlQueryInputValue::Number(2.0)));
+    dict::set(input, "ok", Some(ParsedUrlQueryInputValue::Bool(true)));
+    dict::set(input, "big", Some(ParsedUrlQueryInputValue::BigInt(7)));
+    dict::set(input, "tags", Some(ParsedUrlQueryInputValue::List(vec![ParsedUrlQueryInputItem::Str("x".to_string()), ParsedUrlQueryInputItem::Number(1.0)])));
+    dict::set(input, "none", None);
+    vec![
+        querystring::stringify(input),
+        querystring::stringify_with_sep(input, ";"),
+        querystring::stringify_with_sep_and_eq(input, ";", ":"),
+        querystring::stringify_with_sep_and_eq_and_options(input, "&", "=", StringifyOptions { encode_uri_component: Some(Box::new(|s: &str| s.to_uppercase())) }),
+        querystring::encode(input),
+        shown(querystring::parse("a=1&b=2&a=3")),
+        shown(querystring::parse_with_sep("a=1;b=2", ";")),
+        shown(querystring::parse_with_sep_and_eq("a:1;b:2", ";", ":")),
+        shown(querystring::parse_with_sep_and_eq_and_options("a=1&b=2&c=3", "&", "=", ParseOptions { max_keys: Some(2.0), ..Default::default() })),
+        shown(querystring::decode("x=%20y")),
+        querystring::escape("a b&c"),
+        querystring::unescape("a%20b"),
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('from "querystring";');
+  const lib = await import(join(dir, "lib.js"));
+  const qs = await import("node:querystring");
+  const input = { name: "a b", n: 2, ok: true, big: 7n, tags: ["x", 1], none: undefined };
+  expect(lib.all()).toEqual([
+    qs.stringify(input),
+    qs.stringify(input, ";"),
+    qs.stringify(input, ";", ":"),
+    qs.stringify(input, "&", "=", { encodeURIComponent: (s: string) => s.toUpperCase() }),
+    qs.stringify(input),
+    "a=[1,3] b=2",
+    "a=1 b=2",
+    "a=1 b=2",
+    "a=1 b=2",
+    "x= y",
+    qs.escape("a b&c"),
+    "a b",
+  ]);
+});
+
 // ADR 0272: `url`, its WHATWG classes webapi's, as Node's are the globals,
 // and its own: file URLs, domains, and a URL written without its parts.
 test("node's url module binds its own and the WHATWG classes", async () => {
@@ -846,6 +913,84 @@ pub fn all() -> Vec<String> {
     url.format(link),
     url.format(link, { auth: false, fragment: false }),
     "1",
+  ]);
+});
+
+// ADR 0272: `url`'s legacy `parse` and `format`, a URL's parts, `null`
+// where it hasn't one, and its query a text or parsed.
+test("node's url module parses and formats legacy URL objects", async () => {
+  const dir = fixture("node-url-legacy");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::js::dict;
+use node::querystring::{ParsedUrlQueryInput, ParsedUrlQueryInputValue, ParsedUrlQueryValue};
+use node::url::{self, Url, UrlObject, UrlObjectPort, UrlObjectQuery, UrlQuery, UrlWithStringQuery};
+
+fn or(part: Option<String>) -> String {
+    part.unwrap_or_else(|| "-".to_string())
+}
+
+pub fn parsed() -> Vec<String> {
+    let link: UrlWithStringQuery = url::parse("https://u:p@example.com:8080/a/b?x=1&x=2#h");
+    let bare: UrlWithStringQuery = url::parse("/only/path");
+    let query: Url = url::parse_with_parse_query_string("https://example.com/?x=1&x=2&y=3", true);
+    let host: Url = url::parse_with_parse_query_string_and_slashes_denote_host("//example.com/p", false, true);
+    let parsed = match query.query {
+        Some(UrlQuery::Parsed(parsed)) => match dict::get(parsed, "x") {
+            Some(ParsedUrlQueryValue::Many(many)) => many.join(","),
+            _ => "?".to_string(),
+        },
+        _ => "?".to_string(),
+    };
+    vec![
+        link.href,
+        or(link.protocol),
+        or(link.auth),
+        or(link.host),
+        or(link.port),
+        or(link.hostname),
+        or(link.hash),
+        or(link.search),
+        or(link.query),
+        or(link.pathname),
+        or(link.path),
+        format!("{:?}", link.slashes),
+        or(bare.host),
+        or(bare.query),
+        parsed,
+        or(host.host),
+    ]
+}
+
+pub fn formatted() -> Vec<String> {
+    let query: &ParsedUrlQueryInput = dict::new();
+    dict::set(query, "q", Some(ParsedUrlQueryInputValue::Str("a b".to_string())));
+    vec![
+        url::format_with_url_object(UrlObject {
+            protocol: Some("https"),
+            hostname: Some("example.com"),
+            port: Some(UrlObjectPort::Number(8080.0)),
+            pathname: Some("/x"),
+            query: Some(UrlObjectQuery::Input(query)),
+            ..Default::default()
+        }),
+        url::format_with_url_object(UrlObject { host: Some("example.com"), query: Some(UrlObjectQuery::Str("a=1")), ..Default::default() }),
+        url::format_with_str("https://example.com/a?b#c"),
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  const lib = await import(join(dir, "lib.js"));
+  const url = await import("node:url");
+  const link = url.parse("https://u:p@example.com:8080/a/b?x=1&x=2#h");
+  const or = (part: string | null) => part ?? "-";
+  expect(lib.parsed()).toEqual([
+    link.href, or(link.protocol), or(link.auth), or(link.host), or(link.port), or(link.hostname), or(link.hash), or(link.search),
+    or(link.query), or(link.pathname), or(link.path), "Some(true)", "-", "-", "1,2", "example.com",
+  ]);
+  expect(lib.formatted()).toEqual([
+    url.format({ protocol: "https", hostname: "example.com", port: 8080, pathname: "/x", query: { q: "a b" } }),
+    url.format({ host: "example.com", query: "a=1" }),
+    url.format("https://example.com/a?b#c"),
   ]);
 });
 

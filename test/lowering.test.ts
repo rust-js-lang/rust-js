@@ -515,6 +515,33 @@ pub fn constants() -> (Settled, Settled) {
     .toEqual([true, false]);
 });
 
+// ADR 0214: an untagged enum's `Dict` is a plain object, of no class: told
+// apart as an object, as a parsed URL's query, text or parsed, is.
+test("an untagged enum's dictionary is told apart as an object", async () => {
+  const dir = fixture("untagged-dict");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Dict, dict};
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Query {
+    Str(String),
+    Parsed(&'static Dict<u32>),
+}
+
+pub fn told(query: Option<Query>) -> String {
+    match query {
+        Some(Query::Parsed(parsed)) => format!("parsed {}", dict::get(parsed, "a").copied().unwrap_or(0)),
+        Some(Query::Str(text)) => format!("text {text}"),
+        None => "none".to_string(),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("instanceof Dict");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.told("a=1"), lib.told({ a: 2 }), lib.told(undefined)]).toEqual(["text a=1", "parsed 2", "none"]);
+});
+
 // An array or an object made only to be dropped is what making it does,
 // `loud(1);`, as a person writes it, not `[loud(1)];`.
 test("a value made only to be dropped is what making it does", async () => {

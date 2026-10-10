@@ -150,6 +150,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Kind::Test(test));
         }
+        // One TypeScript types as an object literal, `Dict`'s `{ [key: string]:
+        // T }`, is a plain object, of no class to test.
+        if let ty::Adt(adt, _) = ty.kind()
+            && self.is_js_object(ty)
+            && super::declarations::written_types(self.tcx, adt.did()).is_some_and(|t| t.trim_start().starts_with('{'))
+        {
+            return Some(Kind::Object);
+        }
         if let ty::Adt(adt, _) = ty.kind()
             && self.is_js_object(ty)
         {

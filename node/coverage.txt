@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 43 of 1538 (2.8%)
+# exports: 58 of 1538 (3.8%)
 # assert 0 of 28
 - assert#Assert
 - assert#AssertionError
@@ -1049,17 +1049,17 @@
 - punycode#toUnicode
 - punycode#ucs2
 - punycode#version
-# querystring 0 of 10
-- querystring#decode
-- querystring#encode
-- querystring#escape
-- querystring#parse
-- type querystring#ParsedUrlQuery
-- type querystring#ParsedUrlQueryInput
-- type querystring#ParseOptions
-- querystring#stringify
-- type querystring#StringifyOptions
-- querystring#unescape
+# querystring 10 of 10
++ querystring#decode
++ querystring#encode
++ querystring#escape
++ querystring#parse
++ type querystring#ParsedUrlQuery
++ type querystring#ParsedUrlQueryInput
++ type querystring#ParseOptions
++ querystring#stringify
++ type querystring#StringifyOptions
++ querystring#unescape
 # readline 0 of 16
 - type readline#AsyncCompleter
 - readline#clearLine
@@ -1255,21 +1255,21 @@
 - tty#isatty
 - tty#ReadStream
 - tty#WriteStream
-# url 17 of 24
+# url 22 of 24
 + url#domainToASCII
 + url#domainToUnicode
 + url#fileURLToPath
 - url#fileURLToPathBuffer
 + type url#FileUrlToPathOptions
 + url#format
-- url#parse
++ url#parse
 + url#pathToFileURL
 + type url#PathToFileUrlOptions
 + url#resolve
-- type url#Url
++ type url#Url
 + url#URL
 + type url#URLFormatOptions
-- type url#UrlObject
++ type url#UrlObject
 + url#URLPattern
 + type url#URLPatternComponentResult
 + type url#URLPatternInit
@@ -1278,8 +1278,8 @@
 + url#URLSearchParams
 + type url#URLSearchParamsIterator
 - url#urlToHttpOptions
-- type url#UrlWithParsedQuery
-- type url#UrlWithStringQuery
++ type url#UrlWithParsedQuery
++ type url#UrlWithStringQuery
 # util 0 of 69
 - util#aborted
 - type util#ApplyOptionalModifiers

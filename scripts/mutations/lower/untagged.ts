@@ -154,4 +154,16 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(adt, _) if false && is_fieldless_enum(*adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) => {",
     tests: ["test/lowering.test.ts", "-t", "may hold a fieldless enum"],
   },
+  {
+    "name": "untagged-dict-a-class",
+    "breaks": "an untagged enum's `Dict` is tested `instanceof Dict`, a class JS hasn't",
+    "file": "src/lower/untagged.rs",
+    "find": ".is_some_and(|t| t.trim_start().starts_with('{'))",
+    "replace": ".is_some_and(|_| false)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "dictionary is told apart"
+    ]
+  },
 ];

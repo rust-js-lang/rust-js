@@ -141,3 +141,10 @@ declare it `undefined`.
 A fieldless enum is its variant's name (ADR 0013), so a variant holding
 one, `One(Weight)` beside `Many(&[Weight])`, is a string, told by
 `typeof` as any string is, as next/font's `"400" | Array<"400">` needs.
+
+## Amendment: a plain object's type is an object
+
+A payload of a JS object type is told apart by its class, `instanceof`;
+but one TypeScript types as an object literal, `Dict`'s `{ [key: string]:
+T }`, has no class: it's an object, `typeof value === "object"`. A legacy
+URL's query, its text or a `ParsedUrlQuery`, was tested `instanceof Dict`.
