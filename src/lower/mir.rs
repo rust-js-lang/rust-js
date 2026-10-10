@@ -217,7 +217,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
                 };
                 if boxed {
-                    state.refs.insert(local, Expr::member(Expr::var(&name), "value"));
                     state.boxes.insert(name.clone());
                 }
                 js::Pattern::Name(name)

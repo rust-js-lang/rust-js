@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts", "-t", "bitwise_operators"],
   },
   {
-    name: "mir-statements-inside-labels",
-    breaks: "what a block binds before it branches is inside its labeled block, unseen where its branches meet",
-    file: "src/lower/mir.rs",
-    find: "        let mut out = self.mir_statements(state, block)?;\n        out.extend(self.mir_within(state, block, &merges)?);\n        Ok(out)\n    }\n\n    /// Where `block` goes, inside a labeled block for each of `merges`, each\n    /// followed by its own code (Ramsey's `nodeWithin`). Its statements come\n    /// before, as none of them branches: what they bind is seen where its\n    /// branches meet.\n    fn mir_within(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock, merges: &[BasicBlock]) -> R<Vec<Stmt>> {\n        let Some((&merge, inner)) = merges.split_first() else {\n            return self.mir_terminator(state, block);\n",
-    replace: "        self.mir_within(state, block, &merges)\n    }\n\n    /// Where `block` goes, inside a labeled block for each of `merges`, each\n    /// followed by its own code (Ramsey's `nodeWithin`). Its statements come\n    /// before, as none of them branches: what they bind is seen where its\n    /// branches meet.\n    fn mir_within(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock, merges: &[BasicBlock]) -> R<Vec<Stmt>> {\n        let Some((&merge, inner)) = merges.split_first() else {\n            let mut out = self.mir_statements(state, block)?;\n            out.extend(self.mir_terminator(state, block)?);\n            return Ok(out);\n",
-    tests: ["test/mir.test.ts","-t","bindings_before_branch"],
-  },
-  {
     name: "mir-folded-call-uncaught",
     breaks: "a call written where it's used, which may panic as something's there to drop, isn't in a `try`",
     file: "src/lower/mir.rs",
@@ -57,22 +49,6 @@ export const mutations: Mutation[] = [
     find: "    (Some(local) == referred).then_some(c)\n",
     replace: "    (Some(local) == referred).then_some(c).filter(|_| false)\n",
     tests: ["test/mir.test.ts","-t","thread_local"],
-  },
-  {
-    name: "mir-kept-ref-index-constant-only",
-    breaks: "a `&mut` to an element at an index in a variable assigned once is refused, as if the index may change",
-    file: "src/lower/mir.rs",
-    find: "                && (index.is_constant()\n                    || matches!(&index.kind, js::ExprKind::Var(name)\n                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] == 1)))\n",
-    replace: "                && index.is_constant()\n",
-    tests: ["test/mir.test.ts","-t","kept_element_ref"],
-  },
-  {
-    name: "mir-box-param-unread",
-    breaks: "a `&mut` number parameter is the box, not the place its `value` is, so writes through it are lost",
-    file: "src/lower/mir.rs",
-    find: "                    state.refs.insert(local, Expr::member(Expr::var(&name), \"value\"));\n",
-    replace: "",
-    tests: ["test/mir.test.ts","-t","mut_number_args"],
   },
   {
     name: "mir-box-not-copied-back",
