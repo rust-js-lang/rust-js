@@ -23,7 +23,7 @@ function files(dir: string): string[] {
 test("builtins, webapi, react and next are npm packages of their crates, which an app's Cargo finds in node_modules", () => {
   const out = fixture("npm-crates");
   run([process.execPath, "scripts/package-npm-crates.ts", out], 600_000, { RUSTC_BOOTSTRAP: "" });
-  expect(readdirSync(out).sort()).toEqual(["builtins.tgz", "next.tgz", "react.tgz", "webapi.tgz"]);
+  expect(readdirSync(out).sort()).toEqual(["builtins.tgz", "next.tgz", "node.tgz", "react.tgz", "webapi.tgz"]);
 
   const unpacked = (name: string) => {
     const dir = join(fixture(`npm-crate-${name}`));
@@ -37,8 +37,10 @@ test("builtins, webapi, react and next are npm packages of their crates, which a
     ["webapi", { "@rust-js/builtins": crates["@rust-js/builtins"] }, ["src/lib.rs"]],
     // React's own, the library it binds, and what its build script reads.
     ["react", { ...crates, react: ">=18.0.0", "react-dom": ">=18.0.0" }, ["build.rs", "src/attributes.rs", "src/children.rs", "src/dom.rs", "src/elements.rs", "src/event.rs", "src/lib.rs", "versions.json"]],
-    // Next.js's, the library it binds, and React's crate, which it uses.
-    ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }, ["src/app.rs", "src/cache.rs", "src/data_fetching.rs", "src/document.rs", "src/dynamic.rs", "src/error.rs", "src/form.rs", "src/head.rs", "src/headers.rs", "src/image.rs", "src/legacy.rs", "src/legacy/image.rs", "src/lib.rs", "src/link.rs", "src/metadata.rs", "src/navigation.rs", "src/offline.rs", "src/og.rs", "src/pages.rs", "src/router.rs", "src/script.rs", "src/server.rs", "src/web_vitals.rs"]],
+    // Node.js's, which a Next.js page's server code uses.
+    ["node", { "@rust-js/builtins": crates["@rust-js/builtins"] }, ["src/fs.rs", "src/http.rs", "src/lib.rs", "src/process.rs"]],
+    // Next.js's, the library it binds, and React's and Node.js's crates, which it uses.
+    ["next", { "@rust-js/builtins": crates["@rust-js/builtins"], "@rust-js/node": `~${cargo("node").package.version}`, "@rust-js/react": `~${cargo("react").package.version}`, next: ">=16.0.0" }, ["src/app.rs", "src/cache.rs", "src/data_fetching.rs", "src/document.rs", "src/dynamic.rs", "src/error.rs", "src/form.rs", "src/head.rs", "src/headers.rs", "src/image.rs", "src/legacy.rs", "src/legacy/image.rs", "src/lib.rs", "src/link.rs", "src/metadata.rs", "src/navigation.rs", "src/offline.rs", "src/og.rs", "src/pages.rs", "src/router.rs", "src/script.rs", "src/server.rs", "src/web_vitals.rs"]],
   ] as const) {
     const dir = unpacked(name);
     const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));

@@ -29,7 +29,7 @@ try {
   // Cargo where they are. Each crate a crate it names uses is a package too.
   const templates = [
     { name: "vite", example: "examples/vite-react", crates: ["builtins", "webapi", "react"] },
-    { name: "next", example: "examples/next", crates: ["builtins", "webapi", "react", "next"] },
+    { name: "next", example: "examples/next", crates: ["builtins", "webapi", "react", "next", "node"] },
   ];
   const crateVersion = (dir: string) => (Bun.TOML.parse(readFileSync(join(root, dir, "Cargo.toml"), "utf8")) as { package: { version: string } }).package.version;
   for (const { name, example, crates } of templates) {

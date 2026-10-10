@@ -137,7 +137,7 @@ test("a created app has its crates from npm, which its patch tells Cargo where t
   // A Next.js app's, `next` among them, as the same packages.
   expect(runSync([process.execPath, index, "site", "--template", "next"], cwd, 60_000).code).toBe(0);
   const site = join(cwd, "site");
-  for (const name of ["builtins", "webapi", "react", "next"]) {
+  for (const name of ["builtins", "webapi", "react", "next", "node"]) {
     const at = join(site, "node_modules", "@rust-js", name);
     mkdirSync(at, { recursive: true });
     run(["tar", "-xzf", join(packs, `${name}.tgz`), "-C", at, "--strip-components", "1"]);

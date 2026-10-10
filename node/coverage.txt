@@ -197,7 +197,7 @@
 - type crypto#DecipherOCB
 - crypto#diffieHellman
 - crypto#DiffieHellman
-- type crypto#DiffieHellmanGroup
+- crypto#DiffieHellmanGroup
 - type crypto#DiffieHellmanGroupConstructor
 - type crypto#DSAEncoding
 - type crypto#DSAKeyPairKeyObjectOptions
@@ -1047,7 +1047,7 @@
 - punycode#encode
 - punycode#toASCII
 - punycode#toUnicode
-- type punycode#ucs2
+- punycode#ucs2
 - punycode#version
 # querystring 0 of 10
 - querystring#decode
@@ -1099,7 +1099,7 @@
 # stream 0 of 33
 - stream#addAbortSignal
 - type stream#ArrayOptions
-- type stream#Duplex
+- stream#Duplex
 - type stream#DuplexOptions
 - stream#duplexPair
 - stream#finished
@@ -1489,7 +1489,7 @@
 - worker_threads#markAsUncloneable
 - worker_threads#markAsUntransferable
 - worker_threads#MessageChannel
-- type worker_threads#MessagePort
+- worker_threads#MessagePort
 - worker_threads#moveMessagePortToContext
 - worker_threads#parentPort
 - worker_threads#postMessageToThread
@@ -1509,10 +1509,10 @@
 - type worker_threads#WorkerPerformance
 # zlib 0 of 83
 - zlib#brotliCompress
-- type zlib#BrotliCompress
+- zlib#BrotliCompress
 - zlib#brotliCompressSync
 - zlib#brotliDecompress
-- type zlib#BrotliDecompress
+- zlib#BrotliDecompress
 - zlib#brotliDecompressSync
 - type zlib#BrotliOptions
 - type zlib#CompressCallback
@@ -1530,26 +1530,26 @@
 - zlib#createZstdCompress
 - zlib#createZstdDecompress
 - zlib#deflate
-- type zlib#Deflate
+- zlib#Deflate
 - zlib#deflateRaw
-- type zlib#DeflateRaw
+- zlib#DeflateRaw
 - zlib#deflateRawSync
 - zlib#deflateSync
 - zlib#gunzip
-- type zlib#Gunzip
+- zlib#Gunzip
 - zlib#gunzipSync
 - zlib#gzip
-- type zlib#Gzip
+- zlib#Gzip
 - zlib#gzipSync
 - zlib#inflate
-- type zlib#Inflate
+- zlib#Inflate
 - zlib#inflateRaw
-- type zlib#InflateRaw
+- zlib#InflateRaw
 - zlib#inflateRawSync
 - zlib#inflateSync
 - type zlib#InputType
 - zlib#unzip
-- type zlib#Unzip
+- zlib#Unzip
 - zlib#unzipSync
 - zlib#Z_ASCII
 - zlib#Z_BEST_COMPRESSION
@@ -1585,9 +1585,9 @@
 - type zlib#ZlibParams
 - type zlib#ZlibReset
 - zlib#zstdCompress
-- type zlib#ZstdCompress
+- zlib#ZstdCompress
 - zlib#zstdCompressSync
 - zlib#zstdDecompress
-- type zlib#ZstdDecompress
+- zlib#ZstdDecompress
 - zlib#zstdDecompressSync
 - type zlib#ZstdOptions

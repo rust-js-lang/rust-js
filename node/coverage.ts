@@ -17,10 +17,18 @@ const src = join(import.meta.dir, "src");
 type Kind = "value" | "type";
 export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean }[] };
 
+// A name both a class and an interface, as TypeScript merges them, is a
+// value, whichever file says which first.
+class Exports extends Map<string, Kind> {
+  override set(name: string, kind: Kind): this {
+    return super.set(name, this.get(name) === "value" ? "value" : kind);
+  }
+}
+
 const kinds: Record<string, Kind> = { interface: "type", type: "type", function: "value", const: "value", enum: "value", namespace: "value" };
 
 const files = (dir: string): string[] =>
-  readdirSync(dir).flatMap((f) => {
+  readdirSync(dir).sort().flatMap((f) => {
     const path = join(dir, f);
     if (statSync(path).isDirectory()) return f === "compatibility" || f === "ts5.6" || f === "ts5.7" ? [] : files(path);
     return f.endsWith(".d.ts") ? [path] : [];
@@ -41,11 +49,11 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
     for (const module of declarations as any[]) {
       // `declare global` and `namespace NodeJS` are the globals', not a module.
       if (module.kind !== "namespace" || module.name.startsWith("node:") || ["global", "NodeJS"].includes(module.name)) continue;
-      const own = modules.get(module.name) ?? new Map<string, Kind>();
+      const own = modules.get(module.name) ?? new Exports();
       // A `declare module`'s declarations are each exported, as TypeScript has
       // it, unless it says `export {}`: then those it marks.
       const marked = module.declarations.some((d: any) => d.kind === "other" && /^export \{\s*\};?$/.test(d.text.trim()));
-      const local = new Map<string, Kind>();
+      const local = new Exports();
       for (const d of module.declarations) {
         const kind = kinds[d.kind];
         if (kind && d.name !== "global") {
@@ -114,7 +122,7 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
     const ts = await open([file]);
     const { declarations } = await ts.read(file);
     await ts.close();
-    const members = new Map<string, Kind>();
+    const members = new Exports();
     const find = (list: any[]) => {
       for (const d of list) {
         if (d.kind === "interface" && d.name === shape) {
