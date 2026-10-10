@@ -185,7 +185,7 @@ pub(in crate::lower) enum SliceOp {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of one of the views' helpers (ADR 0335).
-    fn view_call(&mut self, name: &str, list: Vec<Expr>) -> Expr {
+    pub(in crate::lower) fn view_call(&mut self, name: &str, list: Vec<Expr>) -> Expr {
         self.runtime.insert(Helper::View);
         Expr::call(Expr::var(name), list)
     }

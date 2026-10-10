@@ -194,4 +194,20 @@ export const mutations: Mutation[] = [
     replace: "                items\n",
     tests: ["test/mir.test.ts","-t","generic_borrow"],
   },
+  {
+    name: "mir-swap-one-way",
+    breaks: "`mem::swap(&mut a, &mut b)` of two places writes `b` into `a`, and leaves `b`",
+    file: "src/lower/mir.rs",
+    find: "                out.push(StmtKind::Assign(b, old).at(js_span));\n",
+    replace: "                let _ = (b, old);\n",
+    tests: ["test/mir.test.ts","-t","swap_replace"],
+  },
+  {
+    name: "mir-view-whole",
+    breaks: "`&mut v[a..b]` from MIR is all of `v`, not a view of those items",
+    file: "src/lower/mir.rs",
+    find: "                    self.view_call(if checked { \"$viewGet\" } else { \"$view\" }, list)\n",
+    replace: "                    list.remove(0)\n",
+    tests: ["test/mir.test.ts","-t","mut_ref_loop_bounds"],
+  },
 ];

@@ -34,6 +34,7 @@ use super::recognition::{Std, StdItem};
 use super::representation::{const_js, variant_field};
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
+use super::std_types::slice::SliceOp;
 use super::std_types::text::TextOp;
 use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
@@ -1933,6 +1934,77 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
+    /// `mem::swap`, `mem::replace`, `mem::take`, `Option::take` and
+    /// `Option::replace`, as THIR's are: of a `&mut` to a place, writing each
+    /// in turn, `const t = a; a = b; b = t;`, which nothing else can see
+    /// while the call has it; of a `&mut` to an object, the object changed in
+    /// place, `$exchange(a, b)`, `$take(a, v)` (ADR 0147).
+    fn mir_swap_or_replace(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        known: Std,
+        values: Vec<Value<'tcx>>,
+        arg_tys: &[Ty<'tcx>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let pointee = arg_tys[0].peel_refs();
+        let js_span = self.js_span(span);
+        let mut values = values.into_iter();
+        let first = values.next().expect("a `&mut`");
+        self.flush(state, out)?;
+        let Value::Ref(a) = first else {
+            // Of an object: changed in place.
+            if !matches!(known, Std::Swap | Std::Replace | Std::MemTake) || !self.is_object(pointee) {
+                return Err(self.unsupported(span, "this `&mut` given to `mem::swap` and the like, from its MIR"));
+            }
+            let a = self.value_expr(first, span)?;
+            let b = match known {
+                Std::MemTake => self.default_value(pointee, span)?,
+                _ => self.value_expr(values.next().expect("a second"), span)?,
+            };
+            let (helper, name) = match known {
+                Std::Swap => (Helper::Exchange, "$exchange"),
+                _ => (Helper::Take, "$take"),
+            };
+            self.runtime.insert(helper);
+            let call = Expr::call(Expr::var(name), vec![a, b]);
+            if known == Std::Swap {
+                out.push(StmtKind::Expr(call).at(js_span));
+                return Ok(Value::Expr(Expr::undefined()));
+            }
+            return Ok(Value::Expr(call));
+        };
+        let (b, b_place) = match known {
+            Std::Swap => match values.next() {
+                Some(Value::Ref(b)) => (b.clone(), Some(b)),
+                _ => return Err(self.unsupported(span, "`mem::swap` of these, from its MIR")),
+            },
+            // `None`, and what's in a `Some`, boxed where a generic one is (ADR 0051).
+            Std::OptionTake => (Expr::undefined(), None),
+            Std::OptionReplace => {
+                let value = self.value_expr(values.next().expect("a value"), span)?;
+                let item = self.option_of(pointee).expect("an `Option` has a `T`");
+                let value = match self.boxed_payload(item) {
+                    true => self.some(value),
+                    false => value,
+                };
+                (value, None)
+            }
+            Std::MemTake => (self.default_value(pointee, span)?, None),
+            _ => (self.value_expr(values.next().expect("a value"), span)?, None),
+        };
+        let old = self.spill(if b_place.is_some() { "t" } else { "old" }, a.clone(), out);
+        out.push(StmtKind::Assign(a, b).at(js_span));
+        Ok(Value::Expr(match b_place {
+            Some(b) => {
+                out.push(StmtKind::Assign(b, old).at(js_span));
+                Expr::undefined()
+            }
+            None => old,
+        }))
+    }
+
     /// A std function of its arguments' values, as THIR's are lowered once
     /// they're values (`std_values`).
     #[allow(clippy::too_many_arguments)]
@@ -2117,6 +2189,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => None,
                 };
                 self.sort_values(key, items, arg_tys[0], generic_args, span, out)?
+            }
+            Std::Swap | Std::Replace | Std::MemTake | Std::OptionTake | Std::OptionReplace => {
+                let values: Vec<Value<'tcx>> = values.collect();
+                return self.mir_swap_or_replace(state, known, values, arg_tys, span, out);
+            }
+            // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items, THIR's (ADR 0335).
+            Std::Slice(SliceOp::View { checked }) => {
+                let items = self.value_expr(values.next().expect("the items"), span)?;
+                let range = self.value_expr(values.next().expect("the range"), span)?;
+                let (start, end) = self.range_value_bounds(range, arg_tys[1], span, out)?;
+                // `&mut v[..]`: all of it, which is `v`.
+                if !checked && start.as_int() == Some(0) && end.is_none() {
+                    items
+                } else {
+                    let mut list = vec![items, start];
+                    list.extend(end);
+                    self.view_call(if checked { "$viewGet" } else { "$view" }, list)
+                }
             }
             // A string's or a slice's method, but one of a range or a part of
             // it, which THIR lowers from its place.

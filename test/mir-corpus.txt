@@ -76,6 +76,7 @@ marker_traits.rs
 match_index.rs
 mut_number_args.rs
 mut_number_handles.rs
+mut_ref_loop_bounds.rs
 nested_generic_types.rs
 nested_type_chain.rs
 number_methods.rs
@@ -118,6 +119,7 @@ string_slice_boundary.rs
 string_slice_bounds.rs
 struct_update_drops.rs
 supertraits_by_reference.rs
+swap_replace.rs
 temporaries_taken_apart.rs
 thread_local_borrow_inside.rs
 thread_local_syntax.rs
