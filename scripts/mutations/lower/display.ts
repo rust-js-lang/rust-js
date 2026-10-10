@@ -412,4 +412,12 @@ export const mutations: Mutation[] = [
     replace: "                return Ok(Expr::str(\"Any { .. }\"));",
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
   },
+  {
+    name: "peek-mut-debug-heap",
+    breaks: "`{:?}` of a `PeekMut` shows its heap",
+    file: "src/lower/display.rs",
+    find: "            return Ok(join(vec![Expr::str(\"PeekMut(\"), shown, Expr::str(\")\")]));",
+    replace: "            return Ok(shown);",
+    tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
+  },
 ];

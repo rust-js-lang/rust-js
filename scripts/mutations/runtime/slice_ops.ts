@@ -98,4 +98,20 @@ export const mutations: Mutation[] = [
     replace: "    v[i]",
     tests: ["test/corpus.test.ts", "-t", "clone_from_slice_own"],
   },
+  {
+    name: "push-mut-copy",
+    breaks: "`*v.push_mut(10) += 5` writes a copy",
+    file: "src/runtime/slice_ops.js",
+    find: "  return handle ? $mutAt(v, v.length - 1) : x;",
+    replace: "  return x;",
+    tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
+  },
+  {
+    name: "insert-mut-at-end",
+    breaks: "`insert_mut(i, x)`'s `&mut` is to the last item",
+    file: "src/runtime/slice_ops.js",
+    find: "  return handle ? $mutAt(v, i) : x;",
+    replace: "  return handle ? $mutAt(v, v.length - 1) : x;",
+    tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
+  },
 ];

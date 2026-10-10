@@ -18,6 +18,18 @@ pub(in crate::lower) enum HeapOp {
     IntoSorted,
     /// `BinaryHeap::from(v)`, and `collect()` into one.
     From,
+    /// `append(&mut other)` and `retain(f)`, by std's steps (ADR 0333).
+    Append,
+    Retain,
+    /// `drain()`: its items in its order, and it left empty, `heap.splice(0)`.
+    Drain,
+    /// `peek_mut()`: a guard of its top, `{ heap, cmp, changed }`; its
+    /// `Deref` and `DerefMut`, and `PeekMut::pop` (ADR 0333).
+    PeekMut,
+    PeekTop {
+        mutable: bool,
+    },
+    PeekPop,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -33,10 +45,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             HeapOp::From => self.thir[args[0]].ty,
             _ => self.thir[args[0]].ty.peel_refs(),
         };
+        // A guard's, of its top.
+        if let HeapOp::PeekTop { .. } | HeapOp::PeekPop = op {
+            let item = self.recognition().peek_mut_of(heap_ty).expect("a `PeekMut`");
+            let guard = self.expr(args[0], out)?;
+            self.runtime.insert(Helper::HeapOps);
+            return Ok(match op {
+                HeapOp::PeekTop { mutable: false } => Expr::index(Expr::member(guard, "heap"), Expr::int(0)),
+                HeapOp::PeekTop { .. } => {
+                    let mut given = vec![guard];
+                    if self.is_boxable(item) {
+                        given.push(Expr::bool(true));
+                    }
+                    Expr::call(Expr::var("$peekMutTop"), given)
+                }
+                _ => Expr::call(Expr::var("$peekMutPop"), vec![guard]),
+            });
+        }
         let item = self
             .slice_item(heap_ty)
             .ok_or_else(|| self.unsupported(span, "this heap"))?;
         self.heap_of(item, span)?;
+        if op == HeapOp::Drain {
+            let heap = self.expr(args[0], out)?;
+            return Ok(Expr::call(Expr::member(heap, "splice"), vec![Expr::int(0)]));
+        }
         let compare = self.cmp_fn(item, false, span)?;
         let mut values = self.operands(args, out)?;
         values.push(compare);
@@ -45,6 +78,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             HeapOp::Pop => (Helper::HeapPop, "$heapPop"),
             HeapOp::IntoSorted => (Helper::HeapSorted, "$heapSorted"),
             HeapOp::From => (Helper::HeapFrom, "$heapFrom"),
+            HeapOp::Append => (Helper::HeapOps, "$heapAppend"),
+            HeapOp::Retain => (Helper::HeapOps, "$heapRetain"),
+            HeapOp::PeekMut => (Helper::HeapOps, "$peekMut"),
+            HeapOp::Drain | HeapOp::PeekTop { .. } | HeapOp::PeekPop => unreachable!("lowered above"),
         };
         self.runtime.insert(helper);
         Ok(Expr::call(Expr::var(name), values))

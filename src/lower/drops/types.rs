@@ -371,6 +371,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // is its cell's to drop.
             ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => Drops::Nothing,
             ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
+            // A heap's `PeekMut`: its top sifted down, if it changed (ADR 0333).
+            ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Runs,
             // Never dropped, or dropped by hand.
             ty::Adt(..) if self.recognition.is_lang_adt(ty, LangItem::ManuallyDrop) || std(StdItem::MaybeUninit) => {
                 Drops::Nothing

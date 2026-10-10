@@ -66,6 +66,10 @@ pub(in crate::lower) enum SliceOp {
     /// item, or a handle on a number or a string.
     RetainMut,
     PopFrontIf,
+    /// `push_mut(x)`, `insert_mut(i, x)`: a `&mut` to the item put in.
+    PushMut {
+        at: bool,
+    },
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -241,6 +245,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     SliceOp::Strip { suffix } => helper(self, "$sliceStrip", vec![arg(), arg(), Expr::bool(suffix)]),
                     SliceOp::Repeat => helper(self, "$repeatItems", vec![arg(), arg()]),
+                    SliceOp::PushMut { at } => {
+                        let mut given = vec![arg(), arg()];
+                        if at {
+                            given.push(arg());
+                        }
+                        if self.is_boxable(item()) {
+                            given.push(Expr::bool(true));
+                        }
+                        helper(self, if at { "$insertMut" } else { "$pushMut" }, given)
+                    }
                     SliceOp::DequeSwapRemove { front } => {
                         helper(self, "$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)])
                     }

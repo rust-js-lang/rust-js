@@ -10,6 +10,7 @@ use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
 use super::std_types::any::AnyOp;
+use super::std_types::heap::HeapOp;
 use super::std_types::lazy::LazyOp;
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
@@ -696,6 +697,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::IsEmpty
                     // What a guard guards, through its `&mut` (ADR 0328).
                     | Std::GuardValue { .. }
+                    // A heap's top, through its `PeekMut`, and the top it pops (ADR 0333).
+                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)
             )
         {
             // Of a type parameter's only, a generic iterator's chrono folds:

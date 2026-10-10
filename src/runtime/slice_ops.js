@@ -211,3 +211,15 @@ function $popFrontIf(v, holds, handles) {
     : v[0];
   return holds(given) ? v.shift() : undefined;
 }
+
+// `push_mut(x)` and `insert_mut(i, x)`: `x` put in, and a `&mut` to it there,
+// a handle on a number or text (ADR 0152).
+function $pushMut(v, x, handle) {
+  v.push(x);
+  return handle ? $mutAt(v, v.length - 1) : x;
+}
+
+function $insertMut(v, i, x, handle) {
+  $insertAt(v, i, x);
+  return handle ? $mutAt(v, i) : x;
+}

@@ -1037,6 +1037,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.recognition().is_type_id(ty) {
             return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));
         }
+        // A heap's `PeekMut` shows its top, `PeekMut(8)` (ADR 0333).
+        if let Some(item) = self.recognition().peek_mut_of(ty) {
+            let top = Expr::index(Expr::member(value, "heap"), Expr::int(0));
+            let shown = self.debug_string_with(top, item, span, pretty)?;
+            return Ok(join(vec![Expr::str("PeekMut("), shown, Expr::str(")")]));
+        }
         // A `MaybeUninit` shows its type's name, `MaybeUninit<u32>` (ADR 0332).
         if self.recognition().uninit_of(ty).is_some() {
             if ty.has_param() {

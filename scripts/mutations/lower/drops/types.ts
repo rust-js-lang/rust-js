@@ -139,4 +139,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^locks"],
     snapshots: true,
   },
+  {
+    name: "peek-mut-drops-nothing",
+    breaks: "a `PeekMut` dropped never sifts its changed top down",
+    file: "src/lower/drops/types.rs",
+    find: "            ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Runs,",
+    replace: "            ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Nothing,",
+    tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
+  },
 ];

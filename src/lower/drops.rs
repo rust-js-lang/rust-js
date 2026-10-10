@@ -479,6 +479,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 out.push(StmtKind::Expr(Expr::call(Expr::var("$rcDrop"), args)).at(js_span));
             }
+            // A heap's `PeekMut` (ADR 0333).
+            ty::Adt(..) if self.recognition().peek_mut_of(ty).is_some() => {
+                self.runtime.insert(Helper::HeapOps);
+                out.push(StmtKind::Expr(Expr::call(Expr::var("$peekMutDrop"), vec![value])).at(js_span));
+            }
             // A guard: `$unborrow(cell)` (ADR 0328).
             ty::Adt(..) if self.is_guard(ty) => {
                 self.runtime.insert(Helper::Borrow);

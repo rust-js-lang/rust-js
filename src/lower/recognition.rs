@@ -436,6 +436,8 @@ impl Std {
                 | Std::CellGetMut
                 | Std::GuardValue { mutable: true }
                 | Std::Pin(PinOp::Mut | PinOp::Map)
+                | Std::Heap(HeapOp::PeekTop { mutable: true })
+                | Std::Slice(SliceOp::PushMut { .. })
                 | Std::Any(AnyOp::DowncastMut)
                 | Std::Uninit(UninitOp::Write | UninitOp::InitMut)
                 | Std::Text(TextOp::EncodeUtf8)
@@ -728,6 +730,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
                 || self.is_vec_like(ty);
+            // A `PeekMut`'s heap's top (ADR 0333).
+            if self.peek_mut_of(ty).is_some() {
+                return Some(Some(Std::Heap(HeapOp::PeekTop {
+                    mutable: diagnostic("deref_mut_method"),
+                })));
+            }
             // What a `Pin`'s pointer points at (ADR 0329).
             if self.pinned(ty).is_some() {
                 return Some(Some(Std::Pin(match diagnostic("deref_mut_method") {
@@ -1256,6 +1264,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "peek" if heap => Some(Std::First),
             "into_sorted_vec" if heap => Some(Std::Heap(HeapOp::IntoSorted)),
             "into_vec" if heap => Some(Std::Same),
+            // In the order std's heap keeps them (ADR 0333).
+            "append" if heap => Some(Std::Heap(HeapOp::Append)),
+            "retain" if heap => Some(Std::Heap(HeapOp::Retain)),
+            "drain" if heap => Some(Std::Heap(HeapOp::Drain)),
+            "peek_mut" if heap => Some(Std::Heap(HeapOp::PeekMut)),
+            "as_slice" if heap => Some(Std::Same),
             "remove" if deque => Some(Std::DequeRemove),
             "push_back" if deque => Some(Std::Push),
             "pop_back" if deque => Some(Std::Method("pop")),
@@ -1413,6 +1427,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "of" if self.is_type_id(owner) => Std::Any(AnyOp::TypeIdOf),
             // A `Pin` is its pointer (ADR 0329).
             "pin" | "into_pin" if owner.is_box() => Std::Same,
+            "pop" if self.peek_mut_of(owner).is_some() => Std::Heap(HeapOp::PeekPop),
             // What a `Box` or a `MaybeUninit` holds, or `undefined` before it's
             // written (ADR 0332).
             "new_uninit" if owner.is_box() => Std::Uninit(UninitOp::Uninit),
@@ -1519,6 +1534,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "get_mut" if lazy => Std::Lazy(LazyOp::GetMut),
             "new" if adt("Vec") => Std::VecNew,
             "push" if adt("Vec") => Std::Push,
+            "push_mut" if adt("Vec") => Std::Slice(SliceOp::PushMut { at: false }),
+            "insert_mut" if adt("Vec") => Std::Slice(SliceOp::PushMut { at: true }),
             // JS's `pop()` gives `undefined` when empty: `None` (ADR 0030).
             "pop" if adt("Vec") => Std::Method("pop"),
             "len" if adt("Vec") || owner.is_slice() => Std::Len,
@@ -2706,6 +2723,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_dyn_any(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Dynamic(traits, ..)
             if traits.principal_def_id().is_some_and(|id| self.tcx.is_diagnostic_item(Symbol::intern("Any"), id)))
+    }
+
+    /// A `PeekMut<T>`'s `T`, a guard of a heap's top (ADR 0333).
+    pub(super) fn peek_mut_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.kind() {
+            ty::Adt(adt, args) if std_path(self.tcx, adt.did()) == "std::collections::binary_heap::PeekMut" => {
+                args.types().next()
+            }
+            _ => None,
+        }
     }
 
     /// A `MaybeUninit<T>`'s `T`, which it is in JS, or `undefined` (ADR 0332).

@@ -186,6 +186,7 @@ helpers! {
     HeapPop,
     HeapSorted,
     HeapFrom,
+    HeapOps,
     ParseInt,
     ParseF64,
     ParseBool,
@@ -356,7 +357,7 @@ impl Helper {
             Helper::CharBoundary => &[Helper::ByteLen],
             Helper::StrTruncate => &[Helper::ByteLen, Helper::CharBoundary],
             Helper::StrEdits => &[Helper::ByteLen, Helper::CharBoundary],
-            Helper::SliceOps => &[Helper::SliceStartsWith],
+            Helper::SliceOps => &[Helper::SliceStartsWith, Helper::MutAt, Helper::InsertAt],
             Helper::CharEscape => &[Helper::DebugStr],
             Helper::MapOps => &[Helper::SortedEntries, Helper::SortedKeys],
             Helper::StrSearch => &[
@@ -429,6 +430,7 @@ impl Helper {
             Helper::HeapPop => &[Helper::SiftUp],
             Helper::HeapSorted => &[Helper::SiftDown],
             Helper::HeapFrom => &[Helper::SiftDown],
+            Helper::HeapOps => &[Helper::SiftDown, Helper::SiftUp, Helper::HeapPop],
             _ => &[],
         }
     }
@@ -784,6 +786,7 @@ impl Helper {
             // compare as `<=` and `>=` of the items' `cmp`.
             Helper::SiftUp => include_str!("runtime/sift_up.js"),
             Helper::SiftDown => include_str!("runtime/sift_down.js"),
+            Helper::HeapOps => include_str!("runtime/heap_ops.js"),
             Helper::HeapPush => include_str!("runtime/heap_push.js"),
             // The last item goes to the top, which then sinks to the bottom
             // and rises back: Rust's `sift_down_to_bottom`.

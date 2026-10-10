@@ -1,4 +1,4 @@
-# Vec 34 of 48
+# Vec 36 of 48
 + Vec::append
 - Vec::as_mut_ptr
 + Vec::as_mut_slice
@@ -16,7 +16,7 @@
 - Vec::from_parts
 - Vec::from_raw_parts
 + Vec::insert
-- Vec::insert_mut
++ Vec::insert_mut
 + Vec::into_boxed_slice
 + Vec::into_flattened
 - Vec::into_parts
@@ -28,7 +28,7 @@
 + Vec::pop
 + Vec::pop_if
 + Vec::push
-- Vec::push_mut
++ Vec::push_mut
 + Vec::remove
 + Vec::reserve
 + Vec::reserve_exact
@@ -249,12 +249,12 @@
 + BTreeSet::symmetric_difference
 + BTreeSet::take
 + BTreeSet::union
-# BinaryHeap 15 of 23
-- BinaryHeap::append
-- BinaryHeap::as_slice
+# BinaryHeap 20 of 23
++ BinaryHeap::append
++ BinaryHeap::as_slice
 - BinaryHeap::capacity
 + BinaryHeap::clear
-- BinaryHeap::drain
++ BinaryHeap::drain
 + BinaryHeap::into_sorted_vec
 + BinaryHeap::into_vec
 + BinaryHeap::is_empty
@@ -262,12 +262,12 @@
 + BinaryHeap::len
 + BinaryHeap::new
 + BinaryHeap::peek
-- BinaryHeap::peek_mut
++ BinaryHeap::peek_mut
 + BinaryHeap::pop
 + BinaryHeap::push
 + BinaryHeap::reserve
 + BinaryHeap::reserve_exact
-- BinaryHeap::retain
++ BinaryHeap::retain
 + BinaryHeap::shrink_to
 + BinaryHeap::shrink_to_fit
 - BinaryHeap::try_reserve
