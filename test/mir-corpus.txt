@@ -34,6 +34,7 @@ drop_impl_param.rs
 drop_on_panic.rs
 drop_operand_panic.rs
 drop_params.rs
+drop_partial.rs
 drop_temporaries.rs
 drop_temporary_operands.rs
 duration_overflow.rs
@@ -97,6 +98,7 @@ refcell_unwind_releases.rs
 remainder_sign.rs
 replacement_character.rs
 rotate_past_end.rs
+scope_temporaries.rs
 size_of.rs
 slice_from_past_len.rs
 slice_prefixes.rs
@@ -110,10 +112,13 @@ stepped_nested.rs
 string_pushes.rs
 string_slice_boundary.rs
 string_slice_bounds.rs
+struct_update_drops.rs
 supertraits_by_reference.rs
+temporaries_taken_apart.rs
 thread_local_borrow_inside.rs
 thread_local_syntax.rs
 trait_param_drops.rs
+try_lock.rs
 unsized_struct_slice.rs
 unwrap_none.rs
 unwrap_string_debug.rs

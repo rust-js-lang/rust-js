@@ -334,21 +334,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .iter()
                 .map(|f| self.field_ty(f, args))
                 .collect(),
+            ty::Adt(adt, args) if adt.is_enum() => {
+                return self.open_drop_variants(state, block, (place, path), (*adt, args), cleanup, span, out);
+            }
             _ => {
                 let what = format!("dropping what's left of a `{ty}` some of which has moved, from its MIR");
                 return Err(self.unsupported(span, &what));
             }
         };
+        self.drop_ladder(state, block, (place, path, path), fields, cleanup, span, out)?;
+        if !cleanup && let Some(flag) = &state.flags[path] {
+            out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
+        }
+        Ok(())
+    }
+
+    /// rustc's `drop_ladder`: each of `fields` of `place`, a struct's or a
+    /// variant's whose path is `parts`, that's there, in order. One with no
+    /// path of its own is there as `path`'s flag says.
+    #[allow(clippy::too_many_arguments)]
+    fn drop_ladder(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path, parts): (Place<'tcx>, MovePathIndex, MovePathIndex),
+        fields: Vec<Ty<'tcx>>,
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
         for (i, field_ty) in fields.into_iter().enumerate() {
             if self.drops(field_ty) == Drops::Nothing {
                 continue;
             }
             let field = FieldIdx::from_usize(i);
-            let part = tcx.mk_place_field(place, field, field_ty);
+            let part = self.tcx.mk_place_field(place, field, field_ty);
             let drops = state.drops.as_ref().expect("elaborated");
             let subpath = move_path_children_matching(
                 &drops.move_data,
-                path,
+                parts,
                 |elem| matches!(elem, ProjectionElem::Field(at, _) if at == field),
             );
             match subpath {
@@ -357,6 +381,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => self.complete_drop(state, block, (part, path), span, out)?,
             }
         }
+        Ok(())
+    }
+
+    /// rustc's `open_drop_for_multivariant`: of an enum some of which has
+    /// moved, each variant some of whose fields have, those left, if it's
+    /// that variant; any other, all of it, if it holds what drops something.
+    /// Then its flag cleared.
+    #[allow(clippy::too_many_arguments)]
+    fn open_drop_variants(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        block: BasicBlock,
+        (place, path): (Place<'tcx>, MovePathIndex),
+        (adt, args): (ty::AdtDef<'tcx>, ty::GenericArgsRef<'tcx>),
+        cleanup: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let ty = place.ty(&state.body.local_decls, self.tcx).ty;
+        let subject = self.mir_place(state, place, span, out)?;
+        let mut arms = Vec::new();
+        let (mut otherwise, mut glue) = (false, false);
+        for (variant, def) in adt.variants().iter_enumerated() {
+            let drops = state.drops.as_ref().expect("elaborated");
+            let parts = move_path_children_matching(
+                &drops.move_data,
+                path,
+                |elem| matches!(elem, ProjectionElem::Downcast(_, at) if at == variant),
+            );
+            let fields: Vec<Ty<'tcx>> = def.fields.iter().map(|f| self.field_ty(f, args)).collect();
+            match parts {
+                Some(parts) => {
+                    let base = self.tcx.mk_place_downcast(place, adt, variant);
+                    let mut dropped = Vec::new();
+                    self.drop_ladder(state, block, (base, path, parts), fields, cleanup, span, &mut dropped)?;
+                    arms.push((variant, dropped));
+                }
+                None => {
+                    otherwise = true;
+                    glue |= fields.iter().any(|&f| self.drops(f) != Drops::Nothing);
+                }
+            }
+        }
+        // The variants not taken apart: all of it, or nothing.
+        let mut chain: Option<Vec<Stmt>> = match (otherwise, glue) {
+            (true, true) => {
+                let mut whole = Vec::new();
+                self.drop_value(subject.clone(), ty, span, &mut whole)?;
+                Some(whole)
+            }
+            (true, false) => Some(Vec::new()),
+            // The last variant taken apart is what's left.
+            (false, _) => arms.pop().map(|(_, dropped)| dropped),
+        };
+        let js_span = self.js_span(span);
+        for (variant, dropped) in arms.into_iter().rev() {
+            let test = self.variant_test(subject.clone(), ty, adt, variant, span)?;
+            chain = Some(match (dropped.is_empty(), chain) {
+                (true, Some(rest)) if !rest.is_empty() => {
+                    vec![StmtKind::If(Expr::unary(js::UnaryOp::Not, test), rest, None).at(js_span)]
+                }
+                (true, _) => Vec::new(),
+                (false, rest) => vec![StmtKind::If(test, dropped, rest.filter(|r| !r.is_empty())).at(js_span)],
+            });
+        }
+        out.extend(chain.unwrap_or_default());
         if !cleanup && let Some(flag) = &state.flags[path] {
             out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js::Span::NONE));
         }
