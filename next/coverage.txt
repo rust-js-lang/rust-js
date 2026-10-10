@@ -1,5 +1,5 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 69 of 2095 (3.3%)
+# exports: 80 of 2095 (3.8%)
 # next 4 of 42
 - type next#AdapterOutput
 - next#default
@@ -50,18 +50,18 @@
 - type next/app#AppType
 - next/app#default
 - type next/app#NextWebVitalsMetric
-# next/cache 0 of 11
-- next/cache#cacheLife
-- next/cache#cacheTag
-- next/cache#io
-- next/cache#refresh
-- next/cache#revalidatePath
-- next/cache#revalidateTag
-- next/cache#unstable_cache
-- next/cache#unstable_cacheLife
-- next/cache#unstable_cacheTag
-- next/cache#unstable_noStore
-- next/cache#updateTag
+# next/cache 11 of 11
++ next/cache#cacheLife
++ next/cache#cacheTag
++ next/cache#io
++ next/cache#refresh
++ next/cache#revalidatePath
++ next/cache#revalidateTag
++ next/cache#unstable_cache
++ next/cache#unstable_cacheLife
++ next/cache#unstable_cacheTag
++ next/cache#unstable_noStore
++ next/cache#updateTag
 # next/document 4 of 9
 - next/document#default
 - type next/document#DocumentContext

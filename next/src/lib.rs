@@ -19,6 +19,7 @@
 #![allow(non_snake_case, unused_variables)]
 
 pub mod app;
+pub mod cache;
 mod data_fetching;
 pub mod document;
 pub mod error;

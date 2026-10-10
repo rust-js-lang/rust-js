@@ -71,7 +71,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
@@ -84,6 +84,7 @@ function app(name: string): string {
   mkdirSync(join(dir, "app/request"));
   writeFileSync(join(dir, "app/request/page.rs"), request);
   writeFileSync(join(dir, "app/actions.rs"), actions);
+  writeFileSync(join(dir, "app/cached.rs"), cached);
   // A Route Handler, and a proxy that rewrites a path to another route.
   mkdirSync(join(dir, "app/api/hello"), { recursive: true });
   writeFileSync(join(dir, "app/api/hello/route.rs"), route);
@@ -213,6 +214,18 @@ pub fn proxy(request: &'static NextRequest) -> NextMiddlewareResult {
 pub static config: MiddlewareConfig<'static> = MiddlewareConfig { matcher: Some(Matcher::Path("/old")), regions: None, unstable_allow_dynamic: None };
 `;
 
+const cached = `js::directive!("use cache");
+
+use next::cache::{CacheLife, cache_life, cache_tag};
+
+pub async fn cached_count(n: u32) -> u32 {
+    cache_life("hours");
+    cache_life(CacheLife { stale: Some(60.0), ..Default::default() });
+    cache_tag(&["count", "clock"]);
+    n + 1
+}
+`;
+
 const actions = `js::directive!("use server");
 
 use next::headers::{CookieOptions, DeletedCookie, SameSite, cookies};
@@ -222,6 +235,16 @@ pub async fn leave(forbidden: bool) {
         next::navigation::forbidden();
     }
     next::navigation::redirect_with_type("/", next::navigation::RedirectType::Replace);
+}
+
+pub async fn renew() -> u32 {
+    next::cache::revalidate_path("/request");
+    next::cache::revalidate_tag("count", "max");
+    next::cache::update_tag("count");
+    next::cache::refresh();
+    let options = next::cache::UnstableCacheOptions { revalidate: Some(next::cache::Revalidate::Seconds(60.0)), tags: Some(&["n"]) };
+    let next_of = next::cache::unstable_cache_with_options(async |n: u32| n + 1, Some(&["n"]), options);
+    next_of(1).await
 }
 
 pub async fn remember(theme: String) {
@@ -480,6 +503,15 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
   expect(proxyJs).toContain('export const config = { matcher: "/old" };');
   expect(proxyJs).toContain('const about = new URL("/about", request.url);\n  const response = NextResponse.rewrite(about);\n  return response;');
+  // next/cache, in a "use cache" module and a Server Action.
+  const cachedJs = readFileSync(join(dir, "app/cached.js"), "utf8");
+  for (const written of ['"use cache";', 'cacheLife("hours");', "cacheLife({ stale: 60 });", 'cacheTag("count", "clock");']) {
+    expect(cachedJs).toContain(written);
+  }
+  const renewJs = readFileSync(join(dir, "app/actions.js"), "utf8");
+  for (const written of ['revalidatePath("/request");', 'revalidateTag("count", "max");', 'updateTag("count");', "refresh();", 'const options = { revalidate: 60, tags: ["n"] };', 'unstable_cache(async (n) => (n + 1) >>> 0, ["n"], options);']) {
+    expect(renewJs).toContain(written);
+  }
   // next/navigation.
   expect(linkedJsx).toContain('const query = useSearchParams().get("q") ?? "";');
   expect(linkedJsx).toContain("const { slug } = useParams();");
