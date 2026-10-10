@@ -22,6 +22,7 @@ pub mod app;
 pub mod cache;
 mod data_fetching;
 pub mod document;
+pub mod dynamic;
 pub mod error;
 pub mod form;
 pub mod head;

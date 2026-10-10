@@ -25,8 +25,14 @@ pub fn About() -> JSX::Element {
             </div>
             <HomeLink className="home" {..Default::default()} />
             <Script id={Some("inline")}>{"window.inlined = true;"}</Script>
+            <Loaded />
         </main>
     }
+}
+
+// A client component loaded by next/dynamic, at the module's top.
+thread_local! {
+    pub static Loaded: react::ComponentValue<()> = next::dynamic::dynamic(|| react::import_module("../later.jsx"));
 }
 
 #[derive(Default)]
@@ -71,9 +77,20 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
+  writeFileSync(join(dir, "app/later.rs"), `#![allow(non_snake_case)]
+js::directive!("use client");
+
+use react::{JSX, jsx};
+
+pub fn Later() -> JSX::Element {
+    jsx! { <p>{"Loaded later"}</p> }
+}
+
+js::export_default!(Later);
+`);
   // The Pages Router's route, as react.dev's pages read it: compiled, not
   // rendered, as this app's routes are the App Router's.
   // A link of a ref and passHref, as react.dev's SidebarLink has it.
@@ -409,6 +426,14 @@ pub fn Navigator() -> JSX::Element {
     }
 }
 
+// Only in the browser, and what's shown while it loads.
+thread_local! {
+    pub static Browsed: react::ComponentValue<()> = next::dynamic::dynamic_with_options(
+        || react::import_module("./later.jsx"),
+        next::dynamic::DynamicOptions { loading: Some(Box::new(|_| jsx! { <p>{"Loading"}</p> })), ssr: Some(false), ..Default::default() },
+    );
+}
+
 pub fn Location() -> JSX::Element {
     jsx! { <Located prefix="at " /> }
 }
@@ -523,6 +548,10 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   for (const written of ['revalidatePath("/request");', 'revalidateTag("count", "max");', 'updateTag("count");', "refresh();", 'const options = { revalidate: 60, tags: ["n"] };', 'unstable_cache(async (n) => (n + 1) >>> 0, ["n"], options);']) {
     expect(renewJs).toContain(written);
   }
+  // next/dynamic, at each module's top, rendered on the server too.
+  expect(aboutJsx).toContain('export const Loaded = dynamic(() => import("../later.jsx"));');
+  expect(aboutHtml).toContain("Loaded later");
+  expect(linkedJsx).toContain('export const Browsed = dynamic(() => import("./later.jsx"), {\n  loading: () => <p>Loading</p>,\n  ssr: false,\n});');
   // next/navigation.
   expect(linkedJsx).toContain('const query = useSearchParams().get("q") ?? "";');
   expect(linkedJsx).toContain("const { slug } = useParams();");

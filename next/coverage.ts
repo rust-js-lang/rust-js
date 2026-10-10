@@ -104,6 +104,12 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
       }
     }
   }
+  // `export default function dynamic` is the default, not a `dynamic`: the
+  // model has it as any exported function.
+  for (const m of readFileSync(path, "utf8").matchAll(/^export default (?:declare )?(?:async )?(?:function|class) (\w+)/gm)) {
+    exported.set("default", exported.get(m[1]) ?? "value");
+    exported.delete(m[1]);
+  }
   read.set(path, exported);
   return exported;
 }

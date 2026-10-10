@@ -1,5 +1,5 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 80 of 2095 (3.8%)
+# exports: 91 of 2093 (4.3%)
 # next 4 of 42
 - type next#AdapterOutput
 - next#default
@@ -72,19 +72,18 @@
 + next/document#Main
 + next/document#NextScript
 - type next/document#OriginProps
-# next/dynamic 0 of 12
-- next/dynamic#default
-- next/dynamic#dynamic
-- type next/dynamic#DynamicOptions
-- type next/dynamic#DynamicOptionsLoadingProps
-- type next/dynamic#LoadableComponent
-- type next/dynamic#LoadableFn
-- type next/dynamic#LoadableGeneratedOptions
-- type next/dynamic#LoadableOptions
-- type next/dynamic#Loader
-- type next/dynamic#LoaderComponent
-- type next/dynamic#LoaderMap
-- next/dynamic#noSSR
+# next/dynamic 11 of 11
++ next/dynamic#default
++ type next/dynamic#DynamicOptions
++ type next/dynamic#DynamicOptionsLoadingProps
++ type next/dynamic#LoadableComponent
++ type next/dynamic#LoadableFn
++ type next/dynamic#LoadableGeneratedOptions
++ type next/dynamic#LoadableOptions
++ type next/dynamic#Loader
++ type next/dynamic#LoaderComponent
++ type next/dynamic#LoaderMap
++ next/dynamic#noSSR
 # next/error 4 of 4
 + next/error#catchError
 + next/error#default
@@ -2052,9 +2051,8 @@
 - type next/image#ImageLoaderProps
 + type next/image#ImageProps
 - type next/image#StaticImageData
-# next/legacy/image 2 of 6
+# next/legacy/image 2 of 5
 + next/legacy/image#default
-- next/legacy/image#Image
 - type next/legacy/image#ImageLoader
 - type next/legacy/image#ImageLoaderProps
 + type next/legacy/image#ImageProps
