@@ -273,7 +273,7 @@
 - BinaryHeap::try_reserve
 - BinaryHeap::try_reserve_exact
 + BinaryHeap::with_capacity
-# Option 40 of 46
+# Option 41 of 46
 + Option::and
 + Option::and_then
 - Option::as_deref
@@ -299,7 +299,7 @@
 + Option::is_some
 + Option::is_some_and
 + Option::iter
-- Option::iter_mut
++ Option::iter_mut
 + Option::map
 + Option::map_or
 + Option::map_or_default
@@ -320,12 +320,12 @@
 + Option::unzip
 + Option::xor
 + Option::zip
-# Result 32 of 36
+# Result 34 of 36
 + Result::and
 + Result::and_then
 - Result::as_deref
 - Result::as_deref_mut
-- Result::as_mut
++ Result::as_mut
 + Result::as_ref
 + Result::cloned
 + Result::copied
@@ -340,7 +340,7 @@
 + Result::is_ok
 + Result::is_ok_and
 + Result::iter
-- Result::iter_mut
++ Result::iter_mut
 + Result::map
 + Result::map_err
 + Result::map_or

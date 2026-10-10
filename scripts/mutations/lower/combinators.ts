@@ -322,4 +322,28 @@ export const mutations: Mutation[] = [
     replace: "            Comb::Err if false => {",
     tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
+  {
+    name: "result-as-mut-copied",
+    breaks: "`as_mut()` of a `Result` of a number gives the number, not a handle",
+    file: "src/lower/combinators.rs",
+    find: "                    true => Expr::handle(inside()),\n                    false => inside(),",
+    replace: "                    true => inside(),\n                    false => inside(),",
+    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+  },
+  {
+    name: "result-as-mut-tag-ok",
+    breaks: "`as_mut()` of a `Result` of numbers is always `Ok`",
+    file: "src/lower/combinators.rs",
+    find: "                            side(Expr::member(subject.clone(), \"TAG\"), ok)",
+    replace: "                            side(Expr::str(\"Ok\"), ok)",
+    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+  },
+  {
+    name: "result-as-mut-mixed-err",
+    breaks: "`as_mut()` of a `Result` of a number and an object is always `Err`",
+    file: "src/lower/combinators.rs",
+    find: "                            Expr::cond(tag(\"Ok\"), side(Expr::str(\"Ok\"), ok), side(Expr::str(\"Err\"), err))",
+    replace: "                            side(Expr::str(\"Err\"), err)",
+    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+  },
 ];

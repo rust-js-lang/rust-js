@@ -319,6 +319,9 @@ pub(super) enum Std {
     /// An `Option`'s `iter()` and `into_iter()`: an array of its value, or
     /// of none (ADR 0128).
     OptionIter,
+    /// `iter_mut()` of an `Option`, and `&mut option` iterated: a handle
+    /// on its own place, of a number or text (ADR 0343).
+    OptionIterMut,
     /// `Option` (ADR 0030): `o != null`, `o == null`.
     IsSome,
     IsNone,
@@ -439,6 +442,8 @@ impl Std {
             self,
             Std::Once(OnceOp::GetMut)
                 | Std::Leak
+                | Std::OptionIterMut
+                | Std::Comb(Comb::ResultIterMut | Comb::ResultAsMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
                 | Std::CellGetMut
@@ -1089,6 +1094,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.is_lang_adt(ty.peel_refs(), LangItem::Option)
         {
             return Some(Std::OptionIter);
+        }
+        if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
+            && tcx.item_name(def_id).as_str() == "into_iter"
+            && self.is_lang_adt(ty.peel_refs(), LangItem::Option)
+        {
+            return Some(Std::OptionIterMut);
         }
         // `cmp`, `max` and `min` of what JS's `<` orders the same way.
         if tcx.is_diagnostic_item(sym::Ord, trait_) {
@@ -1812,6 +1823,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "replace" if option => Std::OptionReplace,
             "flatten" if option => Std::OptionFlatten,
             "iter" if option => Std::OptionIter,
+            "iter_mut" if option => Std::OptionIterMut,
             "copied" | "cloned" if option => Std::OptionCloned,
             "is_none" if option => Std::IsNone,
             "unwrap_or" if option => Std::UnwrapOr,
@@ -2797,7 +2809,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::collections::binary_heap::Iter",
                     "std::collections::binary_heap::IntoIter",
                     "std::option::Iter",
+                    "std::option::IterMut",
                     "std::option::IntoIter",
+                    "std::result::IterMut",
                     // A slice's chunks and splits, copies or views (ADR 0335).
                     "std::slice::ChunksMut",
                     "std::slice::ChunksExact",

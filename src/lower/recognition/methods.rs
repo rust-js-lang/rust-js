@@ -223,6 +223,8 @@ pub(super) fn combinator(name: &str, option: bool, result: bool, vec: bool, slic
         "inspect" if result => Comb::ResultInspect { err: false },
         "inspect_err" if result => Comb::ResultInspect { err: true },
         "iter" if result => Comb::ResultIter,
+        "iter_mut" if result => Comb::ResultIterMut,
+        "as_mut" if result => Comb::ResultAsMut,
         "map_or_default" if result => Comb::ResultMapOrDefault,
         "transpose" if result => Comb::ResultTranspose,
         "cloned" | "copied" if result => Comb::ResultCloned,

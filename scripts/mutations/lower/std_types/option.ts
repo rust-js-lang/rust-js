@@ -216,4 +216,20 @@ export const mutations: Mutation[] = [
     replace: "            Std::ResultOk if false => {",
     tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
+  {
+    name: "option-items-mut-copied",
+    breaks: "`iter_mut()` of an `Option` of a number gives the number, not a handle on it",
+    file: "src/lower/std_types/option.rs",
+    find: "            Expr::array(vec![cell]),\n",
+    replace: "            Expr::array(vec![Expr::member(cell, \"value\")]),\n",
+    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+  },
+  {
+    name: "option-items-mut-object-cell",
+    breaks: "`iter_mut()` of an `Option` of an object gives its cell",
+    file: "src/lower/std_types/option.rs",
+    find: "            let (option, _) = self.through_refs(option, option_ref);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+  },
 ];

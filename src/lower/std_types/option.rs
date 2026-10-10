@@ -278,6 +278,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::cond(present, value, Expr::undefined())
             }
+            // Of a number or text, a handle on the `Option`'s own place: `Some(x)`
+            // of one is `x` (ADR 0030), so writing it writes the `Option`.
+            Std::OptionIterMut => {
+                let item = self
+                    .option_of(self.thir[args[0]].ty.peel_refs())
+                    .expect("an `Option` has a `T`");
+                let option = arg();
+                self.option_items_mut(option, self.thir[args[0]].ty, item, span, out)?
+            }
             Std::OptionIter => {
                 let item = self
                     .option_of(self.thir[args[0]].ty.peel_refs())
@@ -375,6 +384,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::array(vec![]),
             Expr::array(vec![value]),
         )
+    }
+
+    /// The `&mut`s to what's in an `Option`, of its `&mut`, `option`: of a
+    /// number or text a handle on its own place, as `Some(x)` of one is `x`
+    /// (ADR 0030), so writing it writes the `Option`; of an object, the
+    /// object (ADR 0343).
+    pub(in crate::lower) fn option_items_mut(
+        &mut self,
+        option: Expr,
+        option_ref: Ty<'tcx>,
+        item: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        if !self.is_boxable(item) {
+            // The `Option` the `&mut` is to, through its cell.
+            let (option, _) = self.through_refs(option, option_ref);
+            return Ok(self.option_items(option, item, out));
+        }
+        if self.boxed_payload(item) {
+            return Err(self.unsupported(span, "a `&mut` to what's in an `Option` of an `Option`"));
+        }
+        let (place, cell) = match option.kind {
+            js::ExprKind::Handle(place) => (*place.clone(), Expr::handle(*place)),
+            _ => {
+                let cell = self.spill("option", option, out);
+                (Expr::member(cell.clone(), "value"), cell)
+            }
+        };
+        Ok(Expr::cond(
+            Expr::bin(Op::LooseEq, place, Expr::null()),
+            Expr::array(vec![]),
+            Expr::array(vec![cell]),
+        ))
     }
 
     /// What's in an `Option` of a generic `T` (ADR 0051): `$someValue(option)`.

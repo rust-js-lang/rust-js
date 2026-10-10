@@ -194,4 +194,12 @@ export const mutations: Mutation[] = [
     replace: "                    let _ = id;\n                    return true;\n",
     tests: ["test/lowering.test.ts","-t","Console's loops"],
   },
+  {
+    name: "loop-option-mut-copied",
+    breaks: "`for x in &mut option` gives the number, not a handle on it",
+    file: "src/lower/loops.rs",
+    find: "                Some(item) if matches!(head_ty.kind(), ty::Ref(_, _, Mutability::Mut)) => {",
+    replace: "                Some(item) if false => {",
+    tests: ["test/corpus.test.ts","-t","option_result_mut"],
+  },
 ];

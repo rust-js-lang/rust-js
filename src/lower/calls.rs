@@ -1206,6 +1206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::UnwrapOr
             | Std::OptionMap
             | Std::OptionIter
+            | Std::OptionIterMut
             | Std::OptionCloned
             | Std::OptionFlatten => unreachable!("lowered by option_call"),
             Std::Channel(_) => unreachable!("lowered by channel_call"),

@@ -281,9 +281,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             let peeled = head_ty.peel_refs();
             // An `Option`, or a `&Option`: a `&mut` one's items are places.
-            let option = self
-                .option_of(peeled)
-                .filter(|_| !matches!(head_ty.kind(), ty::Ref(_, _, Mutability::Mut)));
+            let option = self.option_of(peeled);
             let sequence = option.is_some()
                 || kind.is_some()
                 || peeled.is_array()
@@ -327,6 +325,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => head,
             };
             let head = match option {
+                // `for x in &mut option`: a `&mut` to what's in it (ADR 0343).
+                Some(item) if matches!(head_ty.kind(), ty::Ref(_, _, Mutability::Mut)) => {
+                    self.option_items_mut(head, head_ty, item, head_span, out)?
+                }
                 Some(item) => self.option_items(head, item, out),
                 None => head,
             };

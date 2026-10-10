@@ -60,6 +60,10 @@ pub(super) enum Comb {
         err: bool,
     },
     ResultIter,
+    /// `iter_mut()` and `as_mut()` of a `Result`: a `&mut` to what's in it,
+    /// a handle on `r._0` of a number or text (ADR 0343).
+    ResultIterMut,
+    ResultAsMut,
     ResultMapOrDefault,
     ResultTranspose,
     ResultCloned,
@@ -897,6 +901,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Comb::ResultFlatten => Expr::cond(tag("Ok"), inside(), subject),
             Comb::ResultIter => Expr::cond(tag("Ok"), Expr::array(vec![inside()]), Expr::array(Vec::new())),
+            Comb::ResultIterMut | Comb::ResultAsMut => {
+                let ty::Adt(_, sides) = subject_ty.peel_refs().kind() else {
+                    return Err(self.unsupported(span, "this `Result`"));
+                };
+                let (ok_ty, err_ty) = (sides.type_at(0), sides.type_at(1));
+                let part = |this: &Self, ty: Ty<'tcx>| match this.is_boxable(ty) {
+                    true => Expr::handle(inside()),
+                    false => inside(),
+                };
+                let ok = part(self, ok_ty);
+                match comb {
+                    Comb::ResultIterMut => Expr::cond(tag("Ok"), Expr::array(vec![ok]), Expr::array(Vec::new())),
+                    // Of objects, the `Result` itself, as `as_ref()`'s is.
+                    _ if !self.is_boxable(ok_ty) && !self.is_boxable(err_ty) => subject,
+                    _ => {
+                        let side = |name: Expr, value: Expr| {
+                            Expr::object(vec![Prop::Field("TAG".into(), name), Prop::Field("_0".into(), value)])
+                        };
+                        // Of both, a handle on `r._0` whichever it is.
+                        if self.is_boxable(ok_ty) && self.is_boxable(err_ty) {
+                            side(Expr::member(subject.clone(), "TAG"), ok)
+                        } else {
+                            let err = part(self, err_ty);
+                            Expr::cond(tag("Ok"), side(Expr::str("Ok"), ok), side(Expr::str("Err"), err))
+                        }
+                    }
+                }
+            }
             // `Ok(None)` is `None`, `Ok(Some(x))` `Some(Ok(x))`, `Err(e)` `Some(Err(e))`.
             Comb::ResultTranspose => {
                 let inner = match subject_ty.kind() {
