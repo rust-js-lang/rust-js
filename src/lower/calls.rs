@@ -346,12 +346,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let this = is_method(self.tcx, def_id).then(|| args.remove(0));
             // Its last argument, a slice, is JS's rest arguments: what an
             // array written out holds, or the slice spread (ADR 0221).
+            // Or a tuple, as an emitter's event's arguments are, of its type at
+            // this call: `()`, an empty array, none.
             if is_variadic(self.tcx, def_id) {
-                let inputs = self.tcx.fn_sig(def_id).skip_binder().skip_binder().inputs();
-                if !inputs.last().is_some_and(|ty| ty.peel_refs().is_slice()) {
+                let last = (self.tcx.fn_sig(def_id).instantiate(self.tcx, generic_args))
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()
+                    .last()
+                    .copied();
+                let last = last.map(|ty| {
+                    self.tcx
+                        .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
+                        .unwrap_or(ty)
+                });
+                let tuple = last.is_some_and(|ty| matches!(ty.kind(), ty::Tuple(_)));
+                if !last.is_some_and(|ty| ty.peel_refs().is_slice()) && !tuple {
                     return Err(self.unsupported(
                         span,
-                        "a `#[rust_js::variadic]` binding whose last parameter isn't a slice",
+                        "a `#[rust_js::variadic]` binding whose last parameter isn't a slice or a tuple",
                     ));
                 }
                 match args.pop() {

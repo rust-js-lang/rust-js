@@ -59,3 +59,11 @@ as classnames does. An argument shown only if a test holds,
 'sp-layout-expanded')`. The test is read as a test, its `!!o` as `o` (ADR 0298):
 `(error || bundlerIsReady) && 'overflow-auto'`, as react.dev's Preview
 writes it.
+
+## Amendment: a tuple
+
+A variadic binding's last parameter may be a tuple, of its type at the
+call, as an emitter's event's arguments are, `Emits<E>::Args`: one written
+out is the arguments, `emit("request", req, res)`, another spread, and
+`()`, an empty array, none. A tuple is an array (ADR 0020), so a slice's
+rule holds.

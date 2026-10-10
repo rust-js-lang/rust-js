@@ -258,7 +258,7 @@ export const mutations: Mutation[] = [
     name: "variadic-of-no-slice",
     breaks: "a variadic binding whose last parameter isn't a slice spreads it anyway, `Math.max(1, ...2)`",
     file: "src/lower/calls.rs",
-    find: "                if !inputs.last().is_some_and(|ty| ty.peel_refs().is_slice()) {\n",
+    find: "                if !last.is_some_and(|ty| ty.peel_refs().is_slice()) && !tuple {\n",
     replace: "                if false {\n",
     tests: ["test/diagnostics.test.ts", "-t", "variadic binding of no slice"],
   },
@@ -464,6 +464,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "sets a static property"
+    ]
+  },
+  {
+    "name": "variadic-tuple-refused",
+    "breaks": "a variadic binding's tuple, an event's arguments, is refused",
+    "file": "src/lower/calls.rs",
+    "find": "                if !last.is_some_and(|ty| ty.peel_refs().is_slice()) && !tuple {",
+    "replace": "                if !last.is_some_and(|ty| ty.peel_refs().is_slice()) {",
+    "tests": [
+      "test/bindings.test.ts",
+      "-t",
+      "takes a tuple as its rest"
     ]
   },
 ];

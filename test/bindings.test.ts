@@ -1360,6 +1360,58 @@ pub fn largest_of(values: Vec<f64>) -> f64 {
   expect([lib.largest(-3, -2), lib.largest(4, 2), lib.largest_of([2, 9, 4])]).toEqual([1, 4, 9]);
 });
 
+// A variadic binding's last parameter may be a tuple, as an emitter's
+// event's arguments are, of each type: the arguments themselves too, none
+// of \`()\`, and of a type parameter, its type at the call.
+test("a variadic binding takes a tuple as its rest arguments", async () => {
+  const dir = fixture("variadic-tuple");
+  writeFileSync(join(dir, "lib.rs"), `pub trait Event {
+    type Args;
+}
+
+pub struct Pair;
+pub struct Nothing;
+
+impl Event for Pair {
+    type Args = (f64, &'static str);
+}
+
+impl Event for Nothing {
+    type Args = ();
+}
+
+#[rust_js::link_name = "globalThis.called"]
+#[rust_js::variadic]
+#[allow(unused_variables)]
+fn called<E: Event>(event: &str, args: E::Args) -> String {
+    unreachable!()
+}
+
+#[rust_js::link_name = "globalThis.called"]
+#[rust_js::variadic]
+#[allow(unused_variables)]
+fn pair(event: &str, args: (f64, &str)) -> String {
+    unreachable!()
+}
+
+pub fn calls(held: (f64, &str)) -> Vec<String> {
+    vec![
+        called::<Pair>("pair", (1.0, "a")),
+        called::<Nothing>("nothing", ()),
+        pair("held", held),
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('globalThis.called("pair", 1, "a")');
+  expect(js).toContain('globalThis.called("nothing")');
+  expect(js).toContain('globalThis.called("held", ...held)');
+  const lib = await import(join(dir, "lib.js"));
+  (globalThis as any).called = (...args: unknown[]) => JSON.stringify(args);
+  expect(lib.calls([2, "b"])).toEqual(['["pair",1,"a"]', '["nothing"]', '["held",2,"b"]']);
+});
+
 // ADR 0269: a window's own functions are called bare too, as TypeScript's DOM
 // declares them globals and react.dev's NavigationBar asks `confirm('Clear
 // all your edits?')`. `window.confirm(..)` is still the method's.
