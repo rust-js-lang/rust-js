@@ -801,6 +801,87 @@ pub fn spread(parts: &[&str]) -> String {
   expect(lib.spread(["x", "y"])).toBe(path.join("x", "y"));
 });
 
+// ADR 0272: `process`, the global, read and written, run by Node itself,
+// whose own `process` says what each should be.
+test("node's process global is read and written", () => {
+  const dir = fixture("node-process");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::js::dict;
+use node::process::{self, NumberOrStr, ProcessFeaturesTypeScript};
+
+pub fn all() -> Vec<String> {
+    let here = process::cwd();
+    let _ = process::chdir("/");
+    let root = process::cwd();
+    let _ = process::chdir(&here);
+    dict::set(process::env(), "RUST_JS_TEST", "set".to_string());
+    let since = process::cpu_usage_with_previous_value(process::cpu_usage());
+    let time = process::hrtime_with_time(process::hrtime());
+    process::set_exit_code(3.0);
+    let code = match process::exit_code() {
+        Some(NumberOrStr::Number(n)) => n.to_string(),
+        _ => "?".to_string(),
+    };
+    process::set_exit_code(0.0);
+    process::set_trace_process_warnings(true);
+    process::next_tick(Box::new(|| println!("tick")));
+    println!("now");
+    vec![
+        process::argv().len().to_string(),
+        format!("{:?}", process::platform()),
+        format!("{:?}", process::arch()),
+        root,
+        (process::cwd() == here).to_string(),
+        dict::get(process::env(), "RUST_JS_TEST").cloned().unwrap_or_default(),
+        process::exec_path(),
+        process::version(),
+        dict::get(process::versions(), "node").cloned().unwrap_or_default(),
+        (process::pid() > 0.0 && process::ppid() > 0.0 && process::uptime() > 0.0).to_string(),
+        (time.0 >= 0.0 && process::hrtime_bigint() > 0).to_string(),
+        (process::memory_usage().heap_used > 0.0 && process::memory_usage_rss() > 0.0).to_string(),
+        (since.user >= 0.0 && process::resource_usage().max_rss > 0.0).to_string(),
+        process::release().name,
+        match process::features().typescript {
+            ProcessFeaturesTypeScript::Strip => "strip".to_string(),
+            ProcessFeaturesTypeScript::Transform => "transform".to_string(),
+            ProcessFeaturesTypeScript::None(_) => "false".to_string(),
+        },
+        process::config().variables.host_arch,
+        code,
+        process::kill_with_signal(process::pid(), 0.0).map(|sent| sent.to_string()).unwrap_or_default(),
+        format!("{} {}", process::get_builtin_module("fs").is_some(), process::get_builtin_module("nope").is_some()),
+        process::allowed_node_environment_flags().contains("--max-old-space-size").to_string(),
+        process::trace_process_warnings().to_string(),
+        process::has_uncaught_exception_capture_callback().to_string(),
+        process::getuid().to_string(),
+        process::argv0(),
+        process::exec_argv().len().to_string(),
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { all } from "./lib.js";
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+const got = all();
+const want = [
+  String(process.argv.length), cap(process.platform), cap(process.arch), "/", "true", "set", process.execPath, process.version,
+  process.versions.node, "true", "true", "true", "true", process.release.name, String(process.features.typescript),
+  process.config.variables.host_arch, "3", "true", "true false", "true", "true", "false", String(process.getuid()), process.argv0,
+  String(process.execArgv.length),
+];
+console.log(JSON.stringify({ got, want }));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  const out = p.stdout.toString();
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  const lines = out.trim().split("\n");
+  // `nextTick`'s callback runs once the script's own code is done.
+  expect([lines[0], lines[2]]).toEqual(["now", "tick"]);
+  const { got, want } = JSON.parse(lines[1]);
+  expect(got).toEqual(want);
+});
+
 // ADR 0272: `querystring`, a query's text from a dictionary of values and
 // back, each value one text or a list of them.
 test("node's querystring module is bound whole", async () => {
