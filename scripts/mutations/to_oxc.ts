@@ -341,4 +341,12 @@ export const mutations: Mutation[] = [
     replace: "                    false,\n",
     tests: ["test/lowering.test.ts","-t","only gives a value"],
   },
+  {
+    name: "same-place-index",
+    breaks: "`counts[name] = counts[name] ?? v` isn't `counts[name] ??= v`",
+    file: "src/to_oxc.rs",
+    find: "        // `counts[name]`, `files[\"/a\"]`: a key that reads the same.\n        (ExprKind::Index(a, i), ExprKind::Index(b, j)) => {\n            same_place(a, b)\n                && (same_place(i, j) || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j))\n        }\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","property read of what may be None"],
+  },
 ];

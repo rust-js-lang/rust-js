@@ -1307,11 +1307,25 @@ pub fn page(code: u32) -> Page {
 
 // A property of what may be `None`, `file.and_then(|f| js::get(f, "visible"))`,
 // is `file?.visible`, and of a dictionary's, `files["/styles.css"]?.visible`,
-// as react.dev's SandpackRoot reads it: a key that's a name. Another stays a test, `file != null ? file["a-b"] : undefined`.
+// as react.dev's SandpackRoot reads it, and one of a variable's key,
+// `files[name]?.active`: a key that's a name. Set where it's none, it's
+// `counts[name] ??= ..`, as react.dev's CustomPreset counts lines. Another stays a test, `file != null ? file["a-b"] : undefined`.
 test("a property read of what may be None is an optional chain", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("optional-property");
   writeFileSync(join(dir, "lib.rs"), `use js::{Dict, Unknown, dict};
+pub struct File {
+    pub active: Option<bool>,
+}
+pub fn active(files: &Dict<File>, name: &str) -> bool {
+    dict::get(files, name).and_then(|f| f.active) == Some(true)
+}
+pub fn counted(counts: &Dict<f64>, name: &str, code: &str) -> f64 {
+    if dict::get(counts, name).is_none() {
+        dict::set(counts, name, code.split('\\n').count() as f64);
+    }
+    *dict::get(counts, name).unwrap()
+}
 pub fn styled(files: &Dict<&Unknown>) -> bool {
     !js::truthy(dict::get(files, "/styles.css").and_then(|f| js::get(*f, "visible")))
 }
@@ -1326,9 +1340,11 @@ pub fn dashed(file: Option<&Unknown>) -> bool {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return !file?.visible;");
   expect(js).toContain('return !files["/styles.css"]?.visible;');
+  expect(js).toContain("return !!files[name]?.active;");
+  expect(js).toContain('counts[name] ??= code.split("\\n").length;');
   expect(js).toContain('file != null ? file["a-b"] : undefined');
-  const { visible, dashed, styled } = await import(join(dir, "lib.js"));
-  expect([styled({}), styled({ "/styles.css": { visible: true } }), visible(undefined), visible({}), visible({ visible: 1 }), dashed({ "a-b": 1 }), dashed(undefined)]).toEqual([true, false, true, true, false, true, false]);
+  const { visible, dashed, styled, active, counted } = await import(join(dir, "lib.js"));
+  expect([counted({}, "a", "x\ny"), counted({ a: 7 }, "a", "x"), active({ a: { active: true } }, "a"), active({}, "a"), styled({}), styled({ "/styles.css": { visible: true } }), visible(undefined), visible({}), visible({ visible: 1 }), dashed({ "a-b": 1 }), dashed(undefined)]).toEqual([2, 7, true, false, true, false, true, true, false, true, false]);
 });
 
 // `matches!` of a kind's literal says the literal: `x === "a"` holds of no

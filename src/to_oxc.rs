@@ -1413,6 +1413,11 @@ fn same_place(a: &js::Expr, b: &js::Expr) -> bool {
     match (&a.kind, &b.kind) {
         (ExprKind::Var(a), ExprKind::Var(b)) => a == b,
         (ExprKind::Member(a, x), ExprKind::Member(b, y)) => x == y && same_place(a, b),
+        // `counts[name]`, `files["/a"]`: a key that reads the same.
+        (ExprKind::Index(a, i), ExprKind::Index(b, j)) => {
+            same_place(a, b)
+                && (same_place(i, j) || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j))
+        }
         // `$index(v, i).hits`: an item, checked the same each time (ADR 0056).
         (ExprKind::Call(f, xs), ExprKind::Call(g, ys)) => {
             matches!((&f.kind, &g.kind), (ExprKind::Var(f), ExprKind::Var(g)) if f == "$index" && g == "$index")

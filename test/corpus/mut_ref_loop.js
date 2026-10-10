@@ -14,7 +14,7 @@ function main() {
   console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
   const halves = [1.5, 2.5];
   for (let i$1 = 0; i$1 < halves.length; i$1++) {
-    halves[i$1] = halves[i$1] * 2;
+    halves[i$1] *= 2;
   }
   console.log(`[${halves.map((item) => $debugF64(item)).join(", ")}]`);
   const counts = [1, 2];
@@ -24,7 +24,7 @@ function main() {
   console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
   const words = ["a", "b"];
   for (let i$3 = 0; i$3 < words.length; i$3++) {
-    words[i$3] = words[i$3] + "!";
+    words[i$3] += "!";
   }
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const end = $sliceEnd(ints, 1);

@@ -93,3 +93,12 @@ value written in place,** as `Option::map` already was:
   path as `x["k"]`, of the same text. A lowering test reads a property of
   an `Option` and of a dictionary's entry, and keeps a key that isn't a
   name, `file["a-b"]`, tested; a mutation tells no keys the same.
+- **So may a variable's key** (2026-10-10), `files[name]?.active`, where
+  `files[name]` was spilled into a `const` first: an index by what reads
+  the same reads the same, as a variable does. And a place set where it's
+  none, `if (counts[name] == null) { counts[name] = n; }`, is
+  `counts[name] ??= n`, as `x ??= n` was, and `words[i] = words[i] +
+  "!"` is `words[i] += "!"`. The `mut_ref_loop` corpus case's JS has two
+  such updates; the lowering test reads an entry by a variable's key and
+  sets one where it's none; mutations spill it, test another path, and
+  print the update whole.

@@ -220,4 +220,20 @@ export const mutations: Mutation[] = [
     replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => {\n",
     tests: ["test/lowering.test.ts","-t","property read of what may be None"],
   },
+  {
+    name: "reads-same-index-variable",
+    breaks: "`files[name]` is spilled, read twice",
+    file: "src/js.rs",
+    find: " && (index.is_constant() || index.reads_same()),",
+    replace: " && index.is_constant(),",
+    tests: ["test/lowering.test.ts","-t","property read of what may be None"],
+  },
+  {
+    name: "same-path-index-variable",
+    breaks: "`files[name]` isn't the path `files[name]` tests",
+    file: "src/js.rs",
+    find: " || same_path(i, j))\n",
+    replace: ")\n",
+    tests: ["test/lowering.test.ts","-t","property read of what may be None"],
+  },
 ];
