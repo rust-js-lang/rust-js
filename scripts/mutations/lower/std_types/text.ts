@@ -212,4 +212,20 @@ export const mutations: Mutation[] = [
     replace: "vec![Expr::spread(Expr::call(Expr::var(\"$slice\"), list))],",
     tests: ["test/corpus.test.ts","-t","extend_within_past_len"],
   },
+  {
+    name: "starts-with-eq-dropped",
+    breaks: "a slice's `starts_with` of structs compares them by identity",
+    file: "src/lower/std_types/text.rs",
+    find: "                list.extend(eq);\n                call(self, Helper::SliceStartsWith",
+    replace: "                call(self, Helper::SliceStartsWith",
+    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+  },
+  {
+    name: "ends-with-end-dropped",
+    breaks: "`ends_with` of structs is `starts_with`",
+    file: "src/lower/std_types/text.rs",
+    find: "                if end || eq.is_some() {\n                    list.push(Expr::bool(end));",
+    replace: "                if end || eq.is_some() {\n                    list.push(Expr::bool(false));",
+    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+  },
 ];

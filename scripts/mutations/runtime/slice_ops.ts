@@ -146,4 +146,20 @@ export const mutations: Mutation[] = [
     replace: "  const at = n;",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
+  {
+    name: "slice-strip-eq-ignored",
+    breaks: "a slice's `strip_prefix` compares by `===`, not the items' `==`",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (!$sliceStartsWith(v, p, end, eq)) return undefined;",
+    replace: "  if (!$sliceStartsWith(v, p, end)) return undefined;",
+    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+  },
+  {
+    name: "slice-strip-circumfix-prefix-only",
+    breaks: "a slice's `strip_circumfix` keeps the suffix",
+    file: "src/runtime/slice_ops.js",
+    find: "  return rest === undefined ? undefined : $sliceStrip(rest, suffix, true, eq);",
+    replace: "  return rest;",
+    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+  },
 ];

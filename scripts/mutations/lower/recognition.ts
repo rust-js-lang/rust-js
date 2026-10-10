@@ -1052,4 +1052,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
+  {
+    name: "slice-strip-circumfix-unknown",
+    breaks: "a slice's `strip_circumfix` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"strip_prefix\" | \"strip_suffix\" | \"strip_circumfix\" if owner.is_slice() => Std::Slice(SliceOp::Strip {",
+    replace: "            \"strip_prefix\" | \"strip_suffix\" if owner.is_slice() => Std::Slice(SliceOp::Strip {",
+    tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+  },
 ];

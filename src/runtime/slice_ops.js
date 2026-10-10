@@ -184,9 +184,16 @@ function $trimAsciiBytes(v, start, end) {
 
 // `v.strip_prefix(p)`, or `strip_suffix` (`end`): the rest, or `None`, of
 // items `==` compares by value.
-function $sliceStrip(v, p, end) {
-  if (!$sliceStartsWith(v, p, end)) return undefined;
+function $sliceStrip(v, p, end, eq) {
+  if (!$sliceStartsWith(v, p, end, eq)) return undefined;
   return end ? v.slice(0, v.length - p.length) : v.slice(p.length);
+}
+
+// `strip_circumfix(prefix, suffix)`: `strip_prefix`'s, then `strip_suffix`'s
+// of what's left.
+function $sliceStripCircumfix(v, prefix, suffix, eq) {
+  const rest = $sliceStrip(v, prefix, false, eq);
+  return rest === undefined ? undefined : $sliceStrip(rest, suffix, true, eq);
 }
 
 // `v.repeat(n)`: its items `n` times over, of `Copy` items.

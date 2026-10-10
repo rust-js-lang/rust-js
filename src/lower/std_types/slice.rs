@@ -88,9 +88,11 @@ pub(in crate::lower) enum SliceOp {
         start: bool,
         end: bool,
     },
-    /// `strip_prefix(p)` or `strip_suffix(p)`, of items compared by value.
+    /// `strip_prefix(p)`, `strip_suffix(p)`, or `strip_circumfix(p, s)`
+    /// (`circumfix`), of items compared by their own `==` (ADR 0336).
     Strip {
         suffix: bool,
+        circumfix: bool,
     },
     Repeat,
     /// A `VecDeque`'s `swap_remove_back(i)` or `swap_remove_front(i)`.
@@ -112,6 +114,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn view_call(&mut self, name: &str, list: Vec<Expr>) -> Expr {
         self.runtime.insert(Helper::View);
         Expr::call(Expr::var(name), list)
+    }
+
+    /// How a slice's `starts_with` and `strip_*` compare its items (ADR
+    /// 0336): `None` where JS's `===` is their `==`, numbers, text and
+    /// `bool`s, or a function of two of them their own `==` is.
+    pub(in crate::lower) fn item_eq(&mut self, item: ty::Ty<'tcx>, span: Span) -> R<Option<Expr>> {
+        if self.eq_is_identity(item) || (!self.has_cell_layer(item) && Num::of(item.peel_refs()).is_some()) {
+            return Ok(None);
+        }
+        let mut body = Vec::new();
+        let same = self.eq_value(Expr::var("a"), Expr::var("b"), item, span, &mut body)?;
+        // `(a, b) => $eq(a, b)` is `$eq`: the helper gives it the two alone.
+        if body.is_empty()
+            && let js::ExprKind::Call(callee, given) = &same.kind
+            && matches!(callee.kind, js::ExprKind::Var(_))
+            && let [a, b] = given.as_slice()
+            && matches!((&a.kind, &b.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == "a" && b == "b")
+        {
+            return Ok(Some(*callee.clone()));
+        }
+        body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
+        Ok(Some(Expr::arrow(vec!["a".into(), "b".into()], body)))
     }
 
     /// A chunk's `N`, as the call has it.
@@ -344,7 +368,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     SliceOp::TrimAscii { start, end } => {
                         helper(self, "$trimAsciiBytes", vec![arg(), Expr::bool(start), Expr::bool(end)])
                     }
-                    SliceOp::Strip { suffix } => helper(self, "$sliceStrip", vec![arg(), arg(), Expr::bool(suffix)]),
+                    SliceOp::Strip { suffix, circumfix } => {
+                        let mut list = vec![arg(), arg()];
+                        let name = match circumfix {
+                            true => {
+                                list.push(arg());
+                                "$sliceStripCircumfix"
+                            }
+                            false => {
+                                list.push(Expr::bool(suffix));
+                                "$sliceStrip"
+                            }
+                        };
+                        list.extend(self.item_eq(item(), span)?);
+                        helper(self, name, list)
+                    }
                     SliceOp::Repeat => helper(self, "$repeatItems", vec![arg(), arg()]),
                     SliceOp::PushMut { at } => {
                         let mut given = vec![arg(), arg()];

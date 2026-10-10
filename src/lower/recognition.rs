@@ -1930,18 +1930,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "contains" if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) => {
                 Std::Method("includes")
             }
-            "starts_with" | "ends_with" if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) => {
-                Std::Text(TextOp::SliceStartsWith {
-                    end: name.as_str() == "ends_with",
-                })
-            }
-            "strip_prefix" | "strip_suffix"
-                if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) =>
-            {
-                Std::Slice(SliceOp::Strip {
-                    suffix: name.as_str() == "strip_suffix",
-                })
-            }
+            // Of items compared by their own `==` where it isn't JS's `===`
+            // (ADR 0336).
+            "starts_with" | "ends_with" if owner.is_slice() => Std::Text(TextOp::SliceStartsWith {
+                end: name.as_str() == "ends_with",
+            }),
+            "strip_prefix" | "strip_suffix" | "strip_circumfix" if owner.is_slice() => Std::Slice(SliceOp::Strip {
+                suffix: name.as_str() == "strip_suffix",
+                circumfix: name.as_str() == "strip_circumfix",
+            }),
             // Only `[u8]` has it.
             "eq_ignore_ascii_case" if owner.is_slice() => Std::Text(TextOp::BytesAsciiEq),
             "is_ok" if result => Std::IsOk(true),

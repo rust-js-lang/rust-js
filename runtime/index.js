@@ -1728,9 +1728,16 @@ export function $trimAsciiBytes(v, start, end) {
 
 // `v.strip_prefix(p)`, or `strip_suffix` (`end`): the rest, or `None`, of
 // items `==` compares by value.
-export function $sliceStrip(v, p, end) {
-  if (!$sliceStartsWith(v, p, end)) return undefined;
+export function $sliceStrip(v, p, end, eq) {
+  if (!$sliceStartsWith(v, p, end, eq)) return undefined;
   return end ? v.slice(0, v.length - p.length) : v.slice(p.length);
+}
+
+// `strip_circumfix(prefix, suffix)`: `strip_prefix`'s, then `strip_suffix`'s
+// of what's left.
+export function $sliceStripCircumfix(v, prefix, suffix, eq) {
+  const rest = $sliceStrip(v, prefix, false, eq);
+  return rest === undefined ? undefined : $sliceStrip(rest, suffix, true, eq);
 }
 
 // `v.repeat(n)`: its items `n` times over, of `Copy` items.
@@ -5299,11 +5306,12 @@ export function $sliceSplitAt(items, mid, checked = false) {
   return [items.slice(0, mid), items.slice(mid)];
 }
 
-// `v.starts_with(prefix)`, or `ends_with` (`end`), of a slice whose items `==`
-// compares by value, as JS's `===` does: numbers, strings and `bool`s.
-export function $sliceStartsWith(items, prefix, end = false) {
+// `v.starts_with(prefix)`, or `ends_with` (`end`): each item `eq` to the
+// prefix's, the items' own `==`, or JS's `===` where that's it: numbers,
+// strings and `bool`s (ADR 0336).
+export function $sliceStartsWith(items, prefix, end = false, eq = (a, b) => a === b) {
   const at = end ? items.length - prefix.length : 0;
-  return at >= 0 && prefix.length <= items.length && prefix.every((item, i) => item === items[at + i]);
+  return at >= 0 && prefix.length <= items.length && prefix.every((item, i) => eq(items[at + i], item));
 }
 
 // `a.eq_ignore_ascii_case(b)` of bytes: the same length, each byte equal once

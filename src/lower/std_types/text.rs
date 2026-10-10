@@ -541,9 +541,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::ParseErrorKind => call(self, Helper::DebugParseError, "$parseErrorKind", vec![arg()]),
             TextOp::SliceStartsWith { end } => {
                 let mut list = vec![arg(), arg()];
-                if end {
-                    list.push(Expr::bool(true));
+                let eq = self.item_eq(generic_args.type_at(0), span)?;
+                if end || eq.is_some() {
+                    list.push(Expr::bool(end));
                 }
+                list.extend(eq);
                 call(self, Helper::SliceStartsWith, "$sliceStartsWith", list)
             }
             TextOp::BytesAsciiEq => call(self, Helper::BytesAsciiEq, "$bytesAsciiEq", vec![arg(), arg()]),
