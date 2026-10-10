@@ -62,3 +62,23 @@ choice, 2026-10-10; an error boundary is next/error's `catchError` or a JS
 component's binding); and TypeScript's own, types of types that compute a
 component's props, refs or elements, a string whose values are only
 suggestions, and `createElement`, which `jsx!` is.
+
+## Amendment: react-dom by @types's names
+
+react-dom is bound whole, 25 of 25, its types under @types/react-dom's
+names: `PreloadAs`, `PreinitAs`, `BrowserUsable` (were `As`, `Init`,
+`Browser`); `PreloadModuleOptions` and `PreinitModuleOptions` apart (were
+one `ModuleOptions`), with `PreloadModuleAs` a fetch's `RequestDestination`
+and `PreinitModuleAs`; `PreconnectOptions`. A function whose options
+@types makes optional has a `_with` twin, `preconnect_with`, as
+`create_root_with` is.
+
+- `FormStatus` is @types's union, `FormStatusPending | FormStatusNotPending`,
+  an enum tagged by `pending: true | false` (ADR 0284): a pending form's
+  `data`, `method` and `action` are there only while it's pending, where a
+  struct of getters read `null` as a `FormData` and a `String`.
+- A discriminated union's variant counts as TypeScript names its member,
+  `FormStatusPending` of `FormStatus::Pending`.
+- "old names" are `x` too, as test/react-versions.test.ts leaves them out:
+  `useFormState`, `unstable_batchedUpdates`, and each entry's `version`,
+  react-dom's.

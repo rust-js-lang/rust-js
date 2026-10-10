@@ -7,7 +7,7 @@ import { expect, test } from "bun:test";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 
-import { Misc, Places, Refs, Signup, Store, Suspended, mount, page_html, page_stream } from "./apis.jsx";
+import { Misc, Places, Refs, Signup, Store, Suspended, Upload, mount, page_html, page_stream } from "./apis.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -25,6 +25,8 @@ globalThis.store = {
 globalThis.portalTarget = document.createElement("div");
 document.body.append(globalThis.portalTarget);
 globalThis.flushedText = () => document.querySelector(".flush").textContent;
+let upload;
+globalThis.uploaded = () => new Promise((resolve) => (upload = resolve));
 
 async function render(element) {
   const container = document.createElement("div");
@@ -63,6 +65,16 @@ test("a form action with its state, an optimistic value and its status", async (
   // a submitter that its FormData then rejects.)
   await act(async () => $("button").click());
   expect($(".names").textContent).toBe("ada;");
+  await act(() => root.unmount());
+});
+
+test("a form's status while its action is pending", async () => {
+  const { $, root } = await render(<Upload />);
+  expect($(".status").textContent).toBe("ready");
+  await act(async () => $("button").click());
+  expect($(".status").textContent).toBe("sending grace by get");
+  await act(async () => upload());
+  expect($(".status").textContent).toBe("ready");
   await act(() => root.unmount());
 });
 

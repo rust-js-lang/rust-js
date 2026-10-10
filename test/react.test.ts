@@ -196,7 +196,7 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   copyFileSync(join(root, "test", "apis.jsx"), join(out, "apis.test.jsx"));
   const p = Bun.spawnSync(["bun", "test", "--preload", "./test/happydom.ts", join(out, "apis.test.jsx")], { cwd: root, stderr: "pipe" });
   const output = p.stdout.toString() + p.stderr.toString();
-  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "7"]);
+  expect([p.exitCode, output.match(/(\d+) pass/)?.[1]], output).toEqual([0, "8"]);
 }, 120_000);
 
 // ADR 0046: with `js::camel_case!()` (ADR 0110), a crate's own functions and

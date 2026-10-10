@@ -7,7 +7,7 @@ use react::dom::client::{Root, RootOptions, create_root_with};
 use react::dom::server::{
     ReactDOMServerReadableStream, StreamOptions, StringOptions, render_to_readable_stream, render_to_string_with,
 };
-use react::dom::{create_portal, flush_sync, use_form_status};
+use react::dom::{FormStatus, create_portal, flush_sync, use_form_status};
 use react::{js, jsx};
 use react::webapi;
 use react::{
@@ -32,6 +32,8 @@ unsafe extern "Rust" {
     safe static portal_target: &'static webapi::Element;
     #[link_name = "globalThis.flushedText"]
     safe fn flushed_text() -> String;
+    #[link_name = "globalThis.uploaded"]
+    safe fn uploaded() -> Promise<()>;
 }
 
 /// `use` a promise: Suspense shows the fallback until it resolves.
@@ -79,9 +81,29 @@ fn submit(previous: &String, data: &'static FormData) -> String {
 }
 
 pub fn SubmitStatus() -> JSX::Element {
-    let status = use_form_status();
+    let status = match use_form_status() {
+        FormStatus::Pending { data, method, .. } => {
+            let name = match data.get("name") {
+                Some(FormDataEntryValue::Str(text)) => text.to_string(),
+                _ => String::new(),
+            };
+            format!("sending {name} by {method}")
+        }
+        FormStatus::NotPending => "ready".to_string(),
+    };
     jsx! {
-        <span className="status">{if status.pending() { "sending" } else { "ready" }}</span>
+        <span className="status">{status}</span>
+    }
+}
+
+/// A form whose action waits for the test, pending till then.
+pub fn Upload() -> JSX::Element {
+    jsx! {
+        <form action={|_: &'static FormData| async { uploaded().await }}>
+            <input name="name" defaultValue="grace" />
+            <button type="submit">{"Upload"}</button>
+            <SubmitStatus />
+        </form>
     }
 }
 

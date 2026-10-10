@@ -56,7 +56,12 @@ const UNBOUND: Record<string, string> = Object.fromEntries(
       "AriaRole", "HTMLInputTypeAttribute", "HTMLAttributeAnchorTarget", "HTMLInputAutoCompleteAttribute", "AutoFill",
       "AutoFillAddressKind", "AutoFillBase", "AutoFillContactField", "AutoFillContactKind", "AutoFillCredentialField",
       "AutoFillField", "AutoFillNormalField", "AutoFillSection", "OptionalPostfixToken", "OptionalPrefixToken",
-    ].map((name) => `react#${name}`).concat(["react-dom#BrowserUsable"]),
+    ].map((name) => `react#${name}`),
+    // What React keeps for old code, as test/react-versions.test.ts leaves
+    // it out: `useFormState` is `useActionState`'s old name, and React
+    // batches every update itself. Each entry's `version` is react-dom's,
+    // `dom::VERSION`.
+    "old names": ["react-dom#useFormState", "react-dom#unstable_batchedUpdates", "react-dom/server#version", "react-dom/static#version"],
   }).flatMap(([why, names]) => names.map((name) => [name, why])),
 );
 
@@ -90,7 +95,9 @@ async function declared(file: string): Promise<Map<string, Kind>> {
 // as a call, a constructor or a component, `react#useState`, `new x#Y`,
 // `<react#Suspense>`, as `module#name`, and a type's `test`,
 // `isValidElement` of `ReactElement` (ADR 0214); each type's `types` link,
-// `react#MouseEvent` of `"react#MouseEvent<T>"`; and each type's name.
+// `react#MouseEvent` of `"react#MouseEvent<T>"`; and each type's name, and
+// a discriminated union's variant's as TypeScript names a union's members,
+// `FormStatusPending` of `FormStatus::Pending` (ADR 0284).
 export function bindings(release: string = latest): { links: Set<string>; types: Set<string>; items: Set<string> } {
   const out = join(root, "target", "react-docs", release);
   mkdirSync(out, { recursive: true });
@@ -115,8 +122,12 @@ export function bindings(release: string = latest): { links: Set<string>; types:
   const links = new Set<string>();
   const types = new Set<string>();
   const items = new Set<string>();
-  for (const item of Object.values(docs.index) as { name?: string; inner?: object; attrs?: { other?: string }[] }[]) {
+  type Item = { name?: string; inner?: { enum?: { variants: string[] } }; attrs?: { other?: string }[] };
+  for (const item of Object.values(docs.index) as Item[]) {
     if (item.name && ["struct", "enum", "type_alias", "trait"].some((k) => k in (item.inner ?? {}))) items.add(item.name);
+    if (item.inner?.enum && item.attrs?.some((a) => a.other?.includes("rust_js::tag ="))) {
+      for (const id of item.inner.enum.variants) items.add(`${item.name}${(docs.index[id] as Item).name}`);
+    }
     for (const attr of item.attrs ?? []) {
       const name = attr.other?.match(/rust_js::(?:link_name|test) = "(.*)"\]$/)?.[1] ?? attr.other?.match(/LinkName \{name: "(.*)"\}/)?.[1];
       const path = name?.replace(/^new /, "").replace(/^<(.*)>$/, "$1");
@@ -159,7 +170,7 @@ export function render(modules: Module[]): string {
   return [
     `# The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts`,
     `# exports: ${bound} of ${all.length} (${((100 * bound) / all.length).toFixed(1)}%)`,
-    `# not bound by design (x): ${unbound}, class components or TypeScript's own`,
+    `# not bound by design (x): ${unbound}, class components, TypeScript's own or old names`,
     ...modules.flatMap((m) => [
       `# ${m.name} ${counted(m).filter((e) => e.bound).length} of ${counted(m).length}`,
       ...m.exports.map((e) => `${e.unbound ? "x" : e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),

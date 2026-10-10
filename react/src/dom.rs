@@ -50,9 +50,16 @@ pub fn preconnect(href: &str) {
     unreachable!()
 }
 
-/// What a resource is, for [`preload`] and [`preinit`].
+/// `preconnect(href, options)`.
 #[cfg(react = "19.0")]
-pub enum As {
+#[cfg_attr(rust_js, rust_js::link_name = "react-dom#preconnect")]
+pub fn preconnect_with(href: &str, options: PreconnectOptions) {
+    unreachable!()
+}
+
+/// What a resource is, for [`preload`].
+#[cfg(react = "19.0")]
+pub enum PreloadAs {
     #[cfg_attr(rust_js, rust_js::name = "audio")]
     Audio,
     #[cfg_attr(rust_js, rust_js::name = "document")]
@@ -107,10 +114,19 @@ macro_rules! options {
 }
 
 options! {
-    /// [`preload`]'s options: `PreloadOptions::new(As::Font)`.
+    /// [`preconnect_with`]'s options.
     #[cfg(react = "19.0")]
-    PreloadOptions("{as}", r#as: As) {
-        /// `"anonymous"` or `"use-credentials"`; needed for `As::Fetch`.
+    PreconnectOptions("{}") {
+        /// `"anonymous"`, `"use-credentials"` or `""`.
+        cross_origin: impl Value = "crossOrigin";
+    }
+}
+
+options! {
+    /// [`preload`]'s options: `PreloadOptions::new(PreloadAs::Font)`.
+    #[cfg(react = "19.0")]
+    PreloadOptions("{as}", r#as: PreloadAs) {
+        /// `"anonymous"`, `"use-credentials"` or `""`; needed for `PreloadAs::Fetch`.
         cross_origin: impl Value = "crossOrigin";
         referrer_policy: impl Value = "referrerPolicy";
         integrity: impl Value = "integrity";
@@ -119,9 +135,11 @@ options! {
         nonce: impl Value = "nonce";
         /// `"auto"`, `"high"` or `"low"`.
         fetch_priority: impl Value = "fetchPriority";
-        /// For `As::Image`.
+        /// For `PreloadAs::Image`.
         image_src_set: impl Value = "imageSrcSet";
         image_sizes: impl Value = "imageSizes";
+        /// A media query the resource is for, `"(min-width: 800px)"`.
+        media: impl Value = "media";
     }
 }
 
@@ -133,10 +151,56 @@ pub fn preload(href: &str, options: PreloadOptions) {
     unreachable!()
 }
 
+/// What a module is, for [`preload_module_with`]: a fetch's
+/// `RequestDestination`, `"script"` where none is given.
+#[cfg(react = "19.0")]
+pub enum PreloadModuleAs {
+    #[cfg_attr(rust_js, rust_js::name = "")]
+    Empty,
+    #[cfg_attr(rust_js, rust_js::name = "audio")]
+    Audio,
+    #[cfg_attr(rust_js, rust_js::name = "audioworklet")]
+    AudioWorklet,
+    #[cfg_attr(rust_js, rust_js::name = "document")]
+    Document,
+    #[cfg_attr(rust_js, rust_js::name = "embed")]
+    Embed,
+    #[cfg_attr(rust_js, rust_js::name = "font")]
+    Font,
+    #[cfg_attr(rust_js, rust_js::name = "frame")]
+    Frame,
+    #[cfg_attr(rust_js, rust_js::name = "iframe")]
+    IFrame,
+    #[cfg_attr(rust_js, rust_js::name = "image")]
+    Image,
+    #[cfg_attr(rust_js, rust_js::name = "manifest")]
+    Manifest,
+    #[cfg_attr(rust_js, rust_js::name = "object")]
+    Object,
+    #[cfg_attr(rust_js, rust_js::name = "paintworklet")]
+    PaintWorklet,
+    #[cfg_attr(rust_js, rust_js::name = "report")]
+    Report,
+    #[cfg_attr(rust_js, rust_js::name = "script")]
+    Script,
+    #[cfg_attr(rust_js, rust_js::name = "sharedworker")]
+    SharedWorker,
+    #[cfg_attr(rust_js, rust_js::name = "style")]
+    Style,
+    #[cfg_attr(rust_js, rust_js::name = "track")]
+    Track,
+    #[cfg_attr(rust_js, rust_js::name = "video")]
+    Video,
+    #[cfg_attr(rust_js, rust_js::name = "worker")]
+    Worker,
+    #[cfg_attr(rust_js, rust_js::name = "xslt")]
+    Xslt,
+}
+
 options! {
-    /// [`preload_module`]'s and [`preinit_module`]'s options.
+    /// [`preload_module_with`]'s options: `PreloadModuleOptions::new(PreloadModuleAs::Script)`.
     #[cfg(react = "19.0")]
-    ModuleOptions("{}") {
+    PreloadModuleOptions("{as}", r#as: PreloadModuleAs) {
         cross_origin: impl Value = "crossOrigin";
         integrity: impl Value = "integrity";
         nonce: impl Value = "nonce";
@@ -147,13 +211,20 @@ options! {
 /// fetch an ES module you'll need soon.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#preloadModule")]
-pub fn preload_module(href: &str, options: ModuleOptions) {
+pub fn preload_module(href: &str) {
+    unreachable!()
+}
+
+/// `preloadModule(href, options)`.
+#[cfg(react = "19.0")]
+#[cfg_attr(rust_js, rust_js::link_name = "react-dom#preloadModule")]
+pub fn preload_module_with(href: &str, options: PreloadModuleOptions) {
     unreachable!()
 }
 
 /// What [`preinit`] loads: a script or a stylesheet.
 #[cfg(react = "19.0")]
-pub enum Init {
+pub enum PreinitAs {
     #[cfg_attr(rust_js, rust_js::name = "script")]
     Script,
     #[cfg_attr(rust_js, rust_js::name = "style")]
@@ -161,9 +232,9 @@ pub enum Init {
 }
 
 options! {
-    /// [`preinit`]'s options: `PreinitOptions::new(Init::Style).precedence("high")`.
+    /// [`preinit`]'s options: `PreinitOptions::new(PreinitAs::Style).precedence("high")`.
     #[cfg(react = "19.0")]
-    PreinitOptions("{as}", r#as: Init) {
+    PreinitOptions("{as}", r#as: PreinitAs) {
         /// A stylesheet's place among others: `"reset"`, `"low"`, `"medium"`
         /// or `"high"`. A stylesheet needs one.
         precedence: impl Value = "precedence";
@@ -182,11 +253,37 @@ pub fn preinit(href: &str, options: PreinitOptions) {
     unreachable!()
 }
 
+/// What [`preinit_module_with`] loads: a script, as for now only one is.
+#[cfg(react = "19.0")]
+pub enum PreinitModuleAs {
+    #[cfg_attr(rust_js, rust_js::name = "script")]
+    Script,
+}
+
+options! {
+    /// [`preinit_module_with`]'s options.
+    #[cfg(react = "19.0")]
+    PreinitModuleOptions("{}") {
+        /// `PreinitModuleAs::Script` where none is given.
+        r#as: PreinitModuleAs = "as";
+        cross_origin: impl Value = "crossOrigin";
+        integrity: impl Value = "integrity";
+        nonce: impl Value = "nonce";
+    }
+}
+
 /// [`preinitModule`](https://react.dev/reference/react-dom/preinitModule):
 /// fetch and run an ES module early.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#preinitModule")]
-pub fn preinit_module(href: &str, options: ModuleOptions) {
+pub fn preinit_module(href: &str) {
+    unreachable!()
+}
+
+/// `preinitModule(href, options)`.
+#[cfg(react = "19.0")]
+#[cfg_attr(rust_js, rust_js::link_name = "react-dom#preinitModule")]
+pub fn preinit_module_with(href: &str, options: PreinitModuleOptions) {
     unreachable!()
 }
 
@@ -196,33 +293,35 @@ pub fn preinit_module(href: &str, options: ModuleOptions) {
 /// the last submission of the `<form>` this component is in.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#useFormStatus")]
-pub fn use_form_status() -> &'static FormStatus {
+pub fn use_form_status() -> FormStatus {
     unreachable!()
 }
 
-/// What [`use_form_status`] gives.
+/// What [`use_form_status`] gives: the submission, while the form is
+/// being submitted, `{ pending: true, .. }`, or `{ pending: false, .. }`.
+/// @types/react-dom's `FormStatusPending | FormStatusNotPending`.
 #[cfg(react = "19.0")]
-pub struct FormStatus(PhantomData<JsObject>);
+#[cfg_attr(rust_js, rust_js::tag = "pending")]
+pub enum FormStatus {
+    #[cfg_attr(rust_js, rust_js::name = true)]
+    Pending {
+        /// What it's submitting.
+        data: &'static webapi::FormData,
+        /// `"get"` or `"post"`.
+        method: String,
+        action: FormStatusAction,
+    },
+    #[cfg_attr(rust_js, rust_js::name = false)]
+    NotPending,
+}
 
+/// What a pending form is submitted to: the `<form>`'s `action`, a URL or
+/// a function.
 #[cfg(react = "19.0")]
-impl FormStatus {
-    /// Whether the form is being submitted.
-    #[cfg_attr(rust_js, rust_js::link_name = "get pending")]
-    pub fn pending(&self) -> bool {
-        unreachable!()
-    }
-
-    /// What it's submitting, while it is.
-    #[cfg_attr(rust_js, rust_js::link_name = "get data")]
-    pub fn data(&self) -> Option<&'static webapi::FormData> {
-        unreachable!()
-    }
-
-    /// `"get"` or `"post"`.
-    #[cfg_attr(rust_js, rust_js::link_name = "get method")]
-    pub fn method(&self) -> String {
-        unreachable!()
-    }
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum FormStatusAction {
+    Url(String),
+    Function(&'static dyn Fn(&webapi::FormData) -> Option<Promise<()>>),
 }
 
 /// [`requestFormReset`](https://react.dev/reference/react-dom/requestFormReset):
@@ -235,10 +334,10 @@ pub fn request_form_reset(form: &webapi::HTMLFormElement) {
 
 /// What [`browser`] marks: content that only renders in the browser.
 #[cfg(react = "19.3")]
-pub struct Browser(PhantomData<JsObject>);
+pub struct BrowserUsable(PhantomData<JsObject>);
 
 #[cfg(react = "19.3")]
-impl Usable for Browser {
+impl Usable for BrowserUsable {
     type Output = ();
 }
 
@@ -247,7 +346,7 @@ impl Usable for Browser {
 /// [`suspense`]'s fallback shows instead, and `reason` says why.
 #[cfg(react = "19.3")]
 #[cfg_attr(rust_js, rust_js::link_name = "react-dom#browser")]
-pub fn browser(reason: &str) -> Browser {
+pub fn browser(reason: &str) -> BrowserUsable {
     unreachable!()
 }
 

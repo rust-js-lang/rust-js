@@ -1,6 +1,6 @@
 # The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts
-# exports: 196 of 248 (79.0%)
-# not bound by design (x): 84, class components or TypeScript's own
+# exports: 206 of 245 (84.1%)
+# not bound by design (x): 87, class components, TypeScript's own or old names
 # react 162 of 184
 - type react#AbstractView
 + react#act
@@ -269,32 +269,32 @@ x type react#UntrackedReactPromise
 - type react#WebViewHTMLAttributes
 + type react#WheelEvent
 + type react#WheelEventHandler
-# react-dom 15 of 26
+# react-dom 25 of 25
 + react-dom#browser
-x type react-dom#BrowserUsable
++ type react-dom#BrowserUsable
 + react-dom#createPortal
 + react-dom#flushSync
 + type react-dom#FormStatus
-- type react-dom#FormStatusNotPending
-- type react-dom#FormStatusPending
++ type react-dom#FormStatusNotPending
++ type react-dom#FormStatusPending
 + react-dom#preconnect
-- type react-dom#PreconnectOptions
++ type react-dom#PreconnectOptions
 + react-dom#prefetchDNS
 + react-dom#preinit
-- type react-dom#PreinitAs
++ type react-dom#PreinitAs
 + react-dom#preinitModule
-- type react-dom#PreinitModuleAs
-- type react-dom#PreinitModuleOptions
++ type react-dom#PreinitModuleAs
++ type react-dom#PreinitModuleOptions
 + type react-dom#PreinitOptions
 + react-dom#preload
-- type react-dom#PreloadAs
++ type react-dom#PreloadAs
 + react-dom#preloadModule
-- type react-dom#PreloadModuleAs
-- type react-dom#PreloadModuleOptions
++ type react-dom#PreloadModuleAs
++ type react-dom#PreloadModuleOptions
 + type react-dom#PreloadOptions
 + react-dom#requestFormReset
-- react-dom#unstable_batchedUpdates
-- react-dom#useFormState
+x react-dom#unstable_batchedUpdates
+x react-dom#useFormState
 + react-dom#useFormStatus
 + react-dom#version
 # react-dom/client 5 of 8
@@ -306,7 +306,7 @@ x type react-dom#BrowserUsable
 - type react-dom/client#ReactFormState
 + type react-dom/client#Root
 + type react-dom/client#RootOptions
-# react-dom/server 8 of 17
+# react-dom/server 8 of 16
 - type react-dom/server#BootstrapScriptDescriptor
 - type react-dom/server#HeadersDescriptor
 - type react-dom/server#NonceOption
@@ -323,8 +323,8 @@ x type react-dom#BrowserUsable
 + react-dom/server#resumeToPipeableStream
 - type react-dom/server#ResumeToPipeableStreamOptions
 - type react-dom/server#ServerOptions
-- react-dom/server#version
-# react-dom/static 6 of 13
+x react-dom/server#version
+# react-dom/static 6 of 12
 - type react-dom/static#BootstrapScriptDescriptor
 - type react-dom/static#NonceOption
 + type react-dom/static#PostponedState
@@ -337,4 +337,4 @@ x type react-dom#BrowserUsable
 + react-dom/static#resumeAndPrerender
 + react-dom/static#resumeAndPrerenderToNodeStream
 - type react-dom/static#ResumeOptions
-- react-dom/static#version
+x react-dom/static#version
