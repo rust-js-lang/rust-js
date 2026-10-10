@@ -1392,4 +1392,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","trait_default_bounds"],
   },
+  {
+    name: "non-zero-fields-read",
+    breaks: "a `NonZero` matched against a constant is read by its fields, which its number hasn't",
+    file: "src/lower/recognition.rs",
+    find: "            || matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did())\n",
+    replace: "            || matches!(ty.kind(), ty::Adt(adt, _) if false\n",
+    tests: ["test/mir.test.ts","-t","nonzero"],
+  },
 ];

@@ -782,15 +782,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if known == Std::NonZeroNew {
             let ty = self.thir[args[0]].ty;
-            let num = self.num(ty, span)?;
             let n = self.expr(args[0], out)?;
-            // Of a constant, `NonZero::new(7)`: its answer.
-            if let Some(value) = n.as_int().or_else(|| n.as_bigint()) {
-                return Ok(if value == 0 { Expr::undefined() } else { n });
-            }
-            let n = if n.reads_same() { n } else { self.spill("n", n, out) };
-            let zero = Expr::bin(Op::Eq, n.clone(), num.literal(0));
-            return Ok(Expr::cond(zero, Expr::undefined(), n));
+            return self.non_zero_new(n, ty, span, out);
         }
         // A `for` loop's is `&mut it` (`lower_for`); a chain's, a JS iterator
         // of it, which each stage takes from as it's asked (ADR 0071).

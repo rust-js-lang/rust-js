@@ -2798,6 +2798,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
+            // `vec![item; n]`: each a clone, as THIR's of what it can't remake.
+            Std::FromElem => {
+                let item = self.value_expr(values.next().expect("the item"), span)?;
+                let n = self.value_expr(values.next().expect("the count"), span)?;
+                self.copies_values((item, arg_tys[0]), n, false, span, out)?
+            }
+            Std::NonZeroNew => {
+                let n = self.value_expr(values.next().expect("the number"), span)?;
+                self.non_zero_new(n, arg_tys[0], span, out)?
+            }
             // std's `size_hint()`, of an iterator of the crate's that keeps it:
             // `(0, None)`, as THIR's `size_hint` (ADR 0170).
             Std::SizeHint(false) => {

@@ -117,14 +117,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "integers_128"],
   },
   {
-    name: "non-zero-new-keeps-zero",
-    breaks: "`NonZero::new(n)` of `0` is `Some(0)`",
-    file: "src/lower/calls.rs",
-    find: "            return Ok(Expr::cond(zero, Expr::undefined(), n));",
-    replace: "            return Ok(Expr::cond(zero, n.clone(), n));",
-    tests: ["test/corpus.test.ts", "-t", "nonzero"],
-  },
-  {
     name: "stepped-clone-shared",
     breaks: "a clone of an iterator stepped through is the same `$iter`, and stepping one steps both",
     file: "src/lower/calls.rs",

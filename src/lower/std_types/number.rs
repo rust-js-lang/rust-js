@@ -1057,6 +1057,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         shift_amount_of(op, r, self.thir[lhs].ty, self.thir[rhs].ty)
     }
 
+    /// `NonZero::new(n)`: `n`, or `None` of zero.
+    pub(in crate::lower) fn non_zero_new(&mut self, n: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let num = self.num(ty, span)?;
+        // Of a constant, `NonZero::new(7)`: its answer.
+        if let Some(value) = n.as_int().or_else(|| n.as_bigint()) {
+            return Ok(if value == 0 { Expr::undefined() } else { n });
+        }
+        let n = if n.reads_same() { n } else { self.spill("n", n, out) };
+        let zero = Expr::bin(Op::Eq, n.clone(), num.literal(0));
+        Ok(Expr::cond(zero, Expr::undefined(), n))
+    }
+
     pub(in crate::lower) fn bitwise(&self, op: Op, l: Expr, r: Expr, num: Num) -> Expr {
         // JS bitwise ops return signed 32-bit results; only u32 needs fixing.
         let e = Expr::bin(op, l, r);

@@ -47,6 +47,7 @@ const_generics.rs
 const_too_large.rs
 copied_closure.rs
 copied_closure_bound.rs
+copy_mutation.rs
 cow_own_to_owned.rs
 debug_options.rs
 declarations_assigned_later.rs
@@ -169,6 +170,7 @@ nested_generic_types.rs
 nested_type_chain.rs
 next_back_generic.rs
 next_back_lazy.rs
+nonzero.rs
 number_methods.rs
 once_cell_reentrant.rs
 once_cells.rs
@@ -254,6 +256,7 @@ unwrap_none.rs
 unwrap_string_debug.rs
 unwrap_typed_debug.rs
 user_collections.rs
+user_deref.rs
 user_fmt_traits.rs
 utf8_unwrap_panic.rs
 wrapping.rs

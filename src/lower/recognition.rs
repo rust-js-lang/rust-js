@@ -3058,6 +3058,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.uninit_of(ty).is_some()
             || self.is_lang_adt(ty, LangItem::ManuallyDrop)
             || self.is_lang_adt(ty, LangItem::MaybeDangling)
+            // A `NonZero`, its number (ADR 0177), in std's `NonZeroU8Inner`.
+            || matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did())
+                || std_path(self.tcx, adt.did()).starts_with("std::num::niche_types::"))
     }
 
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).

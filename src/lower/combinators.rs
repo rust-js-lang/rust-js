@@ -405,6 +405,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item_ty = self.thir[args[0]].ty;
         let rebuilt = self.rebuilt(args[0]);
         let [item, n]: [Expr; 2] = self.operands(args, out)?.try_into().ok().expect("an item and a count");
+        self.copies_values((item, item_ty), n, rebuilt, span, out)
+    }
+
+    /// `vec![item; n]`, of their values: `rebuilt`, whether making `item` again
+    /// makes a clone of it, as THIR finds (ADR 0364).
+    pub(in crate::lower) fn copies_values(
+        &mut self,
+        (item, item_ty): (Expr, Ty<'tcx>),
+        n: Expr,
+        rebuilt: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         if !self.needs_clone(item_ty) {
             let array = Expr::new_(Expr::var("Array"), vec![n]);
             return Ok(Expr::call(Expr::member(array, "fill"), vec![item]));

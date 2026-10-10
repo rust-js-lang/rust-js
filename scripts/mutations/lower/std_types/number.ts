@@ -236,4 +236,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && from.is_bool() {\n            let num = self.num(to, span)?;",
     tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
   },
+  {
+    name: "non-zero-new-keeps-zero",
+    breaks: "`NonZero::new(n)` of `0` is `Some(0)`",
+    file: "src/lower/std_types/number.rs",
+    find: "        Ok(Expr::cond(zero, Expr::undefined(), n))\n",
+    replace: "        Ok(Expr::cond(zero, n.clone(), n))\n",
+    tests: ["test/corpus.test.ts","-t","nonzero"],
+  },
 ];

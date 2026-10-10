@@ -594,4 +594,20 @@ export const mutations: Mutation[] = [
     replace: "                let _ = at;\n",
     tests: ["test/mir.test.ts","-t","range_inclusive_next_back"],
   },
+  {
+    name: "mir-copies-shared",
+    breaks: "`vec![p; 3]` of a struct is three names for one object",
+    file: "src/lower/mir.rs",
+    find: "self.copies_values((item, arg_tys[0]), n, false, span, out)?",
+    replace: "self.copies_values((item, tcx.types.unit), n, false, span, out)?",
+    tests: ["test/mir.test.ts","-t","copy_mutation"],
+  },
+  {
+    name: "mir-non-zero-new-refused",
+    breaks: "`NonZero::new(n)` is refused",
+    file: "src/lower/mir.rs",
+    find: "            Std::NonZeroNew => {\n",
+    replace: "            Std::NonZeroNew if false => {\n",
+    tests: ["test/mir.test.ts","-t","nonzero"],
+  },
 ];
