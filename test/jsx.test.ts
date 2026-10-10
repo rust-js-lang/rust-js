@@ -1927,6 +1927,65 @@ pub fn App() -> JSX::Element {
   refused(flattened.replace("pub children: C,", "pub children: C,\n    pub rest: react::Rest,").replace("{ size, children, anchor }", "{ size, children, anchor, .. }"), "one rest");
 });
 
+// A struct of two flattened fields is made as JS spreads two objects,
+// `{ ...base, ...over }`, the second's keys over the first's, as react.dev's
+// SandpackRoot gives Sandpack `{...template, ...files}`. JS's object has
+// their keys mixed, so it's neither taken apart nor read through one.
+test("a struct of two flattened fields is made as two spreads", async () => {
+  const both = `#![allow(non_snake_case)]
+#[derive(Default)]
+pub struct Base {
+    pub a: Option<u32>,
+    pub b: Option<u32>,
+}
+#[derive(Default)]
+pub struct Over {
+    pub b: Option<u32>,
+}
+pub struct Both<'x> {
+    pub size: u32,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub base: &'x Base,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub over: &'x Over,
+}
+pub fn mixed(base: &'static Base, over: &'static Over) -> Both<'static> {
+    Both { size: 3, base, over }
+}
+`;
+  const made = compile(both);
+  run(made.args);
+  const js = readFileSync(join(made.dir, "lib.js"), "utf8");
+  expect(js).toContain("return { size: 3, ...base, ...over };");
+  const { mixed } = await import(join(made.dir, "lib.js"));
+  expect(mixed({ a: 1, b: 2 }, { b: 5 })).toEqual({ size: 3, a: 1, b: 5 });
+  const refused = (source: string, says: string) => {
+    const c = compile(source);
+    const failed = Bun.spawnSync(c.args, { cwd: c.dir });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(says)]);
+  };
+  // A dictionary's keys spread as well, react.dev's `files`.
+  const dictionary = compile(`pub struct Base {
+    pub a: Option<u32>,
+}
+pub struct Over<'x> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub base: &'x Base,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub extra: &'x js::Dict<u32>,
+}
+pub fn over(base: &'static Base, extra: &'static js::Dict<u32>) -> Over<'static> {
+    Over { base, extra }
+}
+`);
+  run([...dictionary.args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
+  expect(readFileSync(join(dictionary.dir, "lib.js"), "utf8")).toContain("return { ...base, ...extra };");
+  const { over } = await import(join(dictionary.dir, "lib.js"));
+  expect(over({ a: 1 }, { a: 2, z: 3 })).toEqual({ a: 2, z: 3 });
+  refused(both + "pub fn read(p: &Both) -> Option<u32> { p.base.a }\n", "more than one rest through one of them");
+  refused(both + "pub fn taken(Both { size, base, over }: Both) -> u32 { size + base.a.unwrap_or(0) + over.b.unwrap_or(0) }\n", "more than one rest taken apart");
+});
+
 // Flattened structs chain, as TypeScript's interfaces extend one another,
 // and a name its props have too is theirs, as TypeScript's `Omit` has it:
 // what's taken apart besides holds none of it. A flattened field is read

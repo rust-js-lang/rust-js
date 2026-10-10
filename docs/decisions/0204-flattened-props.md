@@ -101,3 +101,15 @@ severity[item.severity]}`. A derived `Default`'s is too. A flattened field
 may be a reference to a struct, read through as the struct is,
 `report.item.line` being `report.line`. They were refused, made only as
 JSX's.
+
+A struct of more than one rest, two flattened fields, is made as two
+spreads (2026-10-10), `{ ...template, ...files }`, the later's keys over
+the earlier's, as react.dev's SandpackRoot gives Sandpack
+`{...template, ...files}`. JS's object has their keys mixed, so such a
+struct is neither taken apart, which would be two rests, nor read
+through one of them, whose keys another may have; each is refused. A
+flattened field may be a JS object too, a `Dict` whose keys spread. A
+struct of more than one rest was refused whole. A JSX test makes one of
+a struct and one of a struct and a `Dict`, and refuses the read and the
+taking apart; mutations take a struct of one rest as one of two, allow
+each refused one, and refuse a `Dict`.

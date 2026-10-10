@@ -2,15 +2,16 @@
 
 use crate::lower::bindings;
 use crate::lower::recognition::{StdItem, from_serde_derive, is_from_str, is_std_def, known_derive};
+use crate::lower::representation::marks_js_object;
 use crate::lower::traits;
 use crate::lower::{Body, strip};
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::middle::codegen_fn_attrs::CodegenFnAttrFlags;
 use rustc_middle::mir::BorrowKind;
-use rustc_middle::thir::{ExprId, ExprKind, Thir};
-use rustc_middle::ty;
+use rustc_middle::thir::{ExprId, ExprKind, PatKind, Thir};
 use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 use std::collections::HashSet;
@@ -198,10 +199,11 @@ pub(super) fn in_thread_local(tcx: TyCtxt<'_>, d: LocalDefId) -> Option<LocalDef
     None
 }
 
-/// Report what flattened props (ADR 0204, 0205) can't be: a struct with
-/// more than one rest, or a flattened field that isn't a struct of named
-/// fields; a flattened field read whole, which JS's props don't have; and
-/// a struct with one made anywhere but as JSX's props, or a flattened
+/// Report what flattened props (ADR 0204, 0205) can't be: a flattened field
+/// that isn't a struct of named fields; a flattened field read whole,
+/// which JS's props don't have; one of a struct of more than one rest read
+/// through, or such a struct taken apart, whose rests JS's object mixes;
+/// and a struct with one made anywhere but as JSX's props, or a flattened
 /// field's value there, which JSX holds flat. False if there was one.
 pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>]) -> bool {
     let mut valid = true;
@@ -209,42 +211,57 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
         tcx.dcx().span_err(span, format!("rust-js does not support {what} yet"));
         valid = false;
     };
+    // The structs of more than one rest: made, `{ ...template, ...files }`,
+    // but neither taken apart nor read through, as JS's object has their
+    // keys mixed.
+    let mut mixed = HashSet::new();
     for id in tcx.hir_crate_items(()).definitions() {
         if tcx.def_kind(id) != DefKind::Struct {
             continue;
         }
         let parent = tcx.adt_def(id).non_enum_variant();
-        let Some(field) = parent.fields.iter().find(|f| bindings::is_flatten(tcx, f)) else {
-            continue;
-        };
-        let span = tcx.def_span(field.did);
         let own = tcx.type_of(id).instantiate_identity().skip_normalization();
         if (0..parent.fields.len())
             .filter(|&i| bindings::is_rest_field(tcx, own, i))
             .count()
             > 1
         {
-            refuse(
-                span,
-                "props with more than one rest: they have one rest, a `Rest` or a flattened field".into(),
-            );
-            continue;
+            mixed.insert(id.to_def_id());
         }
-        let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
-        // A struct, or a reference to one, which is the object it is.
-        if !ty
-            .peel_refs()
-            .ty_adt_def()
-            .is_some_and(|adt| adt.is_struct() && adt.non_enum_variant().ctor.is_none())
-        {
-            refuse(
-                span,
-                format!("flattening `{ty}`: a flattened field is a struct of named fields"),
-            );
+        for field in parent.fields.iter().filter(|f| bindings::is_flatten(tcx, f)) {
+            let ty = tcx.type_of(field.did).instantiate_identity().skip_normalization();
+            // A struct, or a reference to one, which is the object it is; or a
+            // JS object, a `Dict` whose keys spread.
+            let object = match ty.peel_refs().kind() {
+                ty::Adt(adt, args) => {
+                    adt.is_struct() && adt.non_enum_variant().ctor.is_none() || marks_js_object(tcx, *adt, args)
+                }
+                _ => false,
+            };
+            if !object {
+                refuse(
+                    tcx.def_span(field.did),
+                    format!("flattening `{ty}`: a flattened field is a struct of named fields or a JS object"),
+                );
+            }
         }
     }
+    let is_mixed = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if mixed.contains(&adt.did()));
     for body in all_bodies {
         let thir = &body.thir;
+        // Taken apart where they're given, which JS's one rest is.
+        for param in thir.params.iter() {
+            if let Some(pat) = &param.pat
+                && matches!(pat.kind, PatKind::Leaf { .. })
+                && is_mixed(pat.ty)
+            {
+                refuse(
+                    pat.span,
+                    "props with more than one rest taken apart: they have one rest, a `Rest` or a flattened field"
+                        .into(),
+                );
+            }
+        }
         let (_, bases) = crate::lower::body_queries::jsx_given_props(tcx, thir);
         // A flattened field read through, `props.html.title`, is its parent's,
         // a reference's too, `(*report.item).line`.
@@ -262,6 +279,15 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
             .collect();
         for (e, expr) in thir.exprs.iter_enumerated() {
             match expr.kind {
+                ExprKind::Field { lhs, name, .. }
+                    if is_mixed(thir[lhs].ty) && bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize()) =>
+                {
+                    refuse(
+                        expr.span,
+                        "reading props of more than one rest through one of them: JS's object has their keys mixed"
+                            .into(),
+                    );
+                }
                 ExprKind::Field { lhs, name, .. }
                     if bindings::is_flatten_field(tcx, thir[lhs].ty, name.as_usize())
                         && !read_through.contains(&e)
