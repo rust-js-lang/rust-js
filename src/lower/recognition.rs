@@ -445,7 +445,7 @@ impl Std {
                 | Std::GuardValue { mutable: true }
                 | Std::Pin(PinOp::Mut | PinOp::Map)
                 | Std::Heap(HeapOp::PeekTop { mutable: true })
-                | Std::Slice(SliceOp::PushMut { .. })
+                | Std::Slice(SliceOp::PushMut { .. } | SliceOp::SplitEndMut { .. })
                 | Std::Any(AnyOp::DowncastMut)
                 | Std::Uninit(UninitOp::Write | UninitOp::InitMut)
                 | Std::Text(
@@ -883,6 +883,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && (ty.peel_refs().is_slice() || ty.peel_refs().is_array() || self.is_vec_like(ty.peel_refs()))
         {
             return Some(Std::Text(TextOp::Slice));
+        }
+        // `&mut v[a..b]` of a slice, an array or a `Vec`: a view of those
+        // items (ADR 0335).
+        if tcx.is_lang_item(trait_, LangItem::IndexMut)
+            && let Some(range) = args.types().nth(1)
+            && self.range_kind(range).is_some()
+            && (ty.peel_refs().is_slice() || ty.peel_refs().is_array() || self.is_vec_like(ty.peel_refs()))
+        {
+            return Some(Std::Slice(SliceOp::View { checked: false }));
         }
         // `&s[a..b]` of a string: by its UTF-8 bytes (ADR 0138).
         if tcx.is_lang_item(trait_, LangItem::Index)
@@ -1811,17 +1820,68 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "is_sorted_by" if owner.is_slice() => Std::Slice(SliceOp::IsSortedBy),
             "is_sorted_by_key" if owner.is_slice() => Std::Slice(SliceOp::IsSortedByKey),
             "partition_point" if owner.is_slice() => Std::Slice(SliceOp::PartitionPoint),
-            "chunks_exact" if owner.is_slice() => Std::Slice(SliceOp::ChunksExact),
-            "rchunks" if owner.is_slice() => Std::Slice(SliceOp::Rchunks { exact: false }),
-            "rchunks_exact" if owner.is_slice() => Std::Slice(SliceOp::Rchunks { exact: true }),
-            "remainder" if self.is_exact_chunks(owner) => Std::Slice(SliceOp::Remainder),
-            "first_chunk" if owner.is_slice() => Std::Slice(SliceOp::Chunk { last: false }),
-            "last_chunk" if owner.is_slice() => Std::Slice(SliceOp::Chunk { last: true }),
-            "split" | "splitn" | "rsplit" | "rsplitn" | "split_inclusive" if owner.is_slice() => {
+            "chunks_exact" | "chunks_exact_mut" if owner.is_slice() => Std::Slice(SliceOp::ChunksExact {
+                mutable: name.as_str().ends_with("_mut"),
+            }),
+            "rchunks" | "rchunks_mut" | "rchunks_exact" | "rchunks_exact_mut" if owner.is_slice() => {
+                Std::Slice(SliceOp::Rchunks {
+                    exact: name.as_str().contains("exact"),
+                    mutable: name.as_str().ends_with("_mut"),
+                })
+            }
+            "chunks_mut" if owner.is_slice() => Std::Slice(SliceOp::ChunksMut),
+            "remainder" | "into_remainder" if self.is_exact_chunks(owner) => Std::Slice(SliceOp::Remainder),
+            "first_chunk" | "first_chunk_mut" | "last_chunk" | "last_chunk_mut" if owner.is_slice() => {
+                Std::Slice(SliceOp::Chunk {
+                    last: name.as_str().starts_with("last"),
+                    mutable: name.as_str().ends_with("_mut"),
+                })
+            }
+            "split_first_chunk" | "split_first_chunk_mut" | "split_last_chunk" | "split_last_chunk_mut"
+                if owner.is_slice() =>
+            {
+                Std::Slice(SliceOp::SplitChunk {
+                    last: name.as_str().starts_with("split_last"),
+                    mutable: name.as_str().ends_with("_mut"),
+                })
+            }
+            "split"
+            | "splitn"
+            | "rsplit"
+            | "rsplitn"
+            | "split_inclusive"
+            | "split_mut"
+            | "splitn_mut"
+            | "rsplit_mut"
+            | "rsplitn_mut"
+            | "split_inclusive_mut"
+                if owner.is_slice() =>
+            {
+                let base = name.as_str().trim_end_matches("_mut");
                 Std::Slice(SliceOp::SplitBy {
-                    limited: name.as_str().ends_with('n'),
-                    inclusive: name.as_str() == "split_inclusive",
-                    back: name.as_str().starts_with('r'),
+                    limited: base.ends_with('n'),
+                    inclusive: base == "split_inclusive",
+                    back: base.starts_with('r'),
+                    mutable: base != name.as_str(),
+                })
+            }
+            "chunk_by" | "chunk_by_mut" if owner.is_slice() => Std::Slice(SliceOp::ChunkBy {
+                mutable: name.as_str().ends_with("_mut"),
+            }),
+            "split_at_mut" | "split_at_mut_unchecked" | "split_at_mut_checked" if owner.is_slice() => {
+                Std::Slice(SliceOp::SplitAtMut {
+                    checked: name.as_str() == "split_at_mut_checked",
+                })
+            }
+            "split_at_unchecked" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt { checked: false }),
+            "split_first_mut" | "split_last_mut" if owner.is_slice() => Std::Slice(SliceOp::SplitEndMut {
+                last: name.as_str() == "split_last_mut",
+            }),
+            "get_mut" | "get_unchecked_mut"
+                if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some()) =>
+            {
+                Std::Slice(SliceOp::View {
+                    checked: name.as_str() == "get_mut",
                 })
             }
             "sort_by_cached_key" if owner.is_slice() => Std::Slice(SliceOp::SortByCachedKey),
@@ -1858,7 +1918,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Std::SliceGet
             }
             // Unchecked, the item, as JS reads one (ADR 0294).
-            "get_unchecked" if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) => Std::SliceGet,
+            "get_unchecked" | "get_unchecked_mut"
+                if owner.is_slice() && args.types().nth(1).is_some_and(|i| i.is_usize()) =>
+            {
+                Std::SliceGet
+            }
             "last" | "last_mut" if owner.is_slice() => Std::SliceLast,
             // `includes` compares strings and numbers by value, as `==` does,
             // but objects by identity: only for those.
@@ -2554,7 +2618,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_exact_chunks(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if matches!(
             std_path(self.tcx, adt.did()).as_str(),
-            "std::slice::ChunksExact" | "std::slice::RChunksExact"
+            "std::slice::ChunksExact"
+                | "std::slice::RChunksExact"
+                | "std::slice::ChunksExactMut"
+                | "std::slice::RChunksExactMut"
         ))
     }
 
@@ -2637,6 +2704,26 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::collections::binary_heap::IntoIter",
                     "std::option::Iter",
                     "std::option::IntoIter",
+                    // A slice's chunks and splits, copies or views (ADR 0335).
+                    "std::slice::ChunksMut",
+                    "std::slice::ChunksExact",
+                    "std::slice::ChunksExactMut",
+                    "std::slice::RChunks",
+                    "std::slice::RChunksMut",
+                    "std::slice::RChunksExact",
+                    "std::slice::RChunksExactMut",
+                    "std::slice::Split",
+                    "std::slice::SplitMut",
+                    "std::slice::SplitN",
+                    "std::slice::SplitNMut",
+                    "std::slice::RSplit",
+                    "std::slice::RSplitMut",
+                    "std::slice::RSplitN",
+                    "std::slice::RSplitNMut",
+                    "std::slice::SplitInclusive",
+                    "std::slice::SplitInclusiveMut",
+                    "std::slice::ChunkBy",
+                    "std::slice::ChunkByMut",
                 ]
                 .contains(&path.as_str())
                 || self.is_str_split(ty))

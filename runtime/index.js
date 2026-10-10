@@ -1622,43 +1622,80 @@ export function $chunkSize(n) {
   if (n === 0) throw new Error("chunk size must be non-zero");
 }
 
+// What a slice's chunks and splits are cut as: copies, or views of the
+// `_mut` ones' (ADR 0335).
+export function $copyOf(items, start, end) {
+  return items.slice(start, end);
+}
+
 // `chunks_exact(n)`: each whole chunk, and what's left, its `remainder()`.
-export function $chunksExact(v, n) {
+export function $chunksExact(v, n, cut = $copyOf) {
   $chunkSize(n);
   const whole = v.length - (v.length % n);
   const chunks = [];
-  for (let i = 0; i < whole; i += n) chunks.push(v.slice(i, i + n));
-  chunks.remainder = v.slice(whole);
+  for (let i = 0; i < whole; i += n) chunks.push(cut(v, i, i + n));
+  chunks.remainder = cut(v, whole, v.length);
   return chunks;
 }
 
 // `rchunks(n)`, and `rchunks_exact(n)`: chunks from the end; the exact ones
 // leave what's left at the start, their `remainder()`.
-export function $rchunks(v, n, exact) {
+export function $rchunks(v, n, exact, cut = $copyOf) {
   $chunkSize(n);
   const chunks = [];
   let end = v.length;
-  for (; end >= n; end -= n) chunks.push(v.slice(end - n, end));
-  if (exact) chunks.remainder = v.slice(0, end);
-  else if (end > 0) chunks.push(v.slice(0, end));
+  for (; end >= n; end -= n) chunks.push(cut(v, end - n, end));
+  if (exact) chunks.remainder = cut(v, 0, end);
+  else if (end > 0) chunks.push(cut(v, 0, end));
   return chunks;
 }
 
 // `split(p)` of a slice: the pieces between the items `p` holds of, at most
 // `n`, each with its item where `inclusive`, and from the end where `back`.
-export function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false) {
+export function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $copyOf) {
   if (n === 0) return [];
-  const items = back ? [...v].reverse() : v;
   const parts = [];
+  if (back) {
+    let end = v.length;
+    for (let i = v.length - 1; i >= 0 && parts.length < n - 1; i--) {
+      if (p(v[i])) {
+        parts.push(cut(v, i + 1, end));
+        end = i;
+      }
+    }
+    parts.push(cut(v, 0, end));
+    return parts;
+  }
   let start = 0;
-  for (let i = 0; i < items.length && parts.length < n - 1; i++) {
-    if (p(items[i])) {
-      parts.push(items.slice(start, inclusive ? i + 1 : i));
+  for (let i = 0; i < v.length && parts.length < n - 1; i++) {
+    if (p(v[i])) {
+      parts.push(cut(v, start, inclusive ? i + 1 : i));
       start = i + 1;
     }
   }
-  if (!inclusive || start < items.length) parts.push(items.slice(start));
-  return back ? parts.map((part) => part.reverse()) : parts;
+  if (!inclusive || start < v.length) parts.push(cut(v, start, v.length));
+  return parts;
+}
+
+// `chunk_by(p)`: the runs of items `p` holds of each two in a row of.
+export function $chunkBy(v, p, cut = $copyOf) {
+  const runs = [];
+  let start = 0;
+  for (let i = 1; i <= v.length; i++) {
+    if (i === v.length || !p(v[i - 1], v[i])) {
+      runs.push(cut(v, start, i));
+      start = i;
+    }
+  }
+  return runs;
+}
+
+// `split_first_chunk::<N>()`, or `split_last_chunk` (`last`): its first
+// `n`, or its last, and the rest; `undefined` where it has fewer.
+export function $splitChunk(v, n, last, cut = $copyOf) {
+  if (v.length < n) return undefined;
+  const at = last ? v.length - n : n;
+  return [cut(v, 0, at), cut(v, at, v.length)];
 }
 
 // `sort_by_cached_key(f)`: `f` of each item once, in order, then sorted by
@@ -2334,6 +2371,98 @@ export function $strGetMut(cell, start, end) {
 export function $strSplitAtMut(cell, at, checked) {
   if (checked && $charBoundary(cell.value, at) === undefined) return undefined;
   return [$strPart(cell, 0, at), $strPart(cell, at)];
+}
+
+// `&mut v[start..end]` (ADR 0335): those items of `items`, an array to JS's
+// own methods, whose every read and write is one of `items`. Checked as
+// `&v[start..end]` is, as it's made. Nothing a `&mut [T]` does makes it
+// longer or shorter, so it stays over the same items.
+export function $view(items, start, end = items.length) {
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+  const length = end - start;
+  const at = (key) => {
+    if (typeof key !== "string") return -1;
+    const i = Number(key);
+    return Number.isInteger(i) && i >= 0 && i < length && String(i) === key ? i : -1;
+  };
+  return new Proxy([], {
+    get(target, key) {
+      if (key === "length") return length;
+      const i = at(key);
+      return i < 0 ? Reflect.get(target, key) : items[start + i];
+    },
+    set(target, key, value) {
+      // `$assign`'s, of an array as long (ADR 0147).
+      if (key === "length") return value === length;
+      const i = at(key);
+      if (i < 0) return false;
+      items[start + i] = value;
+      return true;
+    },
+    has(target, key) {
+      return at(key) >= 0 || Reflect.has(target, key);
+    },
+    deleteProperty() {
+      return false;
+    },
+    ownKeys() {
+      return [...Array.from({ length }, (_, i) => String(i)), "length"];
+    },
+    getOwnPropertyDescriptor(target, key) {
+      if (key === "length") return { value: length, writable: true, enumerable: false, configurable: false };
+      const i = at(key);
+      return i < 0 ? undefined : { value: items[start + i], writable: true, enumerable: true, configurable: true };
+    },
+  });
+}
+
+// `v.get_mut(start..end)`: a view, or `undefined`, `None`, where
+// `&mut v[start..end]` would panic.
+export function $viewGet(v, start, end = v.length) {
+  return start <= end && end <= v.length ? $view(v, start, end) : undefined;
+}
+
+// `split_at_mut(mid)`: views of the items before and after `mid`; or,
+// `checked`, `undefined` where `mid` is past the end.
+export function $splitAtMut(v, mid, checked) {
+  if (mid > v.length) {
+    if (checked) return undefined;
+    throw new Error("mid > len");
+  }
+  return [$view(v, 0, mid), $view(v, mid)];
+}
+
+// `split_first_mut()`, or `split_last_mut()` (`last`): the item at that end,
+// a handle on a number or text (`handle`), and a view of the rest; or
+// `undefined` of an empty slice.
+export function $splitEndMut(v, last, handle) {
+  if (v.length === 0) return undefined;
+  const at = last ? v.length - 1 : 0;
+  return [handle ? $mutAt(v, at) : v[at], last ? $view(v, 0, at) : $view(v, 1)];
+}
+
+export function $chunksMut(v, n) {
+  return $chunks(v, n, $view);
+}
+
+export function $chunksExactMut(v, n) {
+  return $chunksExact(v, n, $view);
+}
+
+export function $rchunksMut(v, n, exact) {
+  return $rchunks(v, n, exact, $view);
+}
+
+export function $sliceSplitByMut(v, p, n, inclusive, back) {
+  return $sliceSplitBy(v, p, n, inclusive, back, $view);
+}
+
+export function $chunkByMut(v, p) {
+  return $chunkBy(v, p, $view);
+}
+
+export function $splitChunkMut(v, n, last) {
+  return $splitChunk(v, n, last, $view);
 }
 
 // std's `slice_index_fail`: why `start..end` isn't a range of a slice of
@@ -5670,11 +5799,13 @@ export function $windows(v, size) {
   return Array.from({ length: Math.max(0, v.length - size + 1) }, (_, i) => v.slice(i, i + size));
 }
 
-export function $chunks(v, size) {
+// `chunks(size)`: each `size` items, the last fewer, as `cut` cuts them:
+// copies, or views of `chunks_mut`'s (ADR 0335).
+export function $chunks(v, size, cut = (items, start, end) => items.slice(start, end)) {
   if (size === 0) {
     throw new Error("chunk size must be non-zero");
   }
-  return Array.from({ length: Math.ceil(v.length / size) }, (_, i) => v.slice(i * size, i * size + size));
+  return Array.from({ length: Math.ceil(v.length / size) }, (_, i) => cut(v, i * size, Math.min(i * size + size, v.length)));
 }
 
 export function $zip(a, b) {

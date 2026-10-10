@@ -24,15 +24,28 @@ pub(in crate::lower) enum SliceOp {
     IsSortedBy,
     IsSortedByKey,
     PartitionPoint,
-    ChunksExact,
+    /// `chunks_exact(n)`, and `chunks_exact_mut(n)` (`mutable`), whose
+    /// chunks are views (ADR 0335); so of each below.
+    ChunksExact {
+        mutable: bool,
+    },
     Rchunks {
         exact: bool,
+        mutable: bool,
     },
-    /// A `ChunksExact`'s or an `RChunksExact`'s `remainder()`.
+    /// A `ChunksExact`'s or an `RChunksExact`'s `remainder()`, and a
+    /// `_mut` one's `into_remainder()`.
     Remainder,
     /// `first_chunk::<N>()` or `last_chunk::<N>()`.
     Chunk {
         last: bool,
+        mutable: bool,
+    },
+    /// `split_first_chunk::<N>()` or `split_last_chunk::<N>()`: that chunk
+    /// and the rest.
+    SplitChunk {
+        last: bool,
+        mutable: bool,
     },
     /// `split`, `splitn`, `rsplit`, `rsplitn` and `split_inclusive` by a
     /// predicate.
@@ -40,6 +53,28 @@ pub(in crate::lower) enum SliceOp {
         limited: bool,
         inclusive: bool,
         back: bool,
+        mutable: bool,
+    },
+    /// `chunk_by(p)`: the runs `p` holds of each two in a row of.
+    ChunkBy {
+        mutable: bool,
+    },
+    /// `&mut v[a..b]` and `get_unchecked_mut(a..b)`: a view of those items
+    /// (ADR 0335); `get_mut(a..b)`, one or `None` (`checked`).
+    View {
+        checked: bool,
+    },
+    /// `chunks_mut(n)`: views of each `n` items, the last fewer.
+    ChunksMut,
+    /// `split_at_mut(mid)`, or `split_at_mut_checked` (`checked`): views
+    /// before and after `mid`.
+    SplitAtMut {
+        checked: bool,
+    },
+    /// `split_first_mut()` or `split_last_mut()` (`last`): the item at
+    /// that end, a handle on a number or text, and a view of the rest.
+    SplitEndMut {
+        last: bool,
     },
     SortByCachedKey,
     /// A byte slice's `to_ascii_uppercase()` or `to_ascii_lowercase()`, and
@@ -73,6 +108,21 @@ pub(in crate::lower) enum SliceOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A call of one of the views' helpers (ADR 0335).
+    fn view_call(&mut self, name: &str, list: Vec<Expr>) -> Expr {
+        self.runtime.insert(Helper::View);
+        Expr::call(Expr::var(name), list)
+    }
+
+    /// A chunk's `N`, as the call has it.
+    fn chunk_length(&self, generic_args: ty::GenericArgsRef<'tcx>, span: Span) -> R<u64> {
+        generic_args
+            .consts()
+            .next()
+            .and_then(|n| n.try_to_target_usize(self.tcx))
+            .ok_or_else(|| self.unsupported(span, "a chunk of a length only a caller knows"))
+    }
+
     /// One of `SliceOp`'s, of `args`, with the call's `generic_args`.
     pub(in crate::lower) fn slice_call(
         &mut self,
@@ -88,6 +138,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let item = || generic_args.type_at(0);
         Ok(match op {
+            SliceOp::View { checked } => {
+                let items = self.operands(&args[..1], out)?.remove(0);
+                let (start, end) = self.range_bounds(args[1], span, out)?;
+                // `&mut v[..]`: all of it, which is `v`.
+                if !checked && start.as_int() == Some(0) && end.is_none() {
+                    return Ok(items);
+                }
+                let mut list = vec![items, start];
+                list.extend(end);
+                self.view_call(if checked { "$viewGet" } else { "$view" }, list)
+            }
             SliceOp::CopyWithin => {
                 let items = self.operands(&args[..1], out)?.remove(0);
                 let (start, end) = self.range_bounds(args[1], span, out)?;
@@ -172,18 +233,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         helper(self, "$isSortedByKey", vec![items, key, cmp])
                     }
                     SliceOp::PartitionPoint => helper(self, "$partitionPoint", vec![arg(), arg()]),
-                    SliceOp::ChunksExact => helper(self, "$chunksExact", vec![arg(), arg()]),
-                    SliceOp::Rchunks { exact } => helper(self, "$rchunks", vec![arg(), arg(), Expr::bool(exact)]),
+                    SliceOp::ChunksExact { mutable: false } => helper(self, "$chunksExact", vec![arg(), arg()]),
+                    SliceOp::Rchunks { exact, mutable: false } => {
+                        helper(self, "$rchunks", vec![arg(), arg(), Expr::bool(exact)])
+                    }
+                    SliceOp::ChunksMut => self.view_call("$chunksMut", vec![arg(), arg()]),
+                    SliceOp::ChunksExact { mutable: true } => self.view_call("$chunksExactMut", vec![arg(), arg()]),
+                    SliceOp::Rchunks { exact, mutable: true } => {
+                        self.view_call("$rchunksMut", vec![arg(), arg(), Expr::bool(exact)])
+                    }
+                    SliceOp::SplitAtMut { checked } => {
+                        let mut list = vec![arg(), arg()];
+                        if checked {
+                            list.push(Expr::bool(true));
+                        }
+                        self.view_call("$splitAtMut", list)
+                    }
+                    SliceOp::SplitEndMut { last } => {
+                        let mut list = vec![arg(), Expr::bool(last)];
+                        if self.is_boxable(item()) {
+                            list.push(Expr::bool(true));
+                        }
+                        self.view_call("$splitEndMut", list)
+                    }
+                    SliceOp::ChunkBy { mutable: false } => helper(self, "$chunkBy", vec![arg(), arg()]),
+                    SliceOp::ChunkBy { mutable: true } => self.view_call("$chunkByMut", vec![arg(), arg()]),
+                    SliceOp::SplitChunk { last, mutable } => {
+                        let n = self.chunk_length(generic_args, span)?;
+                        let list = vec![arg(), Expr::int(n as i128), Expr::bool(last)];
+                        match mutable {
+                            false => helper(self, "$splitChunk", list),
+                            true => self.view_call("$splitChunkMut", list),
+                        }
+                    }
+                    SliceOp::View { .. } => unreachable!("lowered above"),
+                    // Of one stepped through a `&mut`, which is `$iter`'s, of its
+                    // `items` (ADR 0071).
+                    SliceOp::Remainder if self.is_stepping(args[0]) => {
+                        Expr::member(Expr::member(arg(), "items"), "remainder")
+                    }
                     SliceOp::Remainder => Expr::member(arg(), "remainder"),
-                    // `Some` of its first `N`, or its last, if it has as many.
-                    SliceOp::Chunk { last } => {
-                        let Some(n) = generic_args
-                            .consts()
-                            .next()
-                            .and_then(|n| n.try_to_target_usize(self.tcx))
-                        else {
-                            return Err(self.unsupported(span, "a chunk of a length only a caller knows"));
-                        };
+                    // `Some` of its first `N`, or its last, if it has as many:
+                    // a copy, or a view (`mutable`).
+                    SliceOp::Chunk { last, mutable } => {
+                        let n = self.chunk_length(generic_args, span)?;
                         let items = arg();
                         let items = if items.reads_same() {
                             items
@@ -191,9 +284,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             self.spill("items", items, out)
                         };
                         let length = Expr::member(items.clone(), "length");
-                        let chunk = match last {
-                            false => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), Expr::int(n as i128)]),
-                            true => Expr::call(Expr::member(items, "slice"), vec![Expr::int(-(n as i128))]),
+                        let chunk = match (last, mutable) {
+                            (false, false) => {
+                                Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), Expr::int(n as i128)])
+                            }
+                            (true, false) => Expr::call(Expr::member(items, "slice"), vec![Expr::int(-(n as i128))]),
+                            (false, true) => self.view_call("$view", vec![items, Expr::int(0), Expr::int(n as i128)]),
+                            (true, true) => {
+                                let start = Expr::bin(Op::Sub, length.clone(), Expr::int(n as i128));
+                                self.view_call("$view", vec![items, start])
+                            }
                         };
                         let chunk = match (n, last) {
                             // `slice(-0)` is all of it.
@@ -210,15 +310,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         limited,
                         inclusive,
                         back,
+                        mutable,
                     } => {
                         let items = arg();
                         let limit = if limited { arg() } else { Expr::undefined() };
                         let predicate = arg();
-                        helper(
-                            self,
-                            "$sliceSplitBy",
-                            vec![items, predicate, limit, Expr::bool(inclusive), Expr::bool(back)],
-                        )
+                        let list = vec![items, predicate, limit, Expr::bool(inclusive), Expr::bool(back)];
+                        match mutable {
+                            false => helper(self, "$sliceSplitBy", list),
+                            true => self.view_call("$sliceSplitByMut", list),
+                        }
                     }
                     SliceOp::SortByCachedKey => {
                         let (items, key) = (arg(), arg());

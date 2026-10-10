@@ -154,6 +154,7 @@ helpers! {
     StartsBy,
     StrGet,
     StrPart,
+    View,
     SliceIndexFail,
     StripCircumfix,
     ExactLen,
@@ -362,6 +363,7 @@ impl Helper {
             Helper::StrTruncate => &[Helper::ByteLen, Helper::CharBoundary],
             Helper::StrEdits => &[Helper::ByteLen, Helper::CharBoundary, Helper::SliceIndexFail],
             Helper::SliceRange | Helper::SliceEnd | Helper::Drain | Helper::Splice => &[Helper::SliceIndexFail],
+            Helper::View => &[Helper::SliceIndexFail, Helper::MutAt, Helper::Chunks, Helper::SliceOps],
             Helper::SliceOps => &[
                 Helper::SliceStartsWith,
                 Helper::MutAt,
@@ -586,6 +588,7 @@ impl Helper {
             Helper::StartsBy => include_str!("runtime/starts_by.js"),
             Helper::StrGet => include_str!("runtime/str_get.js"),
             Helper::StrPart => include_str!("runtime/str_part.js"),
+            Helper::View => include_str!("runtime/slice_view.js"),
             Helper::SliceIndexFail => include_str!("runtime/slice_index_fail.js"),
             Helper::StripCircumfix => include_str!("runtime/strip_circumfix.js"),
             Helper::ExactLen => include_str!("runtime/exact_len.js"),

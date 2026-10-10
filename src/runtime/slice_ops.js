@@ -78,43 +78,80 @@ function $chunkSize(n) {
   if (n === 0) throw new Error("chunk size must be non-zero");
 }
 
+// What a slice's chunks and splits are cut as: copies, or views of the
+// `_mut` ones' (ADR 0335).
+function $copyOf(items, start, end) {
+  return items.slice(start, end);
+}
+
 // `chunks_exact(n)`: each whole chunk, and what's left, its `remainder()`.
-function $chunksExact(v, n) {
+function $chunksExact(v, n, cut = $copyOf) {
   $chunkSize(n);
   const whole = v.length - (v.length % n);
   const chunks = [];
-  for (let i = 0; i < whole; i += n) chunks.push(v.slice(i, i + n));
-  chunks.remainder = v.slice(whole);
+  for (let i = 0; i < whole; i += n) chunks.push(cut(v, i, i + n));
+  chunks.remainder = cut(v, whole, v.length);
   return chunks;
 }
 
 // `rchunks(n)`, and `rchunks_exact(n)`: chunks from the end; the exact ones
 // leave what's left at the start, their `remainder()`.
-function $rchunks(v, n, exact) {
+function $rchunks(v, n, exact, cut = $copyOf) {
   $chunkSize(n);
   const chunks = [];
   let end = v.length;
-  for (; end >= n; end -= n) chunks.push(v.slice(end - n, end));
-  if (exact) chunks.remainder = v.slice(0, end);
-  else if (end > 0) chunks.push(v.slice(0, end));
+  for (; end >= n; end -= n) chunks.push(cut(v, end - n, end));
+  if (exact) chunks.remainder = cut(v, 0, end);
+  else if (end > 0) chunks.push(cut(v, 0, end));
   return chunks;
 }
 
 // `split(p)` of a slice: the pieces between the items `p` holds of, at most
 // `n`, each with its item where `inclusive`, and from the end where `back`.
-function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false) {
+function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut = $copyOf) {
   if (n === 0) return [];
-  const items = back ? [...v].reverse() : v;
   const parts = [];
+  if (back) {
+    let end = v.length;
+    for (let i = v.length - 1; i >= 0 && parts.length < n - 1; i--) {
+      if (p(v[i])) {
+        parts.push(cut(v, i + 1, end));
+        end = i;
+      }
+    }
+    parts.push(cut(v, 0, end));
+    return parts;
+  }
   let start = 0;
-  for (let i = 0; i < items.length && parts.length < n - 1; i++) {
-    if (p(items[i])) {
-      parts.push(items.slice(start, inclusive ? i + 1 : i));
+  for (let i = 0; i < v.length && parts.length < n - 1; i++) {
+    if (p(v[i])) {
+      parts.push(cut(v, start, inclusive ? i + 1 : i));
       start = i + 1;
     }
   }
-  if (!inclusive || start < items.length) parts.push(items.slice(start));
-  return back ? parts.map((part) => part.reverse()) : parts;
+  if (!inclusive || start < v.length) parts.push(cut(v, start, v.length));
+  return parts;
+}
+
+// `chunk_by(p)`: the runs of items `p` holds of each two in a row of.
+function $chunkBy(v, p, cut = $copyOf) {
+  const runs = [];
+  let start = 0;
+  for (let i = 1; i <= v.length; i++) {
+    if (i === v.length || !p(v[i - 1], v[i])) {
+      runs.push(cut(v, start, i));
+      start = i;
+    }
+  }
+  return runs;
+}
+
+// `split_first_chunk::<N>()`, or `split_last_chunk` (`last`): its first
+// `n`, or its last, and the rest; `undefined` where it has fewer.
+function $splitChunk(v, n, last, cut = $copyOf) {
+  if (v.length < n) return undefined;
+  const at = last ? v.length - n : n;
+  return [cut(v, 0, at), cut(v, at, v.length)];
 }
 
 // `sort_by_cached_key(f)`: `f` of each item once, in order, then sorted by
