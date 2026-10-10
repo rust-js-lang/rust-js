@@ -291,4 +291,16 @@ export const mutations: Mutation[] = [
     replace: "        && false\n",
     tests: ["test/lowering.test.ts","-t","Console's loops"],
   },
+  {
+    "name": "dropped-array-kept-whole",
+    "breaks": "an array made only to be dropped stays, `[loud(1)];`, not `loud(1);`",
+    "file": "src/prepare.rs",
+    "find": "            StmtKind::Expr(e) if matches!(e.kind, ExprKind::Array(_) | ExprKind::Object(_)) => e",
+    "replace": "            StmtKind::Expr(e) if false => e",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "made only to be dropped"
+    ]
+  },
 ];

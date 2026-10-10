@@ -244,4 +244,16 @@ export const mutations: Mutation[] = [
     replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
     tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
   },
+  {
+    "name": "effects-keep-inert-items",
+    "breaks": "what making an array does keeps its items that do nothing, `2;`",
+    "file": "src/js.rs",
+    "find": "        if !self.has_effects() {\n            return Vec::new();\n        }\n        match self.kind {",
+    "replace": "        match self.kind {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "made only to be dropped"
+    ]
+  },
 ];

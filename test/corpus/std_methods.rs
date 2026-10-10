@@ -93,10 +93,17 @@ impl fmt::Debug for Table {
     }
 }
 
+// Made for what it prints.
+fn loud(n: u32) -> u32 {
+    println!("made {n}");
+    n
+}
+
 fn main() {
     let mut a = Some(3);
     // Nothing to drop: what making it does, and nothing more.
     drop(vec![a.unwrap_or(0)]);
+    drop(vec![loud(1)]);
     let taken = a.take();
     let mut b = Some(1);
     let old = b.replace(5);

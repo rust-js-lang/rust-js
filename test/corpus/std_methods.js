@@ -114,8 +114,14 @@ function tableDebug_fmt(table) {
   return `{${Array.from($sortedEntries(table[0], $cmp), (entry) => `${$debugStr(entry[0])}: ${entry[1]}`).join(", ")}}`;
 }
 
+function loud(n) {
+  console.log(`made ${n}`);
+  return n;
+}
+
 function main() {
   let a = 3;
+  loud(1);
   const old = a;
   a = undefined;
   const taken = old;

@@ -523,6 +523,14 @@ fn collect_tests<'tcx>(
 fn generic_consts(tcx: TyCtxt<'_>, all_bodies: &[&Body<'_>]) -> HashSet<DefId> {
     all_bodies
         .iter()
+        // A trait's default, `const A: u8 = Self::B`, reads only where it's
+        // lowered, a library's dictionary, which has every constant: here its
+        // `Self::B` would ask the program's of a default it never reads, which
+        // may not evaluate, `B = Self::A` (rustc's defaults-cyclic-pass).
+        .filter(|body| {
+            !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })
+                && tcx.trait_of_assoc(body.def_id.to_def_id()).is_some())
+        })
         .flat_map(|body| body.thir.exprs.iter())
         .filter_map(|expr| match expr.kind {
             ExprKind::NamedConst { def_id, args, .. }

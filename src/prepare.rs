@@ -100,6 +100,19 @@ fn imported(stmts: &mut [Stmt]) {
 
 fn block(body: &mut Vec<Stmt>) {
     try_catches(body);
+    // `[loud(1)];`, an array or an object made only to be dropped, is
+    // what making it does, `loud(1);`, as a person writes it.
+    *body = std::mem::take(body)
+        .into_iter()
+        .flat_map(|stmt| match stmt.kind {
+            StmtKind::Expr(e) if matches!(e.kind, ExprKind::Array(_) | ExprKind::Object(_)) => e
+                .effects()
+                .into_iter()
+                .map(|e| StmtKind::Expr(e).at(stmt.span))
+                .collect(),
+            kind => vec![Stmt { kind, ..stmt }],
+        })
+        .collect();
     for stmt in body.iter_mut() {
         if let Some(coalesced) = coalescing(stmt) {
             stmt.kind = coalesced;

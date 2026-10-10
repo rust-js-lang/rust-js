@@ -99,4 +99,16 @@ export const mutations: Mutation[] = [
     replace: "                })",
     tests: ["test/lowering.test.ts", "-t", "default constant of Self"],
   },
+  {
+    "name": "trait-default-reads-generic",
+    "breaks": "a trait default's `Self::B` counts as generic code reading `B`, so `()`'s defaults of each other are computed, a cycle",
+    "file": "src/lower/analysis.rs",
+    "find": "            !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
+    "replace": "            true || !(matches!(tcx.def_kind(body.def_id), DefKind::AssocConst { .. })",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "defaulting to each other"
+    ]
+  },
 ];

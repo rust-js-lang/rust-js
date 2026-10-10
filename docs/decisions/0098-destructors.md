@@ -456,3 +456,11 @@ the function or closure that drops one, and every drop there calls it.
 - Tested: the `drop_functions` corpus case; mutations lose the
   declarations, declare one again for each drop, and declare it where it's
   first needed.
+
+## Amendment: what's made only to be dropped
+
+`drop(vec![loud(1)])` of nothing to drop is what making it does. An array
+or an object made only to be dropped, as an expression statement, is its
+items that do something, in order: `loud(1);`, not `[loud(1)];`, as a
+person writes it. A spread's or a getter's isn't taken apart: it iterates,
+or reads.

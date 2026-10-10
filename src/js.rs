@@ -1480,6 +1480,29 @@ impl Expr {
         }
     }
 
+    /// What evaluating this does, as the expressions that do it, in their
+    /// order: an array's or an object's items', where making it does
+    /// nothing itself; this, where it does something; else nothing.
+    pub fn effects(self) -> Vec<Expr> {
+        if !self.has_effects() {
+            return Vec::new();
+        }
+        match self.kind {
+            // A spread iterates, and reads getters.
+            ExprKind::Array(items) if !items.iter().any(|i| matches!(i.kind, ExprKind::Spread(_))) => {
+                items.into_iter().flat_map(Expr::effects).collect()
+            }
+            ExprKind::Object(props) if props.iter().all(|p| matches!(p, Prop::Field(..))) => props
+                .into_iter()
+                .flat_map(|p| match p {
+                    Prop::Field(_, value) => value.effects(),
+                    Prop::Getter(..) | Prop::Spread(_) => unreachable!("only fields"),
+                })
+                .collect(),
+            kind => vec![Expr { kind, ..self }],
+        }
+    }
+
     /// Could evaluating this do something observable (call a function, throw)?
     pub fn has_effects(&self) -> bool {
         match &self.kind {

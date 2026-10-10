@@ -371,6 +371,30 @@ pub fn f() -> u32 {
   expect((await import(join(dir, "library", "lib.js"))).f()).toBe(2);
 });
 
+// Trait defaults of each other are an error only where they're read, as
+// rustc has it (its defaults-cyclic-pass): a default's own `Self::B` isn't
+// generic code reading `B`, which would compute `()`'s, a cycle.
+test("trait constants defaulting to each other compile where none is read", async () => {
+  const dir = fixture("default-const-cycle");
+  writeFileSync(join(dir, "lib.rs"), `pub trait Tr {
+    const A: u8 = Self::B;
+    const B: u8 = Self::A;
+}
+
+impl Tr for () {}
+
+impl Tr for u8 {
+    const A: u8 = 42;
+}
+
+pub fn read() -> (u8, u8) {
+    (<u8 as Tr>::A, <u8 as Tr>::B)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect((await import(join(dir, "lib.js"))).read()).toEqual([42, 42]);
+});
+
 // A struct updated from one it owns, `..file`, is that one spread, then the
 // fields named, as a reference's is (ADR 0250): `{ ...code, hidden: true }`,
 // as react.dev's RSC template hides its files. One of a type changed in
@@ -489,6 +513,25 @@ pub fn constants() -> (Settled, Settled) {
   // Equality compares fields by the tag too, NaN unequal as Rust has it.
   expect([lib.same({ status: "measured", values: [1] }, { status: "measured", values: [1] }), lib.same({ status: "measured", values: [NaN] }, { status: "measured", values: [NaN] })])
     .toEqual([true, false]);
+});
+
+// An array or an object made only to be dropped is what making it does,
+// `loud(1);`, as a person writes it, not `[loud(1)];`.
+test("a value made only to be dropped is what making it does", async () => {
+  const dir = fixture("dropped-made");
+  writeFileSync(join(dir, "lib.rs"), `fn loud(n: u32) -> u32 {
+    println!("made {n}");
+    n
+}
+
+pub fn made() {
+    drop(vec![loud(1), 2, loud(3)]);
+    drop((loud(4), 5));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function made() {\n  loud(1);\n  loud(3);\n  loud(4);\n}");
 });
 
 // ADR 0284: a tag may be `true` or `false`, react-dom's `FormStatus`

@@ -55,3 +55,9 @@ of the dictionary. In a library every trait default is, never computed,
 as a consumer may never read it and rustc reports one it can't compute,
 `360 / Self::A` of 0, only where it's read; one that's a literal is the
 field, `NAME: "shape"`.
+
+A default's own initializer isn't generic code reading the constants it
+names: its `Self::B` is read only where it's lowered, a library's
+dictionary, which has every constant. Counted as one, a program computed
+`()`'s defaults of each other, `A = Self::B` and `B = Self::A`, which
+rustc errs on only where one is read (its `defaults-cyclic-pass`).
