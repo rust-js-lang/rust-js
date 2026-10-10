@@ -710,9 +710,13 @@ pub fn Navigator() -> JSX::Element {
     let segment = next::navigation::use_selected_layout_segment().unwrap_or_default();
     let Slug { slug } = next::navigation::use_params();
     jsx! {
+        <>
         <button key={router.bfcache_id()} onClick={move |_| router.push_with_options("/about", next::navigation::NavigateOptions { scroll: Some(false), ..Default::default() })}>
             {query}{segment}{slug}
         </button>
+        // A gesture's push, where Next.js has the experiment.
+        <button onClick={move |_| if let Some(push) = router.experimental_gesture_push() { push("/about", None) }}>{"Swipe"}</button>
+        </>
     }
 }
 
@@ -859,6 +863,8 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(aboutHtml).toContain("window.inlined = true;");
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain("handleClientScriptLoad(props(src));\n  initScriptLoader([props(src)]);");
   // next/web-vitals, next/offline, next/form and next/error.
+  // next/navigation's router's experimental gesture push, where it has one.
+  expect(linkedJsx).toContain('const push = router.experimental_gesturePush;\n          if (push != null) {\n            push("/about", undefined);');
   expect(linkedJsx).toContain("useReportWebVitals((metric) => {");
   expect(linkedJsx).toContain('<Form action="/search" className="search">\n      <input name="query" disabled={offline} />\n    </Form>');
   // Next.js's error page, `Error` as its docs import it, where the module reads no global `Error` (ADR 0352).

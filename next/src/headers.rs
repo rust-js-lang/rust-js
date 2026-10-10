@@ -9,9 +9,13 @@ use react::webapi::Headers;
 
 /// The request's headers, read only, as `await headers()`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/headers#headers")]
-pub fn headers() -> Promise<&'static Headers> {
+pub fn headers() -> Promise<&'static ReadonlyHeaders> {
     unreachable!()
 }
+
+/// The request's headers, as `ReadonlyHeaders` types them: `Headers`, whose
+/// `append`, `set` and `delete` throw.
+pub type ReadonlyHeaders = Headers;
 
 /// The request's cookies, as `await cookies()`: read in a Server
 /// Component, and set or deleted in a Server Action or a Route Handler.

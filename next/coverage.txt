@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 2093 of 2093 (100.0%), and 3 left to JS (~)
-# not bound by design (x): 31, TypeScript's own, declared only to throw, or internal
-# members: 335 of 335 (100.0%)
+# exports: 2099 of 2099 (100.0%), and 3 left to JS (~)
+# not bound by design (x): 34, TypeScript's own, declared only to throw, or internal
+# members: 363 of 363 (100.0%)
 # next 38 of 38, members 116 of 116
 ~ type next#AdapterOutput
 ~ next#AdapterOutput.APP_PAGE
@@ -255,7 +255,7 @@ x type next#InferGetStaticPropsType
 + next/app#NextWebVitalsMetric.name
 + next/app#NextWebVitalsMetric.startTime
 + next/app#NextWebVitalsMetric.value
-# next/cache 15 of 15, members 11 of 11
+# next/cache 16 of 16, members 12 of 12
 + type next/cache#CacheEntry
 + next/cache#CacheEntry.expire
 + next/cache#CacheEntry.revalidate
@@ -283,6 +283,8 @@ x type next/cache#CacheLifeProfiles
 + next/cache#unstable_cacheTag
 + next/cache#unstable_noStore
 + next/cache#updateTag
++ type next/cache#CacheLifeConfig (revalidateTag's)
++ next/cache#CacheLifeConfig (revalidateTag's).expire
 # next/document 9 of 9, members 22 of 22
 + next/document#default
 + next/document#default.getInitialProps
@@ -2304,8 +2306,18 @@ x next/document#NextScript.getInlineScriptSource
 + next/font/google#Zhi_Mang_Xing
 + next/font/google#Zilla_Slab
 + next/font/google#Zilla_Slab_Highlight
-# next/font/local 1 of 1, members 0 of 0
+# next/font/local 2 of 2, members 9 of 9
 + next/font/local#default
++ type next/font/local#LocalFont (default's)
++ next/font/local#LocalFont (default's).adjustFontFallback
++ next/font/local#LocalFont (default's).declarations
++ next/font/local#LocalFont (default's).display
++ next/font/local#LocalFont (default's).fallback
++ next/font/local#LocalFont (default's).preload
++ next/font/local#LocalFont (default's).src
++ next/font/local#LocalFont (default's).style
++ next/font/local#LocalFont (default's).variable
++ next/font/local#LocalFont (default's).weight
 # next/form 2 of 2, members 4 of 4
 + next/form#default
 + type next/form#FormProps
@@ -2316,10 +2328,18 @@ x next/document#NextScript.getInlineScriptSource
 # next/head 2 of 2, members 0 of 0
 + next/head#default
 + next/head#defaultHead
-# next/headers 3 of 3, members 0 of 0
+# next/headers 5 of 5, members 3 of 3
 + next/headers#cookies
 + next/headers#draftMode
 + next/headers#headers
++ type next/headers#ReadonlyHeaders (headers's)
+x next/headers#ReadonlyHeaders (headers's).append
+x next/headers#ReadonlyHeaders (headers's).delete
+x next/headers#ReadonlyHeaders (headers's).set
++ type next/headers#DraftMode (draftMode's)
++ next/headers#DraftMode (draftMode's).disable
++ next/headers#DraftMode (draftMode's).enable
++ next/headers#DraftMode (draftMode's).isEnabled
 # next/image 6 of 6, members 29 of 29
 + next/image#default
 + next/image#getImageProps
@@ -2403,7 +2423,7 @@ x next/document#NextScript.getInlineScriptSource
 + next/link#LinkProps.shallow
 + next/link#LinkProps.transitionTypes
 + next/link#useLinkStatus
-# next/navigation 17 of 17, members 0 of 0
+# next/navigation 18 of 18, members 8 of 8
 + next/navigation#forbidden
 + next/navigation#notFound
 + next/navigation#permanentRedirect
@@ -2425,6 +2445,15 @@ x next/navigation#ReadonlyURLSearchParams.sort
 + next/navigation#useSelectedLayoutSegment
 + next/navigation#useSelectedLayoutSegments
 + next/navigation#useServerInsertedHTML
++ type next/navigation#AppRouterInstance (useRouter's)
++ next/navigation#AppRouterInstance (useRouter's).back
++ next/navigation#AppRouterInstance (useRouter's).bfcacheId
++ next/navigation#AppRouterInstance (useRouter's).experimental_gesturePush
++ next/navigation#AppRouterInstance (useRouter's).forward
++ next/navigation#AppRouterInstance (useRouter's).prefetch
++ next/navigation#AppRouterInstance (useRouter's).push
++ next/navigation#AppRouterInstance (useRouter's).refresh
++ next/navigation#AppRouterInstance (useRouter's).replace
 # next/offline 1 of 1, members 0 of 0
 + next/offline#useOffline
 # next/og 1 of 1, members 1 of 1
@@ -2520,7 +2549,7 @@ x next/router#Router.urlIsNew
 + next/script#ScriptProps.onReady
 + next/script#ScriptProps.strategy
 + next/script#ScriptProps.stylesheets
-# next/server 14 of 14, members 20 of 20
+# next/server 15 of 15, members 27 of 27
 + next/server#after
 + next/server#connection
 + next/server#ImageResponse
@@ -2559,5 +2588,13 @@ x next/server#NextRequest.ua
 + next/server#URLPattern
 + next/server#userAgent
 + next/server#userAgentFromString
++ type next/server#UserAgent (userAgentFromString's)
++ next/server#UserAgent (userAgentFromString's).browser
++ next/server#UserAgent (userAgentFromString's).cpu
++ next/server#UserAgent (userAgentFromString's).device
++ next/server#UserAgent (userAgentFromString's).engine
++ next/server#UserAgent (userAgentFromString's).isBot
++ next/server#UserAgent (userAgentFromString's).os
++ next/server#UserAgent (userAgentFromString's).ua
 # next/web-vitals 1 of 1, members 0 of 0
 + next/web-vitals#useReportWebVitals

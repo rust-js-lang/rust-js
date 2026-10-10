@@ -106,3 +106,11 @@ node's type, `NextRequest`'s `Request`, has that type's members too.
 `ResolvedViewport`'s fields are getters, in place of `get []`. Today every
 export and member counted is bound; a type a function gives that no module
 exports, `AppRouterInstance`, still isn't counted.
+
+## Amendment: what an export's function gives or takes
+
+A type a module's function gives or takes that no module exports,
+`useRouter`'s `AppRouterInstance` or `headers`' `ReadonlyHeaders`, is its
+module's too, once, `AppRouterInstance (useRouter's)`, with its members:
+one step from a function's signature. It found `ReadonlyHeaders`, now its
+alias of `Headers`, and `experimental_gesturePush`, new in 16.4.

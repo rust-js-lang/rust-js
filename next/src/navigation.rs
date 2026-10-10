@@ -199,6 +199,13 @@ impl AppRouterInstance {
         unreachable!()
     }
 
+    /// [`push`](Self::push) as a gesture's, an experiment's: `None` where
+    /// Next.js hasn't one.
+    #[cfg_attr(rust_js, rust_js::link_name = "get experimental_gesturePush")]
+    pub fn experimental_gesture_push(&self) -> Option<&'static dyn Fn(&str, Option<NavigateOptions<'_>>)> {
+        unreachable!()
+    }
+
     /// The route segment's id, new where a push or a replace makes it, the
     /// same going back or forward: a `key` that resets a form's state.
     #[cfg_attr(rust_js, rust_js::link_name = "get bfcacheId")]

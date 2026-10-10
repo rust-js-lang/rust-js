@@ -61,6 +61,9 @@ const UNBOUND: Record<string, string> = Object.fromEntries(
       "next/navigation#ReadonlyURLSearchParams.delete",
       "next/navigation#ReadonlyURLSearchParams.set",
       "next/navigation#ReadonlyURLSearchParams.sort",
+      "next/headers#ReadonlyHeaders.append",
+      "next/headers#ReadonlyHeaders.delete",
+      "next/headers#ReadonlyHeaders.set",
     ],
     // Its internals, public only to Next.js's own code: a class
     // component's context, and the router's machinery.
@@ -167,6 +170,24 @@ type Entry = { kind: Kind; origin?: string };
 
 const read = new Map<string, Map<string, Entry>>();
 
+// The types each exported function, `path#name`, gives or takes, by their
+// names and where they're declared: `useRouter`'s `AppRouterInstance`.
+const reached = new Map<string, { name: string; origin?: string }[]>();
+// Each resolved once every file is read: one read in an import cycle is
+// cut short where it's read again.
+const resolving: (() => Promise<void>)[] = [];
+
+// The names of the types `type` is made of, a function type's and an
+// object's parts' too.
+function typeNames(type: any, out: Set<string>): void {
+  if (!type || typeof type !== "object") return;
+  if (type.kind === "reference" && typeof type.name === "string") out.add(type.name.split(".").pop());
+  for (const value of Object.values(type)) {
+    if (Array.isArray(value)) value.forEach((v) => typeNames(v, out));
+    else if (value && typeof value === "object") typeNames(value, out);
+  }
+}
+
 async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<Map<string, Entry>> {
   if (read.has(path)) return read.get(path)!;
   if (seen.has(path)) return new Map();
@@ -174,6 +195,8 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   const exported = new Map<string, Entry>();
   const local = new Map<string, Entry>();
   const declare = (name: string, kind: Kind) => local.set(name, { kind, origin: `${path}#${name}` });
+  // Each exported function's types' names, resolved once the file's are all declared.
+  const functions: [string, Set<string>][] = [];
   // A session reads the files it's opened with: one each.
   const ts = await open([path]);
   const { declarations } = await ts.read(path);
@@ -207,6 +230,13 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
     if ("name" in d && typeof d.name === "string" && ["interface", "type", "const", "function", "class", "enum"].includes(d.kind)) {
       declare(d.name, kindOf(d));
       if ("exported" in d && d.exported) exported.set(d.name, local.get(d.name)!);
+      if (d.kind === "function" && "exported" in d && d.exported) {
+        const names = new Set<string>();
+        for (const p of d.params ?? []) typeNames(p.type, names);
+        typeNames(d.returns, names);
+        for (const t of d.typeParameters ?? []) names.delete(t.name);
+        functions.push([d.name, names]);
+      }
     }
     if (d.kind === "export-from") await reexport(d.from, d.names, false);
     if (d.kind === "export-default") exported.set("default", (await own(d.name)) ?? { kind: "value" });
@@ -245,6 +275,13 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   for (const m of readFileSync(path, "utf8").matchAll(/^export default (?:declare )?(?:async )?(?:function|class) (\w+)/gm)) {
     exported.set("default", exported.get(m[1]) ?? { kind: "value", origin: `${path}#${m[1]}` });
     exported.delete(m[1]);
+  }
+  for (const [name, names] of functions) {
+    resolving.push(async () => {
+      const types = [];
+      for (const type of names) types.push({ name: type, origin: (await own(type))?.origin });
+      reached.set(`${path}#${name}`, types);
+    });
   }
   read.set(path, exported);
   return exported;
@@ -373,6 +410,32 @@ export async function measure(): Promise<Module[]> {
           .map((m) => ({ name: m, bound: owned.get(e)?.has(m) ?? false, unbound: `${name}#${e}.${m}` in UNBOUND })),
       }));
     modules.push({ name, exports });
+  }
+  // A type a function gives or takes that no module exports, `useRouter`'s
+  // `AppRouterInstance`, is its module's too, once, after its exports.
+  for (const resolve of resolving.splice(0)) await resolve();
+  const publics = await Promise.all(Object.values(MODULES).map((path) => exportsOf(join(next, path))));
+  const exportedOrigins = new Set(publics.flatMap((m) => [...m.values()].map((e) => e.origin)));
+  const counted = new Set<string>();
+  for (const module of modules) {
+    const path = join(next, MODULES[module.name]);
+    for (const [fn, entry] of await exportsOf(path)) {
+      for (const { name: type, origin } of reached.get(entry.origin ?? "") ?? []) {
+        if (!origin || exportedOrigins.has(origin) || counted.has(origin) || !shapes.has(origin)) continue;
+        counted.add(origin);
+        module.exports.push({
+          name: `${type} (${fn}'s)`,
+          kind: "type",
+          bound: items.has(type),
+          left: false,
+          unbound: `${module.name}#${type}` in UNBOUND,
+          members: shapes
+            .get(origin)!
+            .sort()
+            .map((m) => ({ name: m, bound: owned.get(type)?.has(m) ?? false, unbound: `${module.name}#${type}.${m}` in UNBOUND })),
+        });
+      }
+    }
   }
   return modules;
 }
