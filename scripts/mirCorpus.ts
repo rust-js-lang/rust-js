@@ -29,12 +29,18 @@ for (const line of log.split("\n")) {
 const running = readdirSync(corpus).filter((f) => f.endsWith(".rs"));
 const ignored = (f: string) => /^\/\/@ ignore-rust-js/m.test(readFileSync(join(corpus, f), "utf8"));
 // One THIR gets wrong passes from MIR where its test says it passes now.
+// So does one THIR refuses as a library that MIR builds as one, which
+// `mir.test.ts` runs as a program, its only problem that it builds now.
+const only = (f: string, problem: string) => {
+  const said = failed.get(f) ?? "";
+  return said.includes(problem) && [...said.matchAll(/^\+ {3}"/gm)].length === 1;
+};
 const passesFromMir = (f: string) =>
-  ignored(f) ? (failed.get(f) ?? "").includes("it passes now") : !failed.has(f);
+  ignored(f) ? only(f, "it passes now") : !failed.has(f) || only(f, "it compiles as a library now");
 const passing = running.filter(passesFromMir).sort();
 // A case passes only if it ran: a compiler that doesn't build runs none.
 const passes = Number(/^ (\d+) pass$/m.exec(log)?.[1] ?? 0);
-if (passes < passing.filter((f) => !ignored(f)).length) {
+if (passes < passing.filter((f) => !failed.has(f)).length) {
   console.error(`the corpus didn't run: ${passes} passed, ${passing.length} didn't fail\n${log.slice(-2000)}`);
   process.exit(1);
 }

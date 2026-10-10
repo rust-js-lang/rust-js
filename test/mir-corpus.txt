@@ -10,6 +10,7 @@ assignment_order_compound.rs
 associated_consts.rs
 associated_type_drops.rs
 associated_type_fields.rs
+associated_types.rs
 atomics.rs
 begin_panic_str.rs
 begin_panic_string.rs
