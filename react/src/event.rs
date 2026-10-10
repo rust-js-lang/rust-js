@@ -47,6 +47,12 @@ impl<T, E> SyntheticEvent<T, E> {
     pub fn is_propagation_stopped(&self) -> bool {
         unreachable!()
     }
+
+    /// Nothing, since React 17, which no longer reuses events.
+    #[cfg_attr(rust_js, rust_js::link_name = "persist")]
+    pub fn persist(&self) {
+        unreachable!()
+    }
 }
 
 /// Getters, one per React event field: `client_x` is `e.clientX`.
@@ -337,16 +343,43 @@ pub type ToggleEventHandler<T = webapi::Element> = EventHandler<ToggleEvent<T>>;
 pub type TransitionEventHandler<T = webapi::Element> = EventHandler<TransitionEvent<T>>;
 
 impl<T, E> MouseEvent<T, E> {
-    /// Whether a modifier key, like `"Shift"` or `"CapsLock"`, is down.
+    /// Whether a modifier key, like `ModifierKey::Shift`, is down.
     #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
-    pub fn get_modifier_state(&self, key: &str) -> bool {
+    pub fn get_modifier_state(&self, key: ModifierKey) -> bool {
         unreachable!()
     }
 }
 
 impl<T> KeyboardEvent<T> {
     #[cfg_attr(rust_js, rust_js::link_name = "getModifierState")]
-    pub fn get_modifier_state(&self, key: &str) -> bool {
+    pub fn get_modifier_state(&self, key: ModifierKey) -> bool {
         unreachable!()
     }
 }
+
+/// A key [`MouseEvent::get_modifier_state`] asks of.
+pub enum ModifierKey {
+    Alt,
+    AltGraph,
+    CapsLock,
+    Control,
+    Fn,
+    FnLock,
+    Hyper,
+    Meta,
+    NumLock,
+    ScrollLock,
+    Shift,
+    Super,
+    Symbol,
+    SymbolLock,
+}
+
+/// A touch of a [`TouchEvent`]: the DOM's, which React gives as it is.
+pub type Touch = webapi::Touch;
+
+/// A [`TouchEvent`]'s touches: the DOM's, which React gives as it is.
+pub type TouchList = webapi::TouchList;
+
+/// A [`UIEvent`]'s `view`: the window, which React gives as it is.
+pub type AbstractView = webapi::Window;

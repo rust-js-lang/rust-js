@@ -192,5 +192,21 @@ for (const struct of structs) {
     "",
   );
 }
+// An SVG element's interface that adds nothing to `SVGProps`,
+// `SVGLineElementAttributes`: `SVGAttributes` of its element (`ref`,
+// `ClassAttributes`'s, is hand-written).
+for (const [name, declaration] of interfaces) {
+  if (!/^SVG\w+ElementAttributes$/.test(name)) continue;
+  if (declaration.members.length || declaration.extends.length !== 1 || declaration.extends[0].name !== "SVGProps") {
+    throw new Error(`${name} isn't SVGProps alone`);
+  }
+  const of = name.replace(/Attributes$/, "");
+  lines.push(
+    `/// \`${name}<T>\`'s props: \`SVGAttributes\`'s, \`${of}\`'s by default.`,
+    `#[cfg_attr(rust_js, rust_js::types = "react#${name}<T>")]`,
+    `pub type ${name}<'a, T = webapi::${of}> = SVGAttributes<'a, T>;`,
+    "",
+  );
+}
 writeFileSync(process.argv[2] ?? join(import.meta.dir, "src", "attributes.rs"), `${lines.join("\n").trimEnd()}\n`);
 console.log(`react/src/attributes.rs: ${structs.length} structs from @types/react ${typesVersion}; left out, with no Rust type: ${[...skipped.keys()].join(", ") || "none"}`);

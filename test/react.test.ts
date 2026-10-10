@@ -185,7 +185,7 @@ test("React's and React DOM's APIs are hand-written React, and they run", () => 
   expect(js).toContain("return (\n    <Suspense fallback={<p className=\"loading\">Loading</p>}>\n      <Greeting />\n    </Suspense>");
   expect(js).toContain("const text = use(globalThis.greeting);");
   expect(js).toContain('<Activity mode={hidden ? "hidden" : "visible"}>');
-  expect(js).toContain("{[1, 2].map((n) => (\n          <Fragment key={n}>");
+  expect(js).toContain("{[1, 2].map((n) => (\n          <Fragment\n            key={n}\n            ref={(fragment) => {");
   // Objects built by methods: a style, raw HTML, and options.
   expect(js).toContain('style={{ color: "red", fontSize: 12, "--gap": "4px" }}');
   expect(js).toContain('dangerouslySetInnerHTML={{ __html: "<i>raw</i>" }}');

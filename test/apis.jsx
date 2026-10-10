@@ -120,6 +120,9 @@ test("keyed fragments, styles, raw HTML, attributes, a lazy component and a Prof
   await act(async () => await new Promise((resolve) => setTimeout(resolve, 50)));
   expect($(".lazy").textContent).toBe("lazy card");
   expect(logged).toContain("misc mount");
+  // A Fragment's ref listens on its nodes.
+  await act(() => container.querySelectorAll("li")[3].click());
+  expect(logged).toContain("fragment 2 clicked");
   await act(() => root.unmount());
 });
 

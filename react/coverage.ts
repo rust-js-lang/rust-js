@@ -52,6 +52,8 @@ const UNBOUND: Record<string, string> = Object.fromEntries(
       "ReactHTMLElement", "ReactSVGElement", "DetailedHTMLProps", "HTMLProps", "SVGProps", "AllHTMLAttributes", "AriaAttributes",
       "DOMAttributes", "Attributes", "RefAttributes", "HTMLElementType", "SVGElementType", "ReactPromise", "FulfilledReactPromise",
       "PendingReactPromise", "RejectedReactPromise", "UntrackedReactPromise", "RendererUsable", "createElement",
+      // The base `SyntheticEvent` extends, of any targets.
+      "BaseSyntheticEvent",
       // A string, its values suggestions, `(string & {})`; and their parts.
       "AriaRole", "HTMLInputTypeAttribute", "HTMLAttributeAnchorTarget", "HTMLInputAutoCompleteAttribute", "AutoFill",
       "AutoFillAddressKind", "AutoFillBase", "AutoFillContactField", "AutoFillContactKind", "AutoFillCredentialField",
@@ -59,9 +61,15 @@ const UNBOUND: Record<string, string> = Object.fromEntries(
     ].map((name) => `react#${name}`),
     // What React keeps for old code, as test/react-versions.test.ts leaves
     // it out: `useFormState` is `useActionState`'s old name, and React
-    // batches every update itself. Each entry's `version` is react-dom's,
+    // batches every update itself; `MutableRefObject` is `RefObject`'s, as
+    // @types/react deprecates it. Each entry's `version` is react-dom's,
     // `dom::VERSION`.
-    "old names": ["react-dom#useFormState", "react-dom#unstable_batchedUpdates", "react-dom/server#version", "react-dom/static#version"],
+    "old names": [
+      "react#MutableRefObject", "react-dom#useFormState", "react-dom#unstable_batchedUpdates", "react-dom/server#version",
+      "react-dom/static#version",
+    ],
+    // Electron's `<webview>`, which no browser has, nor lib.dom nor webapi.
+    "Electron's": ["react#WebViewHTMLAttributes"],
   }).flatMap(([why, names]) => names.map((name) => [name, why])),
 );
 
@@ -170,7 +178,7 @@ export function render(modules: Module[]): string {
   return [
     `# The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts`,
     `# exports: ${bound} of ${all.length} (${((100 * bound) / all.length).toFixed(1)}%)`,
-    `# not bound by design (x): ${unbound}, class components, TypeScript's own or old names`,
+    `# not bound by design (x): ${unbound}, class components, TypeScript's own, old names or Electron's`,
     ...modules.flatMap((m) => [
       `# ${m.name} ${counted(m).filter((e) => e.bound).length} of ${counted(m).length}`,
       ...m.exports.map((e) => `${e.unbound ? "x" : e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),

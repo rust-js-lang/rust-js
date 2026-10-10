@@ -12,7 +12,7 @@ use react::dom::{FormStatus, create_portal, flush_sync, use_form_status};
 use react::{js, jsx};
 use react::webapi;
 use react::{
-    Activity, ActivityMode, JSX, LazyExoticComponent, Module, Phase, RefObject, CSSProperties, import_module, inner_html, lazy, use_,
+    Activity, ActivityMode, FragmentInstance, JSX, LazyExoticComponent, Module, Phase, RefObject, CSSProperties, import_module, inner_html, lazy, use_,
     use_action_state, use_deferred_value, use_effect, use_effect_event, use_id, use_imperative_handle,
     use_layout_effect, use_optimistic, use_reducer_with, use_ref, use_state, use_sync_external_store, use_transition,
 };
@@ -232,7 +232,11 @@ pub fn Misc() -> JSX::Element {
             onRender={|id, phase, _, _, _, _| log(&format!("{id} {}", match phase { Phase::Mount => "mount", Phase::Update => "update", Phase::NestedUpdate => "nested" }))}>
             <ul>
                 {vec![1, 2].into_iter().map(|n| jsx! {
-                    <Fragment key={n}>
+                    <Fragment key={n} ref={move |fragment: Option<&'static FragmentInstance>| {
+                        if let Some(fragment) = fragment {
+                            fragment.add_event_listener("click", move |_| log(&format!("fragment {n} clicked")));
+                        }
+                    }}>
                         <li>{n}</li>
                         <li>{"·"}</li>
                     </Fragment>
@@ -241,7 +245,7 @@ pub fn Misc() -> JSX::Element {
             <div className="styled" style={CSSProperties::new().color("red").font_size(12).set("--gap", "4px")} />
             <div className="raw" dangerouslySetInnerHtml={inner_html("<i>raw</i>")} />
             <span className="id" data-id={id}>{total}</span>
-            <Suspense fallback="loading card">
+            <Suspense fallback="loading card" name="card">
                 <LAZY_CARD />
             </Suspense>
         </Profiler>

@@ -227,7 +227,16 @@ export function Misc() {
     >
       <ul>
         {[1, 2].map((n) => (
-          <Fragment key={n}>
+          <Fragment
+            key={n}
+            ref={(fragment) => {
+              if (fragment) {
+                fragment.addEventListener("click", () => {
+                  globalThis.log(`fragment ${n} clicked`);
+                });
+              }
+            }}
+          >
             <li>{n}</li>
             <li>·</li>
           </Fragment>
@@ -238,7 +247,7 @@ export function Misc() {
       <span className="id" data-id={id}>
         {total}
       </span>
-      <Suspense fallback="loading card">
+      <Suspense fallback="loading card" name="card">
         <LAZY_CARD />
       </Suspense>
     </Profiler>

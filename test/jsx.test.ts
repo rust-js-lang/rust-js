@@ -1116,11 +1116,11 @@ pub fn App() -> JSX::Element {
     }
 }
 `, {
-    "wrapped.rs": `use react::{Context, JSX, ForwardRefExoticComponent, LazyExoticComponent, MemoExoticComponent, RefObject, create_context, forward_ref, import_module, jsx, lazy, memo};
+    "wrapped.rs": `use react::{Context, JSX, ForwardRefExoticComponent, ForwardedRef, LazyExoticComponent, MemoExoticComponent, create_context, forward_ref, import_module, jsx, lazy, memo};
 pub struct Props { pub label: &'static str }
 pub fn Card(p: Props) -> JSX::Element { jsx! { <b>{p.label}</b> } }
 pub fn Provider() -> JSX::Element { jsx! { <i /> } }
-pub fn Input(p: Props, _: RefObject<Option<i32>>) -> JSX::Element { jsx! { <b>{p.label}</b> } }
+pub fn Input(p: Props, _: ForwardedRef<i32>) -> JSX::Element { jsx! { <b>{p.label}</b> } }
 thread_local! {
     pub static MEMO: MemoExoticComponent<Props> = memo(Card);
     pub static LAZY: LazyExoticComponent<()> = lazy(|| import_module::<()>("./lazy.jsx"));
@@ -1363,10 +1363,10 @@ pub fn App() -> JSX::Element {
 
 test("forwarded refs keep their handle type, evaluation order and handwritten JSX", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
-use react::{JSX, ForwardRefExoticComponent, RefObject, forward_ref, jsx, webapi};
+use react::{JSX, ForwardRefExoticComponent, ForwardedRef, RefObject, forward_ref, jsx, webapi};
 unsafe extern "Rust" { #[link_name = "globalThis.record"] safe fn record(n: i32) -> i32; }
 pub struct Props { pub label: i32 }
-pub fn Input(p: Props, reference: RefObject<Option<&'static webapi::Element>>) -> JSX::Element {
+pub fn Input(p: Props, reference: ForwardedRef<&'static webapi::Element>) -> JSX::Element {
     jsx! { <input ref={reference} tabIndex={p.label} /> }
 }
 thread_local! { static INPUT: ForwardRefExoticComponent<Props, &'static webapi::Element> = forward_ref(Input); }

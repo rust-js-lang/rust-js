@@ -349,6 +349,30 @@ pub trait StyleValue {}
 impl StyleValue for CSSProperties {}
 impl StyleValue for Option<CSSProperties> {}
 
+/// A `referrerPolicy` attribute's value, as @types/react names them: one,
+/// or, as JSX writes it, the text of one, `referrerPolicy="no-referrer"`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum HTMLAttributeReferrerPolicy {
+    #[cfg_attr(rust_js, rust_js::name = "")]
+    Empty,
+    #[cfg_attr(rust_js, rust_js::name = "no-referrer")]
+    NoReferrer,
+    #[cfg_attr(rust_js, rust_js::name = "no-referrer-when-downgrade")]
+    NoReferrerWhenDowngrade,
+    #[cfg_attr(rust_js, rust_js::name = "origin")]
+    Origin,
+    #[cfg_attr(rust_js, rust_js::name = "origin-when-cross-origin")]
+    OriginWhenCrossOrigin,
+    #[cfg_attr(rust_js, rust_js::name = "same-origin")]
+    SameOrigin,
+    #[cfg_attr(rust_js, rust_js::name = "strict-origin")]
+    StrictOrigin,
+    #[cfg_attr(rust_js, rust_js::name = "strict-origin-when-cross-origin")]
+    StrictOriginWhenCrossOrigin,
+    #[cfg_attr(rust_js, rust_js::name = "unsafe-url")]
+    UnsafeUrl,
+}
+
 /// What an attribute takes, as @types/react types it (ADR 0228): `className`
 /// text, `tabIndex` a number, `width` either, `draggable` a [`Booleanish`];
 /// each an `Option` of one too, which leaves it out when `None`. One
@@ -364,6 +388,7 @@ pub mod value {
     impl Text for String {}
     impl<T: Text + ?Sized> Text for &T {}
     impl<T: Text> Text for Option<T> {}
+    impl Text for super::HTMLAttributeReferrerPolicy {}
 
     /// `number`: any of Rust's numbers.
     #[diagnostic::on_unimplemented(message = "`{Self}` is not a number", label = "this attribute takes a number", note = "@types/react types it as a `number`")]
@@ -834,7 +859,7 @@ pub fn create_ref<T>() -> RefObject<Option<T>> {
 /// [`useImperativeHandle`](https://react.dev/reference/react/useImperativeHandle):
 /// what a parent's ref to this component gets, made by `create`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useImperativeHandle")]
-pub fn use_imperative_handle<H>(r: RefObject<Option<H>>, create: impl Fn() -> H + 'static, deps: impl DependencyList) {
+pub fn use_imperative_handle<H, M>(r: impl Ref<H, M>, create: impl Fn() -> H + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
@@ -1192,14 +1217,19 @@ pub fn strict_mode(children: impl ReactNode) -> Element {
 }
 
 /// Declares a built-in component: `name()` makes its element, whose props
-/// are set by its methods, and `.children(..)` finishes it.
+/// are set by its methods, and `.children(..)` finishes it. Its props,
+/// @types/react's `SuspenseProps`, are those methods: the same type.
 macro_rules! built_in {
-    ($(#[doc = $doc:literal])* $(#[cfg($cfg:meta)])? $name:ident = $make:ident $tag:literal { $($(#[doc = $pdoc:literal])* $prop:ident: $ty:ty = $js:literal;)* }) => {
+    ($(#[doc = $doc:literal])* $(#[cfg($cfg:meta)])? $name:ident($props:ident) = $make:ident $tag:literal { $($(#[doc = $pdoc:literal])* $(#[cfg($pcfg:meta)])? $prop:ident $(<$($g:ident $(: $gb:path)?),*>)?: $ty:ty = $js:literal;)* }) => {
         $(#[doc = $doc])*
         $(#[cfg($cfg)])?
         #[cfg_attr(rust_js, rust_js::jsx_element)]
         #[doc(hidden)]
         pub struct $name(PhantomData<JsObject>);
+
+        #[doc = concat!("A `<", $tag, ">`'s props, which its methods set.")]
+        $(#[cfg($cfg)])?
+        pub type $props = $name;
 
         #[doc = concat!("`<", $tag, ">`: set its props, then its children.")]
         $(#[cfg($cfg)])?
@@ -1230,8 +1260,9 @@ macro_rules! built_in {
 
             $(
                 $(#[doc = $pdoc])*
+                $(#[cfg($pcfg)])?
                 #[cfg_attr(rust_js, rust_js::link_name = concat!("prop ", $js))]
-                pub fn $prop(self, value: $ty) -> $name {
+                pub fn $prop$(<$($g $(: $gb)?),*>)?(self, value: $ty) -> $name {
                     unreachable!()
                 }
             )*
@@ -1248,22 +1279,166 @@ macro_rules! built_in {
 built_in! {
     /// [`<Fragment>`](https://react.dev/reference/react/Fragment) with a key,
     /// for a list item of several elements. Without one, [`fragment`] is `<>`.
-    Fragment = keyed_fragment "Fragment" {}
+    Fragment(FragmentProps) = keyed_fragment "Fragment" {
+        /// Its [`FragmentInstance`]: its children's DOM nodes as one.
+        #[cfg(react = "19.3")]
+        r#ref<M>: impl Ref<&'static FragmentInstance, M> = "ref";
+    }
+}
+
+/// What a `<Fragment>`'s ref holds: its first level of DOM nodes, to
+/// focus, observe, listen to or scroll to as one.
+#[cfg(react = "19.3")]
+pub struct FragmentInstance(PhantomData<JsObject>);
+
+#[cfg(react = "19.3")]
+impl FragmentInstance {
+    #[cfg_attr(rust_js, rust_js::link_name = "blur")]
+    pub fn blur(&self) {
+        unreachable!()
+    }
+
+    /// Focus its first focusable node.
+    #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    pub fn focus(&self) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "focus")]
+    pub fn focus_with_options(&self, options: webapi::FocusOptions) {
+        unreachable!()
+    }
+
+    /// Focus its last focusable node.
+    #[cfg_attr(rust_js, rust_js::link_name = "focusLast")]
+    pub fn focus_last(&self) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "focusLast")]
+    pub fn focus_last_with_options(&self, options: webapi::FocusOptions) {
+        unreachable!()
+    }
+
+    /// Have `observer`, an `IntersectionObserver` or a `ResizeObserver`,
+    /// observe each of its nodes.
+    #[cfg_attr(rust_js, rust_js::link_name = "observeUsing")]
+    pub fn observe_using<M>(&self, observer: impl FragmentObserver<M>) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "unobserveUsing")]
+    pub fn unobserve_using<M>(&self, observer: impl FragmentObserver<M>) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "getClientRects")]
+    pub fn get_client_rects(&self) -> Vec<&'static webapi::DOMRect> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "getRootNode")]
+    pub fn get_root_node(&self) -> FragmentRootNode {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "getRootNode")]
+    pub fn get_root_node_with_options(&self, options: webapi::GetRootNodeOptions) -> FragmentRootNode {
+        unreachable!()
+    }
+
+    /// Listen on each of its nodes, those added later too.
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    pub fn add_event_listener(&self, name: &str, listener: impl FnMut(&webapi::Event) + 'static) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "addEventListener")]
+    pub fn add_event_listener_with_options(
+        &self,
+        name: &str,
+        listener: impl FnMut(&webapi::Event) + 'static,
+        options: impl webapi::IntoAddEventListenerOptionsOrBool,
+    ) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    pub fn remove_event_listener(&self, name: &str, listener: &'static dyn Fn(&webapi::Event)) {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "removeEventListener")]
+    pub fn remove_event_listener_with_options(
+        &self,
+        name: &str,
+        listener: &'static dyn Fn(&webapi::Event),
+        options: impl webapi::IntoEventListenerOptionsOrBool,
+    ) {
+        unreachable!()
+    }
+
+    /// Dispatch `event` on its parent, as if from it.
+    #[cfg_attr(rust_js, rust_js::link_name = "dispatchEvent")]
+    pub fn dispatch_event(&self, event: &webapi::Event) -> bool {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    pub fn scroll_into_view(&self) {
+        unreachable!()
+    }
+
+    /// `scrollIntoView(alignToTop)`.
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    pub fn scroll_into_view_with(&self, align_to_top: bool) {
+        unreachable!()
+    }
+}
+
+/// What [`FragmentInstance::observe_using`] takes: an
+/// `IntersectionObserver` or a `ResizeObserver`.
+#[cfg(react = "19.3")]
+pub trait FragmentObserver<M> {}
+
+#[cfg(react = "19.3")]
+#[doc(hidden)]
+pub struct IntersectionObserved;
+#[cfg(react = "19.3")]
+#[doc(hidden)]
+pub struct ResizeObserved;
+
+#[cfg(react = "19.3")]
+impl FragmentObserver<IntersectionObserved> for &webapi::IntersectionObserver {}
+#[cfg(react = "19.3")]
+impl FragmentObserver<ResizeObserved> for &webapi::ResizeObserver {}
+
+/// What [`FragmentInstance::get_root_node`] gives: a document, a shadow
+/// root, or, where the fragment isn't in either, the fragment itself.
+#[cfg(react = "19.3")]
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum FragmentRootNode {
+    Document(&'static webapi::Document),
+    ShadowRoot(&'static webapi::ShadowRoot),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Fragment(&'static FragmentInstance),
 }
 
 built_in! {
     /// [`<Suspense>`](https://react.dev/reference/react/Suspense): shows
     /// `fallback` until its children stop suspending.
-    Suspense = suspense "Suspense" {
+    Suspense(SuspenseProps) = suspense "Suspense" {
         /// What to show while the children load.
         fallback: impl ReactNode = "fallback";
+        /// Its name in React DevTools.
+        name: impl Value = "name";
     }
 }
 
 built_in! {
     /// [`<Profiler>`](https://react.dev/reference/react/Profiler): measures
     /// how long its children take to render, in development and profiling builds.
-    Profiler = profiler "Profiler" {
+    Profiler(ProfilerProps) = profiler "Profiler" {
         id: impl Value = "id";
         /// Called after each commit: `(id, phase, actual_duration,
         /// base_duration, start_time, commit_time)`, the times in milliseconds.
@@ -1271,7 +1446,11 @@ built_in! {
     }
 }
 
-/// A [`Profiler`]'s render: the first, a later one, or one its effects caused.
+/// What a `<Profiler>` calls after each commit, its `on_render`.
+#[cfg_attr(rust_js, rust_js::types = "react#ProfilerOnRenderCallback")]
+pub type ProfilerOnRenderCallback = Box<dyn Fn(&str, Phase, f64, f64, f64, f64)>;
+
+/// A `<Profiler>`'s render: the first, a later one, or one its effects caused.
 pub enum Phase {
     #[cfg_attr(rust_js, rust_js::name = "mount")]
     Mount,
@@ -1285,12 +1464,14 @@ built_in! {
     /// [`<Activity>`](https://react.dev/reference/react/Activity): hides its
     /// children and keeps their state, or shows them.
     #[cfg(react = "19.2")]
-    Activity = activity "Activity" {
+    Activity(ActivityProps) = activity "Activity" {
         mode: ActivityMode = "mode";
+        /// Its name in React DevTools.
+        name: impl Value = "name";
     }
 }
 
-/// Whether an [`Activity`]'s children show.
+/// Whether an `<Activity>`'s children show.
 #[cfg(react = "19.2")]
 pub enum ActivityMode {
     #[cfg_attr(rust_js, rust_js::name = "visible")]
@@ -1305,22 +1486,41 @@ built_in! {
     /// change in a Transition. A class prop is `"auto"`, `"none"`, or a CSS
     /// class for the `::view-transition-*` pseudo-elements.
     #[cfg(react = "19.3")]
-    ViewTransition = view_transition "ViewTransition" {
+    ViewTransition(ViewTransitionProps) = view_transition "ViewTransition" {
         /// Its name, for a shared-element transition between two of them.
         name: impl Value = "name";
-        enter: impl Value = "enter";
-        exit: impl Value = "exit";
-        update: impl Value = "update";
-        share: impl Value = "share";
-        default: impl Value = "default";
-        on_enter: impl Fn(&ViewTransitionInstance, &Vec<String>) + 'static = "onEnter";
-        on_exit: impl Fn(&ViewTransitionInstance, &Vec<String>) + 'static = "onExit";
-        on_share: impl Fn(&ViewTransitionInstance, &Vec<String>) + 'static = "onShare";
-        on_update: impl Fn(&ViewTransitionInstance, &Vec<String>) + 'static = "onUpdate";
+        enter: impl ViewTransitionClass = "enter";
+        exit: impl ViewTransitionClass = "exit";
+        update: impl ViewTransitionClass = "update";
+        share: impl ViewTransitionClass = "share";
+        default: impl ViewTransitionClass = "default";
+        /// Each event's callback may return a cleanup, run when it's done.
+        on_enter<C: Cleanup>: impl Fn(&ViewTransitionInstance, &Vec<String>) -> C + 'static = "onEnter";
+        on_exit<C: Cleanup>: impl Fn(&ViewTransitionInstance, &Vec<String>) -> C + 'static = "onExit";
+        on_share<C: Cleanup>: impl Fn(&ViewTransitionInstance, &Vec<String>) -> C + 'static = "onShare";
+        on_update<C: Cleanup>: impl Fn(&ViewTransitionInstance, &Vec<String>) -> C + 'static = "onUpdate";
+        r#ref<M>: impl Ref<&'static ViewTransitionInstance, M> = "ref";
     }
 }
 
-/// What a [`ViewTransition`]'s event gets: its pseudo-elements, to animate.
+/// A `<ViewTransition>`'s class prop: `"auto"`, `"none"`, or a CSS class
+/// for the `::view-transition-*` pseudo-elements; or a
+/// [`ViewTransitionClassPerType`], one by each Transition's type.
+#[cfg(react = "19.3")]
+pub trait ViewTransitionClass {}
+#[cfg(react = "19.3")]
+impl ViewTransitionClass for &str {}
+#[cfg(react = "19.3")]
+impl ViewTransitionClass for String {}
+#[cfg(react = "19.3")]
+impl ViewTransitionClass for &ViewTransitionClassPerType {}
+
+/// A class for each Transition's type, [`add_transition_type`]'s, and
+/// `"default"`'s for the rest.
+#[cfg(react = "19.3")]
+pub type ViewTransitionClassPerType = js::Dict<String>;
+
+/// What a `<ViewTransition>`'s event gets: its pseudo-elements, to animate.
 #[cfg(react = "19.3")]
 pub struct ViewTransitionInstance(PhantomData<JsObject>);
 
@@ -1494,9 +1694,25 @@ pub struct ForwardRefExoticComponent<P, H>(PhantomData<JsObject>, PhantomData<(P
 /// `thread_local!`: `render` gets the props and the parent's ref. From React
 /// 19 a component can take `ref` as a prop instead.
 #[cfg_attr(rust_js, rust_js::link_name = "react#forwardRef")]
-pub fn forward_ref<P, H>(render: impl Fn(P, RefObject<Option<H>>) -> Element + 'static) -> ForwardRefExoticComponent<P, H> {
+pub fn forward_ref<P, H>(render: impl Fn(P, ForwardedRef<H>) -> Element + 'static) -> ForwardRefExoticComponent<P, H> {
     unreachable!()
 }
+
+/// What [`forward_ref`] takes: a component's render, given its props and
+/// its parent's ref.
+#[cfg_attr(rust_js, rust_js::types = "react#ForwardRefRenderFunction<H, P>")]
+pub type ForwardRefRenderFunction<H, P> = Box<dyn Fn(P, ForwardedRef<H>) -> Element>;
+
+handle! {
+    /// The ref a [`forward_ref`] component's parent gave: a callback, a
+    /// [`RefObject`], or none, to give on as an element's `ref` or to
+    /// [`use_imperative_handle`].
+    ForwardedRef<H>
+}
+
+#[doc(hidden)]
+pub struct ForwardedRefMarker;
+impl<H> Ref<H, ForwardedRefMarker> for ForwardedRef<H> {}
 
 pub struct Forwarded;
 
@@ -1530,7 +1746,7 @@ pub fn start_transition<R: ActionResult<M>, M>(action: impl FnOnce() -> R + 'sta
 }
 
 /// [`addTransitionType`](https://react.dev/reference/react/addTransitionType):
-/// names what the current Transition is, for [`ViewTransition`]'s classes.
+/// names what the current Transition is, for a `<ViewTransition>`'s classes.
 #[cfg(react = "19.3")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#addTransitionType")]
 pub fn add_transition_type(name: &str) {
@@ -1553,12 +1769,16 @@ pub fn cache<F: 'static>(f: F) -> F {
     unreachable!()
 }
 
+/// What [`cache_signal`] gives: an `AbortSignal`, as react-dom has it.
+#[cfg(react = "19.2")]
+pub type CacheSignal = webapi::AbortSignal;
+
 /// [`cacheSignal`](https://react.dev/reference/react/cacheSignal): aborted
 /// when the render that [`cache`] belongs to is done. Server Components only;
 /// `None` elsewhere.
 #[cfg(react = "19.2")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#cacheSignal")]
-pub fn cache_signal() -> Option<&'static webapi::AbortSignal> {
+pub fn cache_signal() -> Option<&'static CacheSignal> {
     unreachable!()
 }
 

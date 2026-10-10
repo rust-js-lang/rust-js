@@ -101,3 +101,27 @@ React warns without an `as`.
 - "old names" are `x` too, as test/react-versions.test.ts leaves them out:
   `useFormState`, `unstable_batchedUpdates`, and each entry's `version`,
   react-dom's.
+
+## Amendment: react whole
+
+The react crate binds all of @types/react but what's `x`, 242 of 242:
+
+- A built-in's props, `SuspenseProps`, is its element's type, `Suspense`,
+  whose methods set them: an alias, as `import { Suspense }` names the
+  component, which a port writes as `use react::Suspense`. `Suspense` and
+  `Activity` take `name`; `ViewTransition` a `ViewTransitionClass`, text
+  or a `ViewTransitionClassPerType` (a `Dict` by Transition type), its
+  callbacks a cleanup, and a `ref`; a `Fragment` a `ref` to its
+  `FragmentInstance` (React 19.3), whose nodes it focuses, observes,
+  listens to and scrolls to as one.
+- `forward_ref`'s render gets a `ForwardedRef<H>`, opaque, as a parent may
+  give a callback, a `RefObject` or none: it was a `RefObject`, which a
+  callback isn't. It's a `Ref`, for an element's `ref` or
+  `use_imperative_handle`, which takes any `Ref` now, as @types has it.
+- `get_modifier_state` takes a `ModifierKey`; `HTMLAttributeReferrerPolicy`
+  is an enum an attribute takes beside text, as JSX writes it as text.
+  `Touch`, `TouchList` and `AbstractView` are webapi's, which React gives
+  as they are, as `CacheSignal` is an `AbortSignal`.
+- `x` beside: `BaseSyntheticEvent`, TypeScript's base of `SyntheticEvent`;
+  `MutableRefObject`, an old name, deprecated; `WebViewHTMLAttributes`,
+  Electron's `<webview>`, which no browser, lib.dom nor webapi has.

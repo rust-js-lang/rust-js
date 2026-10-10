@@ -1,12 +1,12 @@
 # The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts
-# exports: 223 of 245 (91.0%)
-# not bound by design (x): 87, class components, TypeScript's own or old names
-# react 162 of 184
-- type react#AbstractView
+# exports: 242 of 242 (100.0%)
+# not bound by design (x): 90, class components, TypeScript's own, old names or Electron's
+# react 181 of 181
++ type react#AbstractView
 + react#act
 + type react#ActionDispatch
 + react#Activity
-- type react#ActivityProps
++ type react#ActivityProps
 + react#addTransitionType
 x type react#AllHTMLAttributes
 + type react#AnchorHTMLAttributes
@@ -28,12 +28,12 @@ x type react#AutoFillField
 x type react#AutoFillNormalField
 x type react#AutoFillSection
 + type react#BaseHTMLAttributes
-- type react#BaseSyntheticEvent
+x type react#BaseSyntheticEvent
 + type react#BlockquoteHTMLAttributes
 + type react#ButtonHTMLAttributes
 + react#cache
 + react#cacheSignal
-- type react#CacheSignal
++ type react#CacheSignal
 + type react#CanvasHTMLAttributes
 + react#captureOwnerStack
 x type react#CElement
@@ -99,20 +99,20 @@ x type react#FC
 + type react#FormEvent
 + type react#FormEventHandler
 + type react#FormHTMLAttributes
-- type react#ForwardedRef
++ type react#ForwardedRef
 + react#forwardRef
 + type react#ForwardRefExoticComponent
-- type react#ForwardRefRenderFunction
++ type react#ForwardRefRenderFunction
 + react#Fragment
-- type react#FragmentInstance
-- type react#FragmentProps
++ type react#FragmentInstance
++ type react#FragmentProps
 x type react#FulfilledReactPromise
 x type react#FunctionComponent
 x type react#FunctionComponentElement
 x type react#GetDerivedStateFromError
 x type react#GetDerivedStateFromProps
 x type react#HTMLAttributeAnchorTarget
-- type react#HTMLAttributeReferrerPolicy
++ type react#HTMLAttributeReferrerPolicy
 + type react#HTMLAttributes
 x type react#HTMLElementType
 + type react#HtmlHTMLAttributes
@@ -154,10 +154,10 @@ x type react#LegacyRef
 + type react#MenuHTMLAttributes
 + type react#MetaHTMLAttributes
 + type react#MeterHTMLAttributes
-- type react#ModifierKey
++ type react#ModifierKey
 + type react#MouseEvent
 + type react#MouseEventHandler
-- type react#MutableRefObject
+x type react#MutableRefObject
 + type react#NamedExoticComponent
 x type react#NewLifecycle
 + type react#ObjectHTMLAttributes
@@ -172,8 +172,8 @@ x type react#PendingReactPromise
 + type react#PointerEvent
 + type react#PointerEventHandler
 + react#Profiler
-- type react#ProfilerOnRenderCallback
-- type react#ProfilerProps
++ type react#ProfilerOnRenderCallback
++ type react#ProfilerProps
 + type react#ProgressHTMLAttributes
 x type react#PropsWithChildren
 x type react#PropsWithoutRef
@@ -213,12 +213,12 @@ x type react#StaticLifecycle
 + type react#SubmitEvent
 + type react#SubmitEventHandler
 + react#Suspense
-- type react#SuspenseProps
++ type react#SuspenseProps
 + type react#SVGAttributes
 x type react#SVGElementType
-- type react#SVGLineElementAttributes
++ type react#SVGLineElementAttributes
 x type react#SVGProps
-- type react#SVGTextElementAttributes
++ type react#SVGTextElementAttributes
 + type react#SyntheticEvent
 + type react#TableHTMLAttributes
 + type react#TdHTMLAttributes
@@ -227,10 +227,10 @@ x type react#SVGProps
 + type react#TimeHTMLAttributes
 + type react#ToggleEvent
 + type react#ToggleEventHandler
-- type react#Touch
++ type react#Touch
 + type react#TouchEvent
 + type react#TouchEventHandler
-- type react#TouchList
++ type react#TouchList
 + type react#TrackHTMLAttributes
 + type react#TransitionEvent
 + type react#TransitionEventHandler
@@ -262,11 +262,11 @@ x type react#UntrackedReactPromise
 + react#version
 + type react#VideoHTMLAttributes
 + react#ViewTransition
-- type react#ViewTransitionClass
-- type react#ViewTransitionClassPerType
++ type react#ViewTransitionClass
++ type react#ViewTransitionClassPerType
 + type react#ViewTransitionInstance
-- type react#ViewTransitionProps
-- type react#WebViewHTMLAttributes
++ type react#ViewTransitionProps
+x type react#WebViewHTMLAttributes
 + type react#WheelEvent
 + type react#WheelEventHandler
 # react-dom 25 of 25

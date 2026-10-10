@@ -4647,3 +4647,11 @@ impl<T> Default for VideoHTMLAttributes<'_, T> {
         }
     }
 }
+
+/// `SVGLineElementAttributes<T>`'s props: `SVGAttributes`'s, `SVGLineElement`'s by default.
+#[cfg_attr(rust_js, rust_js::types = "react#SVGLineElementAttributes<T>")]
+pub type SVGLineElementAttributes<'a, T = webapi::SVGLineElement> = SVGAttributes<'a, T>;
+
+/// `SVGTextElementAttributes<T>`'s props: `SVGAttributes`'s, `SVGTextElement`'s by default.
+#[cfg_attr(rust_js, rust_js::types = "react#SVGTextElementAttributes<T>")]
+pub type SVGTextElementAttributes<'a, T = webapi::SVGTextElement> = SVGAttributes<'a, T>;
