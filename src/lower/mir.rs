@@ -123,8 +123,9 @@ struct State<'m, 'tcx> {
     /// same, `COUNT.value`: the place, named where it's used.
     refs: std::collections::HashMap<Local, Expr>,
     /// The boxes a call is given for its `&mut`s to numbers, each copied
-    /// back to its place once the call returns (ADR 0074).
-    copy_backs: Vec<(Expr, String)>,
+    /// back to its place once the call returns (ADR 0074); an object's, in
+    /// place, which each name for it sees (ADR 0147).
+    copy_backs: Vec<(Expr, String, bool)>,
     /// The parameters that are boxes their callers give (ADR 0074).
     boxes: std::collections::HashSet<String>,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
@@ -739,9 +740,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // Each box given, copied back once the call returns.
                         if !state.copy_backs.is_empty() {
                             self.flush(state, &mut called)?;
-                            for (place, boxed) in std::mem::take(&mut state.copy_backs) {
+                            for (place, boxed, object) in std::mem::take(&mut state.copy_backs) {
                                 let back = Expr::member(Expr::var(&boxed), "value");
-                                called.push(StmtKind::Assign(place, back).at(self.js_span(span)));
+                                let js_span = self.js_span(span);
+                                called.push(match object {
+                                    true => {
+                                        self.runtime.insert(Helper::Assign);
+                                        StmtKind::Expr(Expr::call(Expr::var("$assign"), vec![place, back])).at(js_span)
+                                    }
+                                    false => StmtKind::Assign(place, back).at(js_span),
+                                });
                             }
                         }
                         self.unwinding_to(state, unwind, called, &mut out)?;
@@ -1091,6 +1099,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
+            let object = !matches!(value, Value::Ref(_));
             let place = match value {
                 Value::Ref(place) => place,
                 // An object given where a box goes, a generic `&mut T`'s: boxed,
@@ -1164,7 +1173,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let boxed = Expr::object(vec![Prop::Field("value".into(), place.clone())]);
             out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
             if fixed_place(&place) {
-                state.copy_backs.push((place, name.clone()));
+                state.copy_backs.push((place, name.clone(), object));
             }
             exprs.push(Expr::var(&name));
         }

@@ -3210,6 +3210,9 @@ export function $exactLen(hint) {
 // entries, an object its fields, those `v` hasn't gone, as another
 // variant's are.
 export function $assign(target, value) {
+  // Itself, as a box given back unreplaced is: nothing to do, where
+  // clearing it first would lose what it holds.
+  if (target === value) return;
   if (Array.isArray(target)) {
     target.length = value.length;
     for (let i = 0; i < value.length; i++) target[i] = value[i];

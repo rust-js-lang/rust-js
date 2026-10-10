@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "replace_through_mut"],
   },
+  {
+    name: "assign-itself-cleared",
+    breaks: "a map given back in its own box is cleared, then filled from itself, which is empty",
+    file: "src/runtime/assign.js",
+    find: "  if (target === value) return;\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","generic_mut_map"],
+  },
 ];

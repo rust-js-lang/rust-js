@@ -79,6 +79,7 @@ early_bound_method_lifetime.rs
 empty_pattern.rs
 enum_order.rs
 evaluation_order.rs
+evidence_paths.rs
 exp_format.rs
 f32.rs
 f32_digits.rs
@@ -104,6 +105,7 @@ generic_impl_consts.rs
 generic_into.rs
 generic_iterator_map_lazy.rs
 generic_iterator_rest_lazy.rs
+generic_mut_map.rs
 generic_mut_ref.rs
 generic_operators.rs
 generic_traits.rs

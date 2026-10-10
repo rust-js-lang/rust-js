@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "mir-box-not-copied-back",
     breaks: "a box given for a `&mut` number isn't copied back, so the caller never sees what the call wrote",
     file: "src/lower/mir.rs",
-    find: "                                called.push(StmtKind::Assign(place, back).at(self.js_span(span)));\n",
-    replace: "                                let _ = (place, back);\n",
+    find: "                                    false => StmtKind::Assign(place, back).at(js_span),\n",
+    replace: "                                    false => StmtKind::Expr(Expr::undefined()).at(js_span),\n",
     tests: ["test/mir.test.ts","-t","mut_number_args"],
   },
   {
@@ -489,5 +489,13 @@ export const mutations: Mutation[] = [
     find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
     replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
     tests: ["test/mir.test.ts","-t","matrix_floats"],
+  },
+  {
+    name: "mir-object-copied-back-rebound",
+    breaks: "an object given in a box for a generic `&mut T` is copied back by assigning its variable, a `const`",
+    file: "src/lower/mir.rs",
+    find: "            let object = !matches!(value, Value::Ref(_));\n",
+    replace: "            let object = false && !matches!(value, Value::Ref(_));\n",
+    tests: ["test/mir.test.ts","-t","evidence_paths"],
   },
 ];
