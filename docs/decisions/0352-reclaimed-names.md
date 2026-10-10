@@ -49,3 +49,6 @@ import Error, { catchError } from "next/error";
   of an import named apart from nothing it reads; 0 of react.dev's 823
   pages differ.
 - A name its scope reads elsewhere keeps its `$1`, `f$1` beside an `f`.
+- An import named apart from another module's import of its name, which
+  naming crate-wide avoids (ADR 0202), is reclaimed too: the mutation that
+  named it apart is no longer caught, and is gone.

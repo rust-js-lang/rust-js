@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { $parseInt, $stripPrefix } from "@rust-js/runtime";
 
-export function parse(hash$1) {
-  const match = $stripPrefix(hash$1, "#") ?? hash$1;
+export function parse(hash) {
+  const match = $stripPrefix(hash, "#") ?? hash;
   if (match === "" || match === "/") {
     return "List";
   }

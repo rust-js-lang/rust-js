@@ -61,14 +61,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "look inside their children"],
   },
   {
-    name: "imports-named-crate-wide",
-    breaks: "a module's import is named around another module's of its name, `import Image$1 from \"next/legacy/image\"` where another imports next/image's",
-    file: "src/lower/analysis/naming.rs",
-    find: "            let names = (own.into_iter().chain(others))\n",
-    replace: "            let names = (others.into_iter().chain(own))\n",
-    tests: ["test/next.test.ts", "-t", "rust-js-next build"],
-  },
-  {
     name: "namespace-named-by-file",
     breaks: "a namespace whose bindings `mod ContextMenu` holds is named by its file, `import * as menu`",
     file: "src/lower/analysis/naming.rs",
