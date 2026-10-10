@@ -695,6 +695,33 @@ pub fn reader() -> fn() -> f64 {
   expect([lib.read(), lib.reader()()]).toEqual([Math.PI * 2, Math.PI]);
 });
 
+// `set X.y` of a function without a receiver writes a global's property,
+// `process.exitCode = 1`, as `get X.y` reads one.
+test("a binding sets a static property", async () => {
+  const dir = fixture("static-setter");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::link_name = "get globalThis.counter")]
+fn counter() -> f64 {
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "set globalThis.counter")]
+#[allow(unused_variables)]
+fn set_counter(value: f64) {
+    unreachable!()
+}
+
+pub fn bump() -> f64 {
+    set_counter(counter() + 1.0);
+    counter()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("globalThis.counter += 1;");
+  const lib = await import(join(dir, "lib.js"));
+  (globalThis as any).counter = 1;
+  expect(lib.bump()).toBe(2);
+});
+
 // ADR 0285: `std::ptr::eq` of JS objects is whether they're one, `===`.
 test("ptr::eq of JS objects is whether they're one", async () => {
   const dir = fixture("ptr-eq");

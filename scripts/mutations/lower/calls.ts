@@ -454,4 +454,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","try_lock"],
   },
+  {
+    "name": "static-setter-refused",
+    "breaks": "`set process.exitCode`, a global's property, is refused as a binding without a receiver",
+    "file": "src/lower/calls.rs",
+    "find": "                (JsForm::Set(name), None) if args.len() == 1 && name.contains('.') && !name.contains('#') => {",
+    "replace": "                (JsForm::Set(name), None) if false => {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "sets a static property"
+    ]
+  },
 ];

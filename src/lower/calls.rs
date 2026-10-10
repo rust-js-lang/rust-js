@@ -391,6 +391,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(StmtKind::Assign(Expr::member(this, name), value).at(self.js_span(span)));
                     Expr::undefined()
                 }
+                // A global's property, written: `process.exitCode = 1`. Not an
+                // import's, which JS can't assign.
+                (JsForm::Set(name), None) if args.len() == 1 && name.contains('.') && !name.contains('#') => {
+                    let value = args.remove(0);
+                    out.push(StmtKind::Assign(self.js_ref(&name).or_at(fun_span), value).at(self.js_span(span)));
+                    Expr::undefined()
+                }
                 (JsForm::This, Some(this)) if args.is_empty() => this,
                 // Of a value that's an `Option` itself, a JSON `null`'s
                 // `Some(None)`, which only an own key has (ADR 0225).

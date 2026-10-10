@@ -225,3 +225,9 @@ which always passes `--extern webapi=..`.
   is `Notification.permission`, and as a value `() =>
   Notification.permission`, as `get x` of a method is `this.x`. A Rust
   `static` would say it doesn't change. It was rejected. Case N.
+
+## Amendment: a global's property, written
+
+`set X.y` of a function without a receiver writes a global's property, as
+`get X.y` reads one: `process.exitCode = 1`, a statement. Not an import's,
+`set fs#x`, which JS can't assign: that stays refused.
