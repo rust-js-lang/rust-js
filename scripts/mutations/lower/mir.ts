@@ -426,4 +426,20 @@ export const mutations: Mutation[] = [
     replace: "            && false && self.is_object(pointee)\n",
     tests: ["test/mir.test.ts","-t","replace_through_mut"],
   },
+  {
+    name: "mir-handle-boxed-by-value",
+    breaks: "a handle `first_mut().unwrap()` made is boxed by its value, and writes to the box are lost",
+    file: "src/lower/mir.rs",
+    find: "            if !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {\n",
+    replace: "            if false && !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {\n",
+    tests: ["test/mir.test.ts","-t","std_mut_items"],
+  },
+  {
+    name: "mir-unit-place-refused",
+    breaks: "`pass(&mut unit)` of a `()` is refused as a place that isn't fixed",
+    file: "src/lower/mir.rs",
+    find: "            if !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {\n",
+    replace: "            if !fixed_place(&place) {\n",
+    tests: ["test/mir.test.ts","-t","mut_ref_as_generic"],
+  },
 ];

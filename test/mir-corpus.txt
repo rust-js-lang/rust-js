@@ -136,6 +136,7 @@ mut_number_handles.rs
 mut_ref_as_generic.rs
 mut_ref_handle.rs
 mut_ref_kept.rs
+mut_ref_loop.rs
 mut_ref_loop_bounds.rs
 mut_ref_std_items.rs
 mut_ref_temporary.rs
@@ -195,6 +196,7 @@ static_raw_address.rs
 statics.rs
 std_errors_boxed.rs
 std_function_value_panic.rs
+std_mut_items.rs
 std_struct_const.rs
 stepped_nested.rs
 str_circumfix.rs

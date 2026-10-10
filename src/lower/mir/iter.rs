@@ -44,6 +44,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {
                 return Ok(Some(value));
             }
+            // `for x in &mut v` of numbers: handles on its items, as
+            // `iter_mut()`'s are, `mir_std_call`'s (ADR 0099).
+            let handles = matches!(receiver_ty.kind(), ty::Ref(_, _, Mutability::Mut))
+                && self.iterator_item(output).is_some_and(|item| self.is_cell(item));
+            if handles {
+                return Ok(None);
+            }
             if iter_ty.is_array() || iter_ty.is_slice() || self.is_vec_like(iter_ty) {
                 return Ok(Some(self.js_iterator(value)));
             }

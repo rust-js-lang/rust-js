@@ -1098,6 +1098,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exprs.push((**boxed).clone());
                 continue;
             }
+            // A handle a call made, `first_mut().unwrap()`'s: given as it is,
+            // its `value` the place (ADR 0099). A box of another place that
+            // isn't fixed couldn't be copied back; a `()`'s needn't be.
+            if !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {
+                let js::ExprKind::Member(handle, field) = &place.kind else {
+                    return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
+                };
+                if field != "value" {
+                    return Err(self.unsupported(span, "a `&mut` of a number given, from its MIR"));
+                }
+                exprs.push((**handle).clone());
+                continue;
+            }
             // What it returns can hold the borrow: a box would be copied back
             // before it's used.
             if self.result_borrows(def_id, i) {

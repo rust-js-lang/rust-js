@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "                self.extreme_of(name == \"min\", items, item, span)?\n",
     tests: ["test/mir.test.ts","-t","enum_order|opaque_iterators|generic_as_ref|returned_references"],
   },
+  {
+    name: "mir-mut-loop-items-unhandled",
+    breaks: "`for x in &mut v` of numbers gives numbers, whose `value` writes nothing",
+    file: "src/lower/mir/iter.rs",
+    find: "            if handles {\n",
+    replace: "            if false && handles {\n",
+    tests: ["test/mir.test.ts","-t","mut_ref_loop"],
+  },
 ];
