@@ -1860,10 +1860,17 @@ pub fn key(msg: Option<&Unknown>, index: usize) -> String {
 pub fn named(arg: Option<&Unknown>) -> String {
     format!(" {}", js::string(arg))
 }
+
+// A number as JS shows it, \`1e+21\`, as react.dev's copyright shows a year.
+pub fn year(year: f64) -> String {
+    format!("© {}", js::shown(year))
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return `${msg}-${index}`;");
+  expect(js).toContain("return `© ${year}`;");
+  expect((await import(join(dir, "lib.js"))).year(1e21)).toBe("© 1e+21");
   // `String(arg)` stays, which names a symbol a template throws on.
   expect(js).toContain("return ` ${String(arg)}`;");
   const { key, named } = await import(join(dir, "lib.js"));

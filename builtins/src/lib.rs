@@ -229,7 +229,7 @@ pub unsafe fn cast<T>(this: Option<&Unknown>) -> T {
 
 /// What JS takes as text where it wants text, which TypeScript's `string`
 /// is given: text, or any value, which JS makes text, `"undefined"` of
-/// `None` (ADR 0310).
+/// `None` (ADR 0310); a number as JS writes it, `1e+21`.
 pub trait ToText {}
 
 impl ToText for &str {}
@@ -237,6 +237,7 @@ impl ToText for &String {}
 impl ToText for String {}
 impl ToText for &Unknown {}
 impl ToText for Option<&Unknown> {}
+impl ToText for f64 {}
 
 /// [`parseInt(text, radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
 /// the integer `text` starts with, in base `radix`, `NaN` of none: `"4x"` is 4,

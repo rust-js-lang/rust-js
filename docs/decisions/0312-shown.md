@@ -26,3 +26,11 @@ itself, `#[link_name = "this"]`, and `format!` writes a value whose
   original's does, symbols and all.
 - **It's tested**: a bindings test shows `undefined`, `null`, an object and
   text; a mutation calls its `Display`.
+
+## Amendment: a number
+
+`js::shown` takes an `f64` too: `format!("© {}", js::shown(year))` is
+`` `© ${year}` ``, as react.dev's copyright shows `new Date().getFullYear()`.
+Rust's `{}` of an `f64` stays `$displayF64`, as Rust writes it, `-0` and
+`1000000000000000000000` where JS writes `0` and `1e+21`: `js::shown` is
+how a program asks for JS's.
