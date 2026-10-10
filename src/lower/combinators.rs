@@ -280,7 +280,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = self.iter_value(args[0], out)?;
                 let items = self.iter_source(items, receiver_ty, span, out)?;
                 if boxed {
-                    self.some_at(items, Expr::int(-1))
+                    let items = if items.reads_same() {
+                        items
+                    } else {
+                        self.spill("items", items, out)
+                    };
+                    let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
+                    self.some_at(items, last)
                 } else {
                     Expr::call(Expr::member(items, "at"), vec![Expr::int(-1)])
                 }

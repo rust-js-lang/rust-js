@@ -378,4 +378,12 @@ export const mutations: Mutation[] = [
     replace: "StepOp::Next | StepOp::Peekable",
     tests: ["test/corpus.test.ts","-t","next_back_lazy"],
   },
+  {
+    name: "next-back-boxed-before-start",
+    breaks: "`next_back()` of a new iterator of `Option`s is `None`",
+    file: "src/lower/combinators.rs",
+    find: "let last = Expr::bin(Op::Sub, Expr::member(items.clone(), \"length\"), Expr::int(1));",
+    replace: "let last = Expr::int(-1);",
+    tests: ["test/corpus.test.ts","-t","iter_next_back"],
+  },
 ];

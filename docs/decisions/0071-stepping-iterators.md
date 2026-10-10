@@ -113,7 +113,7 @@ on:
   | Rust | JS |
   |---|---|
   | `it.next_back()` of one stepped through | `$nextBack(it)`, `$nextBackSome(it)` of a generic `T`'s |
-  | `v.iter().next_back()`, a new one | its items' `.at(-1)`, `$someAt(items, -1)` of a generic `T`'s |
+  | `v.iter().next_back()`, a new one | its items' `.at(-1)`, `$someAt(items, items.length - 1)` of a generic `T`'s |
   | `it.as_slice()` | `it.items.slice(it.at, it.end)`, or a new one's items |
   | a `Peekable`'s `peek()` of a generic `T`'s | `$peekSome(it)`, as `$nextSome` |
 

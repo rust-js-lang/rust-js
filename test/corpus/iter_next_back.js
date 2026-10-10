@@ -15,6 +15,8 @@ import {
   $rest,
   $restStr,
   $sizeHint,
+  $slice,
+  $someAt,
   $someValue,
   $sortedEntries,
   $treeRange,
@@ -98,25 +100,31 @@ function main() {
   console.log(
     `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$13)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$14)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$15)}`,
   );
+  const tmp$1 = $someAt(maybe, maybe.length - 1);
+  const items = $slice(maybe, 0, 1);
+  const arg$16 = $someAt(items, items.length - 1);
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(tmp$1)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$16)}`,
+  );
   const peeked = $iter(maybe);
   $nextBackSome(peeked);
   $nextBackSome(peeked);
-  const arg$16 = $peekSome(peeked);
-  const arg$17 = $range(0, 4).at(-1);
+  const arg$17 = $peekSome(peeked);
+  const arg$18 = $range(0, 4).at(-1);
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$16)} ${arg$17 == null ? "None" : `Some(${arg$17})`}`,
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$17)} ${arg$18 == null ? "None" : `Some(${arg$18})`}`,
   );
   const peeking = $iter(v);
   const first = $peek(peeking);
-  const arg$18 = $nextBack(peeking);
+  const arg$19 = $nextBack(peeking);
   console.log(
-    `${first == null ? "None" : `Some(${first})`} ${arg$18 == null ? "None" : `Some(${arg$18})`}`,
+    `${first == null ? "None" : `Some(${first})`} ${arg$19 == null ? "None" : `Some(${arg$19})`}`,
   );
   while ($nextBack(peeking) != null) {}
   const left = $peek(peeking);
-  const arg$19 = $nextIf(peeking, () => true);
+  const arg$20 = $nextIf(peeking, () => true);
   console.log(
-    `${left == null ? "None" : `Some(${left})`} ${arg$19 == null ? "None" : `Some(${arg$19})`}`,
+    `${left == null ? "None" : `Some(${left})`} ${arg$20 == null ? "None" : `Some(${arg$20})`}`,
   );
   const chars = $iter(Array.from("xyz"));
   $nextBack(chars);

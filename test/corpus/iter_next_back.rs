@@ -36,6 +36,7 @@ fn main() {
     let maybe: Vec<Option<i32>> = vec![Some(1), None];
     let mut options = maybe.iter();
     println!("{:?} {:?} {:?}", options.next_back(), options.next_back(), options.next_back());
+    println!("{:?} {:?}", maybe.iter().next_back(), maybe[..1].iter().next_back());
     let mut peeked = maybe.iter().peekable();
     peeked.next_back();
     peeked.next_back();
