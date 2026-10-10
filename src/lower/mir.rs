@@ -1034,14 +1034,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// Whether `place` reads through a `&mut` to a number its local holds,
-    /// a handle or a box, `*r`.
-    fn derefs_handle(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>) -> bool {
-        place.projection.first() == Some(&PlaceElem::Deref)
-            && matches!(body.local_decls[place.local].ty.kind(),
-                ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee))
-    }
-
     /// The arguments of a call of the crate's: a `&mut` to a value JS can't
     /// change in place is a box, named for its parameter, copied back once
     /// the call returns (ADR 0074). What's given before it that does
@@ -1326,10 +1318,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match self.read_local_value(state, place.local, out)? {
                     // Through a `&mut` to a place: what the place holds.
                     Value::Ref(target) if place.is_indirect() => Ok(Value::Expr(target)),
-                    // Through a handle a variable holds: its `value`.
-                    Value::Expr(handle) if self.derefs_handle(state.body, place) => {
-                        Ok(Value::Expr(Expr::member(handle, "value")))
-                    }
                     value => Ok(value),
                 }
             }

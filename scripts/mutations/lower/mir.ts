@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","mut_number_args"],
   },
   {
-    name: "mir-iterator-ref-refused",
-    breaks: "a `&mut` to a std iterator is refused, as if it were a number's",
-    file: "src/lower/mir.rs",
-    find: "                    Value::Ref(iterator) => Ok(iterator),\n",
-    replace: "",
-    tests: ["test/mir.test.ts", "-t", "iterator_stepped_by_hand"],
-  },
-  {
     name: "mir-branch-continue-is-break",
     breaks: "`?` goes on with an `Err` or a `None`, and returns early with what's inside",
     file: "src/lower/mir.rs",
@@ -128,14 +120,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if !std::mem::take(&mut placed) {\n                    value = Expr::member(value, \"value\");\n                }\n",
     replace: "                let _ = std::mem::take(&mut placed);\n",
-    tests: ["test/mir.test.ts","-t","mut_number_handles"],
-  },
-  {
-    name: "mir-handle-read-unread",
-    breaks: "a read through a handle a variable holds reads the handle, not the number",
-    file: "src/lower/mir.rs",
-    find: "                    Value::Expr(handle) if self.derefs_handle(state.body, place) => {\n",
-    replace: "                    Value::Expr(handle) if false && self.derefs_handle(state.body, place) => {\n",
     tests: ["test/mir.test.ts","-t","mut_number_handles"],
   },
   {
@@ -353,5 +337,13 @@ export const mutations: Mutation[] = [
     find: "                            locals.writes[borrowed.local] += 1;\n",
     replace: "",
     tests: ["test/mir.test.ts","-t","box_uninit"],
+  },
+  {
+    name: "mir-iterator-ref-refused",
+    breaks: "a `&mut` to a std iterator is a handle on it, which JS can't step",
+    file: "src/lower/mir.rs",
+    find: "                    Value::Ref(iterator) => Ok(iterator),\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","generic_associated_types"],
   },
 ];
