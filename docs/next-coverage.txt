@@ -2071,12 +2071,12 @@
 - type next/router#SingletonRouter
 + next/router#useRouter
 + next/router#withRouter
-# next/script 0 of 5
-- next/script#default
-- next/script#handleClientScriptLoad
-- next/script#initScriptLoader
-- type next/script#Props
-- type next/script#ScriptProps
+# next/script 5 of 5
++ next/script#default
++ next/script#handleClientScriptLoad
++ next/script#initScriptLoader
++ type next/script#Props
++ type next/script#ScriptProps
 # next/server 0 of 14
 - next/server#after
 - next/server#connection

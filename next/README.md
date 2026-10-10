@@ -40,10 +40,9 @@ export default Home;
 ```
 
 A module is a Server Component unless it says `js::directive!("use client");`,
-as one with state or events must. The crate binds `next/image`'s `Image`,
-`next/link`'s `Link`, and `next/navigation`'s `use_router`, `use_pathname`,
-`use_search_params`, `not_found` and `redirect`, and the Pages Router's
-`next/router` `use_router`, whose `as_path` react.dev reads: a component's optional
-props are `None` unless they're given, the rest from `{..Default::default()}`.
+as one with state or events must. The crate binds Next.js's modules as their
+`.d.ts` types them, and [docs/next-coverage.txt](../docs/next-coverage.txt)
+lists each export and whether it's bound yet: a component's optional props
+are `None` unless they're given, the rest from `{..Default::default()}`.
 
 `bun create @rust-js my-site --template next` makes an app that uses it.

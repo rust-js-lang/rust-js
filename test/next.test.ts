@@ -12,6 +12,7 @@ const about = `#![allow(non_snake_case)]
 
 use next::legacy::image::Image;
 use next::link::Link;
+use next::script::Script;
 use react::attributes::AnchorHTMLAttributes;
 use react::{CSSProperties, JSX, jsx};
 
@@ -23,6 +24,7 @@ pub fn About() -> JSX::Element {
                 <Image src="/next.svg" layout={Some("fill")} objectFit={Some("cover")} alt={Some("Next.js logo")} {..Default::default()} />
             </div>
             <HomeLink className="home" {..Default::default()} />
+            <Script id={Some("inline")}>{"window.inlined = true;"}</Script>
         </main>
     }
 }
@@ -210,6 +212,19 @@ thread_local! {
     );
 }
 
+// A third party script, loaded once the page is idle, which a client
+// component handles the load of.
+pub fn Idle() -> JSX::Element {
+    jsx! { <next::script::Script src={Some("https://example.net/idle.js")} strategy={Some("lazyOnload")} onLoad={Some(Box::new(|_| {}))} /> }
+}
+
+// Scripts loaded where they are called, as a Script of the same props.
+pub fn load(src: &str) {
+    let props = |src| next::script::ScriptProps { script: react::attributes::ScriptHTMLAttributes { src: Some(src), ..Default::default() }, ..Default::default() };
+    next::script::handle_client_script_load::<JSX::Element>(props(src));
+    next::script::init_script_loader::<JSX::Element>(vec![props(src)]);
+}
+
 pub fn Location() -> JSX::Element {
     jsx! { <Located prefix="at " /> }
 }
@@ -293,6 +308,11 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const aboutJsx = readFileSync(join(dir, "app/about/page.jsx"), "utf8");
   expect([aboutJsx.includes('import Image from "next/legacy/image";'), aboutJsx.includes('<Image src="/next.svg" layout="fill" objectFit="cover" alt="Next.js logo" />')]).toEqual([true, true]);
   expect([aboutHtml.includes('alt="Next.js logo"'), aboutHtml.includes("object-fit:cover")]).toEqual([true, true]);
+  // next/script: its props as written, and the inline one in the page.
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Script src="https://example.net/idle.js" strategy="lazyOnload" onLoad={() => {}} />');
+  expect(aboutJsx).toContain('<Script id="inline">window.inlined = true;</Script>');
+  expect(aboutHtml).toContain("window.inlined = true;");
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain("handleClientScriptLoad(props(src));\n  initScriptLoader([props(src)]);");
   // A page's module has no declarations beside it, which Turbopack would
   // take as a page of its own; another module has (ADR 0276).
   expect([existsSync(join(dir, "pages/codes/[code].d.ts")), existsSync(join(dir, "app/linked.d.ts"))]).toEqual([false, true]);

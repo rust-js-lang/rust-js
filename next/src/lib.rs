@@ -1,6 +1,6 @@
 //! [Next.js](https://nextjs.org) for rust-js (ADR 0192): what an app's
 //! routes, `app/page.rs` beside `app/layout.js`, use of it. Its components,
-//! `next/head`, `next/image`, `next/legacy/image` and `next/link`, and its navigation,
+//! `next/head`, `next/image`, `next/legacy/image`, `next/link` and `next/script`, and its navigation,
 //! `next/navigation`.
 //!
 //! ```rust,ignore
@@ -28,6 +28,7 @@ pub mod legacy;
 pub mod link;
 pub mod navigation;
 pub mod router;
+pub mod script;
 
 pub use data_fetching::{
     GetStaticPathsContext, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, RevalidateReason, StaticNotFound,
