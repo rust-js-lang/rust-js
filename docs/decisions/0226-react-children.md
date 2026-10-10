@@ -109,3 +109,13 @@ cloneElement(element, { isLink: true })
   prop's name is `undefined`, not an error.
 - **A breaking change**: `NodeKind` has an `Element` variant, so a `match`
   of it needs an arm for one.
+
+## Since
+
+- **A list of a component's children and more** (2026-10-10):
+  `Child::element(e)` is an element as a child, the element itself, so
+  `[children::to_array(children), vec![Child::element(end)]].concat()` is
+  `[...Children.toArray(children), end]`, as react.dev's
+  SandpackWithHTMLOutput adds its sandbox's files; and `to_array` takes a
+  node behind a reference, `&'static dyn ReactNode`'s, whose children
+  live as long. A JSX test renders a component's children and one more.

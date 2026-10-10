@@ -18,6 +18,16 @@ pub enum Child<'a> {
     Other(&'a JsObject),
 }
 
+impl Child<'_> {
+    /// `element` as a child, of a list made of [`to_array`]'s and more,
+    /// `[...Children.toArray(children), <pre />]`: the element itself.
+    #[cfg_attr(rust_js, rust_js::link_name = "this")]
+    #[allow(unused_variables)]
+    pub fn element(this: super::Element) -> Child<'static> {
+        unreachable!()
+    }
+}
+
 impl ReactNode for Child<'_> {}
 impl sealed::Sealed for Child<'_> {}
 
@@ -26,7 +36,7 @@ impl sealed::Sealed for Child<'_> {}
 /// out, each keyed.
 #[cfg_attr(rust_js, rust_js::link_name = "react#Children.toArray")]
 #[allow(unused_variables)]
-pub fn to_array<C: ReactNode>(children: &C) -> Vec<Child<'_>> {
+pub fn to_array<C: ReactNode + ?Sized>(children: &C) -> Vec<Child<'_>> {
     unreachable!()
 }
 

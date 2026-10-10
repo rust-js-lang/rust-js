@@ -2232,7 +2232,8 @@ pub fn Labeled<C: ReactNode>(LabeledProps { children }: LabeledProps<C>) -> JSX:
 
 // A component looks inside its children as React's own API does, as
 // react.dev's MDX components do: `Children.toArray`, an element told apart by
-// `isValidElement`, its `type`, `props` and `key`, and `cloneElement`.
+// `isValidElement`, its `type`, `props` and `key`, and `cloneElement`; and
+// a list of them and more, `Child::element` of an element.
 test("JSX components look inside their children with React's Children", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use js::Kind;
@@ -2267,6 +2268,13 @@ pub fn Only<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
         ReactNodeKind::List(_) | ReactNodeKind::Other(_) => jsx! { <b>{"other"}</b> },
     }
 }
+// Its children and one more, as react.dev's SandpackWithHTMLOutput adds
+// files, of a node behind a reference too.
+pub fn More(ListProps { children }: ListProps<&'static dyn ReactNode>) -> JSX::Element {
+    let end = jsx! { <hr key="end" /> };
+    let all = [children::to_array(children), vec![Child::element(end)]].concat();
+    jsx! { <div>{all}</div> }
+}
 pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let id = match kind_of(&children) {
         ReactNodeKind::Element(element) => js::get(element.props(), "id").map(js::classify),
@@ -2281,7 +2289,8 @@ pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
   expect(jsx).toContain("Children.toArray(children)");
   expect(jsx).toContain("isValidElement(");
   expect(jsx).toContain("cloneElement(");
-  const { Kinds, Only, Id } = await import(join(dir, "lib.jsx"));
+  expect(jsx).toContain("const all = [...Children.toArray(children), end];");
+  const { Kinds, Only, Id, More } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   const Component = () => null;
   expect(renderToStaticMarkup(createElement(Kinds, null, "a", 1, createElement("img", { key: "k" }), createElement(Component), null, true)))
@@ -2291,6 +2300,7 @@ pub fn Id<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
   expect(renderToStaticMarkup(createElement(Only, null, "t", "u"))).toBe("<b>other</b>");
   expect(renderToStaticMarkup(createElement(Id, null, createElement("h4", { id: "deep" })))).toBe("<p>deep</p>");
   expect(renderToStaticMarkup(createElement(Id, null, "t"))).toBe("<p>none</p>");
+  expect(renderToStaticMarkup(createElement(More, null, "a", createElement("b", null, "c")))).toBe("<div>a<b>c</b><hr/></div>");
 });
 
 // As react.dev's TerminalBlock reads its message, text or an element's text:
