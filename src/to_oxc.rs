@@ -25,11 +25,11 @@ use oxc_allocator::{Allocator, ArenaBox, ArenaVec};
 use oxc_ast::ast::{
     Argument, ArrayExpressionElement, ArrowFunctionBody, AssignmentTarget, BindingIdentifier, BindingPattern,
     BindingProperty, BindingRestElement, BlockStatement, CallExpression, CatchClause, CatchParameter, ChainElement,
-    ComputedMemberExpression, Declaration, ExportFromDeclaration, Expression, ForStatementInit, ForStatementLeft,
-    FormalParameter, FormalParameterKind, FormalParameters, FunctionBody, FunctionType, IdentifierName,
-    ImportDeclaration, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild, JSXClosingElement,
-    JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject, JSXOpeningElement,
-    JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
+    ComputedMemberExpression, Declaration, Directive, ExportFromDeclaration, Expression, ForStatementInit,
+    ForStatementLeft, FormalParameter, FormalParameterKind, FormalParameters, FunctionBody, FunctionType,
+    IdentifierName, ImportDeclaration, JSXAttributeItem, JSXAttributeName, JSXAttributeValue, JSXChild,
+    JSXClosingElement, JSXClosingFragment, JSXElementName, JSXExpression, JSXIdentifier, JSXMemberExpressionObject,
+    JSXOpeningElement, JSXOpeningFragment, LabelIdentifier, ObjectPropertyKind, Program, PropertyKey, PropertyKind,
     SimpleAssignmentTarget, Statement, StaticMemberExpression, StringLiteral, TemplateElement, TemplateElementValue,
     VariableDeclarationKind, VariableDeclarator,
 };
@@ -427,10 +427,34 @@ impl<'a> Cx<'a> {
         FormalParameters::new(SPAN, kind, ArenaVec::from_iter_in(params, b), None, b)
     }
 
+    /// A function's or an arrow's body: its directives, `"use cache";`, in
+    /// its prologue (ADR 0349), then its statements.
+    fn function_body(&self, body: &[js::Stmt]) -> FunctionBody<'a> {
+        let b = &self.b;
+        let directives = body.iter().filter_map(|s| match &s.kind {
+            StmtKind::Directive(directive) => {
+                let directive = self.name(directive);
+                Some(Directive::new(
+                    SPAN,
+                    StringLiteral::new(SPAN, directive, None, b),
+                    directive,
+                    b,
+                ))
+            }
+            _ => None,
+        });
+        let directives = ArenaVec::from_iter_in(directives, b);
+        let stmts: Vec<js::Stmt> = (body.iter())
+            .filter(|s| !matches!(s.kind, StmtKind::Directive(_)))
+            .cloned()
+            .collect();
+        FunctionBody::new(SPAN, directives, self.stmts(&stmts), b)
+    }
+
     fn function(&self, f: &js::Function) -> Statement<'a> {
         let b = &self.b;
         let params = self.params(FormalParameterKind::FormalParameter, &f.params);
-        let body = FunctionBody::new(SPAN, ArenaVec::new_in(b), self.stmts(&f.body), b);
+        let body = self.function_body(&f.body);
         let decl = Declaration::new_function_declaration(
             span(f.span),
             FunctionType::FunctionDeclaration,
@@ -460,7 +484,7 @@ impl<'a> Cx<'a> {
             ArenaVec::from_iter_in(
                 n.methods.iter().map(|f| {
                     let params = self.params(FormalParameterKind::FormalParameter, &f.params);
-                    let body = FunctionBody::new(SPAN, ArenaVec::new_in(b), self.stmts(&f.body), b);
+                    let body = self.function_body(&f.body);
                     let value = Expression::new_function_expression(
                         span(f.span),
                         FunctionType::FunctionExpression,
@@ -585,6 +609,7 @@ impl<'a> Cx<'a> {
         match &s.kind {
             StmtKind::Const(name, init) => self.declare(sp, VariableDeclarationKind::Const, name, Some(init)),
             StmtKind::Function(function) => self.function(function),
+            StmtKind::Directive(_) => unreachable!("a directive is its function's body's, taken first"),
             StmtKind::Let(name, init) => self.declare(sp, VariableDeclarationKind::Let, name, init.as_ref()),
             StmtKind::Destructure {
                 pattern,
@@ -1011,14 +1036,14 @@ impl<'a> Cx<'a> {
                             ..
                         },
                     ] => ArrowFunctionBody::from(self.expr(value)),
-                    _ => ArrowFunctionBody::new_function_body(SPAN, ArenaVec::new_in(b), self.stmts(body), b),
+                    _ => ArrowFunctionBody::FunctionBody(ArenaBox::new_in(self.function_body(body), b)),
                 };
                 Expression::new_arrow_function_expression(sp, is_async, None, params, None, body, b)
             }
             // `function Label(props) { .. }`, named (ADR 0296).
             ExprKind::Function(f) => {
                 let params = self.params(FormalParameterKind::FormalParameter, &f.params);
-                let body = FunctionBody::new(SPAN, ArenaVec::new_in(b), self.stmts(&f.body), b);
+                let body = self.function_body(&f.body);
                 Expression::new_function_expression(
                     span(f.span),
                     FunctionType::FunctionExpression,
@@ -1229,7 +1254,7 @@ impl<'a> Cx<'a> {
     ) -> ObjectPropertyKind<'a> {
         let b = &self.b;
         let params = self.params(FormalParameterKind::FormalParameter, params);
-        let body = FunctionBody::new(SPAN, ArenaVec::new_in(b), self.stmts(body), b);
+        let body = self.function_body(body);
         let value = Expression::new_function_expression(
             SPAN,
             FunctionType::FunctionExpression,

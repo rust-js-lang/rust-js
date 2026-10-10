@@ -10,6 +10,7 @@ use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};
+use rustc_span::Symbol;
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -567,13 +568,33 @@ pub fn lower_crate<'tcx>(
             // `js::directive!("use client");` and `js::export_default!(page);`,
             // what a Next.js route's module has (ADR 0192).
             let mut directives = Vec::new();
-            for attr in super::bindings::marks(tcx, module, "directive") {
-                match attr.value_str() {
+            for (directive, span) in super::bindings::directives_of(tcx, module.to_local_def_id()) {
+                match directive {
                     Some(directive) => directives.push(directive.to_string()),
                     None => {
                         tcx.dcx()
-                            .span_err(attr.span(), "rust-js: write it `js::directive!(\"use client\");`");
+                            .span_err(span, "rust-js: write it `js::directive!(\"use client\");`");
                     }
+                }
+            }
+            // One in a body is its function's or its closure's (ADR 0349);
+            // one in an `async` block's, or a constant's, has none.
+            for item in tcx.hir_module_free_items(module) {
+                let owner = super::bindings::directive_owner(tcx, item.owner_id.def_id);
+                let owned = owner == module.to_local_def_id()
+                    || matches!(tcx.def_kind(owner), DefKind::Fn | DefKind::AssocFn)
+                    || (tcx.def_kind(owner) == DefKind::Closure && tcx.coroutine_kind(owner).is_none());
+                if !owned
+                    && let Some(attr) = (tcx.get_attrs_by_path(
+                        item.owner_id.to_def_id(),
+                        &[Symbol::intern("rust_js"), Symbol::intern("directive")],
+                    ))
+                    .next()
+                {
+                    tcx.dcx().span_err(
+                        attr.span(),
+                        "rust-js: a directive is a module's, a function's or a closure's, written first in it",
+                    );
                 }
             }
             let mut default_export = None;

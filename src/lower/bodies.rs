@@ -21,6 +21,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (mut params, is_async) = self.lower_signature(def_id, &thir.params.raw, body.expr, &mut out)?;
         params.extend(evidence);
         out.splice(0..0, self.end_hoisting(outer));
+        out.splice(0..0, self.directives(body.def_id));
         self.check_drops()?;
         self.note_drop_uses(def_id);
 
@@ -45,6 +46,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             jsx: self.jsx,
             dependencies: self.dependencies.take(),
         })
+    }
+
+    /// The directives of a function's or a closure's body, `"use cache";`,
+    /// its first statements (ADR 0349).
+    fn directives(&self, owner: rustc_span::def_id::LocalDefId) -> Vec<Stmt> {
+        (super::bindings::directives_of(self.tcx, owner).into_iter())
+            .filter_map(|(directive, span)| Some(StmtKind::Directive(directive?.to_string()).at(self.js_span(span))))
+            .collect()
     }
 
     /// A static's or a constant's initializer, as a function with no
@@ -523,6 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.close_scope(mark, lowered, span, &mut stmts)?;
         let hoisted = self.leave_body(enclosing)?;
         stmts.splice(0..0, hoisted);
+        stmts.splice(0..0, self.directives(body.def_id));
         self.give_flags(flags);
         for (path, previous) in shadowed {
             match previous {

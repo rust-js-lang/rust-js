@@ -4,9 +4,10 @@ use crate::js;
 use rustc_ast::LitKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
+use rustc_hir::{CoroutineKind, CoroutineSource};
 use rustc_hir::{ExprKind, ItemKind, Stmt, StmtKind};
 use rustc_middle::ty::{self, FieldDef, Ty, TyCtxt, VariantDef};
-use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
+use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
 use rustc_span::{Span, Symbol, sym};
 
 /// Validate tool bindings even if no function calls them. A malformed binding
@@ -418,6 +419,38 @@ pub(super) fn marks<'tcx>(
         tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path)
             .collect::<Vec<_>>()
     })
+}
+
+/// What a `js::directive!` is the directive of (ADR 0349): the function or
+/// closure whose body it's written in, past the coroutine an `async` one's
+/// body is, or else its module.
+pub(super) fn directive_owner(tcx: TyCtxt<'_>, mark: LocalDefId) -> LocalDefId {
+    let mut owner = tcx.local_parent(mark);
+    while matches!(
+        tcx.coroutine_kind(owner),
+        Some(CoroutineKind::Desugared(
+            _,
+            CoroutineSource::Fn | CoroutineSource::Closure
+        ))
+    ) {
+        owner = tcx.local_parent(owner);
+    }
+    owner
+}
+
+/// The directives of `owner`, a module, a function or a closure: each
+/// `js::directive!` in it, as [`directive_owner`] tells, and where it is.
+pub(super) fn directives_of(tcx: TyCtxt<'_>, owner: LocalDefId) -> Vec<(Option<Symbol>, Span)> {
+    let path = [Symbol::intern("rust_js"), Symbol::intern("directive")];
+    let module = match tcx.def_kind(owner) {
+        DefKind::Mod => LocalModId::new_unchecked(owner),
+        _ => tcx.parent_module_from_def_id(owner),
+    };
+    tcx.hir_module_free_items(module)
+        .filter(|item| directive_owner(tcx, item.owner_id.def_id) == owner)
+        .flat_map(|item| tcx.get_attrs_by_path(item.owner_id.to_def_id(), &path))
+        .map(|attr| (attr.value_str(), attr.span()))
+        .collect()
 }
 
 /// Is `def_id` a `js::on_load!`'s function, whose body is what its module

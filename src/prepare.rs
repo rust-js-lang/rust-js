@@ -475,6 +475,7 @@ impl Walk {
                 | StmtKind::Expr(_)
                 | StmtKind::Break(_)
                 | StmtKind::Continue(_)
+                | StmtKind::Directive(_)
                 | StmtKind::Return(_)
                 | StmtKind::Throw(_)
                 | StmtKind::Function(_) => {}

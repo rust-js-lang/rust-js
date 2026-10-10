@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "directive-owner-stops-at-coroutine",
+    breaks: "an `async fn`'s directive is its body's coroutine's, which no function writes",
+    file: "src/lower/bindings.rs",
+    find: "    while matches!(\n        tcx.coroutine_kind(owner),",
+    replace: "    while false && matches!(\n        tcx.coroutine_kind(owner),",
+    tests: ["test/modules.test.ts", "-t", "in a body is the body"],
+  },
+  {
     name: "tagged-unit-variant-string",
     breaks: "a discriminated union's variant without fields is its bare name, `\"pending\"`, not `{ status: \"pending\" }`",
     file: "src/lower/bindings.rs",

@@ -5,7 +5,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { buildReact, buildWebapi, compiler, fixture, run, target } from "./support";
+import { buildReact, buildWebapi, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
 
@@ -310,6 +310,53 @@ test("js::directive! and js::export_default! make a module a Next.js route", asy
   // A generic function's too, which Rust can't name as a value unless it's
   // given its types.
   expect((await import(join(dir, "generic.js"))).default([7, 8])).toBe(7);
+});
+
+// `js::directive!` in a function's body, or a closure's, is that body's
+// directive, its first statement, as Next.js's inline Server Actions
+// and `"use cache"` functions have one (ADR 0349): not the module's. One in
+// an `async` block, which no function is, is an error.
+test("js::directive! in a body is the body's directive", async () => {
+  const dir = fixture("js-body-directive");
+  writeFileSync(join(dir, "lib.rs"), `pub async fn cached(n: u32) -> u32 {
+    js::directive!("use cache");
+    n + 1
+}
+
+pub fn plain() -> u32 {
+    js::directive!("use strict");
+    2
+}
+
+pub fn action(step: u32) -> impl AsyncFn(u32) -> u32 {
+    async move |n: u32| {
+        js::directive!("use server");
+        n + step
+    }
+}
+`);
+  buildWebapi();
+  const extern = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...extern]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const statements = js.split("\n").filter((line) => line && !line.startsWith("//"));
+  expect(statements[0]).toBe("export async function cached(n) {");
+  expect(js).toContain('export async function cached(n) {\n  "use cache";\n  return (n + 1) >>> 0;\n}');
+  expect(js).toContain('export function plain() {\n  "use strict";\n  return 2;\n}');
+  expect(js).toContain('return async (n) => {\n    "use server";\n    return (n + step) >>> 0;\n  };');
+  const lib = await import(join(dir, "lib.js"));
+  expect([await lib.cached(1), lib.plain(), await lib.action(2)(3)]).toEqual([2, 2, 5]);
+  writeFileSync(join(dir, "block.rs"), `pub async fn later() -> u32 {
+    async {
+        js::directive!("use cache");
+        1
+    }
+    .await
+}
+`);
+  const block = Bun.spawnSync([compiler, join(dir, "block.rs"), "-o", join(dir, "block.js"), ...extern], { cwd: root, stderr: "pipe" });
+  expect(block.exitCode).not.toBe(0);
+  expect(block.stderr.toString()).toContain("a directive is a module's, a function's or a closure's");
 });
 
 test("a namespace import is named as the module of its bindings", async () => {

@@ -158,6 +158,7 @@ pub fn statement_lists(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>))
             | StmtKind::Expr(_)
             | StmtKind::Break(_)
             | StmtKind::Continue(_)
+            | StmtKind::Directive(_)
             | StmtKind::Return(_)
             | StmtKind::Throw(_)
             | StmtKind::Function(_) => {}
@@ -206,7 +207,11 @@ pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
                 each_expr_mut(b, f);
             }
             StmtKind::Function(function) => each_expr_mut(&mut function.body, f),
-            StmtKind::Let(_, None) | StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Return(None) => {}
+            StmtKind::Let(_, None)
+            | StmtKind::Break(_)
+            | StmtKind::Continue(_)
+            | StmtKind::Return(None)
+            | StmtKind::Directive(_) => {}
         }
     }
 }
@@ -265,7 +270,7 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                 visit_stmts(finally, read);
             }
             StmtKind::Function(function) => visit_stmts(&function.body, read),
-            StmtKind::Break(_) | StmtKind::Continue(_) => {}
+            StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) => {}
         }
     }
 }
@@ -573,6 +578,9 @@ pub enum StmtKind {
     Return(Option<Expr>),
     /// `throw new Error(..)`: a panic (ADR 0012).
     Throw(Expr),
+    /// `"use cache";`: a function's or an arrow's directive, first in its body
+    /// (ADR 0349).
+    Directive(String),
 }
 
 impl StmtKind {

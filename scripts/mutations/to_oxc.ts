@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "body-directives-unprinted",
+    breaks: "a body's directives aren't in its prologue",
+    file: "src/to_oxc.rs",
+    find: "        let directives = ArenaVec::from_iter_in(directives, b);",
+    replace: "        let directives = ArenaVec::from_iter_in(directives.take(0), b);",
+    tests: ["test/modules.test.ts", "-t", "in a body is the body"],
+  },
+  {
     name: "chain-link-own-chain",
     breaks: "a link of a chain is a chain of its own, `(o?.inner).v`, which reads `.v` of `undefined`",
     file: "src/to_oxc.rs",

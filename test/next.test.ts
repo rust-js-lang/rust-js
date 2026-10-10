@@ -148,6 +148,7 @@ js::export_default!(MyDocument);
 const request = `#![allow(non_snake_case)]
 
 use next::headers::{cookies, draft_mode, headers};
+use react::webapi::FormData;
 use react::{JSX, jsx};
 
 pub async fn Request() -> JSX::Element {
@@ -159,7 +160,17 @@ pub async fn Request() -> JSX::Element {
     };
     let draft = draft_mode().await.is_enabled();
     let mode = if draft { "draft" } else { "live" };
-    jsx! { <p>{theme}{" "}{jar.size()}{" "}{mode}{" "}{agent.len()}</p> }
+    // An inline Server Action, its directive its own.
+    let lighten = async |_: &'static FormData| {
+        js::directive!("use server");
+        cookies().await.set("theme", "light");
+    };
+    jsx! {
+        <main>
+            <p>{theme}{" "}{jar.size()}{" "}{mode}{" "}{agent.len()}</p>
+            <form action={lighten}><button>{"Lighten"}</button></form>
+        </main>
+    }
 }
 
 js::export_default!(Request);
@@ -523,6 +534,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const requestJsx = readFileSync(join(dir, "app/request/page.jsx"), "utf8");
   expect(requestJsx).toContain("const jar = await cookies();");
   expect(requestJsx).toContain("(await draftMode()).isEnabled");
+  expect(requestJsx).toContain('const lighten = async () => {\n    "use server";\n    (await cookies()).set("theme", "light");\n  };');
   const actionsJs = readFileSync(join(dir, "app/actions.js"), "utf8");
   expect(actionsJs).toContain('jar.set("theme", theme, { sameSite: "lax", maxAge: 3600 });');
   expect(actionsJs).toContain('jar.delete({ name: "old", path: "/" });');
@@ -620,6 +632,9 @@ test("rust-js-next dev serves Rust routes, refreshes a save in place, and recove
     await page.context().addCookies([{ name: "theme", value: "dark", url: `http://localhost:${port}` }]);
     await page.goto(`http://localhost:${port}/request`);
     await page.getByText(/^dark \d+ live \d+$/).waitFor();
+    // The Server Action sets the cookie, and the route is rendered again.
+    await page.getByRole("button", { name: "Lighten" }).click();
+    await page.getByText(/^light \d+ live \d+$/).waitFor();
 
     // next/server: the Route Handler's JSON and cookie, and the proxy's
     // rewrite of /old to /about, its URL kept.

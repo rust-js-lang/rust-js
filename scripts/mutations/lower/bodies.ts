@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "fn-directives-dropped",
+    breaks: "a function's `js::directive!` is written nowhere",
+    file: "src/lower/bodies.rs",
+    find: "        out.splice(0..0, self.directives(body.def_id));",
+    replace: "        out.splice(0..0, Vec::new());",
+    tests: ["test/modules.test.ts", "-t", "in a body is the body"],
+  },
+  {
+    name: "closure-directives-dropped",
+    breaks: "a closure's `js::directive!` is written nowhere",
+    file: "src/lower/bodies.rs",
+    find: "        stmts.splice(0..0, self.directives(body.def_id));",
+    replace: "        stmts.splice(0..0, Vec::new());",
+    tests: ["test/modules.test.ts", "-t", "in a body is the body"],
+  },
+  {
     name: "drop-ref-parameter",
     breaks: "a parameter bound by `ref` isn't dropped as its function ends",
     file: "src/lower/bodies.rs",
