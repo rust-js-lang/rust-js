@@ -258,6 +258,16 @@ fn untest(e: &mut Expr) -> bool {
 }
 
 fn try_catches(body: &mut Vec<Stmt>) {
+    // `$try(() => f())` whose result is ignored, `let _ = f();`, is `try {
+    // f(); } catch {}`: the call, what it threw dropped.
+    for stmt in body.iter_mut() {
+        if let StmtKind::Expr(e) = &stmt.kind
+            && let Some(call) = tried(e)
+        {
+            let tried = vec![StmtKind::Expr(call.clone()).at(stmt.span)];
+            stmt.kind = StmtKind::TryCatch(tried, None, Vec::new());
+        }
+    }
     let mut i = 0;
     while i + 1 < body.len() {
         if let Some(caught) = try_catch(&body[i], &body[i + 1], &body[i + 2..]) {
@@ -272,24 +282,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<StmtKind> {
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
-    let ExprKind::Call(callee, args) = &value.kind else {
-        return None;
-    };
-    let (ExprKind::Var(helper), [thunk]) = (&callee.kind, args.as_slice()) else {
-        return None;
-    };
-    let ExprKind::Arrow(params, thunk) = &thunk.kind else {
-        return None;
-    };
-    let [
-        Stmt {
-            kind: StmtKind::Return(Some(call)),
-            ..
-        },
-    ] = thunk.as_slice()
-    else {
-        return None;
-    };
+    let call = tried(value)?;
     let StmtKind::If(test, kept, Some(failed)) = &tested.kind else {
         return None;
     };
@@ -300,9 +293,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<StmtKind> {
         matches!(&e.kind, ExprKind::Member(of, field)
         if field == name && matches!(&of.kind, ExprKind::Var(v) if v == result))
     };
-    if helper != "$try"
-        || !params.is_empty()
-        || !of_result(tag, "TAG")
+    if !of_result(tag, "TAG")
         || !matches!(&ok.kind, ExprKind::Str(s) if s == "Ok")
         || js::mentions_in(failed, result) > 0
         || js::mentions_in(rest, result) > 0
@@ -321,6 +312,29 @@ fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<StmtKind> {
         _ => return None,
     };
     Some(StmtKind::TryCatch(vec![body.at(*span)], None, failed.clone()))
+}
+
+/// The call `$try(() => call)` tries, of a JS call whose throw is an `Err`
+/// (ADR 0035).
+fn tried(e: &Expr) -> Option<&Expr> {
+    let ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let (ExprKind::Var(helper), [thunk]) = (&callee.kind, args.as_slice()) else {
+        return None;
+    };
+    let ExprKind::Arrow(params, thunk) = &thunk.kind else {
+        return None;
+    };
+    match thunk.as_slice() {
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(call)),
+                ..
+            },
+        ] if helper == "$try" && params.is_empty() => Some(call),
+        _ => None,
+    }
 }
 
 /// `if (x == null) { x = e; }` is `x = x ?? e`, printed `x ??= e`: the

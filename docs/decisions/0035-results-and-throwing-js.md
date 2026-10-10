@@ -97,3 +97,9 @@ const match = $try(() => JSON.parse(json));   // { TAG: "Ok", _0: .. } or { TAG:
   JS can throw any value.
 - `map`, `map_err`, `and_then`, `ok_or` and the like came with ADR 0062.
 - Not yet: `?` with std's `From` conversions.
+
+## Amendment: a result ignored
+
+A call whose throw is an `Err`, its result ignored, `let _ = f();`, is
+`try { f(); } catch {}`, as a person writes it: the call, and what it
+threw dropped. It was `$try(() => f());`, the helper's result unread.

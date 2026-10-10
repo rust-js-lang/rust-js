@@ -695,6 +695,42 @@ pub fn reader() -> fn() -> f64 {
   expect([lib.read(), lib.reader()()]).toEqual([Math.PI * 2, Math.PI]);
 });
 
+// ADR 0035: a JS call whose throw is an `Err`, its result ignored, is
+// `try { call; } catch {}`, as a person writes it, not `$try(() => call)`.
+test("an ignored result of a call that throws is try and an empty catch", async () => {
+  const dir = fixture("ignored-try");
+  writeFileSync(join(dir, "lib.rs"), `use js::JsError;
+
+unsafe extern "Rust" {
+    #[link_name = "globalThis.risky"]
+    safe fn risky(n: f64) -> Result<f64, &'static JsError>;
+}
+
+pub fn ignored(n: f64) {
+    let _ = risky(n);
+}
+
+pub fn twice(n: f64) {
+    let _ = risky(n);
+    _ = risky(n + 1.0);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("$try");
+  expect(js).toContain("export function ignored(n) {\n  try {\n    globalThis.risky(n);\n  } catch {}\n}");
+  const lib = await import(join(dir, "lib.js"));
+  const calls: number[] = [];
+  (globalThis as any).risky = (n: number) => {
+    calls.push(n);
+    if (n < 0) throw new Error("negative");
+    return n;
+  };
+  lib.ignored(-1);
+  lib.twice(-2);
+  expect(calls).toEqual([-1, -2, -1]);
+});
+
 // `set X.y` of a function without a receiver writes a global's property,
 // `process.exitCode = 1`, as `get X.y` reads one.
 test("a binding sets a static property", async () => {

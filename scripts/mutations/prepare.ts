@@ -303,4 +303,16 @@ export const mutations: Mutation[] = [
       "made only to be dropped"
     ]
   },
+  {
+    "name": "ignored-try-kept",
+    "breaks": "an ignored `$try(() => f())`, `let _ = f();`, stays the helper, not `try { f(); } catch {}`",
+    "file": "src/prepare.rs",
+    "find": "            && let Some(call) = tried(e)\n",
+    "replace": "            && let Some(call) = tried(e).filter(|_| false)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "ignored result of a call"
+    ]
+  },
 ];
