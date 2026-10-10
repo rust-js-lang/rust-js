@@ -251,8 +251,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let AdtExprBase::Base(fru) = &adt.base
             && match self.thir[self.strip(fru.base)].kind {
                 thir::ExprKind::Deref { arg } => matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not)),
+                // Moved, unless it's `Copy`: then nothing changes it after, in place.
                 thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. } => {
-                    !bindings::has_flatten(self.tcx, ty) && !self.contains_mutated(ty)
+                    !bindings::has_flatten(self.tcx, ty) && (!self.is_copy(ty) || !self.contains_mutated(ty))
                 }
                 _ => false,
             }

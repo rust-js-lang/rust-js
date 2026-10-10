@@ -122,7 +122,9 @@ pub fn lower_crate<'tcx>(
                 "statics",
             ),
             _ => (
-                eval_const(tcx, typing_env, def_id.to_def_id(), args, span).and_then(|v| const_js(tcx, v)),
+                eval_const(tcx, typing_env, def_id.to_def_id(), args, span)
+                    .and_then(|v| const_js(tcx, v))
+                    .map(|v| super::const_lines(tcx, def_id, v)),
                 "constants",
             ),
         };

@@ -1564,28 +1564,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Leaves ──────────────────────────────────────────────────────────
 
-    /// Whether a string literal's line breaks are written as such in its
-    /// source, not as `\n`: a raw string's always are, and a cooked one's
-    /// where it spans lines, other than by a `\` ending one, which leaves
-    /// the break out.
-    fn written_across_lines(&self, style: StrStyle, span: Span) -> bool {
-        !span.from_expansion()
-            && match style {
-                StrStyle::Raw(_) => true,
-                StrStyle::Cooked => self
-                    .tcx
-                    .sess
-                    .source_map()
-                    .span_to_snippet(span)
-                    .is_ok_and(|code| code.match_indices('\n').any(|(i, _)| !code[..i].ends_with('\\'))),
-            }
-    }
-
     fn literal(&self, lit: &LitKind, neg: bool, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match *lit {
             LitKind::Bool(b) => Ok(Expr::bool(b)),
             // One written across lines keeps them, a template literal.
-            LitKind::Str(s, style) if s.as_str().contains('\n') && self.written_across_lines(style, span) => {
+            LitKind::Str(s, style) if s.as_str().contains('\n') && written_across_lines(self.tcx, style, span) => {
                 Ok(Expr::lines(s.as_str()))
             }
             LitKind::Str(s, _) => Ok(Expr::str(s.as_str())),
@@ -1965,5 +1948,40 @@ fn module_symbol(module: LocalModId, export: &str) -> crate::js::Symbol {
     crate::js::Symbol {
         module: module.to_def_id().index.as_u32(),
         export: export.to_owned(),
+    }
+}
+
+/// Whether a string literal's line breaks are written as such in its
+/// source, not as `\n`: a raw string's always are, and a cooked one's
+/// where it spans lines, other than by a `\` ending one, which leaves
+/// the break out.
+fn written_across_lines(tcx: TyCtxt<'_>, style: StrStyle, span: Span) -> bool {
+    !span.from_expansion()
+        && match style {
+            StrStyle::Raw(_) => true,
+            StrStyle::Cooked => tcx
+                .sess
+                .source_map()
+                .span_to_snippet(span)
+                .is_ok_and(|code| code.match_indices('\n').any(|(i, _)| !code[..i].ends_with('\\'))),
+        }
+}
+
+/// A `const`'s text, `const PAGE: &str = r#"<main>..`, written across
+/// lines: a template literal of them, as a literal written so in place is.
+fn const_lines(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr) -> Expr {
+    let js::ExprKind::Str(text) = &value.kind else {
+        return value;
+    };
+    let body = tcx.hir_body_owned_by(def_id);
+    match body.value.kind {
+        rustc_hir::ExprKind::Lit(lit)
+            if let rustc_ast::LitKind::Str(_, style) = lit.node
+                && text.contains('\n')
+                && written_across_lines(tcx, style, lit.span) =>
+        {
+            Expr::lines(text.as_str())
+        }
+        _ => value,
     }
 }

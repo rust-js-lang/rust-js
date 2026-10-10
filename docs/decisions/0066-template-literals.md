@@ -80,3 +80,10 @@ a template throws on a symbol, which `String` names, as react.dev's
 Console names what a page logged. It was `${arg}`. A number's text is its
 own node, which only it unwraps; a bindings test shows a symbol, and
 mutations unwrap any `String`, and keep a number's `fmt` an arrow.
+- **A `const` of a string written across lines is a template literal**
+  (2026-10-10), `const PAGE = \`<main>..\``, as one in place was, where it was
+  a string of `\n`s: its value is rustc's, whose text the literal it's
+  written as says how to write. react.dev's SandpackWithHTMLOutput writes
+  its sandbox's files so; the playground's own test runner's text is laid
+  out anew. A lowering test has one of a raw string and one of `\n`s,
+  which stays a string; mutations write each either way.

@@ -58,3 +58,10 @@ jsx! { <Panel wide={Some(true)} {..*props} /> }
   changes in place, which a spread read later, through the `const` JSX
   keeps it in, could see changed; nor of one with flattened fields, which
   are written as they are (ADR 0204). Case N.
+- **Moved into the update, `..props` is a spread of a type changed in
+  place too** (2026-10-10): only a `Copy` one, still there, could be
+  changed before the spread is read; one moved can't be. react.dev's
+  SandpackWithHTMLOutput passes its props on, `<SandpackClient
+  {...props}>`, of a library's public type, which another crate may
+  change. A lowering test spreads one changed in place and reads a
+  `Copy` one's fields; a mutation reads the moved one's.

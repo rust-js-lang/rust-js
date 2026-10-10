@@ -30,8 +30,8 @@ export const mutations: Mutation[] = [
     name: "raw-lines-escaped",
     breaks: "a raw string written across lines is one line of `\\n`s",
     file: "src/lower.rs",
-    find: "                StrStyle::Raw(_) => true,",
-    replace: "                StrStyle::Raw(_) => false,",
+    find: "            StrStyle::Raw(_) => true,",
+    replace: "            StrStyle::Raw(_) => false,",
     tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
   },
   {
@@ -473,5 +473,21 @@ export const mutations: Mutation[] = [
     find: "                let copied = if self.is_copy(item_ty) || constant {",
     replace: "                let copied = if self.is_copy(item_ty) {",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
+  {
+    name: "const-lines-string",
+    breaks: "a `const` of a string written across lines is a string of `\\n`s",
+    file: "src/lower.rs",
+    find: "                && written_across_lines(tcx, style, lit.span) =>",
+    replace: "                && false =>",
+    tests: ["test/lowering.test.ts", "-t", "const of a string written across lines"],
+  },
+  {
+    name: "const-lines-any",
+    breaks: "a `const` of `\\n`s is a template literal",
+    file: "src/lower.rs",
+    find: "                && written_across_lines(tcx, style, lit.span) =>",
+    replace: "                =>",
+    tests: ["test/lowering.test.ts", "-t", "const of a string written across lines"],
   },
 ];

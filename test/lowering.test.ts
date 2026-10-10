@@ -259,9 +259,36 @@ pub fn maybe(files: Option<&Files>) -> Option<String> {
   expect([lib.maybe(files), lib.maybe(undefined)]).toEqual(["w", undefined]);
 });
 
+// A `const` of a string written across lines, a raw string's, is a template
+// literal of them, as an inline one is and as react.dev's
+// SandpackWithHTMLOutput writes its sandbox's files; one of `\n`s stays a
+// string.
+test("a const of a string written across lines is a template literal", async () => {
+  const dir = fixture("const-lines");
+  writeFileSync(join(dir, "lib.rs"), `const PAGE: &str = r#"<main>
+  <h1>Hi</h1>
+</main>"#;
+
+const PAIR: &str = "a\\nb";
+
+pub fn page() -> String {
+    format!("{PAGE}|{PAIR}")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("const PAGE = `<main>\n  <h1>Hi</h1>\n</main>`;");
+  expect(js).toContain('const PAIR = "a\\nb";');
+  const { page } = await import(join(dir, "lib.js"));
+  expect(page()).toBe("<main>\n  <h1>Hi</h1>\n</main>|a\nb");
+});
+
 // A struct updated from one it owns, `..file`, is that one spread, then the
 // fields named, as a reference's is (ADR 0250): `{ ...code, hidden: true }`,
-// as react.dev's RSC template hides its files.
+// as react.dev's RSC template hides its files. One of a type changed in
+// place elsewhere too, moved into the update, as react.dev's
+// SandpackWithHTMLOutput passes its props on; a `Copy` one, still there,
+// keeps its fields read.
 test("a struct updated from one it owns is a spread", async () => {
   const dir = fixture("owned-spread");
   writeFileSync(join(dir, "lib.rs"), `pub struct File {
@@ -273,10 +300,30 @@ test("a struct updated from one it owns is a spread", async () => {
 pub fn hide(file: File) -> File {
     File { hidden: Some(true), ..file }
 }
+
+// Changed in place elsewhere: moved into the update, nothing changes it.
+pub fn show(file: &mut File) {
+    file.hidden = None;
+}
+
+#[derive(Clone, Copy)]
+pub struct Pos {
+    pub x: u32,
+    pub y: u32,
+}
+
+pub fn nudge(pos: &mut Pos) {
+    pos.y += 1;
+}
+
+pub fn right(pos: Pos) -> Pos {
+    Pos { x: 9, ..pos }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("return { ...file, hidden: true };");
+  expect(js).toContain("return { x: 9, y: pos.y };");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.hide({ code: "c", hidden: false, active: true })).toEqual({ code: "c", hidden: true, active: true });
 });
