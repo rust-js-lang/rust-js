@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "boxed-unwrap-or-default-coalesced",
     breaks: "`unwrap_or_default` of `Some(None)` gives the box, not the `None` in it",
     file: "src/lower/combinators.rs",
-    find: "                let fallback = self.default_value(inner, span)?;\n                match boxed {",
-    replace: "                let fallback = self.default_value(inner, span)?;\n                match false {",
+    find: "                let fallback = self.default_value(inner, span)?;\n                Expr::cond(some, value, fallback)",
+    replace: "                let fallback = self.default_value(inner, span)?;\n                Expr::bin(Op::Coalesce, subject, fallback)",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
