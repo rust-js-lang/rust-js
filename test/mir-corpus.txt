@@ -8,6 +8,7 @@ assert_failure.rs
 assignment_order.rs
 assignment_order_compound.rs
 associated_consts.rs
+associated_type_drops.rs
 associated_type_fields.rs
 atomics.rs
 begin_panic_str.rs
@@ -53,7 +54,9 @@ destructuring_assignment.rs
 drain_from_past_len.rs
 drop_deref_temporary.rs
 drop_functions.rs
+drop_generic.rs
 drop_impl_clear.rs
+drop_impl_dictionary.rs
 drop_impl_indirect.rs
 drop_impl_param.rs
 drop_impl_param_call.rs
@@ -61,6 +64,8 @@ drop_on_panic.rs
 drop_operand_panic.rs
 drop_params.rs
 drop_partial.rs
+drop_replace_panics.rs
+drop_scopes.rs
 drop_temporaries.rs
 drop_temporary_operands.rs
 duration_overflow.rs

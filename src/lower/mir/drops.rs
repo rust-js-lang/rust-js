@@ -1,9 +1,9 @@
-//! What each `Drop` of a MIR body drops (ADR 0364), as rustc's drop
+//! What each `Drop` of a MIR body drop            match state.body.basic_blocks[block].terminator().kind { (ADR 0364), as rustc's drop
 //! elaboration finds it: rustc's dataflow of what's initialized says,
 //! before each, whether what it drops is there, isn't, or may be, which a
 //! flag of its own then says as the body runs, set where rustc sets it.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use rustc_abi::FieldIdx;
 use rustc_index::IndexVec;
@@ -46,9 +46,20 @@ pub(super) struct Elaboration<'tcx> {
     pub(super) initial: IndexVec<MovePathIndex, bool>,
     /// The flags set before a statement or a terminator.
     pub(super) sets: HashMap<Location, Vec<(MovePathIndex, bool)>>,
+    /// The blocks whose `Drop` drops what's behind a pointer that drops
+    /// nothing itself, `*self`'s field: there, as borrowck says.
+    behind: HashSet<BasicBlock>,
 }
 
 impl<'tcx> Elaboration<'tcx> {
+    /// Whether the `Drop` ending `block` drops `place`, or may.
+    pub(super) fn drops(&self, block: BasicBlock, place: Place<'tcx>) -> bool {
+        match self.move_data.rev_lookup.find(place.as_ref()) {
+            LookupResult::Exact(path) => self.style(block, path, true) != Style::Dead,
+            LookupResult::Parent(parent) => parent.is_some() || self.behind.contains(&block),
+        }
+    }
+
     /// How the `Drop` ending `block` drops `path`: all of it, `deep`, or
     /// only what isn't a part of its own, as rustc's `drop_style`.
     pub(super) fn style(&self, block: BasicBlock, path: MovePathIndex, deep: bool) -> Style {
@@ -78,14 +89,10 @@ impl<'tcx> Elaboration<'tcx> {
     pub(super) fn read(&self, body: &mir::Body<'tcx>) -> Vec<mir::Local> {
         let mut read = Vec::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {
-            if let TerminatorKind::Drop { place, .. } = &data.terminator().kind {
-                let dropped = match self.move_data.rev_lookup.find(place.as_ref()) {
-                    LookupResult::Exact(path) => self.style(block, path, true) != Style::Dead,
-                    LookupResult::Parent(parent) => parent.is_some(),
-                };
-                if dropped {
-                    read.push(place.local);
-                }
+            if let TerminatorKind::Drop { place, .. } = &data.terminator().kind
+                && self.drops(block, *place)
+            {
+                read.push(place.local);
             }
         }
         read
@@ -117,12 +124,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .into_results_cursor(body);
         let mut states = HashMap::new();
         let mut flagged = IndexVec::from_elem(false, &move_data.move_paths);
+        let mut behind = HashSet::new();
         for (block, data) in body.basic_blocks.iter_enumerated() {
             let TerminatorKind::Drop { place, .. } = &data.terminator().kind else {
                 continue;
             };
-            let LookupResult::Exact(path) = move_data.rev_lookup.find(place.as_ref()) else {
-                continue;
+            let path = match move_data.rev_lookup.find(place.as_ref()) {
+                LookupResult::Exact(path) => path,
+                LookupResult::Parent(None) if place.is_indirect() && drops(place.ty(&body.local_decls, tcx).ty) => {
+                    behind.insert(block);
+                    continue;
+                }
+                LookupResult::Parent(_) => continue,
             };
             let at = body.terminator_loc(block);
             inits.seek_before_primary_effect(at);
@@ -201,6 +214,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             flagged,
             initial,
             sets,
+            behind,
         })
     }
 }
@@ -232,11 +246,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         loop {
             match state.body.basic_blocks[block].terminator().kind {
                 TerminatorKind::Drop { place, target, .. } => {
-                    let dropped = match drops.move_data.rev_lookup.find(place.as_ref()) {
-                        LookupResult::Exact(path) => drops.style(block, path, true) != Style::Dead,
-                        LookupResult::Parent(parent) => parent.is_some(),
-                    };
-                    if dropped {
+                    if drops.drops(block, place) {
                         return Some(start);
                     }
                     block = target;
@@ -265,10 +275,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         match drops.move_data.rev_lookup.find(place.as_ref()) {
             LookupResult::Exact(path) => self.elaborate_drop(state, block, (place, path), cleanup, span, out),
-            // Of nothing JS sees.
-            LookupResult::Parent(None) => Ok(()),
             // Behind a pointer, which borrowck says is there.
-            LookupResult::Parent(Some(_)) => self.drop_place(state, place, span, out),
+            LookupResult::Parent(_) if drops.drops(block, place) => self.drop_place(state, place, span, out),
+            // Of nothing JS sees.
+            LookupResult::Parent(_) => Ok(()),
         }
     }
 
@@ -475,12 +485,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut out = Vec::new();
         loop {
             let data = &state.body.basic_blocks[block];
-            for statement in &data.statements {
-                if !matches!(
-                    statement.kind,
-                    StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop
-                ) {
-                    return Err(self.unsupported(span, "this cleanup, from its MIR"));
+            for (index, statement) in data.statements.iter().enumerate() {
+                match &statement.kind {
+                    StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop => {}
+                    // A `Drop`'s replacing value, written as the old one's
+                    // drop unwinds: of variables, made of nothing made before.
+                    StatementKind::Assign(assign) => {
+                        let at = Location {
+                            block,
+                            statement_index: index,
+                        };
+                        let made = std::mem::take(&mut state.pending);
+                        let (place, rvalue) = &**assign;
+                        let written = self
+                            .flag_sets(state, at, &mut out)
+                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out));
+                        let left = std::mem::replace(&mut state.pending, made);
+                        written?;
+                        if !left.is_empty() {
+                            return Err(self.unsupported(span, "this cleanup, from its MIR"));
+                        }
+                    }
+                    _ => return Err(self.unsupported(span, "this cleanup, from its MIR")),
                 }
             }
             match data.terminator().kind {

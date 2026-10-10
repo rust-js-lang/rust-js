@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "            let test = Expr::unary(js::UnaryOp::Not, self.variant_test(subject.clone(), ty, adt, variant, span)?);\n",
     tests: ["test/mir.test.ts","-t","drop_partial|struct_update_drops|temporaries_taken_apart"],
   },
+  {
+    name: "mir-drop-behind-pointer-skipped",
+    breaks: "`self.inner = value` of a generic `T` drops the old value unrun",
+    file: "src/lower/mir/drops.rs",
+    find: "                    behind.insert(block);\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","drop_generic"],
+  },
+  {
+    name: "mir-cleanup-write-dropped",
+    breaks: "a cleanup's write of the replacing value is left out",
+    file: "src/lower/mir/drops.rs",
+    find: "                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out));\n",
+    replace: "                            .and_then(|()| Ok(()));\n",
+    tests: ["test/mir.test.ts","-t","drop_replace_panics"],
+  },
 ];

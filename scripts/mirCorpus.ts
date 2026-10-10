@@ -1,5 +1,6 @@
 // The corpus with bodies lowered from their MIR (ADR 0364): how many cases
-// run as native Rust does, or are refused as `compile-fail` says, which pass that `test/mir-corpus.txt` doesn't
+// run as native Rust does, or are refused as `compile-fail` says, a case
+// THIR gets wrong, `ignore-rust-js`, among them where MIR gets it right, which pass that `test/mir-corpus.txt` doesn't
 // list yet, and what MIR lowering doesn't support yet, most often first.
 //
 //   bun scripts/mirCorpus.ts           report
@@ -17,14 +18,23 @@ const run = Bun.spawnSync(["bun", "test", "test/corpus.test.ts"], {
   stderr: "pipe",
 });
 const log = run.stdout.toString() + run.stderr.toString();
-const failed = new Set([...log.matchAll(/\(fail\) ([a-z0-9_]+\.rs)/g)].map((m) => m[1]));
-const running = readdirSync(corpus)
-  .filter((f) => f.endsWith(".rs"))
-  .filter((f) => !/^\/\/@ ignore-rust-js/m.test(readFileSync(join(corpus, f), "utf8")));
-const passing = running.filter((f) => !failed.has(f)).sort();
+// Each case that failed, and what the run said of it before.
+const failed = new Map<string, string>();
+let said = "";
+for (const line of log.split("\n")) {
+  const m = /^\(fail\) ([a-z0-9_]+\.rs)/.exec(line);
+  if (m) failed.set(m[1], said);
+  said = m || line.startsWith("(pass)") ? "" : said + line + "\n";
+}
+const running = readdirSync(corpus).filter((f) => f.endsWith(".rs"));
+const ignored = (f: string) => /^\/\/@ ignore-rust-js/m.test(readFileSync(join(corpus, f), "utf8"));
+// One THIR gets wrong passes from MIR where its test says it passes now.
+const passesFromMir = (f: string) =>
+  ignored(f) ? (failed.get(f) ?? "").includes("it passes now") : !failed.has(f);
+const passing = running.filter(passesFromMir).sort();
 // A case passes only if it ran: a compiler that doesn't build runs none.
 const passes = Number(/^ (\d+) pass$/m.exec(log)?.[1] ?? 0);
-if (passes < passing.length) {
+if (passes < passing.filter((f) => !ignored(f)).length) {
   console.error(`the corpus didn't run: ${passes} passed, ${passing.length} didn't fail\n${log.slice(-2000)}`);
   process.exit(1);
 }
