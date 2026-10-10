@@ -1332,4 +1332,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","deque_range_mut"],
   },
+  {
+    name: "as-deref-unknown",
+    breaks: "`as_deref()` of an `Rc` or a type's own `Deref` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"as_deref\" if option || result => Std::Comb(Comb::AsDeref),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","^as_deref"],
+  },
 ];

@@ -57,3 +57,29 @@ where it fills or takes from the `Option`.**
   `get_or_insert`, take without asking, write a number's field, and spill
   a handle.
 - `docs/std-coverage.txt`: `Option` 40 of 46, `Result` 32 of 36.
+
+## Since
+
+- **`as_deref` of an `Rc`, an `Arc` or a type with its own `Deref`**
+  (2026-10-10), which were refused. One not counted is what it points at
+  (ADR 0023), so the `Option` or `Result` is itself, as a `String`'s; a
+  counted one's is its `value` (ADR 0320), one layer of it; another type's
+  is its own `deref()`, called only on a `Some` or an `Ok`.
+
+  ```rust
+  let named = Some(Name("custom".to_string()));
+  println!("{:?}", named.as_deref());
+  ```
+
+  ```js
+  const arg$3 = named != null ? nameDeref_deref(named) : undefined;
+  ```
+
+  An `Option` of what could look like `None` stays refused. The
+  `as_deref` corpus case runs, against native Rust, `String`s matched and
+  mapped, a `Vec`'s slice, a box, an `Rc` not counted, a type's own
+  `Deref` that prints, and `Ok`s and `Err`s; `as_deref_counted` counted
+  ones, two layers of them and a `Result` of one; `as_deref_none_like`
+  the refusal. Mutations give the `Rc` for its `value`, unwrap the
+  `Result`, and refuse each. `docs/std-coverage.txt`: `Option` 42 of 46,
+  `Result` 35 of 36.

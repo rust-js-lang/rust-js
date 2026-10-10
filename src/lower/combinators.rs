@@ -5,9 +5,11 @@
 
 use super::calls::apply;
 use super::drops::Drops;
+use super::recognition::trait_method;
 use super::{FnCx, R, Std, representation::Num};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -49,6 +51,9 @@ pub(super) enum Comb {
     Inspect,
     MapOrDefault,
     AsSlice,
+    /// An `Option`'s or a `Result`'s `as_deref()` of an `Rc` or of a type
+    /// with its own `Deref`: what it points at, or its `deref()`.
+    AsDeref,
     /// A `Result`'s `and`, `or`, `or_else`, `flatten`, `inspect` and
     /// `inspect_err`, `iter`, `map_or_default`, `transpose`, and `cloned`
     /// and `copied` (ADR 0326).
@@ -372,6 +377,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(items, "join"), vec![Expr::str("")])
             }
         })
+    }
+
+    /// What a `value` of `ty` points at, as `*value` reads it: a counted
+    /// `Rc`'s value, or the `deref()` of a type with its own `Deref`.
+    fn deref_value(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        // A counted `Rc`'s, its `value` (ADR 0320).
+        if self.counted_rc(ty).is_some() {
+            return Ok(Expr::member(value, "value"));
+        }
+        let deref = self.tcx.require_lang_item(LangItem::Deref, span);
+        if self.has_user_impl(deref, ty) {
+            let method = trait_method(self.tcx, deref, "deref");
+            let args = self.args_of(deref, ty);
+            if let Some(call) = self.trait_call(method, args, vec![value], span, out)? {
+                return Ok(call);
+            }
+        }
+        Err(self.unsupported(span, &format!("`as_deref` of a `{ty}`")))
     }
 
     /// `vec![x; n]`: `new Array(n).fill(x)`, when copies of `x` can't be
@@ -935,6 +958,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(test, mapped, fallback)
             }
             Comb::AsSlice => Expr::cond(some, Expr::array(vec![value]), Expr::array(Vec::new())),
+            Comb::AsDeref => {
+                let option = self.option_of(subject_ty);
+                let inner = match (option, subject_ty.kind()) {
+                    (Some(inner), _) => inner,
+                    (None, ty::Adt(_, sides)) => sides.type_at(0),
+                    _ => return Err(self.unsupported(span, "`as_deref` of this")),
+                };
+                // An `Rc` that isn't counted is what it points at (ADR 0023).
+                if self.is_rc(inner) && self.counted_rc(inner).is_none() {
+                    return Ok(subject);
+                }
+                let given = if option.is_some() { value } else { inside() };
+                let pointee = self.deref_value(given, inner, span, out)?;
+                match option {
+                    Some(_) => Expr::cond(some, pointee, Expr::undefined()),
+                    None => Expr::cond(tag("Ok"), Self::ok(pointee), subject),
+                }
+            }
             Comb::ResultAnd | Comb::ResultOr => {
                 let other = next();
                 let other = eager(self, other, out);

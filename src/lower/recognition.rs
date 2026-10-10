@@ -1847,6 +1847,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     Std::Same
                 }
             }
+            "as_deref" if option || result => Std::Comb(Comb::AsDeref),
             // A reference is the value (ADR 0023): what's in the `Result` is.
             "as_ref" if result => Std::Same,
             "into_inner" if adt("Cell") || adt("RefCell") => Std::CellGet,
