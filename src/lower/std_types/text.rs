@@ -328,14 +328,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 TextOp::Slice
             };
             let range = self.slice_range(read, &args[..2], span, out)?;
-            let js::ExprKind::Call(callee, mut list) = range.kind else {
+            let js::ExprKind::Call(_, mut list) = range.kind else {
                 unreachable!("a range's read is a helper's call");
             };
             let items = list[0].clone();
+            // Checked as `slice::range` checks it, its end first, not as
+            // `&v[a..b]` is: `v.push(...$copyRange(v, a, b))`.
             if op == TextOp::ExtendFromWithin {
                 return Ok(Expr::call(
                     Expr::member(items, "push"),
-                    vec![Expr::spread(Expr::call(*callee, list))],
+                    vec![Expr::spread(Expr::call(Expr::var("$copyRange"), list))],
                 ));
             }
             if list.len() == 2 {

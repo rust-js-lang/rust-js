@@ -1410,8 +1410,7 @@ export function $joinWith(lists, sep, spread, clone) {
 export function $strRange(s, start, end, replacing) {
   const length = $byteLen(s);
   end ??= length;
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);
+  $checkRange(start, end, length);
   const from = $charBoundary(s, start);
   if (from === undefined) {
     throw new Error(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)");
@@ -1581,8 +1580,7 @@ export function $swapWithSlice(v, other) {
 
 export function $copyWithin(v, start, end, dest) {
   end ??= v.length;
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > v.length) throw new Error(`range end index ${end} out of range for slice of length ${v.length}`);
+  $checkRange(start, end, v.length);
   if (dest > v.length - (end - start)) throw new Error("dest is out of bounds");
   v.copyWithin(dest, start, end);
 }
@@ -2336,6 +2334,22 @@ export function $strGetMut(cell, start, end) {
 export function $strSplitAtMut(cell, at, checked) {
   if (checked && $charBoundary(cell.value, at) === undefined) return undefined;
   return [$strPart(cell, 0, at), $strPart(cell, at)];
+}
+
+// std's `slice_index_fail`: why `start..end` isn't a range of a slice of
+// `length` items, as Rust says it, its start first.
+export function $sliceIndexFail(start, end, length) {
+  if (start > length) throw new Error(`range start index ${start} out of range for slice of length ${length}`);
+  if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);
+  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
+  throw new Error(`range end index ${end} out of range for slice of length ${length}`);
+}
+
+// std's `slice::range`, which `drain`, `splice`, `copy_within` and
+// `extend_from_within` check theirs by: its end, then its start.
+export function $checkRange(start, end, length) {
+  if (end > length) $sliceIndexFail(0, end, length);
+  if (start > end) $sliceIndexFail(start, end, length);
 }
 
 // `s.strip_circumfix(prefix, suffix)`: `strip_prefix`'s, then
@@ -4856,8 +4870,7 @@ export function $totalCmp(a, b) {
 }
 
 export function $drain(items, start, end = items.length) {
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);
+  $checkRange(start, end, items.length);
   return items.splice(start, end - start);
 }
 
@@ -5129,8 +5142,14 @@ export function $parseChar(s) {
 }
 
 export function $slice(items, start, end = items.length) {
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
+  return items.slice(start, end);
+}
+
+// `v.extend_from_within(start..end)`'s copy of those items, checked as
+// `slice::range` checks them.
+export function $copyRange(items, start, end = items.length) {
+  $checkRange(start, end, items.length);
   return items.slice(start, end);
 }
 
@@ -5467,8 +5486,7 @@ export function $debugDuration(duration) {
 }
 
 export function $sliceEnd(items, start, end = items.length) {
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);
+  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
   return end;
 }
 
@@ -5641,8 +5659,7 @@ export function $dedupByCells(v, same) {
 }
 
 export function $splice(items, start, end, replacement) {
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > items.length) throw new Error(`range end index ${end} out of range for slice of length ${items.length}`);
+  $checkRange(start, end, items.length);
   return items.splice(start, end - start, ...replacement);
 }
 

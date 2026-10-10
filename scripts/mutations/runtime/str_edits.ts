@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "  return s + s;\n",
     tests: ["test/corpus.test.ts", "-t", "text_edits"],
   },
+  {
+    name: "str-range-unchecked",
+    breaks: "a `String`'s `drain(a..)` with `a` past the end says it's inside a `char`",
+    file: "src/runtime/str_edits.js",
+    find: "  $checkRange(start, end, length);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","string_drain_from_past_len"],
+  },
 ];

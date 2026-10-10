@@ -111,8 +111,8 @@ export const mutations: Mutation[] = [
     name: "extend-from-within-unspread",
     breaks: "`extend_from_within` pushes the range as one item, not its items",
     file: "src/lower/std_types/text.rs",
-    find: "                    vec![Expr::spread(Expr::call(*callee, list))],\n",
-    replace: "                    vec![Expr::call(*callee, list)],\n",
+    find: "                    vec![Expr::spread(Expr::call(Expr::var(\"$copyRange\"), list))],\n",
+    replace: "                    vec![Expr::call(Expr::var(\"$copyRange\"), list)],\n",
     tests: ["test/corpus.test.ts","-t","vec_edits"],
   },
   {
@@ -203,5 +203,13 @@ export const mutations: Mutation[] = [
     find: "Expr::call(Expr::var(\"$stripCircumfix\"), vec![arg(), arg(), arg()])",
     replace: "Expr::call(Expr::var(\"$stripPrefix\"), vec![arg(), arg()])",
     tests: ["test/corpus.test.ts","-t","str_circumfix"],
+  },
+  {
+    name: "extend-within-index-checked",
+    breaks: "`extend_from_within(a..b)` is checked as `&v[a..b]` is, its start first",
+    file: "src/lower/std_types/text.rs",
+    find: "vec![Expr::spread(Expr::call(Expr::var(\"$copyRange\"), list))],",
+    replace: "vec![Expr::spread(Expr::call(Expr::var(\"$slice\"), list))],",
+    tests: ["test/corpus.test.ts","-t","extend_within_past_len"],
   },
 ];

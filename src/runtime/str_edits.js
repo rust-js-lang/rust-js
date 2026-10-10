@@ -5,8 +5,7 @@
 function $strRange(s, start, end, replacing) {
   const length = $byteLen(s);
   end ??= length;
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > length) throw new Error(`range end index ${end} out of range for slice of length ${length}`);
+  $checkRange(start, end, length);
   const from = $charBoundary(s, start);
   if (from === undefined) {
     throw new Error(replacing ? "start of range should be a character boundary" : "assertion failed: self.is_char_boundary(start)");

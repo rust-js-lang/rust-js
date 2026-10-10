@@ -36,8 +36,7 @@ function $swapWithSlice(v, other) {
 
 function $copyWithin(v, start, end, dest) {
   end ??= v.length;
-  if (start > end) throw new Error(`slice index starts at ${start} but ends at ${end}`);
-  if (end > v.length) throw new Error(`range end index ${end} out of range for slice of length ${v.length}`);
+  $checkRange(start, end, v.length);
   if (dest > v.length - (end - start)) throw new Error("dest is out of bounds");
   v.copyWithin(dest, start, end);
 }
