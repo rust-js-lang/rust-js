@@ -37,7 +37,7 @@ use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
 use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
-use super::std_types::text::TextOp;
+use super::std_types::text::{StringEdit, TextOp};
 use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -2855,6 +2855,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::NonZeroNew => {
                 let n = self.value_expr(values.next().expect("the number"), span)?;
                 self.non_zero_new(n, arg_tys[0], span, out)?
+            }
+            // `s.insert(i, c)` and the rest: `s` given its new text, as THIR's
+            // `string_edit` writes it; what it took out, its value.
+            Std::StringEdit(edit) => {
+                let place = match values.next().expect("the string") {
+                    Value::Ref(place) if fixed_place(&place) => place,
+                    _ => return Err(self.unsupported(span, "changing this string, from its MIR")),
+                };
+                let mut given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                if matches!(
+                    edit,
+                    StringEdit::Drain | StringEdit::ReplaceRange | StringEdit::ExtendFromWithin
+                ) {
+                    let range = given.remove(0);
+                    let (start, end) = self.range_value_bounds(range, arg_tys[1], span, out)?;
+                    given.splice(0..0, [start, end.unwrap_or_else(Expr::undefined)]);
+                }
+                self.flush(state, out)?;
+                let (edited, taken) = self.string_edit_values(edit, place.clone(), given, out);
+                out.push(StmtKind::Assign(place, edited).at(self.js_span(span)));
+                taken.unwrap_or_else(Expr::undefined)
+            }
+            // Its capacity is the engine's: what it's given runs, for what it does.
+            Std::StringWithCapacity => {
+                for value in values {
+                    let value = self.value_expr(value, span)?;
+                    if value.has_effects() {
+                        self.flush(state, out)?;
+                        out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                    }
+                }
+                Expr::str("")
             }
             // std's `size_hint()`, of an iterator of the crate's that keeps it:
             // `(0, None)`, as THIR's `size_hint` (ADR 0170).

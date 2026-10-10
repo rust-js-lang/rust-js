@@ -263,14 +263,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => self.operands(&args[1..], out)?,
         };
         let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
-        let current = target.read();
-        let js_span = self.js_span(span);
+        let (edited, taken) = self.string_edit_values(edit, target.read(), given, out);
+        target.write(edited, self.js_span(span), out);
+        Ok(taken.unwrap_or_else(Expr::undefined))
+    }
+
+    /// `edit` of a string whose text is `current`, of what it's `given`:
+    /// its new text, and what it took out, if it takes anything (ADR 0364).
+    pub(in crate::lower) fn string_edit_values(
+        &mut self,
+        edit: StringEdit,
+        current: Expr,
+        given: Vec<Expr>,
+        out: &mut Vec<Stmt>,
+    ) -> (Expr, Option<Expr>) {
         let helper = |cx: &mut Self, helper: Helper, name: &str, mut list: Vec<Expr>| {
             cx.runtime.insert(helper);
             list.insert(0, current.clone());
             Expr::call(Expr::var(name), list)
         };
-        let (edited, taken) = match edit {
+        match edit {
             StringEdit::Clear => (Expr::str(""), None),
             StringEdit::Truncate => (helper(self, Helper::StrTruncate, "$strTruncate", given), None),
             StringEdit::Insert => (helper(self, Helper::InsertStr, "$insertStr", given), None),
@@ -304,9 +316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Some(Expr::index(pair, Expr::int(1))),
                 )
             }
-        };
-        target.write(edited, js_span, out);
-        Ok(taken.unwrap_or_else(Expr::undefined))
+        }
     }
 
     pub(in crate::lower) fn text_call(

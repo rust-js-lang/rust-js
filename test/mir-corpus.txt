@@ -205,6 +205,7 @@ refcell_replace_while_borrowed.rs
 refcell_swap_itself.rs
 refcell_unwind_releases.rs
 remainder_sign.rs
+replace_range_panic.rs
 replace_through_mut.rs
 replacement_character.rs
 returned_references.rs
@@ -232,6 +233,9 @@ std_struct_const.rs
 stepped_nested.rs
 str_circumfix.rs
 string_bytes.rs
+string_drain_from_past_len.rs
+string_editing.rs
+string_insert_boundary.rs
 string_patterns.rs
 string_pushes.rs
 string_slice_boundary.rs
@@ -240,6 +244,8 @@ struct_update_drops.rs
 supertraits_by_reference.rs
 swap_replace.rs
 temporaries_taken_apart.rs
+text_aliases.rs
+text_edits.rs
 thread_local_borrow_inside.rs
 thread_local_syntax.rs
 trait_default_bounds.rs

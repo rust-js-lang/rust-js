@@ -610,4 +610,28 @@ export const mutations: Mutation[] = [
     replace: "            Std::NonZeroNew if false => {\n",
     tests: ["test/mir.test.ts","-t","nonzero"],
   },
+  {
+    name: "mir-string-edit-refused",
+    breaks: "`s.insert(i, c)` and the rest of a string's edits are refused",
+    file: "src/lower/mir.rs",
+    find: "            Std::StringEdit(edit) => {\n",
+    replace: "            Std::StringEdit(edit) if false => {\n",
+    tests: ["test/mir.test.ts","-t","text_edits|string_editing"],
+  },
+  {
+    name: "mir-string-range-swapped",
+    breaks: "`s.replace_range(a..b, t)` takes its range's end for its start",
+    file: "src/lower/mir.rs",
+    find: "                    given.splice(0..0, [start, end.unwrap_or_else(Expr::undefined)]);\n",
+    replace: "                    given.splice(0..0, [end.unwrap_or_else(Expr::undefined), start]);\n",
+    tests: ["test/mir.test.ts","-t","text_edits|string_editing|replace_range_panic|string_drain_from_past_len"],
+  },
+  {
+    name: "mir-with-capacity-refused",
+    breaks: "`String::with_capacity(n)` is refused",
+    file: "src/lower/mir.rs",
+    find: "            Std::StringWithCapacity => {\n",
+    replace: "            Std::StringWithCapacity if false => {\n",
+    tests: ["test/mir.test.ts","-t","text_edits|string_editing|text_aliases|string_insert_boundary"],
+  },
 ];
