@@ -15,6 +15,7 @@
 mod cfg;
 mod drops;
 mod iter;
+mod tidy;
 
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -29,7 +30,7 @@ use rustc_middle::ty::{self, Ty};
 use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
-use super::recognition::Std;
+use super::recognition::{Std, StdItem};
 use super::representation::{const_js, variant_field};
 use super::std_types::number::NumOp;
 use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
@@ -65,6 +66,9 @@ enum Value<'tcx> {
     /// A `&mut` to a place JS can't share, a number's: the place, read and
     /// written through where it's used, or by a closure that captured it.
     Ref(Expr),
+    /// What `?`'s `Try::branch` makes of an `Option` or a `Result`: the
+    /// value tried, and its type, whose `None` or `Err` is its `Break`.
+    Branch(Expr, Ty<'tcx>),
 }
 
 /// What's known of a body's locals.
@@ -112,6 +116,8 @@ struct State<'m, 'tcx> {
     copy_backs: Vec<(Expr, String)>,
     /// The parameters that are boxes their callers give (ADR 0074).
     boxes: std::collections::HashSet<String>,
+    /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
+    branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -174,6 +180,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             refs: Default::default(),
             copy_backs: Vec::new(),
             boxes: Default::default(),
+            branches: Default::default(),
         };
         state.borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
@@ -249,6 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             out.pop();
         }
+        tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE]);
         Ok((params, out))
     }
 
@@ -308,6 +316,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut user: IndexVec<Local, Option<String>> = IndexVec::from_elem_n(None, n);
         let sm = self.tcx.sess.source_map();
+        // `?`'s own `val`, what its `Continue` holds: a temporary.
+        let continued = self.continued(body);
         for info in &body.var_debug_info {
             // A variable a std macro makes, `format_args!`'s `args`, isn't
             // one the program names.
@@ -315,6 +325,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && place.projection.is_empty()
                 && user[place.local].is_none()
                 && !info.source_info.span.in_external_macro(sm)
+                && !continued.contains(&place.local)
             {
                 user[place.local] = Some(super::camel_case(info.name.as_str()));
                 locals.user[place.local] = true;
@@ -379,6 +390,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         locals
     }
 
+    /// The locals `?` binds what a `ControlFlow::Continue` holds to, `val`.
+    fn continued(&self, body: &mir::Body<'tcx>) -> Vec<Local> {
+        let mut continued = Vec::new();
+        for data in body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let (place, Rvalue::Use(Operand::Copy(from) | Operand::Move(from), ..)) = &**assign
+                    && let [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] = from.projection.as_slice()
+                    && let ty::Adt(adt, _) = body.local_decls[from.local].ty.kind()
+                    && self
+                        .tcx
+                        .is_lang_item(adt.variant(*variant).def_id, LangItem::ControlFlowContinue)
+                {
+                    continued.push(place.local);
+                }
+            }
+        }
+        continued
+    }
+
     /// Whether `local` is a temporary written where it's read: made once,
     /// read once, never borrowed. The return place too, read by `return`.
     fn foldable(&self, state: &State<'_, 'tcx>, local: Local) -> bool {
@@ -441,6 +472,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.flush(state, &mut out)?;
             out.push(StmtKind::Continue(Some(label(to))).at(js::Span::NONE));
             return Ok(out);
+        }
+        // To the block that returns, and does nothing else: the `return`,
+        // where a person writes it.
+        if is_return(state.body, to) {
+            return self.mir_terminator(state, to);
         }
         if state.graph.merges.contains(&to) {
             let mut out = Vec::new();
@@ -537,10 +573,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // The cases, those that can't be reached left out.
                 let reached = |b: BasicBlock| !is_unreachable(state.body, b);
                 let mut cases: Vec<(Expr, BasicBlock)> = Vec::new();
+                let mut always = None;
                 for (value, target) in targets.iter() {
                     if reached(target) {
-                        cases.push((self.switch_test(&subject, ty, value, span)?, target));
+                        let test = self.switch_test(&subject, ty, value, span)?;
+                        // A test that's a constant: its branch alone, or none.
+                        match test.kind {
+                            js::ExprKind::Bool(false) => {}
+                            js::ExprKind::Bool(true) => always = always.or(Some(target)),
+                            _ => cases.push((test, target)),
+                        }
                     }
+                }
+                if let Some(target) = always {
+                    out.extend(self.mir_branch(state, block, target)?);
+                    return Ok(out);
                 }
                 let otherwise = Some(targets.otherwise()).filter(|&b| reached(b));
                 let mut chain: Option<Vec<Stmt>> = match otherwise {
@@ -555,7 +602,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 for (test, target) in cases.into_iter().rev() {
                     let then = self.mir_branch(state, block, target)?;
-                    chain = Some(vec![StmtKind::If(test, then, chain).at(self.js_span(span))]);
+                    chain = Some(early_exit(test, then, chain, self.js_span(span)));
                 }
                 out.extend(chain.unwrap_or_default());
             }
@@ -832,6 +879,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ),
             Value::Discriminant(..) => return Err(self.unsupported(span, "an enum's discriminant read as a value")),
             Value::Place(e) => e,
+            Value::Branch(..) => return Err(self.unsupported(span, "what `?` made, read as a value, from its MIR")),
             Value::Ref(_) => return Err(self.unsupported(span, "a `&mut` of a number kept or given, from its MIR")),
         })
     }
@@ -873,6 +921,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.flush(state, out)?;
                 out.push(StmtKind::Expr(expr).at(self.js_span(span)));
             }
+            return Ok(());
+        }
+        // What `?` made: the value it tried, read where the branch is.
+        if place.projection.is_empty()
+            && !state.body.local_decls[local].ty.is_integral()
+            && let Value::Branch(tried, ty) = &value
+        {
+            state.branches.insert(local, (tried.clone(), *ty));
             return Ok(());
         }
         // A `&mut` to a place that's always the same, made once: the
@@ -976,6 +1032,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        if let Some((tried, ty)) = state.branches.get(&place.local).cloned() {
+            return match place.projection.as_slice() {
+                [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] if variant.as_u32() == 0 => {
+                    Ok(match self.never_fails(ty) {
+                        true => Expr::undefined(),
+                        false => self.tried_value(tried, ty),
+                    })
+                }
+                // The residual, `None` or the `Err` itself.
+                [PlaceElem::Downcast(..), PlaceElem::Field(..)] => Ok(match self.option_of(ty) {
+                    Some(_) => Expr::undefined(),
+                    None => tried,
+                }),
+                _ => Err(self.unsupported(span, "this part of what `?` made, from its MIR")),
+            };
+        }
         let mut value = if place.projection.is_empty() {
             match state.locals.names[place.local].as_str() {
                 "" => Expr::undefined(),
@@ -1330,7 +1402,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             // A reference made another kind of reference is the same value:
-            // an array's a slice's (ADR 0023). One made a `dyn` isn't yet.
+            // an array's a slice's (ADR 0023). One made a `dyn` is THIR's: a
+            // `dyn Iterator` the JS iterator, another its `{ value, impl }`.
             Rvalue::Cast(mir::CastKind::PointerCoercion(coercion, _), operand, to) => {
                 use rustc_middle::ty::adjustment::PointerCoercion;
                 let to_dyn = to
@@ -1338,7 +1411,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .is_some_and(|pointee| matches!(pointee.kind(), ty::Dynamic(..)));
                 match coercion {
                     PointerCoercion::Unsize if to_dyn => {
-                        return Err(self.unsupported(span, &format!("a `{to}`, from its MIR")));
+                        let from = operand.ty(decls, tcx);
+                        let value = self.mir_expr(state, operand, out)?;
+                        if self.recognition().is_dyn_iter(*to) {
+                            let iterator = from.builtin_deref(true).unwrap_or(from);
+                            return Ok(Value::Expr(self.as_js_iterator(value, iterator, span)?));
+                        }
+                        return Ok(Value::Expr(self.unsize_trait(from, *to, value, span, out)?));
                     }
                     PointerCoercion::Unsize | PointerCoercion::MutToConstPointer | PointerCoercion::ArrayToPointer => {
                         return self.mir_operand(state, operand, out);
@@ -1360,6 +1439,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     self.cast(v, from, *to, span)?
                 }
+            }
+            Rvalue::Discriminant(place)
+                if place.projection.is_empty()
+                    && let Some((tried, ty)) = state.branches.get(&place.local) =>
+            {
+                return Ok(Value::Branch(tried.clone(), *ty));
             }
             Rvalue::Discriminant(place) => {
                 let ty = place.ty(decls, tcx).ty;
@@ -1467,6 +1552,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// discriminant, its variant.
     fn switch_test(&mut self, subject: &Value<'tcx>, ty: Ty<'tcx>, value: u128, span: Span) -> R<Expr> {
         match subject {
+            Value::Branch(tried, tried_ty) => {
+                let failed = self.branch_failed(tried.clone(), *tried_ty);
+                Ok(match value {
+                    0 => negate(failed),
+                    _ => failed,
+                })
+            }
             Value::Discriminant(enum_value, enum_ty) => {
                 let ty::Adt(adt, _) = enum_ty.kind() else {
                     return Err(self.unsupported(span, "a discriminant of this type, from its MIR"));
@@ -1502,6 +1594,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Expr::bin(Op::Eq, subject, literal))
             }
         }
+    }
+
+    /// Whether what `?` tried returns early; a write's never does (ADRs
+    /// 0054, 0132).
+    fn branch_failed(&self, tried: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.never_fails(ty) {
+            true => Expr::bool(false),
+            false => self.tried_failed(tried, ty),
+        }
+    }
+
+    /// A write's result, which never fails (ADRs 0054, 0132).
+    fn never_fails(&self, ty: Ty<'tcx>) -> bool {
+        self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty)
     }
 
     /// That `subject` is `variant` of its enum, as a pattern tests it.
@@ -1604,6 +1710,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
         let values = self.take_operands(state, &operands, out)?;
         let tcx = self.tcx;
+        // `x?`: `Try::branch(x)`, kept as `x` (`Value::Branch`), and what it
+        // returns, `FromResidual::from_residual(r)`, THIR's (ADR 0052).
+        if tcx.is_lang_item(def_id, LangItem::TryTraitBranch) {
+            let ty = arg_tys[0];
+            if self.is_fmt_result(ty) && self.krate.any_failing {
+                return Err(self.unsupported(span, "`?` of a `fmt::Result` that may fail, from its MIR"));
+            }
+            if !self.never_fails(ty) && self.option_of(ty).is_none() && !self.is_std_type(ty, StdItem::Result) {
+                return Err(self.unsupported(span, &format!("`?` on a `{ty}`, from its MIR")));
+            }
+            let tried = self.value_expr(values.into_iter().next().expect("the value tried"), span)?;
+            let tried = match tried.reads_same() {
+                true => tried,
+                false => {
+                    self.flush(state, out)?;
+                    self.spill(
+                        if self.option_of(ty).is_some() {
+                            "value"
+                        } else {
+                            "result"
+                        },
+                        tried,
+                        out,
+                    )
+                }
+            };
+            return Ok(Value::Branch(tried, ty));
+        }
+        if tcx.is_lang_item(def_id, LangItem::TryTraitFromResidual) {
+            let ty = arg_tys[0];
+            if self.option_of(ty).is_none() && !self.is_std_type(ty, StdItem::Result) {
+                return Err(self.unsupported(span, &format!("`?` returning a `{ty}`, from its MIR")));
+            }
+            let residual = self.value_expr(values.into_iter().next().expect("the residual"), span)?;
+            let convert = self.tried_conversion(ty, Some(output), span)?;
+            let converted = convert.map(|conversion| conversion.of(Expr::member(residual.clone(), "_0")));
+            return Ok(Value::Expr(self.tried_returned(residual, ty, converted)));
+        }
         // `x.into()` is the `From::from(x)` it calls, the crate's own (ADR 0052).
         let (def_id, generic_args) = self
             .resolve_into(def_id, generic_args)
@@ -1851,7 +1995,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
     match value {
         Value::Fmt(_, _, e) if e.reads_same() => true,
-        Value::Expr(e) | Value::Fmt(_, _, e) | Value::Discriminant(e, _) => {
+        Value::Expr(e) | Value::Fmt(_, _, e) | Value::Discriminant(e, _) | Value::Branch(e, _) => {
             let mut stable = true;
             e.visit_vars(&mut |name| {
                 stable &= !state.borrowed_names.contains(name);
@@ -2092,4 +2236,57 @@ fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
         }
         _ => false,
     }
+}
+
+/// `!test`, of a test that's a `bool`: `!!t` is `t`.
+fn negate(test: Expr) -> Expr {
+    match test.kind {
+        js::ExprKind::Unary(js::UnaryOp::Not, inner) => *inner,
+        _ => Expr::unary(js::UnaryOp::Not, test),
+    }
+}
+
+/// `if (test) { then } else { otherwise }`, written with the branch that
+/// returns or throws first and the other after it, as a person writes an
+/// early exit: the same, as that branch never goes on.
+fn early_exit(test: Expr, then: Vec<Stmt>, otherwise: Option<Vec<Stmt>>, span: js::Span) -> Vec<Stmt> {
+    let exits = |stmts: &[Stmt]| {
+        matches!(
+            stmts.last().map(|s| &s.kind),
+            Some(StmtKind::Return(_) | StmtKind::Throw(_))
+        )
+    };
+    match otherwise {
+        Some(otherwise) if exits(&then) && !exits(&otherwise) => {
+            let mut out = vec![StmtKind::If(test, then, None).at(span)];
+            out.extend(otherwise);
+            out
+        }
+        Some(otherwise) if exits(&otherwise) && (!exits(&then) || otherwise.len() < then.len()) => {
+            let mut out = vec![StmtKind::If(negate(test), otherwise, None).at(span)];
+            out.extend(then);
+            out
+        }
+        otherwise => vec![StmtKind::If(test, then, otherwise).at(span)],
+    }
+}
+
+/// Whether `block` only returns, through blocks that do nothing but go on.
+fn is_return(body: &mir::Body<'_>, mut block: BasicBlock) -> bool {
+    // A `loop {}` goes on forever.
+    for _ in 0..body.basic_blocks.len() {
+        let data = &body.basic_blocks[block];
+        let quiet = data.statements.iter().all(|s| {
+            matches!(
+                s.kind,
+                StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop
+            )
+        });
+        match data.terminator().kind {
+            TerminatorKind::Return => return quiet,
+            TerminatorKind::Goto { target } if quiet => block = target,
+            _ => return false,
+        }
+    }
+    false
 }

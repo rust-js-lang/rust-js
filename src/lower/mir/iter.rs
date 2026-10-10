@@ -164,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
     /// by its `next`, the crate's by its impl's, a JS one as it is.
-    fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(super) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         match self.range_kind(ty) {
             Some(RangeKind::Exclusive) => {
                 self.runtime.insert(Helper::RangeNext);

@@ -90,4 +90,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts"],
   },
+  {
+    name: "mir-branch-continue-is-break",
+    breaks: "`?` goes on with an `Err` or a `None`, and returns early with what's inside",
+    file: "src/lower/mir.rs",
+    find: "                    0 => negate(failed),\n                    _ => failed,\n",
+    replace: "                    0 => failed,\n                    _ => negate(failed),\n",
+    tests: ["test/mir.test.ts","-t","question_early_returns"],
+  },
+  {
+    name: "mir-residual-err-lost",
+    breaks: "`?` of an `Err` returns nothing, not the `Err`",
+    file: "src/lower/mir.rs",
+    find: "                    Some(_) => Expr::undefined(),\n                    None => tried,\n",
+    replace: "                    Some(_) => Expr::undefined(),\n                    None => Expr::undefined(),\n",
+    tests: ["test/mir.test.ts","-t","question_early_returns"],
+  },
+  {
+    name: "mir-early-exit-not-negated",
+    breaks: "a branch that returns, written first, is taken when its test fails, not when it holds",
+    file: "src/lower/mir.rs",
+    find: "            let mut out = vec![StmtKind::If(negate(test), otherwise, None).at(span)];\n",
+    replace: "            let mut out = vec![StmtKind::If(test, otherwise, None).at(span)];\n",
+    tests: ["test/mir.test.ts","-t","question_early_returns"],
+  },
 ];

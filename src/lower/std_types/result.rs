@@ -7,6 +7,26 @@ use crate::lower::{Dest, FnCx, R};
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 
+/// How `?` makes an error the function's: a `From` of the crate's own,
+/// called on it, or for a `Box<dyn Error>`, its dictionary (ADR 0141).
+pub(in crate::lower) enum Conversion {
+    From(Expr),
+    Dyn(Expr),
+}
+
+impl Conversion {
+    /// `error`, converted.
+    pub(in crate::lower) fn of(self, error: Expr) -> Expr {
+        match self {
+            Conversion::From(from) => Expr::call(from, vec![error]),
+            Conversion::Dyn(dictionary) => Expr::object(vec![
+                Prop::Field("value".into(), error),
+                Prop::Field("impl".into(), dictionary),
+            ]),
+        }
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `e?`: the value inside, after returning early with an `Err` or `None`.
     /// Only when the `Err` is returned as it is: a `From` conversion isn't
@@ -35,83 +55,98 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !is_option && !self.is_std_type(ty, StdItem::Result) {
             return Err(self.unsupported(span, &format!("`?` on a `{ty}`")));
         }
-        // The function's error type: the same as this one's, and the `Err` is
-        // returned as it is, or one with a `From` of the crate's own, and it's
-        // `{ TAG: "Err", _0: from(error) }`.
-        let mut from = None;
-        // Or a `Box<dyn Error>`, of the error and its dictionary (ADR 0141).
-        let mut boxed_error = None;
-        if !is_option {
-            let ExprKind::Match { ref arms, .. } = self.thir[self.strip(question)].kind else {
-                unreachable!("checked")
-            };
-            let returned = arms
-                .iter()
-                .find_map(|&arm| match self.thir[self.strip(self.thir[arm].body)].kind {
-                    ExprKind::Return { value: Some(v) } => Some(self.thir[v].ty),
-                    _ => None,
-                });
-            let error = |t: Ty<'tcx>| match t.kind() {
-                ty::Adt(_, args) => args.types().nth(1),
-                _ => None,
-            };
-            let (to, from_ty) = (returned.and_then(error), error(ty));
-            // A `&str` error to a `String` one: the same JS string.
-            let same_string = to
-                .zip(from_ty)
-                .is_some_and(|(to, from_ty)| self.is_string_like(to) && self.is_string_like(from_ty));
-            if to != from_ty && !same_string {
-                let (Some(to), Some(from_ty)) = (to, from_ty) else {
-                    return Err(self.unsupported(span, "this `?`"));
+        // The function's return type, which a returned `Err` is converted to.
+        let returned = match is_option {
+            true => None,
+            false => {
+                let ExprKind::Match { ref arms, .. } = self.thir[self.strip(question)].kind else {
+                    unreachable!("checked")
                 };
-                match self.dyn_error_from(to, from_ty, span)? {
-                    Some(dictionary) => boxed_error = Some(dictionary),
-                    None => {
-                        from =
-                            Some(self.error_from(to, from_ty)?.ok_or_else(|| {
-                                self.unsupported(span, "`?` that converts the error with this `From`")
-                            })?);
-                    }
-                }
+                arms.iter()
+                    .find_map(|&arm| match self.thir[self.strip(self.thir[arm].body)].kind {
+                        ExprKind::Return { value: Some(v) } => Some(self.thir[v].ty),
+                        _ => None,
+                    })
             }
-        }
+        };
+        let converted = self.tried_conversion(ty, returned, span)?;
         let (subject, _) = self.subject(tried, base.unwrap_or(if is_option { "value" } else { "result" }), out)?;
         let js_span = self.js_span(span);
-        let (failed, ret, value) = if is_option {
-            let boxed = self.option_of(ty).is_some_and(|inner| self.boxed_payload(inner));
-            let value = if boxed {
-                self.some_value(subject.clone())
-            } else {
-                subject.clone()
-            };
-            // Of a value never falsy, `!o` (ADR 0298).
-            let failed = match self.option_of(ty) {
-                Some(inner) => self.absent(subject, inner),
-                None => Expr::bin(Op::LooseEq, subject, Expr::null()),
-            };
-            (failed, Expr::undefined(), value)
-        } else {
-            let failed = Expr::bin(Op::Eq, Expr::member(subject.clone(), "TAG"), Expr::str("Err"));
-            let error = Expr::member(subject.clone(), "_0");
-            let converted = match (from, boxed_error) {
-                (Some(from), _) => Some(Expr::call(from, vec![error])),
-                (None, Some(dictionary)) => Some(Expr::object(vec![
-                    Prop::Field("value".into(), error),
-                    Prop::Field("impl".into(), dictionary),
-                ])),
-                (None, None) => None,
-            };
-            let ret = match converted {
-                Some(converted) => Expr::object(vec![
-                    Prop::Field("TAG".into(), Expr::str("Err")),
-                    Prop::Field("_0".into(), converted),
-                ]),
-                None => subject.clone(),
-            };
-            (failed, ret, Expr::member(subject, "_0"))
-        };
+        let failed = self.tried_failed(subject.clone(), ty);
+        let converted = converted.map(|conversion| conversion.of(Expr::member(subject.clone(), "_0")));
+        let ret = self.tried_returned(subject.clone(), ty, converted);
+        let value = self.tried_value(subject, ty);
         out.push(StmtKind::If(failed, vec![StmtKind::Return(Some(ret)).at(js_span)], None).at(js_span));
         Ok(value)
+    }
+
+    /// Whether `?` of `subject`, an `Option` or a `Result`, returns early:
+    /// it's `None`, of a value never falsy `!o` (ADR 0298), or an `Err`.
+    pub(in crate::lower) fn tried_failed(&self, subject: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.option_of(ty) {
+            Some(inner) => self.absent(subject, inner),
+            None => Expr::bin(Op::Eq, Expr::member(subject, "TAG"), Expr::str("Err")),
+        }
+    }
+
+    /// What `?` of `subject` gives when it doesn't return: what's inside.
+    pub(in crate::lower) fn tried_value(&mut self, subject: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.option_of(ty) {
+            Some(inner) if self.boxed_payload(inner) => self.some_value(subject),
+            Some(_) => subject,
+            None => Expr::member(subject, "_0"),
+        }
+    }
+
+    /// What `?` of `subject` returns: `undefined` for a `None`; the `Err`
+    /// as it is, or `converted`, its error made the function's.
+    pub(in crate::lower) fn tried_returned(&self, subject: Expr, ty: Ty<'tcx>, converted: Option<Expr>) -> Expr {
+        if self.option_of(ty).is_some() {
+            return Expr::undefined();
+        }
+        match converted {
+            Some(converted) => Expr::object(vec![
+                Prop::Field("TAG".into(), Expr::str("Err")),
+                Prop::Field("_0".into(), converted),
+            ]),
+            None => subject,
+        }
+    }
+
+    /// What converts the error of `?` of a `Result` `ty` to the function's,
+    /// `returned`'s, given `subject`'s `_0`: nothing if it's the same, or a
+    /// `&str` to a `String`, the same JS string; a `From` of the crate's own;
+    /// or for a `Box<dyn Error>`, the error and its dictionary (ADR 0141).
+    pub(in crate::lower) fn tried_conversion(
+        &mut self,
+        ty: Ty<'tcx>,
+        returned: Option<Ty<'tcx>>,
+        span: rustc_span::Span,
+    ) -> R<Option<Conversion>> {
+        if self.option_of(ty).is_some() {
+            return Ok(None);
+        }
+        let error = |t: Ty<'tcx>| match t.kind() {
+            ty::Adt(_, args) => args.types().nth(1),
+            _ => None,
+        };
+        let (to, from_ty) = (returned.and_then(error), error(ty));
+        let same_string = to
+            .zip(from_ty)
+            .is_some_and(|(to, from_ty)| self.is_string_like(to) && self.is_string_like(from_ty));
+        if to == from_ty || same_string {
+            return Ok(None);
+        }
+        let (Some(to), Some(from_ty)) = (to, from_ty) else {
+            return Err(self.unsupported(span, "this `?`"));
+        };
+        if let Some(dictionary) = self.dyn_error_from(to, from_ty, span)? {
+            return Ok(Some(Conversion::Dyn(dictionary)));
+        }
+        let from = self
+            .error_from(to, from_ty)?
+            .ok_or_else(|| self.unsupported(span, "`?` that converts the error with this `From`"))?;
+        Ok(Some(Conversion::From(from)))
     }
 
     /// The function `?` converts an error with, `<to as From<from>>::from`,

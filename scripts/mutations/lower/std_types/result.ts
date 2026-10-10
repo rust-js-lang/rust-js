@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "question-box-error-unconverted",
     breaks: "`?` into a `Box<dyn Error>` returns the error as it is, not as a pair",
     file: "src/lower/std_types/result.rs",
-    find: "                (None, Some(dictionary)) => Some(Expr::object(vec![",
-    replace: "                (None, Some(_)) => Some(error.clone()),\n                (None, Some(dictionary)) => Some(Expr::object(vec![",
+    find: "            Conversion::Dyn(dictionary) => Expr::object(vec![\n",
+    replace: "            Conversion::Dyn(_) => error,\n            #[allow(unreachable_patterns)]\n            Conversion::Dyn(dictionary) => Expr::object(vec![\n",
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "question-null-test",
     breaks: "`?` of an Option never falsy tests `item == null`, not `!item`",
     file: "src/lower/std_types/result.rs",
-    find: "                Some(inner) => self.absent(subject, inner),\n",
-    replace: "                Some(_) => Expr::bin(Op::LooseEq, subject, Expr::null()),\n",
+    find: "            Some(inner) => self.absent(subject, inner),\n",
+    replace: "            Some(_) => Expr::bin(Op::LooseEq, subject, Expr::null()),\n",
     tests: ["test/lowering.test.ts", "-t", "of an Option never falsy tests its truth"],
   },
 ];

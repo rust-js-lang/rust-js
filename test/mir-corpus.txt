@@ -10,6 +10,7 @@ block_modules.rs
 clamp_reversed.rs
 closure_clone_shared.rs
 conditional_move_drops.rs
+conditional_regions.rs
 const_generic_traits.rs
 const_generic_values.rs
 const_too_large.rs
@@ -24,6 +25,8 @@ drop_params.rs
 drop_temporaries.rs
 drop_temporary_operands.rs
 duration_overflow.rs
+dyn_drops.rs
+early_bound_method_lifetime.rs
 empty_pattern.rs
 evaluation_order.rs
 float_clamp_nan.rs
@@ -37,6 +40,7 @@ generic_operators.rs
 guard_statements.rs
 guarded_bindings.rs
 higher_ranked_bound.rs
+higher_ranked_dyn.rs
 ilog_zero.rs
 impl_names.rs
 index_out_of_bounds.rs
@@ -56,6 +60,7 @@ overflowing_literals.rs
 panic_display.rs
 path_text.rs
 pretty_debug_derived.rs
+question_early_returns.rs
 radix_out_of_range.rs
 range_searches.rs
 refcell_borrow_while_mut.rs
@@ -73,6 +78,7 @@ stepped_nested.rs
 supertraits_by_reference.rs
 thread_local_borrow_inside.rs
 thread_local_syntax.rs
+trait_param_drops.rs
 unsized_struct_slice.rs
 unwrap_none.rs
 unwrap_string_debug.rs
