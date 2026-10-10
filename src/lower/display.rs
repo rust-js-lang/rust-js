@@ -1029,12 +1029,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // a `TypeId` its hash, which rust-js doesn't keep (ADR 0331).
         if self.recognition().is_dyn_any(ty) {
             if value.has_effects() {
-                return Err(self.unsupported(span, "`{:?}` of a `dyn Any` made here"));
+                self.runtime.insert(Helper::DebugAny);
+                return Ok(Expr::call(Expr::var("$debugAny"), vec![value]));
             }
             return Ok(Expr::str("Any { .. }"));
         }
         if self.recognition().is_type_id(ty) {
             return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));
+        }
+        // A `MaybeUninit` shows its type's name, `MaybeUninit<u32>` (ADR 0332).
+        if self.recognition().uninit_of(ty).is_some() {
+            if ty.has_param() {
+                return Err(self.unsupported(span, "`{:?}` of a generic `MaybeUninit`"));
+            }
+            let name = rustc_const_eval::util::type_name(self.tcx, ty);
+            return Ok(Expr::str(&name[name.find("MaybeUninit").unwrap_or(0)..]));
         }
         // A `fmt::Result`: `undefined`, `Ok`, or the `fmt::Error` it caught
         // (ADR 0187), and a `fmt::Error`, which holds nothing.

@@ -545,10 +545,10 @@
 - String::try_reserve
 - String::try_reserve_exact
 + String::with_capacity
-# Box 5 of 17
+# Box 11 of 17
 - Box::as_mut_ptr
 - Box::as_ptr
-- Box::assume_init
++ Box::assume_init
 + Box::downcast
 - Box::from_non_null
 - Box::from_raw
@@ -557,12 +557,12 @@
 - Box::into_raw
 + Box::leak
 + Box::new
-- Box::new_uninit
-- Box::new_uninit_slice
-- Box::new_zeroed
-- Box::new_zeroed_slice
++ Box::new_uninit
++ Box::new_uninit_slice
++ Box::new_zeroed
++ Box::new_zeroed_slice
 + Box::pin
-- Box::write
++ Box::write
 # Pin 15 of 16
 - Pin::as_deref_mut
 + Pin::as_mut

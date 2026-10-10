@@ -396,4 +396,20 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n            return Err",
     tests: ["test/corpus.test.ts", "-t", "type_id_debug"],
   },
+  {
+    name: "uninit-debug-full-name",
+    breaks: "`{:?}` of a `MaybeUninit` shows its path, where std shows from `MaybeUninit`",
+    file: "src/lower/display.rs",
+    find: "            return Ok(Expr::str(&name[name.find(\"MaybeUninit\").unwrap_or(0)..]));",
+    replace: "            return Ok(Expr::str(&name));",
+    tests: ["test/corpus.test.ts", "-t", "box_uninit"],
+  },
+  {
+    name: "debug-any-unrun",
+    breaks: "`{:?}` of a `dyn Any` made where it's shown skips what made it",
+    file: "src/lower/display.rs",
+    find: "                return Ok(Expr::call(Expr::var(\"$debugAny\"), vec![value]));",
+    replace: "                return Ok(Expr::str(\"Any { .. }\"));",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
+  },
 ];

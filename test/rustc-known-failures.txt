@@ -61,7 +61,6 @@ codegen/correctly-monomorphize-generic-drop-impl.rs	error: rust-js does not supp
 codegen/dont-roundup-dst-prefix-size-to-alignment.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not support `size_of_val` of a value without one size yet
 codegen/issue-27859.rs	error: rust-js does not support calling `std::iter::ExactSizeIterator::len` yet
-coercion/any-trait-object-debug-12744.rs	error: rust-js does not support `{:?}` of a `dyn std::any::Any` yet
 coercion/basic-ptr-coercions.rs	error: rust-js does not support values of type `*const isize` yet
 coercion/box-dyn-to-ref-dyn.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 coercion/coerce-overloaded-autoderef.rs	error: rust-js does not support `&mut` to a `&mut &mut std::boxed::Box<T>` yet
@@ -158,7 +157,6 @@ layout/aggregate-lang/struct-offsets.rs	error: rust-js does not support calling 
 layout/issue-112048-unsizing-field-order.rs	error: rust-js does not support a `GcNode<dyn std::fmt::Debug>`, whose last field is a `dyn` yet
 layout/null-pointer-optimization.rs	error: rust-js does not support `{:?}` of a `fn()` yet
 let-else/let-else-drop-order.rs	error: rust-js does not support a `&mut` of this in a variable yet
-lifetimes/any-lifetime-escape-higher-rank.rs	error: rust-js does not support calling `<(dyn std::any::Any + 'static)>::downcast_ref` yet
 lifetimes/rvalue-cleanup-shortcircuit.rs	error: rust-js does not support calling `std::env::args` yet
 lint/issue-20343.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 liveness/var-defined-after-early-return.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
@@ -248,7 +246,6 @@ traits/default-method/skip-default-method-if-normalization-fails.rs	error: rust-
 traits/dyn-drop-principal.rs	error: rust-js does not support values of type `dyn std::marker::Send` yet
 traits/encoder-trait-bounds-regression.rs	error: rust-js does not support calling `std::io::Write::write_fmt` yet
 traits/impl-object-overlap-issue-23853.rs	error: rust-js does not support this trait implementation yet
-traits/object-one-type-two-traits.rs	error: rust-js does not support calling `<(dyn std::any::Any + 'static)>::is` yet
 traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait method `Q::q` yet
 traits/principal-less-objects.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 transmute/transmute-array-to-scalar.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet

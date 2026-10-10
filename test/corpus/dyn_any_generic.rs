@@ -21,6 +21,25 @@ fn erased<T: 'static>(value: T) -> Box<dyn Any> {
     Box::new(value)
 }
 
+fn first(text: &String) -> &str {
+    text
+}
+
+fn made() -> Box<dyn Any> {
+    println!("made");
+    Box::new(1)
+}
+
+trait AsStr<'a, 'b> {
+    fn get(&'a self) -> &'b str;
+}
+
+impl<'a> AsStr<'a, 'a> for String {
+    fn get(&'a self) -> &'a str {
+        self
+    }
+}
+
 fn main() {
     println!("{} {} {}", same::<i32, i32>(), same::<i32, i64>(), relay::<u8>());
     let items: Vec<Box<dyn Any>> = vec![Box::new(1u8), Box::new("a"), Box::new(2u8), erased(String::from("e"))];
@@ -34,4 +53,9 @@ fn main() {
     println!("{:?} {}", sent.downcast_ref::<Option<u16>>(), sent.is::<u16>());
     let none: Box<dyn Any> = Box::new(None::<u16>);
     println!("{:?}", none.downcast_ref::<Option<u16>>());
+    let f: Box<dyn Any> = Box::new(first as fn(&String) -> &str);
+    println!("{} {}", f.is::<fn(&String) -> &str>(), f.is::<fn(&String) -> &'static str>());
+    println!("{:?}", made());
+    let held: Box<dyn Any> = Box::new(Box::new(String::from("h")) as Box<dyn for<'a> AsStr<'a, 'a>>);
+    println!("{} {}", held.is::<Box<dyn for<'a> AsStr<'a, 'a>>>(), held.is::<Box<dyn for<'a> AsStr<'a, 'static>>>());
 }

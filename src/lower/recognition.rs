@@ -20,6 +20,7 @@ use super::std_types::range::{RangeKind, RangeOp};
 use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
 use super::std_types::text::{StringEdit, TextOp};
+use super::std_types::uninit::UninitOp;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
@@ -136,6 +137,8 @@ pub(super) enum Std {
     Pin(PinOp),
     /// `TypeId`s and a `dyn Any`'s downcasts (ADR 0331).
     Any(AnyOp),
+    /// `MaybeUninit`'s, and a `Box`'s made before its value (ADR 0332).
+    Uninit(UninitOp),
     /// An atomic's operations (ADR 0096), on its `{ value }` as a `Cell`'s:
     /// `load` and `into_inner`, `store`, `swap`, the `fetch_` ones, with
     /// the operator or whether it's `fetch_max`, and `compare_exchange`.
@@ -434,6 +437,7 @@ impl Std {
                 | Std::GuardValue { mutable: true }
                 | Std::Pin(PinOp::Mut | PinOp::Map)
                 | Std::Any(AnyOp::DowncastMut)
+                | Std::Uninit(UninitOp::Write | UninitOp::InitMut)
                 | Std::Text(TextOp::EncodeUtf8)
                 | Std::OptionPlace(
                     OptionPlaceOp::GetOrInsert
@@ -1409,6 +1413,21 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "of" if self.is_type_id(owner) => Std::Any(AnyOp::TypeIdOf),
             // A `Pin` is its pointer (ADR 0329).
             "pin" | "into_pin" if owner.is_box() => Std::Same,
+            // What a `Box` or a `MaybeUninit` holds, or `undefined` before it's
+            // written (ADR 0332).
+            "new_uninit" if owner.is_box() => Std::Uninit(UninitOp::Uninit),
+            "new_zeroed" if owner.is_box() => Std::Uninit(UninitOp::Zeroed),
+            "new_uninit_slice" if owner.is_box() => Std::Uninit(UninitOp::Slice { zeroed: false }),
+            "new_zeroed_slice" if owner.is_box() => Std::Uninit(UninitOp::Slice { zeroed: true }),
+            "write" if owner.is_box() => Std::Uninit(UninitOp::BoxWrite),
+            "assume_init" if owner.is_box() => Std::Same,
+            "uninit" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Uninit),
+            "zeroed" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Zeroed),
+            "new" | "assume_init" | "assume_init_ref" | "assume_init_read" if self.uninit_of(owner).is_some() => {
+                Std::Same
+            }
+            "write" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::Write),
+            "assume_init_mut" if self.uninit_of(owner).is_some() => Std::Uninit(UninitOp::InitMut),
             "new" | "new_unchecked" | "into_inner" | "into_inner_unchecked" | "get_ref" | "static_ref"
                 if self.pinned(owner).is_some() =>
             {
@@ -2689,6 +2708,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if traits.principal_def_id().is_some_and(|id| self.tcx.is_diagnostic_item(Symbol::intern("Any"), id)))
     }
 
+    /// A `MaybeUninit<T>`'s `T`, which it is in JS, or `undefined` (ADR 0332).
+    pub(super) fn uninit_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.kind() {
+            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::MaybeUninit) => args.types().next(),
+            _ => None,
+        }
+    }
+
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
     pub(super) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
@@ -2700,6 +2727,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_std_wrapper(&self, ty: Ty<'tcx>) -> bool {
         ty.is_box()
             || self.pinned(ty).is_some()
+            || self.uninit_of(ty).is_some()
             || self.is_lang_adt(ty, LangItem::String)
             || self.is_rc(ty)
             || self.is_guard(ty)
@@ -4101,6 +4129,8 @@ pub(crate) fn is_std_def(tcx: TyCtxt<'_>, id: DefId, item: StdItem) -> bool {
                     || name.as_str() == lock && tcx.crate_name(id.krate) == sym::std
             }
         }
+        // A lang item, which has no diagnostic item.
+        StdItem::MaybeUninit => tcx.is_lang_item(id, LangItem::MaybeUninit),
         _ => tcx.is_diagnostic_item(item.name(), id),
     }
 }

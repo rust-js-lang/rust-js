@@ -18,6 +18,7 @@
 //! | ranges | `{ start, end }` | `range` |
 //! | `mpsc` channels | a queue | `channel` |
 //! | `Pin` | its pointer | `pin` |
+//! | `MaybeUninit`, a `Box` of one | what it holds, or `undefined` | `uninit` |
 //! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
 //!
 //! Which std type each is, and how much of each is known, is
@@ -39,4 +40,5 @@ pub(super) mod rc;
 pub(super) mod result;
 pub(super) mod slice;
 pub(super) mod text;
+pub(super) mod uninit;
 pub(super) mod vec;

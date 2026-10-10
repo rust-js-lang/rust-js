@@ -267,4 +267,12 @@ export const mutations: Mutation[] = [
     replace: "            return !self.is_object(pointer);",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
+  {
+    name: "uninit-not-nullish",
+    breaks: "`Some(MaybeUninit::uninit())` is `None`",
+    file: "src/lower/representation.rs",
+    find: "            || self.recognition().uninit_of(ty).is_some()\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "box_uninit"],
+  },
 ];

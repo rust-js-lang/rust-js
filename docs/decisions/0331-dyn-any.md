@@ -48,12 +48,16 @@ const n = items[0].impl.type_id() === "i32" ? items[0].value : undefined;
   and `(*c).type_id()` is its value's.
 - **A binding's `&dyn Any`, any JS value, is given the value**, not the
   pair: webapi binds WebIDL's `object` so.
-- **`{:?}` of a `dyn Any`** is `Any { .. }`, as std's.
+- **`{:?}` of a `dyn Any`** is `Any { .. }`, as std's, and `$debugAny(made())`
+  of one made where it's shown, which runs what makes it.
 - **Refused, loud**: a closure's `TypeId`, as closures share a name; `{:?}`
   of a `TypeId`, its hash; `<` of `TypeId`s and a `BTreeSet` of them, by
-  their hashes' order; a counted `Rc<dyn Any>`'s downcast. A type of a crate
-  linked at two versions has its hash beside its name, which tells them
-  apart.
+  their hashes' order; a counted `Rc<dyn Any>`'s downcast. A type whose name doesn't tell
+  it apart has its hash beside its name: a `dyn` or a function pointer,
+  whose higher-ranked lifetimes a name leaves out, `dyn for<'a> AsStr<'a,
+  'a>` and `dyn for<'a> AsStr<'a, 'static>`, and a type of a crate linked
+  at two versions. (Amended: rustc's `any-lifetime-escape-higher-rank.rs`
+  found the `dyn`'s.)
 
 ## Why
 

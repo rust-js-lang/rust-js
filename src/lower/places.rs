@@ -407,6 +407,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             match self.place(borrowed) {
                 Some((place, _)) => place,
+                // `&mut *slot.write(v)` of a call that gives a cell: its `value`.
+                None if let ExprKind::Deref { arg } = self.thir[self.strip(borrowed)].kind
+                    && self.is_cell_value(arg) =>
+                {
+                    match self.expr(arg, out)? {
+                        // A handle on a place: the place.
+                        Expr {
+                            kind: js::ExprKind::Handle(place),
+                            ..
+                        } => *place,
+                        cell => {
+                            let cell = if cell.reads_same() {
+                                cell
+                            } else {
+                                self.spill("cell", cell, out)
+                            };
+                            Expr::member(cell, "value")
+                        }
+                    }
+                }
                 None => return Err(self.unsupported(span, "a `&mut` of this in a variable")),
             }
         };

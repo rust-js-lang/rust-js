@@ -1102,6 +1102,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.any_call(known, call, &mut values, out)? {
             return Ok(js);
         }
+        if let Some(js) = self.uninit_call(known, call, &mut values, out)? {
+            return Ok(js);
+        }
         if let Some(js) = self.channel_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -1234,6 +1237,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
             Std::Pin(_) => unreachable!("lowered by pin_call"),
             Std::Any(_) => unreachable!("lowered by any_call"),
+            Std::Uninit(_) => unreachable!("lowered by uninit_call"),
             Std::Cow(_) => unreachable!("lowered by cow_call"),
             Std::Rc(_) => unreachable!("lowered by rc_call"),
             Std::Slice(_) => unreachable!("lowered by slice_call"),

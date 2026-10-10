@@ -2055,6 +2055,12 @@ export function $deadlock() {
   throw new Error("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
 }
 
+// `{:?}` of a `dyn Any` made where it's shown (ADR 0331): what std shows of
+// any, once what made it ran.
+export function $debugAny() {
+  return "Any { .. }";
+}
+
 // A `OnceLock`'s `get_or_init(f)`: what it holds, made by `f` the first
 // time. An `f` that sets it itself deadlocks in Rust, which JS can't do.
 export function $getOrInitLock(cell, f) {

@@ -145,7 +145,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The key a `TypeId` is: rustc's name for the type, which each crate
     /// rust-js compiles agrees on. Not a closure's, which share a name; and a
-    /// type of a crate linked at two versions has its hash too.
+    /// type whose name doesn't tell it apart has its hash too.
     pub(in crate::lower) fn type_id_key(&self, of: Ty<'tcx>, span: Span) -> R<String> {
         let unnamed = of.walk().any(|part| {
             part.as_type().is_some_and(|t| {
@@ -159,9 +159,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "the `TypeId` of a closure's type"));
         }
         let name = rustc_const_eval::util::type_name(self.tcx, of);
+        // A name leaves out lifetimes, which tell a function pointer's or a
+        // `dyn`'s types apart, `for<'a> fn(&'a str) -> &'a str` from `..
+        // -> &'static str`; and a crate linked at two versions has one path
+        // for two types.
         let twice = of.walk().any(|part| {
-            part.as_type()
-                .is_some_and(|t| matches!(t.kind(), ty::Adt(adt, _) if linked_twice(self.tcx, adt.did())))
+            part.as_type().is_some_and(|t| match t.kind() {
+                ty::Adt(adt, _) => linked_twice(self.tcx, adt.did()),
+                ty::FnPtr(..) | ty::Dynamic(..) => true,
+                _ => false,
+            })
         });
         Ok(match twice {
             true => format!("{name}#{:x}", self.tcx.type_id_hash(of).as_u128()),

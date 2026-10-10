@@ -51,4 +51,12 @@ export const mutations: Mutation[] = [
     replace: "            id if id.is_some() => dictionary,",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
+  {
+    name: "higher-ranked-by-name",
+    breaks: "`dyn for<'a> T<'a, 'a>` and `.. T<'a, 'static>` share a `TypeId`, their name",
+    file: "src/lower/std_types/any.rs",
+    find: "                ty::FnPtr(..) | ty::Dynamic(..) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
+  },
 ];

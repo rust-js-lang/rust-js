@@ -224,4 +224,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(Std::Pin(PinOp::Mut)) if false => {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
+  {
+    name: "uninit-let-unbound",
+    breaks: "`let r: &mut String = slot.write(..)` is an error",
+    file: "src/lower/places.rs",
+    find: "                None if let ExprKind::Deref { arg } = self.thir[self.strip(borrowed)].kind\n                    && self.is_cell_value(arg) =>",
+    replace: "                None if let ExprKind::Deref { arg } = self.thir[self.strip(borrowed)].kind\n                    && false\n                    && self.is_cell_value(arg) =>",
+    tests: ["test/corpus.test.ts", "-t", "box_uninit"],
+  },
 ];

@@ -924,4 +924,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
+  {
+    name: "maybe-uninit-by-diagnostic",
+    breaks: "`MaybeUninit` is never recognized, its values errors",
+    file: "src/lower/recognition.rs",
+    find: "        StdItem::MaybeUninit => tcx.is_lang_item(id, LangItem::MaybeUninit),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "box_uninit"],
+  },
+  {
+    name: "box-write-unknown",
+    breaks: "`Box::write(b, v)` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"write\" if owner.is_box() => Std::Uninit(UninitOp::BoxWrite),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "box_uninit"],
+  },
+  {
+    name: "uninit-write-no-cell",
+    breaks: "`let r: &mut String = slot.write(..)` is an error",
+    file: "src/lower/recognition.rs",
+    find: "                | Std::Uninit(UninitOp::Write | UninitOp::InitMut)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "box_uninit"],
+  },
 ];

@@ -45,6 +45,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty.is_unit()
             || matches!(ty.kind(), ty::Param(_) | ty::Alias(..))
             || self.option_of(ty).is_some()
+            // `undefined` before it's written (ADR 0332).
+            || self.recognition().uninit_of(ty).is_some()
             || matches!(ty.kind(), ty::Adt(adt, _) if adt.is_struct() && adt.non_enum_variant().fields.is_empty())
     }
 
