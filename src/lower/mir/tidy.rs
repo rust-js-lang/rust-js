@@ -27,6 +27,69 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
     if !read.contains(result) {
         body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name == result));
     }
+    declarations(body);
+}
+
+/// `let x; .. x = e;` is `.. let x = e;`, where nothing between names `x`,
+/// nor does `e`; and a `let` nothing assigns after, a closure neither, is
+/// a `const`.
+fn declarations(body: &mut Vec<Stmt>) {
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            let first = match &stmts[i].kind {
+                // What it's declared with does nothing, and is never read.
+                StmtKind::Let(name, init) if init.as_ref().is_none_or(|e| !e.has_effects()) => (i + 1..stmts.len())
+                    .find(|&j| js::mentions_in(&stmts[j..=j], name) > 0)
+                    .filter(|&j| {
+                        matches!(&stmts[j].kind, StmtKind::Assign(target, _)
+                            if matches!(&target.kind, ExprKind::Var(assigned) if assigned == name))
+                            && js::mentions_in(&stmts[j..=j], name) == 1
+                    }),
+                _ => None,
+            };
+            let Some(j) = first else {
+                i += 1;
+                continue;
+            };
+            let StmtKind::Let(name, _) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            let assign = &mut stmts[j - 1];
+            let StmtKind::Assign(_, value) = std::mem::replace(&mut assign.kind, StmtKind::Break(None)) else {
+                unreachable!("matched")
+            };
+            assign.kind = StmtKind::Let(name, Some(value));
+        }
+    });
+    let mut assigned = HashSet::new();
+    js::each_block_mut(body, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Assign(target, _) = &stmt.kind
+                && let ExprKind::Var(name) = &target.kind
+            {
+                assigned.insert(name.clone());
+            }
+        }
+    });
+    // A handle on a variable, which its setter assigns (ADR 0099).
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind
+            && let ExprKind::Var(name) = &place.kind
+        {
+            assigned.insert(name.clone());
+        }
+    });
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Let(name, Some(value)) = &mut stmt.kind
+                && !assigned.contains(name)
+            {
+                let value = std::mem::replace(value, js::Expr::undefined());
+                stmt.kind = StmtKind::Const(std::mem::take(name), value);
+            }
+        }
+    });
 }
 
 /// `result = e; return result;` is `return e;`: nothing reads the return

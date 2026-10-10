@@ -1090,6 +1090,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 exprs.push(Expr::handle(place));
                 continue;
             }
+            // A `dyn`'s, or a slice's, the callee can't replace whole: its box
+            // is never written, so it isn't copied back.
+            let param = self
+                .tcx
+                .fn_sig(def_id)
+                .instantiate(self.tcx, generic_args)
+                .skip_binder()
+                .inputs()[i];
+            if param
+                .builtin_deref(true)
+                .is_some_and(|pointee| !pointee.is_sized(self.tcx, self.typing_env))
+            {
+                exprs.push(Expr::object(vec![Prop::Field("value".into(), place)]));
+                continue;
+            }
             self.flush(state, out)?;
             for expr in &mut exprs {
                 if expr.has_effects() {

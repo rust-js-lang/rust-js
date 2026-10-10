@@ -47,6 +47,7 @@ copied_closure.rs
 copied_closure_bound.rs
 cow_own_to_owned.rs
 debug_options.rs
+declarations_assigned_later.rs
 default_method_clones.rs
 default_method_drops.rs
 deque_rotate_past_end.rs
@@ -72,6 +73,7 @@ duration_overflow.rs
 dyn_any_closure.rs
 dyn_any_counted_rc.rs
 dyn_drops.rs
+dyn_generic.rs
 dyn_mut.rs
 early_bound_method_lifetime.rs
 empty_pattern.rs

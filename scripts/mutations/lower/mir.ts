@@ -370,4 +370,12 @@ export const mutations: Mutation[] = [
     replace: "                            let width = match spec.width_from {\n                                Some(_) => None,\n",
     tests: ["test/mir.test.ts","-t","format_width_arguments"],
   },
+  {
+    name: "mir-unsized-box-copied-back",
+    breaks: "a `&mut dyn` given to generic code is copied back to its `const`",
+    file: "src/lower/mir.rs",
+    find: "                .is_some_and(|pointee| !pointee.is_sized(self.tcx, self.typing_env))\n",
+    replace: "                .is_some_and(|pointee| false && !pointee.is_sized(self.tcx, self.typing_env))\n",
+    tests: ["test/mir.test.ts","-t","dyn_generic"],
+  },
 ];
