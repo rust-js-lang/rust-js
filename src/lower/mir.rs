@@ -381,6 +381,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         };
                         count_place(&mut locals, place, true);
                         count_rvalue(&mut locals, rvalue);
+                        // The whole through its box or `MaybeUninit` borrowed mutably,
+                        // `Box::new_uninit()`'s written by `write`: as the local.
+                        if let Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) = rvalue
+                            && !borrowed.projection.is_empty()
+                            && self.whole(body, borrowed)
+                        {
+                            locals.writes[borrowed.local] += 1;
+                        }
                         // A `&mut` of a value JS can't share is its place, which
                         // a write through it, a closure's say, assigns.
                         let changes = match rvalue {
@@ -1646,72 +1654,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             AggregateKind::Tuple if values.is_empty() => Ok(Value::Expr(Expr::undefined())),
             AggregateKind::Tuple => Ok(Value::List(values)),
             AggregateKind::Adt(did, variant_index, args, _, _) => {
-                let adt = self.tcx.adt_def(*did);
-                let ty = Ty::new_adt(self.tcx, adt, args);
+                let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(*did), args);
                 let exprs = values
                     .into_iter()
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?;
-                Ok(Value::Expr(self.mir_adt(adt, *variant_index, ty, exprs, span)?))
+                Ok(Value::Expr(self.adt_value(ty, *variant_index, exprs, span)?))
             }
             AggregateKind::Closure(def_id, _) => Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?)),
             _ => Err(self.unsupported(span, "this aggregate, from its MIR")),
-        }
-    }
-
-    /// A struct's or a variant's value, as the THIR's `adt` makes it.
-    fn mir_adt(
-        &mut self,
-        adt: ty::AdtDef<'tcx>,
-        variant_index: VariantIdx,
-        ty: Ty<'tcx>,
-        fields: Vec<Expr>,
-        span: Span,
-    ) -> R<Expr> {
-        let variant = adt.variant(variant_index);
-        if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
-            return Ok(match fields.into_iter().next() {
-                Some(value) if self.boxed_payload(self.option_of(ty).expect("an `Option`")) => self.some(value),
-                Some(value) => value,
-                None => Expr::undefined(),
-            });
-        }
-        if adt.is_enum() {
-            if bindings::is_untagged(self.tcx, adt.did()) {
-                return fields
-                    .into_iter()
-                    .next()
-                    .ok_or_else(|| self.unsupported(span, "an untagged enum's variant without fields, from its MIR"));
-            }
-            if variant.fields.is_empty() {
-                return Ok(bindings::unit_variant(self.tcx, adt.did(), variant));
-            }
-            let props = std::iter::once(Prop::Field(
-                bindings::tag_key(self.tcx, adt.did()),
-                bindings::variant_tag(self.tcx, variant),
-            ))
-            .chain(
-                fields
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, v)| Prop::Field(variant_field(self.tcx, variant, i), v)),
-            )
-            .collect();
-            return Ok(Expr::object(props));
-        }
-        match self.shape(ty) {
-            super::Shape::Array(_) => Ok(Expr::array(fields)),
-            super::Shape::Object(names) => Ok(Expr::object(
-                names
-                    .into_iter()
-                    .zip(fields)
-                    .map(|((name, field_ty), value)| Prop::Field(name, self.holding(value, field_ty)))
-                    .collect(),
-            )),
-            super::Shape::Other if fields.is_empty() => {
-                Ok(bindings::unit_name(self.tcx, adt.did()).map_or_else(Expr::undefined, Expr::str))
-            }
-            super::Shape::Other => Err(self.unsupported(span, &format!("a `{ty}`, from its MIR"))),
         }
     }
 

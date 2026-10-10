@@ -9,6 +9,7 @@ use super::representation::ordering_value;
 use super::{Dest, FnCx, R, Shape, assembled};
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
+use rustc_abi::VariantIdx;
 use rustc_hir::def::CtorKind;
 use rustc_middle::thir::{self as thir, AdtExprBase, ExprId};
 use rustc_middle::ty::{self, Ty};
@@ -286,6 +287,81 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A `Cell` in an object's field is what it holds (ADR 0288).
             items.push(if object { self.holding(item, field_ty) } else { item });
         }
+        Ok(assembled(shape, tag, items))
+    }
+
+    /// A struct's or a variant's value, of its fields' values in the order
+    /// they're declared: as `adt` makes a literal without a base, which is
+    /// how MIR makes each (ADR 0364).
+    pub(super) fn adt_value(
+        &mut self,
+        ty: Ty<'tcx>,
+        variant_index: VariantIdx,
+        fields: Vec<Expr>,
+        span: Span,
+    ) -> R<Expr> {
+        let ty::Adt(adt_def, args) = *ty.kind() else {
+            unreachable!("an ADT's value")
+        };
+        let variant = adt_def.variant(variant_index);
+        if let Some(inner) = self.option_of(ty) {
+            return Ok(match fields.into_iter().next() {
+                Some(value) if self.boxed_payload(inner) => self.some(value),
+                Some(value) => value,
+                None => Expr::undefined(),
+            });
+        }
+        if self.untagged(ty).is_some() && variant.fields.is_empty() {
+            return Ok(Expr::str(bindings::variant_name(self.tcx, variant)));
+        }
+        if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt_def.did(), variant) {
+            let Ok([field]) = <[Expr; 1]>::try_from(fields) else {
+                return Err(self.unsupported(span, "this untagged enum's variant"));
+            };
+            return Ok(field);
+        }
+        if let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {
+            return Ok(Expr::int(n));
+        }
+        if adt_def.is_enum() && variant.fields.is_empty() {
+            return Ok(bindings::unit_variant(self.tcx, adt_def.did(), variant));
+        }
+        if adt_def.is_union() {
+            return Err(self.unsupported(span, "unions"));
+        }
+        if variant.ctor_kind() == Some(CtorKind::Const) {
+            return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::undefined, Expr::str));
+        }
+        let mut fields = fields;
+        // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275).
+        for (field, value) in variant.fields.iter().zip(&mut fields) {
+            if bindings::is_nullable(self.tcx, field) {
+                let made = std::mem::replace(value, Expr::undefined());
+                *value = match made.kind {
+                    js::ExprKind::Undefined => Expr::null(),
+                    _ if made.is_constant() => made,
+                    _ => Expr::bin(js::Op::Coalesce, made, Expr::null()),
+                };
+            }
+        }
+        let tag = (adt_def.is_enum()).then(|| {
+            (
+                bindings::tag_key(self.tcx, adt_def.did()),
+                bindings::variant_tag(self.tcx, variant),
+            )
+        });
+        let shape = match tag {
+            Some(_) => Shape::Object(self.variant_fields(variant, args)),
+            None => self.shape(ty),
+        };
+        let items = match &shape {
+            // A `Cell` in an object's field is what it holds (ADR 0288).
+            Shape::Object(names) => (names.iter().zip(fields))
+                .map(|(&(_, field_ty), value)| self.holding(value, field_ty))
+                .collect(),
+            Shape::Array(_) => fields,
+            Shape::Other => return Err(self.unsupported(span, &format!("a `{ty}`"))),
+        };
         Ok(assembled(shape, tag, items))
     }
 

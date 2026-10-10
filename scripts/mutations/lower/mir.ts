@@ -346,4 +346,12 @@ export const mutations: Mutation[] = [
     replace: "                place.projection.is_empty() && !state.locals.borrowed[place.local]\n",
     tests: ["test/mir.test.ts","-t","assignment_order"],
   },
+  {
+    name: "mir-whole-mut-borrow-unwritten",
+    breaks: "`Box::new_uninit()`, written through `write`, is a `const` assigned again",
+    file: "src/lower/mir.rs",
+    find: "                            locals.writes[borrowed.local] += 1;\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","box_uninit"],
+  },
 ];

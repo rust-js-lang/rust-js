@@ -18,6 +18,7 @@ bindings_before_branch.rs
 bit_methods.rs
 bitwise_operators.rs
 block_modules.rs
+box_uninit.rs
 box_zeroed_struct.rs
 boxed_str.rs
 byte_strings.rs
@@ -29,6 +30,7 @@ closure_clone.rs
 closure_clone_cell.rs
 closure_clone_shared.rs
 closure_mut_ref.rs
+collection_methods.rs
 combinators_owned_drops.rs
 compound_assignment_order.rs
 conditional_move_drops.rs

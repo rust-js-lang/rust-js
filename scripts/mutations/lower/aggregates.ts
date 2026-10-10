@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "untagged-unit-unmade",
     breaks: "`Fallback::Blocking` isn't made, as it holds no value",
     file: "src/lower/aggregates.rs",
-    find: "        if self.untagged(ty).is_some() && variant.fields.is_empty() {",
-    replace: "        if false && self.untagged(ty).is_some() && variant.fields.is_empty() {",
+    find: "        // One without fields is its name's string, `\"blocking\"`.\n        if self.untagged(ty).is_some() && variant.fields.is_empty() {",
+    replace: "        // One without fields is its name's string, `\"blocking\"`.\n        if false && self.untagged(ty).is_some() && variant.fields.is_empty() {",
     tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
   },
   {
@@ -139,8 +139,8 @@ export const mutations: Mutation[] = [
     name: "nullable-literal-none-coalesced",
     breaks: "a `#[rust_js::nullable]` field's `None` is `undefined ?? null`, not `null`",
     file: "src/lower/aggregates.rs",
-    find: "            js::ExprKind::Undefined => Expr::null(),\n",
-    replace: "",
+    find: "\n            js::ExprKind::Undefined => Expr::null(),\n",
+    replace: "\n",
     tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
@@ -258,5 +258,13 @@ export const mutations: Mutation[] = [
       "-t",
       "tag may be a boolean"
     ]
+  },
+  {
+    name: "adt-value-ordering-tag",
+    breaks: "an `Ordering` MIR makes is its variant's name, not -1, 0 or 1",
+    file: "src/lower/aggregates.rs",
+    find: "        if let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
+    replace: "        if false && let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
+    tests: ["test/mir.test.ts","-t","collection_methods"],
   },
 ];
