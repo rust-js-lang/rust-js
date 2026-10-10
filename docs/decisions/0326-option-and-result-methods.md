@@ -40,8 +40,8 @@ where it fills or takes from the `Option`.**
 - **`b` is worked out either way**, as Rust's argument is: in a `const`
   first where it has effects.
 - **`as_deref` is the value of a `String`, a `Vec`, a box or a
-  reference**, as ADR 0211's `Option` of a `String` was; another type's
-  own `Deref` is refused.
+  reference**, as ADR 0211's `Option` of a `String` was; of an `Rc` or a
+  type's own `Deref`, see Since.
 - **Refused, loud**: an `Option` whose value could look like `None`
   changed in place, one in a map changed in place, `as_mut_slice`,
   `iter_mut`, a `Result`'s `as_mut`, and the pinned ones.
