@@ -184,3 +184,27 @@ test("what another crate's derive writes is compiled as the crate's own code", a
   const { js } = await check(manifest, { packageName: "app" });
   expect(printed(js)).toBe(run(cargo(manifest, "run", "-p", "check")));
 }, 600_000);
+
+// The app, the package the tooling builds, is compiled as a program: no
+// other crate uses it, so what only a library can't do, an `Rc` whose counts
+// it reads, which another crate might share, it does. Built as another's
+// dependency it's a library again, Cargo told by what rust-js records of
+// `RUST_JS_APP`, and refused.
+test("the app's crate is a program, and a library once another uses it", async () => {
+  const dir = fixture("crates-app-program");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app", "user"]\nresolver = "2"\n');
+  for (const [name, uses] of [["app", ""], ["user", 'app = { path = "../app" }\n']]) {
+    mkdirSync(join(dir, name, "src"), { recursive: true });
+    writeFileSync(join(dir, name, "Cargo.toml"), `[package]\nname = "${name}"\nversion = "0.1.0"\nedition = "2024"\n\n[dependencies]\n${uses}`);
+  }
+  writeFileSync(join(dir, "app", "src", "lib.rs"), "use std::rc::Rc;\n\npub struct Shared(pub Rc<u32>);\n\npub fn main() {\n    let a = Rc::new(5);\n    let b = Rc::clone(&a);\n    println!(\"{} {}\", Rc::strong_count(&a), *b);\n}\n");
+  writeFileSync(join(dir, "user", "src", "lib.rs"), "pub fn main() {\n    app::main();\n}\n");
+  const manifest = join(dir, "Cargo.toml");
+  run(cargo(manifest, "generate-lockfile"));
+  const built = async (packageName: string) => (await check(manifest, { packageName })).js;
+  expect(printed(await built("app"))).toBe("2 5\n");
+  await expect(built("user")).rejects.toThrow("another crate may share");
+  expect(printed(await built("app"))).toBe("2 5\n");
+  // The whole workspace, each member a package Cargo was asked for: no app.
+  await expect(check(manifest, { packageName: undefined })).rejects.toThrow("another crate may share");
+}, 600_000);

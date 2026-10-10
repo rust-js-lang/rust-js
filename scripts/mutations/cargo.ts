@@ -22,9 +22,9 @@ export const mutations: Mutation[] = [
     name: "cargo-app-not-library",
     breaks: "the package Cargo was asked for is built as the app, and fresh as that when another build uses it",
     file: "src/cargo.rs",
-    find: '        "--library".into(),\n    ];\n',
-    replace: '    ];\n    if std::env::var_os("CARGO_PRIMARY_PACKAGE").is_none() {\n        ours.push("--library".into());\n    }\n',
-    tests: ["test/cargo-workspace.test.ts", "test/cargo-react.test.ts", "-t", "Cargo workspace"],
+    find: "    if std::env::var(APP)\n        .ok()\n        .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
+    replace: "    if std::env::var_os(\"CARGO_PRIMARY_PACKAGE\").is_none() {\n",
+    tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
   },
   {
     name: "cargo-transitive-untold",
@@ -73,5 +73,13 @@ export const mutations: Mutation[] = [
     find: '    if let [flag] = given\n        && flag == "-vV"\n',
     replace: '    if let [flag] = given\n        && flag == "-vV-"\n',
     tests: ["test/cargo-workspace.test.ts", "-t", "told which rust-js"],
+  },
+  {
+    name: "cargo-app-a-library",
+    breaks: "the app, `RUST_JS_APP`'s package, is compiled as a library, and refuses what only a library can't do, a counted `Rc`",
+    file: "src/cargo.rs",
+    find: "    if std::env::var(APP)\n        .ok()\n        .is_none_or(|app| std::env::var(\"CARGO_PKG_NAME\").ok() != Some(app))\n    {\n",
+    replace: "    if true {\n",
+    tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
   },
 ];

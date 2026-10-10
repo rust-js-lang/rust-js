@@ -24,6 +24,10 @@ pub enum Invocation {
 /// rust-js's target (ADR 0090): what a crate Cargo checks for it is built for.
 const TARGET: &str = "wasm32-unknown-unknown";
 
+/// The package the tooling builds as the app, a program no crate uses
+/// (ADR 0360).
+pub const APP: &str = "RUST_JS_APP";
+
 /// The packages of the bindings rust-js ships: `react/`, `webapi/` and `builtins/`.
 const BINDINGS: [&str; 3] = ["rust-js-react", "rust-js-webapi", "rust-js-builtins"];
 
@@ -102,12 +106,17 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
         "--manifest".into(),
         dir.join("lib.manifest.json").display().to_string(),
         "--cargo".into(),
-        // Each is a library, the one Cargo was asked for too: built as the
-        // app, it would be fresh when another build uses it, and Cargo can't
-        // be told which it was, as it drops what it set for rustc itself,
-        // `CARGO_PRIMARY_PACKAGE`, from what it tracks.
-        "--library".into(),
     ];
+    // Each is a library, but the app, the package `RUST_JS_APP` names, which
+    // the tooling builds and no crate of its build uses (ADR 0360). What
+    // `RUST_JS_APP` is, rust-js records for Cargo, which builds it again as
+    // a library once another build uses it.
+    if std::env::var(APP)
+        .ok()
+        .is_none_or(|app| std::env::var("CARGO_PKG_NAME").ok() != Some(app))
+    {
+        ours.push("--library".into());
+    }
     for manifest in dependencies(flags)? {
         ours.push("--dependency".into());
         ours.push(manifest.display().to_string());

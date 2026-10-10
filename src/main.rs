@@ -106,6 +106,8 @@ struct RustJs {
     /// `--std-coverage <file>`: where to write how much of std's data
     /// structures rust-js lowers (ADR 0314).
     std_coverage: Option<PathBuf>,
+    /// Cargo's build (ADR 0101), which is told what `RUST_JS_APP` was.
+    cargo: bool,
 }
 
 /// `rust_js` is a tool rustc knows, as it knows `rustfmt`: a program
@@ -148,6 +150,17 @@ impl Callbacks for RustJs {
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
+        // Whether the crate is the app is `RUST_JS_APP`'s, which Cargo
+        // reads of the dep-info, as of an `env!`: another value is another
+        // build (ADR 0360).
+        if self.cargo {
+            let app = std::env::var(cargo::APP).ok().map(|app| Symbol::intern(&app));
+            compiler
+                .sess
+                .env_depinfo
+                .lock()
+                .insert((Symbol::intern(cargo::APP), app));
+        }
         Syntax.after_crate_root_parsing(compiler, krate)
     }
 
@@ -472,6 +485,7 @@ fn main() -> ExitCode {
         pending: None,
         std_coverage,
         output: plan,
+        cargo,
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
     // Once rustc has written the metadata: if it couldn't, nothing is published.

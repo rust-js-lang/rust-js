@@ -13,12 +13,24 @@ import { commit, fingerprint } from "./publish.js";
 const execute = promisify(execFile);
 
 /** Cargo's environment of a check through rust-js: the workspace's
- * wrapper, rustc's shim, and the React the react crate is built for. */
-function cargoEnv(compiler, react) {
+ * wrapper, rustc's shim, the React the react crate is built for, and the
+ * app, `RUST_JS_APP`, a program no crate of the build uses (ADR 0360). */
+function cargoEnv(compiler, react, app) {
   const env = { ...process.env, RUSTC_WORKSPACE_WRAPPER: resolve(compiler), RUSTC: rustcShim(resolve(compiler)) };
   if (react) env.RUST_JS_REACT = react;
   else delete env.RUST_JS_REACT;
+  if (app) env.RUST_JS_APP = app;
+  else delete env.RUST_JS_APP;
   return env;
+}
+
+/** The app a check builds: the package it's asked for, or else its
+ * manifest's own, a workspace's root without one having none. */
+function appOf(manifest, packageName) {
+  if (packageName) return packageName;
+  const text = readFileSync(manifest, "utf8");
+  const section = /^\[package\]\s*$([\s\S]*?)(?=^\[|(?![\s\S]))/m.exec(text)?.[1];
+  return section && /^name\s*=\s*"([^"]+)"/m.exec(section)?.[1];
 }
 
 /**
@@ -34,7 +46,7 @@ export function editorCheck({ manifestPath, toolchain, compiler, react, targetDi
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", "wasm32-unknown-unknown", "--manifest-path", manifest];
-  const env = { ...cargoEnv(compiler, react), CARGO_TARGET_DIR: targetDir };
+  const env = { ...cargoEnv(compiler, react, appOf(manifest)), CARGO_TARGET_DIR: targetDir };
   return new Promise((done, failed) => {
     spawn("cargo", args, { cwd: dirname(manifest), env, stdio: ["ignore", "inherit", "inherit"] })
       .on("error", failed)
@@ -138,7 +150,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const env = cargoEnv(compiler, react);
+  const env = cargoEnv(compiler, react, appOf(manifest, packageName));
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     const rendered = messages.filter(m => m.reason === "compiler-message").map(m => m.message.rendered).join("");
@@ -173,7 +185,9 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     if (packageName ? packageNameOf(message.package_id) === packageName : message.manifest_path === manifest) js = entry.js;
   }
   if (!js) throw new Error(`rust-js compiled no library of ${packageName ?? manifest}`);
-  const manifests = [...crates.values()].map(({ manifest }) => JSON.parse(readFileSync(manifest, "utf8")));
+  // Each with its crate's name, as Cargo has it: the app's manifest, a
+  // program's, has no library to say it (ADR 0360).
+  const manifests = [...crates].map(([crate, { manifest }]) => ({ crate, ...JSON.parse(readFileSync(manifest, "utf8")) }));
   if (!inSource) return { js, crates, files: manifests.flatMap(({ modules }) => modules.map((module) => module.file)) };
   const moved = writeInSource(manifests, ledger, routes);
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
@@ -194,7 +208,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
  * that this build doesn't write goes, if it's still as written: an edited
  * one is a person's, and one rust-js wrote some other way isn't this
  * build's. Where each JS went.
- * @param {{ library: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], located?: boolean, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
+ * @param {{ crate?: string, library?: { name: string }, modules: { file: string, map?: string, types?: string, source: string, module: string[], located?: boolean, links?: { start: number, end: number, file: string }[], type_links?: { start: number, end: number, file: string }[] }[] }[]} manifests
  * @param {string} ledger
  * @param {string[]} [routes] directories where each file is a route,
  * Next.js's `pages/`: a module's there gets no declarations, which
@@ -214,7 +228,7 @@ export function writeInSource(manifests, ledger, routes = []) {
     if (crate === other.crate) return own;
     return `crate \`${crate}\`'s ${module.length === 0 ? "root" : own}`;
   };
-  for (const { library, modules } of manifests) {
+  for (const { crate, library, modules } of manifests) {
     const crateRoot = modules.find((m) => m.module.length === 0).source;
     for (const { file, source, module, located } of modules) {
       const extension = file.endsWith(".jsx") ? ".jsx" : ".js";
@@ -228,7 +242,7 @@ export function writeInSource(manifests, ledger, routes = []) {
     }
     for (const { file, module } of [...modules].sort((a, b) => a.module.length - b.module.length)) {
       const to = moved.get(file);
-      const here = { crate: library.name, module };
+      const here = { crate: library?.name ?? crate, module };
       const other = byDestination.get(to);
       if (other) throw new Error(`rust-js can't write the JS in source: ${named(other, here)} and ${named(here, other)} would both be ${to}; rename the module`);
       byDestination.set(to, here);

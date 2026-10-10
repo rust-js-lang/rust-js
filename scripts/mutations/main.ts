@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "    unsafe { std::env::set_var(\"RUSTC_BOOTSTRAP\", \"1\") };\n    let mut rustc_args = vec![\n        \"rust-js\".to_string(), // argv[0], ignored by rustc",
     tests: ["test/diagnostics.test.ts", "-t", "a crate's own #!\\[feature\\] is refused, as on a stable release"],
   },
+  {
+    name: "cargo-app-untracked",
+    breaks: "Cargo isn't told what `RUST_JS_APP` was, so the app compiled as a program is fresh when another crate uses it",
+    file: "src/main.rs",
+    find: "            compiler\n                .sess\n                .env_depinfo\n                .lock()\n                .insert((Symbol::intern(cargo::APP), app));",
+    replace: "            let _ = app;",
+    tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
+  },
 ];
