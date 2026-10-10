@@ -999,56 +999,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // apart, else each its own, `Array.from({ length: N }, () => ..)`.
             ExprKind::Repeat { value, count } => {
                 let item_ty = self.thir[value].ty;
-                let count = self
-                    .tcx
-                    .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(count));
-                // A caller's `N` (ADR 0107), or the number.
-                let n = count.try_to_target_usize(self.tcx);
-                let length = match n {
-                    Some(n) => Expr::int(n as i128),
-                    None => self.const_arg(count, span)?,
-                };
                 let item = self.expr(value, out)?;
-                // A `Copy` value's copies are copies of its bits, which a
-                // value that nothing changes needs none of; one that isn't
-                // `Copy` is a constant's, made again for each, as each use of
-                // a constant is.
+                // A constant's value, made again for each, as each use of one is.
                 let constant = matches!(
                     self.thir[self.strip(value)].kind,
                     ExprKind::NamedConst { .. } | ExprKind::ConstBlock { .. }
                 );
-                let copied = if self.is_copy(item_ty) || constant {
-                    self.contains_mutated(item_ty)
-                } else if self.needs_clone(item_ty) {
-                    return Err(self.unsupported(span, "`[x; N]` of a value that isn't `Copy`"));
-                } else {
-                    false
-                };
-                if !copied {
-                    if let Some(n) = n
-                        && n <= 4
-                        && item.is_constant()
-                    {
-                        return Ok(Expr::array(vec![item; n as usize]));
-                    }
-                    let array = Expr::new_(Expr::var("Array"), vec![length]);
-                    return Ok(Expr::call(Expr::member(array, "fill"), vec![item]));
-                }
-                let item = if item.reads_same() {
-                    item
-                } else {
-                    self.spill("item", item, out)
-                };
-                let copy = self.copy(item, item_ty);
-                let length = Expr::object(vec![Prop::Field("length".into(), length)]);
-                let from = Expr::member(Expr::var("Array"), "from");
-                Ok(Expr::call(
-                    from,
-                    vec![
-                        length,
-                        Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)]),
-                    ],
-                ))
+                self.repeat((item, item_ty), count, constant, span, out)
             }
             ExprKind::Index { lhs, index } => {
                 let values = self.indexed(lhs, index, out)?;
@@ -1785,6 +1742,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => Err(self.unsupported(span, "this constant")),
         }
+    }
+
+    /// `[item; count]`, the count a caller's `N` or a number (ADR 0107);
+    /// `constant`, whether the item is a named constant's value.
+    fn repeat(
+        &mut self,
+        (item, item_ty): (Expr, Ty<'tcx>),
+        count: ty::Const<'tcx>,
+        constant: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let count = self
+            .tcx
+            .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(count));
+        // A caller's `N` (ADR 0107), or the number.
+        let n = count.try_to_target_usize(self.tcx);
+        let length = match n {
+            Some(n) => Expr::int(n as i128),
+            None => self.const_arg(count, span)?,
+        };
+        // A `Copy` value's copies are copies of its bits, which a
+        // value that nothing changes needs none of; one that isn't
+        // `Copy` is a constant's, made again for each, as each use of
+        // a constant is.
+        let copied = if self.is_copy(item_ty) || constant {
+            self.contains_mutated(item_ty)
+        } else if self.needs_clone(item_ty) {
+            return Err(self.unsupported(span, "`[x; N]` of a value that isn't `Copy`"));
+        } else {
+            false
+        };
+        if !copied {
+            if let Some(n) = n
+                && n <= 4
+                && item.is_constant()
+            {
+                return Ok(Expr::array(vec![item; n as usize]));
+            }
+            let array = Expr::new_(Expr::var("Array"), vec![length]);
+            return Ok(Expr::call(Expr::member(array, "fill"), vec![item]));
+        }
+        let item = if item.reads_same() {
+            item
+        } else {
+            self.spill("item", item, out)
+        };
+        let copy = self.copy(item, item_ty);
+        let length = Expr::object(vec![Prop::Field("length".into(), length)]);
+        let from = Expr::member(Expr::var("Array"), "from");
+        Ok(Expr::call(
+            from,
+            vec![
+                length,
+                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(copy)).at(js::Span::NONE)]),
+            ],
+        ))
     }
 
     /// An integer `const`'s value: `x / SIZE` can't divide by zero.

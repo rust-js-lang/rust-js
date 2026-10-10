@@ -22,6 +22,12 @@ const running = readdirSync(corpus)
   .filter((f) => f.endsWith(".rs"))
   .filter((f) => !/^\/\/@ (compile-fail|ignore-rust-js)/m.test(readFileSync(join(corpus, f), "utf8")));
 const passing = running.filter((f) => !failed.has(f)).sort();
+// A case passes only if it ran: a compiler that doesn't build runs none.
+const passes = Number(/^ (\d+) pass$/m.exec(log)?.[1] ?? 0);
+if (passes < passing.length) {
+  console.error(`the corpus didn't run: ${passes} passed, ${passing.length} didn't fail\n${log.slice(-2000)}`);
+  process.exit(1);
+}
 const listFile = join(root, "test/mir-corpus.txt");
 const listed = new Set(readFileSync(listFile, "utf8").split("\n").filter(Boolean));
 const fresh = passing.filter((f) => !listed.has(f));

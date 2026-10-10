@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "array-repeat-shared",
     breaks: "`[x; N]` of what's changed is one object, `N` times",
     file: "src/lower.rs",
-    find: "                let copied = if self.is_copy(item_ty) || constant {\n                    self.contains_mutated(item_ty)",
-    replace: "                let copied = if self.is_copy(item_ty) || constant {\n                    false",
+    find: "        let copied = if self.is_copy(item_ty) || constant {\n            self.contains_mutated(item_ty)",
+    replace: "        let copied = if self.is_copy(item_ty) || constant {\n            false",
     tests: ["test/corpus.test.ts", "-t", "array_repeat"],
   },
   {
@@ -150,8 +150,8 @@ export const mutations: Mutation[] = [
     name: "repeat-generic-length",
     breaks: "`[x; N]` of a caller's `N` is refused",
     file: "src/lower.rs",
-    find: "                    None => self.const_arg(count, span)?,\n",
-    replace: "                    None => return Err(self.unsupported(span, \"`[x; N]` of a generic length\")),\n",
+    find: "            None => self.const_arg(count, span)?,\n",
+    replace: "            None => return Err(self.unsupported(span, \"`[x; N]` of a generic length\")),\n",
     tests: ["test/corpus.test.ts","-t","const_generics"],
   },
   {
@@ -470,8 +470,8 @@ export const mutations: Mutation[] = [
     name: "repeat-const-not-copy",
     breaks: "`[const { .. }; N]` of a value that isn't `Copy` is refused",
     file: "src/lower.rs",
-    find: "                let copied = if self.is_copy(item_ty) || constant {",
-    replace: "                let copied = if self.is_copy(item_ty) {",
+    find: "        let copied = if self.is_copy(item_ty) || constant {",
+    replace: "        let copied = if self.is_copy(item_ty) {",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
   },
   {

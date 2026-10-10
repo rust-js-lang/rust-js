@@ -116,12 +116,13 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
         ) {
             continue;
         }
-        let (built, _) = tcx.mir_promoted(body.def_id);
-        if built.is_stolen() {
+        let (built, promoted) = tcx.mir_promoted(body.def_id);
+        if built.is_stolen() || promoted.is_stolen() {
             continue;
         }
         body.mir = Some(super::mir::Mir {
             body: built.borrow().clone(),
+            promoted: promoted.borrow().clone(),
         });
     }
 }

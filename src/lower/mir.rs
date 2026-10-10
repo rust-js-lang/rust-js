@@ -18,11 +18,12 @@ mod iter;
 
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::def::DefKind;
 use rustc_index::IndexVec;
 use rustc_middle::mir::interpret::GlobalId;
 use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
-    Place, PlaceElem, Rvalue, StatementKind, TerminatorKind, UnOp,
+    Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp,
 };
 use rustc_middle::ty::{self, Ty};
 use rustc_mir_dataflow::move_paths::MovePathIndex;
@@ -35,9 +36,10 @@ use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
 
-/// A body's MIR, as borrowck reads it (ADR 0364).
+/// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
 pub struct Mir<'tcx> {
     pub(super) body: mir::Body<'tcx>,
+    pub(super) promoted: IndexVec<Promoted, mir::Body<'tcx>>,
 }
 
 /// Whether bodies are lowered from their MIR: `RUST_JS_MIR=1`, while the
@@ -84,6 +86,7 @@ struct Locals {
 /// A body's lowering state.
 struct State<'m, 'tcx> {
     body: &'m mir::Body<'tcx>,
+    promoted: &'m IndexVec<Promoted, mir::Body<'tcx>>,
     graph: cfg::Graph,
     locals: Locals,
     /// Temporaries made and not yet used, in the order they were made.
@@ -101,6 +104,9 @@ struct State<'m, 'tcx> {
     /// The cleanup the temporaries made and not yet used unwind to, if one
     /// that drops something: the statement that runs them is its `try`.
     unwind: Option<BasicBlock>,
+    /// Each local that's a `&mut` to a number's place that's always the
+    /// same, `COUNT.value`: the place, named where it's used.
+    refs: std::collections::HashMap<Local, Expr>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -150,6 +156,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut state = State {
             body: mir_body,
+            promoted: &mir.promoted,
             graph: cfg::Graph::of(mir_body),
             locals,
             pending: Vec::new(),
@@ -159,6 +166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             flags: IndexVec::new(),
             drops,
             unwind: None,
+            refs: Default::default(),
         };
         state.borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
@@ -671,6 +679,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let at = state.pending.iter().position(|(l, _)| *l == local).expect("admitted");
             return Ok(state.pending.remove(at).1);
         }
+        if let Some(place) = state.refs.get(&local) {
+            return Ok(Value::Ref(place.clone()));
+        }
         match state.locals.names[local].as_str() {
             "" => Ok(Value::Expr(Expr::undefined())),
             name => Ok(Value::Expr(Expr::var(name))),
@@ -839,6 +850,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(());
         }
+        // A `&mut` to a place that's always the same, made once: the
+        // place, named where it's used, as borrowck keeps it the same.
+        if place.projection.is_empty()
+            && state.locals.writes[local] == 1
+            && let Value::Ref(target) = &value
+            && same_place(state, target)
+        {
+            state.refs.insert(local, target.clone());
+            return Ok(());
+        }
         if place.projection.is_empty() && self.foldable(state, local) {
             state.pending.push((local, value));
             return Ok(());
@@ -913,8 +934,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         Ok(match elem {
-            // A reference is what it refers to (ADR 0023), and so is a box.
-            PlaceElem::Deref if ty.ty.is_ref() || ty.ty.is_box() => base,
+            // A reference is what it refers to (ADR 0023), and so are a box
+            // and a pointer, a `static mut`'s.
+            PlaceElem::Deref if ty.ty.is_ref() || ty.ty.is_box() || ty.ty.is_raw_ptr() => base,
             PlaceElem::Field(field, _) => self.mir_field(base, ty, field, span)?,
             PlaceElem::Downcast(..) | PlaceElem::OpaqueCast(_) => base,
             PlaceElem::Index(local) => {
@@ -992,11 +1014,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match operand {
             // A local's value, read through references to it, as it is.
             Operand::Copy(place) | Operand::Move(place) if self.through_values(state.body, place, true) => {
-                self.read_local_value(state, place.local, out)
+                match self.read_local_value(state, place.local, out)? {
+                    // Through a `&mut` to a place: what the place holds.
+                    Value::Ref(target) if place.is_indirect() => Ok(Value::Expr(target)),
+                    value => Ok(value),
+                }
             }
             Operand::Copy(place) | Operand::Move(place) => {
                 let span = state.body.local_decls[place.local].source_info.span;
                 Ok(Value::Expr(self.mir_place(state, *place, span, out)?))
+            }
+            // A pointer to a `static mut`, its `{ value }`'s place (ADR 0096).
+            Operand::Constant(c)
+                if let Some(def_id) = self.const_static(c)
+                    && self.tcx.is_mutable_static(def_id)
+                    && self.krate.fns.contains_key(&def_id) =>
+            {
+                Ok(Value::Ref(Expr::member(self.fn_ref(def_id), "value")))
             }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
             #[allow(unreachable_patterns)]
@@ -1015,10 +1049,88 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if ty.is_unit() || matches!(ty.kind(), ty::FnDef(..)) {
             return Ok(Expr::undefined());
         }
-        let _ = state;
+        let tcx = self.tcx;
+        // A promoted reference to a named constant or a static, `&LOG`:
+        // what it refers to, as the reference is (ADR 0023).
+        if let Const::Unevaluated(uv, _) = c.const_
+            && let Some(promoted) = uv.promoted
+            && let Some(referred) = referred_constant(&state.promoted[promoted])
+            && self.const_static(c).is_none()
+        {
+            return self.mir_const(state, &referred);
+        }
+        // A named constant, as THIR's lowering writes one (ADR 0031); a
+        // `const { .. }` block, its value, or as one (ADR 0127).
+        if let Const::Unevaluated(uv, _) = c.const_
+            && uv.promoted.is_none()
+        {
+            match tcx.def_kind(uv.def) {
+                DefKind::Const { .. } | DefKind::AssocConst { .. } => {
+                    return self.named_const(uv.def, uv.args, ty, c.span);
+                }
+                DefKind::AnonConst => {
+                    return match self
+                        .mir_const_value(c.const_, ty, c.span)
+                        .and_then(|v| const_js(tcx, v))
+                    {
+                        Some(value) => Ok(value),
+                        None => self.named_const(uv.def, uv.args, ty, c.span),
+                    };
+                }
+                _ => {}
+            }
+        }
+        // A const generic parameter, its value as the function's caller
+        // gives it; a constant named in a type, as one named anywhere.
+        if let Const::Ty(_, ct) = c.const_ {
+            match ct.kind() {
+                ty::ConstKind::Param(_) => return self.const_arg(ct, c.span),
+                ty::ConstKind::Alias(_, alias) => {
+                    let (ty::AliasConstKind::Projection { def_id }
+                    | ty::AliasConstKind::Inherent { def_id }
+                    | ty::AliasConstKind::Free { def_id }
+                    | ty::AliasConstKind::Anon { def_id }) = alias.kind;
+                    return self.named_const(def_id, alias.args, ty, c.span);
+                }
+                _ => {}
+            }
+        }
+        // A reference to a static, which is the static (ADR 0023): a JS
+        // global (ADR 0021), or the crate's, its module's `const` (ADR 0096).
+        if let ty::Ref(_, _, ty::Mutability::Not) = ty.kind()
+            && let Some(def_id) = self.const_static(c)
+            && !tcx.is_mutable_static(def_id)
+        {
+            if tcx.is_foreign_item(def_id) {
+                return Ok(self.js_ref(&bindings::js_name(tcx, def_id)));
+            }
+            if self.krate.fns.contains_key(&def_id) {
+                return Ok(self.fn_ref(def_id));
+            }
+        }
         self.mir_const_value(c.const_, ty, c.span)
-            .and_then(|value| const_js(self.tcx, value))
+            .and_then(|value| const_js(tcx, value))
             .ok_or_else(|| self.unsupported(c.span, "this constant, from its MIR"))
+    }
+
+    /// The static a constant points to the start of: `&LOG`, a promoted
+    /// `&STATIC`, `&raw mut COUNT`.
+    fn const_static(&self, c: &ConstOperand<'tcx>) -> Option<rustc_span::def_id::DefId> {
+        let value = match c.const_ {
+            Const::Val(value, _) => value,
+            Const::Unevaluated(uv, _) if uv.promoted.is_some() => {
+                self.tcx.const_eval_resolve(self.typing_env, uv, c.span).ok()?
+            }
+            _ => return None,
+        };
+        let mir::ConstValue::Scalar(mir::interpret::Scalar::Ptr(ptr, _)) = value else {
+            return None;
+        };
+        let (provenance, offset) = ptr.into_raw_parts();
+        match self.tcx.global_alloc(provenance.alloc_id()) {
+            mir::interpret::GlobalAlloc::Static(def_id) if offset.bytes() == 0 => Some(def_id),
+            _ => None,
+        }
     }
 
     fn mir_const_value(&self, c: Const<'tcx>, ty: Ty<'tcx>, span: Span) -> Option<ty::Value<'tcx>> {
@@ -1174,6 +1286,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Discriminant(subject, ty));
             }
             Rvalue::Aggregate(kind, operands) => return self.mir_aggregate(state, kind, operands, span, out),
+            // `[x; N]`, as THIR's lowering writes it (ADR 0107); an item
+            // that's a constant is a named one's, or a literal, `Copy`.
+            Rvalue::Repeat(operand, count) => {
+                let item_ty = operand.ty(decls, tcx);
+                let constant = matches!(operand, Operand::Constant(_));
+                let item = self.mir_expr(state, operand, out)?;
+                self.repeat((item, item_ty), *count, constant, span, out)?
+            }
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
     }
@@ -1846,5 +1966,52 @@ fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>) {
         }
         Rvalue::Discriminant(place) | Rvalue::CopyForDeref(place) => count_place(locals, place, false),
         _ => {}
+    }
+}
+
+/// The constant a promoted body refers to, `_1 = const LOG; _0 = &_1`, if
+/// that's all it is.
+fn referred_constant<'tcx>(body: &mir::Body<'tcx>) -> Option<ConstOperand<'tcx>> {
+    if body.basic_blocks.len() != 1 {
+        return None;
+    }
+    let data = &body.basic_blocks[mir::START_BLOCK];
+    let mut constant = None;
+    let mut referred = None;
+    for statement in &data.statements {
+        match &statement.kind {
+            StatementKind::Assign(assign) => match &**assign {
+                (place, Rvalue::Use(Operand::Constant(c), ..)) if place.projection.is_empty() => {
+                    constant = Some((place.local, **c));
+                }
+                (place, Rvalue::Ref(_, BorrowKind::Shared, target))
+                    if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
+                {
+                    referred = Some(target.local);
+                }
+                _ => return None,
+            },
+            StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop => {}
+            _ => return None,
+        }
+    }
+    let (local, c) = constant?;
+    (Some(local) == referred).then_some(c)
+}
+
+/// Whether `place` names the same place wherever it's read: variables and
+/// their fields, and elements at an index that's a constant, or a variable
+/// assigned once.
+fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
+    match &place.kind {
+        js::ExprKind::Var(_) => true,
+        js::ExprKind::Member(object, _) => same_place(state, object),
+        js::ExprKind::Index(object, index) => {
+            same_place(state, object)
+                && (index.is_constant()
+                    || matches!(&index.kind, js::ExprKind::Var(name)
+                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] == 1)))
+        }
+        _ => false,
     }
 }
