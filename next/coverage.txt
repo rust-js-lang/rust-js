@@ -1,6 +1,6 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 32 of 2075 (1.5%)
-# next 4 of 37
+# exports: 42 of 2095 (2.0%)
+# next 4 of 42
 - type next#AdapterOutput
 - next#default
 - type next#FileSizeSuffix
@@ -20,8 +20,13 @@
 - type next#Metadata
 - type next#MetadataRoute
 - type next#NextAdapter
+- type next#NextApiHandler
+- type next#NextApiRequest
+- type next#NextApiResponse
+- type next#NextComponentType
 - type next#NextConfig
 - type next#NextPage
+- type next#NextPageContext
 - type next#PageConfig
 - type next#PreviewData
 - type next#Redirect
@@ -38,12 +43,16 @@
 - type next#ServerRuntime
 - type next#SizeLimit
 - type next#Viewport
-# next/app 1 of 3
+# next/app 1 of 6
 - type next/app#AppContext
+- type next/app#AppInitialProps
 + type next/app#AppProps
+- type next/app#AppType
 - next/app#default
-# next/cache 0 of 10
+- type next/app#NextWebVitalsMetric
+# next/cache 0 of 11
 - next/cache#cacheLife
+- next/cache#cacheTag
 - next/cache#io
 - next/cache#refresh
 - next/cache#revalidatePath
@@ -53,8 +62,11 @@
 - next/cache#unstable_cacheTag
 - next/cache#unstable_noStore
 - next/cache#updateTag
-# next/document 4 of 6
+# next/document 4 of 9
 - next/document#default
+- type next/document#DocumentContext
+- type next/document#DocumentInitialProps
+- type next/document#DocumentProps
 + next/document#Head
 + next/document#Html
 + next/document#Main
@@ -73,11 +85,11 @@
 - type next/dynamic#LoaderComponent
 - type next/dynamic#LoaderMap
 - next/dynamic#noSSR
-# next/error 0 of 4
-- next/error#catchError
-- next/error#default
-- type next/error#ErrorInfo
-- type next/error#ErrorProps
+# next/error 4 of 4
++ next/error#catchError
++ next/error#default
++ type next/error#ErrorInfo
++ type next/error#ErrorProps
 # next/font/google 0 of 1942
 - next/font/google#ABeeZee
 - next/font/google#Abel
@@ -2023,8 +2035,9 @@
 - next/font/google#Zilla_Slab_Highlight
 # next/font/local 0 of 1
 - next/font/local#default
-# next/form 0 of 1
-- next/form#default
+# next/form 2 of 2
++ next/form#default
++ type next/form#FormProps
 # next/head 1 of 2
 + next/head#default
 - next/head#defaultHead
@@ -2032,9 +2045,13 @@
 + next/headers#cookies
 + next/headers#draftMode
 + next/headers#headers
-# next/image 1 of 2
+# next/image 2 of 6
 + next/image#default
 - next/image#getImageProps
+- type next/image#ImageLoader
+- type next/image#ImageLoaderProps
++ type next/image#ImageProps
+- type next/image#StaticImageData
 # next/legacy/image 2 of 6
 + next/legacy/image#default
 - next/legacy/image#Image
@@ -2046,10 +2063,11 @@
 + next/link#default
 + type next/link#LinkProps
 - next/link#useLinkStatus
-# next/navigation 5 of 16
+# next/navigation 5 of 17
 - next/navigation#forbidden
 + next/navigation#notFound
 - next/navigation#permanentRedirect
+- next/navigation#ReadonlyURLSearchParams
 + next/navigation#redirect
 - next/navigation#RedirectType
 - next/navigation#ServerInsertedHTMLContext
@@ -2063,12 +2081,14 @@
 - next/navigation#useSelectedLayoutSegment
 - next/navigation#useSelectedLayoutSegments
 - next/navigation#useServerInsertedHTML
-# next/offline 0 of 1
-- next/offline#useOffline
+# next/offline 1 of 1
++ next/offline#useOffline
 # next/og 0 of 1
 - next/og#ImageResponse
-# next/router 4 of 5
+# next/router 5 of 7
 + next/router#default
++ type next/router#NextRouter
+- next/router#Router
 + type next/router#RouterEvent
 - type next/router#SingletonRouter
 + next/router#useRouter
@@ -2094,5 +2114,5 @@
 - next/server#URLPattern
 - next/server#userAgent
 - next/server#userAgentFromString
-# next/web-vitals 0 of 1
-- next/web-vitals#useReportWebVitals
+# next/web-vitals 1 of 1
++ next/web-vitals#useReportWebVitals

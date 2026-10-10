@@ -261,6 +261,39 @@ pub fn load(src: &str) {
     next::script::init_script_loader::<JSX::Element>(vec![props(src)]);
 }
 
+// The page's Web Vitals, whether it's offline, and a search form, as
+// next/web-vitals, next/offline and next/form give them.
+pub fn Search() -> JSX::Element {
+    next::web_vitals::use_report_web_vitals(|metric| {
+        let _ = (metric.name(), metric.value());
+    });
+    let offline = next::offline::use_offline();
+    jsx! {
+        <next::form::Form action="/search" className={Some("search")}>
+            <input name="query" disabled={offline} />
+        </next::form::Form>
+    }
+}
+
+pub struct ShownProps<'a> {
+    pub text: &'a str,
+    pub children: JSX::Element,
+}
+
+// A boundary of its children's errors, as next/error's catchError makes one,
+// and Next.js's error page.
+thread_local! {
+    pub static Shown: react::ComponentValue<ShownProps<'static>> = next::error::catch_error(
+        |ShownProps { text, .. }, info: &'static next::error::ErrorInfo| {
+            jsx! { <button onClick={move |_| info.reset()}>{text}</button> }
+        },
+    );
+}
+
+pub fn Missing() -> JSX::Element {
+    jsx! { <Shown text="again"><next::error::Error statusCode={404} title={Some("Gone")} /></Shown> }
+}
+
 pub fn Location() -> JSX::Element {
     jsx! { <Located prefix="at " /> }
 }
@@ -349,6 +382,13 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(aboutJsx).toContain('<Script id="inline">window.inlined = true;</Script>');
   expect(aboutHtml).toContain("window.inlined = true;");
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain("handleClientScriptLoad(props(src));\n  initScriptLoader([props(src)]);");
+  // next/web-vitals, next/offline, next/form and next/error.
+  expect(linkedJsx).toContain("useReportWebVitals((metric) => {");
+  expect(linkedJsx).toContain('<Form action="/search" className="search">\n      <input name="query" disabled={offline} />\n    </Form>');
+  // Next.js's error page, named apart from JS's `Error` (ADR 0038).
+  expect(linkedJsx).toContain('import Error$, { catchError } from "next/error";');
+  expect(linkedJsx).toContain("export const Shown = catchError(({ text }, info) => (\n  <button onClick={() => info.reset()}>{text}</button>\n));");
+  expect(linkedJsx).toContain('<Shown text="again">\n      <Error$ statusCode={404} title="Gone" />\n    </Shown>');
   // next/headers: the request's route is dynamic, rendered as it's asked.
   expect(output).toContain("ƒ /request");
   const requestJsx = readFileSync(join(dir, "app/request/page.jsx"), "utf8");

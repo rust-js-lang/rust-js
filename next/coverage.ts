@@ -93,6 +93,12 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
           return [name, as ?? name] as [string, string];
         });
         await reexport(m[3], names, Boolean(m[1]));
+      } else if ((m = text.match(/^export (type )?\{([\s\S]*?)\}\s*;?\s*$/))) {
+        // A name of the module's own, or one it imports, exported as it is.
+        for (const s of m[2].split(",").map((s) => s.trim()).filter(Boolean)) {
+          const [name, as] = s.replace(/^type /, "").split(/\s+as\s+/);
+          exported.set(as ?? name, m[1] || s.startsWith("type ") ? "type" : (local.get(name) ?? "value"));
+        }
       } else if ((m = text.match(/^export default (\w+)/))) {
         exported.set("default", local.get(m[1]) ?? "value");
       }

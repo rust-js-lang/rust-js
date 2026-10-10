@@ -1,8 +1,6 @@
 //! [Next.js](https://nextjs.org) for rust-js (ADR 0192): what an app's
-//! routes, `app/page.rs` beside `app/layout.js`, use of it. Its components,
-//! `next/head`, `next/image`, `next/legacy/image`, `next/link` and `next/script`, its
-//! request, `next/headers`, and its navigation,
-//! `next/navigation`.
+//! routes, `app/page.rs` beside `app/layout.js`, use of it: each of its
+//! modules, `next/link` the crate's `next::link`, as Next.js types it.
 //!
 //! ```rust,ignore
 //! use next::image::{Image, ImageProps};
@@ -23,14 +21,18 @@
 pub mod app;
 mod data_fetching;
 pub mod document;
+pub mod error;
+pub mod form;
 pub mod head;
 pub mod headers;
 pub mod image;
 pub mod legacy;
 pub mod link;
 pub mod navigation;
+pub mod offline;
 pub mod router;
 pub mod script;
+pub mod web_vitals;
 
 pub use data_fetching::{
     GetStaticPathsContext, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, RevalidateReason, StaticNotFound,
