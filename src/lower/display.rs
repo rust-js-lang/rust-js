@@ -1025,6 +1025,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn debug_string_with(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, pretty: &Pretty) -> R<Expr> {
         let (value, ty) = self.through_refs(value, ty);
         let (value, ty) = self.through_boxes(value, ty);
+        // A `dyn Any` shows nothing of its value, as std's `Debug` doesn't;
+        // a `TypeId` its hash, which rust-js doesn't keep (ADR 0331).
+        if self.recognition().is_dyn_any(ty) {
+            if value.has_effects() {
+                return Err(self.unsupported(span, "`{:?}` of a `dyn Any` made here"));
+            }
+            return Ok(Expr::str("Any { .. }"));
+        }
+        if self.recognition().is_type_id(ty) {
+            return Err(self.unsupported(span, "`{:?}` of a `TypeId`, its hash"));
+        }
         // A `fmt::Result`: `undefined`, `Ok`, or the `fmt::Error` it caught
         // (ADR 0187), and a `fmt::Error`, which holds nothing.
         if self.is_fmt_result(ty) {

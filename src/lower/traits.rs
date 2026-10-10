@@ -5,8 +5,8 @@ use super::bindings;
 use super::display::Pretty;
 use super::drops::Drops;
 use super::recognition::{
-    Recognition, StdItem, TraitCall, TypeFact, in_std_dictionary, is_std_def, is_std_method, is_writer_default,
-    known_derive, std_item,
+    Recognition, StdItem, TraitCall, TypeFact, any_trait, in_std_dictionary, is_std_def, is_std_method,
+    is_writer_default, known_derive, std_item,
 };
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
@@ -577,11 +577,13 @@ impl<'a, 'tcx> EvidenceQuery<'a, 'tcx> {
     }
 }
 
-/// `Display` or `Error`: a std trait whose `dyn` is a pair (ADR 0141).
+/// `Display`, `Error` or `Any`: a std trait whose `dyn` is a pair (ADRs
+/// 0141, 0331).
 fn is_std_pair_trait(tcx: TyCtxt<'_>, id: DefId) -> bool {
     [StdItem::Display, StdItem::Error]
         .into_iter()
         .any(|item| is_std_def(tcx, id, item))
+        || any_trait(tcx) == Some(id)
 }
 
 /// An associated type's drop in its impl's dictionary, `$dropOffset`: a
@@ -813,6 +815,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 TypeFact::Size => "Size",
                 TypeFact::Align => "Align",
                 TypeFact::Name => "Name",
+                TypeFact::Id => "Id",
             };
             let name = self.fresh(&format!("{}{word}", param_word(param.name)));
             self.given.type_facts.push((index, fact, Expr::var(&name)));
@@ -859,6 +862,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.evidence_query().has_evidence(tr)
     }
 
+    /// A `dyn`'s `Any` dictionary, of a trait whose supertrait is `Any`,
+    /// from its own (ADR 0331).
+    pub(super) fn any_of_dyn(&self, ty: Ty<'tcx>, dictionary: Expr) -> Option<Expr> {
+        let ty::Dynamic(traits, ..) = ty.kind() else {
+            return None;
+        };
+        let from = self
+            .tcx
+            .instantiate_bound_regions_with_erased(traits.principal()?.with_self_ty(self.tcx, ty));
+        let any = any_trait(self.tcx)?;
+        self.super_evidence(from, ty::TraitRef::new(self.tcx, any, [ty]), dictionary)
+    }
+
     fn super_evidence(&self, from: ty::TraitRef<'tcx>, to: ty::TraitRef<'tcx>, value: Expr) -> Option<Expr> {
         let route = self.evidence_query().super_route(from, to)?;
         Some(route.into_iter().fold(value, |dictionary, name| {
@@ -899,6 +915,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(found) = self.evidence_for(tr) {
             return Ok(found);
+        }
+        // `Any`'s: its type's key, `{ type_id: () => "i32" }` (ADR 0331).
+        if any_trait(self.tcx) == Some(tr.def_id) {
+            let key = self.type_fact_value(tr.self_ty(), TypeFact::Id, span)?;
+            let type_id = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(key)).at(js::Span::NONE)]);
+            return Ok(Expr::object(vec![Prop::Field("type_id".into(), type_id)]));
         }
         // A marker's of a type a bound gave none for, as none passes one: a
         // type parameter made a `dyn`, `Box::new(value)` of a `T: Marker`.

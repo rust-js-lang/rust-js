@@ -9,6 +9,7 @@ use super::fn_def;
 use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
+use super::std_types::any::AnyOp;
 use super::std_types::lazy::LazyOp;
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
@@ -323,6 +324,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if matches!(self.thir[self.strip(arg)].kind, ExprKind::Tuple { ref fields } if fields.is_empty()) {
                     *value = Expr::array(Vec::new());
                 }
+                // A `&dyn Any` given to JS, any JS value, is its value, not
+                // the pair (ADR 0331).
+                let taken = std::mem::replace(value, Expr::undefined());
+                *value = self.any_given_to_js(taken, self.thir[arg].ty);
             }
             // A parameter it names `#[rust_js::nullable(..)]` is `T | null`:
             // its `None` is `null` (ADR 0275).
@@ -459,10 +464,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(copy) = self.cloned_stepping(def_id, args, span, out)? {
             return Ok(Some(copy));
         }
-        if self
-            .tcx
-            .trait_of_assoc(def_id)
-            .is_some_and(|id| super::traits::operational(self.tcx, self.krate.foreign, id))
+        // `x.type_id()` is its type's key, a `dyn`'s its dictionary's (ADR 0331).
+        let any = matches!(self.recognition().classify(def_id, generic_args), Some(Std::Any(_)));
+        if !any
+            && self
+                .tcx
+                .trait_of_assoc(def_id)
+                .is_some_and(|id| super::traits::operational(self.tcx, self.krate.foreign, id))
             || (self.tcx.trait_of_assoc(def_id).is_some()
                 && self
                     .resolve_instance(def_id, generic_args)?
@@ -766,6 +774,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `as_ref()`: the same value, box and all.
                     | Std::Pointee
                     | Std::ResultOk
+                    // A downcast's `Some`, boxed as it's made (ADR 0331).
+                    | Std::Any(AnyOp::DowncastRef | AnyOp::DowncastMut)
                     | Std::ArrayMethod("find")
                     | Std::Extreme(_)
                     | Std::Step(StepOp::Next | StepOp::Peek)
@@ -1089,6 +1099,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.pin_call(known, call, &mut values, out)? {
             return Ok(js);
         }
+        if let Some(js) = self.any_call(known, call, &mut values, out)? {
+            return Ok(js);
+        }
         if let Some(js) = self.channel_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -1220,6 +1233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Once(_) => unreachable!("lowered by once_call"),
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
             Std::Pin(_) => unreachable!("lowered by pin_call"),
+            Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Cow(_) => unreachable!("lowered by cow_call"),
             Std::Rc(_) => unreachable!("lowered by rc_call"),
             Std::Slice(_) => unreachable!("lowered by slice_call"),

@@ -266,4 +266,13 @@ export const mutations: Mutation[] = [
     replace: "                ty::Adt(_, args) if false => {\n                    let pointer",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
+  {
+    name: "type-id-eq-deep",
+    breaks: "`==` of `TypeId`s isn't `===`",
+    file: "src/lower/std_impls.rs",
+    find: "            || self.recognition().is_type_id(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
+    snapshots: true,
+  },
 ];

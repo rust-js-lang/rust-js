@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "type-name-unerased",
     breaks: "`type_name` names the type as written, `Vec<Option<&str>>`, not rustc's paths",
     file: "src/lower/std_types/number.rs",
-    find: "        Ok(Expr::str(rustc_const_eval::util::type_name(self.tcx, of)))",
-    replace: "        Ok(Expr::str(of.to_string()))",
+    find: "            _ => rustc_const_eval::util::type_name(self.tcx, of),",
+    replace: "            _ => of.to_string(),",
     tests: ["test/corpus.test.ts", "-t", "std_odds"],
   },
   {

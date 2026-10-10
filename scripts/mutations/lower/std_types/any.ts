@@ -1,0 +1,54 @@
+// Mutations of src/lower/std_types/any.rs (ADR 0331).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "downcast-ref-unboxed",
+    breaks: "`downcast_ref::<Option<u16>>()` of a `None`-looking value isn't boxed",
+    file: "src/lower/std_types/any.rs",
+    find: "                let some = if self.boxed_payload(of) {",
+    replace: "                let some = if false {",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
+  },
+  {
+    name: "downcast-mut-copy",
+    breaks: "`downcast_mut::<u8>()` gives the number, so `*n += 1` is lost",
+    file: "src/lower/std_types/any.rs",
+    find: "                let found = if self.is_boxable(of) { pair } else { inside };",
+    replace: "                let found = inside;",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
+  },
+  {
+    name: "downcast-err-value",
+    breaks: "a failed `downcast` gives the value, not the `Box<dyn Any>`",
+    file: "src/lower/std_types/any.rs",
+    find: "            AnyOp::Downcast => Expr::cond(is, Self::ok(inside), Self::err(pair)),",
+    replace: "            AnyOp::Downcast => Expr::cond(is, Self::ok(inside.clone()), Self::err(inside)),",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
+  },
+  {
+    name: "type-id-of-closure",
+    breaks: "two closures share a `TypeId`, their name",
+    file: "src/lower/std_types/any.rs",
+    find: "        if unnamed {\n",
+    replace: "        if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any_closure"],
+  },
+  {
+    name: "binding-given-pair",
+    breaks: "a binding taking a `&dyn Any`, any JS value, is given the pair",
+    file: "src/lower/std_types/any.rs",
+    find: "        if self.recognition().is_dyn_any(pointee) {\n            // A pair made here",
+    replace: "        if false {\n            // A pair made here",
+    tests: ["test/snapshots.test.ts", "-t", "async: the generated"],
+    snapshots: true,
+  },
+  {
+    name: "type-id-of-supertrait-dyn",
+    breaks: "`type_id()` of a `dyn` of a trait under `Any` is an error",
+    file: "src/lower/std_types/any.rs",
+    find: "            id if id.is_some() && id == any_trait(self.tcx) => dictionary,",
+    replace: "            id if id.is_some() => dictionary,",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
+  },
+];

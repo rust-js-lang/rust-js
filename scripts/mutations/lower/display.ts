@@ -388,4 +388,12 @@ export const mutations: Mutation[] = [
     replace: "                let shown = match false {",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
+  {
+    name: "type-id-debug-shown",
+    breaks: "`{:?}` of a `TypeId` shows its key, where Rust shows its hash",
+    file: "src/lower/display.rs",
+    find: "        if self.recognition().is_type_id(ty) {\n            return Err",
+    replace: "        if false {\n            return Err",
+    tests: ["test/corpus.test.ts", "-t", "type_id_debug"],
+  },
 ];

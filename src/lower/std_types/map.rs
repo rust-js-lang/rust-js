@@ -532,6 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     pub(in crate::lower) fn is_primitive_key(&self, ty: Ty<'tcx>) -> bool {
         self.is_string_like(ty)
+            || self.recognition().is_type_id(ty)
             || Num::of(ty).is_some()
             || ty.is_bool()
             || matches!(ty.kind(), ty::Adt(adt, _) if is_fieldless_enum(*adt))

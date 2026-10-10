@@ -18,10 +18,12 @@
 //! | ranges | `{ start, end }` | `range` |
 //! | `mpsc` channels | a queue | `channel` |
 //! | `Pin` | its pointer | `pin` |
+//! | `TypeId`, `dyn Any` | its type's key, a string; `{ value, impl }` | `any` |
 //!
 //! Which std type each is, and how much of each is known, is
 //! `recognition/registry.rs`'s and `docs/std-coverage.txt`'s.
 
+pub(super) mod any;
 pub(super) mod cell;
 pub(super) mod channel;
 pub(super) mod cow;

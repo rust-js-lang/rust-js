@@ -616,6 +616,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `==` compares (ADR 0063).
         self.is_string_like(ty)
             || self.is_parse_error(ty)
+            // A `TypeId` is its type's key (ADR 0331).
+            || self.recognition().is_type_id(ty)
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()

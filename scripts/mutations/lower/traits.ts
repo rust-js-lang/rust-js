@@ -785,4 +785,12 @@ export const mutations: Mutation[] = [
     replace: "            if self.tcx.def_kind(item.def_id) != DefKind::AssocFn {\n",
     tests: ["test/bindings.test.ts","-t","binding method is read of the value"],
   },
+  {
+    name: "any-not-pair",
+    breaks: "a `dyn Any` is an error, not a pair",
+    file: "src/lower/traits.rs",
+    find: "        || any_trait(tcx) == Some(id)",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
+  },
 ];

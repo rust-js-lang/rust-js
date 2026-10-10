@@ -8,8 +8,9 @@ use crate::js::StmtKind;
 use crate::js::{self, Expr, Op, Prop, Stmt, UnaryOp};
 use crate::lower::calls::Call;
 use crate::lower::discriminants;
-use crate::lower::recognition::{Std, TypeFact};
+use crate::lower::recognition::{Std, TypeFact, any_trait};
 use crate::lower::representation::{Num, is_fieldless_enum};
+use crate::lower::std_types::any::AnyOp;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -1482,22 +1483,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TypeFact::Size => ("size_of", Std::SizeOf),
             TypeFact::Align => ("align_of", Std::AlignOf),
             TypeFact::Name => ("type_name", Std::TypeName { of_val: false }),
+            TypeFact::Id => ("the `TypeId`", Std::Any(AnyOp::TypeIdOf)),
         };
         if let ty::Param(param) = of.kind() {
+            // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
+            if fact == TypeFact::Id
+                && self.given_type_fact(param.index, fact).is_none()
+                && let Some(any) = any_trait(self.tcx)
+                && let Some(dictionary) = self.evidence_for(ty::TraitRef::new(self.tcx, any, [of]))
+            {
+                return Ok(Expr::call(Expr::member(dictionary, "type_id"), Vec::new()));
+            }
             return self
                 .given_type_fact(param.index, fact)
                 .ok_or_else(|| self.unsupported(span, &format!("`{what}` of a type parameter")));
         }
-        if fact != TypeFact::Name {
+        if !matches!(fact, TypeFact::Name | TypeFact::Id) {
             return Ok(Expr::int(self.layout_bytes(known, of, span)?));
         }
         if of.has_param() {
-            return Err(self.unsupported(span, "`type_name` of a type parameter"));
+            return Err(self.unsupported(span, &format!("{what} of a type with a type parameter")));
         }
         let of = self
             .tcx
             .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(of));
-        Ok(Expr::str(rustc_const_eval::util::type_name(self.tcx, of)))
+        Ok(Expr::str(match fact {
+            TypeFact::Id => self.type_id_key(self.tcx.erase_and_anonymize_regions(of), span)?,
+            _ => rustc_const_eval::util::type_name(self.tcx, of),
+        }))
     }
 
     /// The bytes `size_of`, `align_of` or `size_of_val` gives for `of`.

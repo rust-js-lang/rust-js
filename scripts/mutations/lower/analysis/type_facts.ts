@@ -18,4 +18,21 @@ export const mutations: Mutation[] = [
     replace: "\n",
     tests: ["test/diagnostics.test.ts", "-t", "size_of_val of an unsized"],
   },
+  {
+    name: "dyn-any-param-unasked",
+    breaks: "a `T: 'static` made a `dyn Any` has no `TypeId` to give it",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                asked.insert((caller, param.index, TypeFact::Id));\n                continue;",
+    replace: "                continue;",
+    tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
+  },
+  {
+    name: "any-bound-fact-asked",
+    breaks: "a `T: Any` is given its `TypeId` beside its dictionary",
+    file: "src/lower/analysis/type_facts.rs",
+    find: "                    && !(fact == TypeFact::Id && bound_by_any(tcx, caller, param.index))",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
+    snapshots: true,
+  },
 ];

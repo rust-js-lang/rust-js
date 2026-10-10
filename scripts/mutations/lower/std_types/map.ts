@@ -42,4 +42,13 @@ export const mutations: Mutation[] = [
     replace: "                    _ => method(s, \"has\", vec![x.clone()]),\n",
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
   },
+  {
+    name: "type-id-key-by-value",
+    breaks: "a `TypeId` key is found by value, a `$KeyMap`, not as a string",
+    file: "src/lower/std_types/map.rs",
+    find: "            || self.recognition().is_type_id(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
+    snapshots: true,
+  },
 ];

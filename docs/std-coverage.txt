@@ -357,11 +357,11 @@
 + Result::unwrap_or_default
 + Result::unwrap_or_else
 + Result::unwrap_unchecked
-# Rc 11 of 23
+# Rc 12 of 23
 - Rc::as_ptr
 - Rc::assume_init
 - Rc::decrement_strong_count
-- Rc::downcast
++ Rc::downcast
 + Rc::downgrade
 - Rc::from_raw
 + Rc::get_mut
@@ -381,11 +381,11 @@
 + Rc::try_unwrap
 + Rc::unwrap_or_clone
 + Rc::weak_count
-# Arc 11 of 23
+# Arc 12 of 23
 - Arc::as_ptr
 - Arc::assume_init
 - Arc::decrement_strong_count
-- Arc::downcast
++ Arc::downcast
 + Arc::downgrade
 - Arc::from_raw
 + Arc::get_mut
@@ -545,11 +545,11 @@
 - String::try_reserve
 - String::try_reserve_exact
 + String::with_capacity
-# Box 4 of 17
+# Box 5 of 17
 - Box::as_mut_ptr
 - Box::as_ptr
 - Box::assume_init
-- Box::downcast
++ Box::downcast
 - Box::from_non_null
 - Box::from_raw
 - Box::into_non_null

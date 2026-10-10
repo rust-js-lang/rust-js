@@ -82,6 +82,7 @@ its type (ADR 0054):
 ## Consequences
 
 - A `dyn ToString`, `dyn Any` and `dyn DoubleEndedIterator` are still
-  errors.
+  errors. (Amended by ADR 0331: a `dyn Any` is a pair too, of `Any`'s
+  dictionary, its type's `TypeId`.)
 - Of rustc's tests, 8 more pass: `dyn Display` in its forms, `Box<dyn
   Error>` from a string, and three of trait upcasting's.

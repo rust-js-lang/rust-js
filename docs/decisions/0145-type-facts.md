@@ -25,7 +25,8 @@ to run knows its drop (ADR 0098).
 
 **A generic function that asks `size_of`, `align_of` or `type_name` of a
 type parameter takes the answer as a parameter, after its dictionaries,
-and each caller gives it for its type:**
+and each caller gives it for its type:** (Amended by ADR 0331: and its
+`TypeId`, `TId`, unless a `T: Any` bound gives its dictionary.)
 
 ```js
 function describe(_, TSize, TName) {

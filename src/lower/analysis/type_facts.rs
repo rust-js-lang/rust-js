@@ -2,11 +2,12 @@
 //! `size_of::<T>()`, `align_of::<T>()` and `type_name::<T>()`, which a
 //! caller's type answers.
 
-use crate::lower::recognition::{TypeFact, type_fact};
+use crate::lower::recognition::{TypeFact, bound_by_any, pointer_target, points_at_dyn_any, type_fact};
 use crate::lower::{Body, FnInfo, fn_def};
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::TyCtxt;
+use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
@@ -29,14 +30,31 @@ pub(super) fn type_fact_params<'tcx>(
         let caller = tcx.typeck_root_def_id(body.def_id.to_def_id());
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, caller);
         for expr in body.thir.exprs.iter() {
+            // A type parameter's value made a `dyn Any`, whose dictionary is
+            // its `TypeId` (ADR 0331).
+            if let ExprKind::PointerCoercion {
+                cast: PointerCoercion::Unsize,
+                source,
+                ..
+            } = expr.kind
+                && let ty::Param(param) = pointer_target(tcx, body.thir[source].ty).kind()
+                && points_at_dyn_any(tcx, expr.ty)
+                && !bound_by_any(tcx, caller, param.index)
+            {
+                asked.insert((caller, param.index, TypeFact::Id));
+                continue;
+            }
             let (ExprKind::ZstLiteral { .. }, Some((callee, args))) = (&expr.kind, fn_def(expr.ty)) else {
                 continue;
             };
             if let Some(fact) = type_fact(tcx, callee) {
                 // `size_of_val` of an unsized `T` is the value's, not the type's.
-                if let Some(of) = args.types().next()
+                // A downcast's type is its last, after its `Box`'s allocator.
+                // A `T: Any`'s `TypeId` is its dictionary's (ADR 0331).
+                if let Some(of) = args.types().last()
                     && let ty::Param(param) = of.kind()
                     && of.is_sized(tcx, typing_env)
+                    && !(fact == TypeFact::Id && bound_by_any(tcx, caller, param.index))
                 {
                     asked.insert((caller, param.index, fact));
                 }
@@ -58,7 +76,7 @@ pub(super) fn type_fact_params<'tcx>(
     while changed {
         changed = false;
         for &((caller, from), (callee, to)) in &passed {
-            for fact in [TypeFact::Size, TypeFact::Align, TypeFact::Name] {
+            for fact in [TypeFact::Size, TypeFact::Align, TypeFact::Name, TypeFact::Id] {
                 if asked.contains(&(callee, to, fact)) && asked.insert((caller, from, fact)) {
                     changed = true;
                 }

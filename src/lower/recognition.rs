@@ -7,6 +7,7 @@ use super::combinators::{Comb, IterComb, IterSource, StepOp};
 use super::fn_def;
 use super::format_spec::Radix;
 use super::representation::Num;
+use super::std_types::any::AnyOp;
 use super::std_types::cow::CowOp;
 use super::std_types::heap::HeapOp;
 use super::std_types::lazy::LazyOp;
@@ -133,6 +134,8 @@ pub(super) enum Std {
     Lock,
     /// A `Pin`'s functions, each its pointer's (ADR 0329).
     Pin(PinOp),
+    /// `TypeId`s and a `dyn Any`'s downcasts (ADR 0331).
+    Any(AnyOp),
     /// An atomic's operations (ADR 0096), on its `{ value }` as a `Cell`'s:
     /// `load` and `into_inner`, `store`, `swap`, the `fetch_` ones, with
     /// the operator or whether it's `fetch_max`, and `compare_exchange`.
@@ -430,6 +433,7 @@ impl Std {
                 | Std::CellGetMut
                 | Std::GuardValue { mutable: true }
                 | Std::Pin(PinOp::Mut | PinOp::Map)
+                | Std::Any(AnyOp::DowncastMut)
                 | Std::Text(TextOp::EncodeUtf8)
                 | Std::OptionPlace(
                     OptionPlaceOp::GetOrInsert
@@ -744,10 +748,23 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let tcx = self.tcx;
         let self_ty = args.types().next();
         let ty = self_ty?;
+        // `x.type_id()`, its type's key (ADR 0331).
+        if tcx.is_diagnostic_item(Symbol::intern("Any"), trait_) && tcx.item_name(def_id).as_str() == "type_id" {
+            return Some(Std::Any(AnyOp::TypeIdOfValue));
+        }
         // `x.borrow()` of std's `Borrow`: the value itself, as its dictionary's
         // is (ADR 0167). A type parameter's is its dictionary's.
         if is_std_def(tcx, trait_, StdItem::Borrow)
             && tcx.item_name(def_id).as_str() == "borrow"
+            && self.borrows_as_itself(ty, args.type_at(1))
+        {
+            return Some(Std::Same);
+        }
+        // `b.as_ref()` of std's `AsRef` where it's the same JS value, a
+        // `Box`'s of what it holds (ADR 0331).
+        if is_std_def(tcx, trait_, StdItem::AsRef)
+            && tcx.item_name(def_id).as_str() == "as_ref"
+            && ty.is_box()
             && self.borrows_as_itself(ty, args.type_at(1))
         {
             return Some(Std::Same);
@@ -1377,6 +1394,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // Kept for good, a `&'static` of it: in JS, which frees nothing
             // itself, the value itself.
             "leak" if adt("Vec") || string || owner.is_box() => Std::Same,
+            // A `dyn Any`'s downcasts, by its type's key (ADR 0331).
+            "is" if self.is_dyn_any(owner) => Std::Any(AnyOp::Is),
+            "downcast_ref" if self.is_dyn_any(owner) => Std::Any(AnyOp::DowncastRef),
+            "downcast_mut" if self.is_dyn_any(owner) => Std::Any(AnyOp::DowncastMut),
+            "downcast"
+                if (owner.is_box() || rc)
+                    && owner
+                        .walk()
+                        .any(|part| part.as_type().is_some_and(|t| self.is_dyn_any(t))) =>
+            {
+                Std::Any(AnyOp::Downcast)
+            }
+            "of" if self.is_type_id(owner) => Std::Any(AnyOp::TypeIdOf),
             // A `Pin` is its pointer (ADR 0329).
             "pin" | "into_pin" if owner.is_box() => Std::Same,
             "new" | "new_unchecked" | "into_inner" | "into_inner_unchecked" | "get_ref" | "static_ref"
@@ -2648,6 +2678,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .any(|item| item.name().as_str() == "clone_from")
     }
 
+    /// `TypeId`, which rust-js holds as its type's key, a string (ADR 0331).
+    pub(super) fn is_type_id(&self, ty: Ty<'tcx>) -> bool {
+        self.is_lang_adt(ty, LangItem::TypeId)
+    }
+
+    /// A `dyn Any`, `+ Send` or not (ADR 0331).
+    pub(super) fn is_dyn_any(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Dynamic(traits, ..)
+            if traits.principal_def_id().is_some_and(|id| self.tcx.is_diagnostic_item(Symbol::intern("Any"), id)))
+    }
+
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
     pub(super) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
@@ -3103,6 +3144,8 @@ pub(super) fn operational(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_,
         || tcx.is_diagnostic_item(Symbol::intern("ToString"), id)
         // A `dyn Error`'s (ADR 0141), its `Display` and `Debug` its supertraits'.
         || tcx.is_diagnostic_item(Symbol::intern("Error"), id)
+        // A `dyn Any`'s, its type's key (ADR 0331).
+        || tcx.is_diagnostic_item(Symbol::intern("Any"), id)
         // Its evidence is the writer or reader itself (ADR 0081).
         || serde_trait(tcx, id).is_some()
         // `parse` of a `T: FromStr`: its dictionary's `from_str` (ADR 0161).
@@ -3600,6 +3643,8 @@ pub(crate) enum TypeFact {
     Size,
     Align,
     Name,
+    /// Its `TypeId`'s key (ADR 0331).
+    Id,
 }
 
 /// The fact `def_id` asks of its type argument: `size_of` and `size_of_val`
@@ -3614,9 +3659,62 @@ pub(crate) fn type_fact(tcx: TyCtxt<'_>, def_id: DefId) -> Option<TypeFact> {
         return Some(TypeFact::Align);
     }
     match std_path(tcx, def_id).as_str() {
-        "std::any::type_name" | "std::any::type_name_of_val" => Some(TypeFact::Name),
-        _ => None,
+        "std::any::type_name" | "std::any::type_name_of_val" => return Some(TypeFact::Name),
+        "std::any::TypeId::of" => return Some(TypeFact::Id),
+        _ => {}
     }
+    // `x.type_id()`, and a downcast's type, its last type argument (ADR 0331).
+    let any = tcx.get_diagnostic_item(Symbol::intern("Any"));
+    let name = tcx.item_name(def_id);
+    if tcx.trait_of_assoc(def_id) == any && name.as_str() == "type_id" {
+        return Some(TypeFact::Id);
+    }
+    let owner = tcx.inherent_impl_of_assoc(def_id)?;
+    let owner = tcx.type_of(owner).instantiate_identity().skip_normalization();
+    let of_any = owner.walk().any(|part| {
+        part.as_type().is_some_and(|t| {
+            matches!(t.kind(), ty::Dynamic(traits, ..)
+            if traits.principal_def_id().is_some() && traits.principal_def_id() == any)
+        })
+    });
+    (of_any && matches!(name.as_str(), "is" | "downcast_ref" | "downcast_mut" | "downcast")).then_some(TypeFact::Id)
+}
+
+/// Is `id` of a crate linked at two versions, whose paths alone don't tell
+/// the two apart (ADR 0331)?
+pub(crate) fn linked_twice(tcx: TyCtxt<'_>, id: DefId) -> bool {
+    let name = tcx.crate_name(id.krate);
+    tcx.crates(()).iter().filter(|&&c| tcx.crate_name(c) == name).count() > 1
+}
+
+/// `Any`, std's trait of a type's `TypeId` (ADR 0331).
+pub(crate) fn any_trait(tcx: TyCtxt<'_>) -> Option<DefId> {
+    tcx.get_diagnostic_item(Symbol::intern("Any"))
+}
+
+/// What a reference, a `Box` or an `Rc` points at, and any other type itself.
+pub(crate) fn pointer_target<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Ty<'tcx> {
+    match ty.kind() {
+        ty::Ref(_, inner, _) => *inner,
+        ty::Adt(_, args) if ty.is_box() || rc_pointee(tcx, ty).is_some() => args.type_at(0),
+        _ => ty,
+    }
+}
+
+/// A `dyn Any`, `+ Send` or not, through a reference, a `Box` or an
+/// `Rc` (ADR 0331).
+pub(crate) fn points_at_dyn_any<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
+    matches!(pointer_target(tcx, ty).kind(), ty::Dynamic(traits, ..) if traits.principal_def_id().is_some() && traits.principal_def_id() == any_trait(tcx))
+}
+
+/// Does `owner` bound its type parameter `index` by `Any` (ADR 0331)?
+pub(crate) fn bound_by_any(tcx: TyCtxt<'_>, owner: DefId, index: u32) -> bool {
+    (tcx.clauses_of(owner).clauses.iter())
+        .filter_map(|(clause, _)| clause.as_trait_clause())
+        .map(|bound| bound.skip_binder())
+        .any(|bound| {
+            Some(bound.def_id()) == any_trait(tcx) && matches!(bound.self_ty().kind(), ty::Param(p) if p.index == index)
+        })
 }
 
 /// Is `ty` a `fmt::Result` (ADR 0054)?
