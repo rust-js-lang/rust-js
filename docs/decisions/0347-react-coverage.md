@@ -65,13 +65,32 @@ suggestions, and `createElement`, which `jsx!` is.
 
 ## Amendment: react-dom by @types's names
 
-react-dom is bound whole, 25 of 25, its types under @types/react-dom's
-names: `PreloadAs`, `PreinitAs`, `BrowserUsable` (were `As`, `Init`,
-`Browser`); `PreloadModuleOptions` and `PreinitModuleOptions` apart (were
-one `ModuleOptions`), with `PreloadModuleAs` a fetch's `RequestDestination`
-and `PreinitModuleAs`; `PreconnectOptions`. A function whose options
-@types makes optional has a `_with` twin, `preconnect_with`, as
-`create_root_with` is.
+react-dom and its entry points are bound whole, their types under
+@types/react-dom's names: `PreloadAs`, `PreinitAs`, `BrowserUsable` (were
+`As`, `Init`, `Browser`); `PreloadModuleOptions` and
+`PreinitModuleOptions` apart (were one `ModuleOptions`), with
+`PreloadModuleAs` a fetch's `RequestDestination` and `PreinitModuleAs`;
+`PreconnectOptions`; `ServerOptions`, `RenderToReadableStreamOptions`,
+`RenderToPipeableStreamOptions` (were `StringOptions`, `StreamOptions`,
+`PipeOptions`), `ResumeToPipeableStreamOptions`, `PrerenderOptions` and
+`ResumeOptions` each its own, with `BootstrapScriptDescriptor`,
+`NonceOption`, `ReactImportMap`, `HeadersDescriptor`, `HydrationOptions`
+and `ReactFormState`. A function whose options React takes without has a
+`_with` twin, `preconnect_with`, `render_to_readable_stream_with`, as
+`create_root_with` is; `preload` and `preinit` keep theirs required, as
+React warns without an `as`.
+
+- A union parameter is a trait of a marker, as `FormAction<M>` is:
+  `Container<M>` is an element (any `IsA<Element>`), a document fragment
+  or a document, which one blanket `impl` and two others can't be apart.
+  `hydrate_root`'s `HydrationContainer<M>`, an element or a document, has
+  no @types name.
+- `prerender_to_node_stream` gives a `PrerenderToNodeStreamResult`, whose
+  `prelude` is a Node `Readable` (it gave the Web stream's type), of the
+  type its caller names, as `PipeableStream::pipe` takes any `Writable`:
+  the crate has no Node types.
+- `resume_and_prerender_with` takes `ResumeOptions`, whose nonce @types
+  omits there: one more type for one option wasn't worth it.
 
 - `FormStatus` is @types's union, `FormStatusPending | FormStatusNotPending`,
   an enum tagged by `pending: true | false` (ADR 0284): a pending form's

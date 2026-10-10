@@ -5,7 +5,8 @@
 
 use react::dom::client::{Root, RootOptions, create_root_with};
 use react::dom::server::{
-    ReactDOMServerReadableStream, StreamOptions, StringOptions, render_to_readable_stream, render_to_string_with,
+    BootstrapScript, BootstrapScriptDescriptor, NonceOption, Nonces, ReactDOMServerReadableStream,
+    RenderToReadableStreamOptions, ServerOptions, render_to_readable_stream_with, render_to_string_with,
 };
 use react::dom::{FormStatus, create_portal, flush_sync, use_form_status};
 use react::{js, jsx};
@@ -265,16 +266,22 @@ pub fn page_html() -> String {
         jsx! {
             <Page />
         },
-        StringOptions::new().identifier_prefix("s-"),
+        ServerOptions::new().identifier_prefix("s-"),
     )
 }
 
 pub async fn page_stream() -> &'static ReactDOMServerReadableStream {
-    let stream = render_to_readable_stream(
+    let stream = render_to_readable_stream_with(
         jsx! {
             <Page />
         },
-        StreamOptions::new().identifier_prefix("w-"),
+        RenderToReadableStreamOptions::new()
+            .identifier_prefix("w-")
+            .nonce(NonceOption::Each(Nonces::new().script("n1")))
+            .bootstrap_scripts(vec![
+                BootstrapScript::Src("/a.js"),
+                BootstrapScript::Descriptor(BootstrapScriptDescriptor::new("/b.js").integrity("sha-b")),
+            ]),
     )
     .await;
     stream.all_ready().await;

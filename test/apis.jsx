@@ -126,7 +126,11 @@ test("keyed fragments, styles, raw HTML, attributes, a lazy component and a Prof
 test("rendering to a string and a stream, and a root, with their options", async () => {
   expect(page_html()).toBe('<p class="page">id <!-- -->_s-R_0_</p>');
   const stream = await page_stream();
-  expect(await new Response(stream).text()).toContain('<p class="page">id <!-- -->_w-R_0_</p>');
+  const html = await new Response(stream).text();
+  expect(html).toContain('<p class="page">id <!-- -->_w-R_0_</p>');
+  // Its scripts, a src and a descriptor, with the scripts' nonce.
+  expect(html).toContain('<script src="/a.js" nonce="n1" id="_w-R_" async="">');
+  expect(html).toContain('<script src="/b.js" nonce="n1" integrity="sha-b" async="">');
   const container = document.createElement("div");
   let root;
   await act(() => (root = mount(container)));

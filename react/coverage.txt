@@ -1,5 +1,5 @@
 # The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts
-# exports: 206 of 245 (84.1%)
+# exports: 223 of 245 (91.0%)
 # not bound by design (x): 87, class components, TypeScript's own or old names
 # react 162 of 184
 - type react#AbstractView
@@ -297,44 +297,44 @@ x react-dom#unstable_batchedUpdates
 x react-dom#useFormState
 + react-dom#useFormStatus
 + react-dom#version
-# react-dom/client 5 of 8
-- type react-dom/client#Container
+# react-dom/client 8 of 8
++ type react-dom/client#Container
 + react-dom/client#createRoot
 + type react-dom/client#ErrorInfo
 + react-dom/client#hydrateRoot
-- type react-dom/client#HydrationOptions
-- type react-dom/client#ReactFormState
++ type react-dom/client#HydrationOptions
++ type react-dom/client#ReactFormState
 + type react-dom/client#Root
 + type react-dom/client#RootOptions
-# react-dom/server 8 of 16
-- type react-dom/server#BootstrapScriptDescriptor
-- type react-dom/server#HeadersDescriptor
-- type react-dom/server#NonceOption
+# react-dom/server 16 of 16
++ type react-dom/server#BootstrapScriptDescriptor
++ type react-dom/server#HeadersDescriptor
++ type react-dom/server#NonceOption
 + type react-dom/server#PipeableStream
 + type react-dom/server#ReactDOMServerReadableStream
-- type react-dom/server#ReactImportMap
++ type react-dom/server#ReactImportMap
 + react-dom/server#renderToPipeableStream
-- type react-dom/server#RenderToPipeableStreamOptions
++ type react-dom/server#RenderToPipeableStreamOptions
 + react-dom/server#renderToReadableStream
-- type react-dom/server#RenderToReadableStreamOptions
++ type react-dom/server#RenderToReadableStreamOptions
 + react-dom/server#renderToStaticMarkup
 + react-dom/server#renderToString
 + react-dom/server#resume
 + react-dom/server#resumeToPipeableStream
-- type react-dom/server#ResumeToPipeableStreamOptions
-- type react-dom/server#ServerOptions
++ type react-dom/server#ResumeToPipeableStreamOptions
++ type react-dom/server#ServerOptions
 x react-dom/server#version
-# react-dom/static 6 of 12
-- type react-dom/static#BootstrapScriptDescriptor
-- type react-dom/static#NonceOption
+# react-dom/static 12 of 12
++ type react-dom/static#BootstrapScriptDescriptor
++ type react-dom/static#NonceOption
 + type react-dom/static#PostponedState
 + react-dom/static#prerender
-- type react-dom/static#PrerenderOptions
++ type react-dom/static#PrerenderOptions
 + type react-dom/static#PrerenderResult
 + react-dom/static#prerenderToNodeStream
-- type react-dom/static#PrerenderToNodeStreamResult
-- type react-dom/static#ReactImportMap
++ type react-dom/static#PrerenderToNodeStreamResult
++ type react-dom/static#ReactImportMap
 + react-dom/static#resumeAndPrerender
 + react-dom/static#resumeAndPrerenderToNodeStream
-- type react-dom/static#ResumeOptions
++ type react-dom/static#ResumeOptions
 x react-dom/static#version

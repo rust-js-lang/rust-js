@@ -72,8 +72,30 @@ function submit(previous, data) {
 }
 
 export function SubmitStatus() {
-  const status = useFormStatus();
-  return <span className="status">{status.pending ? "sending" : "ready"}</span>;
+  let status;
+  const match = useFormStatus();
+  if (match.pending === true) {
+    const match$1 = match.data.get("name");
+    const name = typeof match$1 === "string" ? match$1 : "";
+    status = `sending ${name} by ${match.method}`;
+  } else {
+    status = "ready";
+  }
+  return <span className="status">{status}</span>;
+}
+
+export function Upload() {
+  return (
+    <form
+      action={async () => {
+        await globalThis.uploaded();
+      }}
+    >
+      <input name="name" defaultValue="grace" />
+      <button type="submit">Upload</button>
+      <SubmitStatus />
+    </form>
+  );
 }
 
 export function Signup() {
@@ -234,7 +256,11 @@ export function page_html() {
 }
 
 export async function page_stream() {
-  const stream = await renderToReadableStream(<Page />, { identifierPrefix: "w-" });
+  const stream = await renderToReadableStream(<Page />, {
+    identifierPrefix: "w-",
+    nonce: { script: "n1" },
+    bootstrapScripts: ["/a.js", { src: "/b.js", integrity: "sha-b" }],
+  });
   await stream.allReady;
   return stream;
 }
