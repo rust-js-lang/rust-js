@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 128 of 2093 (6.1%)
-# members: 275 of 449 (61.2%)
-# next 30 of 42, members 101 of 199
+# exports: 138 of 2093 (6.6%)
+# members: 305 of 433 (70.4%)
+# next 30 of 42, members 102 of 199
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
 - next#AdapterOutput.APP_ROUTE
@@ -120,7 +120,7 @@
 + next#NextApiResponse.setPreviewData
 + next#NextApiResponse.status
 + type next#NextComponentType
-- next#NextComponentType.getInitialProps
++ next#NextComponentType.getInitialProps
 - type next#NextConfig
 - next#NextConfig.adapterPath
 - next#NextConfig.agentRules
@@ -243,21 +243,21 @@
 + type next#Viewport
 + next#Viewport.colorScheme
 + next#Viewport.themeColor
-# next/app 1 of 6, members 0 of 8
-- type next/app#AppContext
-- type next/app#AppInitialProps
-- next/app#AppInitialProps.pageProps
+# next/app 6 of 6, members 8 of 8
++ type next/app#AppContext
++ type next/app#AppInitialProps
++ next/app#AppInitialProps.pageProps
 + type next/app#AppProps
-- type next/app#AppType
-- next/app#AppType.getInitialProps
-- next/app#default
-- type next/app#NextWebVitalsMetric
-- next/app#NextWebVitalsMetric.attribution
-- next/app#NextWebVitalsMetric.id
-- next/app#NextWebVitalsMetric.label
-- next/app#NextWebVitalsMetric.name
-- next/app#NextWebVitalsMetric.startTime
-- next/app#NextWebVitalsMetric.value
++ type next/app#AppType
++ next/app#AppType.getInitialProps
++ next/app#default
++ type next/app#NextWebVitalsMetric
++ next/app#NextWebVitalsMetric.attribution
++ next/app#NextWebVitalsMetric.id
++ next/app#NextWebVitalsMetric.label
++ next/app#NextWebVitalsMetric.name
++ next/app#NextWebVitalsMetric.startTime
++ next/app#NextWebVitalsMetric.value
 # next/cache 11 of 11, members 0 of 0
 + next/cache#cacheLife
 + next/cache#cacheTag
@@ -270,56 +270,40 @@
 + next/cache#unstable_cacheTag
 + next/cache#unstable_noStore
 + next/cache#updateTag
-# next/document 4 of 9, members 0 of 40
-- next/document#default
-- type next/document#DocumentContext
-- next/document#DocumentContext.AppTree
-- next/document#DocumentContext.asPath
-- next/document#DocumentContext.defaultGetInitialProps
-- next/document#DocumentContext.defaultLocale
-- next/document#DocumentContext.err
-- next/document#DocumentContext.locale
-- next/document#DocumentContext.locales
-- next/document#DocumentContext.pathname
-- next/document#DocumentContext.query
-- next/document#DocumentContext.renderPage
-- next/document#DocumentContext.req
-- next/document#DocumentContext.res
-- type next/document#DocumentInitialProps
-- next/document#DocumentInitialProps.head
-- next/document#DocumentInitialProps.html
-- next/document#DocumentInitialProps.styles
-- type next/document#DocumentProps
-- next/document#DocumentProps.head
-- next/document#DocumentProps.html
-- next/document#DocumentProps.styles
+# next/document 9 of 9, members 21 of 24
++ next/document#default
++ type next/document#DocumentContext
++ next/document#DocumentContext.AppTree
++ next/document#DocumentContext.asPath
++ next/document#DocumentContext.defaultGetInitialProps
++ next/document#DocumentContext.defaultLocale
++ next/document#DocumentContext.err
++ next/document#DocumentContext.locale
++ next/document#DocumentContext.locales
++ next/document#DocumentContext.pathname
++ next/document#DocumentContext.query
++ next/document#DocumentContext.renderPage
++ next/document#DocumentContext.req
++ next/document#DocumentContext.res
++ type next/document#DocumentInitialProps
++ next/document#DocumentInitialProps.head
++ next/document#DocumentInitialProps.html
++ next/document#DocumentInitialProps.styles
++ type next/document#DocumentProps
++ next/document#DocumentProps.head
++ next/document#DocumentProps.html
++ next/document#DocumentProps.styles
 + next/document#Head
-- next/document#Head.context
 - next/document#Head.contextType
-- next/document#Head.getBeforeInteractiveInlineScripts
-- next/document#Head.getCssLinks
-- next/document#Head.getDynamicChunks
-- next/document#Head.getPolyfillScripts
-- next/document#Head.getPreNextScripts
-- next/document#Head.getPreloadDynamicChunks
-- next/document#Head.getPreloadMainLinks
-- next/document#Head.getScripts
-- next/document#Head.render
 + next/document#Html
 + next/document#Main
 + next/document#NextScript
-- next/document#NextScript.context
 - next/document#NextScript.contextType
-- next/document#NextScript.getDynamicChunks
 - next/document#NextScript.getInlineScriptSource
-- next/document#NextScript.getPolyfillScripts
-- next/document#NextScript.getPreNextScripts
-- next/document#NextScript.getScripts
-- next/document#NextScript.render
-- type next/document#OriginProps
-- next/document#OriginProps.children
-- next/document#OriginProps.crossOrigin
-- next/document#OriginProps.nonce
++ type next/document#OriginProps
++ next/document#OriginProps.children
++ next/document#OriginProps.crossOrigin
++ next/document#OriginProps.nonce
 # next/dynamic 11 of 11, members 19 of 19
 + next/dynamic#default
 + type next/dynamic#DynamicOptions

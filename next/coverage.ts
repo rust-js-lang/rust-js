@@ -107,8 +107,11 @@ function classText(text: string): { name: string; members: string[] } | undefine
   const body = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
   const name = body.match(/^\s*(?:export )?(?:default )?(?:declare )?(?:abstract )?class (\w+)/)?.[1];
   if (!name) return undefined;
+  // A React component's instance members are its own, `render`: what it
+  // offers is its statics, `Document.getInitialProps`.
+  const component = /class \w+(?:<[^>]*>)? extends (?:React\.)?(?:Pure)?Component\b/.test(body);
   const members = [...body.matchAll(/^ {4}((?:(?:public|static|readonly|get|set|declare|abstract|override)\s+)*)([A-Za-z_$][\w$]*)\??\s*[(:<]/gm)]
-    .filter((m) => !/private|protected/.test(m[1]) && m[2] !== "constructor")
+    .filter((m) => !/private|protected/.test(m[1]) && m[2] !== "constructor" && (!component || /static/.test(m[1])))
     .map((m) => m[2]);
   return { name, members: [...new Set(members)] };
 }
@@ -257,6 +260,13 @@ function rustMembers(): Map<string, Set<string>> {
     }
     for (const m of text.matchAll(/link_name = "(?:new )?next[^"#]*#(\w+)\.(\w+)"/g)) add(m[1], m[2]);
     for (const m of text.matchAll(/pub type (\w+)(?:<[^>]*>)? = (?:[\w:]+::)?(\w+)/g)) aliases.push([m[1], m[2]]);
+    // A setter of what a trait's types are, `set getInitialProps` of `this:
+    // impl NextComponentType`, is the trait's member; and a trait's are its
+    // supertrait's too.
+    for (const m of text.matchAll(/link_name = "set (\w+)"\)\]\s*pub fn \w+(?:<[^(]*>)?\(this: impl (\w+)</g)) add(m[2], m[1]);
+    for (const m of text.matchAll(/pub trait (\w+)(?:<[^>]*>)?: (\w+)</g)) aliases.push([m[1], m[2]]);
+    // A type's `Deref` target's, as JS's subclass has its superclass's.
+    for (const m of text.matchAll(/impl(?:<[^>]*>)? Deref for (\w+)(?:<[^>]*>)? \{\s*type Target = (\w+)/g)) aliases.push([m[1], m[2]]);
     // An untagged enum's, a union of objects, are its payloads'.
     for (const m of text.matchAll(/pub enum (\w+)[^{]*\{/g)) {
       for (const payload of block(text, m.index! + m[0].length - 1).matchAll(/^\s*\w+\((\w+)/gm)) payloads.push([m[1], payload[1]]);

@@ -165,7 +165,7 @@ js::export_default!(MyApp);
   // _document has them.
   writeFileSync(join(dir, "pages/_document.rs"), `#![allow(non_snake_case)]
 
-use next::document::{Head, Html, Main, NextScript};
+use next::document::{DocumentContext, DocumentInitialProps, Head, Html, Main, NextScript, document};
 use react::attributes::{HTMLAttributes, HtmlHTMLAttributes};
 use react::{JSX, jsx};
 
@@ -184,13 +184,23 @@ pub fn MyDocument() -> JSX::Element {
             <Head />
             <body className="document">
                 <Main />
-                <NextScript />
+                <NextScript nonce={Some("n0nce")} />
             </body>
         </Html>
     }
 }
 
 js::export_default!(MyDocument);
+
+// What Next.js's own document gives, its styles left out.
+pub async fn initial(ctx: &'static DocumentContext) -> DocumentInitialProps {
+    let props = document::get_initial_props(ctx).await;
+    DocumentInitialProps { html: props.html, head: props.head, styles: None }
+}
+
+js::on_load! {
+    next::set_get_initial_props(MyDocument, initial);
+}
 `);
   return dir;
 }
@@ -756,6 +766,9 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain('<Html lang="eo" dir="ltr">');
   const documented = readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8");
   expect([documented.includes('<html lang="eo" dir="ltr">'), documented.includes('<body class="document">')]).toEqual([true, true]);
+  // Its getInitialProps, set on it, and its scripts' nonce.
+  expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain("MyDocument.getInitialProps = initial;");
+  expect(documented).toContain('nonce="n0nce"');
   // Its props as written, an anchor's first, which the props it names
   // replace (ADR 0203, 0208).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');

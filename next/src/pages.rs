@@ -21,6 +21,15 @@ pub trait NextComponentType<Props, M>: ComponentType<Props, M> {}
 
 impl<T: ComponentType<Props, M>, Props, M> NextComponentType<Props, M> for T {}
 
+/// `Component.getInitialProps = get`: what Next.js calls for a page's, an
+/// app's or a document's initial props, given its context, `NextPageContext`,
+/// `AppContext` or `DocumentContext`, as `NextComponentType` types it. In a
+/// `js::on_load!`, as JS sets it where the component is declared.
+#[cfg_attr(rust_js, rust_js::link_name = "set getInitialProps")]
+pub fn set_get_initial_props<P, M, Ctx: 'static, R>(this: impl NextComponentType<P, M>, get: impl Fn(&'static Ctx) -> R + 'static) {
+    unreachable!()
+}
+
 /// [`NextPageContext`](https://nextjs.org/docs/pages/api-reference/functions/get-initial-props#context-object):
 /// what a page's `getInitialProps` is given.
 pub struct NextPageContext(PhantomData<JsObject>);

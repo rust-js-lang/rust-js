@@ -58,5 +58,5 @@ pub use data_fetching::{
 pub use pages::{
     ApiConfig, BodyParser, BodyParserLimit, ClearPreviewDataOptions, DraftModeOptions, FileSizeSuffix, NextApiHandler, NextApiRequest,
     NextApiResponse, NextComponentType, NextPage, NextPageContext, PageConfig, PreviewData, PreviewDataOptions, QueryValue, ResponseLimit,
-    RevalidateOptions, Route, ServerRuntime, SizeLimit,
+    RevalidateOptions, Route, ServerRuntime, SizeLimit, set_get_initial_props,
 };
