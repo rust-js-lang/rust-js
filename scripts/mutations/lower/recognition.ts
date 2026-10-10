@@ -1284,4 +1284,20 @@ export const mutations: Mutation[] = [
     replace: "]",
     tests: ["test/corpus.test.ts","-t","btree_range_mut"],
   },
+  {
+    name: "next-back-unknown",
+    breaks: "`next_back()` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            && tcx.item_name(def_id).as_str() == \"next_back\"\n",
+    replace: "            && tcx.item_name(def_id).as_str() == \"next_back!\"\n",
+    tests: ["test/corpus.test.ts","-t","iter_next_back"],
+  },
+  {
+    name: "as-slice-unknown",
+    breaks: "`as_slice()` of a slice's iterator is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"as_slice\" if slice_iter => Some(Std::Step(StepOp::AsSlice)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","iter_next_back"],
+  },
 ];

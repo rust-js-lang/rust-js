@@ -88,3 +88,42 @@ on:
   index anyway, and a `$iter` can be read in a debugger.
 - **Every iterator a `$iter`.** Uniform, but `v.iter().map(f)` would lose
   its plain `v.map(f)`.
+
+## Since
+
+- **`next_back()` of a std iterator, and `as_slice()` of a slice's or a
+  `Vec`'s** (2026-10-10). Each was refused. A `$iter` keeps where its back
+  is, `end`, which `next_back()` steps down as `next()` steps `at` up, and
+  every reader of what's left, `$rest`, `$peek`, `$nextIf`, `len()`,
+  `size_hint()`, `as_str()`, a clone and `as_slice()`, reads from `at` to
+  `end`. Its items stay the array they are, which the iterator's source
+  may be.
+
+  ```rust
+  let mut it = v.iter();
+  println!("{:?} {:?}", it.next(), it.next_back());
+  ```
+
+  ```js
+  const it = $iter(v);
+  const arg = $next(it);
+  const arg$1 = $nextBack(it);
+  ```
+
+  | Rust | JS |
+  |---|---|
+  | `it.next_back()` of one stepped through | `$nextBack(it)`, `$nextBackSome(it)` of a generic `T`'s |
+  | `v.iter().next_back()`, a new one | its items' `.at(-1)`, `$someAt(items, -1)` of a generic `T`'s |
+  | `it.as_slice()` | `it.items.slice(it.at, it.end)`, or a new one's items |
+  | a `Peekable`'s `peek()` of a generic `T`'s | `$peekSome(it)`, as `$nextSome` |
+
+  A chain whose closures do what can be seen, or a generic one, is a JS
+  iterator, which gives its items from the front only: its `next_back()`
+  is refused, as Rust would run the closures on its last item alone. The
+  `iter_next_back` corpus case runs, against native Rust, `next()` and
+  `next_back()` meeting, `len`, `size_hint`, a generic one's, `as_slice`,
+  a clone, `collect`, a `for` after them, a B-tree's range and `iter`,
+  `map`, `chars`, `split`, `Option`s, a `Peekable` peeked after, `next_if`,
+  `as_str` and a `RangeInclusive`; `next_back_lazy` the refusal.
+  Mutations take from the front, read past `end` in each reader, unbox,
+  run the chain eagerly, and refuse each.

@@ -73,11 +73,9 @@ function main() {
   );
   const rest = $iter(Array.from(new TextEncoder().encode("abc")));
   $next(rest);
-  const before = rest.items.length - rest.at;
+  const before = rest.end - rest.at;
   const next = $next(rest);
-  console.log(
-    `${before} ${next == null ? "None" : `Some(${next})`} ${rest.items.length - rest.at}`,
-  );
+  console.log(`${before} ${next == null ? "None" : `Some(${next})`} ${rest.end - rest.at}`);
   console.log(`${[1, 2, 3].slice(1).length}`);
 }
 //# sourceMappingURL=case.js.map

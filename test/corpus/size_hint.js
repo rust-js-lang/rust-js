@@ -59,7 +59,7 @@ function main() {
   const v = [1, 2, 3];
   const it = $iter(v);
   $next(it);
-  const len = it.items.length - it.at;
+  const len = it.end - it.at;
   const arg$4 = [len, len];
   console.log(`(${arg$4[0]}, ${arg$4[1] == null ? "None" : `Some(${arg$4[1]})`})`);
   const len$1 = v.map((x) => Math.imul(x, 2)).length;

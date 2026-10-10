@@ -707,8 +707,10 @@ export function $iter(items) {
   return {
     items,
     at: 0,
+    // Where its back is, which `next_back()` steps down.
+    end: items.length,
     next() {
-      return this.at < this.items.length ? { value: this.items[this.at++], done: false } : { value: undefined, done: true };
+      return this.at < this.end ? { value: this.items[this.at++], done: false } : { value: undefined, done: true };
     },
     [Symbol.iterator]() {
       return this;
@@ -724,6 +726,18 @@ export function $next(it) {
 export function $nextSome(it) {
   const step = it.next();
   return step.done ? undefined : $some(step.value);
+}
+
+export function $nextBack(it) {
+  return it.at < it.end ? it.items[--it.end] : undefined;
+}
+
+export function $nextBackSome(it) {
+  return it.at < it.end ? $some(it.items[--it.end]) : undefined;
+}
+
+export function $peekSome(it) {
+  return it.at < it.end ? $some(it.items[it.at]) : undefined;
 }
 
 export function $scan(items, init, f) {
@@ -5686,21 +5700,21 @@ export function $splitOff(items, at) {
 }
 
 export function $peek(it) {
-  return it.items[it.at];
+  return it.at < it.end ? it.items[it.at] : undefined;
 }
 
 export function $nextIf(it, f) {
-  return it.at < it.items.length && f(it.items[it.at]) ? it.items[it.at++] : undefined;
+  return it.at < it.end && f(it.items[it.at]) ? it.items[it.at++] : undefined;
 }
 
 export function $rest(it) {
-  const rest = it.items.slice(it.at);
-  it.at = it.items.length;
+  const rest = it.items.slice(it.at, it.end);
+  it.at = it.end;
   return rest;
 }
 
 export function $restStr(it) {
-  return it.items.slice(it.at).join("");
+  return it.items.slice(it.at, it.end).join("");
 }
 
 export function $unwrapErr(result, message = "called `Result::unwrap_err()` on an `Ok` value", debug = $debug) {
@@ -5995,7 +6009,7 @@ export function $bytesAsciiEq(a, b) {
 // one stepping through an array, and std's `(0, None)` of a lazy one, which
 // may be any length; Rust lets a hint be any bounds that hold.
 export function $sizeHint(it) {
-  const left = Array.isArray(it) ? it.length : Array.isArray(it.items) ? it.items.length - it.at : undefined;
+  const left = Array.isArray(it) ? it.length : Array.isArray(it.items) ? it.end - it.at : undefined;
   return left === undefined ? [0, undefined] : [left, left];
 }
 

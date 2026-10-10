@@ -777,7 +777,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Any(AnyOp::DowncastRef | AnyOp::DowncastMut)
                     | Std::ArrayMethod("find")
                     | Std::Extreme(_)
-                    | Std::Step(StepOp::Next | StepOp::Peek)
+                    | Std::Step(StepOp::Next | StepOp::NextBack | StepOp::Peek)
                     // The old value, as it's kept: boxed already.
                     | Std::OptionTake
                     // A `OnceCell`'s, kept as `$some` makes it, and a `LazyCell`'s.

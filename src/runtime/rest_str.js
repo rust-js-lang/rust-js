@@ -1,4 +1,4 @@
 
 function $restStr(it) {
-  return it.items.slice(it.at).join("");
+  return it.items.slice(it.at, it.end).join("");
 }

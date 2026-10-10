@@ -142,16 +142,20 @@ pub(super) enum IterSource {
 }
 
 /// Stepping through an iterator (ADR 0071): a `Peekable`, and a local that
-/// `next()` is called on, are a `$iter` object, `{ items, at }`.
+/// `next()` is called on, are a `$iter` object, `{ items, at, end }`.
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum StepOp {
     Next,
+    /// `DoubleEndedIterator::next_back`: its last item.
+    NextBack,
     Peekable,
     Peek,
     NextIf,
     NextIfEq,
     /// `Chars::as_str`: the rest, as a string.
     AsStr,
+    /// A slice's or a `Vec`'s iterator's `as_slice`: the rest.
+    AsSlice,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -210,10 +214,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let stepping = self.is_stepping(args[0]);
         // One item at a time: a chain's stages that do what can be seen run
         // lazily, as Rust's do (ADR 0139).
-        if matches!(op, StepOp::Next | StepOp::Peekable) {
+        if matches!(op, StepOp::Next | StepOp::NextBack | StepOp::Peekable) {
             self.mark_lazy_chain(args[0], true);
         }
         let lazy = self.is_lazy_value(args[0]);
+        // A JS iterator gives its items from the front only.
+        if op == StepOp::NextBack && !stepping && (self.is_generic_iter(receiver_ty) || lazy) {
+            return Err(self.unsupported(span, &format!("`next_back()` of a lazy `{receiver_ty}`")));
+        }
         let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
             this.runtime.insert(helper);
             Expr::call(Expr::var(name), list)
@@ -245,6 +253,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = self.expr(args[0], out)?;
                 helper(self, Helper::Next, "$next", vec![it])
             }
+            StepOp::NextBack if stepping && boxed => {
+                let it = self.expr(args[0], out)?;
+                helper(self, Helper::NextBackSome, "$nextBackSome", vec![it])
+            }
+            StepOp::NextBack if stepping => {
+                let it = self.expr(args[0], out)?;
+                helper(self, Helper::NextBack, "$nextBack", vec![it])
+            }
             // A `RangeInclusive` keeps whether it's reached its end, which
             // its object has no field for (ADR 0129).
             StepOp::Next if self.is_kept(args[0]) && self.range_kind(receiver_ty).is_some() => {
@@ -252,11 +268,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // One kept elsewhere, as a field or a parameter, would have to know
             // where it is too: a `Peekable` does.
-            StepOp::Next if self.is_kept(args[0]) => {
+            StepOp::Next | StepOp::NextBack if self.is_kept(args[0]) => {
+                let name = if op == StepOp::Next { "next" } else { "next_back" };
                 let message = format!(
-                    "rust-js does not support `next()` of a `{receiver_ty}` kept in a field, a parameter or a closure: make it a `Peekable`"
+                    "rust-js does not support `{name}()` of a `{receiver_ty}` kept in a field, a parameter or a closure: make it a `Peekable`"
                 );
                 return Err(self.tcx.dcx().span_err(span, message));
+            }
+            // A new one, `m.range(..3).next_back()`: its last item.
+            StepOp::NextBack => {
+                let items = self.iter_value(args[0], out)?;
+                let items = self.iter_source(items, receiver_ty, span, out)?;
+                if boxed {
+                    self.some_at(items, Expr::int(-1))
+                } else {
+                    Expr::call(Expr::member(items, "at"), vec![Expr::int(-1)])
+                }
             }
             // A new one, `v.iter().skip(2).next()`: its first item.
             StepOp::Next => {
@@ -278,8 +305,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             StepOp::Peek if boxed => {
                 let it = self.expr(args[0], out)?;
-                let it = if it.reads_same() { it } else { self.spill("it", it, out) };
-                self.some_at(Expr::member(it.clone(), "items"), Expr::member(it, "at"))
+                helper(self, Helper::PeekSome, "$peekSome", vec![it])
             }
             StepOp::Peek => {
                 let it = self.expr(args[0], out)?;
@@ -317,6 +343,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             StepOp::AsStr if stepping => {
                 let it = self.expr(args[0], out)?;
                 helper(self, Helper::RestStr, "$restStr", vec![it])
+            }
+            StepOp::AsSlice if stepping => {
+                let it = self.expr(args[0], out)?;
+                let it = if it.reads_same() { it } else { self.spill("it", it, out) };
+                Expr::call(
+                    Expr::member(Expr::member(it.clone(), "items"), "slice"),
+                    vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
+                )
+            }
+            StepOp::AsSlice => {
+                let items = self.iter_value(args[0], out)?;
+                self.iter_source(items, receiver_ty, span, out)?
             }
             StepOp::AsStr => {
                 let items = self.expr(args[0], out)?;

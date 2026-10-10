@@ -831,6 +831,7 @@ pub(super) fn stepped_locals<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Hash
         };
         // `by_ref()` lends it to what steps through it, a loop or a chain.
         let steps = is_std_method(tcx, def_id, StdItem::Iterator, "next")
+            || is_std_method(tcx, def_id, StdItem::DoubleEndedIterator, "next_back")
             || is_std_method(tcx, def_id, StdItem::Iterator, "by_ref");
         let Some(&receiver) = args.first() else {
             continue;

@@ -37,7 +37,7 @@ function main() {
   );
   const it = $iter(v);
   $next(it);
-  const copy = $iter(it.items.slice(it.at));
+  const copy = $iter(it.items.slice(it.at, it.end));
   $next(it);
   const arg = $next(copy);
   const arg$1 = $next(it);
@@ -47,7 +47,7 @@ function main() {
   );
   const a = $iter([7, 8, 9]);
   $next(a);
-  const b = a.items.slice(a.at);
+  const b = a.items.slice(a.at, a.end);
   const arg$3 = b.slice();
   const arg$4 = $next(a);
   console.log(

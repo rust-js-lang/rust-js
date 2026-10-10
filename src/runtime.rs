@@ -70,6 +70,9 @@ helpers! {
     Iter,
     Next,
     NextSome,
+    NextBack,
+    NextBackSome,
+    PeekSome,
     Scan,
     JsonFail,
     BigDiv,
@@ -418,7 +421,7 @@ impl Helper {
             Helper::Successors | Helper::FromFn => &[Helper::SomeValue],
             Helper::RemEuclid => &[Helper::Rem],
             Helper::DivEuclid => &[Helper::Div],
-            Helper::NextSome => &[Helper::Some],
+            Helper::NextSome | Helper::NextBackSome | Helper::PeekSome => &[Helper::Some],
             Helper::JsonError => &[Helper::DebugStr],
             Helper::StringError => &[Helper::DebugStr],
             Helper::StrSlice => &[Helper::ByteLen, Helper::DebugStr],
@@ -770,6 +773,11 @@ impl Helper {
             Helper::Next => include_str!("runtime/next.js"),
             // Of a generic `T`'s: a `Some` that looks like `None` is boxed (ADR 0051).
             Helper::NextSome => include_str!("runtime/next_some.js"),
+            // `it.next_back()` of one that knows where it is: its last item left.
+            Helper::NextBack => include_str!("runtime/next_back.js"),
+            Helper::NextBackSome => include_str!("runtime/next_back_some.js"),
+            // A `Peekable`'s `peek()` of a generic `T`'s, boxed as `$nextSome` boxes.
+            Helper::PeekSome => include_str!("runtime/peek_some.js"),
             // `a.total_cmp(&b)`: Rust's, which compares the bits as `i64`s,
             // negative ones with all but the sign flipped.
             Helper::TotalCmp => include_str!("runtime/total_cmp.js"),

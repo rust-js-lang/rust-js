@@ -22,7 +22,7 @@ fn main() {
     for (_, name) in names.range_mut("b"..) {
         name.push('!');
     }
-    if let Some((k, v)) = names.range_mut(..="ann").last() {
+    if let Some((k, v)) = names.range_mut(..="ann").next_back() {
         v.insert(0, '>');
         println!("{k}");
     }

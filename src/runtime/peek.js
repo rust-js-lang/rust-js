@@ -1,4 +1,4 @@
 
 function $peek(it) {
-  return it.items[it.at];
+  return it.at < it.end ? it.items[it.at] : undefined;
 }

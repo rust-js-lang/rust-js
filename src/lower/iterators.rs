@@ -36,7 +36,7 @@ fn iterates(known: Std) -> bool {
                 | Std::ArrayMethod(_)
                 | Std::IterComb(_)
                 | Std::Len
-                | Std::Step(StepOp::Next)
+                | Std::Step(StepOp::Next | StepOp::NextBack)
         )
 }
 
@@ -250,7 +250,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `it.clone()` of a local stepped through, a `$iter` of std's iterator
-    /// over an array (ADR 0071): what's left of its items, `it.items.slice(it.at)`,
+    /// over an array (ADR 0071): what's left of its items, `it.items.slice(it.at, it.end)`,
     /// as std's iterator over an array is the array (ADR 0061), copies of
     /// those it owns that need one (ADR 0181). None of anything else.
     pub(super) fn cloned_stepping(
@@ -282,7 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let it = self.expr(e, out)?;
         let left = Expr::call(
             Expr::member(Expr::member(it.clone(), "items"), "slice"),
-            vec![Expr::member(it, "at")],
+            vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
         );
         let item = self.iterator_item(ty).expect("an iterator's item");
         Ok(Some(match owns && self.needs_clone(item) {
@@ -1224,7 +1224,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `it.len()`: the items `it` has left, without taking them. Rust runs
     /// none of its closures, so a chain whose closures do what can be seen
-    /// isn't counted; one stepped through is a `$iter`, its items after `at`.
+    /// isn't counted; one stepped through is a `$iter`, its items from `at` to `end`.
     pub(super) fn iter_len(&mut self, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         self.mark_lazy_chain(receiver, true);
         if self.is_lazy_value(receiver) {
@@ -1235,8 +1235,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "`len()` of a `Peekable`"));
             }
             let it = self.expr(receiver, out)?;
-            let items = Expr::member(Expr::member(it.clone(), "items"), "length");
-            return Ok(Expr::bin(Op::Sub, items, Expr::member(it, "at")));
+            return Ok(Expr::bin(
+                Op::Sub,
+                Expr::member(it.clone(), "end"),
+                Expr::member(it, "at"),
+            ));
         }
         let items = self.expr(receiver, out)?;
         Ok(Expr::member(items, "length"))

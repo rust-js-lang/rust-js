@@ -330,4 +330,12 @@ export const mutations: Mutation[] = [
     replace: "                    && unchanged_in(var, body)\n                    && fixed(var)\n",
     tests: ["test/lowering.test.ts", "-t", "Console's loops"],
   },
+  {
+    name: "next-back-not-stepped",
+    breaks: "a local only `next_back()` steps isn't a `$iter`",
+    file: "src/lower/body_queries.rs",
+    find: "\n            || is_std_method(tcx, def_id, StdItem::DoubleEndedIterator, \"next_back\")",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","iter_next_back"],
+  },
 ];

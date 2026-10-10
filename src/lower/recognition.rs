@@ -1090,6 +1090,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 _ => {}
             }
         }
+        // Any other std one's last item, as `next()` its first (ADR 0071).
+        if is_std_def(tcx, trait_, StdItem::DoubleEndedIterator)
+            && tcx.item_name(def_id).as_str() == "next_back"
+            && !self.is_user_iterator(ty)
+        {
+            return Some(Std::Step(StepOp::NextBack));
+        }
         // An `Option`'s, or a `&Option`'s: a `&mut` one's items are places.
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
@@ -1314,6 +1321,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // `remove` is an `Option` (ADR 0068).
         let peekable = self.is_peekable(owner);
         let chars = self.is_str_chars(owner);
+        let slice_iter = adt("SliceIter")
+            || matches!(owner.kind(), ty::Adt(it, _) if std_path(tcx, it.did()) == "std::vec::IntoIter");
         let own = match name.as_str() {
             "send" if self.channel_end(owner) == Some(ChannelEnd::Sender) => Some(Std::Channel(ChannelOp::Send)),
             "recv" if self.channel_end(owner) == Some(ChannelEnd::Receiver) => Some(Std::Channel(ChannelOp::Recv)),
@@ -1324,6 +1333,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "next_if" if peekable => Some(Std::Step(StepOp::NextIf)),
             "next_if_eq" if peekable => Some(Std::Step(StepOp::NextIfEq)),
             "as_str" if chars => Some(Std::Step(StepOp::AsStr)),
+            "as_slice" if slice_iter => Some(Std::Step(StepOp::AsSlice)),
             "push" if heap => Some(Std::Heap(HeapOp::Push)),
             "pop" if heap => Some(Std::Heap(HeapOp::Pop)),
             "peek" if heap => Some(Std::First),
@@ -4173,6 +4183,7 @@ pub(crate) enum StdItem {
     Debug,
     Default,
     Display,
+    DoubleEndedIterator,
     Eq,
     Error,
     FmtWrite,
@@ -4215,6 +4226,7 @@ impl StdItem {
             StdItem::Debug => Symbol::intern("Debug"),
             StdItem::Default => Symbol::intern("Default"),
             StdItem::Display => Symbol::intern("Display"),
+            StdItem::DoubleEndedIterator => Symbol::intern("DoubleEndedIterator"),
             StdItem::Eq => sym::Eq,
             StdItem::Error => Symbol::intern("Error"),
             StdItem::FmtWrite => Symbol::intern("FmtWrite"),
