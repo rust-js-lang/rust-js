@@ -2088,6 +2088,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
             let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
+            // An iterator of the crate's, or a range, where a generic iterator
+            // goes: a JS iterator, as THIR's `iterator_arg` makes (ADR 0061).
+            let inputs = tcx.fn_sig(def_id).instantiate_identity().skip_binder().inputs();
+            for ((expr, &input), &given) in exprs.iter_mut().zip(inputs).zip(&arg_tys) {
+                let (input, given) = match *input.kind() {
+                    ty::Ref(_, inner, ty::Mutability::Mut) => (inner, given.peel_refs()),
+                    _ => (input, given),
+                };
+                if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {
+                    let value = std::mem::replace(expr, Expr::undefined());
+                    *expr = self.as_js_iterator(value, given, span)?;
+                }
+            }
             exprs.extend(self.evidence_args(def_id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(def_id), exprs);
             return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));
@@ -2236,6 +2249,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let first_ty = || generic_args.types().next();
         let tcx = self.tcx;
+        // `format!`, `print!` and `to_string()` of what may fail: in a `try`,
+        // a `fmt::Error` std's panic, as THIR's `failing_consumer` (ADR 0187).
+        let fails = match known {
+            Std::Format | Std::Print { .. } => matches!(values.first(), Some(Value::Fmt(Std::FmtNew, ..))),
+            Std::ToString => first_ty().is_some_and(|ty| self.fmt_may_fail(self.display_trait(), ty)),
+            _ => false,
+        };
+        if fails {
+            let exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let value = match known {
+                Std::ToString => self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?,
+                _ => exprs.into_iter().next().expect("the text"),
+            };
+            if matches!(known, Std::Print { .. }) {
+                self.flush(state, out)?;
+            }
+            return Ok(Value::Expr(self.failing_values(known, Vec::new(), value, span, out)));
+        }
         // One whose `Some` is boxed where it looks like `None` (ADR 0051).
         if self.refuses_boxed_option(known, output) {
             return Err(self.unsupported(span, "this call, for an `Option` of what could look like `None`"));
@@ -2343,7 +2377,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     });
                 }
-                super::display::join(parts)
+                // Of what may fail, its `Arguments` say so to `format!`'s or
+                // `print!`'s: `fmt_may_fail` of each, by its trait (ADR 0187).
+                let fails = items.iter().any(|item| match *item {
+                    Value::Fmt(Std::FmtDisplay, ty, _) => self.fmt_may_fail(self.display_trait(), ty),
+                    Value::Fmt(Std::FmtDebug, ty, _) => self.fmt_may_fail(self.debug_trait(), ty),
+                    // A number's or a pointer's, unless a type of the crate's.
+                    Value::Fmt(_, ty, _) => self.krate.any_failing && ty.peel_refs().is_adt(),
+                    _ => false,
+                });
+                let joined = super::display::join(parts);
+                if fails {
+                    return Ok(Value::Fmt(Std::FmtNew, output, joined));
+                }
+                joined
             }
             // `assert_failed(kind, &left, &right, None or Some(message))`: the
             // two values' `{:?}`, by their types (ADR 0060).

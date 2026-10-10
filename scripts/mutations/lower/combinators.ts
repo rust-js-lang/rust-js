@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/combinators.rs",
     find: "        if self.is_stepping(e) && !self.is_generic_iter(self.thir[e].ty) {",
     replace: "        if self.is_stepping(e) {",
-    tests: ["test/corpus.test.ts", "-t", "kept_generic_iterators"],
+    tests: ["test/corpus.test.ts", "-t", "generic_iterator_rest_lazy"],
   },
   {
     name: "extend-from-slice-shallow",
