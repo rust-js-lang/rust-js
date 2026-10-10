@@ -1,5 +1,6 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 139 of 1538 (9.0%)
+# exports: 156 of 1535 (10.2%)
+# not bound by design (x): 3, TypeScript's own
 # assert 0 of 28
 - assert#Assert
 - assert#AssertionError
@@ -42,27 +43,27 @@
 - async_hooks#executionAsyncResource
 - type async_hooks#HookCallbacks
 - async_hooks#triggerAsyncId
-# buffer 0 of 20
-- type buffer#AllowSharedBuffer
-- buffer#Blob
-- type buffer#BlobOptions
-- buffer#Buffer
-- type buffer#BufferView
-- buffer#constants
-- buffer#File
-- type buffer#FileOptions
-- type buffer#ImplicitArrayBuffer
-- buffer#INSPECT_MAX_BYTES
-- buffer#isAscii
-- buffer#isUtf8
-- buffer#kMaxLength
-- buffer#kStringMaxLength
-- type buffer#NonSharedBuffer
-- buffer#resolveObjectURL
-- buffer#SlowBuffer
-- buffer#transcode
-- type buffer#TranscodeEncoding
-- type buffer#WithImplicitCoercion
+# buffer 17 of 17
++ type buffer#AllowSharedBuffer
++ buffer#Blob
++ type buffer#BlobOptions
++ buffer#Buffer
+x type buffer#BufferView
++ buffer#constants
++ buffer#File
++ type buffer#FileOptions
+x type buffer#ImplicitArrayBuffer
++ buffer#INSPECT_MAX_BYTES
++ buffer#isAscii
++ buffer#isUtf8
++ buffer#kMaxLength
++ buffer#kStringMaxLength
++ type buffer#NonSharedBuffer
++ buffer#resolveObjectURL
++ buffer#SlowBuffer
++ buffer#transcode
++ type buffer#TranscodeEncoding
+x type buffer#WithImplicitCoercion
 # child_process 0 of 49
 - child_process#ChildProcess
 - type child_process#ChildProcessByStdio

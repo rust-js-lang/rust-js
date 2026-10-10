@@ -53,3 +53,9 @@ types such as `BufferEncoding`, for each module.
 
 A type the crate re-exports, `pub use webapi::{URL, ..}` in url.rs, binds
 that module's export: Node's `url.URL` is the global webapi binds.
+
+## Amendment: what isn't bound by design
+
+As react's (ADR 0347), what isn't bound by design is `x`, counted apart,
+each list with why: so far, TypeScript's own types of types, buffer's
+`WithImplicitCoercion` and its kin.

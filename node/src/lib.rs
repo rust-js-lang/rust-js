@@ -25,6 +25,7 @@
 // JS functions, which in native code rustc would take for those.
 #![allow(invalid_runtime_symbol_definitions)]
 
+pub mod buffer;
 pub mod event;
 pub mod events;
 pub mod fs;
@@ -48,6 +49,8 @@ pub enum BufferEncoding {
     Utf8Dash,
     #[cfg_attr(rust_js, rust_js::name = "utf16le")]
     Utf16le,
+    #[cfg_attr(rust_js, rust_js::name = "utf-16le")]
+    Utf16leDash,
     #[cfg_attr(rust_js, rust_js::name = "ucs2")]
     Ucs2,
     #[cfg_attr(rust_js, rust_js::name = "ucs-2")]

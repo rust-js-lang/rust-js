@@ -16,7 +16,17 @@ const types = join(import.meta.dir, "../node_modules/@types/node");
 const src = join(import.meta.dir, "src");
 
 type Kind = "value" | "type";
-export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean }[] };
+export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; unbound?: boolean }[] };
+
+// What isn't bound by design, each list with why: `x`, counted apart, as
+// react's coverage has it (ADR 0347).
+const UNBOUND: Record<string, string> = Object.fromEntries(
+  Object.entries({
+    // Types of types, which compute a buffer's or a value's type: Rust's
+    // are each, `Buffer` and its parameters' traits.
+    "TypeScript's own": ["buffer#BufferView", "buffer#ImplicitArrayBuffer", "buffer#WithImplicitCoercion"],
+  }).flatMap(([why, names]) => names.map((name) => [name, why])),
+);
 
 // A name both a class and an interface, as TypeScript merges them, is a
 // value, whichever file says which first.
@@ -178,20 +188,28 @@ export async function measure(): Promise<Module[]> {
       name,
       exports: [...exported]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([e, kind]) => ({ name: e, kind, bound: links.has(`${name}#${e}`) || items.has(`${name}#${e}`) || items.has(`*#${e}`) })),
+        .map(([e, kind]) => ({
+          name: e,
+          kind,
+          bound: links.has(`${name}#${e}`) || items.has(`${name}#${e}`) || items.has(`*#${e}`),
+          unbound: `${name}#${e}` in UNBOUND,
+        })),
     }));
 }
 
-/** The baseline's text: each module's count, then each export, `+` bound. */
+/** The baseline's text: each module's count, then each export, `+` bound, `x` not by design. */
 export function render(modules: Module[]): string {
-  const all = modules.flatMap((m) => m.exports);
+  const counted = (m: Module) => m.exports.filter((e) => !e.unbound);
+  const all = modules.flatMap(counted);
   const bound = all.filter((e) => e.bound).length;
+  const unbound = modules.flatMap((m) => m.exports.filter((e) => e.unbound)).length;
   return [
     `# The node crate against @types/node: bun test test/node-coverage.test.ts`,
     `# exports: ${bound} of ${all.length} (${((100 * bound) / all.length).toFixed(1)}%)`,
+    `# not bound by design (x): ${unbound}, TypeScript's own`,
     ...modules.flatMap((m) => [
-      `# ${m.name} ${m.exports.filter((e) => e.bound).length} of ${m.exports.length}`,
-      ...m.exports.map((e) => `${e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),
+      `# ${m.name} ${counted(m).filter((e) => e.bound).length} of ${counted(m).length}`,
+      ...m.exports.map((e) => `${e.unbound ? "x" : e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),
     ]),
     "",
   ].join("\n");

@@ -801,6 +801,61 @@ pub fn spread(parts: &[&str]) -> String {
   expect(lib.spread(["x", "y"])).toBe(path.join("x", "y"));
 });
 
+// ADR 0272: `buffer`, a `Buffer` made, read, written and searched, its
+// numbers each of their Rust type, run by Node itself.
+test("node's buffers are made, read and written", () => {
+  const dir = fixture("node-buffer");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::BufferEncoding;
+use node::buffer::{self, Buffer, TranscodeEncoding};
+
+pub fn all() -> Vec<String> {
+    let hi = Buffer::from_with_str("héllo");
+    let hex = Buffer::from_with_str_and_encoding("ff00ab", BufferEncoding::Hex);
+    let bytes = Buffer::from(&[1, 2, 3]);
+    let zeros = Buffer::alloc(4);
+    zeros.write_uint16_be_with_offset(0xbeef, 1);
+    let both = Buffer::concat(&[&bytes, &hex]);
+    let numbers = Buffer::alloc(20);
+    numbers.write_int32_le(-5);
+    numbers.write_double_be_with_offset(1.5, 4);
+    numbers.write_big_uint64_le_with_offset(7, 12);
+    let filled = Buffer::alloc_with_fill(5, "ab");
+    filled.fill_with_offset(0, 3);
+    vec![
+        hi.to_string(),
+        hi.length().to_string(),
+        Buffer::byte_length("héllo").to_string(),
+        hex.to_string_with_encoding(BufferEncoding::Base64),
+        both.to_string_with_encoding(BufferEncoding::Hex),
+        zeros.to_string_with_encoding(BufferEncoding::Hex),
+        format!("{} {} {}", numbers.read_int32_le(), numbers.read_double_be_with_offset(4), numbers.read_big_uint64_le_with_offset(12)),
+        format!("{} {}", bytes.read_uint8_with_offset(2), bytes.read_uint_be(0, 3)),
+        filled.to_string(),
+        format!("{} {} {}", hi.index_of("l"), hi.last_index_of("l"), hi.includes("xyz")),
+        format!("{} {}", Buffer::compare_buffers(&bytes, &hex), bytes.equals(&Buffer::of(&[1, 2, 3]))),
+        hi.subarray_with_start_and_end(0, 1).to_string(),
+        bytes.to_json().data.len().to_string(),
+        format!("{} {}", Buffer::is_buffer(hi), Buffer::is_encoding("utf8")),
+        format!("{} {}", buffer::is_utf8(hi), buffer::is_ascii(hi)),
+        buffer::transcode(&Buffer::from_with_str("€"), TranscodeEncoding::Utf8, TranscodeEncoding::Utf16le).length().to_string(),
+        buffer::INSPECT_MAX_BYTES.to_string(),
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { all } from "./lib.js";
+console.log(JSON.stringify(all()));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  expect(JSON.parse(p.stdout.toString())).toEqual([
+    "héllo", "6", "6", Buffer.from("ff00ab", "hex").toString("base64"), "010203ff00ab", "00beef00", "-5 1.5 7", "3 66051", "ababa".slice(0, 3) + "\u0000\u0000",
+    "3 4 false", "-1 true", "h", "3", "true true", "true false", "2", "50",
+  ]);
+});
+
 // ADR 0361: an emitter's events, each a name of its own and its listener's
 // type: a program's own on an `EventEmitter`, and `process`'s, `exit` and a
 // signal, run by Node itself.
