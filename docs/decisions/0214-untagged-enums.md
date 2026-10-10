@@ -135,3 +135,9 @@ matches, compares and shows one, and refuses one beside a string; a
 declarations test declares one; mutations match any value, allow the
 string, refuse the variant, leave it unmade, compare it equal to any, and
 declare it `undefined`.
+
+## Amendment: a variant of a fieldless enum
+
+A fieldless enum is its variant's name (ADR 0013), so a variant holding
+one, `One(Weight)` beside `Many(&[Weight])`, is a string, told by
+`typeof` as any string is, as next/font's `"400" | Array<"400">` needs.

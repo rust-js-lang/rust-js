@@ -3978,6 +3978,44 @@ pub fn stringed(n: u32) -> String {
   expect(lib.stringed(3)).toBe("93");
 });
 
+// An untagged enum's variant of a fieldless enum is a string, its variant's
+// name (ADR 0013), as next/font's `weight: "400" | Array<"400">` has it:
+// made, and told from an array where it's matched.
+test("an untagged enum's variant may hold a fieldless enum, a string", async () => {
+  const dir = fixture("untagged-fieldless");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Weight {
+    #[cfg_attr(rust_js, rust_js::name = "400")]
+    Normal,
+    #[cfg_attr(rust_js, rust_js::name = "700")]
+    Bold,
+}
+
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Weights<'a> {
+    One(Weight),
+    Many(&'a [Weight]),
+}
+
+pub fn one() -> Weights<'static> {
+    Weights::One(Weight::Bold)
+}
+
+pub fn many() -> Weights<'static> {
+    Weights::Many(&[Weight::Normal, Weight::Bold])
+}
+
+pub fn count(weights: Weights) -> usize {
+    match weights {
+        Weights::One(_) => 1,
+        Weights::Many(all) => all.len(),
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.one(), lib.many(), lib.count("700"), lib.count(["400", "700"])]).toEqual(["700", ["400", "700"], 1, 2]);
+});
+
 // An untagged enum's variant without fields is its name, a string literal,
 // as TypeScript's `boolean | "blocking"` is: made, matched, compared and
 // shown as one (ADR 0214). Beside a variant of any string, which JS can't

@@ -6,7 +6,7 @@
 use super::FnCx;
 use super::bindings;
 use super::recognition::{Recognition, StdItem, conversion_target, serde_impl, std_item};
-use super::representation::Num;
+use super::representation::{Num, is_fieldless_enum};
 use crate::js::{Expr, Op, UnaryOp};
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -165,6 +165,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(CtorKind::Fn) if !adt.non_enum_variant().fields.is_empty() => Some(Kind::Array),
                 Some(_) => None,
             },
+            // A fieldless enum is its variant's name (ADR 0013), a string.
+            ty::Adt(adt, _) if is_fieldless_enum(*adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) => {
+                Some(Kind::String)
+            }
             _ => None,
         }
     }

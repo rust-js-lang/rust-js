@@ -146,4 +146,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "JSX components take apart a list of children"],
   },
+  {
+    name: "untagged-fieldless-unknown",
+    breaks: "an untagged enum's `One(Weight)`, of a fieldless enum, is refused, though its value is a string",
+    file: "src/lower/untagged.rs",
+    find: "            ty::Adt(adt, _) if is_fieldless_enum(*adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) => {",
+    replace: "            ty::Adt(adt, _) if false && is_fieldless_enum(*adt) && !adt.variants().is_empty() && !self.is_std(adt.did()) => {",
+    tests: ["test/lowering.test.ts", "-t", "may hold a fieldless enum"],
+  },
 ];
