@@ -5,7 +5,6 @@ import {
   $debugStr,
   $joinWith,
   $lines,
-  $slice,
   $trimEnd,
   $trimMatches,
   $trimStart,
@@ -56,7 +55,7 @@ function main() {
   console.log(
     `[${$joinWith(nested, 0, false)
       .map((item) => String(item))
-      .join(", ")}] [${$joinWith(nested, $slice([7, 8], 0), true)
+      .join(", ")}] [${$joinWith(nested, [7, 8], true)
       .map((item) => String(item))
       .join(", ")}] [${nested
       .flat()

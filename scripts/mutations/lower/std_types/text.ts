@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "whole-slice-copied",
+    breaks: "`&v[..]` is `$slice(v, 0)`, a copy of all of it",
+    file: "src/lower/std_types/text.rs",
+    find: "        if helper == Helper::SliceRange && start.as_int() == Some(0) && end.is_none() {",
+    replace: "        if false && helper == Helper::SliceRange && start.as_int() == Some(0) && end.is_none() {",
+    tests: ["test/lowering.test.ts", "-t", "shared slice of all"],
+  },
+  {
     name: "replacen-any-count",
     breaks: "`replacen(p, r, 2)` is JS's `replace`, of the first only",
     file: "src/lower/std_types/text.rs",

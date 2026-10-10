@@ -1362,13 +1362,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .try_to_target_usize(self.tcx)
                     .ok_or_else(|| self.unsupported(span, "an array of a generic length here"))?;
                 let slice = arg();
+                // An array of its own, `[T; N]`, is a copy, as a write to the
+                // slice's after doesn't change it; of a part, `$slice`'s copy
+                // already. A `&[T; N]` is the slice's.
+                let fresh = matches!(&slice.kind, js::ExprKind::Array(_))
+                    || matches!(&slice.kind, js::ExprKind::Call(callee, _)
+                        if matches!(&callee.kind, js::ExprKind::Var(name) if name == "$slice"));
                 let slice = if slice.reads_same() {
                     slice
                 } else {
                     self.spill("slice", slice, out)
                 };
                 let fits = Expr::bin(Op::Eq, Expr::member(slice.clone(), "length"), Expr::int(len as i128));
-                Expr::cond(fits, Self::ok(slice), Self::err(Expr::undefined()))
+                let value = match target.is_ref() || fresh {
+                    true => slice.clone(),
+                    false => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),
+                };
+                Expr::cond(fits, Self::ok(value), Self::err(Expr::undefined()))
             }
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![arg()]),
             Std::TryFromInt { into } => {

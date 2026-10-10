@@ -3,6 +3,23 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "array-of-slice-aliased",
+    breaks: "`<[T; N]>::try_from(&v[..])` is `v`, which a write to `v` after changes",
+    file: "src/lower/std_types/number.rs",
+    find: "                let value = match target.is_ref() || fresh {",
+    replace: "                let value = match true {",
+    tests: ["test/lowering.test.ts", "-t", "array made of a whole slice"],
+  },
+  {
+    name: "array-of-part-copied-twice",
+    breaks: "`<[T; N]>::try_from(&v[1..3])` copies `$slice`'s copy again",
+    file: "src/lower/std_types/number.rs",
+    find: "                let value = match target.is_ref() || fresh {",
+    replace: "                let value = match target.is_ref() {",
+    tests: ["test/corpus.test.ts", "-t", "slice_to_array"],
+    snapshots: true,
+  },
+  {
     name: "f32-arithmetic-unrounded",
     breaks: "an `f32`'s `+` is a double's, which may be no `f32` at all: ten tenths are 1.0000000149011612",
     file: "src/lower/std_types/number.rs",

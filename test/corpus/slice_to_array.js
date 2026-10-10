@@ -25,8 +25,7 @@ function main() {
   console.log(
     `[${fixed.map((item) => String(item)).join(", ")}] [${owned.map((item) => String(item)).join(", ")}] ${wrong.TAG === "Ok" ? `Ok([${wrong._0.map((item) => String(item)).join(", ")}])` : "Err(TryFromSliceError(()))"} ${wrong.TAG !== "Ok"}`,
   );
-  const slice$3 = $slice(bytes, 0);
-  const match = slice$3.length === 2 ? { TAG: "Ok", _0: slice$3 } : { TAG: "Err" };
+  const match = bytes.length === 2 ? { TAG: "Ok", _0: bytes.slice() } : { TAG: "Err" };
   if (match.TAG === "Ok") {
     console.log(`[${match._0.map((item) => String(item)).join(", ")}]`);
   } else {

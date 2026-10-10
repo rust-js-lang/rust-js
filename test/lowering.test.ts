@@ -3624,3 +3624,61 @@ pub fn og() -> OpenGraph<'static> {
   const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support flattening an enum variant's field yet")]);
 });
+
+// `&v[..]`, all of a slice, is the slice itself, as `&s[..]` of a string
+// is and `&mut v[..]` is (ADR 0335): nothing changes it while it's
+// borrowed, so the copy a part is made as isn't needed.
+test("a shared slice of all of a slice is the slice", async () => {
+  const dir = fixture("whole-slice");
+  writeFileSync(join(dir, "lib.rs"), `pub fn take(v: &[&str]) -> usize {
+    v.len()
+}
+
+pub fn whole(v: &Vec<u32>) -> &[u32] {
+    &v[..]
+}
+
+pub fn literal() -> usize {
+    take(&["a", "b"][..])
+}
+
+pub fn part(v: &Vec<u32>) -> Vec<u32> {
+    v[1..].to_vec()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function whole(v) {\n  return v;\n}");
+  expect(js).toContain('return take(["a", "b"]);');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.whole([1, 2]), lib.literal(), lib.part([1, 2, 3])]).toEqual([[1, 2], 2, [2, 3]]);
+});
+
+// `<[T; N]>::try_from(&v[..])` is an array of its own, as Rust's is, which
+// a write to `v` after doesn't change; `<&[T; N]>`'s is `v`'s, a borrow.
+test("an array made of a whole slice is a copy", async () => {
+  const dir = fixture("array-of-slice");
+  writeFileSync(join(dir, "lib.rs"), `pub fn owned() -> (u8, u8) {
+    let mut bytes = vec![1u8, 2];
+    let arr: [u8; 2] = bytes[..].try_into().unwrap();
+    bytes[0] = 9;
+    (arr[0], bytes[0])
+}
+
+pub fn part() -> (u8, u8) {
+    let mut bytes = vec![1u8, 2, 3];
+    let arr = <[u8; 2]>::try_from(&bytes[1..]).unwrap();
+    bytes[1] = 9;
+    (arr[0], bytes[1])
+}
+
+pub fn borrowed() -> u8 {
+    let bytes = vec![1u8, 2];
+    let arr = <&[u8; 2]>::try_from(&bytes[..]).unwrap();
+    arr[1]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.owned(), lib.part(), lib.borrowed()]).toEqual([[1, 9], [2, 9], 2]);
+});

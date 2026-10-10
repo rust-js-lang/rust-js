@@ -89,13 +89,7 @@ export function words(text) {
 export function slices(v) {
   const a = [10, 20, 30];
   const tail = $slice(a, 1).reduce((a, b) => (a + b) >>> 0, 0);
-  return [
-    $slice(v, 1, 3).slice(),
-    $slice(v, 2).slice(),
-    $slice(v, 0, 1).slice(),
-    $slice(v, 0).slice(),
-    tail,
-  ];
+  return [$slice(v, 1, 3).slice(), $slice(v, 2).slice(), $slice(v, 0, 1).slice(), v.slice(), tail];
 }
 
 export function slice_panics(start, end) {

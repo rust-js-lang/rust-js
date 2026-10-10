@@ -96,3 +96,16 @@ for (const chunk of $chunksMut(v, 4)) {
   checked forms and the stepped `remainder`, and cut each split, run and
   chunk wrong.
 - `docs/std-coverage.txt`: `slice` 91 of 133.
+
+## Amendment: all of a slice is the slice
+
+`&v[..]`, all of a shared slice (2026-10-10), is `v`, where it was
+`$slice(v, 0)`, a copy: nothing changes `v` while it's borrowed, as ADR
+0063 says of every shared slice, so the copy a part needs isn't needed for
+all of it, as `&s[..]` of a string was already `s` and `&mut v[..]` is `v`.
+`take(&["a", "b"][..])` is `take(["a", "b"])`. What made an owned value of
+one, and leaned on that copy, copies now: `<[T; N]>::try_from(&v[..])` is
+`v.slice()`, as a write to `v` after doesn't change the array, but not of
+a part, `$slice`'s copy already, nor of a literal. A lowering test makes
+each, and runs them; mutations copy all of it, alias the array, and copy a
+part twice. Seven corpus cases read the shorter JS.

@@ -688,9 +688,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, &format!("`parse` to a `{target}`")))
     }
 
-    /// `&v[a..b]`, `&v[a..]`, `&v[..b]`, `&v[..]`: a copy, which a shared
-    /// slice can be, since nothing changes `v` while it's borrowed. Out of
-    /// bounds, it panics, as Rust does.
+    /// `&v[a..b]`, `&v[a..]`, `&v[..b]`: a copy, which a shared slice can
+    /// be, since nothing changes `v` while it's borrowed; `&v[..]`, all of
+    /// it, `v` itself, as `&s[..]` of a string is. Out of bounds, it panics,
+    /// as Rust does.
     fn slice_range(&mut self, op: TextOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let (helper, name) = match op {
             TextOp::Drain => (Helper::Drain, "$drain"),
@@ -704,6 +705,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `&s[..]` of a string: all of it, which is never out of bounds, nor
         // inside a character.
         if matches!(op, TextOp::StrSlice | TextOp::StrGet) && start.as_int() == Some(0) && end.is_none() {
+            return Ok(items);
+        }
+        // `&v[..]` of a slice: all of it, never out of bounds (ADR 0335).
+        if helper == Helper::SliceRange && start.as_int() == Some(0) && end.is_none() {
             return Ok(items);
         }
         self.runtime.insert(helper);
