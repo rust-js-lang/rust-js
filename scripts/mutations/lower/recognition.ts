@@ -1196,4 +1196,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","option_result_mut"],
   },
+  {
+    name: "extract-if-not-lazy",
+    breaks: "an `extract_if`'s iterator is refused",
+    file: "src/lower/recognition.rs",
+    find: "            && self.tcx.item_name(adt.did()).as_str() == \"ExtractIf\")",
+    replace: "            && self.tcx.item_name(adt.did()).as_str() == \"NotExtractIf\")",
+    tests: ["test/corpus.test.ts","-t","extract_if"],
+  },
+  {
+    name: "vec-extract-if-unknown",
+    breaks: "a `Vec`'s `extract_if` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"extract_if\" if adt(\"Vec\") || adt(\"LinkedList\") => {",
+    replace: "            \"extract_if\" if adt(\"LinkedList\") => {",
+    tests: ["test/corpus.test.ts","-t","extract_if"],
+  },
 ];

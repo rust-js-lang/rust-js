@@ -167,6 +167,12 @@ pub(in crate::lower) enum SliceOp {
     },
     /// A deque's `push_front_mut(x)`.
     PushFrontMut,
+    /// `v.extract_if(range, f)` of a `Vec`, or of all of a list
+    /// (`range: false`): a JS iterator, taking out what it gives as it's
+    /// asked (ADR 0344).
+    ExtractIf {
+        range: bool,
+    },
     /// A `VecDeque`'s `insert(i, x)`, or `insert_mut` (`mutable`): checked
     /// with its own message, `index out of bounds`.
     DequeInsert {
@@ -401,6 +407,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let is_less = Expr::arrow(vec!["a".into(), "b".into()], body);
                 self.unstable_sort_call(op, items, index, is_less, kind, item)
             }
+            SliceOp::ExtractIf { range } => {
+                let items = self.operands(&args[..1], out)?.remove(0);
+                let (start, end) = match range {
+                    true => self.range_bounds(args[1], span, out)?,
+                    false => (Expr::int(0), None),
+                };
+                let f = self.operands(&args[args.len() - 1..], out)?.remove(0);
+                let mut list = vec![items, start, end.unwrap_or_else(Expr::undefined), f];
+                if self.is_boxable(generic_args.type_at(0)) {
+                    list.push(Expr::bool(true));
+                }
+                self.runtime.insert(Helper::ExtractIf);
+                Expr::call(Expr::var("$extractIf"), list)
+            }
             SliceOp::View { checked } => {
                 let items = self.operands(&args[..1], out)?.remove(0);
                 let (start, end) = self.range_bounds(args[1], span, out)?;
@@ -530,6 +550,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                     SliceOp::View { .. }
+                    | SliceOp::ExtractIf { .. }
                     | SliceOp::SortUnstable { .. }
                     | SliceOp::SelectNth { .. }
                     | SliceOp::SplitOff { .. }

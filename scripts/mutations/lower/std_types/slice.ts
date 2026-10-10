@@ -332,4 +332,12 @@ export const mutations: Mutation[] = [
     replace: "                        if false {\n                            given.push(Expr::bool(true));\n                        }\n                        helper(self, \"$dequeInsert\"",
     tests: ["test/corpus.test.ts","-t","deque_push_mut"],
   },
+  {
+    name: "extract-if-range-ignored",
+    breaks: "a `Vec`'s `extract_if` runs over all of it, not its range",
+    file: "src/lower/std_types/slice.rs",
+    find: "                    true => self.range_bounds(args[1], span, out)?,\n                    false => (Expr::int(0), None),",
+    replace: "                    _ => (Expr::int(0), None),",
+    tests: ["test/corpus.test.ts","-t","extract_if"],
+  },
 ];

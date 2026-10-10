@@ -70,6 +70,9 @@ pub(in crate::lower) enum MapOp {
         pop: bool,
     },
     TreeRange,
+    /// `extract_if(f)`, of a B-tree `extract_if(range, f)`: a JS iterator,
+    /// taking out what it gives as it's asked (ADR 0344).
+    ExtractIf,
     TreeSplitOff,
     TreeAppend,
     Extend,
@@ -162,6 +165,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if op == MapOp::TreeRange {
             return self.tree_range(args, span, out);
         }
+        if op == MapOp::ExtractIf {
+            return self.map_extract_if(args, span, out);
+        }
         // The map or set a method of ADR 0325's is of, its type's arguments, and
         // a B-tree's keys' `cmp` where the method orders them.
         let receiver = args
@@ -243,11 +249,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 map_ops(self, "$treeSplitOff", vec![m, key, cmp, Expr::bool(set)])
             }
             MapOp::TreeAppend => map_ops(self, "$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
-            MapOp::Extend => map_ops(self, "$extendMap", vec![arg(), arg(), Expr::bool(set)]),
-            MapOp::TreeRange => unreachable!("lowered above"),
+            MapOp::Extend => {
+                let (m, items) = (arg(), arg());
+                let items = self.items_of(items, args[1], span, out)?;
+                map_ops(self, "$extendMap", vec![m, items, Expr::bool(set)])
+            }
+            MapOp::TreeRange | MapOp::ExtractIf => unreachable!("lowered above"),
             MapOp::New { set } => Expr::new_(self.made(set, generic_args), Vec::new()),
             MapOp::From { set } => {
                 let items = arg();
+                let items = self.items_of(items, args[0], span, out)?;
                 Expr::new_(self.made(set, generic_args), vec![items])
             }
             MapOp::Insert if discarded => {
@@ -331,6 +342,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Entry => Expr::array(vec![arg(), arg()]),
             MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => unreachable!("taken apart above"),
         })
+    }
+
+    /// What a map or a set is made of, or extended by: a range's items, as a
+    /// range kept as a value is an object (ADR 0129); anything else as it is.
+    fn items_of(&mut self, items: Expr, arg: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let ty = self.thir[arg].ty;
+        match self.range_kind(ty.peel_refs()) {
+            Some(_) => self.range_items(items, ty.peel_refs(), span, out),
+            None => Ok(items),
+        }
+    }
+
+    /// `m.extract_if(f)`: `$mapExtractIf(m, f, entries, handles, set)`, of a
+    /// B-tree's entries in order and in its range, which isn't checked as
+    /// `range`'s is: one that ends before it starts takes nothing (ADR 0344).
+    fn map_extract_if(&mut self, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let receiver = self.thir[args[0]].ty.peel_refs();
+        let set = self.is_set(receiver);
+        let (m, entries) = match self.is_sorted(receiver) {
+            true => {
+                let range = self.tree_range(&args[..2], span, out)?;
+                let js::ExprKind::Call(callee, mut list) = range.kind else {
+                    unreachable!("a B-tree's range is `$treeRange`'s")
+                };
+                list.push(Expr::bool(false));
+                (list[0].clone(), Expr::call(*callee, list))
+            }
+            false => {
+                let m = self.operands(&args[..1], out)?.remove(0);
+                (m.clone(), m)
+            }
+        };
+        let f = self.operands(&args[args.len() - 1..], out)?.remove(0);
+        let handles = !set
+            && matches!(receiver.kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.is_boxable(value)));
+        self.runtime.insert(Helper::ExtractIf);
+        Ok(Expr::call(
+            Expr::var("$mapExtractIf"),
+            vec![m, f, entries, Expr::bool(handles), Expr::bool(set)],
+        ))
     }
 
     /// `m.range(a..b)` of a B-tree: its entries, or items, in the bounds, in

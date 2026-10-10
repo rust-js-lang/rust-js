@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "tree-range-unchecked",
     breaks: "a B-tree's range starting past its end is empty, not std's panic",
     file: "src/runtime/map_ops.js",
-    find: "  if (hasStart && hasEnd && cmp(start, end) > 0) {\n",
+    find: "  if (checked && hasStart && hasEnd && cmp(start, end) > 0) {\n",
     replace: "  if (false) {\n",
     tests: ["test/corpus.test.ts", "-t", "btree_range_panic"],
   },

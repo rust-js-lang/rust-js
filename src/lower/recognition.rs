@@ -1330,6 +1330,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "peek_mut" if heap => Some(Std::Heap(HeapOp::PeekMut)),
             "as_slice" if heap => Some(Std::Same),
             "remove" if deque => Some(Std::DequeRemove),
+            "extract_if" if adt("Vec") || adt("LinkedList") => {
+                Some(Std::Slice(SliceOp::ExtractIf { range: adt("Vec") }))
+            }
             // A `VecDeque`'s `insert`, checked with its own message, and the
             // `_mut` ones' `&mut` to what they put in (ADR 0333).
             "insert" | "insert_mut" if adt("VecDeque") => Some(Std::Slice(SliceOp::DequeInsert {
@@ -1437,6 +1440,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "pop_first" if std_map || set => Std::Map(MapOp::TreeEnd { last: false, pop: true }),
             "pop_last" if std_map || set => Std::Map(MapOp::TreeEnd { last: true, pop: true }),
             "range" if std_map || set => Std::Map(MapOp::TreeRange),
+            // Lazy, as each is asked for (ADR 0344).
+            "extract_if" if std_map || set => Std::Map(MapOp::ExtractIf),
             "split_off" if std_map || set => Std::Map(MapOp::TreeSplitOff),
             "append" if std_map || set => Std::Map(MapOp::TreeAppend),
             "is_empty" if map || set => Std::Map(MapOp::IsEmpty),
@@ -3726,6 +3731,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.bounded_by(ty, sym::Iterator)
     }
 
+    /// An `extract_if`'s iterator, a JS one that takes out what it gives as
+    /// it's asked (ADR 0344).
+    pub(super) fn is_extract_if(&self, ty: ty::Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
+            && self.tcx.item_name(adt.did()).as_str() == "ExtractIf")
+    }
+
     pub(super) fn is_lazy_iter(&self, ty: ty::Ty<'tcx>) -> bool {
         let ty = self.reveal(ty.peel_refs());
         // std's sources that may never end (ADR 0128).
@@ -3733,6 +3745,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && ["std::iter::Repeat", "std::iter::RepeatWith", "std::iter::Successors", "std::iter::FromFn"]
                 .contains(&std_path(self.tcx, adt.did()).as_str()));
         endless
+            || self.is_extract_if(ty)
             || self.range_kind(ty) == Some(RangeKind::From)
             || self.is_user_iterator(ty)
             || self.is_generic_iter(ty)

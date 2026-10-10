@@ -154,6 +154,7 @@ helpers! {
     StartsBy,
     StrGet,
     StrPart,
+    ExtractIf,
     SortUnstable,
     View,
     SliceIndexFail,
@@ -365,6 +366,7 @@ impl Helper {
             Helper::StrEdits => &[Helper::ByteLen, Helper::CharBoundary, Helper::SliceIndexFail],
             Helper::SliceRange | Helper::SliceEnd | Helper::Drain | Helper::Splice => &[Helper::SliceIndexFail],
             Helper::SortUnstable => &[Helper::View, Helper::MutAt],
+            Helper::ExtractIf => &[Helper::SliceIndexFail, Helper::MutAt, Helper::MutGet],
             Helper::View => &[Helper::SliceIndexFail, Helper::MutAt, Helper::Chunks, Helper::SliceOps],
             Helper::SliceOps => &[
                 Helper::SliceStartsWith,
@@ -590,6 +592,7 @@ impl Helper {
             Helper::StartsBy => include_str!("runtime/starts_by.js"),
             Helper::StrGet => include_str!("runtime/str_get.js"),
             Helper::StrPart => include_str!("runtime/str_part.js"),
+            Helper::ExtractIf => include_str!("runtime/extract_if.js"),
             Helper::SortUnstable => include_str!("runtime/sort_unstable.js"),
             Helper::View => include_str!("runtime/slice_view.js"),
             Helper::SliceIndexFail => include_str!("runtime/slice_index_fail.js"),

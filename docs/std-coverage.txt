@@ -1,4 +1,4 @@
-# Vec 36 of 48
+# Vec 37 of 48
 + Vec::append
 - Vec::as_mut_ptr
 + Vec::as_mut_slice
@@ -12,7 +12,7 @@
 + Vec::drain
 + Vec::extend_from_slice
 + Vec::extend_from_within
-- Vec::extract_if
++ Vec::extract_if
 - Vec::from_parts
 - Vec::from_raw_parts
 + Vec::insert
@@ -103,13 +103,13 @@
 - VecDeque::try_reserve
 - VecDeque::try_reserve_exact
 + VecDeque::with_capacity
-# LinkedList 19 of 20
+# LinkedList 20 of 20
 + LinkedList::append
 + LinkedList::back
 + LinkedList::back_mut
 + LinkedList::clear
 + LinkedList::contains
-- LinkedList::extract_if
++ LinkedList::extract_if
 + LinkedList::front
 + LinkedList::front_mut
 + LinkedList::is_empty
@@ -124,13 +124,13 @@
 + LinkedList::push_front
 + LinkedList::push_front_mut
 + LinkedList::split_off
-# HashMap 25 of 33
+# HashMap 26 of 33
 - HashMap::capacity
 + HashMap::clear
 + HashMap::contains_key
 + HashMap::drain
 + HashMap::entry
-- HashMap::extract_if
++ HashMap::extract_if
 + HashMap::get
 - HashMap::get_disjoint_mut
 - HashMap::get_disjoint_unchecked_mut
@@ -158,13 +158,13 @@
 + HashMap::with_capacity
 - HashMap::with_capacity_and_hasher
 - HashMap::with_hasher
-# HashSet 24 of 30
+# HashSet 25 of 30
 - HashSet::capacity
 + HashSet::clear
 + HashSet::contains
 + HashSet::difference
 + HashSet::drain
-- HashSet::extract_if
++ HashSet::extract_if
 + HashSet::get
 - HashSet::hasher
 + HashSet::insert
@@ -189,12 +189,12 @@
 + HashSet::with_capacity
 - HashSet::with_capacity_and_hasher
 - HashSet::with_hasher
-# BTreeMap 27 of 31
+# BTreeMap 28 of 31
 + BTreeMap::append
 + BTreeMap::clear
 + BTreeMap::contains_key
 + BTreeMap::entry
-- BTreeMap::extract_if
++ BTreeMap::extract_if
 - BTreeMap::first_entry
 + BTreeMap::first_key_value
 + BTreeMap::get
@@ -221,12 +221,12 @@
 + BTreeMap::split_off
 + BTreeMap::values
 + BTreeMap::values_mut
-# BTreeSet 26 of 27
+# BTreeSet 27 of 27
 + BTreeSet::append
 + BTreeSet::clear
 + BTreeSet::contains
 + BTreeSet::difference
-- BTreeSet::extract_if
++ BTreeSet::extract_if
 + BTreeSet::first
 + BTreeSet::get
 + BTreeSet::insert

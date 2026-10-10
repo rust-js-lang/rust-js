@@ -59,8 +59,10 @@ function $treeEnd(m, cmp, last, set, pop) {
 
 // `m.range(..)` of a B-tree: its entries, or items, whose keys are in the
 // bounds, in order; a start past the end panics, as std's does.
-function $treeRange(m, cmp, set, name, hasStart, start, hasEnd, end, endIncluded) {
-  if (hasStart && hasEnd && cmp(start, end) > 0) {
+// Checked as `range` checks its bounds where `checked`; `extract_if`'s
+// aren't (ADR 0344).
+function $treeRange(m, cmp, set, name, hasStart, start, hasEnd, end, endIncluded, checked = true) {
+  if (checked && hasStart && hasEnd && cmp(start, end) > 0) {
     throw new Error(`range start is greater than range end in ${name}`);
   }
   const sorted = set ? $sortedKeys(m, cmp) : $sortedEntries(m, cmp);

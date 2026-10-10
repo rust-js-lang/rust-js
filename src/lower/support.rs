@@ -33,7 +33,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return None;
         }
-        if self.is_array_iter(ty) {
+        if self.is_array_iter(ty) || self.recognition().is_extract_if(ty) {
             return None;
         }
         match ty.kind() {

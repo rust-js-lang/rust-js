@@ -51,4 +51,28 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
     snapshots: true,
   },
+  {
+    name: "tree-extract-checked",
+    breaks: "a B-tree's `extract_if` of a range that ends before it starts panics",
+    file: "src/lower/std_types/map.rs",
+    find: "                list.push(Expr::bool(false));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","extract_if"],
+  },
+  {
+    name: "map-extract-no-handles",
+    breaks: "a map's `extract_if` gives its filter a number, not a handle on it",
+    file: "src/lower/std_types/map.rs",
+    find: "        let handles = !set\n            && matches!(",
+    replace: "        let handles = false\n            && matches!(",
+    tests: ["test/corpus.test.ts","-t","extract_if"],
+  },
+  {
+    name: "range-items-of-ignored",
+    breaks: "a set made of a range is made of the range object",
+    file: "src/lower/std_types/map.rs",
+    find: "            Some(_) => self.range_items(items, ty.peel_refs(), span, out),",
+    replace: "            Some(_) => Ok(items),",
+    tests: ["test/corpus.test.ts","-t","range_into_set"],
+  },
 ];

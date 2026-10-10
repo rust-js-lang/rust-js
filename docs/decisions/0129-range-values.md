@@ -70,3 +70,8 @@ from it, its items:**
 - `('a'..'e')` and `('a'..='c')` written in place were no items; they're
   their `char`s now.
 - `size_hint()`, `by_ref()` and `RangeInclusive`'s `next()` are still errors.
+
+## Since
+
+- **A range a set or a map is made of, or extended by, is its items**
+  (ADR 0344): `new Set($range(1, 7))`, where it was the range's object.
