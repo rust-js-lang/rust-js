@@ -2143,6 +2143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(match value {
                 Value::Expr(e)
                     if self.implements_iterator(output)
+                        && !output.is_box()
                         && self.range_kind(output).is_none()
                         && !self.is_user_iterator(output)
                         && !super::recognition::is_text_escape(tcx, output) =>
@@ -2595,17 +2596,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ if lowered_from_values(known) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                let made = self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?;
-                // An iterator is a JS iterator (ADR 0364), where a source of
-                // THIR's makes an array: its items, lazily.
-                if self.range_kind(output).is_none()
-                    && !self.is_user_iterator(output)
-                    && self.implements_iterator(output)
-                {
-                    self.js_iterator(made)
-                } else {
-                    made
-                }
+                self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?
             }
             _ => {
                 let name = self.tcx.def_path_str(def_id);

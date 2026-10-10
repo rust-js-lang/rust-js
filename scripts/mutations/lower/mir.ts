@@ -498,4 +498,12 @@ export const mutations: Mutation[] = [
     replace: "            let object = false && !matches!(value, Value::Ref(_));\n",
     tests: ["test/mir.test.ts","-t","evidence_paths"],
   },
+  {
+    name: "mir-boxed-iterator-wrapped",
+    breaks: "`Box::new(Countdown(3))` is wrapped as an array's iterator, stepping its struct's fields",
+    file: "src/lower/mir.rs",
+    find: "                        && !output.is_box()\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","dyn_iterators"],
+  },
 ];
