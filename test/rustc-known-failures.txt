@@ -143,7 +143,7 @@ for-loop-while/loop-no-reinit-needed-post-bot.rs	error: rust-js does not support
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 function-pointer/function-pointer-comparison-54696.rs	error: rust-js does not support `==` on `fn()` yet
 functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
-generic-associated-types/issue-76826.rs	error: rust-js does not support calling `core::slice::<impl [T]>::get_mut` yet
+generic-associated-types/issue-76826.rs	error: rust-js does not support `&mut` to a `Self` yet
 generic-associated-types/streaming_iterator.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
 impl-trait/issues/issue-51185.rs	error: rust-js does not support calling `std::convert::Into::into` yet
 impl-trait/nesting.rs	error: rust-js does not support calling `std::convert::Into::into` yet
@@ -172,7 +172,6 @@ methods/method-two-traits-distinguished-via-where-clause.rs	error: rust-js does 
 mir/mir_assign_eval_order.rs	error: rust-js does not support assigning to this place yet
 mir/mir_augmented_assignments.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 mir/mir_autoderef.rs	error: rust-js does not support this expression yet
-mir/mir_fat_ptr.rs	error: rust-js does not support values of type `&mut &[u8]` yet
 mir/mir_misc_casts.rs	error: rust-js does not support values of type `*const ()` yet
 mir/mir_raw_fat_ptr.rs	error: rust-js does not support values of type `*const S<[u8]>` yet
 mir/reset-discriminant-drop-flag-on-partial-move.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
@@ -187,8 +186,8 @@ overloaded/fixup-deref-mut.rs	error: rust-js does not support values of type `*m
 overloaded/overloaded_deref_with_ref_pattern_issue15609.rs	error: rust-js does not support `ref mut` bindings to this type yet
 overloaded/overloaded_deref_with_ref_pattern.rs	error: rust-js does not support `ref mut` bindings to this type yet
 overloaded/overloaded-deref-count.rs	error: rust-js does not support assigning to this place yet
-overloaded/overloaded-index-autoderef.rs	error: rust-js does not support a `&mut` of this in a variable yet
-overloaded/overloaded-index.rs	error: rust-js does not support a `&mut` of this in a variable yet
+overloaded/overloaded-index-autoderef.rs	error: rust-js does not support assigning to this place yet
+overloaded/overloaded-index.rs	error: rust-js does not support assigning to this place yet
 packed/dyn-trait.rs	error: rust-js does not support calling `std::mem::ManuallyDrop::<T>::new` yet
 packed/issue-118537-field-offset-ice.rs	error: rust-js does not support values of type `*const PackedUnsized` yet
 packed/issue-118537-field-offset.rs	error: rust-js does not support values of type `*const PackedUnsized` yet
@@ -209,7 +208,6 @@ raw-ref-op/raw-ref-op.rs	error: rust-js does not support values of type `*const 
 recursion/instantiable.rs	error: rust-js does not support values of type `*const foo` yet
 recursion/recursive-struct-with-raw-pointer-field.rs	error: rust-js does not support values of type `*mut [Loopy; 1]` yet
 regions/regions-issue-21422.rs	error: rust-js does not support values of type `*const &u8` yet
-regions/regions-static-bound-rpass.rs	error: rust-js does not support values of type `&mut &()` yet
 return/ret-bang.rs	error: rust-js does not support values of type `!` yet
 rfcs/rfc-1789-as-cell/from-mut.rs	error: rust-js does not support calling `std::cell::Cell::<T>::from_mut` yet
 rfcs/rfc-2005-default-binding-mode/general.rs	error: rust-js does not support `&mut` to a `&mut std::option::Option<i32>` yet
@@ -237,8 +235,8 @@ structs-enums/tag-align-u64.rs	error: rust-js does not support calling `std::int
 threads-sendsync/send_str_hashmap.rs	error: rust-js does not support values of type `std::borrow::Cow<'_, str>` yet
 threads-sendsync/send_str_treemap.rs	error: rust-js does not support values of type `std::borrow::Cow<'_, str>` yet
 threads-sendsync/send-type-inference.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<Command<K, V>>>`, yet
-threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support calling `std::collections::BinaryHeap::<T, A>::drain` yet
-threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `core::str::<impl str>::escape_debug` yet
+threads-sendsync/sync-send-iterators-in-libcollections.rs	error: rust-js does not support a B-tree's range of bounds that aren't a range yet
+threads-sendsync/sync-send-iterators-in-libcore.rs	error: rust-js does not support calling `std::iter::Iterator::cycle` yet
 threads-sendsync/task-comm-16.rs	error: rust-js does not support a channel of a value with a destructor, `std::sync::mpsc::Sender<std::sync::mpsc::Sender<isize>>`, yet
 threads-sendsync/yield2.rs	error: rust-js does not support calling `std::thread::yield_now` yet
 traits/coercion.rs	error: rust-js does not support values of type `dyn std::io::Write` yet
@@ -250,11 +248,11 @@ traits/object/ambiguity-vtable-segfault.rs	error: rust-js does not support trait
 traits/principal-less-objects.rs	error: rust-js does not support a `dyn` of a value with a destructor yet
 transmute/transmute-array-to-scalar.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 try-trait/try-operator-various-contexts.rs	error: rust-js does not support values of type `(*const core::io::error::Custom) is !null` yet
-type/type-name-basic.rs	error: rust-js does not support `type_name` of a type parameter yet
+type/type-name-basic.rs	error: rust-js does not support type_name of a type with a type parameter yet
 typeck/issue-18937-1.rs	error: rust-js does not support values of type `*mut [U]` yet
 typeck/typeck_type_placeholder_1.rs	error: rust-js does not support statics of type `TestStruct` yet
 typeck/unify-return-ty.rs	error: rust-js does not support values of type `*const T` yet
-unboxed-closures/type-id-higher-rank.rs	error: rust-js does not support values of type `*const ()` yet
+unboxed-closures/type-id-higher-rank.rs	error: rust-js does not support `{:?}` of a `TypeId`, its hash yet
 union/union_destructure.rs	error: rust-js does not support values of type `Foo` yet
 union/union-align.rs	error: rust-js does not support values of type `U16` yet
 union/union-const-codegen.rs	error: rust-js does not support constants of type `U` yet
