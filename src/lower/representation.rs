@@ -59,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(pointer) = self.recognition().pinned(ty) {
             return self.is_boxable(pointer);
         }
-        !ty.is_ref()
+        !matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut))
             && !self.is_unknown(ty)
             && !self.is_object(ty)
             // A `&mut dyn FnMut()` is the function (ADR 0099).

@@ -445,7 +445,9 @@ impl Std {
                 | Std::GuardValue { mutable: true }
                 | Std::Pin(PinOp::Mut | PinOp::Map)
                 | Std::Heap(HeapOp::PeekTop { mutable: true })
-                | Std::Slice(SliceOp::PushMut { .. } | SliceOp::SplitEndMut { .. })
+                | Std::Slice(
+                    SliceOp::PushMut { .. } | SliceOp::SplitEndMut { .. } | SliceOp::SplitOff { mutable: true, .. }
+                )
                 | Std::Any(AnyOp::DowncastMut)
                 | Std::Uninit(UninitOp::Write | UninitOp::InitMut)
                 | Std::Text(
@@ -1874,6 +1876,20 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 })
             }
             "split_at_unchecked" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt { checked: false }),
+            "split_off"
+            | "split_off_mut"
+            | "split_off_first"
+            | "split_off_first_mut"
+            | "split_off_last"
+            | "split_off_last_mut"
+                if owner.is_slice() =>
+            {
+                let base = name.as_str().trim_end_matches("_mut");
+                Std::Slice(SliceOp::SplitOff {
+                    end: (base != "split_off").then_some(base == "split_off_last"),
+                    mutable: base != name.as_str(),
+                })
+            }
             // A slice as arrays of `N`, and arrays as one slice (ADR 0337).
             "as_array" | "as_mut_array" if owner.is_slice() => Std::Slice(SliceOp::AsArray),
             "array_windows" if owner.is_slice() => Std::Slice(SliceOp::ArrayWindows),

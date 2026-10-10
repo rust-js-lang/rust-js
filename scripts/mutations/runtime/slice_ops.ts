@@ -170,4 +170,20 @@ export const mutations: Mutation[] = [
     replace: "  const start = 0;\n  const chunks = Array.from(",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
   },
+  {
+    name: "slice-split-off-past-end",
+    breaks: "`split_off(..n)` past the end takes what there is, not `None`",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (n > v.length) return [v, undefined];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+  },
+  {
+    name: "slice-split-off-end-empty",
+    breaks: "`split_off_first_mut()` of an empty slice makes a view past its end",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (v.length === 0) return [v, undefined];\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+  },
 ];

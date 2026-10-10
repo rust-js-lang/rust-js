@@ -275,4 +275,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "box_uninit"],
   },
+  {
+    name: "ref-not-boxable",
+    breaks: "a `&mut` to a shared reference isn't a cell, and is refused",
+    file: "src/lower/representation.rs",
+    find: "        !matches!(ty.kind(), ty::Ref(_, _, Mutability::Mut))\n",
+    replace: "        !ty.is_ref()\n",
+    tests: ["test/corpus.test.ts","-t","mut_ref_to_ref"],
+  },
 ];

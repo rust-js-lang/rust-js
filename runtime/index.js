@@ -1677,6 +1677,21 @@ export function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = fals
   return parts;
 }
 
+// `s.split_off(..n)`, or `split_off(n..)` (`back`): what's left of `s` and
+// what's taken off it, or `s` and `undefined`, `None`, where `n` is past
+// its end (ADR 0338).
+export function $sliceSplitOff(v, n, back = false, cut = $copyOf) {
+  if (n > v.length) return [v, undefined];
+  return back ? [cut(v, 0, n), cut(v, n, v.length)] : [cut(v, n, v.length), cut(v, 0, n)];
+}
+
+// `split_off_first()`, or `split_off_last()` (`last`): what's left and the
+// item taken off, or `s` and `undefined` of an empty one.
+export function $sliceSplitOffEnd(v, last, cut = $copyOf, item = (items, i) => items[i]) {
+  if (v.length === 0) return [v, undefined];
+  return last ? [cut(v, 0, v.length - 1), item(v, v.length - 1)] : [cut(v, 1, v.length), item(v, 0)];
+}
+
 // `as_chunks::<N>()`: its whole chunks of `n`, copies, and what's left after
 // them; `as_rchunks` (`back`): what's left before them first.
 export function $asChunks(v, n, back = false) {
@@ -2540,6 +2555,15 @@ export function $flatView(v, n) {
       v[Math.floor(i / n)][i % n] = item;
     },
   );
+}
+
+export function $sliceSplitOffMut(v, n, back) {
+  return $sliceSplitOff(v, n, back, $view);
+}
+
+// Of a `&mut` slice, its item a handle on a number or text (`handle`).
+export function $sliceSplitOffEndMut(v, last, handle) {
+  return $sliceSplitOffEnd(v, last, $view, handle ? $mutAt : undefined);
 }
 
 // std's `slice_index_fail`: why `start..end` isn't a range of a slice of

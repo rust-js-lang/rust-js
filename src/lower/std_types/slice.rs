@@ -92,6 +92,13 @@ pub(in crate::lower) enum SliceOp {
     Flattened {
         mutable: bool,
     },
+    /// `s.split_off(range)` of a one-sided range, or `split_off_first()`
+    /// (`end: Some(false)`) or `split_off_last()`: what it takes off `s`,
+    /// which is then what's left (ADR 0338).
+    SplitOff {
+        end: Option<bool>,
+        mutable: bool,
+    },
     SortByCachedKey,
     /// A byte slice's `to_ascii_uppercase()` or `to_ascii_lowercase()`, and
     /// `make_ascii_*` in place.
@@ -178,6 +185,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let item = || generic_args.type_at(0);
         Ok(match op {
+            // `s.split_off(..n)`: `s` given what's left, `s = split[0]`, and what
+            // it takes, `split[1]` (ADR 0338), as a `String`'s `pop` is.
+            SliceOp::SplitOff { end, mutable } => {
+                let Some(place) = self.mut_borrowed(args[0]) else {
+                    return Err(self.unsupported(span, "splitting this slice"));
+                };
+                let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
+                let mut list = vec![target.read()];
+                match end {
+                    None => match self.range_bounds(args[1], span, out)? {
+                        (_, Some(n)) => list.push(n),
+                        (n, None) => list.extend([n, Expr::bool(true)]),
+                    },
+                    Some(last) => {
+                        list.push(Expr::bool(last));
+                        if mutable && self.is_boxable(item()) {
+                            list.push(Expr::bool(true));
+                        }
+                    }
+                }
+                let name = match (end, mutable) {
+                    (None, false) => "$sliceSplitOff",
+                    (None, true) => "$sliceSplitOffMut",
+                    (Some(_), false) => "$sliceSplitOffEnd",
+                    (Some(_), true) => "$sliceSplitOffEndMut",
+                };
+                let split = match mutable {
+                    false => helper(self, name, list),
+                    true => self.view_call(name, list),
+                };
+                let split = self.spill("split", split, out);
+                target.write(Expr::index(split.clone(), Expr::int(0)), self.js_span(span), out);
+                Expr::index(split, Expr::int(1))
+            }
             SliceOp::View { checked } => {
                 let items = self.operands(&args[..1], out)?.remove(0);
                 let (start, end) = self.range_bounds(args[1], span, out)?;
@@ -306,7 +347,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => self.view_call("$splitChunkMut", list),
                         }
                     }
-                    SliceOp::View { .. } => unreachable!("lowered above"),
+                    SliceOp::View { .. } | SliceOp::SplitOff { .. } => unreachable!("lowered above"),
                     SliceOp::AsArray => {
                         let n = self.chunk_length(generic_args, span)?;
                         let items = arg();

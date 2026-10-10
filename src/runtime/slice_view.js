@@ -149,3 +149,12 @@ function $flatView(v, n) {
     },
   );
 }
+
+function $sliceSplitOffMut(v, n, back) {
+  return $sliceSplitOff(v, n, back, $view);
+}
+
+// Of a `&mut` slice, its item a handle on a number or text (`handle`).
+function $sliceSplitOffEndMut(v, last, handle) {
+  return $sliceSplitOffEnd(v, last, $view, handle ? $mutAt : undefined);
+}

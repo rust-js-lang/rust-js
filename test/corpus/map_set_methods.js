@@ -184,7 +184,7 @@ function main() {
       .map(([key, value]) => `${key}: ${$debugStr(value)}`)
       .join(", ")}}`,
   );
-  $retainMap(tree, (k) => k !== 4, $sortedEntries(tree, $cmp), false);
+  $retainMap(tree, (k) => k !== 4, $sortedEntries(tree, $cmp), true);
   console.log(
     `{${Array.from($sortedEntries(tree, $cmp))
       .map(([key, value]) => `${key}: ${$debugStr(value)}`)

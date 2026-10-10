@@ -1024,8 +1024,8 @@ export const mutations: Mutation[] = [
     name: "split-end-mut-not-cell",
     breaks: "`split_first_mut()`'s handle isn't the call's own cell",
     file: "src/lower/recognition.rs",
-    find: "SliceOp::PushMut { .. } | SliceOp::SplitEndMut { .. })",
-    replace: "SliceOp::PushMut { .. })",
+    find: "SliceOp::PushMut { .. } | SliceOp::SplitEndMut { .. } |",
+    replace: "SliceOp::PushMut { .. } |",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
   {
@@ -1067,5 +1067,21 @@ export const mutations: Mutation[] = [
     find: "                    \"std::slice::ArrayWindows\",\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
+  },
+  {
+    name: "slice-split-off-unknown",
+    breaks: "a slice's `split_off` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"split_off\"\n            | \"split_off_mut\"\n",
+    replace: "            \"split_off_never\"\n            | \"split_off_mut\"\n",
+    tests: ["test/corpus.test.ts","-t","slice_split_off"],
+  },
+  {
+    name: "split-off-mut-not-cell",
+    breaks: "`split_off_first_mut()`'s handle isn't the call's own cell",
+    file: "src/lower/recognition.rs",
+    find: " | SliceOp::SplitEndMut { .. } | SliceOp::SplitOff { mutable: true, .. }\n",
+    replace: " | SliceOp::SplitEndMut { .. }\n",
+    tests: ["test/corpus.test.ts","-t","slice_split_off"],
   },
 ];
