@@ -11,11 +11,8 @@ use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
     imports(module);
-    // Not an `on_load!` body's, whose names are the module's (ADR 0267).
     for item in &mut module.items {
-        if !matches!(item, js::Item::Statements(_)) {
-            locals(item);
-        }
+        locals(item);
     }
 }
 
@@ -65,43 +62,30 @@ fn imports(module: &mut js::Module) {
 /// Each local of `item`'s, of a name where each read is still of what it
 /// was: its base, `n` of `n$2`, or else the first of `n$1` on that is.
 fn locals(item: &mut js::Item) {
-    let mut tried = HashSet::new();
-    loop {
-        let Some(before) = reads(item, None) else { return };
-        let mut declared = Vec::new();
-        names_mut(item, false, &mut |name| declared.push(name.clone()));
-        let renamed = (declared.iter())
-            .filter(|d| tried.insert((*d).clone()))
-            .find_map(|local| {
-                let base = reclaimable(local, &HashSet::new())?;
-                let suffix: usize = local[base.len() + 1..].parse().unwrap_or(0);
-                std::iter::once(base.to_string())
-                    .chain((1..suffix).map(|i| format!("{base}${i}")))
-                    .find(|to| reads(item, Some((local, to))).as_ref() == Some(&before))
-                    .map(|to| (local.clone(), to))
-            });
-        let Some((local, to)) = renamed else { return };
+    let Some(mut tree) = scopes::Tree::of(item) else { return };
+    let mut declared = Vec::new();
+    names_mut(item, false, &mut |name| {
+        if !declared.contains(name) {
+            declared.push(name.clone());
+        }
+    });
+    for local in declared {
+        let Some(base) = reclaimable(&local, &HashSet::new()) else {
+            continue;
+        };
+        let suffix: usize = local[base.len() + 1..].parse().unwrap_or(0);
+        let Some(to) = std::iter::once(base.to_string())
+            .chain((1..suffix).map(|i| format!("{base}${i}")))
+            .find(|to| tree.renames(&local, to))
+        else {
+            continue;
+        };
+        tree.rename(&local, &to);
         names_mut(item, true, &mut |name| {
             if *name == local {
                 name.clone_from(&to);
             }
         });
-    }
-}
-
-/// Each read in `item`, and what it's of, were `renamed`'s first name its
-/// second.
-fn reads(item: &js::Item, renamed: Option<(&str, &str)>) -> Option<Vec<scopes::Of>> {
-    match item {
-        js::Item::Function(function) => scopes::reads(function, renamed),
-        js::Item::Namespace(namespace) => {
-            let methods = namespace.methods.iter().map(|m| scopes::reads(m, renamed));
-            methods
-                .collect::<Option<Vec<_>>>()
-                .map(|all| all.into_iter().flatten().collect())
-        }
-        js::Item::Const(constant) => scopes::reads_of(&constant.value, renamed),
-        js::Item::Statements(_) => None,
     }
 }
 

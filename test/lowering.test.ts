@@ -3957,6 +3957,27 @@ pub fn tag() -> u32 {
   expect([lib.show({ label: "ab" }), lib.make()({ label: "abc" }), lib.shadowing({ label: "a" }), lib.made(), lib.kept(1), lib.both(1), lib.alone(1), lib.tag()]).toEqual([2, 3, 5, 42, 2, [2, "1"], 2, 8]);
 });
 
+// An import of JS's global's name, `String`, stays apart where the module
+// converts with the global, `String(n)` (ADR 0352).
+test("an import named as a global a conversion reads stays apart", async () => {
+  const dir = fixture("reclaimed-global-import");
+  writeFileSync(join(dir, "names.js"), "export function String() { return 9; }\n");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "./names.js#String"]
+    safe fn js_string() -> u32;
+}
+
+pub fn stringed(n: u32) -> String {
+    js_string().to_string() + &n.to_string()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { String as String$ } from "./names.js";');
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.stringed(3)).toBe("93");
+});
+
 // An untagged enum's variant without fields is its name, a string literal,
 // as TypeScript's `boolean | "blocking"` is: made, matched, compared and
 // shown as one (ADR 0214). Beside a variant of any string, which JS can't

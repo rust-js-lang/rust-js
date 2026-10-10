@@ -1023,11 +1023,11 @@ test("chars, parse and slices are plain JS with Rust's answers", async () => {
 test("the calculator's JS is what a person would write", async () => {
   const js = await Bun.file(join(target, "calc.js")).text();
   expect(js).toContain("for (const [i, c] of Array.from(s).entries()) {");
-  expect(js).toContain('const arg$1 = first_dup("abcdbe");');
-  expect(js).toContain("`Some((${arg$1[0]}, ${$debugStr(arg$1[1], \"'\")}))`");
+  expect(js).toContain('const arg = first_dup("abcdbe");');
+  expect(js).toContain("`Some((${arg[0]}, ${$debugStr(arg[1], \"'\")}))`");
   expect(js).toContain('$splitBy(text, (c) => !/^[\\p{Alphabetic}\\p{N}]$/u.test(c))');
   // `?` from a `&str` error to a `String` one: the same string, returned as it is.
-  expect(js).toContain("_0: \"underflow\" };\n      if (result$1.TAG === \"Err\") {\n        return result$1;");
+  expect(js).toContain("_0: \"underflow\" };\n      if (result.TAG === \"Err\") {\n        return result;");
 });
 
 // ADR 0064: a number's methods are `Math`'s where JS agrees with Rust, and
@@ -1042,7 +1042,7 @@ test("numbers are Math's, operators call their impl, and vec![x; n] fills", asyn
   // Each row made again; a struct cloned, since one is changed later.
   expect(js).toContain("Array.from({ length: n }, () => new Array(n).fill(0))");
   expect(js).toContain("Array.from({ length: 3 }, () => ({ ...cell }))");
-  expect(js).toContain("for (const [j$1, v] of row.entries()) {");
+  expect(js).toContain("for (const [j, v] of row.entries()) {");
   // Numbers as JS writes them, and constants shown as their text.
   expect(js).toContain("$displayF64(2.220446049250313e-16)");
   expect(js).not.toContain("((tuple) =>");
@@ -1111,8 +1111,8 @@ test("values' JS: boxes for &mut to primitives, and recursive clones", async () 
   expect(js).toContain("out.value += \"[\\n\";");
   expect(js).toContain("const out$1 = { value: p };\n  Value.pretty(v, 0, out$1);\n  p = out$1.value;");
   expect(js).toContain("count.value = (count.value + by) >>> 0;");
-  expect(js).toContain("const count$3 = { value: stats.hits };");
-  expect(js).toContain("stats.hits = count$3.value;");
+  expect(js).toContain("const count$2 = { value: stats.hits };");
+  expect(js).toContain("stats.hits = count$2.value;");
   expect(js).toContain("const cloneValue = (value) =>");
 });
 

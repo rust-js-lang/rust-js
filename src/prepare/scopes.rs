@@ -1,105 +1,155 @@
-//! What each name a function reads is, as JS's scopes resolve it: a
-//! declaration of its own, by its place in the function, or a name from
-//! outside it. Two functions alike but for their names read the same where
-//! each read is of the same declaration (ADR 0357).
+//! An item's scopes, as JS resolves its names: each scope's declarations,
+//! and each read, where it is and the declaration it's of, or a name from
+//! outside the item. A local renamed keeps each read its own where no
+//! declaration of the new name comes between a read and what it reads
+//! (ADR 0357).
 
 use std::collections::HashMap;
 
 use crate::js::{self, Expr, ExprKind, Function, JsxTag, Pattern, Prop, Stmt, StmtKind};
 
-/// What a read is of: the declaration, by the order they're declared in,
-/// or a name from outside.
-#[derive(PartialEq, Eq, Debug)]
-pub(super) enum Of {
-    Declared(usize),
-    Outside(String),
+struct Scope {
+    parent: Option<usize>,
+    names: HashMap<String, usize>,
 }
 
-/// Each read in `function`, in order, and what it's of, were `renamed`'s
-/// first name its second; `None` where a scope declares a name twice,
-/// which JS refuses.
-pub(super) fn reads(function: &Function, renamed: Option<(&str, &str)>) -> Option<Vec<Of>> {
-    let mut walk = Walk::new(renamed);
-    walk.function(function, false);
-    (!walk.twice).then_some(walk.reads)
+/// A read: the scope it's in, and the scope of the declaration it's of,
+/// `None` of a name from outside.
+struct Read {
+    scope: usize,
+    of: Option<usize>,
 }
 
-/// Each read in `e`, a constant's value, as [`reads`].
-pub(super) fn reads_of(e: &Expr, renamed: Option<(&str, &str)>) -> Option<Vec<Of>> {
-    let mut walk = Walk::new(renamed);
-    walk.expr(e);
-    (!walk.twice).then_some(walk.reads)
+#[derive(Default)]
+pub(super) struct Tree {
+    scopes: Vec<Scope>,
+    /// Each name's reads.
+    reads: HashMap<String, Vec<Read>>,
 }
 
+impl Tree {
+    /// `item`'s scopes; `None` of an `on_load!` body's, whose names are the
+    /// module's (ADR 0267), or where a scope declares a name twice, which JS
+    /// refuses.
+    pub(super) fn of(item: &js::Item) -> Option<Tree> {
+        let mut walk = Walk::default();
+        walk.enter();
+        match item {
+            js::Item::Function(function) => walk.function(function, false),
+            js::Item::Namespace(namespace) => namespace.methods.iter().for_each(|m| walk.function(m, false)),
+            js::Item::Const(constant) => walk.expr(&constant.value),
+            js::Item::Statements(_) => return None,
+        }
+        (!walk.twice).then_some(walk.tree)
+    }
+
+    fn declares(&self, scope: usize, name: &str) -> bool {
+        self.scopes[scope].names.contains_key(name)
+    }
+
+    /// Does each read stay of what it's of, where `from` is named `to`? No
+    /// scope that declares `from` declares `to` too; no read of `from`
+    /// passes a declaration of `to` before its own; and no read of `to`
+    /// passes one of `from` before its own.
+    pub(super) fn renames(&self, from: &str, to: &str) -> bool {
+        let declaring: Vec<usize> = (0..self.scopes.len()).filter(|&s| self.declares(s, from)).collect();
+        if declaring.is_empty() || declaring.iter().any(|&s| self.declares(s, to)) {
+            return false;
+        }
+        let passes = |read: &Read, name: &str| {
+            let mut scope = Some(read.scope);
+            while scope.is_some() && scope != read.of {
+                let at = scope.expect("checked");
+                if self.declares(at, name) {
+                    return true;
+                }
+                scope = self.scopes[at].parent;
+            }
+            false
+        };
+        let none = Vec::new();
+        let of_from = self.reads.get(from).unwrap_or(&none);
+        let of_to = self.reads.get(to).unwrap_or(&none);
+        of_from.iter().all(|r| r.of.is_some() && !passes(r, to)) && of_to.iter().all(|r| !passes(r, from))
+    }
+
+    /// `from` named `to`, where [`Tree::renames`] said it keeps each read.
+    pub(super) fn rename(&mut self, from: &str, to: &str) {
+        for scope in &mut self.scopes {
+            if let Some(id) = scope.names.remove(from) {
+                scope.names.insert(to.to_string(), id);
+            }
+        }
+        if let Some(reads) = self.reads.remove(from) {
+            self.reads.entry(to.to_string()).or_default().extend(reads);
+        }
+    }
+}
+
+#[derive(Default)]
 struct Walk {
-    renamed: Option<(String, String)>,
-    scopes: Vec<HashMap<String, usize>>,
+    tree: Tree,
+    stack: Vec<usize>,
     declared: usize,
-    reads: Vec<Of>,
     twice: bool,
 }
 
 impl Walk {
-    fn new(renamed: Option<(&str, &str)>) -> Self {
-        Walk {
-            renamed: renamed.map(|(from, to)| (from.to_string(), to.to_string())),
-            scopes: Vec::new(),
-            declared: 0,
-            reads: Vec::new(),
-            twice: false,
-        }
+    fn enter(&mut self) {
+        let parent = self.stack.last().copied();
+        self.tree.scopes.push(Scope {
+            parent,
+            names: HashMap::new(),
+        });
+        self.stack.push(self.tree.scopes.len() - 1);
     }
 
-    /// `name`, or what it's renamed to.
-    fn named(&self, name: &str) -> String {
-        match &self.renamed {
-            Some((from, to)) if name == from => to.clone(),
-            _ => name.to_string(),
-        }
+    fn leave(&mut self) {
+        self.stack.pop();
     }
 
     fn declare(&mut self, name: &str) {
-        let name = self.named(name);
         let id = self.declared;
         self.declared += 1;
-        let scope = self.scopes.last_mut().expect("a declaration is in a scope");
-        self.twice |= scope.insert(name, id).is_some();
+        let scope = *self.stack.last().expect("a declaration is in a scope");
+        self.twice |= self.tree.scopes[scope].names.insert(name.to_string(), id).is_some();
     }
 
     fn read(&mut self, name: &str) {
-        let name = self.named(name);
-        let name = name.as_str();
-        let of = (self.scopes.iter().rev())
-            .find_map(|scope| scope.get(name).copied())
-            .map_or_else(|| Of::Outside(name.to_string()), Of::Declared);
-        self.reads.push(of);
+        let scope = *self.stack.last().expect("a read is in a scope");
+        let of = self.stack.iter().rev().copied().find(|&s| self.tree.declares(s, name));
+        self.tree
+            .reads
+            .entry(name.to_string())
+            .or_default()
+            .push(Read { scope, of });
     }
 
     /// A function's parameters and its body's own declarations are one scope;
     /// a function expression's own name, one outside them, which only it sees.
     fn function(&mut self, function: &Function, named: bool) {
         if named {
-            self.scopes.push(HashMap::new());
+            self.enter();
             self.declare(&function.name);
         }
-        self.scopes.push(HashMap::new());
+        self.enter();
         for param in &function.params {
             self.pattern(param);
         }
         self.block_in_scope(&function.body);
-        self.scopes.pop();
+        self.leave();
         if named {
-            self.scopes.pop();
+            self.leave();
         }
     }
 
     fn closure(&mut self, params: &[Pattern], body: &[Stmt]) {
-        self.scopes.push(HashMap::new());
+        self.enter();
         for param in params {
             self.pattern(param);
         }
         self.block_in_scope(body);
-        self.scopes.pop();
+        self.leave();
     }
 
     fn pattern(&mut self, pattern: &Pattern) {
@@ -121,9 +171,9 @@ impl Walk {
     }
 
     fn block(&mut self, stmts: &[Stmt]) {
-        self.scopes.push(HashMap::new());
+        self.enter();
         self.block_in_scope(stmts);
-        self.scopes.pop();
+        self.leave();
     }
 
     /// A block's `const`s, `let`s and functions are its scope's from its
@@ -160,8 +210,8 @@ impl Walk {
         }
     }
 
-    /// What a hoisted pattern declares; its defaults are read in order, as
-    /// the statement runs.
+    /// What a hoisted pattern declares; its defaults are read as the
+    /// statement runs.
     fn pattern_names(&mut self, pattern: &Pattern) {
         match pattern {
             Pattern::Name(name) => self.declare(name),
@@ -206,11 +256,11 @@ impl Walk {
                 body,
                 ..
             } => {
-                self.scopes.push(HashMap::new());
+                self.enter();
                 self.pattern(pattern);
                 self.expr(iterable);
                 self.block(body);
-                self.scopes.pop();
+                self.leave();
             }
             StmtKind::For {
                 name,
@@ -219,12 +269,12 @@ impl Walk {
                 body,
                 ..
             } => {
-                self.scopes.push(HashMap::new());
+                self.enter();
                 self.declare(name);
                 self.expr(start);
                 self.expr(test);
                 self.block(body);
-                self.scopes.pop();
+                self.leave();
             }
             StmtKind::Labeled(_, body) => self.block(body),
             StmtKind::Try(body, finally) => {
@@ -234,12 +284,12 @@ impl Walk {
             // A `catch`'s parameter and its block's own declarations are one scope.
             StmtKind::TryCatch(body, error, handler) => {
                 self.block(body);
-                self.scopes.push(HashMap::new());
+                self.enter();
                 if let Some(error) = error {
                     self.declare(error);
                 }
                 self.block_in_scope(handler);
-                self.scopes.pop();
+                self.leave();
             }
             StmtKind::Function(function) => self.function(function, false),
             StmtKind::Break(_) | StmtKind::Continue(_) | StmtKind::Directive(_) => {}
@@ -312,5 +362,80 @@ impl Walk {
                 jsx.children.iter().for_each(|c| self.expr(c));
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Tree;
+    use crate::js::{self, Expr, Function, Op, Span, Stmt, StmtKind};
+
+    fn item(body: Vec<Stmt>) -> js::Item {
+        js::Item::Function(Function {
+            name: "f".into(),
+            params: Vec::new(),
+            body,
+            export: false,
+            is_async: false,
+            span: Span::NONE,
+            name_span: Span::NONE,
+        })
+    }
+
+    fn constant(name: &str, value: Expr) -> Stmt {
+        StmtKind::Const(name.into(), value).at(Span::NONE)
+    }
+
+    fn returned(value: Expr) -> Stmt {
+        StmtKind::Return(Some(value)).at(Span::NONE)
+    }
+
+    fn when(body: Vec<Stmt>) -> Stmt {
+        StmtKind::If(Expr::var("a"), body, None).at(Span::NONE)
+    }
+
+    // `if (a) { const n$1 = 2; if (a) { const n = 3; return n; } }`: the
+    // inner `n`'s read is its own, past which `n$1` may be `n` too.
+    #[test]
+    fn a_read_is_of_its_innermost_declaration() {
+        let tree = Tree::of(&item(vec![
+            constant("n", Expr::int(1)),
+            when(vec![
+                constant("n$1", Expr::int(2)),
+                when(vec![constant("n", Expr::int(3)), returned(Expr::var("n"))]),
+                returned(Expr::var("n$1")),
+            ]),
+            returned(Expr::var("n")),
+        ]))
+        .expect("each scope declares a name once");
+        assert!(tree.renames("n$1", "n"));
+    }
+
+    // `const n$1 = 1; if (a) { const n = 2; return n + n$1; }`: the block's
+    // read of `n$1` would be of its own `n`.
+    #[test]
+    fn a_read_passing_a_declaration_of_the_new_name_keeps_its_own() {
+        let tree = Tree::of(&item(vec![
+            constant("n$1", Expr::int(1)),
+            when(vec![
+                constant("n", Expr::int(2)),
+                returned(Expr::bin(Op::Add, Expr::var("n"), Expr::var("n$1"))),
+            ]),
+            returned(Expr::var("n$1")),
+        ]))
+        .expect("each scope declares a name once");
+        assert!(!tree.renames("n$1", "n"));
+    }
+
+    // `if (a) { const x$1 = 1; } return x$1;`: the last a name from outside,
+    // an import's, which a rename would rename too.
+    #[test]
+    fn a_name_also_read_from_outside_stays() {
+        let tree = Tree::of(&item(vec![
+            when(vec![constant("x$1", Expr::int(1)), returned(Expr::var("x$1"))]),
+            returned(Expr::var("x$1")),
+        ]))
+        .expect("each scope declares a name once");
+        assert!(!tree.renames("x$1", "x"));
     }
 }

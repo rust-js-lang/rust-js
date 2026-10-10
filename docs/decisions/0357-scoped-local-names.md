@@ -45,3 +45,16 @@ it**, chosen with the user:
 - The corpus and snapshots: 99 files, renames only, each still run; the
   react.dev port: 2 files, `className` and `decorator` as react.dev names
   them.
+
+## Amendment: one scope tree, each rename checked against it
+
+Walking the item again for each candidate name took inbox's serde code 42
+seconds. An item's scopes are built once instead: each scope's
+declarations, and each read's scope and its declaration's. A rename of
+`from` to `to` keeps each read where no scope declaring `from` declares
+`to`, no read of `from` is from outside or passes a scope declaring `to`
+on its way to its own, and no read of `to` passes one declaring `from`.
+The tree is renamed with the item, so each candidate is a check of its
+own reads: inbox is a second again, its JS the same. The conditions no
+Rust rust-js lowers reaches, as it numbers names in order, are
+`src/prepare/scopes.rs`'s unit tests.

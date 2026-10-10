@@ -1,4 +1,7 @@
-// Mutations of src/prepare/scopes.rs (ADR 0093).
+// Mutations of src/prepare/scopes.rs (ADR 0093). Its reads resolved
+// innermost first, and a rename refused of a read from outside or one that
+// passes the new name's declaration, are its unit tests', `cargo test`: no
+// Rust rust-js lowers reaches them, as it numbers names in order.
 import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
@@ -6,8 +9,8 @@ export const mutations: Mutation[] = [
     name: "scopes-twice-allowed",
     breaks: "`const n = items.pop(); const n = ..` in one block, which JS refuses",
     file: "src/prepare/scopes.rs",
-    find: "        self.twice |= scope.insert(name, id).is_some();",
-    replace: "        scope.insert(name, id);",
+    find: "        if declaring.is_empty() || declaring.iter().any(|&s| self.declares(s, to)) {",
+    replace: "        if declaring.is_empty() {",
     tests: ["test/lowering.test.ts", "-t", "reuses a name"],
   },
   {
@@ -16,14 +19,6 @@ export const mutations: Mutation[] = [
     file: "src/prepare/scopes.rs",
     find: "                StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.declare(name),",
     replace: "                StmtKind::Const(..) | StmtKind::Let(..) => {}",
-    tests: ["test/lowering.test.ts", "-t", "reuses a name"],
-  },
-  {
-    name: "scopes-outermost-first",
-    breaks: "a read is of the outermost declaration of its name, not the innermost",
-    file: "src/prepare/scopes.rs",
-    find: "        let of = (self.scopes.iter().rev())",
-    replace: "        let of = (self.scopes.iter())",
     tests: ["test/lowering.test.ts", "-t", "reuses a name"],
   },
   {
@@ -41,6 +36,14 @@ export const mutations: Mutation[] = [
     file: "src/prepare/scopes.rs",
     find: "                StmtKind::If(_, then, Some(els)) if js::leaves(then) => self.hoist(els),",
     replace: "                StmtKind::If(_, then, Some(els)) if false && js::leaves(then) => self.hoist(els),",
+    tests: ["test/lowering.test.ts", "-t", "reuses a name"],
+  },
+  {
+    name: "scopes-other-read-captured",
+    breaks: "`const m = n;` in a block whose `n$1` is named `n`, which the read then is",
+    file: "src/prepare/scopes.rs",
+    find: "        of_from.iter().all(|r| r.of.is_some() && !passes(r, to)) && of_to.iter().all(|r| !passes(r, from))",
+    replace: "        of_from.iter().all(|r| r.of.is_some() && !passes(r, to))",
     tests: ["test/lowering.test.ts", "-t", "reuses a name"],
   },
 ];
