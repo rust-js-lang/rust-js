@@ -5,6 +5,7 @@ as_deref.rs
 as_deref_counted.rs
 as_deref_none_like.rs
 assert_failure.rs
+assignment_order.rs
 assignment_order_compound.rs
 associated_consts.rs
 associated_type_fields.rs

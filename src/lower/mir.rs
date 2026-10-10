@@ -85,6 +85,9 @@ struct Locals {
     writes: IndexVec<Local, usize>,
     /// Each one whose place is borrowed: it stays a variable.
     borrowed: IndexVec<Local, bool>,
+    /// Each one a `&mut` is the place of, a number's: a call made while
+    /// it lives, a closure's say, may assign it.
+    changed: IndexVec<Local, bool>,
     /// Each one declared already.
     declared: IndexVec<Local, bool>,
     /// Each one the program names, not a macro of std's.
@@ -342,6 +345,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             reads: IndexVec::from_elem_n(0, n),
             writes: IndexVec::from_elem_n(0, n),
             borrowed: IndexVec::from_elem_n(false, n),
+            changed: IndexVec::from_elem_n(false, n),
             declared: IndexVec::from_elem_n(false, n),
             user: IndexVec::from_elem_n(false, n),
         };
@@ -377,6 +381,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         };
                         count_place(&mut locals, place, true);
                         count_rvalue(&mut locals, rvalue);
+                        // A `&mut` of a value JS can't share is its place, which
+                        // a write through it, a closure's say, assigns.
+                        let changes = match rvalue {
+                            Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) => {
+                                self.is_cell_pointee(borrowed.ty(&body.local_decls, self.tcx).ty)
+                            }
+                            Rvalue::RawPtr(kind, _) => kind.to_mutbl_lossy().is_mut(),
+                            _ => false,
+                        };
+                        if changes
+                            && let Rvalue::Ref(_, _, borrowed) | Rvalue::RawPtr(_, borrowed) = rvalue
+                            && !borrowed.is_indirect()
+                        {
+                            locals.changed[borrowed.local] = true;
+                        }
                     }
                     StatementKind::SetDiscriminant { place, .. } => count_place(&mut locals, place, false),
                     _ => {}
@@ -812,7 +831,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let stable = |state: &State<'_, 'tcx>, operand: &Operand<'tcx>| match operand {
             Operand::Constant(_) => true,
             Operand::Copy(place) | Operand::Move(place) => {
-                place.projection.is_empty() && !state.locals.borrowed[place.local]
+                place.projection.is_empty() && !state.locals.borrowed[place.local] && !state.locals.changed[place.local]
             }
             #[allow(unreachable_patterns)]
             _ => false,

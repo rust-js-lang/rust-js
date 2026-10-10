@@ -330,4 +330,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","drop_impl_clear"],
   },
+  {
+    name: "mir-mut-borrowed-unchanged",
+    breaks: "`e += inc()` reads `e` before the closure that changes it runs",
+    file: "src/lower/mir.rs",
+    find: "                            locals.changed[borrowed.local] = true;\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","assignment_order"],
+  },
+  {
+    name: "mir-changed-operand-stable",
+    breaks: "an operand a call may change is read before the call",
+    file: "src/lower/mir.rs",
+    find: "                place.projection.is_empty() && !state.locals.borrowed[place.local] && !state.locals.changed[place.local]\n",
+    replace: "                place.projection.is_empty() && !state.locals.borrowed[place.local]\n",
+    tests: ["test/mir.test.ts","-t","assignment_order"],
+  },
 ];
