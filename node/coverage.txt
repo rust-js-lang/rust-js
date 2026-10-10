@@ -1,0 +1,1593 @@
+# The node crate against @types/node: bun test test/node-coverage.test.ts
+# exports: 5 of 1538 (0.3%)
+# assert 0 of 28
+- assert#Assert
+- assert#AssertionError
+- type assert#AssertionErrorOptions
+- type assert#AssertMethodNames
+- type assert#AssertOptions
+- type assert#AssertPredicate
+- type assert#AssertStrict
+- assert#CallTracker
+- type assert#CallTrackerCall
+- type assert#CallTrackerReportInformation
+- assert#deepEqual
+- assert#deepStrictEqual
+- assert#doesNotMatch
+- assert#doesNotReject
+- assert#doesNotThrow
+- assert#equal
+- assert#fail
+- assert#ifError
+- assert#match
+- assert#notDeepEqual
+- assert#notDeepStrictEqual
+- assert#notEqual
+- assert#notStrictEqual
+- assert#ok
+- assert#partialDeepStrictEqual
+- assert#rejects
+- assert#strictEqual
+- assert#throws
+# assert/strict 0 of 0
+# async_hooks 0 of 11
+- type async_hooks#AsyncHook
+- async_hooks#AsyncLocalStorage
+- type async_hooks#AsyncLocalStorageOptions
+- async_hooks#AsyncResource
+- type async_hooks#AsyncResourceOptions
+- async_hooks#asyncWrapProviders
+- async_hooks#createHook
+- async_hooks#executionAsyncId
+- async_hooks#executionAsyncResource
+- type async_hooks#HookCallbacks
+- async_hooks#triggerAsyncId
+# buffer 0 of 20
+- type buffer#AllowSharedBuffer
+- buffer#Blob
+- type buffer#BlobOptions
+- buffer#Buffer
+- type buffer#BufferView
+- buffer#constants
+- buffer#File
+- type buffer#FileOptions
+- type buffer#ImplicitArrayBuffer
+- buffer#INSPECT_MAX_BYTES
+- buffer#isAscii
+- buffer#isUtf8
+- buffer#kMaxLength
+- buffer#kStringMaxLength
+- type buffer#NonSharedBuffer
+- buffer#resolveObjectURL
+- buffer#SlowBuffer
+- buffer#transcode
+- type buffer#TranscodeEncoding
+- type buffer#WithImplicitCoercion
+# child_process 0 of 49
+- child_process#ChildProcess
+- type child_process#ChildProcessByStdio
+- type child_process#ChildProcessWithoutNullStreams
+- type child_process#CommonExecOptions
+- type child_process#CommonOptions
+- type child_process#CommonSpawnOptions
+- type child_process#Control
+- child_process#exec
+- type child_process#ExecException
+- child_process#execFile
+- type child_process#ExecFileException
+- type child_process#ExecFileOptions
+- type child_process#ExecFileOptionsWithBufferEncoding
+- type child_process#ExecFileOptionsWithOtherEncoding
+- type child_process#ExecFileOptionsWithStringEncoding
+- child_process#execFileSync
+- type child_process#ExecFileSyncOptions
+- type child_process#ExecFileSyncOptionsWithBufferEncoding
+- type child_process#ExecFileSyncOptionsWithStringEncoding
+- type child_process#ExecOptions
+- type child_process#ExecOptionsWithBufferEncoding
+- type child_process#ExecOptionsWithStringEncoding
+- child_process#execSync
+- type child_process#ExecSyncOptions
+- type child_process#ExecSyncOptionsWithBufferEncoding
+- type child_process#ExecSyncOptionsWithStringEncoding
+- child_process#fork
+- type child_process#ForkOptions
+- type child_process#IOType
+- type child_process#MessageOptions
+- type child_process#MessagingOptions
+- type child_process#ProcessEnvOptions
+- type child_process#PromiseWithChild
+- type child_process#SendHandle
+- type child_process#Serializable
+- type child_process#SerializationType
+- child_process#spawn
+- type child_process#SpawnOptions
+- type child_process#SpawnOptionsWithoutStdio
+- type child_process#SpawnOptionsWithStdioTuple
+- child_process#spawnSync
+- type child_process#SpawnSyncOptions
+- type child_process#SpawnSyncOptionsWithBufferEncoding
+- type child_process#SpawnSyncOptionsWithStringEncoding
+- type child_process#SpawnSyncReturns
+- type child_process#StdioNull
+- type child_process#StdioOptions
+- type child_process#StdioPipe
+- type child_process#StdioPipeNamed
+# cluster 0 of 6
+- type cluster#Address
+- cluster#cluster
+- type cluster#Cluster
+- type cluster#ClusterSettings
+- type cluster#SerializationType
+- cluster#Worker
+# console 0 of 23
+- console#assert
+- console#clear
+- console#Console
+- console#count
+- console#countReset
+- console#debug
+- console#dir
+- console#dirxml
+- console#error
+- console#group
+- console#groupCollapsed
+- console#groupEnd
+- console#info
+- console#log
+- console#profile
+- console#profileEnd
+- console#table
+- console#time
+- console#timeEnd
+- console#timeLog
+- console#timeStamp
+- console#trace
+- console#warn
+# constants 0 of 0
+# crypto 0 of 166
+- crypto#argon2
+- type crypto#Argon2Algorithm
+- type crypto#Argon2Parameters
+- crypto#argon2Sync
+- type crypto#AsymmetricKeyDetails
+- type crypto#BasePrivateKeyEncodingOptions
+- type crypto#BinaryLike
+- type crypto#BinaryToTextEncoding
+- crypto#Certificate
+- type crypto#CharacterEncoding
+- crypto#checkPrime
+- type crypto#CheckPrimeOptions
+- crypto#checkPrimeSync
+- type crypto#CipherCCM
+- type crypto#CipherCCMOptions
+- type crypto#CipherCCMTypes
+- type crypto#CipherChaCha20Poly1305
+- type crypto#CipherChaCha20Poly1305Options
+- type crypto#CipherChaCha20Poly1305Types
+- type crypto#CipherGCM
+- type crypto#CipherGCMOptions
+- type crypto#CipherGCMTypes
+- type crypto#CipherInfo
+- type crypto#CipherInfoOptions
+- crypto#Cipheriv
+- type crypto#CipherKey
+- type crypto#CipherMode
+- type crypto#CipherOCB
+- type crypto#CipherOCBOptions
+- type crypto#CipherOCBTypes
+- crypto#constants
+- crypto#createCipheriv
+- crypto#createDecipheriv
+- crypto#createDiffieHellman
+- crypto#createDiffieHellmanGroup
+- crypto#createECDH
+- crypto#createHash
+- crypto#createHmac
+- crypto#createPrivateKey
+- crypto#createPublicKey
+- crypto#createSecretKey
+- crypto#createSign
+- crypto#createVerify
+- crypto#decapsulate
+- type crypto#DecipherCCM
+- type crypto#DecipherChaCha20Poly1305
+- type crypto#DecipherGCM
+- crypto#Decipheriv
+- type crypto#DecipherOCB
+- crypto#diffieHellman
+- crypto#DiffieHellman
+- type crypto#DiffieHellmanGroup
+- type crypto#DiffieHellmanGroupConstructor
+- type crypto#DSAEncoding
+- type crypto#DSAKeyPairKeyObjectOptions
+- type crypto#DSAKeyPairOptions
+- crypto#ECDH
+- type crypto#ECDHKeyFormat
+- type crypto#ECKeyPairKeyObjectOptions
+- type crypto#ECKeyPairOptions
+- type crypto#ED25519KeyPairKeyObjectOptions
+- type crypto#ED25519KeyPairOptions
+- type crypto#ED448KeyPairKeyObjectOptions
+- type crypto#ED448KeyPairOptions
+- crypto#encapsulate
+- type crypto#Encoding
+- crypto#fips
+- crypto#generateKey
+- crypto#generateKeyPair
+- crypto#generateKeyPairSync
+- crypto#generateKeySync
+- crypto#generatePrime
+- type crypto#GeneratePrimeOptions
+- type crypto#GeneratePrimeOptionsArrayBuffer
+- type crypto#GeneratePrimeOptionsBigInt
+- crypto#generatePrimeSync
+- crypto#getCipherInfo
+- crypto#getCiphers
+- crypto#getCurves
+- crypto#getDiffieHellman
+- crypto#getFips
+- crypto#getHashes
+- crypto#getRandomValues
+- crypto#hash
+- crypto#Hash
+- type crypto#HashOptions
+- crypto#hkdf
+- crypto#hkdfSync
+- crypto#Hmac
+- type crypto#JsonWebKey
+- type crypto#JsonWebKeyInput
+- type crypto#JwkKeyExportOptions
+- type crypto#KeyExportOptions
+- type crypto#KeyFormat
+- type crypto#KeyLike
+- crypto#KeyObject
+- type crypto#KeyObjectType
+- type crypto#KeyPairKeyObjectResult
+- type crypto#KeyPairSyncResult
+- type crypto#KeyType
+- type crypto#LargeNumberLike
+- type crypto#LegacyCharacterEncoding
+- type crypto#MLDSAKeyPairKeyObjectOptions
+- type crypto#MLDSAKeyPairOptions
+- type crypto#MLKEMKeyPairKeyObjectOptions
+- type crypto#MLKEMKeyPairOptions
+- type crypto#OneShotDigestOptions
+- type crypto#OneShotDigestOptionsWithBufferEncoding
+- type crypto#OneShotDigestOptionsWithStringEncoding
+- crypto#pbkdf2
+- crypto#pbkdf2Sync
+- crypto#privateDecrypt
+- crypto#privateEncrypt
+- type crypto#PrivateKeyInput
+- crypto#pseudoRandomBytes
+- crypto#publicDecrypt
+- crypto#publicEncrypt
+- type crypto#PublicKeyInput
+- crypto#randomBytes
+- crypto#randomFill
+- crypto#randomFillSync
+- crypto#randomInt
+- crypto#randomUUID
+- type crypto#RandomUUIDOptions
+- crypto#randomUUIDv7
+- type crypto#RandomUUIDV7Options
+- type crypto#RawPrivateKeyInput
+- type crypto#RawPublicKeyInput
+- type crypto#RSAKeyPairKeyObjectOptions
+- type crypto#RSAKeyPairOptions
+- type crypto#RsaPrivateKey
+- type crypto#RSAPSSKeyPairKeyObjectOptions
+- type crypto#RSAPSSKeyPairOptions
+- type crypto#RsaPublicKey
+- crypto#scrypt
+- type crypto#ScryptOptions
+- crypto#scryptSync
+- type crypto#SecureHeapUsage
+- crypto#secureHeapUsed
+- crypto#setEngine
+- crypto#setFips
+- crypto#sign
+- crypto#Sign
+- type crypto#SigningOptions
+- type crypto#SignJsonWebKeyInput
+- type crypto#SignKeyObjectInput
+- type crypto#SignPrivateKeyInput
+- type crypto#SignRawPrivateKeyInput
+- type crypto#SLHDSAKeyPairKeyObjectOptions
+- type crypto#SLHDSAKeyPairOptions
+- crypto#subtle
+- crypto#timingSafeEqual
+- type crypto#UUID
+- crypto#verify
+- crypto#Verify
+- type crypto#VerifyJsonWebKeyInput
+- type crypto#VerifyKeyObjectInput
+- type crypto#VerifyPublicKeyInput
+- type crypto#VerifyRawPublicKeyInput
+- crypto#webcrypto
+- type crypto#X25519KeyPairKeyObjectOptions
+- type crypto#X25519KeyPairOptions
+- type crypto#X448KeyPairKeyObjectOptions
+- type crypto#X448KeyPairOptions
+- crypto#X509Certificate
+- type crypto#X509CheckOptions
+# dgram 0 of 7
+- type dgram#BindOptions
+- type dgram#BindSyncOptions
+- dgram#createSocket
+- type dgram#RemoteInfo
+- dgram#Socket
+- type dgram#SocketOptions
+- type dgram#SocketType
+# diagnostics_channel 0 of 10
+- diagnostics_channel#channel
+- diagnostics_channel#Channel
+- type diagnostics_channel#ChannelListener
+- diagnostics_channel#hasSubscribers
+- diagnostics_channel#subscribe
+- diagnostics_channel#tracingChannel
+- diagnostics_channel#TracingChannel
+- type diagnostics_channel#TracingChannelCollection
+- type diagnostics_channel#TracingChannelSubscribers
+- diagnostics_channel#unsubscribe
+# dns 0 of 78
+- dns#ADDRCONFIG
+- dns#ADDRGETNETWORKPARAMS
+- dns#ALL
+- type dns#AnyAaaaRecord
+- type dns#AnyARecord
+- type dns#AnyCaaRecord
+- type dns#AnyCnameRecord
+- type dns#AnyMxRecord
+- type dns#AnyNaptrRecord
+- type dns#AnyNsRecord
+- type dns#AnyPtrRecord
+- type dns#AnyRecord
+- type dns#AnyRecordWithTtl
+- type dns#AnySoaRecord
+- type dns#AnySrvRecord
+- type dns#AnyTlsaRecord
+- type dns#AnyTxtRecord
+- dns#BADFAMILY
+- dns#BADFLAGS
+- dns#BADHINTS
+- dns#BADNAME
+- dns#BADQUERY
+- dns#BADRESP
+- dns#BADSTR
+- type dns#CaaRecord
+- dns#CANCELLED
+- dns#CONNREFUSED
+- dns#DESTRUCTION
+- dns#EOF
+- dns#FILE
+- dns#FORMERR
+- dns#getDefaultResultOrder
+- dns#getServers
+- dns#LOADIPHLPAPI
+- dns#lookup
+- type dns#LookupAddress
+- type dns#LookupAllOptions
+- type dns#LookupOneOptions
+- type dns#LookupOptions
+- dns#lookupService
+- type dns#MxRecord
+- type dns#NaptrRecord
+- dns#NODATA
+- dns#NOMEM
+- dns#NONAME
+- dns#NOTFOUND
+- dns#NOTIMP
+- dns#NOTINITIALIZED
+- dns#promises
+- type dns#RecordWithTtl
+- dns#REFUSED
+- dns#resolve
+- dns#resolve4
+- dns#resolve6
+- dns#resolveAny
+- dns#resolveCaa
+- dns#resolveCname
+- dns#resolveMx
+- dns#resolveNaptr
+- dns#resolveNs
+- type dns#ResolveOptions
+- dns#resolvePtr
+- dns#Resolver
+- type dns#ResolverOptions
+- dns#resolveSoa
+- dns#resolveSrv
+- dns#resolveTlsa
+- dns#resolveTxt
+- type dns#ResolveWithTtlOptions
+- dns#reverse
+- dns#SERVFAIL
+- dns#setDefaultResultOrder
+- dns#setServers
+- type dns#SoaRecord
+- type dns#SrvRecord
+- dns#TIMEOUT
+- type dns#TlsaRecord
+- dns#V4MAPPED
+# dns/promises 0 of 46
+- dns/promises#ADDRGETNETWORKPARAMS
+- dns/promises#BADFAMILY
+- dns/promises#BADFLAGS
+- dns/promises#BADHINTS
+- dns/promises#BADNAME
+- dns/promises#BADQUERY
+- dns/promises#BADRESP
+- dns/promises#BADSTR
+- dns/promises#CANCELLED
+- dns/promises#CONNREFUSED
+- dns/promises#DESTRUCTION
+- dns/promises#EOF
+- dns/promises#FILE
+- dns/promises#FORMERR
+- dns/promises#getDefaultResultOrder
+- dns/promises#getServers
+- dns/promises#LOADIPHLPAPI
+- dns/promises#lookup
+- dns/promises#lookupService
+- dns/promises#NODATA
+- dns/promises#NOMEM
+- dns/promises#NONAME
+- dns/promises#NOTFOUND
+- dns/promises#NOTIMP
+- dns/promises#NOTINITIALIZED
+- dns/promises#REFUSED
+- dns/promises#resolve
+- dns/promises#resolve4
+- dns/promises#resolve6
+- dns/promises#resolveAny
+- dns/promises#resolveCaa
+- dns/promises#resolveCname
+- dns/promises#resolveMx
+- dns/promises#resolveNaptr
+- dns/promises#resolveNs
+- dns/promises#resolvePtr
+- dns/promises#Resolver
+- dns/promises#resolveSoa
+- dns/promises#resolveSrv
+- dns/promises#resolveTlsa
+- dns/promises#resolveTxt
+- dns/promises#reverse
+- dns/promises#SERVFAIL
+- dns/promises#setDefaultResultOrder
+- dns/promises#setServers
+- dns/promises#TIMEOUT
+# domain 0 of 2
+- domain#create
+- domain#Domain
+# events 0 of 16
+- type events#Abortable
+- events#addAbortListener
+- events#captureRejections
+- events#captureRejectionSymbol
+- events#defaultMaxListeners
+- events#errorMonitor
+- events#EventEmitterAsyncResource
+- type events#EventEmitterAsyncResourceOptions
+- type events#EventEmitterReferencingAsyncResource
+- events#getEventListeners
+- events#getMaxListeners
+- events#listenerCount
+- type events#NodeEventTarget
+- events#on
+- events#once
+- events#setMaxListeners
+# fs 1 of 171
+- type fs#_GlobOptions
+- fs#access
+- fs#accessSync
+- fs#appendFile
+- fs#appendFileSync
+- type fs#BigIntOptions
+- type fs#BigIntStats
+- type fs#BigIntStatsFs
+- type fs#BigIntStatsListener
+- type fs#BufferEncodingOption
+- fs#chmod
+- fs#chmodSync
+- fs#chown
+- fs#chownSync
+- fs#close
+- fs#closeSync
+- fs#constants
+- fs#copyFile
+- fs#copyFileSync
+- type fs#CopyOptions
+- type fs#CopyOptionsBase
+- type fs#CopySyncOptions
+- fs#cp
+- fs#cpSync
+- fs#createReadStream
+- type fs#CreateReadStreamFSImplementation
+- fs#createWriteStream
+- type fs#CreateWriteStreamFSImplementation
+- type fs#CustomEvents
+- fs#Dir
+- fs#Dirent
+- type fs#DisposableTempDir
+- type fs#EncodingOption
+- fs#exists
+- fs#existsSync
+- fs#fchmod
+- fs#fchmodSync
+- fs#fchown
+- fs#fchownSync
+- fs#fdatasync
+- fs#fdatasyncSync
+- type fs#FSImplementation
+- fs#fstat
+- fs#fstatSync
+- type fs#FSWatcher
+- fs#fsync
+- fs#fsyncSync
+- fs#ftruncate
+- fs#ftruncateSync
+- fs#futimes
+- fs#futimesSync
+- fs#glob
+- type fs#GlobOptions
+- type fs#GlobOptionsWithFileTypes
+- type fs#GlobOptionsWithoutFileTypes
+- fs#globSync
+- fs#lchmod
+- fs#lchmodSync
+- fs#lchown
+- fs#lchownSync
+- fs#link
+- fs#linkSync
+- fs#lstat
+- fs#lstatSync
+- fs#lutimes
+- fs#lutimesSync
+- type fs#MakeDirectoryOptions
+- fs#mkdir
+- fs#mkdirSync
+- fs#mkdtemp
+- fs#mkdtempDisposableSync
+- fs#mkdtempSync
+- type fs#Mode
+- type fs#NoParamCallback
+- type fs#ObjectEncodingOptions
+- fs#open
+- fs#openAsBlob
+- type fs#OpenAsBlobOptions
+- fs#opendir
+- type fs#OpenDirOptions
+- fs#opendirSync
+- type fs#OpenMode
+- fs#openSync
+- type fs#PathLike
+- type fs#PathOrFileDescriptor
+- fs#promises
+- fs#read
+- type fs#ReadAsyncOptions
+- fs#readdir
+- fs#readdirSync
+- fs#readFile
+- type fs#ReadFileOptions
+- type fs#ReadFileOptionsWithBuffer
+- type fs#ReadFileOptionsWithBufferEncoding
+- type fs#ReadFileOptionsWithStringEncoding
++ fs#readFileSync
+- type fs#ReadFileSyncOptions
+- type fs#ReadFileSyncOptionsWithBuffer
+- type fs#ReadFileSyncOptionsWithBufferEncoding
+- type fs#ReadFileSyncOptionsWithStringEncoding
+- fs#readlink
+- fs#readlinkSync
+- type fs#ReadOptions
+- type fs#ReadOptionsWithBuffer
+- type fs#ReadPosition
+- fs#ReadStream
+- type fs#ReadStreamEvents
+- type fs#ReadStreamOptions
+- fs#readSync
+- type fs#ReadSyncOptions
+- fs#readv
+- type fs#ReadVResult
+- fs#readvSync
+- fs#realpath
+- fs#realpathSync
+- fs#rename
+- fs#renameSync
+- fs#rm
+- fs#rmdir
+- type fs#RmDirOptions
+- fs#rmdirSync
+- type fs#RmOptions
+- fs#rmSync
+- fs#stat
+- fs#statfs
+- type fs#StatFsOptions
+- fs#statfsSync
+- type fs#StatOptions
+- fs#Stats
+- type fs#StatsBase
+- fs#StatsFs
+- type fs#StatsFsBase
+- type fs#StatsListener
+- fs#statSync
+- type fs#StatSyncFn
+- type fs#StatSyncOptions
+- type fs#StatWatcher
+- type fs#StreamOptions
+- fs#symlink
+- fs#symlinkSync
+- type fs#TimeLike
+- fs#truncate
+- fs#truncateSync
+- fs#unlink
+- fs#unlinkSync
+- fs#unwatchFile
+- fs#Utf8Stream
+- type fs#Utf8StreamOptions
+- fs#utimes
+- fs#utimesSync
+- fs#watch
+- type fs#WatchEventType
+- fs#watchFile
+- type fs#WatchFileOptions
+- type fs#WatchIgnorePredicate
+- type fs#WatchListener
+- type fs#WatchOptions
+- type fs#WatchOptionsWithBufferEncoding
+- type fs#WatchOptionsWithStringEncoding
+- fs#write
+- fs#writeFile
+- type fs#WriteFileOptions
+- fs#writeFileSync
+- type fs#WriteOptions
+- fs#WriteStream
+- type fs#WriteStreamEvents
+- type fs#WriteStreamOptions
+- fs#writeSync
+- fs#writev
+- type fs#WriteVResult
+- fs#writevSync
+# fs/promises 0 of 45
+- fs/promises#access
+- fs/promises#appendFile
+- fs/promises#chmod
+- fs/promises#chown
+- fs/promises#constants
+- fs/promises#copyFile
+- fs/promises#cp
+- type fs/promises#CreateReadStreamOptions
+- type fs/promises#CreateWriteStreamOptions
+- type fs/promises#DisposableTempDir
+- type fs/promises#FileChangeInfo
+- type fs/promises#FileHandle
+- type fs/promises#FileReadOptions
+- type fs/promises#FileReadResult
+- type fs/promises#FlagAndOpenMode
+- fs/promises#glob
+- fs/promises#lchmod
+- fs/promises#lchown
+- fs/promises#link
+- fs/promises#lstat
+- fs/promises#lutimes
+- fs/promises#mkdir
+- fs/promises#mkdtemp
+- fs/promises#mkdtempDisposable
+- fs/promises#open
+- fs/promises#opendir
+- type fs/promises#ReadableWebStreamOptions
+- fs/promises#readdir
+- fs/promises#readFile
+- fs/promises#readlink
+- fs/promises#realpath
+- fs/promises#rename
+- fs/promises#rm
+- fs/promises#rmdir
+- fs/promises#stat
+- fs/promises#statfs
+- fs/promises#symlink
+- fs/promises#truncate
+- fs/promises#unlink
+- fs/promises#utimes
+- fs/promises#watch
+- type fs/promises#WatchOptions
+- type fs/promises#WatchOptionsWithBufferEncoding
+- type fs/promises#WatchOptionsWithStringEncoding
+- fs/promises#writeFile
+# http 3 of 30
+- http#Agent
+- type http#AgentOptions
+- http#ClientRequest
+- type http#ClientRequestArgs
+- http#CloseEvent
+- http#createServer
+- http#get
+- http#globalAgent
+- type http#IncomingHttpHeaders
++ http#IncomingMessage
+- type http#InformationEvent
+- http#maxHeaderSize
+- http#MessageEvent
+- http#METHODS
++ type http#OutgoingHttpHeader
+- type http#OutgoingHttpHeaders
+- http#OutgoingMessage
+- type http#ProxyEnv
+- http#request
+- type http#RequestListener
+- type http#RequestOptions
+- http#Server
+- type http#ServerOptions
++ http#ServerResponse
+- http#setGlobalProxyFromEnv
+- http#setMaxIdleHTTPParsers
+- http#STATUS_CODES
+- http#validateHeaderName
+- http#validateHeaderValue
+- http#WebSocket
+# http2 0 of 39
+- type http2#AlternativeServiceOptions
+- type http2#ClientHttp2Session
+- type http2#ClientHttp2Stream
+- type http2#ClientSessionOptions
+- type http2#ClientSessionRequestOptions
+- http2#connect
+- http2#constants
+- http2#createSecureServer
+- http2#createServer
+- http2#getDefaultSettings
+- http2#getPackedSettings
+- http2#getUnpackedSettings
+- type http2#Http1Options
+- type http2#Http2SecureServer
+- type http2#Http2Server
+- type http2#HTTP2ServerCommon
+- http2#Http2ServerRequest
+- http2#Http2ServerResponse
+- type http2#Http2Session
+- type http2#Http2Stream
+- type http2#IncomingHttpHeaders
+- type http2#IncomingHttpStatusHeader
+- http2#performServerHandshake
+- type http2#SecureClientSessionOptions
+- type http2#SecureServerOptions
+- type http2#SecureServerSessionOptions
+- http2#sensitiveHeaders
+- type http2#ServerHttp2Session
+- type http2#ServerHttp2Stream
+- type http2#ServerOptions
+- type http2#ServerSessionOptions
+- type http2#ServerStreamFileResponseOptions
+- type http2#ServerStreamFileResponseOptionsWithError
+- type http2#ServerStreamResponseOptions
+- type http2#SessionOptions
+- type http2#SessionState
+- type http2#Settings
+- type http2#StatOptions
+- type http2#StreamState
+# https 0 of 9
+- https#Agent
+- type https#AgentOptions
+- https#createServer
+- https#get
+- https#globalAgent
+- https#request
+- type https#RequestOptions
+- https#Server
+- type https#ServerOptions
+# inspector 0 of 23
+- inspector#close
+- inspector#console
+- inspector#Console
+- inspector#Debugger
+- inspector#DOMStorage
+- inspector#HeapProfiler
+- type inspector#InspectorConsole
+- type inspector#InspectorNotification
+- inspector#IO
+- inspector#Network
+- inspector#NetworkResources
+- inspector#NodeRuntime
+- inspector#NodeTracing
+- inspector#NodeWorker
+- inspector#open
+- inspector#Profiler
+- inspector#Runtime
+- inspector#Schema
+- inspector#Session
+- inspector#Storage
+- inspector#Target
+- inspector#url
+- inspector#waitForDebugger
+# inspector/promises 0 of 1
+- inspector/promises#Session
+# module 0 of 43
+- module#builtinModules
+- module#constants
+- module#createRequire
+- module#enableCompileCache
+- type module#EnableCompileCacheOptions
+- type module#EnableCompileCacheResult
+- module#findPackageJSON
+- module#findSourceMap
+- module#flushCompileCache
+- module#getCompileCacheDir
+- module#getSourceMapsSupport
+- type module#ImportAttributes
+- type module#ImportPhase
+- type module#InitializeHook
+- module#isBuiltin
+- type module#LoadFnOutput
+- type module#LoadHook
+- type module#LoadHookContext
+- type module#LoadHookSync
+- type module#ModuleFormat
+- type module#ModuleHooks
+- type module#ModuleSource
+- module#register
+- module#registerHooks
+- type module#RegisterHooksOptions
+- type module#RegisterOptions
+- type module#ResolveFnOutput
+- type module#ResolveHook
+- type module#ResolveHookContext
+- type module#ResolveHookSync
+- module#runMain
+- module#setSourceMapsSupport
+- type module#SetSourceMapsSupportOptions
+- module#SourceMap
+- type module#SourceMapConstructorOptions
+- type module#SourceMapPayload
+- type module#SourceMapping
+- type module#SourceMapsSupport
+- type module#SourceOrigin
+- module#stripTypeScriptTypes
+- type module#StripTypeScriptTypesOptions
+- module#syncBuiltinESMExports
+- module#wrap
+# net 0 of 33
+- type net#AddressInfo
+- net#BlockList
+- net#BoundSocket
+- type net#BoundSocketOptions
+- net#connect
+- net#createConnection
+- net#createServer
+- type net#DropArgument
+- net#getDefaultAutoSelectFamily
+- net#getDefaultAutoSelectFamilyAttemptTimeout
+- type net#IpcNetConnectOpts
+- type net#IpcSocketConnectOpts
+- type net#IPVersion
+- net#isIP
+- net#isIPv4
+- net#isIPv6
+- type net#ListenOptions
+- type net#LookupFunction
+- type net#NetConnectOpts
+- type net#OnReadOpts
+- net#Server
+- type net#ServerOpts
+- net#setDefaultAutoSelectFamily
+- net#setDefaultAutoSelectFamilyAttemptTimeout
+- type net#SetKeepAliveOptions
+- net#Socket
+- net#SocketAddress
+- type net#SocketAddressInitOptions
+- type net#SocketConnectOpts
+- type net#SocketConstructorOpts
+- type net#SocketReadyState
+- type net#TcpNetConnectOpts
+- type net#TcpSocketConnectOpts
+# os 0 of 33
+- os#arch
+- os#availableParallelism
+- os#constants
+- type os#CpuInfo
+- os#cpus
+- os#devNull
+- os#endianness
+- os#EOL
+- os#freemem
+- os#getPriority
+- os#homedir
+- os#hostname
+- os#loadavg
+- os#machine
+- type os#NetworkInterfaceBase
+- type os#NetworkInterfaceInfo
+- type os#NetworkInterfaceInfoIPv4
+- type os#NetworkInterfaceInfoIPv6
+- os#networkInterfaces
+- os#platform
+- os#release
+- os#setPriority
+- type os#SignalConstants
+- os#tmpdir
+- os#totalmem
+- os#type
+- os#uptime
+- os#userInfo
+- type os#UserInfo
+- type os#UserInfoOptions
+- type os#UserInfoOptionsWithBufferEncoding
+- type os#UserInfoOptionsWithStringEncoding
+- os#version
+# path 0 of 19
+- path#basename
+- path#delimiter
+- path#dirname
+- path#extname
+- path#format
+- type path#FormatInputPathObject
+- path#isAbsolute
+- path#join
+- path#matchesGlob
+- path#normalize
+- path#parse
+- type path#ParsedPath
+- type path#PlatformPath
+- path#posix
+- path#relative
+- path#resolve
+- path#sep
+- path#toNamespacedPath
+- path#win32
+# path/posix 0 of 0
+# path/win32 0 of 0
+# perf_hooks 0 of 27
+- perf_hooks#constants
+- perf_hooks#createHistogram
+- type perf_hooks#CreateHistogramOptions
+- type perf_hooks#ELDHistogram
+- type perf_hooks#EntryType
+- type perf_hooks#EventLoopMonitorOptions
+- perf_hooks#eventLoopUtilization
+- type perf_hooks#EventLoopUtilization
+- type perf_hooks#Histogram
+- type perf_hooks#MarkOptions
+- type perf_hooks#MeasureOptions
+- perf_hooks#monitorEventLoopDelay
+- type perf_hooks#NodeGCPerformanceDetail
+- perf_hooks#performance
+- type perf_hooks#Performance
+- perf_hooks#PerformanceEntry
+- perf_hooks#PerformanceMark
+- perf_hooks#PerformanceMeasure
+- perf_hooks#PerformanceNodeTiming
+- perf_hooks#PerformanceObserver
+- type perf_hooks#PerformanceObserverCallback
+- perf_hooks#PerformanceObserverEntryList
+- perf_hooks#PerformanceResourceTiming
+- type perf_hooks#RecordableHistogram
+- perf_hooks#timerify
+- type perf_hooks#TimerifyOptions
+- type perf_hooks#UVMetrics
+# process 1 of 77
+- process#abort
+- process#addListener
+- process#allowedNodeEnvironmentFlags
+- process#arch
+- process#argv
+- process#argv0
+- process#availableMemory
+- process#channel
+- process#chdir
+- process#config
+- process#connected
+- process#constrainedMemory
+- process#cpuUsage
++ process#cwd
+- process#debugPort
+- process#disconnect
+- process#dlopen
+- process#emit
+- process#emitWarning
+- process#env
+- process#execArgv
+- process#execPath
+- process#execve
+- process#exit
+- process#exitCode
+- process#features
+- process#finalization
+- process#getActiveResourcesInfo
+- process#getBuiltinModule
+- process#getegid
+- process#geteuid
+- process#getgid
+- process#getgroups
+- process#getuid
+- process#hasUncaughtExceptionCaptureCallback
+- process#hrtime
+- process#kill
+- process#listeners
+- process#loadEnvFile
+- process#mainModule
+- process#memoryUsage
+- process#nextTick
+- process#noDeprecation
+- process#on
+- process#once
+- process#permission
+- process#pid
+- process#platform
+- process#ppid
+- process#prependListener
+- process#prependOnceListener
+- process#ref
+- process#release
+- process#report
+- process#resourceUsage
+- process#send
+- process#setegid
+- process#seteuid
+- process#setgid
+- process#setgroups
+- process#setSourceMapsEnabled
+- process#setuid
+- process#setUncaughtExceptionCaptureCallback
+- process#sourceMapsEnabled
+- process#stderr
+- process#stdin
+- process#stdout
+- process#threadCpuUsage
+- process#throwDeprecation
+- process#title
+- process#traceDeprecation
+- process#traceProcessWarnings
+- process#umask
+- process#unref
+- process#uptime
+- process#version
+- process#versions
+# punycode 0 of 6
+- punycode#decode
+- punycode#encode
+- punycode#toASCII
+- punycode#toUnicode
+- type punycode#ucs2
+- punycode#version
+# querystring 0 of 10
+- querystring#decode
+- querystring#encode
+- querystring#escape
+- querystring#parse
+- type querystring#ParsedUrlQuery
+- type querystring#ParsedUrlQueryInput
+- type querystring#ParseOptions
+- querystring#stringify
+- type querystring#StringifyOptions
+- querystring#unescape
+# readline 0 of 16
+- type readline#AsyncCompleter
+- readline#clearLine
+- readline#clearScreenDown
+- type readline#Completer
+- type readline#CompleterResult
+- readline#createInterface
+- type readline#CursorPos
+- readline#cursorTo
+- type readline#Direction
+- readline#emitKeypressEvents
+- readline#Interface
+- type readline#Key
+- readline#moveCursor
+- readline#promises
+- type readline#ReadLine
+- type readline#ReadLineOptions
+# readline/promises 0 of 5
+- type readline/promises#Completer
+- readline/promises#createInterface
+- readline/promises#Interface
+- readline/promises#Readline
+- type readline/promises#ReadLineOptions
+# repl 0 of 12
+- repl#Recoverable
+- repl#REPL_MODE_SLOPPY
+- repl#REPL_MODE_STRICT
+- type repl#REPLCommand
+- type repl#REPLCommandAction
+- type repl#REPLEval
+- type repl#ReplOptions
+- repl#REPLServer
+- type repl#REPLServerSetupHistoryOptions
+- type repl#REPLWriter
+- repl#start
+- repl#writer
+# stream 0 of 33
+- stream#addAbortSignal
+- type stream#ArrayOptions
+- type stream#Duplex
+- type stream#DuplexOptions
+- stream#duplexPair
+- stream#finished
+- type stream#FinishedOptions
+- stream#getDefaultHighWaterMark
+- stream#isErrored
+- stream#isReadable
+- stream#isWritable
+- stream#PassThrough
+- type stream#Pipe
+- stream#pipeline
+- type stream#PipelineCallback
+- type stream#PipelineDestination
+- type stream#PipelineDestinationIterableFunction
+- type stream#PipelineDestinationPromiseFunction
+- type stream#PipelineOptions
+- type stream#PipelinePromise
+- type stream#PipelineSource
+- type stream#PipelineSourceFunction
+- type stream#PipelineTransform
+- type stream#PipelineTransformSource
+- stream#Readable
+- type stream#ReadableOptions
+- stream#setDefaultHighWaterMark
+- type stream#StreamOptions
+- stream#Transform
+- type stream#TransformCallback
+- type stream#TransformOptions
+- stream#Writable
+- type stream#WritableOptions
+# stream/consumers 0 of 6
+- stream/consumers#arrayBuffer
+- stream/consumers#blob
+- stream/consumers#buffer
+- stream/consumers#bytes
+- stream/consumers#json
+- stream/consumers#text
+# stream/promises 0 of 3
+- stream/promises#finished
+- type stream/promises#FinishedOptions
+- stream/promises#pipeline
+# stream/web 0 of 52
+- type stream/web#BufferSource
+- stream/web#ByteLengthQueuingStrategy
+- type stream/web#CompressionFormat
+- stream/web#CompressionStream
+- stream/web#CountQueuingStrategy
+- stream/web#DecompressionStream
+- type stream/web#QueuingStrategy
+- type stream/web#QueuingStrategyInit
+- type stream/web#QueuingStrategySize
+- stream/web#ReadableByteStreamController
+- type stream/web#ReadableByteStreamControllerCallback
+- stream/web#ReadableStream
+- type stream/web#ReadableStreamAsyncIterator
+- stream/web#ReadableStreamBYOBReader
+- stream/web#ReadableStreamBYOBRequest
+- type stream/web#ReadableStreamController
+- stream/web#ReadableStreamDefaultController
+- stream/web#ReadableStreamDefaultReader
+- type stream/web#ReadableStreamErrorCallback
+- type stream/web#ReadableStreamGenericReader
+- type stream/web#ReadableStreamGetReaderOptions
+- type stream/web#ReadableStreamReadDoneResult
+- type stream/web#ReadableStreamReader
+- type stream/web#ReadableStreamReaderMode
+- type stream/web#ReadableStreamReadResult
+- type stream/web#ReadableStreamReadValueResult
+- stream/web#ReadableStreamTee
+- type stream/web#ReadableWritablePair
+- type stream/web#StreamPipeOptions
+- type stream/web#TextDecoderOptions
+- stream/web#TextDecoderStream
+- stream/web#TextEncoderStream
+- type stream/web#Transformer
+- type stream/web#TransformerCancelCallback
+- type stream/web#TransformerFlushCallback
+- type stream/web#TransformerStartCallback
+- type stream/web#TransformerTransformCallback
+- stream/web#TransformStream
+- stream/web#TransformStreamDefaultController
+- type stream/web#UnderlyingByteSource
+- type stream/web#UnderlyingSink
+- type stream/web#UnderlyingSinkAbortCallback
+- type stream/web#UnderlyingSinkCloseCallback
+- type stream/web#UnderlyingSinkStartCallback
+- type stream/web#UnderlyingSinkWriteCallback
+- type stream/web#UnderlyingSource
+- type stream/web#UnderlyingSourceCancelCallback
+- type stream/web#UnderlyingSourcePullCallback
+- type stream/web#UnderlyingSourceStartCallback
+- stream/web#WritableStream
+- stream/web#WritableStreamDefaultController
+- stream/web#WritableStreamDefaultWriter
+# string_decoder 0 of 1
+- string_decoder#StringDecoder
+# timers 0 of 8
+- timers#clearImmediate
+- timers#clearInterval
+- timers#clearTimeout
+- timers#promises
+- timers#setImmediate
+- timers#setInterval
+- timers#setTimeout
+- type timers#TimerOptions
+# timers/promises 0 of 5
+- timers/promises#scheduler
+- type timers/promises#Scheduler
+- timers/promises#setImmediate
+- timers/promises#setInterval
+- timers/promises#setTimeout
+# tls 0 of 33
+- type tls#Certificate
+- type tls#CertificateCompressionAlgorithm
+- tls#checkServerIdentity
+- type tls#CipherNameAndProtocol
+- tls#CLIENT_RENEG_LIMIT
+- tls#CLIENT_RENEG_WINDOW
+- type tls#CommonConnectionOptions
+- tls#connect
+- type tls#ConnectionOptions
+- tls#createSecureContext
+- tls#createServer
+- tls#DEFAULT_CIPHERS
+- tls#DEFAULT_ECDH_CURVE
+- tls#DEFAULT_MAX_VERSION
+- tls#DEFAULT_MIN_VERSION
+- type tls#DetailedPeerCertificate
+- type tls#EphemeralKeyInfo
+- tls#getCACertificates
+- tls#getCertificateCompressionAlgorithms
+- tls#getCiphers
+- type tls#KeyObject
+- type tls#PeerCertificate
+- type tls#PSKCallbackNegotation
+- type tls#PxfObject
+- tls#rootCertificates
+- type tls#SecureContext
+- type tls#SecureContextOptions
+- type tls#SecureVersion
+- tls#Server
+- tls#setDefaultCACertificates
+- type tls#TlsOptions
+- tls#TLSSocket
+- type tls#TLSSocketOptions
+# trace_events 0 of 4
+- trace_events#createTracing
+- type trace_events#CreateTracingOptions
+- trace_events#getEnabledCategories
+- type trace_events#Tracing
+# tty 0 of 4
+- type tty#Direction
+- tty#isatty
+- tty#ReadStream
+- tty#WriteStream
+# url 0 of 24
+- url#domainToASCII
+- url#domainToUnicode
+- url#fileURLToPath
+- url#fileURLToPathBuffer
+- type url#FileUrlToPathOptions
+- url#format
+- url#parse
+- url#pathToFileURL
+- type url#PathToFileUrlOptions
+- url#resolve
+- type url#Url
+- url#URL
+- type url#URLFormatOptions
+- type url#UrlObject
+- url#URLPattern
+- type url#URLPatternComponentResult
+- type url#URLPatternInit
+- type url#URLPatternOptions
+- type url#URLPatternResult
+- url#URLSearchParams
+- type url#URLSearchParamsIterator
+- url#urlToHttpOptions
+- type url#UrlWithParsedQuery
+- type url#UrlWithStringQuery
+# util 0 of 69
+- util#aborted
+- type util#ApplyOptionalModifiers
+- type util#BackgroundColors
+- util#callbackify
+- type util#CallSiteObject
+- util#convertProcessSignalToExitCode
+- type util#CustomInspectFunction
+- type util#CustomPromisify
+- type util#CustomPromisifyLegacy
+- type util#CustomPromisifySymbol
+- util#debug
+- util#debuglog
+- type util#DebugLogger
+- type util#DebugLoggerFunction
+- util#deprecate
+- type util#DeprecateOptions
+- util#diff
+- type util#DiffEntry
+- type util#EncodeIntoResult
+- type util#ExtractOptionValue
+- type util#ForegroundColors
+- util#format
+- util#formatWithOptions
+- util#getCallSites
+- type util#GetCallSitesOptions
+- util#getSystemErrorMap
+- util#getSystemErrorMessage
+- util#getSystemErrorName
+- type util#IfDefaultsFalse
+- type util#IfDefaultsTrue
+- util#inherits
+- util#inspect
+- type util#InspectOptions
+- type util#InspectOptionsStylized
+- util#isArray
+- util#isDeepStrictEqual
+- type util#IsDeepStrictEqualOptions
+- util#MIMEParams
+- util#MIMEType
+- type util#Modifiers
+- type util#OptionToken
+- util#parseArgs
+- type util#ParseArgsConfig
+- type util#ParseArgsOptionDescriptor
+- type util#ParseArgsOptionsConfig
+- type util#ParseArgsOptionsType
+- type util#ParsedOptionToken
+- type util#ParsedPositionals
+- type util#ParsedPositionalToken
+- type util#ParsedResults
+- type util#ParsedTokens
+- type util#ParsedValues
+- util#parseEnv
+- type util#PreciseParsedResults
+- type util#PreciseTokenForOptions
+- util#promisify
+- util#setTraceSigInt
+- util#stripVTControlCharacters
+- type util#Style
+- util#styleText
+- type util#StyleTextOptions
+- util#TextDecoder
+- util#TextEncoder
+- type util#Token
+- type util#TokenForOptions
+- util#toUSVString
+- util#transferableAbortController
+- util#transferableAbortSignal
+- util#types
+# util/types 0 of 43
+- util/types#isAnyArrayBuffer
+- util/types#isArgumentsObject
+- util/types#isArrayBuffer
+- util/types#isArrayBufferView
+- util/types#isAsyncFunction
+- util/types#isBigInt64Array
+- util/types#isBigIntObject
+- util/types#isBigUint64Array
+- util/types#isBooleanObject
+- util/types#isBoxedPrimitive
+- util/types#isCryptoKey
+- util/types#isDataView
+- util/types#isDate
+- util/types#isExternal
+- util/types#isFloat16Array
+- util/types#isFloat32Array
+- util/types#isFloat64Array
+- util/types#isGeneratorFunction
+- util/types#isGeneratorObject
+- util/types#isInt16Array
+- util/types#isInt32Array
+- util/types#isInt8Array
+- util/types#isKeyObject
+- util/types#isMap
+- util/types#isMapIterator
+- util/types#isModuleNamespaceObject
+- util/types#isNativeError
+- util/types#isNumberObject
+- util/types#isPromise
+- util/types#isProxy
+- util/types#isRegExp
+- util/types#isSet
+- util/types#isSetIterator
+- util/types#isSharedArrayBuffer
+- util/types#isStringObject
+- util/types#isSymbolObject
+- util/types#isTypedArray
+- util/types#isUint16Array
+- util/types#isUint32Array
+- util/types#isUint8Array
+- util/types#isUint8ClampedArray
+- util/types#isWeakMap
+- util/types#isWeakSet
+# v8 0 of 41
+- type v8#After
+- type v8#Before
+- v8#cachedDataVersionTag
+- type v8#CPUProfileHandle
+- v8#DefaultDeserializer
+- v8#DefaultSerializer
+- v8#deserialize
+- v8#Deserializer
+- type v8#DoesZapCodeSpaceFlag
+- v8#GCProfiler
+- type v8#GCProfilerResult
+- v8#getCppHeapStatistics
+- v8#getHeapCodeStatistics
+- v8#getHeapSnapshot
+- v8#getHeapSpaceStatistics
+- v8#getHeapStatistics
+- type v8#HeapCodeStatistics
+- type v8#HeapInfo
+- type v8#HeapProfileHandle
+- type v8#HeapSnapshotOptions
+- type v8#HeapSpaceInfo
+- type v8#HeapSpaceStatistics
+- type v8#HeapStatistics
+- type v8#HookCallbacks
+- type v8#Init
+- v8#isStringOneByteRepresentation
+- v8#promiseHooks
+- type v8#PromiseHooks
+- v8#queryObjects
+- v8#serialize
+- v8#Serializer
+- v8#setFlagsFromString
+- v8#setHeapSnapshotNearHeapLimit
+- type v8#Settled
+- v8#startCpuProfile
+- v8#startupSnapshot
+- type v8#StartupSnapshotCallbackFn
+- v8#stopCoverage
+- type v8#SyncCPUProfileHandle
+- v8#takeCoverage
+- v8#writeHeapSnapshot
+# vm 0 of 31
+- type vm#BaseOptions
+- vm#compileFunction
+- type vm#CompileFunctionOptions
+- vm#constants
+- type vm#Context
+- vm#createContext
+- type vm#CreateContextOptions
+- type vm#DynamicModuleLoader
+- vm#isContext
+- vm#measureMemory
+- type vm#MeasureMemoryMode
+- type vm#MeasureMemoryOptions
+- type vm#MemoryMeasurement
+- vm#Module
+- type vm#ModuleEvaluateOptions
+- type vm#ModuleLinker
+- type vm#ModuleRequest
+- type vm#ModuleStatus
+- vm#runInContext
+- vm#runInNewContext
+- vm#runInThisContext
+- type vm#RunningCodeInNewContextOptions
+- type vm#RunningCodeOptions
+- type vm#RunningScriptInNewContextOptions
+- type vm#RunningScriptOptions
+- vm#Script
+- type vm#ScriptOptions
+- vm#SourceTextModule
+- type vm#SourceTextModuleOptions
+- vm#SyntheticModule
+- type vm#SyntheticModuleOptions
+# wasi 0 of 3
+- type wasi#FinalizeBindingsOptions
+- wasi#WASI
+- type wasi#WASIOptions
+# worker_threads 0 of 34
+- worker_threads#BroadcastChannel
+- worker_threads#getEnvironmentData
+- worker_threads#isInternalThread
+- worker_threads#isMainThread
+- worker_threads#isMarkedAsUntransferable
+- type worker_threads#Lock
+- type worker_threads#LockGrantedCallback
+- type worker_threads#LockInfo
+- type worker_threads#LockManager
+- type worker_threads#LockManagerSnapshot
+- type worker_threads#LockMode
+- type worker_threads#LockOptions
+- worker_threads#locks
+- worker_threads#markAsUncloneable
+- worker_threads#markAsUntransferable
+- worker_threads#MessageChannel
+- type worker_threads#MessagePort
+- worker_threads#moveMessagePortToContext
+- worker_threads#parentPort
+- worker_threads#postMessageToThread
+- worker_threads#receiveMessageOnPort
+- worker_threads#resourceLimits
+- type worker_threads#ResourceLimits
+- type worker_threads#Serializable
+- worker_threads#setEnvironmentData
+- worker_threads#SHARE_ENV
+- worker_threads#threadId
+- worker_threads#threadName
+- type worker_threads#Transferable
+- type worker_threads#TransferListItem
+- worker_threads#Worker
+- worker_threads#workerData
+- type worker_threads#WorkerOptions
+- type worker_threads#WorkerPerformance
+# zlib 0 of 83
+- zlib#brotliCompress
+- type zlib#BrotliCompress
+- zlib#brotliCompressSync
+- zlib#brotliDecompress
+- type zlib#BrotliDecompress
+- zlib#brotliDecompressSync
+- type zlib#BrotliOptions
+- type zlib#CompressCallback
+- zlib#constants
+- zlib#crc32
+- zlib#createBrotliCompress
+- zlib#createBrotliDecompress
+- zlib#createDeflate
+- zlib#createDeflateRaw
+- zlib#createGunzip
+- zlib#createGzip
+- zlib#createInflate
+- zlib#createInflateRaw
+- zlib#createUnzip
+- zlib#createZstdCompress
+- zlib#createZstdDecompress
+- zlib#deflate
+- type zlib#Deflate
+- zlib#deflateRaw
+- type zlib#DeflateRaw
+- zlib#deflateRawSync
+- zlib#deflateSync
+- zlib#gunzip
+- type zlib#Gunzip
+- zlib#gunzipSync
+- zlib#gzip
+- type zlib#Gzip
+- zlib#gzipSync
+- zlib#inflate
+- type zlib#Inflate
+- zlib#inflateRaw
+- type zlib#InflateRaw
+- zlib#inflateRawSync
+- zlib#inflateSync
+- type zlib#InputType
+- zlib#unzip
+- type zlib#Unzip
+- zlib#unzipSync
+- zlib#Z_ASCII
+- zlib#Z_BEST_COMPRESSION
+- zlib#Z_BEST_SPEED
+- zlib#Z_BINARY
+- zlib#Z_BLOCK
+- zlib#Z_BUF_ERROR
+- zlib#Z_DATA_ERROR
+- zlib#Z_DEFAULT_COMPRESSION
+- zlib#Z_DEFAULT_STRATEGY
+- zlib#Z_DEFLATED
+- zlib#Z_ERRNO
+- zlib#Z_FILTERED
+- zlib#Z_FINISH
+- zlib#Z_FIXED
+- zlib#Z_FULL_FLUSH
+- zlib#Z_HUFFMAN_ONLY
+- zlib#Z_MEM_ERROR
+- zlib#Z_NEED_DICT
+- zlib#Z_NO_COMPRESSION
+- zlib#Z_NO_FLUSH
+- zlib#Z_OK
+- zlib#Z_PARTIAL_FLUSH
+- zlib#Z_RLE
+- zlib#Z_STREAM_END
+- zlib#Z_STREAM_ERROR
+- zlib#Z_SYNC_FLUSH
+- zlib#Z_TEXT
+- zlib#Z_UNKNOWN
+- zlib#Z_VERSION_ERROR
+- type zlib#Zlib
+- type zlib#ZlibOptions
+- type zlib#ZlibParams
+- type zlib#ZlibReset
+- zlib#zstdCompress
+- type zlib#ZstdCompress
+- zlib#zstdCompressSync
+- zlib#zstdDecompress
+- type zlib#ZstdDecompress
+- zlib#zstdDecompressSync
+- type zlib#ZstdOptions
