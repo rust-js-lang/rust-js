@@ -1632,9 +1632,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `dyn Iterator` the JS iterator, another its `{ value, impl }`.
             Rvalue::Cast(mir::CastKind::PointerCoercion(coercion, _), operand, to) => {
                 use rustc_middle::ty::adjustment::PointerCoercion;
-                let to_dyn = to
-                    .builtin_deref(true)
-                    .is_some_and(|pointee| matches!(pointee.kind(), ty::Dynamic(..)));
+                // Through a reference, a `Box` or an `Rc`, as THIR's `unsize_trait` sees it.
+                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..));
                 match coercion {
                     PointerCoercion::Unsize if to_dyn => {
                         let from = operand.ty(decls, tcx);

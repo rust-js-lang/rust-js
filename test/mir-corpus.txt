@@ -73,6 +73,7 @@ drop_temporary_operands.rs
 duration_overflow.rs
 dyn_any_closure.rs
 dyn_any_counted_rc.rs
+dyn_any_generic.rs
 dyn_drops.rs
 dyn_generic.rs
 dyn_iterators.rs

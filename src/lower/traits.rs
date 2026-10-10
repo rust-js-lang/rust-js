@@ -1769,7 +1769,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn pointee(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+    pub(super) fn pointee(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
         match ty.kind() {
             ty::Ref(_, inner, _) => *inner,
             ty::Adt(_, args) if self.is_std_wrapper(ty) => args.type_at(0),

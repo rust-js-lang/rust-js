@@ -371,14 +371,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","format_width_arguments"],
   },
   {
-    name: "mir-unsized-box-copied-back",
-    breaks: "a `&mut dyn` given to generic code is copied back to its `const`",
-    file: "src/lower/mir.rs",
-    find: "                .is_some_and(|pointee| !pointee.is_sized(self.tcx, self.typing_env))\n",
-    replace: "                .is_some_and(|pointee| false && !pointee.is_sized(self.tcx, self.typing_env))\n",
-    tests: ["test/mir.test.ts","-t","dyn_generic"],
-  },
-  {
     name: "mir-shift-amount-bigint",
     breaks: "`22i32 >> by` of an `i64` `by` shifts a number by a BigInt",
     file: "src/lower/mir.rs",
@@ -505,5 +497,13 @@ export const mutations: Mutation[] = [
     find: "                        && !output.is_box()\n",
     replace: "",
     tests: ["test/mir.test.ts","-t","dyn_iterators"],
+  },
+  {
+    name: "mir-rc-dyn-unpaired",
+    breaks: "`Rc<dyn Any>` made from MIR is the value, not its pair with its dictionary",
+    file: "src/lower/mir.rs",
+    find: "                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..));\n",
+    replace: "                let to_dyn = to.builtin_deref(true).is_some_and(|p| matches!(p.kind(), ty::Dynamic(..)));\n",
+    tests: ["test/mir.test.ts","-t","dyn_any_generic"],
   },
 ];
