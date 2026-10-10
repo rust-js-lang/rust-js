@@ -103,6 +103,9 @@ struct State<'m, 'tcx> {
     labels: Vec<BasicBlock>,
     /// The names of the locals borrowed, which a call may change.
     borrowed_names: std::collections::HashSet<String>,
+    /// The names of the body's own locals: another variable, a static's, may
+    /// change by any call.
+    own_names: std::collections::HashSet<String>,
     /// Of a closure: what it captured, each its environment's field.
     captures: Vec<Expr>,
     /// What each `Drop` drops (`drops.rs`), and the flag of each path whose
@@ -179,6 +182,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             pending: Vec::new(),
             labels: Vec::new(),
             borrowed_names: Default::default(),
+            own_names: Default::default(),
             captures: captures.clone().unwrap_or_default(),
             flags: IndexVec::new(),
             drops,
@@ -192,6 +196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&(_, &borrowed)| borrowed)
             .map(|(local, _)| state.locals.names[local].clone())
             .collect();
+        state.own_names = state.locals.names.iter().filter(|n| !n.is_empty()).cloned().collect();
         // A closure's first argument is its environment, read through its fields.
         let skip = usize::from(captures.is_some());
         let params: Vec<js::Pattern> = mir_body
@@ -1472,7 +1477,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.through_values(state.body, place, true) {
                     let value = self.read_local_value(state, place.local, out)?;
                     return Ok(match (kind, value) {
-                        (BorrowKind::Shared, Value::Expr(e)) if e.reads_same() => Value::Place(e),
+                        // Of what can't change meanwhile, the body's own locals: read
+                        // where it's used. A temporary's read of what can, a
+                        // static's, is made where it's made.
+                        (BorrowKind::Shared, Value::Expr(e))
+                            if e.reads_same() && movable(state, &Value::Expr(e.clone())) =>
+                        {
+                            Value::Place(e)
+                        }
                         (_, value) => value,
                     });
                 }
@@ -2407,7 +2419,7 @@ fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
         Value::Expr(e) | Value::Fmt(_, _, e) | Value::Discriminant(e, _) | Value::Branch(e, _) => {
             let mut stable = true;
             e.visit_vars(&mut |name| {
-                stable &= !state.borrowed_names.contains(name);
+                stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);
             });
             e.reads_only_vars() && stable
         }

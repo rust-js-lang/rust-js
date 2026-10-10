@@ -7,6 +7,7 @@ assert_failure.rs
 assignment_order_compound.rs
 associated_consts.rs
 associated_type_fields.rs
+atomics.rs
 begin_panic_str.rs
 begin_panic_string.rs
 binding_after_at.rs
@@ -99,6 +100,7 @@ nested_type_chain.rs
 number_methods.rs
 once_cell_reentrant.rs
 opaque_iterators.rs
+operands_before_replace.rs
 option_as_deref.rs
 option_map_drops.rs
 option_rest_pattern.rs

@@ -274,4 +274,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","generic_traits|mut_ref_as_generic|generic_mut_ref"],
   },
+  {
+    name: "mir-static-read-movable",
+    breaks: "a read of a static, which any call may change, is moved past a call that changes it",
+    file: "src/lower/mir.rs",
+    find: "                stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);\n",
+    replace: "                stable &= !state.borrowed_names.contains(name);\n",
+    tests: ["test/mir.test.ts", "-t", "atomics|operands_before_replace"],
+  },
+  {
+    name: "mir-shared-temporary-a-place",
+    breaks: "a shared reference to a temporary's read of a static is read where it's used, after what changes the static",
+    file: "src/lower/mir.rs",
+    find: "                            if e.reads_same() && movable(state, &Value::Expr(e.clone())) =>\n",
+    replace: "                            if e.reads_same() =>\n",
+    tests: ["test/mir.test.ts","-t","atomics|operands_before_replace"],
+  },
 ];
