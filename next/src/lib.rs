@@ -30,6 +30,7 @@ pub mod headers;
 pub mod image;
 pub mod legacy;
 pub mod link;
+pub mod metadata;
 pub mod navigation;
 pub mod offline;
 pub mod og;
@@ -37,6 +38,15 @@ pub mod router;
 pub mod script;
 pub mod server;
 pub mod web_vitals;
+
+pub use metadata::{Metadata, MetadataRoute, ResolvedMetadata, ResolvedViewport, ResolvingMetadata, ResolvingViewport, Viewport};
+
+/// One value, or a list of them, `T | T[]`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum OneOrMany<'a, T> {
+    One(T),
+    Many(&'a [T]),
+}
 
 pub use data_fetching::{
     GetStaticPathsContext, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, RevalidateReason, StaticNotFound,

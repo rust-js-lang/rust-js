@@ -33,6 +33,29 @@ pub fn About() -> JSX::Element {
     }
 }
 
+// Its metadata and viewport, Next.js's <title> and <meta>s of them.
+pub fn generateMetadata() -> next::Metadata<'static> {
+    use next::OneOrMany;
+    use next::metadata::{MetadataRobots, OgImage, OpenGraph, Robots, Title};
+    next::Metadata {
+        title: Some(Title::Str("About")),
+        description: Some("About, in Rust"),
+        keywords: Some(OneOrMany::Many(&["rust", "next"])),
+        open_graph: Some(OpenGraph {
+            r#type: Some("article"),
+            images: Some(OneOrMany::One(OgImage::Str("https://example.com/og.png"))),
+            published_time: Some("2026-10-10"),
+            ..Default::default()
+        }),
+        robots: Some(MetadataRobots::Robots(Robots { index: Some(false), ..Default::default() })),
+        ..Default::default()
+    }
+}
+
+pub fn generateViewport() -> next::Viewport<'static> {
+    next::Viewport { theme_color: Some(next::metadata::ThemeColor::Str("#101010")), ..Default::default() }
+}
+
 // A client component loaded by next/dynamic, at the module's top.
 thread_local! {
     pub static Loaded: react::ComponentValue<()> = next::dynamic::dynamic(|| react::import_module("../later.jsx"));
@@ -80,9 +103,11 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
+  writeFileSync(join(dir, "app/robots.rs"), robots);
+  writeFileSync(join(dir, "app/sitemap.rs"), sitemap);
   cpSync(join(dir, "public/next.svg"), join(dir, "app/logo.svg"));
   writeFileSync(join(dir, "app/later.rs"), `#![allow(non_snake_case)]
 js::directive!("use client");
@@ -218,6 +243,30 @@ pub async fn GET(request: &'static NextRequest) -> &'static Response {
     response.cookies().set("seen", "1");
     response
 }
+`;
+
+// robots.txt and sitemap.xml, of MetadataRoute's types.
+const robots = `use next::MetadataRoute::{Robots, RobotsRule, RobotsRules};
+use next::OneOrMany;
+
+pub fn robots() -> Robots<'static> {
+    Robots {
+        rules: RobotsRules::One(RobotsRule { user_agent: Some(OneOrMany::One("*")), disallow: Some(OneOrMany::One("/private/")), ..Default::default() }),
+        sitemap: Some(OneOrMany::One("https://example.com/sitemap.xml")),
+        host: None,
+    }
+}
+
+js::export_default!(robots);
+`;
+
+const sitemap = `use next::MetadataRoute::{Sitemap, SitemapEntry};
+
+pub fn sitemap() -> Sitemap<'static> {
+    vec![SitemapEntry { url: "https://example.com/about", change_frequency: Some("monthly"), priority: Some(0.8), ..Default::default() }]
+}
+
+js::export_default!(sitemap);
 `;
 
 const og = `#![allow(non_snake_case)]
@@ -577,6 +626,14 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   for (const written of ['revalidatePath("/request");', 'revalidateTag("count", "max");', 'updateTag("count");', "refresh();", 'const options = { revalidate: 60, tags: ["n"] };', 'unstable_cache(async (n) => (n + 1) >>> 0, ["n"], options);']) {
     expect(renewJs).toContain(written);
   }
+  // Metadata and a viewport, a robots.txt and a sitemap.xml.
+  for (const written of ["<title>About</title>", '<meta name="description" content="About, in Rust"/>', '<meta name="keywords" content="rust,next"/>',
+    '<meta name="robots" content="noindex"/>', '<meta property="og:type" content="article"/>', '<meta property="og:image" content="https://example.com/og.png"/>',
+    '<meta property="article:published_time" content="2026-10-10"/>', '<meta name="theme-color" content="#101010"/>']) {
+    expect(aboutHtml).toContain(written);
+  }
+  expect(readFileSync(join(dir, ".next/server/app/robots.txt.body"), "utf8")).toBe("User-Agent: *\nDisallow: /private/\n\nSitemap: https://example.com/sitemap.xml\n");
+  expect(readFileSync(join(dir, ".next/server/app/sitemap.xml.body"), "utf8")).toContain("<loc>https://example.com/about</loc>\n<changefreq>monthly</changefreq>\n<priority>0.8</priority>");
   // next/dynamic, at each module's top, rendered on the server too.
   expect(aboutJsx).toContain('export const Loaded = dynamic(() => import("../later.jsx"));');
   expect(aboutHtml).toContain("Loaded later");

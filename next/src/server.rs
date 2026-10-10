@@ -11,6 +11,7 @@ use react::webapi::{
     Headers, IntoBodyInit, IntoURLPatternInput, Request, RequestInit, Response, ResponseInit, URL, URLPattern, URLSearchParams,
 };
 
+use crate::OneOrMany;
 use crate::headers::{CookieOptions, DeletedCookie, RequestCookie, ResponseCookie};
 
 /// What `next/server` gives of `next/og`.
@@ -560,10 +561,10 @@ pub struct MiddlewareConfig<'a> {
     /// The paths, `"/about/:path*"`, or each of a list.
     pub matcher: Option<Matcher<'a>>,
     /// The regions it runs in, of an edge deployment.
-    pub regions: Option<OneOrMany<'a>>,
+    pub regions: Option<OneOrMany<'a, &'a str>>,
     /// Files whose dynamic code it may run, by globs.
     #[cfg_attr(rust_js, rust_js::name = "unstable_allowDynamic")]
-    pub unstable_allow_dynamic: Option<OneOrMany<'a>>,
+    pub unstable_allow_dynamic: Option<OneOrMany<'a, &'a str>>,
 }
 
 /// A proxy's `config`, `MiddlewareConfig`'s name since Next.js 16.
@@ -604,12 +605,6 @@ pub struct RouteHas<'a> {
     pub value: Option<&'a str>,
 }
 
-/// One string, or a list of them, each the value itself.
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum OneOrMany<'a> {
-    One(&'a str),
-    Many(&'a [&'a str]),
-}
 
 /// The request's browser, device and system, from its `User-Agent`, as
 /// `userAgent(request)`.

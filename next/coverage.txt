@@ -1,6 +1,6 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 100 of 2093 (4.8%)
-# next 4 of 42
+# exports: 107 of 2093 (5.1%)
+# next 11 of 42
 - type next#AdapterOutput
 - next#default
 - type next#FileSizeSuffix
@@ -17,8 +17,8 @@
 - type next#InferGetStaticPropsType
 - type next#Instant
 - type next#Instrumentation
-- type next#Metadata
-- type next#MetadataRoute
++ type next#Metadata
++ type next#MetadataRoute
 - type next#NextAdapter
 - type next#NextApiHandler
 - type next#NextApiRequest
@@ -30,10 +30,10 @@
 - type next#PageConfig
 - type next#PreviewData
 - type next#Redirect
-- type next#ResolvedMetadata
-- type next#ResolvedViewport
-- type next#ResolvingMetadata
-- type next#ResolvingViewport
++ type next#ResolvedMetadata
++ type next#ResolvedViewport
++ type next#ResolvingMetadata
++ type next#ResolvingViewport
 - type next#ResponseLimit
 - type next#Route
 - type next#RouterTransitionEvent
@@ -42,7 +42,7 @@
 - type next#RouterTransitionType
 - type next#ServerRuntime
 - type next#SizeLimit
-- type next#Viewport
++ type next#Viewport
 # next/app 1 of 6
 - type next/app#AppContext
 - type next/app#AppInitialProps

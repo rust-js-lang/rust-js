@@ -125,7 +125,7 @@ function bindings(): { links: Set<string>; items: Set<string> } {
   const sources = rust(crate).map((f) => readFileSync(f, "utf8")).join("\n");
   return {
     links: new Set([...sources.matchAll(/link_name = "(?:new )?(next[^"#]*)#(\w+)/g)].map((m) => `${m[1]}#${m[2]}`)),
-    items: new Set([...sources.matchAll(/pub (?:struct|enum|type|trait) (\w+)|pub use [\w:]+ as (\w+);/g)].map((m) => m[1] ?? m[2])),
+    items: new Set([...sources.matchAll(/pub (?:struct|enum|type|trait) (\w+)|pub use [\w:]+ as (\w+);|pub mod ([A-Z]\w*)/g)].map((m) => m[1] ?? m[2] ?? m[3])),
   };
 }
 
