@@ -641,6 +641,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Replace
                     | Std::Push
                     | Std::Same
+                    | Std::Leak
                     // Counts what it takes, or gives it back (ADR 0320).
                     | Std::Rc(_)
                     // A map keeps what it takes, and gives back what it replaces or
@@ -739,13 +740,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .unwrap_or(output);
         // A `&mut` it made itself, to a value JS can't change in place, is the
         // item, not a cell (ADR 0099): only a pattern takes it apart.
-        // A leaked `String`'s `&mut str` is the string: nothing writes a
-        // `str` in place (ADR 0157), so it's a `&str` (ADR 0238).
-        let leaked_text = matches!(self.std_fn(fun), Some(Std::Same))
-            && matches!(output.kind(), ty::Ref(_, text, Mutability::Mut) if text.is_str());
         if let Some(cell) = self.makes_items(output, generic_args, args)
             && !self.is_item_call(fun)
-            && !leaked_text
         {
             // Of numbers or strings in a collection: a handle on each (ADR 0152).
             if let Some(handles) = self.item_handles(known, args, span, out)? {
@@ -1131,6 +1127,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Rc` is the JS reference itself: the garbage collector does
             // its counting, so a clone is the same object.
             Std::Same | Std::Format => arg(),
+            Std::Leak => self.leaked(arg(), output),
             Std::Pointee => self.through_refs(arg(), self.thir[args[0]].ty).0,
             Std::Last
             | Std::Cloned
@@ -1264,6 +1261,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Concat
             | Std::StripPrefix
             | Std::StripSuffix
+            | Std::StripCircumfix
             | Std::SplitOnce
             | Std::RsplitOnce
             | Std::Chars

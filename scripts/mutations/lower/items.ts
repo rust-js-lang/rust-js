@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "            Some((export, rest)) if false && self.krate.required.contains(&export) => {\n",
     tests: ["test/bindings.test.ts", "-t", "a required binding"],
   },
+  {
+    name: "leak-fn-unboxed",
+    breaks: "`map(String::leak)` gives the strings, not boxes of them",
+    file: "src/lower/items.rs",
+    find: "            Std::Leak => self.leaked(x, sig.output()),\n",
+    replace: "            Std::Leak => x,\n",
+    tests: ["test/corpus.test.ts","-t","leaked_string_written"],
+  },
 ];

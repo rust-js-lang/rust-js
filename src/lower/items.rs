@@ -256,6 +256,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A counted `Rc`'s `new` or deref (ADR 0320).
             Std::Same if let Some(counted) = self.counted_same(def_id, args, x.clone()) => counted,
             Std::Same | Std::Format => x,
+            Std::Leak => self.leaked(x, sig.output()),
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![x]),

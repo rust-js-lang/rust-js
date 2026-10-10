@@ -390,7 +390,7 @@ export const mutations: Mutation[] = [
     name: "boxed-callback-kept",
     breaks: "a component's callback in `Box::new` or `Rc::new` keeps its call a statement, `onSubmit={() => { submit(false); }}`",
     file: "src/lower/jsx.rs",
-    find: "                    && matches!(self.std_fn(fun), Some(Std::Same)) =>\n",
+    find: "                    && matches!(self.std_fn(fun), Some(Std::Same | Std::Leak)) =>\n",
     replace: "                    && false =>\n",
     tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
   },

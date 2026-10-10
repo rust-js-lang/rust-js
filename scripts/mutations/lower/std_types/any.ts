@@ -59,4 +59,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
   },
+  {
+    name: "any-vec-pair",
+    breaks: "a binding is given a `Vec` of `dyn Any` pairs, not their values",
+    file: "src/lower/std_types/any.rs",
+    find: "            ty::Adt(_, args) if self.is_vec_like(pointee) => args.types().next(),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","dyn Any"],
+  },
 ];

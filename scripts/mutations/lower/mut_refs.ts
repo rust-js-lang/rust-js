@@ -97,8 +97,8 @@ export const mutations: Mutation[] = [
     name: "unsized-mut-arg-copied-back",
     breaks: "a `&mut dyn` given where a generic `&mut T` goes is copied back through its `&mut`, which is refused",
     file: "src/lower/mut_refs.rs",
-    find: "                ArgForm::Boxed(place) if !self.thir[place].ty.is_sized(self.tcx, self.typing_env) => {",
-    replace: "                ArgForm::Boxed(place) if false => {",
+    find: "                ArgForm::Boxed(place)\n                    if !self.thir[place].ty.is_sized(self.tcx, self.typing_env) && !self.thir[place].ty.is_str() =>",
+    replace: "                ArgForm::Boxed(place)\n                    if false =>",
     tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
   },
   {
@@ -164,5 +164,21 @@ export const mutations: Mutation[] = [
     find: '            Std::Cow(CowOp::ToMut) => (Helper::CowMut, "$cowMut"),\n',
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^cows"],
+  },
+  {
+    name: "str-box-not-taken-back",
+    breaks: "`shout(&mut s)` of a `fn(&mut str)` drops what it wrote",
+    file: "src/lower/mut_refs.rs",
+    find: " && !self.thir[place].ty.is_str() =>",
+    replace: " =>",
+    tests: ["test/corpus.test.ts","-t","str_mut"],
+  },
+  {
+    name: "mut-borrowed-same-unseen",
+    breaks: "`shout(&mut v[0])` of a `fn(&mut str)` isn't of `v[0]`",
+    file: "src/lower/mut_refs.rs",
+    find: "        let mut place = self.through_same(place);\n",
+    replace: "        let mut place = place;\n",
+    tests: ["test/corpus.test.ts","-t","str_mut"],
   },
 ];

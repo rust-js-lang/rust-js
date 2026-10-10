@@ -50,4 +50,20 @@ export const mutations: Mutation[] = [
     replace: "new TextDecoder()",
     tests: ["test/corpus.test.ts", "-t", "matrix_strings"],
   },
+  {
+    name: "from-utf8-mut-unwritten",
+    breaks: "a `&mut str` of bytes isn't written through to them",
+    file: "src/runtime/utf8.js",
+    find: "      new TextEncoder().encode(next).forEach((byte, i) => (bytes[i] = byte));\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","str_mut"],
+  },
+  {
+    name: "from-utf8-mut-unchecked-result",
+    breaks: "`from_utf8_unchecked_mut` gives a `Result`",
+    file: "src/runtime/utf8.js",
+    find: "  if (unchecked) return text;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","str_mut"],
+  },
 ];

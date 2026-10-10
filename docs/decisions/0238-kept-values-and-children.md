@@ -59,7 +59,7 @@ const refs = useRef(kept.map(() => createRef()));
 
 - **A `String` kept for good, `.leak()`, is the string**, as react.dev's
   Page gives Seo the image it makes, its props `'static`. Its `&mut str`
-  is a `&str`: nothing writes a `str` in place (ADR 0157), so a write
-  through it is refused, as the corpus's `leaked_string_written` is. A
-  compiler test leaks one; mutations leave `leak` unknown, and its
-  `&mut str` a cell.
+  was a `&str`, as nothing wrote a `str` in place; since ADR 0334 it's a
+  cell of the string, `{ value: s }`, as any `&mut str` is, and read as
+  a `&'static str` it's still the string. A compiler test leaks one;
+  mutations leave `leak` unknown.

@@ -961,7 +961,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = self.expr(place, out)?;
                     return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
                 }
-                Ok(Expr::handle(self.fixed_place(place, self.thir[place].span, out)?))
+                Ok(Expr::handle(self.fixed_place(
+                    place,
+                    "cell",
+                    self.thir[place].span,
+                    out,
+                )?))
             }
             // `&mut` to a `Pin` of a reference is the pin, which only what it
             // points at is changed through (ADR 0329).

@@ -271,14 +271,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "taken apart through a reference"],
   },
   {
-    name: "leaked-text-a-cell",
-    breaks: "a leaked `String`'s `&mut str` is taken for a cell, and refused as a value",
-    file: "src/lower/calls.rs",
-    find: "            && !self.is_item_call(fun)\n            && !leaked_text\n",
-    replace: "            && !self.is_item_call(fun)\n",
-    tests: ["test/lowering.test.ts", "-t", "leaked String"],
-  },
-  {
     name: "own-name-call-kept",
     breaks: "`section.as_str()`, a function giving each variant its own name, is called, `Section.as_str(section)`, not `section`",
     file: "src/lower/calls.rs",

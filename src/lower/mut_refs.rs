@@ -134,22 +134,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, "this `&mut` argument, which isn't to a variable or a field"))
     }
 
-    /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`.
+    /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`, and
+    /// of a `String`'s `&mut str`, `&mut *s.deref_mut()`: `s`.
     pub(super) fn mut_borrowed(&self, arg: ExprId) -> Option<ExprId> {
         let ExprKind::Borrow {
             borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
-            arg: mut place,
+            arg: place,
         } = self.thir[self.strip(arg)].kind
         else {
             return None;
         };
+        let mut place = self.through_same(place);
         while let ExprKind::Deref { arg: inner } = self.thir[self.strip(place)].kind
             && let ExprKind::Borrow {
                 borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
                 arg: reborrowed,
             } = self.thir[self.strip(inner)].kind
         {
-            place = reborrowed;
+            place = self.through_same(reborrowed);
         }
         Some(place)
     }
@@ -507,13 +509,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     values.push(Expr::object(vec![Prop::Field("value".into(), value)]));
                 }
                 // `grow(&mut *shape)` of a `dyn`: a box of it, and nothing to take
-                // back, since nothing replaces an unsized value through a `&mut`.
-                ArgForm::Boxed(place) if !self.thir[place].ty.is_sized(self.tcx, self.typing_env) => {
+                // back, since nothing replaces an unsized value through a `&mut`,
+                // but for a `str`, which `make_ascii_uppercase` writes (ADR 0334).
+                ArgForm::Boxed(place)
+                    if !self.thir[place].ty.is_sized(self.tcx, self.typing_env) && !self.thir[place].ty.is_str() =>
+                {
                     let value = self.expr(place, out)?;
                     values.push(Expr::object(vec![Prop::Field("value".into(), value)]));
                 }
                 ArgForm::Boxed(place) if self.result_borrows(def_id, i) => {
-                    let handle = Expr::handle(self.fixed_place(place, span, out)?);
+                    let handle = Expr::handle(self.fixed_place(place, "cell", span, out)?);
                     values.push(handle);
                 }
                 ArgForm::Boxed(place) => {

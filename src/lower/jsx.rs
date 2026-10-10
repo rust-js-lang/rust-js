@@ -418,7 +418,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `Box::new(f)`, `Rc::new(f)`: what recognition says is `f` itself.
             ExprKind::Call { fun, ref args, .. }
                 if let [inner] = args[..]
-                    && matches!(self.std_fn(fun), Some(Std::Same)) =>
+                    && matches!(self.std_fn(fun), Some(Std::Same | Std::Leak)) =>
             {
                 return self.calls_for_nothing(inner);
             }

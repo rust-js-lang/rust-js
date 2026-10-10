@@ -67,6 +67,22 @@ pub(in crate::lower) enum TextOp {
     SplitAsciiWhitespace,
     /// `s.get(range)`: `&s[range]`, or `None` where that would panic.
     StrGet,
+    /// `&mut s[range]` of a string, `get_unchecked_mut(range)`, and
+    /// `slice_mut_unchecked(a, b)` (`bounds`): that part of it, written
+    /// in place (ADR 0334).
+    StrPart {
+        bounds: bool,
+    },
+    /// `s.get_mut(range)`: that part, or `None` where `&mut s[range]`
+    /// would panic.
+    StrGetMut,
+    /// `s.split_at_mut(at)`, or `split_at_mut_checked` (`checked`): the
+    /// parts before and after the byte `at`.
+    StrSplitAtMut {
+        checked: bool,
+    },
+    /// `s.slice_unchecked(a, b)`: `&s[a..b]`.
+    StrSliceBounds,
     /// `v.get(range)` of a slice: `&v[range]`, or `None` where that would panic.
     SliceGet,
     /// `v.split_at(mid)` of a slice: `(&v[..mid], &v[mid..])`; or
@@ -87,6 +103,12 @@ pub(in crate::lower) enum TextOp {
     },
     /// `str::from_utf8_unchecked(bytes)`: valid UTF-8's text.
     Utf8Unchecked,
+    /// `str::from_utf8_mut(bytes)`, or `from_utf8_unchecked_mut`
+    /// (`unchecked`): a `&mut str` read and written through the bytes
+    /// (ADR 0334).
+    FromUtf8Mut {
+        unchecked: bool,
+    },
     /// `String::from_utf8_lossy(bytes)`: a `Cow`.
     Utf8Lossy,
     /// A part of a `Utf8Error`, `FromUtf8Error` or `Cow<str>`, as the runtime
@@ -197,6 +219,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
             return Err(self.unsupported(span, "changing this string"));
         };
+        // `s[a..b].make_ascii_uppercase()`: `s` given its new text, that
+        // part changed, `s = $asciiCase(s, true, a, b)` (ADR 0334).
+        if let StringEdit::AsciiCase { upper } = edit
+            && let ExprKind::Deref { arg: part } = self.thir[self.strip(place)].kind
+            && let ExprKind::Call {
+                fun, args: ref given, ..
+            } = self.thir[self.strip(part)].kind
+            && let Some(Std::Text(TextOp::StrPart { bounds })) = self.std_fn(fun)
+            && let Some(whole) = self.mut_borrowed(given[0])
+            && !self.returned(whole)
+        {
+            let (target, _) = self.prepare_assignment_target(whole, true, Expr::undefined(), span, out)?;
+            let (start, end) = match bounds {
+                true => {
+                    let [start, end]: [Expr; 2] = self.operands(&given[1..], out)?.try_into().ok().expect("two bounds");
+                    (start, Some(end))
+                }
+                false => self.range_bounds(given[1], span, out)?,
+            };
+            let mut list = vec![target.read(), Expr::bool(upper)];
+            if start.as_int() != Some(0) || end.is_some() {
+                list.push(start);
+                list.extend(end);
+            }
+            self.runtime.insert(Helper::AsciiCase);
+            target.write(Expr::call(Expr::var("$asciiCase"), list), self.js_span(span), out);
+            return Ok(Expr::undefined());
+        }
         // A byte range's bounds, and `replace_range`'s text (ADR 0323).
         let given = match edit {
             StringEdit::Drain | StringEdit::ReplaceRange | StringEdit::ExtendFromWithin => {
@@ -294,6 +344,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             list.extend(self.operands(&args[2..], out)?);
             self.runtime.insert(Helper::Splice);
             return Ok(Expr::call(Expr::var("$splice"), list));
+        }
+        if matches!(
+            op,
+            TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. }
+        ) {
+            return self.str_part(op, args, span, out);
         }
         let mut values = self.operands(args, out)?;
         // A set of `char`s as a pattern is the predicate of being one of
@@ -428,6 +484,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(arg(), "replace"), vec![Expr::regex(regex), Expr::str("")])
             }
             TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
+            TextOp::StrSliceBounds => call(self, Helper::StrSlice, "$strSlice", vec![arg(), arg(), arg()]),
+            TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. } => {
+                unreachable!("a part of a string is made above")
+            }
             TextOp::SliceSplitAt { checked } => {
                 let mut list = vec![arg(), arg()];
                 if checked {
@@ -467,6 +527,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 call(self, Helper::Utf8, "$fromUtf8", list)
             }
             TextOp::Utf8Unchecked => call(self, Helper::Utf8, "$utf8Decode", vec![arg()]),
+            TextOp::FromUtf8Mut { unchecked } => {
+                let mut list = vec![arg()];
+                if unchecked {
+                    list.push(Expr::bool(true));
+                }
+                call(self, Helper::Utf8, "$fromUtf8Mut", list)
+            }
             TextOp::Utf8Lossy => call(self, Helper::Utf8, "$utf8Lossy", vec![arg()]),
             TextOp::Utf8Part(name) => Expr::member(arg(), name),
             TextOp::ParseErrorKind => call(self, Helper::DebugParseError, "$parseErrorKind", vec![arg()]),
@@ -634,6 +701,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::var(name), list))
     }
 
+    /// A part of a string as a `&mut str` (ADR 0334): `$strPart(cell, a, b)`
+    /// of the cell its `&mut` is, `$strGetMut` and `$strSplitAtMut`.
+    fn str_part(&mut self, op: TextOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let mut list = vec![self.str_cell(args[0], span, out)?];
+        let name = match op {
+            TextOp::StrSplitAtMut { checked } => {
+                list.extend(self.operands(&args[1..], out)?);
+                if checked {
+                    list.push(Expr::bool(true));
+                }
+                "$strSplitAtMut"
+            }
+            TextOp::StrPart { bounds: true } => {
+                list.extend(self.operands(&args[1..], out)?);
+                "$strPart"
+            }
+            _ => {
+                let (start, end) = self.range_bounds(args[1], span, out)?;
+                list.push(start);
+                list.extend(end);
+                match op {
+                    TextOp::StrGetMut => "$strGetMut",
+                    _ => "$strPart",
+                }
+            }
+        };
+        self.runtime.insert(Helper::StrPart);
+        Ok(Expr::call(Expr::var(name), list))
+    }
+
+    /// What a `&mut str` is written through (ADR 0334): a box or a part it
+    /// already is, or a handle on the place it borrows, `s` of `&mut s`.
+    fn str_cell(&mut self, arg: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let Some(place) = self.mut_borrowed(arg) else {
+            return self.expr(arg, out);
+        };
+        if let ExprKind::Deref { arg: inner } = self.thir[self.strip(place)].kind
+            && self.is_cell_value(inner)
+        {
+            return self.expr(inner, out);
+        }
+        Ok(Expr::handle(self.fixed_place(place, "cell", span, out)?))
+    }
+
+    /// Is `e` a call making a part of a string, `&mut s[a..b]`?
+    pub(in crate::lower) fn is_str_part(&self, e: ExprId) -> bool {
+        matches!(self.thir[self.strip(e)].kind, ExprKind::Call { fun, .. }
+            if matches!(self.std_fn(fun), Some(Std::Text(TextOp::StrPart { .. }))))
+    }
+
     /// A range argument's bounds, in order: its start, `0` where it has none,
     /// and its end past what it holds, `a..=b`'s `b + 1`, or `None` where it
     /// runs to the end.
@@ -748,6 +865,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 self.runtime.insert(helper);
                 Expr::call(Expr::var(name), vec![arg(), arg()])
+            }
+            Std::StripCircumfix => {
+                self.runtime.insert(Helper::StripCircumfix);
+                Expr::call(Expr::var("$stripCircumfix"), vec![arg(), arg(), arg()])
             }
             Std::Chars => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]),
             Std::StringNew => Expr::str(""),

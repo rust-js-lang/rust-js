@@ -146,6 +146,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<(PreparedPlace, Expr)> {
+        let lhs = self.through_same(lhs);
         if let Some(place) = self.slot_place(lhs) {
             return Ok((place, value));
         }
@@ -227,8 +228,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Borrow { arg, .. } => {
                 matches!(self.thir[self.strip(arg)].kind, ExprKind::Deref { arg: inner } if self.is_cell_value(inner))
             }
-            // A std call's handle (ADR 0152).
-            ExprKind::Call { .. } if self.is_handle(e) => true,
+            // A std call's handle (ADR 0152), or a part of a string (ADR 0334).
+            ExprKind::Call { .. } if self.is_handle(e) || self.is_str_part(e) => true,
             // The crate's own function, or the impl's method a trait's resolves to.
             ExprKind::Call { fun, .. } => match *self.thir[self.strip(fun)].ty.kind() {
                 ty::FnDef(def_id, _) if self.tcx.trait_of_assoc(def_id).is_none() => self.is_rust_fn(def_id),
@@ -368,10 +369,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `p` of `*f(&mut p)`, where `f` gives back what it's given, as a
+    /// `String`'s `deref_mut` gives its `&mut str` (ADR 0334): the place
+    /// it writes.
+    pub(super) fn through_same(&self, mut place: ExprId) -> ExprId {
+        while let ExprKind::Deref { arg } = self.thir[self.strip(place)].kind
+            && let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(arg)].kind
+            && self.std_fn(fun) == Some(Std::Same)
+            && let Some(&given) = args.first()
+            && let ExprKind::Borrow {
+                borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
+                arg: inner,
+            } = self.thir[self.strip(given)].kind
+        {
+            place = inner;
+        }
+        place
+    }
+
+    /// What's kept for good, `s.leak()`, as the `&'static mut` it gives:
+    /// a box of it where that's a cell, `{ value: s }` (ADR 0334).
+    pub(super) fn leaked(&self, value: Expr, output: ty::Ty<'tcx>) -> Expr {
+        match self.is_cell(output) {
+            true => Expr::object(vec![js::Prop::Field("value".into(), value)]),
+            false => value,
+        }
+    }
+
     /// What a reference made with `&` or `&mut` refers to, which is the JS
     /// value itself: `&v[i]` is the element, not a copy of it.
     pub(super) fn referent(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Expr> {
         match self.thir[self.strip(e)].kind {
+            // `&*s.leak()`: what's kept, not a box of it (ADR 0334).
+            ExprKind::Deref { arg }
+                if let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(arg)].kind
+                    && self.std_fn(fun) == Some(Std::Leak) =>
+            {
+                self.expr(args[0], out)
+            }
             // `&*f()`: the reference `f` returned.
             ExprKind::Deref { arg } => self.expr(arg, out),
             ExprKind::Index { lhs, index } => {
@@ -401,7 +436,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// meanwhile: an index is evaluated once, `let r = &mut v[i]` keeping
     /// the index of that moment, and so is an object reached through a
     /// reference in a variable that's assigned again, `&mut cur.count`.
-    pub(super) fn fixed_place(&mut self, borrowed: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    /// A cell a call gives is kept as `label`, `const r = { value: 5 }` of
+    /// `let r = Box::leak(b)`.
+    pub(super) fn fixed_place(&mut self, borrowed: ExprId, label: &str, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let place = if self.in_element(borrowed) {
             self.element_target(borrowed, out)?
         } else {
@@ -421,7 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             let cell = if cell.reads_same() {
                                 cell
                             } else {
-                                self.spill("cell", cell, out)
+                                self.spill(label, cell, out)
                             };
                             Expr::member(cell, "value")
                         }

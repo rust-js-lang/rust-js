@@ -1549,6 +1549,39 @@ test("a leaked String is the string", async () => {
   expect(named(3)).toBe("item-3");
 });
 
+// ADR 0331: a binding's `&dyn Any` is any JS value, given the value, not
+// the pair that downcasts it: of each in a `Vec` and a slice too, as
+// react.dev's CodeBlock gives CodeMirror's `HighlightStyle.define` its specs.
+test("a binding is given each dyn Any's value", async () => {
+  const dir = fixture("any-to-js");
+  writeFileSync(join(dir, "lib.rs"), `use std::any::Any;
+
+unsafe extern "Rust" {
+    #[link_name = "JSON.stringify"]
+    safe fn stringify_all(values: Vec<&dyn Any>) -> String;
+    #[link_name = "JSON.stringify"]
+    safe fn stringify_slice(values: &[&dyn Any]) -> String;
+}
+
+struct Spec {
+    tag: &'static str,
+}
+
+pub fn all() -> String {
+    stringify_all(vec![&Spec { tag: "link" }, &3])
+}
+
+pub fn slice() -> String {
+    let specs: [&dyn Any; 2] = [&Spec { tag: "strong" }, &"bold"];
+    stringify_slice(&specs)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const { all, slice } = await import(join(dir, "lib.js"));
+  expect(all()).toBe('[{"tag":"link"},3]');
+  expect(slice()).toBe('[{"tag":"strong"},"bold"]');
+});
+
 // A struct taken apart through a shared reference is JS's destructuring,
 // `const { errorMessage, errorCode } = useErrorDecoderParams();`, as
 // react.dev's ErrorDecoder has it: what's borrowed can't change while it

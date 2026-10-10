@@ -38,6 +38,23 @@ function $fromUtf8(bytes, owned = false) {
   return { TAG: "Err", _0: owned ? { bytes, error } : error };
 }
 
+// `str::from_utf8_mut(bytes)` (ADR 0334): `Ok` of a `&mut str` read and
+// written through `bytes`, which nothing it does makes longer or shorter,
+// or `from_utf8`'s `Err`; `unchecked`, the `&mut str` itself.
+function $fromUtf8Mut(bytes, unchecked = false) {
+  const text = {
+    get value() {
+      return $utf8Decode(bytes);
+    },
+    set value(next) {
+      new TextEncoder().encode(next).forEach((byte, i) => (bytes[i] = byte));
+    },
+  };
+  if (unchecked) return text;
+  const result = $fromUtf8(bytes);
+  return result.TAG === "Ok" ? { TAG: "Ok", _0: text } : result;
+}
+
 // `String::from_utf8_lossy(bytes)`: a `Cow`, borrowed where the bytes are
 // valid, else owned, with a U+FFFD for each bad sequence, which
 // `TextDecoder` replaces as Rust's `Utf8Chunks` does, by its maximal subpart.

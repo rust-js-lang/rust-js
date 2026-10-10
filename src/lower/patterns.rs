@@ -501,7 +501,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(StmtKind::Let(home.clone(), Some(value)).at(self.js_span(span)));
                     Expr::var(&home)
                 }
-                None => self.fixed_place(borrowed, pat.span, out)?,
+                None => self.fixed_place(borrowed, &camel_case(name.as_str()), pat.span, out)?,
             };
             self.bind_alias(var);
             self.locals.vars.insert(

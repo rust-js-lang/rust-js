@@ -107,7 +107,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `value`, a `ty`, as JS is given it: a `dyn Any`'s value, which a
-    /// binding takes as any JS value, of each in a slice of them too.
+    /// binding takes as any JS value, of each in a slice, an array or a
+    /// `Vec` of them too.
     pub(in crate::lower) fn any_given_to_js(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
         let pointee = ty.peel_refs();
         if self.recognition().is_dyn_any(pointee) {
@@ -120,10 +121,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Expr::member(value, "value");
         }
-        match pointee.kind() {
-            ty::Slice(item) | ty::Array(item, _) if self.recognition().is_dyn_any(item.peel_refs()) => {
+        let item = match *pointee.kind() {
+            ty::Slice(item) | ty::Array(item, _) => Some(item),
+            ty::Adt(_, args) if self.is_vec_like(pointee) => args.types().next(),
+            _ => None,
+        };
+        match item {
+            Some(item) if self.recognition().is_dyn_any(item.peel_refs()) => {
                 if let js::ExprKind::Array(items) = &value.kind {
-                    return Expr::array(items.iter().map(|i| self.any_given_to_js(i.clone(), *item)).collect());
+                    return Expr::array(items.iter().map(|i| self.any_given_to_js(i.clone(), item)).collect());
                 }
                 let each = Expr::arrow(
                     vec!["item".into()],

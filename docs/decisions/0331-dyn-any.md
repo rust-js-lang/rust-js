@@ -47,7 +47,8 @@ const n = items[0].impl.type_id() === "i32" ? items[0].value : undefined;
   as a supertrait's, so `&dyn Component` upcast to `&dyn Any` downcasts,
   and `(*c).type_id()` is its value's.
 - **A binding's `&dyn Any`, any JS value, is given the value**, not the
-  pair: webapi binds WebIDL's `object` so.
+  pair: webapi binds WebIDL's `object` so. So is each in a slice, an
+  array or a `Vec` of them (ADR 0334).
 - **`{:?}` of a `dyn Any`** is `Any { .. }`, as std's, and `$debugAny(made())`
   of one made where it's shown, which runs what makes it.
 - **Refused, loud**: a closure's `TypeId`, as closures share a name; `{:?}`

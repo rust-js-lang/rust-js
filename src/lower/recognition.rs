@@ -77,6 +77,10 @@ pub(super) enum Std {
     /// `s.to_owned()`, `String::from(s)`, `v.iter()`, and `Deref` of
     /// `String`, `Rc`, `Vec`, `Ref`, `RefMut` and JS objects.
     Same,
+    /// `s.leak()` of a `String`, `Box::leak(b)`: kept for good, which in JS,
+    /// freeing nothing itself, is the value, its `&mut` a box of it where
+    /// it's one JS can't change in place, `{ value: s }` (ADR 0334).
+    Leak,
     /// `o.as_ref()` and `o.as_mut()` of an `Option`: the `Option` its
     /// reference points at, whose items' references are the items (ADR 0023),
     /// and whose `&mut`s to what isn't an object a std call's items (ADR 0099).
@@ -336,6 +340,9 @@ pub(super) enum Std {
     /// `strip_prefix` and `strip_suffix`: an option (ADR 0030).
     StripPrefix,
     StripSuffix,
+    /// `strip_circumfix(p, s)`: `strip_prefix`'s, then `strip_suffix`'s of
+    /// what's left (ADR 0334).
+    StripCircumfix,
     /// `split_once` and `rsplit_once`: an option of the two sides.
     SplitOnce,
     RsplitOnce,
@@ -431,6 +438,7 @@ impl Std {
         matches!(
             self,
             Std::Once(OnceOp::GetMut)
+                | Std::Leak
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
                 | Std::CellGetMut
@@ -440,7 +448,13 @@ impl Std {
                 | Std::Slice(SliceOp::PushMut { .. })
                 | Std::Any(AnyOp::DowncastMut)
                 | Std::Uninit(UninitOp::Write | UninitOp::InitMut)
-                | Std::Text(TextOp::EncodeUtf8)
+                | Std::Text(
+                    TextOp::EncodeUtf8
+                        | TextOp::StrPart { .. }
+                        | TextOp::StrGetMut
+                        | TextOp::StrSplitAtMut { .. }
+                        | TextOp::FromUtf8Mut { .. }
+                )
                 | Std::OptionPlace(
                     OptionPlaceOp::GetOrInsert
                         | OptionPlaceOp::GetOrInsertWith
@@ -530,6 +544,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             | "std::str::<impl str>::from_utf8_unchecked"
             | "std::string::String::from_utf8_unchecked" => Some(TextOp::Utf8Unchecked),
             "std::string::String::from_utf8_lossy" => Some(TextOp::Utf8Lossy),
+            "std::str::from_utf8_mut" | "std::str::<impl str>::from_utf8_mut" => {
+                Some(TextOp::FromUtf8Mut { unchecked: false })
+            }
+            "std::str::from_utf8_unchecked_mut" | "std::str::<impl str>::from_utf8_unchecked_mut" => {
+                Some(TextOp::FromUtf8Mut { unchecked: true })
+            }
             "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("valid_up_to")),
             "std::num::ParseIntError::kind" => Some(TextOp::ParseErrorKind),
             _ => None,
@@ -871,6 +891,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.is_string_like(ty)
         {
             return Some(Std::Text(TextOp::StrSlice));
+        }
+        // `&mut s[a..b]` of a string: that part of it (ADR 0334).
+        if tcx.is_lang_item(trait_, LangItem::IndexMut)
+            && let Some(range) = args.types().nth(1)
+            && self.range_kind(range).is_some()
+            && self.is_string_like(ty)
+        {
+            return Some(Std::Text(TextOp::StrPart { bounds: false }));
         }
         // `v[i]` of a `Vec` is a slice's, checked the same way.
         if (tcx.is_lang_item(trait_, LangItem::Index) || tcx.is_lang_item(trait_, LangItem::IndexMut))
@@ -1411,7 +1439,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "weak_count" if weak => Std::Rc(RcOp::WeakWeakCount),
             // Kept for good, a `&'static` of it: in JS, which frees nothing
             // itself, the value itself.
-            "leak" if adt("Vec") || string || owner.is_box() => Std::Same,
+            "leak" if adt("Vec") => Std::Same,
+            "leak" if string || owner.is_box() => Std::Leak,
             // A `dyn Any`'s downcasts, by its type's key (ADR 0331).
             "is" if self.is_dyn_any(owner) => Std::Any(AnyOp::Is),
             "downcast_ref" if self.is_dyn_any(owner) => Std::Any(AnyOp::DowncastRef),
@@ -1492,7 +1521,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "encode_utf8" if owner.is_char() => Std::Text(TextOp::EncodeUtf8),
             "decode_utf16" if owner.is_char() => Std::Text(TextOp::DecodeUtf16),
             "unpaired_surrogate" if is_decode_utf16_error(tcx, owner) => Std::Same,
-            "make_ascii_uppercase" | "make_ascii_lowercase" if owner.is_char() => {
+            "make_ascii_uppercase" | "make_ascii_lowercase" if owner.is_char() || owner.is_str() => {
                 Std::StringEdit(StringEdit::AsciiCase {
                     upper: name.as_str() == "make_ascii_uppercase",
                 })
@@ -1572,7 +1601,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "ceil_char_boundary" if owner.is_str() => Std::Text(TextOp::CharBoundaryNear { ceil: true }),
             "from_utf16" if string => Std::Text(TextOp::FromUtf16 { lossy: false }),
             "from_utf16_lossy" if string => Std::Text(TextOp::FromUtf16 { lossy: true }),
-            "as_str" if string => Std::Same,
+            "as_str" | "as_mut_str" if string => Std::Same,
             "trim" if owner.is_str() => Std::Trim { start: true, end: true },
             // A closure, a function or a set of `char`s as the pattern (ADRs 0063, 0157).
             "split" | "contains" if owner.is_str() && self_ty.is_some_and(|p| self.is_char_predicate(p)) => {
@@ -1592,6 +1621,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             "split_ascii_whitespace" if owner.is_str() => Std::Text(TextOp::SplitAsciiWhitespace),
             "get" if owner.is_str() => Std::Text(TextOp::StrGet),
+            "get_mut" if owner.is_str() => Std::Text(TextOp::StrGetMut),
+            "get_unchecked" if owner.is_str() => Std::Text(TextOp::StrSlice),
+            "get_unchecked_mut" if owner.is_str() => Std::Text(TextOp::StrPart { bounds: false }),
+            "slice_unchecked" if owner.is_str() => Std::Text(TextOp::StrSliceBounds),
+            "slice_mut_unchecked" if owner.is_str() => Std::Text(TextOp::StrPart { bounds: true }),
+            "split_at_mut" | "split_at_mut_checked" if owner.is_str() => Std::Text(TextOp::StrSplitAtMut {
+                checked: name.as_str() == "split_at_mut_checked",
+            }),
             "get" if owner.is_slice() && args.types().nth(1).is_some_and(|r| self.range_kind(r).is_some()) => {
                 Std::Text(TextOp::SliceGet)
             }
@@ -1678,6 +1715,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "split" if owner.is_str() => Std::Method("split"),
             "strip_prefix" if owner.is_str() => Std::StripPrefix,
             "strip_suffix" if owner.is_str() => Std::StripSuffix,
+            "strip_circumfix" if owner.is_str() && args.types().all(|p| self.is_string_like(p)) => Std::StripCircumfix,
             "split_once" if owner.is_str() => Std::SplitOnce,
             "rsplit_once" if owner.is_str() => Std::RsplitOnce,
             "to_uppercase" if owner.is_str() => Std::Method("toUpperCase"),

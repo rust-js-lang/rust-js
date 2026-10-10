@@ -909,7 +909,14 @@ export function $rangeFromNext(range) {
   return range.start++;
 }
 
-export function $asciiCase(text, upper = false) {
+// `make_ascii_uppercase()` of a `char` or a string, or of the bytes
+// `start..end` of one, as `s[start..end]`'s, checked as that is (ADR 0334).
+export function $asciiCase(text, upper = false, start, end) {
+  if (start !== undefined) {
+    end ??= $byteLen(text);
+    const part = $strSlice(text, start, end);
+    return $strSlice(text, 0, start) + $asciiCase(part, upper) + $strSlice(text, end);
+  }
   return upper
     ? text.replace(/[a-z]+/g, (letters) => letters.toUpperCase())
     : text.replace(/[A-Z]+/g, (letters) => letters.toLowerCase());
@@ -2299,6 +2306,43 @@ export function $strGet(s, start, end) {
   const from = $charBoundary(s, start);
   const to = $charBoundary(s, end);
   return from === undefined || to === undefined ? undefined : s.slice(from, to);
+}
+
+// `&mut s[start..end]` of the string a cell holds (ADR 0334): checked as
+// `&s[start..end]` is, then that part of it, read and written in place.
+// Nothing a `&mut str` does changes its length in bytes, so the part stays
+// where it was.
+export function $strPart(cell, start, end) {
+  end ??= $byteLen(cell.value);
+  $strSlice(cell.value, start, end);
+  return {
+    get value() {
+      return $strSlice(cell.value, start, end);
+    },
+    set value(text) {
+      cell.value = $strSlice(cell.value, 0, start) + text + $strSlice(cell.value, end);
+    },
+  };
+}
+
+// `s.get_mut(start..end)`: that part, or `undefined`, `None`, where
+// `&mut s[start..end]` would panic.
+export function $strGetMut(cell, start, end) {
+  return $strGet(cell.value, start, end) === undefined ? undefined : $strPart(cell, start, end);
+}
+
+// `s.split_at_mut(at)`: the parts before and after the byte `at`, panicking
+// as `&s[..at]` does; or, `checked`, `undefined` where that would panic.
+export function $strSplitAtMut(cell, at, checked) {
+  if (checked && $charBoundary(cell.value, at) === undefined) return undefined;
+  return [$strPart(cell, 0, at), $strPart(cell, at)];
+}
+
+// `s.strip_circumfix(prefix, suffix)`: `strip_prefix`'s, then
+// `strip_suffix`'s of what's left, or `undefined`, `None`.
+export function $stripCircumfix(s, prefix, suffix) {
+  const rest = $stripPrefix(s, prefix);
+  return rest === undefined ? undefined : $stripSuffix(rest, suffix);
 }
 
 // `it.len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
@@ -5167,6 +5211,23 @@ export function $fromUtf8(bytes, owned = false) {
   if (bad === undefined) return { TAG: "Ok", _0: $utf8Decode(bytes) };
   const error = { valid_up_to: bad[0], error_len: bad[1] };
   return { TAG: "Err", _0: owned ? { bytes, error } : error };
+}
+
+// `str::from_utf8_mut(bytes)` (ADR 0334): `Ok` of a `&mut str` read and
+// written through `bytes`, which nothing it does makes longer or shorter,
+// or `from_utf8`'s `Err`; `unchecked`, the `&mut str` itself.
+export function $fromUtf8Mut(bytes, unchecked = false) {
+  const text = {
+    get value() {
+      return $utf8Decode(bytes);
+    },
+    set value(next) {
+      new TextEncoder().encode(next).forEach((byte, i) => (bytes[i] = byte));
+    },
+  };
+  if (unchecked) return text;
+  const result = $fromUtf8(bytes);
+  return result.TAG === "Ok" ? { TAG: "Ok", _0: text } : result;
 }
 
 // `String::from_utf8_lossy(bytes)`: a `Cow`, borrowed where the bytes are
