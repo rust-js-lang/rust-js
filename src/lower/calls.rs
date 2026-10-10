@@ -404,9 +404,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(StmtKind::Assign(Expr::member(this, name), value).at(self.js_span(span)));
                     Expr::undefined()
                 }
-                // A global's property, written: `process.exitCode = 1`. Not an
-                // import's, which JS can't assign.
-                (JsForm::Set(name), None) if args.len() == 1 && name.contains('.') && !name.contains('#') => {
+                // A property, written, of a global or an import: `process.exitCode
+                // = 1`, `EventEmitter.captureRejections = true`. Not an import
+                // itself, which JS can't assign.
+                (JsForm::Set(name), None)
+                    if args.len() == 1 && name.rsplit('#').next().is_some_and(|member| member.contains('.')) =>
+                {
                     let value = args.remove(0);
                     out.push(StmtKind::Assign(self.js_ref(&name).or_at(fun_span), value).at(self.js_span(span)));
                     Expr::undefined()

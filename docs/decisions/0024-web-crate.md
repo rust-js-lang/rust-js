@@ -229,5 +229,6 @@ which always passes `--extern webapi=..`.
 ## Amendment: a global's property, written
 
 `set X.y` of a function without a receiver writes a global's property, as
-`get X.y` reads one: `process.exitCode = 1`, a statement. Not an import's,
-`set fs#x`, which JS can't assign: that stays refused.
+`get X.y` reads one: `process.exitCode = 1`, a statement; and an import's
+property, `set events#EventEmitter.defaultMaxListeners`. Not an import
+itself, `set fs#x`, which JS can't assign: that stays refused.

@@ -5,8 +5,10 @@
 use core::marker::PhantomData;
 use std::collections::HashSet;
 
-use js::{Dict, JsError, JsObject, Unknown};
+use js::{Dict, JsError, JsObject, Promise, Unknown};
 
+use crate::event;
+use crate::events::Emits;
 use crate::fs::IntoPathLike;
 
 unsafe extern "Rust" {
@@ -916,4 +918,161 @@ mod sealed {
     impl Sealed for &str {}
     impl Sealed for super::NumberOrStr<'_> {}
     impl Sealed for &js::JsError {}
+}
+
+/// The `process` global's type, of its events (ADR 0361): `process::on`'s.
+#[cfg_attr(rust_js, rust_js::types = "NodeJS.Process")]
+pub struct Process(PhantomData<JsObject>);
+
+/// Where an uncaught exception came from: a throw, or a rejected promise.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum UncaughtExceptionOrigin {
+    #[cfg_attr(rust_js, rust_js::name = "uncaughtException")]
+    UncaughtException,
+    #[cfg_attr(rust_js, rust_js::name = "unhandledRejection")]
+    UnhandledRejection,
+}
+
+/// A rejected promise, of whatever it was to give.
+pub type AnyPromise = Promise<Option<&'static Unknown>>;
+
+impl Emits<event::BeforeExit> for Process {
+    type Listener = dyn Fn(f64);
+    type Args = (f64,);
+}
+
+impl Emits<event::Disconnect> for Process {
+    type Listener = dyn Fn();
+    type Args = ();
+}
+
+impl Emits<event::Exit> for Process {
+    type Listener = dyn Fn(f64);
+    type Args = (f64,);
+}
+
+impl Emits<event::RejectionHandled> for Process {
+    type Listener = dyn Fn(&AnyPromise);
+    type Args = (&'static AnyPromise,);
+}
+
+impl Emits<event::UncaughtException> for Process {
+    type Listener = dyn Fn(&JsError, UncaughtExceptionOrigin);
+    type Args = (&'static JsError, UncaughtExceptionOrigin);
+}
+
+impl Emits<event::UncaughtExceptionMonitor> for Process {
+    type Listener = dyn Fn(&JsError, UncaughtExceptionOrigin);
+    type Args = (&'static JsError, UncaughtExceptionOrigin);
+}
+
+impl Emits<event::UnhandledRejection> for Process {
+    type Listener = dyn Fn(Option<&Unknown>, &AnyPromise);
+    type Args = (Option<&'static Unknown>, &'static AnyPromise);
+}
+
+impl Emits<event::Warning> for Process {
+    type Listener = dyn Fn(&JsError);
+    type Args = (&'static JsError,);
+}
+
+impl Emits<event::WorkerMessage> for Process {
+    type Listener = dyn Fn(Option<&Unknown>, f64);
+    type Args = (Option<&'static Unknown>, f64);
+}
+
+/// A signal, its name the event's: `process::on(Signals::Sigint, ..)`.
+impl Emits<Signals> for Process {
+    type Listener = dyn Fn(Signals);
+    type Args = (Signals,);
+}
+
+/// [`process.on(event, listener)`](https://nodejs.org/api/process.html#process-events):
+/// call `listener` at each of the process's `event`.
+#[cfg_attr(rust_js, rust_js::link_name = "process.on")]
+pub fn on<E>(event: E, listener: Box<<Process as Emits<E>>::Listener>)
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "process.addListener")]
+pub fn add_listener<E>(event: E, listener: Box<<Process as Emits<E>>::Listener>)
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+/// `process.once(event, listener)`: at its next `event` only.
+#[cfg_attr(rust_js, rust_js::link_name = "process.once")]
+pub fn once<E>(event: E, listener: Box<<Process as Emits<E>>::Listener>)
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "process.prependListener")]
+pub fn prepend_listener<E>(event: E, listener: Box<<Process as Emits<E>>::Listener>)
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "process.prependOnceListener")]
+pub fn prepend_once_listener<E>(event: E, listener: Box<<Process as Emits<E>>::Listener>)
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+/// `process.off(event, listener)`: call `listener` no more, one
+/// [`events::listener`](crate::events::listener) made.
+#[cfg_attr(rust_js, rust_js::link_name = "process.off")]
+pub fn off<E>(event: E, listener: &'static <Process as Emits<E>>::Listener)
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+#[cfg_attr(rust_js, rust_js::link_name = "process.removeListener")]
+pub fn remove_listener<E>(event: E, listener: &'static <Process as Emits<E>>::Listener)
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+/// `process.emit(event, ...args)`: call `event`'s listeners, as if the
+/// process had.
+#[cfg_attr(rust_js, rust_js::link_name = "process.emit")]
+#[cfg_attr(rust_js, rust_js::variadic)]
+pub fn emit<E>(event: E, args: <Process as Emits<E>>::Args) -> bool
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+/// `process.listeners(event)`.
+#[cfg_attr(rust_js, rust_js::link_name = "process.listeners")]
+pub fn listeners<E>(event: E) -> Vec<&'static <Process as Emits<E>>::Listener>
+where
+    Process: Emits<E>,
+{
+    unreachable!()
+}
+
+/// `process.listenerCount(event)`.
+#[cfg_attr(rust_js, rust_js::link_name = "process.listenerCount")]
+pub fn listener_count<E>(event: E) -> f64
+where
+    Process: Emits<E>,
+{
+    unreachable!()
 }

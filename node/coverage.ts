@@ -159,7 +159,11 @@ function bindings(): { links: Set<string>; items: Set<string> } {
   };
   return {
     links: new Set([
-      ...[...sources.matchAll(/link_name = "(?:new )?([\w/]+)#(\w+)/g)].map((m) => `${m[1]}#${m[2]}`),
+      // A class's static, `get events#EventEmitter.captureRejections`, is its
+      // module's export too, as an `export =` class's statics are.
+      ...[...sources.matchAll(/link_name = "(?:new |get |set )?([\w/]+)#(\w+)(?:\.(\w+))?/g)].flatMap((m) =>
+        m[3] ? [`${m[1]}#${m[2]}`, `${m[1]}#${m[3]}`] : [`${m[1]}#${m[2]}`],
+      ),
       ...[...sources.matchAll(/link_name = "(?:get |set )?process\.(\w+)"/g)].map((m) => `process#${m[1]}`),
     ]),
     items: new Set(files.flatMap((f) => (f === "lib.rs" ? items(f).map((i) => `*#${i}`) : items(f).map((i) => `${f.slice(0, -3)}#${i}`)))),

@@ -801,6 +801,89 @@ pub fn spread(parts: &[&str]) -> String {
   expect(lib.spread(["x", "y"])).toBe(path.join("x", "y"));
 });
 
+// ADR 0361: an emitter's events, each a name of its own and its listener's
+// type: a program's own on an `EventEmitter`, and `process`'s, `exit` and a
+// signal, run by Node itself.
+test("node's events are typed by their emitters", () => {
+  const dir = fixture("node-events");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::event::Exit;
+use node::events::{self, Emits, EventEmitter, EventEmitterExt};
+use node::process::{self, Signals};
+
+unsafe extern "Rust" {
+    #[link_name = "globalThis.log"]
+    safe fn log(what: &str);
+}
+
+#[rust_js::name = "ping"]
+pub struct Ping;
+
+impl Emits<Ping> for EventEmitter {
+    type Listener = dyn Fn(f64, &str);
+    type Args = (f64, &'static str);
+}
+
+pub fn emitted() -> Vec<String> {
+    let emitter = events::event_emitter::new();
+    emitter.on(Ping, Box::new(|n, s| log(&format!("on {n} {s}"))));
+    emitter.once(Ping, Box::new(|n, _| log(&format!("once {n}"))));
+    let quiet: &'static dyn Fn(f64, &str) = events::listener(Box::new(|_, _| log("removed")));
+    emitter.prepend_listener(Ping, Box::new(quiet));
+    emitter.off(Ping, quiet);
+    let first = emitter.emit(Ping, (1.0, "a"));
+    let second = emitter.emit(Ping, (2.0, "b"));
+    emitter.set_max_listeners(5.0);
+    events::set_default_max_listeners(11.0);
+    vec![
+        events::default_max_listeners().to_string(),
+        first.to_string(),
+        second.to_string(),
+        emitter.listener_count(Ping).to_string(),
+        emitter.get_max_listeners().to_string(),
+        emitter.event_names().join(","),
+        events::get_max_listeners(emitter).to_string(),
+    ]
+}
+
+pub async fn awaited() -> String {
+    let emitter = events::event_emitter::new();
+    let later = events::once(emitter, Ping);
+    emitter.emit(Ping, (3.0, "c"));
+    let (n, s) = later.await;
+    format!("awaited {n} {s}")
+}
+
+pub fn signalled() {
+    process::on(Exit, Box::new(|code| println!("exit {code}")));
+    process::once(Signals::Sigusr2, Box::new(|signal| log(&format!("signal {signal:?}"))));
+    process::emit(Signals::Sigusr2, (Signals::Sigusr2,));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('emitter.emit("ping", 1, "a")');
+  expect(js).toContain('process.on("exit", (code) =>');
+  expect(js).toContain("EventEmitter.defaultMaxListeners = 11;");
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }');
+  writeFileSync(join(dir, "run.js"), `import { awaited, emitted, signalled } from "./lib.js";
+const logged = [];
+globalThis.log = (what) => logged.push(what);
+const got = emitted();
+logged.push(await awaited());
+signalled();
+console.log(JSON.stringify({ got, logged }));
+`);
+  const p = Bun.spawnSync(["node", "run.js"], { cwd: dir, stderr: "pipe" });
+  expect([p.exitCode, p.stderr.toString()]).toEqual([0, ""]);
+  const [json, exit] = p.stdout.toString().trim().split("\n");
+  expect(JSON.parse(json)).toEqual({
+    got: ["11", "true", "true", "1", "5", "ping", "5"],
+    logged: ["on 1 a", "once 1", "on 2 b", "awaited 3 c", "signal Sigusr2"],
+  });
+  expect(exit).toBe("exit 0");
+});
+
 // ADR 0272: `process`, the global, read and written, run by Node itself,
 // whose own `process` says what each should be.
 test("node's process global is read and written", () => {

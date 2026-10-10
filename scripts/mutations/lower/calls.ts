@@ -458,8 +458,8 @@ export const mutations: Mutation[] = [
     "name": "static-setter-refused",
     "breaks": "`set process.exitCode`, a global's property, is refused as a binding without a receiver",
     "file": "src/lower/calls.rs",
-    "find": "                (JsForm::Set(name), None) if args.len() == 1 && name.contains('.') && !name.contains('#') => {",
-    "replace": "                (JsForm::Set(name), None) if false => {",
+    "find": "                    if args.len() == 1 && name.rsplit('#').next().is_some_and(|member| member.contains('.')) =>",
+    "replace": "                    if false =>",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -476,6 +476,18 @@ export const mutations: Mutation[] = [
       "test/bindings.test.ts",
       "-t",
       "takes a tuple as its rest"
+    ]
+  },
+  {
+    "name": "static-setter-of-import-refused",
+    "breaks": "`set events#EventEmitter.defaultMaxListeners`, an import's property, is refused, where JS assigns it",
+    "file": "src/lower/calls.rs",
+    "find": "                    if args.len() == 1 && name.rsplit('#').next().is_some_and(|member| member.contains('.')) =>",
+    "replace": "                    if args.len() == 1 && !name.contains('#') && name.contains('.') =>",
+    "tests": [
+      "test/bindings.test.ts",
+      "-t",
+      "typed by their emitters"
     ]
   },
 ];
