@@ -386,4 +386,12 @@ export const mutations: Mutation[] = [
     replace: "let last = Expr::int(-1);",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
+  {
+    name: "next-back-generic-stepped",
+    breaks: "`next_back()` of a generic iterator stepped through is `None`, with no error",
+    file: "src/lower/combinators.rs",
+    find: "            true => self.is_array_iter(receiver_ty) || self.is_peekable(receiver_ty),",
+    replace: "            true => true,",
+    tests: ["test/corpus.test.ts","-t","next_back_generic"],
+  },
 ];

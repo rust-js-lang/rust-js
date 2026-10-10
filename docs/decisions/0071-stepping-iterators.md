@@ -117,14 +117,16 @@ on:
   | `it.as_slice()` | `it.items.slice(it.at, it.end)`, or a new one's items |
   | a `Peekable`'s `peek()` of a generic `T`'s | `$peekSome(it)`, as `$nextSome` |
 
-  A chain whose closures do what can be seen, or a generic one, is a JS
-  iterator, which gives its items from the front only: its `next_back()`
-  is refused, as Rust would run the closures on its last item alone. The
+  A chain whose closures do what can be seen, or a generic one, kept or
+  not, is a JS iterator, which gives its items from the front only: its
+  `next_back()` is refused, as Rust would run the closures on its last
+  item alone, and a JS iterator has no back to take from. The
   `iter_next_back` corpus case runs, against native Rust, `next()` and
   `next_back()` meeting, `len`, `size_hint`, a generic one's, `as_slice`,
   a clone, `collect`, a `for` after them, a B-tree's range and `iter`,
   `map`, `chars`, `split`, `Option`s, a `Peekable` peeked after, `next_if`,
-  `as_str` and a `RangeInclusive`; `next_back_lazy` the refusal.
+  `as_str` and a `RangeInclusive`; `next_back_lazy` and `next_back_generic`
+  the refusals.
   Mutations take from the front, read past `end` in each reader, unbox,
   run the chain eagerly, and refuse each.
 - **A slice's or a `VecDeque`'s `iter_mut()` kept, and a chain on

@@ -218,9 +218,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.mark_lazy_chain(args[0], true);
         }
         let lazy = self.is_lazy_value(args[0]);
-        // A JS iterator gives its items from the front only.
-        if op == StepOp::NextBack && !stepping && (self.is_generic_iter(receiver_ty) || lazy) {
-            return Err(self.unsupported(span, &format!("`next_back()` of a lazy `{receiver_ty}`")));
+        // Only a `$iter` or an array knows its back: a JS iterator, a generic
+        // one's or a lazy chain's, gives its items from the front only.
+        let has_back = match stepping {
+            true => self.is_array_iter(receiver_ty) || self.is_peekable(receiver_ty),
+            false => !lazy && !self.is_generic_iter(receiver_ty),
+        };
+        if op == StepOp::NextBack && !has_back {
+            return Err(self.unsupported(span, &format!("`next_back()` of a lazy or generic `{receiver_ty}`")));
         }
         let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
             this.runtime.insert(helper);
