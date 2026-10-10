@@ -10,8 +10,8 @@ function unitDebug_fmt(unit) {
   return "Unit";
 }
 
-function entryDebug_fmt(entry$1) {
-  return `Entry { name: ${$debugStr(entry$1.name)}, note: ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value))})`))(entry$1.note)} }`;
+function entryDebug_fmt(entry) {
+  return `Entry { name: ${$debugStr(entry.name)}, note: ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($someValue(value))})`))(entry.note)} }`;
 }
 
 const NOTHING_FOUND = { $someNone: 0 };

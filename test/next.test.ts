@@ -653,10 +653,10 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // next/web-vitals, next/offline, next/form and next/error.
   expect(linkedJsx).toContain("useReportWebVitals((metric) => {");
   expect(linkedJsx).toContain('<Form action="/search" className="search">\n      <input name="query" disabled={offline} />\n    </Form>');
-  // Next.js's error page, named apart from JS's `Error` (ADR 0038).
-  expect(linkedJsx).toContain('import Error$, { catchError } from "next/error";');
+  // Next.js's error page, `Error` as its docs import it, where the module reads no global `Error` (ADR 0352).
+  expect(linkedJsx).toContain('import Error, { catchError } from "next/error";');
   expect(linkedJsx).toContain("export const Shown = catchError(({ text }, info) => (\n  <button onClick={() => info.reset()}>{text}</button>\n));");
-  expect(linkedJsx).toContain('<Shown text="again">\n      <Error$ statusCode={404} title="Gone" />\n    </Shown>');
+  expect(linkedJsx).toContain('<Shown text="again">\n      <Error statusCode={404} title="Gone" />\n    </Shown>');
   // next/server: a Route Handler, and a proxy of its config.
   expect(output).toContain("ƒ /api/hello");
   expect(output).toContain("ƒ Proxy");

@@ -14,8 +14,8 @@ export function entry() {
   main();
 }
 
-function yearDebug_fmt(year$1) {
-  return `Year(${year$1[0]})`;
+function yearDebug_fmt(year) {
+  return `Year(${year[0]})`;
 }
 
 function year(n) {

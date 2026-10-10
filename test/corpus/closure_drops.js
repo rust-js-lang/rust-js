@@ -134,7 +134,7 @@ function main() {
                   noisyDrop_drop(x);
                 }
               },
-              (value$1) => {
+              (value) => {
                 noisyDrop_drop(e);
               },
             )}`,

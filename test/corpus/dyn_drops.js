@@ -101,8 +101,8 @@ function main() {
     const borrowed = { value: lent, impl: noisyShape() };
     try {
       console.log(`${borrowed.impl.name(borrowed.value)}`);
-      const loud$1 = [3];
-      const shown = loudDebug_fmt(loud$1);
+      const loud = [3];
+      const shown = loudDebug_fmt(loud);
       try {
         console.log(`${shown}`);
         const holder = { shape: { value: ["held"], impl: noisyShape() } };
@@ -142,7 +142,7 @@ function main() {
           holder.shape.impl.$drop?.(holder.shape.value);
         }
       } finally {
-        loudDrop_drop(loud$1);
+        loudDrop_drop(loud);
       }
     } finally {
       noisyDrop_drop(lent);

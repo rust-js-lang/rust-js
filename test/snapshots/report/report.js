@@ -136,7 +136,7 @@ export function table(input) {
 
 export function parse_errors() {
   return `${$debugParseError($unwrapErr($parseInt("", 0, 255)), "ParseIntError")} ${$debugParseError($unwrapErr($parseInt("300", 0, 255)), "ParseIntError")} ${$debugParseError($unwrapErr($parseInt("-40000", -32768, 32767)), "ParseIntError")} ${$debugParseError($unwrapErr($parseF64("x"), undefined, $debugF64), "ParseFloatError")} ${$debugParseError($unwrapErr($parseBool("no")), "ParseBoolError")} ${$debugParseError(
-    $unwrapErr($parseChar("ab"), undefined, (e$1) => $debugStr(e$1, "'")),
+    $unwrapErr($parseChar("ab"), undefined, (e) => $debugStr(e, "'")),
     "ParseCharError",
   )}`;
 }

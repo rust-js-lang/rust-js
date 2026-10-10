@@ -3682,3 +3682,71 @@ pub fn borrowed() -> u8 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.owned(), lib.part(), lib.borrowed()]).toEqual([[1, 9], [2, 9], 2]);
 });
+
+// A local named apart from a module's name its function never reads is
+// that name, `{ label }`, as JS shadows it; and an import named apart from
+// a global its module never reads is the global's name, `import Error`
+// (ADR 0352). One whose function reads the outer name keeps its own.
+test("a name nothing it shadows is read in is the name", async () => {
+  const dir = fixture("reclaimed-names");
+  writeFileSync(join(dir, "err.js"), "export default function Error() { return 40; }\n");
+  writeFileSync(join(dir, "lib.rs"), `pub fn label(home: bool) -> &'static str {
+    if home { "Home" } else { "Away" }
+}
+
+pub struct P<'a> {
+    pub label: &'a str,
+}
+
+pub fn show(P { label }: P) -> usize {
+    label.len()
+}
+
+pub fn make() -> impl Fn(P) -> usize {
+    |P { label }| label.len()
+}
+
+pub fn shadowing(P { label: text }: P) -> usize {
+    let label = text;
+    label.len() + self::label(false).len()
+}
+
+unsafe extern "Rust" {
+    #[link_name = "./err.js#default"]
+    safe fn Error() -> u32;
+}
+
+pub fn made() -> u32 {
+    Error() + 2
+}
+
+pub fn kept(class: u32) -> u32 {
+    class + 1
+}
+
+#[allow(non_snake_case)]
+pub fn both(n: u32) -> (u32, String) {
+    let String = n + 1;
+    (String, n.to_string())
+}
+
+#[allow(non_snake_case)]
+pub fn alone(n: u32) -> u32 {
+    let String = n + 1;
+    String
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("export function show({ label }) {\n  return $byteLen(label);\n}");
+  expect(js).toContain("return ({ label }) => $byteLen(label);");
+  expect(js).toContain("const label$1 = text;");
+  expect(js).toContain('import Error from "./err.js";');
+  expect(js).toContain("return (Error() + 2) >>> 0;");
+  // A word JS keeps stays apart; so does a global a conversion reads.
+  expect(js).toContain("export function kept(class$) {");
+  expect(js).toContain("return [String$, String(n)];");
+  expect(js).toContain("const String = (n + 1) >>> 0;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.show({ label: "ab" }), lib.make()({ label: "abc" }), lib.shadowing({ label: "a" }), lib.made(), lib.kept(1), lib.both(1), lib.alone(1)]).toEqual([2, 3, 5, 42, 2, [2, "1"], 2]);
+});

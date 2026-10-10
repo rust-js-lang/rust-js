@@ -6,8 +6,8 @@ export function entry() {
   main();
 }
 
-function titlesDebug_fmt(titles$1) {
-  return `Titles { first: ${$debugStr(titles$1.first)}, count: ${titles$1.count} }`;
+function titlesDebug_fmt(titles) {
+  return `Titles { first: ${$debugStr(titles.first)}, count: ${titles.count} }`;
 }
 
 function titles() {

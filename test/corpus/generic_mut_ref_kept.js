@@ -246,9 +246,9 @@ function main() {
       .join(", ")}] ${checkedDeref_deref(count)}`,
   );
   const k = { n: 1 };
-  const match$1 = cSlot_slot(k);
-  if (match$1 != null) {
-    match$1.value = (match$1.value + 1) | 0;
+  const match = cSlot_slot(k);
+  if (match != null) {
+    match.value = (match.value + 1) | 0;
   }
   console.log(`${cDebug_fmt(k)}`);
 }

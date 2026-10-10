@@ -139,20 +139,20 @@ export function changed_in_place(r) {
   const f = { value: poly };
   grow(f);
   poly = f.value;
-  let circle$1 = { TAG: "Circle", r };
-  const f$1 = { value: circle$1 };
+  let circle = { TAG: "Circle", r };
+  const f$1 = { value: circle };
   grow(f$1);
-  circle$1 = f$1.value;
-  if (circle$1.TAG === "Circle") {
-    circle$1.r += 0.5;
+  circle = f$1.value;
+  if (circle.TAG === "Circle") {
+    circle.r += 0.5;
   }
   let dot = "Dot";
   const f$2 = { value: dot };
   grow(f$2);
   dot = f$2.value;
   let radius;
-  if (circle$1.TAG === "Circle") {
-    const r$1 = circle$1.r;
+  if (circle.TAG === "Circle") {
+    const r$1 = circle.r;
     radius = r$1;
   } else {
     radius = 0;

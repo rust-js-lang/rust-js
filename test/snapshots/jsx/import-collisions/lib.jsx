@@ -8,11 +8,11 @@ export function Card() {
 }
 
 export function View() {
-  const render = (Card$1) => (
+  const render = (Card) => (
     <>
       <Card$2 />
       <Card$3 />
-      <span>{Card$1}</span>
+      <span>{Card}</span>
     </>
   );
   return render(9);

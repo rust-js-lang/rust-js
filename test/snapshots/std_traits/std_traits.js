@@ -182,8 +182,8 @@ export function versionPartialEq() {
   return $versionPartialEq;
 }
 
-function versionPartialEq_eq(version$1, other) {
-  return version$1.major === other.major;
+function versionPartialEq_eq(version, other) {
+  return version.major === other.major;
 }
 
 function version(major, label) {
@@ -354,18 +354,18 @@ export function displays() {
   ];
 }
 
-function countdownIterator_next(countdown$1) {
-  if (countdown$1.n === 0) {
+function countdownIterator_next(countdown) {
+  if (countdown.n === 0) {
     return;
   }
-  countdown$1.n = (countdown$1.n - 1) >>> 0;
-  return (countdown$1.n + 1) >>> 0;
+  countdown.n = (countdown.n - 1) >>> 0;
+  return (countdown.n + 1) >>> 0;
 }
 
-function fibonacciIterator_next(fibonacci$1) {
-  const a = fibonacci$1.a;
-  fibonacci$1.a = fibonacci$1.b;
-  fibonacci$1.b = (fibonacci$1.b + a) >>> 0;
+function fibonacciIterator_next(fibonacci) {
+  const a = fibonacci.a;
+  fibonacci.a = fibonacci.b;
+  fibonacci.b = (fibonacci.b + a) >>> 0;
   return a;
 }
 
@@ -382,14 +382,14 @@ function fibonacci() {
 }
 
 export function iterations() {
-  let total$1 = 0;
+  let total = 0;
   for (const x of $iterator({ n: 3 }, countdownIterator_next)) {
-    total$1 = (total$1 + x) >>> 0;
+    total = (total + x) >>> 0;
   }
   const c = { n: 2 };
   const first = countdownIterator_next(c) ?? 0;
   return [
-    total$1,
+    total,
     first,
     $iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray(),
     $iterator(fibonacci(), fibonacciIterator_next)

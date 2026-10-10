@@ -32,15 +32,15 @@ function main() {
   console.log(`[${sorted.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`);
   const names = new Map();
   for (const k of [2, 1, 2]) {
-    const entry$1 = $entry(names, k);
-    if (entry$1.TAG === "Occupied") {
-      console.log(`${entry$1._0[1]} is ${$entryGet(entry$1._0)}`);
+    const entry = $entry(names, k);
+    if (entry.TAG === "Occupied") {
+      console.log(`${entry._0[1]} is ${$entryGet(entry._0)}`);
     }
-    if (entry$1.TAG === "Occupied") {
-      console.log(`took ${$entryRemove(entry$1._0)}`);
+    if (entry.TAG === "Occupied") {
+      console.log(`took ${$entryRemove(entry._0)}`);
     } else {
-      const key = entry$1._0[1];
-      const cell$1 = $vacantInsert(entry$1._0, String(key), true);
+      const key = entry._0[1];
+      const cell$1 = $vacantInsert(entry._0, String(key), true);
       cell$1.value += "!";
     }
   }

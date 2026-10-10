@@ -350,16 +350,12 @@ export function report() {
   const tmp = { TAG: "Number", _0: $jsonInt(1) };
   const object$3 = new Map();
   object$3.set("a", "Null");
-  const e$3 = {
+  const e = {
     name: "e",
     data: { TAG: "Array", _0: [tmp, { TAG: "Object", _0: object$3 }] },
     meta: new Map(),
   };
-  const text = $unwrapOk(
-    $toJson(e$3, recordSerialize_serialize, false),
-    undefined,
-    $debugJsonError,
-  );
+  const text = $unwrapOk($toJson(e, recordSerialize_serialize, false), undefined, $debugJsonError);
   out += `${text}\n`;
   const back = $unwrapOk(
     $fromJson(text, recordDeserialize_deserialize),
@@ -378,7 +374,7 @@ export function report() {
   object$4.set("c", { TAG: "Array", _0: [$jsonFloat(1.5), $jsonFloat(2)] });
   const arg$9 = $eq(o, { TAG: "Object", _0: object$4 });
   out += `${$jsonValueText(o, false)} ${arg$9}\n`;
-  const tv = $unwrapOk($toJsonValue(e$3, recordSerialize_serialize), undefined, $debugJsonError);
+  const tv = $unwrapOk($toJsonValue(e, recordSerialize_serialize), undefined, $debugJsonError);
   out += `${$jsonValueText(tv, false)}\n`;
   out += `${$jsonValueText($jsonFloat(NaN), false)}\n`;
   const arg$10 = $jsonNumberOfF64(1.5);

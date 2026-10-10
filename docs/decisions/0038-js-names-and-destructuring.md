@@ -84,3 +84,8 @@ Two more follow from reading the output:
   the new names.
 - Two Rust variables that differ only by underscores (`set_count`,
   `setcount`) are fine: the second gets `$1`, as any clash does.
+
+## Amendment
+
+A local may take a module's name, and an import a global's, where its
+scope never mentions the name: ADR 0352.
