@@ -78,8 +78,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let Some((place, _)) = self.ref_place(args[0]) else {
                     return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
                 };
-                let clone = self.clone_arg(item, span)?;
-                let made = helper("$makeMut", vec![place.clone(), clone]);
+                let mut given = vec![place.clone(), self.clone_arg(item, span)?];
+                given.extend(self.drop_function(item, span)?);
+                let made = helper("$makeMut", given);
                 out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));
                 self.through_rc(place, item)
             }
@@ -99,8 +100,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     RcOp::TryUnwrap => helper("$tryUnwrap", vec![rc]),
                     RcOp::IntoInner => helper("$intoInner", vec![rc]),
                     RcOp::UnwrapOrClone => {
-                        let clone = self.clone_arg(item, span)?;
-                        helper("$unwrapOrClone", vec![rc, clone])
+                        let mut given = vec![rc, self.clone_arg(item, span)?];
+                        given.extend(self.drop_function(item, span)?);
+                        helper("$unwrapOrClone", given)
                     }
                     // `Some` of a `&mut` to what it points at, if it's the only
                     // `Rc` and nothing's weak to it.

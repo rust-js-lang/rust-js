@@ -23,6 +23,11 @@ by a helper of `slice_ops.js` where JS has no method of its own.**
 |---|---|
 | `v.fill(x)` | `v.fill(x)`; `$fill(v, x, clone)` where a clone is more than the value: a clone in each but the last, `x` itself |
 | `fill_with`, `copy_from_slice`, `clone_from_slice`, `swap_with_slice`, `copy_within` | `$fillWith`, `$copyFromSlice`, `$cloneFromSlice`, `$swapWithSlice`, `$copyWithin`, each panicking as std's does |
+
+(Amended: `clone_from_slice` of items whose `Clone` has a `clone_from` of
+the crate's calls it on each, as std's does, given a handle on a number or
+text; of items with such a type inside them, or generic where the crate
+has one, it's refused. It had cloned each, which a review found.)
 | `is_sorted()`, `is_sorted_by(f)`, `is_sorted_by_key(f)` | `$isSortedBy(v, (a, b) => a <= b)` of numbers, `$cmp(a, b) <= 0` of others; `$isSortedByKey(v, f, cmp)` |
 | `partition_point(p)` | `$partitionPoint(v, p)`, by std's binary search, `p`'s calls the same |
 | `chunks_exact(n)`, `rchunks(n)`, `rchunks_exact(n)`, `.remainder()` | an array of chunks, and its `remainder` |

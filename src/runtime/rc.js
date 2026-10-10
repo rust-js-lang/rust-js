@@ -66,23 +66,31 @@ function $intoInner(rc) {
 }
 
 // `Rc::unwrap_or_clone(rc)`: what it points at if it's the last, else a
-// clone of it, `clone`'s where that's more than the value itself.
-function $unwrapOrClone(rc, clone) {
+// clone of it, `clone`'s where that's more than the value itself, made
+// while it's still shared, and then the `Rc` dropped, `drop` what the last
+// drops, as a panic unwinds too.
+function $unwrapOrClone(rc, clone, drop) {
   if (rc.strong === 1) return $rcTake(rc);
-  rc.strong--;
-  return clone ? clone(rc.value) : rc.value;
+  try {
+    return clone ? clone(rc.value) : rc.value;
+  } finally {
+    $rcDrop(rc, drop);
+  }
 }
 
 // `Rc::make_mut(&mut rc)`: the `Rc` to change, itself if it's the only one
 // and nothing's weak to it, else a new one of what it pointed at, moved if
-// it was the last strong one, else cloned.
-function $makeMut(rc, clone) {
+// it was the last strong one, else cloned while it's still shared, and then
+// the old one dropped, `drop` what the last drops. A clone that panics
+// leaves it as it was.
+function $makeMut(rc, clone, drop) {
   if (rc.strong === 1) {
     if (rc.weak === 0) return rc;
     return { value: $rcTake(rc), strong: 1, weak: 0 };
   }
-  rc.strong--;
-  return { value: clone ? clone(rc.value) : rc.value, strong: 1, weak: 0 };
+  const made = { value: clone ? clone(rc.value) : rc.value, strong: 1, weak: 0 };
+  $rcDrop(rc, drop);
+  return made;
 }
 
 // `Rc::new_cyclic(f)`: `f` given a `Weak` to what it makes, which can't

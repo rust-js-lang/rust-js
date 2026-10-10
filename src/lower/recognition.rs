@@ -2615,6 +2615,39 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .unwrap_or(ty)
     }
 
+    /// The `Clone` impl of the crate's that a `ty`'s is, if it has a
+    /// `clone_from` of its own, which `clone_from_slice` calls (ADR 0324).
+    pub(super) fn own_clone_from(&self, ty: Ty<'tcx>) -> bool {
+        let clone = self.tcx.require_lang_item(LangItem::Clone, rustc_span::DUMMY_SP);
+        let tr = ty::TraitRef::new(self.tcx, clone, [self.tcx.erase_and_anonymize_regions(ty)]);
+        matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
+            Ok(ImplSource::UserDefined(imp)) if !self.is_std(imp.impl_def_id) && self.has_clone_from(imp.impl_def_id))
+    }
+
+    /// Whether a `clone_from` of the crate's may run in a `clone_from` of a
+    /// `ty` but its own: one of a type inside it, or of what a type parameter
+    /// stands for, where any `Clone` impl of the crate's has one.
+    pub(super) fn reaches_clone_from(&self, ty: Ty<'tcx>) -> bool {
+        let clone = self.tcx.require_lang_item(LangItem::Clone, rustc_span::DUMMY_SP);
+        let any = self
+            .trait_impls
+            .iter()
+            .any(|&imp| self.tcx.impl_opt_trait_id(imp) == Some(clone) && self.has_clone_from(imp));
+        any && ty.walk().skip(1).any(|part| {
+            part.as_type().is_some_and(|t| {
+                matches!(t.kind(), ty::Param(_) | ty::Alias(..) | ty::Dynamic(..)) || self.own_clone_from(t)
+            })
+        }) || any && matches!(ty.kind(), ty::Param(_) | ty::Alias(..) | ty::Dynamic(..))
+    }
+
+    /// Does the impl `imp` write its own `clone_from`?
+    fn has_clone_from(&self, imp: DefId) -> bool {
+        self.tcx
+            .associated_items(imp)
+            .in_definition_order()
+            .any(|item| item.name().as_str() == "clone_from")
+    }
+
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
     pub(super) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {

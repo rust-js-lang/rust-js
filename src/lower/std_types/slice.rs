@@ -5,7 +5,8 @@ use rustc_middle::thir::ExprId;
 use rustc_middle::ty;
 use rustc_span::Span;
 
-use crate::js::{Expr, Op, Stmt};
+use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::recognition::trait_method;
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
@@ -110,6 +111,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     SliceOp::FillWith => helper(self, "$fillWith", vec![arg(), arg()]),
                     SliceOp::CopyFromSlice => helper(self, "$copyFromSlice", vec![arg(), arg()]),
+                    // Each by its type's own `clone_from` where it has one, as
+                    // std's calls it.
+                    SliceOp::CloneFromSlice if self.recognition().own_clone_from(item()) => {
+                        let (items, source) = (arg(), arg());
+                        let place = Expr::index(Expr::var("items"), Expr::var("i"));
+                        let target = match self.is_boxable(item()) {
+                            true => Expr::handle(place),
+                            false => place,
+                        };
+                        let clone_from = trait_method(self.tcx, self.clone_trait(), "clone_from");
+                        let args = self.args_of(self.clone_trait(), item());
+                        let called = self.impl_call(clone_from, args, vec![target, Expr::var("from")], span)?;
+                        let f = Expr::arrow(
+                            vec!["items".into(), "i".into(), "from".into()],
+                            vec![StmtKind::Expr(called).at(js::Span::NONE)],
+                        );
+                        helper(self, "$cloneFromSlice", vec![items, source, Expr::undefined(), f])
+                    }
+                    SliceOp::CloneFromSlice if self.recognition().reaches_clone_from(item()) => {
+                        return Err(self.unsupported(
+                            span,
+                            "`clone_from_slice` of items whose `clone_from` may be the crate's, inside them or generic",
+                        ));
+                    }
                     SliceOp::CloneFromSlice => {
                         let (items, source) = (arg(), arg());
                         let clone = self.clone_arg(item(), span)?;

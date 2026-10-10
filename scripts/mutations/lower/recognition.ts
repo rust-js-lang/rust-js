@@ -883,4 +883,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {\n",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
+  {
+    name: "own-clone-from-of-std",
+    breaks: "a type's own `clone_from` is taken for std's",
+    file: "src/lower/recognition.rs",
+    find: "            Ok(ImplSource::UserDefined(imp)) if !self.is_std(imp.impl_def_id) && self.has_clone_from(imp.impl_def_id))",
+    replace: "            Ok(ImplSource::UserDefined(imp)) if false)",
+    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_own"],
+  },
 ];

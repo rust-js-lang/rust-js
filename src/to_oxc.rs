@@ -903,7 +903,7 @@ impl<'a> Cx<'a> {
             ExprKind::BigUint(n) => Expression::new_identifier(sp, self.name(&format!("{n}n")), b),
             ExprKind::Bool(v) => Expression::new_boolean_literal(sp, *v, b),
             ExprKind::Str(s) => Expression::new_string_literal(sp, self.allocator.alloc_str(s), None, b),
-            ExprKind::Undefined => Expression::new_identifier(sp, "undefined", b),
+            ExprKind::Undefined | ExprKind::GivenUndefined => Expression::new_identifier(sp, "undefined", b),
             ExprKind::Null => Expression::new_null_literal(sp, b),
             ExprKind::Symbol(_) => unreachable!("linking resolves every module symbol before emission"),
             ExprKind::OptionalMember(..) | ExprKind::OptionalIndex(..) | ExprKind::OptionalCall(..) => {

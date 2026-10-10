@@ -659,6 +659,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::Str(_)
         | ExprKind::Lines(_)
         | ExprKind::Undefined
+        | ExprKind::GivenUndefined
         | ExprKind::Null
         | ExprKind::Var(_)
         | ExprKind::Symbol(_)

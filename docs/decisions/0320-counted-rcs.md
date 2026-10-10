@@ -50,8 +50,15 @@ try {
 | a drop | `$rcDrop(rc)`, `$rcDrop(rc, dropNode)` where what it points at has a destructor: the last drops it |
 | `strong_count`, `weak_count`, `ptr_eq` | `rc.strong`, `rc.weak`, `a === b` |
 | `Rc::downgrade(&rc)`, `weak.upgrade()`, `Weak::new()` | `$downgrade(rc)`, `$upgrade(weak)`, `{ strong: 0, weak: 0 }` |
-| `get_mut`, `make_mut` | `rc.strong === 1 && rc.weak === 0 ? rc.value : undefined`; `rc = $makeMut(rc, clone)` |
+| `get_mut`, `make_mut` | `rc.strong === 1 && rc.weak === 0 ? rc.value : undefined`; `rc = $makeMut(rc, clone, drop)` |
 | `try_unwrap`, `into_inner`, `unwrap_or_clone`, `new_cyclic` | `$tryUnwrap`, `$intoInner`, `$unwrapOrClone`, `$newCyclic` |
+
+(Amended: `make_mut` and `unwrap_or_clone` of a shared `Rc` clone what it
+points at while it's still shared, so a `clone` sees every owner, and then
+drop the `Rc`, the last of it dropping what it points at with `drop`; a
+clone that panics leaves `make_mut`'s as it was, and `unwrap_or_clone`'s
+dropped as it unwinds. They had dropped a count first, which a review
+found.)
 
 - **Which are counted**: an analysis finds each `T` whose `Rc` or `Arc`
   the crate reads a count of, `ptr_eq`s, or makes a `Weak` of, in a body

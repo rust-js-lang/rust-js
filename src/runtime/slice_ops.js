@@ -19,9 +19,14 @@ function $copyFromSlice(v, src) {
   for (let i = 0; i < v.length; i++) v[i] = src[i];
 }
 
-function $cloneFromSlice(v, src, clone) {
+// `clone_from_slice(src)`: each item a clone, or `cloneFrom(v, i, item)`'s,
+// its type's own `clone_from` (ADR 0324).
+function $cloneFromSlice(v, src, clone, cloneFrom) {
   if (v.length !== src.length) throw new Error("destination and source slices have different lengths");
-  for (let i = 0; i < v.length; i++) v[i] = clone ? clone(src[i]) : src[i];
+  for (let i = 0; i < v.length; i++) {
+    if (cloneFrom) cloneFrom(v, i, src[i]);
+    else v[i] = clone ? clone(src[i]) : src[i];
+  }
 }
 
 function $swapWithSlice(v, other) {

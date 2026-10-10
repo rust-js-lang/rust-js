@@ -127,3 +127,52 @@ pub fn rw_read() -> u32 {
   expect(call("rw")).toBe(error);
   expect(call("rw_read")).toBe(error);
 });
+
+// A `None` given to JS is `undefined` given, never left out: a JS function
+// may count its arguments, as `Math.max` does (ADR 0330).
+test("an undefined given to JS is an argument, never left out", () => {
+  const dir = fixture("given-undefined");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "Math.max"]
+    safe fn math_max(a: f64, b: Option<f64>) -> f64;
+}
+
+pub fn bound() -> f64 {
+    math_max(1.0, None)
+}
+
+pub fn given(f: &dyn Fn(f64, Option<f64>) -> f64) -> f64 {
+    f(1.0, None)
+}
+
+fn own(a: f64, b: Option<f64>) -> f64 {
+    a + b.unwrap_or(0.0)
+}
+
+pub fn called() -> f64 {
+    own(1.0, None)
+}
+
+pub fn closed(n: f64) -> f64 {
+    let add = move |a: f64, b: Option<f64>| {
+        let total = a + b.unwrap_or(n);
+        total * 2.0
+    };
+    add(1.0, None) + add(2.0, Some(1.0))
+}
+`);
+  const out = join(dir, "lib.js");
+  run([compiler, join(dir, "lib.rs"), "-o", out]);
+  const js = readFileSync(out, "utf8");
+  expect(js).toContain("Math.max(1, undefined)");
+  expect(js).toContain("f(1, undefined)");
+  // The crate's own function takes it as missing: `own(1)`, as a person writes it.
+  expect(js).toContain("own(1)");
+  expect(js).toContain("add(1)");
+  const call = (expression: string) =>
+    run([node ?? "node", "--input-type=module", "--eval", `const m = await import(${JSON.stringify(out)}); console.log(${expression});`]);
+  expect(call("m.bound()")).toBe("NaN\n");
+  expect(call("m.given(Math.max)")).toBe("NaN\n");
+  expect(call("m.called()")).toBe("1\n");
+  expect(call("m.closed(3)")).toBe("14\n");
+});

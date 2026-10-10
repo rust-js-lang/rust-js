@@ -34,7 +34,8 @@ And webapi had no `console`, whose `console.warn` it calls.
   items, `[header, ...lines]`.
 - **A trailing `undefined` after another argument is no argument**, `f(x)`,
   as a person leaves an optional one out. One given alone is a value,
-  `setProgram(undefined)`.
+  `setProgram(undefined)`. (Amended by ADR 0330: of rust-js's own calls
+  only; one given to JS is kept, as it may count its arguments.)
 - **webapi binds the `console` namespace** (WHATWG Console), as it does
   `WebAssembly`.
 

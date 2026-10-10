@@ -602,6 +602,10 @@ pub enum ExprKind {
     /// template literal with its line breaks, as a person writes a page.
     Lines(String),
     Undefined,
+    /// `undefined` given to JS, a binding or a JS function, which no pass
+    /// leaves out of a call: what it calls may count its arguments,
+    /// `Math.max(1, undefined)` (ADR 0330).
+    GivenUndefined,
     /// Only to test against: `o != null` (ADR 0030).
     Null,
     Var(String),
@@ -1040,6 +1044,7 @@ impl Expr {
                 | ExprKind::Str(_)
                 | ExprKind::Lines(_)
                 | ExprKind::Undefined
+                | ExprKind::GivenUndefined
                 | ExprKind::Null
         )
     }
@@ -1108,6 +1113,7 @@ impl Expr {
             | ExprKind::Str(_)
             | ExprKind::Lines(_)
             | ExprKind::Undefined
+            | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
@@ -1170,6 +1176,7 @@ impl Expr {
             | ExprKind::Str(_)
             | ExprKind::Lines(_)
             | ExprKind::Undefined
+            | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
@@ -1213,6 +1220,7 @@ impl Expr {
             | ExprKind::Str(_)
             | ExprKind::Lines(_)
             | ExprKind::Undefined
+            | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)
@@ -1333,6 +1341,7 @@ impl Expr {
             | ExprKind::Str(_)
             | ExprKind::Lines(_)
             | ExprKind::Undefined
+            | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
@@ -1457,6 +1466,7 @@ impl Expr {
             | ExprKind::Str(_)
             | ExprKind::Lines(_)
             | ExprKind::Undefined
+            | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Var(_)
             | ExprKind::Symbol(_)

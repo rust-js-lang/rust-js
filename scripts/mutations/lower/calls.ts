@@ -422,4 +422,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "combinators_owned_drops"],
   },
+  {
+    name: "binding-undefined-left-out",
+    breaks: "`Math.max(1, None)` is `Math.max(1)`, `1` where it's `NaN`",
+    file: "src/lower/calls.rs",
+    find: "            given_to_js(&mut args);\n",
+    replace: "",
+    tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
+  },
+  {
+    name: "dyn-fn-undefined-left-out",
+    breaks: "a `dyn Fn` of JS's given `None` last isn't given it",
+    file: "src/lower/calls.rs",
+    find: "            if !matches!(self.thir[callee_of].ty.peel_refs().kind(), ty::Closure(..)) {\n                given_to_js(&mut values);",
+    replace: "            if false {\n                given_to_js(&mut values);",
+    tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
+  },
+  {
+    name: "closure-undefined-kept",
+    breaks: "a closure of the crate's is given a trailing `undefined`, not as a person writes it",
+    file: "src/lower/calls.rs",
+    find: "            if !matches!(self.thir[callee_of].ty.peel_refs().kind(), ty::Closure(..)) {\n                given_to_js(&mut values);",
+    replace: "            if true {\n                given_to_js(&mut values);",
+    tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
+  },
 ];

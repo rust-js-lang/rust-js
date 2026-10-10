@@ -34,4 +34,20 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(pointer) = self.recognition().pinned(ty).filter(|_| false) {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
+  {
+    name: "make-mut-drop-unknown",
+    breaks: "`make_mut` that drops the last `Rc` leaves what it points at undropped",
+    file: "src/lower/std_types/rc.rs",
+    find: "                let mut given = vec![place.clone(), self.clone_arg(item, span)?];\n                given.extend(self.drop_function(item, span)?);\n",
+    replace: "                let given = vec![place.clone(), self.clone_arg(item, span)?];\n",
+    tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
+  },
+  {
+    name: "unwrap-or-clone-drop-unknown",
+    breaks: "`unwrap_or_clone` that drops the last `Rc` leaves what it points at undropped",
+    file: "src/lower/std_types/rc.rs",
+    find: "                        let mut given = vec![rc, self.clone_arg(item, span)?];\n                        given.extend(self.drop_function(item, span)?);\n",
+    replace: "                        let given = vec![rc, self.clone_arg(item, span)?];\n",
+    tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
+  },
 ];

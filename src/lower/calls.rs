@@ -39,6 +39,18 @@ pub(super) struct Call<'c, 'tcx> {
     pub(super) span: Span,
 }
 
+/// Arguments given to JS: a trailing `undefined` is one it's given, which
+/// no pass leaves out, as what it calls may count its arguments,
+/// `Math.max(1, undefined)` (ADR 0330).
+pub(super) fn given_to_js(args: &mut [Expr]) {
+    for arg in args.iter_mut().rev() {
+        if !matches!(arg.kind, js::ExprKind::Undefined) {
+            break;
+        }
+        arg.kind = js::ExprKind::GivenUndefined;
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call to one of our functions (local or imported by name),
     /// to JS (ADR 0021), or to one of the std functions rust-js knows (ADR 0023).
@@ -58,6 +70,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 operands.extend_from_slice(args);
                 let mut values = self.operands(&operands, out)?;
                 let callee = values.remove(0);
+                // A function pointer, which may be JS's (ADR 0330).
+                given_to_js(&mut values);
                 return Ok(Expr::call(callee, values));
             }
             return Err(self.unsupported(f.span, "calling this"));
@@ -355,6 +369,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
+            given_to_js(&mut args);
             let value = match (js_form(self.tcx, def_id), this) {
                 // A method or a property is on `this`: it can't be an import.
                 (JsForm::Call(name), Some(this)) if !name.contains('#') => {
@@ -428,10 +443,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ExprKind::Borrow { arg, .. } => arg,
                 _ => args[0],
             };
+            let callee_of = callee;
             let mut list = vec![callee];
             list.extend(fields.iter().copied());
             let mut values = self.operands(&list, out)?;
             let callee = values.remove(0);
+            // Not a closure of the crate's: a `dyn Fn`, a generic one or a
+            // pointer, which may be JS's (ADR 0330).
+            if !matches!(self.thir[callee_of].ty.peel_refs().kind(), ty::Closure(..)) {
+                given_to_js(&mut values);
+            }
             return Ok(Some(Expr::call(callee, values)));
         }
         // `it.clone()` of a `$iter`, a local stepped through (ADR 0181).

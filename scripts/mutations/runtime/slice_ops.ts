@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "clone-from-slice-shares",
     breaks: "`clone_from_slice` copies the objects, not clones of them",
     file: "src/runtime/slice_ops.js",
-    find: "  for (let i = 0; i < v.length; i++) v[i] = clone ? clone(src[i]) : src[i];\n",
-    replace: "  for (let i = 0; i < v.length; i++) v[i] = src[i];\n",
+    find: "    else v[i] = clone ? clone(src[i]) : src[i];\n",
+    replace: "    else v[i] = src[i];\n",
     tests: ["test/corpus.test.ts", "-t", "slice_methods"],
   },
   {
@@ -89,5 +89,13 @@ export const mutations: Mutation[] = [
     find: "    if (keep) v[kept++] = v[at];\n",
     replace: "    v[kept++] = v[at];\n",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
+  },
+  {
+    name: "clone-from-slice-callback-skipped",
+    breaks: "`clone_from_slice` ignores the items' own `clone_from`",
+    file: "src/runtime/slice_ops.js",
+    find: "    if (cloneFrom) cloneFrom(v, i, src[i]);\n    else v[i]",
+    replace: "    v[i]",
+    tests: ["test/corpus.test.ts", "-t", "clone_from_slice_own"],
   },
 ];
