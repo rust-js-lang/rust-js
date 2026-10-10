@@ -88,8 +88,8 @@ function wrapTakeNoisy(TDefault, dropT) {
       }
     },
     make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),
-    $drop: (wrap$1) => {
-      dropT?.(wrap$1[0]);
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
     },
   }));
 }

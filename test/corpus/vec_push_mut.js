@@ -6,8 +6,8 @@ export function entry() {
   main();
 }
 
-function entryDebug_fmt(entry$1) {
-  return `Entry { hits: ${entry$1.hits} }`;
+function entryDebug_fmt(entry) {
+  return `Entry { hits: ${entry.hits} }`;
 }
 
 function main() {
