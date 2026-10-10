@@ -31,9 +31,20 @@ pub(super) enum Kind {
     /// What a function says is one, `isValidElement(v)`: its JS path, a
     /// JS object type's `#[rust_js::test]`. An object no other kind is.
     Test(String),
+    /// A variant without fields, its name's string, `"blocking"`.
+    Literal(String),
 }
 
 impl Kind {
+    /// Whether a value of one could be one of `other`'s too: a literal
+    /// is a string, and the same literal.
+    fn overlaps(&self, other: &Kind) -> bool {
+        match (self, other) {
+            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,
+            (a, b) => a == b,
+        }
+    }
+
     /// What `typeof` says of it, for the kinds it tells.
     fn type_of(&self) -> Option<&'static str> {
         match self {
@@ -43,6 +54,7 @@ impl Kind {
             Kind::Boolean => Some("boolean"),
             Kind::Function => Some("function"),
             Kind::Object => Some("object"),
+            Kind::Literal(_) => Some("string"),
             Kind::Array | Kind::Class(..) | Kind::Test(_) => None,
         }
     }
@@ -54,6 +66,7 @@ impl Kind {
             Kind::Class(name, _) => format!("a `{name}`"),
             Kind::Test(test) => format!("what `{test}` says is one"),
             Kind::Object => "an object".into(),
+            Kind::Literal(name) => format!("the string {name:?}"),
             _ => format!("a `{}`", self.type_of().expect("a `typeof` kind")),
         }
     }
@@ -156,6 +169,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// What JS can tell `variant` is: its payload's kind, or of one without
+    /// fields, its name's string.
+    pub(super) fn untagged_variant_kind(&self, variant: &VariantDef, args: GenericArgsRef<'tcx>) -> Option<Kind> {
+        if variant.fields.is_empty() && variant.ctor_kind() == Some(CtorKind::Const) {
+            return Some(Kind::Literal(bindings::variant_name(self.tcx, variant)));
+        }
+        self.untagged_kind(variant.fields.iter().next()?.ty(self.tcx, args).skip_normalization())
+    }
+
     /// A `From` into an untagged enum, or `into()` to one: the trait's method,
     /// or the crate's `from` a call of it resolves to. Each is the value
     /// itself, as its `from` is the variant of its argument, which is checked
@@ -227,18 +249,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .variants()
             .iter()
             .filter(|v| !otherwise(v))
-            .filter_map(|v| self.untagged_kind(v.fields.iter().next()?.ty(self.tcx, args).skip_normalization()))
+            .filter_map(|v| self.untagged_variant_kind(v, args))
             .collect();
-        let own = variant
-            .fields
-            .iter()
-            .next()
-            .and_then(|f| self.untagged_kind(f.ty(self.tcx, args).skip_normalization()))
+        let own = (self.untagged_variant_kind(variant, args))
             .expect("an untagged enum's variant has a kind, as its declaration was checked");
         let test = |kind: &Kind| match kind {
             Kind::Array => Expr::call(Expr::member(Expr::var("Array"), "isArray"), vec![value.clone()]),
             Kind::Class(name, _) => Expr::bin(Op::InstanceOf, value.clone(), class(name)),
             Kind::Test(test) => Expr::call(class(test), vec![value.clone()]),
+            Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),
             other => Expr::bin(
                 Op::Eq,
                 Expr::unary(UnaryOp::Typeof, value.clone()),
@@ -310,12 +329,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let recognition = self.recognition();
         let kind_of = |v: &VariantDef| {
             (!bindings::is_otherwise(self.tcx, v.def_id))
-                .then(|| recognition.untagged_kind(v.fields.iter().next()?.ty(self.tcx, args).skip_normalization()))
+                .then(|| recognition.untagged_variant_kind(v, args))
                 .flatten()
         };
         let own = kind_of(variant)?;
         (adt.variants().iter())
-            .find(|other| other.def_id != variant.def_id && kind_of(other).as_ref() == Some(&own))
+            .find(|other| other.def_id != variant.def_id && kind_of(other).is_some_and(|k| k.overlaps(&own)))
             .map(|other| other.name.to_string())
     }
 }
@@ -343,11 +362,29 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
             let last = adt.variants().len() - 1;
             for (i, variant) in adt.variants().iter().enumerate() {
                 let span = tcx.def_span(variant.def_id);
+                // One without fields is its name's string.
+                if variant.fields.is_empty() && variant.ctor_kind() == Some(CtorKind::Const) {
+                    let kind = Kind::Literal(bindings::variant_name(tcx, variant));
+                    if let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))
+                        && tested_by_impls(tcx, def_id.to_def_id(), &recognition)
+                    {
+                        error(
+                            span,
+                            format!(
+                                "`{}` and `{other}` both hold {}, which JS can't tell apart in an untagged enum (ADR 0214)",
+                                variant.name,
+                                kind.describe()
+                            ),
+                        );
+                    }
+                    seen.push((kind, variant.name.to_string()));
+                    continue;
+                }
                 let ([field], Some(CtorKind::Fn)) = (&variant.fields.raw[..], variant.ctor_kind()) else {
                     error(
                         span,
                         format!(
-                            "an untagged enum's variant holds one value, as `{}(&'a str)` does (ADR 0214)",
+                            "an untagged enum's variant holds one value, as `{}(&'a str)` does, or none, its name's string (ADR 0214)",
                             variant.name
                         ),
                     );
@@ -380,7 +417,7 @@ pub(super) fn validate<'tcx>(tcx: TyCtxt<'tcx>, foreign: &super::library::Foreig
                 // one is tested: an enum only made, `getStaticProps`'s `{ props }`
                 // or `{ notFound }`, is its payloads. An impl or a drop that
                 // tests them is refused here.
-                if let Some((_, other)) = seen.iter().find(|(k, _)| *k == kind)
+                if let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))
                     && tested_by_impls(tcx, def_id.to_def_id(), &recognition)
                 {
                     error(

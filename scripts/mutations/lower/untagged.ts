@@ -3,6 +3,30 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-literal-any",
+    breaks: "a variant without fields is matched by any value, `matches!(false, Blocking)`",
+    file: "src/lower/untagged.rs",
+    find: "            Kind::Literal(name) => Expr::bin(Op::Eq, value.clone(), Expr::str(name)),",
+    replace: "            Kind::Literal(_) => Expr::bool(true),",
+    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+  },
+  {
+    name: "untagged-literal-beside-string",
+    breaks: "a literal beside a variant of any string isn't refused, though JS can't tell them apart",
+    file: "src/lower/untagged.rs",
+    find: "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => true,",
+    replace: "            (Kind::Literal(_), Kind::String) | (Kind::String, Kind::Literal(_)) => false,",
+    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+  },
+  {
+    name: "untagged-unit-refused",
+    breaks: "an untagged enum's variant without fields is refused",
+    file: "src/lower/untagged.rs",
+    find: "                if variant.fields.is_empty() && variant.ctor_kind() == Some(CtorKind::Const) {\n                    let kind",
+    replace: "                if false && variant.fields.is_empty() && variant.ctor_kind() == Some(CtorKind::Const) {\n                    let kind",
+    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+  },
+  {
     name: "untagged-bigint-number",
     breaks: "an untagged enum's `i64` is told as a number, where JS's is a BigInt",
     file: "src/lower/untagged.rs",

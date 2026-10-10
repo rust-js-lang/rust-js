@@ -843,7 +843,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(adt, args) if self.untagged(ty).is_some() => {
                 let mut value = Expr::bool(false);
                 for variant in adt.variants().iter().rev() {
+                    // One without fields, its name's string, is `b`'s the same.
                     let Some(field) = variant.fields.iter().next() else {
+                        let both = self.untagged_variant_test(ty, variant, &b);
+                        value = Expr::cond(self.untagged_variant_test(ty, variant, &a), both, value);
                         continue;
                     };
                     let payload = self.field_ty(field, args);

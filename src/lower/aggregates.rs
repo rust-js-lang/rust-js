@@ -86,6 +86,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An untagged enum's variant is its payload (ADR 0214), and a
         // discriminated union's `otherwise` the object it holds (ADR 0284).
+        // One without fields is its name's string, `"blocking"`.
+        if self.untagged(ty).is_some() && variant.fields.is_empty() {
+            return Ok(Expr::str(bindings::variant_name(self.tcx, variant)));
+        }
         if self.untagged(ty).is_some() || bindings::is_tagged_otherwise(self.tcx, adt.adt_def.did(), variant) {
             let [field] = &adt.fields[..] else {
                 return Err(self.unsupported(span, "this untagged enum's variant"));

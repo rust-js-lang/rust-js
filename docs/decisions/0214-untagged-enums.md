@@ -119,3 +119,19 @@ impl<'a> From<&'a str> for Src<'a> {
   compiler test makes one; the diagnostics test matches one and clones
   another; mutations refuse the made one, and let the matched and the
   cloned be.
+
+## Amendment: a variant without fields is its name's string
+
+A variant of no fields (2026-10-10) is its name's string, its
+`#[rust_js::name]` or its Rust name, as TypeScript's `boolean | "blocking"`
+has a literal beside a type: made as `"blocking"`, matched by
+`value === "blocking"`, compared and shown as one, and declared as the
+literal in its union. One beside a variant of any string is refused where
+the two are told apart, as two of one kind are: JS can't tell the literal
+from that string. Next.js's `getStaticPaths` `fallback`, `GetStaticPathsFallback::Blocking`,
+and a cookie's `sameSite`, `SameSite::Lax`, are typed as Next.js types
+them, where they were a string of any text. A lowering test makes,
+matches, compares and shows one, and refuses one beside a string; a
+declarations test declares one; mutations match any value, allow the
+string, refuse the variant, leave it unmade, compare it equal to any, and
+declare it `undefined`.

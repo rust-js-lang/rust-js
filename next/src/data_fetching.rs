@@ -126,7 +126,8 @@ pub struct GetStaticPathsResult<Params> {
 pub enum GetStaticPathsFallback {
     Bool(bool),
     /// `"blocking"`: a path not built is rendered as it's asked for.
-    Str(&'static str),
+    #[cfg_attr(rust_js, rust_js::name = "blocking")]
+    Blocking,
 }
 
 impl From<bool> for GetStaticPathsFallback {

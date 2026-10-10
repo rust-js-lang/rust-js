@@ -334,7 +334,7 @@ pub async fn renew() -> u32 {
 
 pub async fn remember(theme: String) {
     let jar = cookies().await;
-    jar.set_with_options("theme", &theme, CookieOptions { max_age: Some(3600.0), same_site: Some(SameSite::Str("lax")), ..Default::default() });
+    jar.set_with_options("theme", &theme, CookieOptions { max_age: Some(3600.0), same_site: Some(SameSite::Lax), ..Default::default() });
     jar.delete_cookie(DeletedCookie { name: "old", domain: None, path: Some("/"), secure: None, same_site: None, partitioned: None, http_only: None, max_age: None, priority: None });
 }
 `;
@@ -381,7 +381,7 @@ pub async fn getStaticProps(GetStaticPropsContext { params, .. }: GetStaticProps
 pub async fn getStaticPaths(_: GetStaticPathsContext) -> GetStaticPathsResult<Params> {
     let params = |code: &str| StaticPath::Params(StaticPathParams { params: Params { code: code.to_string() }, locale: None });
     // Another code is rendered as it's asked for.
-    GetStaticPathsResult { paths: vec![params("0"), params("1"), StaticPath::Path("/codes/2".to_string())], fallback: GetStaticPathsFallback::Str("blocking") }
+    GetStaticPathsResult { paths: vec![params("0"), params("1"), StaticPath::Path("/codes/2".to_string())], fallback: GetStaticPathsFallback::Blocking }
 }
 `;
 

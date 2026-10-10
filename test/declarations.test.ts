@@ -249,6 +249,18 @@ pub fn count(items: Items<u32>) -> usize {
     }
 }
 
+// A variant without fields, its name's string.
+#[rust_js::untagged]
+pub enum Fallback {
+    Bool(bool),
+    #[rust_js::name = "blocking"]
+    Blocking,
+}
+
+pub fn blocks(fallback: Fallback) -> bool {
+    matches!(fallback, Fallback::Blocking)
+}
+
 // An enum with fields is its tagged objects' union, a variant without its
 // name (ADR 0033); a discriminated union's, each an object (ADR 0284).
 pub enum Shape {
@@ -338,6 +350,7 @@ pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     "export function names(numbers: {\n    [key: string]: number;\n}): string[];",
     "type Json = string | number | boolean | (Json | null | undefined)[] | {\n    [key: string]: Json | null | undefined;\n};",
     "export type Size = string | number;",
+    'export type Fallback = boolean | "blocking";',
     "export function width(size: Size): string;",
     "export type Items<T> = T[] | string;",
     "export function count(items: Items<number>): number;",

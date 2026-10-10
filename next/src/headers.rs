@@ -140,7 +140,7 @@ pub struct ResponseCookie<'a> {
     pub secure: Option<bool>,
     /// `"lax"`, `"strict"` or `"none"`, or `true`, which is `"strict"`.
     #[cfg_attr(rust_js, rust_js::name = "sameSite")]
-    pub same_site: Option<SameSite<'a>>,
+    pub same_site: Option<SameSite>,
     pub partitioned: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "httpOnly")]
     pub http_only: Option<bool>,
@@ -160,7 +160,7 @@ pub struct CookieOptions<'a> {
     pub path: Option<&'a str>,
     pub secure: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "sameSite")]
-    pub same_site: Option<SameSite<'a>>,
+    pub same_site: Option<SameSite>,
     pub partitioned: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "httpOnly")]
     pub http_only: Option<bool>,
@@ -177,7 +177,7 @@ pub struct DeletedCookie<'a> {
     pub path: Option<&'a str>,
     pub secure: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "sameSite")]
-    pub same_site: Option<SameSite<'a>>,
+    pub same_site: Option<SameSite>,
     pub partitioned: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "httpOnly")]
     pub http_only: Option<bool>,
@@ -195,9 +195,14 @@ pub enum Expires<'a> {
 }
 
 /// A cookie's `sameSite`, `true | false | "lax" | "strict" | "none"`: each
-/// the value itself.
+/// the value itself, `true` `"strict"`'s.
 #[cfg_attr(rust_js, rust_js::untagged)]
-pub enum SameSite<'a> {
+pub enum SameSite {
     Bool(bool),
-    Str(&'a str),
+    #[cfg_attr(rust_js, rust_js::name = "lax")]
+    Lax,
+    #[cfg_attr(rust_js, rust_js::name = "strict")]
+    Strict,
+    #[cfg_attr(rust_js, rust_js::name = "none")]
+    None,
 }

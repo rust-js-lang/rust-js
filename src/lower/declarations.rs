@@ -534,8 +534,11 @@ impl<'tcx> Declarations<'_, 'tcx> {
             true => {
                 let args = ty::GenericArgs::identity_for_item(self.tcx, def_id);
                 let types: Vec<Value> = (adt.variants().iter())
-                    .filter_map(|v| v.fields.iter().next())
-                    .map(|field| self.ts(field.ty(self.tcx, args).skip_normalization()))
+                    .map(|v| match v.fields.iter().next() {
+                        Some(field) => self.ts(field.ty(self.tcx, args).skip_normalization()),
+                        // One without fields, its name's string.
+                        None => json!({ "kind": "literal", "value": variant_name(self.tcx, v) }),
+                    })
                     .collect();
                 json!({ "kind": "union", "types": types })
             }

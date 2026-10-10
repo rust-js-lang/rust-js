@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-unit-unmade",
+    breaks: "`Fallback::Blocking` isn't made, as it holds no value",
+    file: "src/lower/aggregates.rs",
+    find: "        if self.untagged(ty).is_some() && variant.fields.is_empty() {",
+    replace: "        if false && self.untagged(ty).is_some() && variant.fields.is_empty() {",
+    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+  },
+  {
     name: "owned-update-copied",
     breaks: "`File { hidden: Some(true), ..file }` reads each field of `file`, `{ code: file.code, .. }`, not `{ ...file, hidden: true }`",
     file: "src/lower/aggregates.rs",

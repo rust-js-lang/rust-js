@@ -3,6 +3,14 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-unit-eq-any",
+    breaks: "a variant without fields equals any value of the enum",
+    file: "src/lower/std_impls.rs",
+    find: "                        let both = self.untagged_variant_test(ty, variant, &b);",
+    replace: "                        let both = Expr::bool(true);",
+    tests: ["test/lowering.test.ts", "-t", "variant without fields is its name"],
+  },
+  {
     name: "tagged-eq-tag",
     breaks: "`==` of a discriminated union's fields reads `TAG`, which it hasn't",
     file: "src/lower/std_impls.rs",

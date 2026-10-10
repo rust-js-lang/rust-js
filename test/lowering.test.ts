@@ -3750,3 +3750,85 @@ pub fn alone(n: u32) -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.show({ label: "ab" }), lib.make()({ label: "abc" }), lib.shadowing({ label: "a" }), lib.made(), lib.kept(1), lib.both(1), lib.alone(1)]).toEqual([2, 3, 5, 42, 2, [2, "1"], 2]);
 });
+
+// An untagged enum's variant without fields is its name, a string literal,
+// as TypeScript's `boolean | "blocking"` is: made, matched, compared and
+// shown as one (ADR 0214). Beside a variant of any string, which JS can't
+// tell it from, it's refused where it's matched.
+test("an untagged enum's variant without fields is its name's string", async () => {
+  const dir = fixture("untagged-literal");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Fallback {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "blocking")]
+    Blocking,
+}
+
+pub fn fallback(b: bool) -> Fallback {
+    if b { Fallback::Bool(true) } else { Fallback::Blocking }
+}
+
+pub fn describe(f: Fallback) -> String {
+    match f {
+        Fallback::Bool(b) => format!("bool {b}"),
+        Fallback::Blocking => "blocking".to_string(),
+    }
+}
+
+pub fn same(a: Fallback, b: Fallback) -> bool {
+    a == b
+}
+
+pub fn shown(f: Fallback) -> String {
+    format!("{f:?}")
+}
+
+pub fn is_blocking(f: Fallback) -> bool {
+    matches!(f, Fallback::Blocking)
+}
+
+pub struct Loose(pub u32);
+
+impl PartialEq for Loose {
+    fn eq(&self, other: &Loose) -> bool {
+        self.0 % 10 == other.0 % 10
+    }
+}
+
+// Compared part by part, a part's own == among them.
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[derive(PartialEq)]
+pub enum Choice {
+    Loose(Loose),
+    #[cfg_attr(rust_js, rust_js::name = "off")]
+    Off,
+}
+
+pub fn same_choice(a: Choice, b: Choice) -> bool {
+    a == b
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('  if (b) {\n    return true;\n  }\n  return "blocking";');
+  expect(js).toContain('return f === "blocking";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.fallback(true), lib.fallback(false), lib.describe(true), lib.describe("blocking"), lib.same("blocking", "blocking"),
+    lib.same(true, "blocking"), lib.same(true, true), lib.shown("blocking"), lib.shown(false), lib.is_blocking("blocking"), lib.is_blocking(false),
+    lib.same_choice("off", "off"), lib.same_choice("off", [3]), lib.same_choice([13], [3]), lib.same_choice([3], "off")])
+    .toEqual([true, "blocking", "bool true", "blocking", true, false, true, "Blocking", "Bool(false)", true, false, true, false, true, false]);
+  writeFileSync(join(dir, "text.rs"), `#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Mode<'a> {
+    Text(&'a str),
+    #[cfg_attr(rust_js, rust_js::name = "auto")]
+    Auto,
+}
+
+pub fn auto(m: Mode) -> bool {
+    matches!(m, Mode::Auto)
+}
+`);
+  const failed = Bun.spawnSync([compiler, join(dir, "text.rs"), "-o", join(dir, "text.js")], { cwd: root, stderr: "pipe" });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("`Auto` and `Text` hold values of one kind")]);
+});

@@ -5,6 +5,14 @@ const tests = ["test/declarations.test.ts"];
 
 export const mutations: Mutation[] = [
   {
+    name: "untagged-unit-undeclared",
+    breaks: "a variant without fields isn't its literal in the union, `boolean | undefined`",
+    file: "src/lower/declarations.rs",
+    find: "                        None => json!({ \"kind\": \"literal\", \"value\": variant_name(self.tcx, v) }),",
+    replace: "                        None => json!({ \"kind\": \"keyword\", \"name\": \"undefined\" }),",
+    tests: ["test/declarations.test.ts"],
+  },
+  {
     name: "enum-fields-declared-any",
     breaks: "an enum with fields is declared `any`, not its tagged objects' union",
     file: "src/lower/declarations.rs",
