@@ -90,7 +90,7 @@ function main() {
   );
   const item = [0];
   const points = Array.from({ length: 1 }, () => item.slice());
-  $resize(points, 3, [1], (item$1) => item$1.slice());
+  $resize(points, 3, [1], (item) => item.slice());
   $index(points, 1).push(2);
   console.log(
     `[${points.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,

@@ -97,8 +97,8 @@ function main() {
   let kept$live = true;
   try {
     console.log(`kept ${kept?.[0][0] ?? 0}`);
-    const value$1 = make(0);
-    const none = value$1 ? [value$1] : undefined;
+    const value = make(0);
+    const none = value ? [value] : undefined;
     try {
       console.log(`none ${!none}`);
       const generic = wrapped(make(3));
@@ -108,45 +108,45 @@ function main() {
         if (kept != null) {
           dDrop_drop(kept[0]);
         }
-        const option$1 = keep_if(make(4), false, dDrop_drop);
+        const option = keep_if(make(4), false, dDrop_drop);
         try {
-          console.log(`${!option$1}`);
+          console.log(`${!option}`);
         } finally {
-          if (option$1 != null) {
-            dDrop_drop(option$1);
+          if (option != null) {
+            dDrop_drop(option);
           }
         }
-        const option$3 = keep_if($some(make(5)), false, (option$2) => {
+        const option$1 = keep_if($some(make(5)), false, (option$2) => {
           if (option$2 != null) {
             dDrop_drop(option$2);
           }
         });
         try {
-          console.log(`${option$3 == null}`);
+          console.log(`${option$1 == null}`);
         } finally {
-          if (option$3 != null) {
-            if ($someValue(option$3) != null) {
-              dDrop_drop($someValue(option$3));
+          if (option$1 != null) {
+            if ($someValue(option$1) != null) {
+              dDrop_drop($someValue(option$1));
             }
           }
         }
-        const option$5 = keep_if($some(make(0)), false, (option$4) => {
-          if (option$4 != null) {
-            dDrop_drop(option$4);
+        const option$2 = keep_if($some(make(0)), false, (option) => {
+          if (option != null) {
+            dDrop_drop(option);
           }
         });
         try {
-          console.log(`${option$5 == null}`);
+          console.log(`${option$2 == null}`);
         } finally {
-          if (option$5 != null) {
-            if ($someValue(option$5) != null) {
-              dDrop_drop($someValue(option$5));
+          if (option$2 != null) {
+            if ($someValue(option$2) != null) {
+              dDrop_drop($someValue(option$2));
             }
           }
         }
-        const nested = keep_if($some(make(6)), true, (option$6) => {
-          if (option$6 != null) {
-            dDrop_drop(option$6);
+        const nested = keep_if($some(make(6)), true, (option) => {
+          if (option != null) {
+            dDrop_drop(option);
           }
         });
         try {
@@ -155,38 +155,38 @@ function main() {
           const ok = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
           try {
             console.log(`ok ${ok.TAG === "Ok" ? ok._0[0][0] : 0}`);
-            const result$1 = checked(12);
-            const result$2 = result$1.TAG === "Ok" ? { TAG: "Ok", _0: [result$1._0] } : result$1;
+            const result = checked(12);
+            const result$1 = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
             let result$2$Ok$0$live = true;
             try {
-              if (result$2.TAG === "Ok") {
+              if (result$1.TAG === "Ok") {
                 result$2$Ok$0$live = false;
-                const l = result$2._0;
+                const l = result$1._0;
                 try {
                   console.log(`ok ${l[0][0]}`);
                 } finally {
                   dDrop_drop(l[0]);
                 }
               } else {
-                console.log(`err ${result$2._0}`);
+                console.log(`err ${result$1._0}`);
               }
             } finally {
-              if (result$2.TAG === "Ok") {
+              if (result$1.TAG === "Ok") {
                 if (result$2$Ok$0$live) {
-                  dDrop_drop(result$2._0[0]);
+                  dDrop_drop(result$1._0[0]);
                 }
               }
             }
-            const generic$1 = wrapped_result(checked(2));
+            const generic = wrapped_result(checked(2));
             try {
-              console.log(`generic ${generic$1.TAG === "Ok" ? generic$1._0[0][0] : 0}`);
+              console.log(`generic ${generic.TAG === "Ok" ? generic._0[0][0] : 0}`);
               console.log(
                 `${discard_result(checked(3), false, dDrop_drop)} ${discard_result(checked(4), true, dDrop_drop)}`,
               );
               console.log("end");
             } finally {
-              if (generic$1.TAG === "Ok") {
-                dDrop_drop(generic$1._0[0]);
+              if (generic.TAG === "Ok") {
+                dDrop_drop(generic._0[0]);
               }
             }
           } finally {

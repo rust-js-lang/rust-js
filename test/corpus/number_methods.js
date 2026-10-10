@@ -38,10 +38,10 @@ function main() {
     `${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugParseError(arg._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`} ${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${$debugParseError(arg$2._0, "ParseIntError")})`} ${arg$3.TAG === "Ok" ? `Ok(${arg$3._0})` : `Err(${$debugParseError(arg$3._0, "ParseIntError")})`}`,
   );
   for (const s of ["", "+", "-1", "1g", "100000000", "-80000000", "+7f"]) {
-    const arg$4 = $parseInt(s, 0, 4294967295, 16);
-    const arg$5 = $parseInt(s, -2147483648, 2147483647, 16);
+    const arg = $parseInt(s, 0, 4294967295, 16);
+    const arg$1 = $parseInt(s, -2147483648, 2147483647, 16);
     console.log(
-      `${$debugStr(s)}: ${arg$4.TAG === "Ok" ? `Ok(${arg$4._0})` : `Err(${$debugStr(arg$4._0)})`} ${arg$5.TAG === "Ok" ? `Ok(${arg$5._0})` : `Err(${$debugStr(arg$5._0)})`}`,
+      `${$debugStr(s)}: ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugStr(arg$1._0)})`}`,
     );
   }
   console.log(`${$divCeil(7, 2)} ${$divCeil(8, 2)} ${$divCeil(0, 3)} ${$divCeil(10n, 3n)}`);

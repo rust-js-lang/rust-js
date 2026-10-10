@@ -321,37 +321,37 @@ function everythingSerialize_serialize(everything, json) {
   json.endArray();
   json.key("events");
   json.beginArray();
-  for (const item$1 of everything.events) {
+  for (const item of everything.events) {
     json.element();
-    eventSerialize_serialize(item$1, json);
+    eventSerialize_serialize(item, json);
   }
   json.endArray();
   json.key("msgs");
   json.beginArray();
-  for (const item$2 of everything.msgs) {
+  for (const item of everything.msgs) {
     json.element();
-    msgSerialize_serialize(item$2, json);
+    msgSerialize_serialize(item, json);
   }
   json.endArray();
   json.key("loose");
   json.beginArray();
-  for (const item$3 of everything.loose) {
+  for (const item of everything.loose) {
     json.element();
-    looseSerialize_serialize(item$3, json);
+    looseSerialize_serialize(item, json);
   }
   json.endArray();
   json.key("counts");
   json.beginObject();
-  for (const [key, item$4] of $sortedEntries(everything.counts, $cmp)) {
+  for (const [key, item] of $sortedEntries(everything.counts, $cmp)) {
     json.key(key);
-    json.int(item$4);
+    json.int(item);
   }
   json.endObject();
   json.key("by_id");
   json.beginObject();
-  for (const [key$1, item$5] of $sortedEntries(everything.by_id, $cmp)) {
-    json.key(String(key$1));
-    json.bool(item$5);
+  for (const [key, item] of $sortedEntries(everything.by_id, $cmp)) {
+    json.key(String(key));
+    json.bool(item);
   }
   json.endObject();
   json.key("pair");
@@ -369,19 +369,19 @@ function everythingSerialize_serialize(everything, json) {
   json.endArray();
   json.key("empty");
   json.beginArray();
-  for (const item$6 of everything.empty) {
+  for (const item of everything.empty) {
     json.element();
-    json.int(item$6);
+    json.int(item);
   }
   json.endArray();
   json.key("nested");
   json.beginArray();
-  for (const item$7 of everything.nested) {
+  for (const item of everything.nested) {
     json.element();
     json.beginArray();
-    for (const item$8 of item$7) {
+    for (const item$1 of item) {
       json.element();
-      json.int(item$8);
+      json.int(item$1);
     }
     json.endArray();
   }
@@ -390,9 +390,9 @@ function everythingSerialize_serialize(everything, json) {
   json.string(everything.text);
   json.key("floats");
   json.beginArray();
-  for (const item$9 of everything.floats) {
+  for (const item of everything.floats) {
     json.element();
-    json.number(item$9);
+    json.number(item);
   }
   json.endArray();
   json.endObject();
@@ -477,13 +477,13 @@ export function report() {
       $unwrapOk(
         $toJson(
           e.msgs,
-          (value$1, json$1) => {
-            json$1.beginArray();
-            for (const item$1 of value$1) {
-              json$1.element();
-              msgSerialize_serialize(item$1, json$1);
+          (value, json) => {
+            json.beginArray();
+            for (const item of value) {
+              json.element();
+              msgSerialize_serialize(item, json);
             }
-            json$1.endArray();
+            json.endArray();
           },
           false,
         ),
@@ -500,13 +500,13 @@ export function report() {
       $unwrapOk(
         $toJson(
           e.loose,
-          (value$2, json$2) => {
-            json$2.beginArray();
-            for (const item$2 of value$2) {
-              json$2.element();
-              looseSerialize_serialize(item$2, json$2);
+          (value, json) => {
+            json.beginArray();
+            for (const item of value) {
+              json.element();
+              looseSerialize_serialize(item, json);
             }
-            json$2.endArray();
+            json.endArray();
           },
           false,
         ),

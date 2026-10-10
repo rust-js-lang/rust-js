@@ -49,16 +49,16 @@ function main() {
   console.log(`${result$1} ${done}`);
   let loud = ["first"];
   try {
-    const old$2 = loud;
+    const old = loud;
     loud = ["second"];
-    const first = old$2;
+    const first = old;
     try {
       console.log(`replaced ${first[0]}`);
       let third = ["third"];
       try {
-        const t$3 = loud;
+        const t = loud;
         loud = third;
-        third = t$3;
+        third = t;
         console.log(`holding ${loud[0]} ${third[0]}`);
         console.log("42");
       } finally {

@@ -66,8 +66,8 @@ function main() {
     [240, 128, 128, 193],
     [225, 128, 65, 241, 128, 128],
   ];
-  for (const bytes$1 of lossy) {
-    const text = $utf8Lossy(bytes$1);
+  for (const bytes of lossy) {
+    const text = $utf8Lossy(bytes);
     const kind = text.TAG === "Borrowed" ? "borrowed" : "owned";
     console.log(`${kind} ${$debugStr(text._0)} ${$byteLen(text._0)}`);
   }

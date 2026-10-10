@@ -754,6 +754,64 @@ pub fn most(x: u32) -> bool {
   expect([lib.has("b"), lib.has("c"), lib.changed(), lib.most(4294967295)]).toEqual([true, false, ["z", "a"], true]);
 });
 
+// A block's `const` is named as Rust names it where every read is still of
+// what it was, a JS scope's own shadowing another's, as a person writes an
+// early return: `if (a) { const n = 1; return n + 1; } const n = 2;`. One
+// whose block reads the outer `n` keeps its `$1`: JS's `n` there would be
+// the block's, not yet made.
+test("a block's const reuses a name where each read keeps its own", async () => {
+  const dir = fixture("block-names");
+  writeFileSync(join(dir, "lib.rs"), `pub fn twice(a: bool) -> u32 {
+    if a {
+        let n = 1;
+        n + 1
+    } else {
+        let n = 2;
+        n * 3
+    }
+}
+
+pub fn both(a: bool) -> u32 {
+    let n = 10;
+    if a {
+        let m = n;
+        let n = 1;
+        m + n
+    } else {
+        n
+    }
+}
+
+// An else after a branch that returns is written after its if, in the
+// function's block, beside its other n.
+pub fn early(a: bool, k: u32) -> u32 {
+    let n = k + 1;
+    if a {
+        n
+    } else {
+        let n = 2;
+        n * 3
+    }
+}
+
+// Two of one name in one block: JS refuses a second const n there.
+#[allow(unused_variables)]
+pub fn again(mut items: Vec<u32>) -> usize {
+    let n = items.pop();
+    let n = items.len();
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (a) {\n    const n = 1;\n    return (n + 1) >>> 0;\n  }\n  const n = 2;\n  return Math.imul(n, 3) >>> 0;");
+  expect(js).toContain("    const m = n;\n    const n$1 = 1;");
+  expect(js).toContain("  const n = items.pop();\n  const n$1 = ");
+  expect(js).toContain("    return n;\n  }\n  const n$1 = 2;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.twice(true), lib.twice(false), lib.both(true), lib.both(false), lib.again([1, 2]), lib.early(true, 4), lib.early(false, 4)]).toEqual([2, 6, 11, 10, 1, 5, 6]);
+});
+
 // A guard's binding, which the guard reads in place, gets no `const` its arm
 // never reads, as Next.js's getStaticProps has it: in a library, whose
 // pattern's bindings are `const`s, as another crate may change what's
@@ -1278,7 +1336,7 @@ pub fn looped() -> u32 {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function captured(text) {\n  return () => text;\n}");
-  expect(js).toContain("  const kept$1 = text;\n");
+  expect(js).toContain("  const kept = text;\n");
   expect(js).toContain("  return (n + 1) >>> 0;\n");
   expect(js).toContain("    const n$1 = n;\n    fs.push(() => n$1);");
   // In a closure too, of its own parameter, as react.dev's createFileMap
@@ -3732,7 +3790,7 @@ pub fn borrowed() -> u8 {
 // (ADR 0352). One whose function reads the outer name keeps its own.
 test("a name nothing it shadows is read in is the name", async () => {
   const dir = fixture("reclaimed-names");
-  writeFileSync(join(dir, "err.js"), "export default function Error() { return 40; }\n");
+  writeFileSync(join(dir, "err.js"), "export default function Error() { return 40; }\nexport function tag() { return 7; }\n");
   writeFileSync(join(dir, "lib.rs"), `pub fn label(home: bool) -> &'static str {
     if home { "Home" } else { "Away" }
 }
@@ -3778,20 +3836,30 @@ pub fn alone(n: u32) -> u32 {
     let String = n + 1;
     String
 }
+
+// An import of the name of a function of the module's own stays apart.
+unsafe extern "Rust" {
+    #[link_name = "./err.js#tag"]
+    safe fn js_tag() -> u32;
+}
+
+pub fn tag() -> u32 {
+    js_tag() + 1
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function show({ label }) {\n  return $byteLen(label);\n}");
   expect(js).toContain("return ({ label }) => $byteLen(label);");
   expect(js).toContain("const label$1 = text;");
-  expect(js).toContain('import Error from "./err.js";');
+  expect(js).toContain('import Error, { tag as tag$1 } from "./err.js";');
   expect(js).toContain("return (Error() + 2) >>> 0;");
   // A word JS keeps stays apart; so does a global a conversion reads.
   expect(js).toContain("export function kept(class$) {");
   expect(js).toContain("return [String$, String(n)];");
   expect(js).toContain("const String = (n + 1) >>> 0;");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.show({ label: "ab" }), lib.make()({ label: "abc" }), lib.shadowing({ label: "a" }), lib.made(), lib.kept(1), lib.both(1), lib.alone(1)]).toEqual([2, 3, 5, 42, 2, [2, "1"], 2]);
+  expect([lib.show({ label: "ab" }), lib.make()({ label: "abc" }), lib.shadowing({ label: "a" }), lib.made(), lib.kept(1), lib.both(1), lib.alone(1), lib.tag()]).toEqual([2, 3, 5, 42, 2, [2, "1"], 2, 8]);
 });
 
 // An untagged enum's variant without fields is its name, a string literal,

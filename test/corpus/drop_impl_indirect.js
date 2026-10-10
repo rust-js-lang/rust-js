@@ -49,8 +49,8 @@ function wrapPass(dropT) {
       };
       helper_taking(self, dropSelf);
     },
-    $drop: (wrap$1) => {
-      dropT?.(wrap$1[0]);
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
     },
   }));
 }
@@ -77,8 +77,8 @@ function wrapTake(dropT) {
       };
       dropSelf?.(self);
     },
-    $drop: (wrap$1) => {
-      dropT?.(wrap$1[0]);
+    $drop: (wrap) => {
+      dropT?.(wrap[0]);
     },
   }));
 }
@@ -95,9 +95,9 @@ function pairTake(dropA, dropB) {
       };
       dropSelf?.(self);
     },
-    $drop: (pair$1) => {
-      dropA?.(pair$1[0]);
-      dropB?.(pair$1[1]);
+    $drop: (pair) => {
+      dropA?.(pair[0]);
+      dropB?.(pair[1]);
     },
   }));
 }

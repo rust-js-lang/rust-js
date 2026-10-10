@@ -90,10 +90,10 @@ export function dijkstra(edges, n, src) {
       if (option != null && value[0][0] > option) {
         continue;
       }
-      for (const [v, w$1] of $index(adj, value[0][1])) {
-        const nd = (value[0][0] + w$1) >>> 0;
-        const option$1 = $index(dist, v);
-        if (option$1 == null || nd < option$1) {
+      for (const [v, w] of $index(adj, value[0][1])) {
+        const nd = (value[0][0] + w) >>> 0;
+        const option = $index(dist, v);
+        if (option == null || nd < option) {
           dist[$at(dist, v)] = nd;
           $heapPush(heap, [[nd, v]], (a, b) => $cmp(b[0][0], a[0][0]) || $cmp(b[0][1], a[0][1]));
         }
@@ -159,7 +159,7 @@ export function heaps() {
   }
   out += `peek ${h[0]?.name == null ? "None" : `Some(${$debugStr(h[0]?.name, "'")})`} len ${h.length}\n`;
   let popped = "";
-  for (let i$1 = 0; i$1 < 4; i$1++) {
+  for (let i = 0; i < 4; i++) {
     popped += $unwrap($heapPop(h, taskOrd_cmp)).name;
     popped += h.map((t) => t.name).join("");
     popped += " ";
@@ -254,9 +254,9 @@ export function report() {
     .map((item) => String(item))
     .join(", ")}]\n`;
   const words = new Map();
-  for (const w$1 of "the quick brown fox jumps over the lazy dog".split(" ")) {
-    const key = Array.from(w$1).length;
-    $orInsertWith(words, key, () => []).push(w$1);
+  for (const w of "the quick brown fox jumps over the lazy dog".split(" ")) {
+    const key = Array.from(w).length;
+    $orInsertWith(words, key, () => []).push(w);
   }
   const lens = Array.from(words.keys());
   $sortUnstable(lens, (a, b) => $cmp(b, a) < 0, "network");

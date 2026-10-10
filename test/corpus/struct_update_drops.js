@@ -104,12 +104,12 @@ function main() {
     }
     try {
       console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
-      const partial$1 = partialDefault_default();
+      const partial = partialDefault_default();
       let defaults;
       try {
-        defaults = { x: [22], y: partial$1.y, n: partial$1.n };
+        defaults = { x: [22], y: partial.y, n: partial.n };
       } finally {
-        noisyDrop_drop(partial$1.x);
+        noisyDrop_drop(partial.x);
       }
       try {
         console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);

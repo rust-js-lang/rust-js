@@ -177,28 +177,28 @@ export function report() {
     out += `(${arg[0]}, ${arg[1]}, ${arg[2]}, ${arg[3] == null ? "None" : `Some(${arg[3]})`}, ${arg[4] == null ? "None" : `Some(${arg[4]})`}, ${arg[5]}) (${$debugStr(arg$1[0])}, ${$debugStr(arg$1[1])}, ${arg$1[2] == null ? "None" : `Some(${arg$1[2]})`}, ${arg$1[3]}, ${arg$1[4]})\n`;
   }
   for (const c of ["1", "2", "x"]) {
-    const arg$2 = results(c);
-    out += `(${$debugStr(arg$2[0])}, ${$debugStr(arg$2[1])}, ${arg$2[2]}, ${arg$2[3]}, ${arg$2[4] == null ? "None" : `Some(${$debugStr(arg$2[4])})`}, ${arg$2[5]})\n`;
+    const arg = results(c);
+    out += `(${$debugStr(arg[0])}, ${$debugStr(arg[1])}, ${arg[2]}, ${arg[3]}, ${arg[4] == null ? "None" : `Some(${$debugStr(arg[4])})`}, ${arg[5]})\n`;
   }
-  for (const n$1 of [0, 5]) {
-    const arg$3 = iters(n$1);
-    const arg$4 = consumers(n$1);
-    const arg$5 = vecs(n$1);
-    out += `([${arg$3[0].map((item) => String(item)).join(", ")}], [${arg$3[1].map((item) => String(item)).join(", ")}], [${arg$3[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${arg$3[3].map((item) => String(item)).join(", ")}], [${arg$3[4].map((item) => String(item)).join(", ")}], [${arg$3[5].map((item) => String(item)).join(", ")}]) (${arg$4[0] == null ? "None" : `Some(${arg$4[0]})`}, ${arg$4[1] == null ? "None" : `Some(${arg$4[1]})`}, ${arg$4[2]}, ${arg$4[3] == null ? "None" : `Some(${arg$4[3]})`}, ${arg$4[4] == null ? "None" : `Some(${arg$4[4]})`}, ([${arg$4[5][0].map((item) => String(item)).join(", ")}], [${arg$4[5][1].map((item) => String(item)).join(", ")}])) (${arg$5[0]}, [${arg$5[1].map((item) => String(item)).join(", ")}], ${arg$5[2]}, [${arg$5[3].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$5[4].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$5[5].map((item) => String(item)).join(", ")}])\n`;
-    out += `[${joined([1, n$1], (n$1 + 1) >>> 0)
+  for (const n of [0, 5]) {
+    const arg = iters(n);
+    const arg$1 = consumers(n);
+    const arg$2 = vecs(n);
+    out += `([${arg[0].map((item) => String(item)).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}], [${arg[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${arg[3].map((item) => String(item)).join(", ")}], [${arg[4].map((item) => String(item)).join(", ")}], [${arg[5].map((item) => String(item)).join(", ")}]) (${arg$1[0] == null ? "None" : `Some(${arg$1[0]})`}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`}, ${arg$1[2]}, ${arg$1[3] == null ? "None" : `Some(${arg$1[3]})`}, ${arg$1[4] == null ? "None" : `Some(${arg$1[4]})`}, ([${arg$1[5][0].map((item) => String(item)).join(", ")}], [${arg$1[5][1].map((item) => String(item)).join(", ")}])) (${arg$2[0]}, [${arg$2[1].map((item) => String(item)).join(", ")}], ${arg$2[2]}, [${arg$2[3].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$2[4].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$2[5].map((item) => String(item)).join(", ")}])\n`;
+    out += `[${joined([1, n], (n + 1) >>> 0)
       .map((item) => String(item))
       .join(", ")}]\n`;
-    const arg$6 = bumped(n$1 > 0, [1, n$1]);
-    out += `${arg$6 == null ? "None" : `Some([${arg$6.map((item) => String(item)).join(", ")}])`}\n`;
-    const arg$7 = shifted(n$1, [1, n$1]);
-    out += `${arg$7 == null ? "None" : `Some([${arg$7.map((item) => String(item)).join(", ")}])`}\n`;
-    const named = { name: n$1 > 0 ? String(n$1) : undefined, label: `#${n$1}` };
-    const arg$8 = name_of(named);
-    const arg$9 = name_of(undefined);
-    out += `${arg$8 == null ? "None" : `Some(${$debugStr(arg$8)})`} ${arg$9 == null ? "None" : `Some(${$debugStr(arg$9)})`}\n`;
-    const arg$10 = other_name(undefined, named);
-    const arg$11 = other_name(n$1, named);
-    out += `${arg$10 == null ? "None" : `Some(${$debugStr(arg$10)})`} ${arg$11 == null ? "None" : `Some(${$debugStr(arg$11)})`}\n`;
+    const arg$3 = bumped(n > 0, [1, n]);
+    out += `${arg$3 == null ? "None" : `Some([${arg$3.map((item) => String(item)).join(", ")}])`}\n`;
+    const arg$4 = shifted(n, [1, n]);
+    out += `${arg$4 == null ? "None" : `Some([${arg$4.map((item) => String(item)).join(", ")}])`}\n`;
+    const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
+    const arg$5 = name_of(named);
+    const arg$6 = name_of(undefined);
+    out += `${arg$5 == null ? "None" : `Some(${$debugStr(arg$5)})`} ${arg$6 == null ? "None" : `Some(${$debugStr(arg$6)})`}\n`;
+    const arg$7 = other_name(undefined, named);
+    const arg$8 = other_name(n, named);
+    out += `${arg$7 == null ? "None" : `Some(${$debugStr(arg$7)})`} ${arg$8 == null ? "None" : `Some(${$debugStr(arg$8)})`}\n`;
     out += `${$debugStr(label_of(named))} ${$debugStr(label_of(undefined))}\n`;
     out += `${$debugStr(label_or_else(named))} ${$debugStr(label_or_else(undefined))}\n`;
   }

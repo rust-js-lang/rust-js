@@ -196,13 +196,13 @@ export async function compile(loaded, sources, rootFile, test) {
   for (const arg of [`/in/${rootFile}`, "-o", outFile]) {
     args.push(arg);
   }
-  for (const arg$1 of ["--", "--target", "wasm32-unknown-unknown", "--sysroot", "/sysroot"]) {
-    args.push(arg$1);
+  for (const arg of ["--", "--target", "wasm32-unknown-unknown", "--sysroot", "/sysroot"]) {
+    args.push(arg);
   }
   if (test) {
     args.push("--cfg=browser");
   }
-  for (const arg$2 of [
+  for (const arg of [
     "--extern",
     "webapi=/crates/libwebapi.rmeta",
     "--extern",
@@ -212,7 +212,7 @@ export async function compile(loaded, sources, rootFile, test) {
     "-L",
     "/crates",
   ]) {
-    args.push(arg$2);
+    args.push(arg);
   }
   const wasi = new WASI(args, ["RUSTC_ICE=0"], fds, { debug: false });
   const t0 = performance.now();

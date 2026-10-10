@@ -177,9 +177,9 @@ function main() {
   console.log(`${lightDebug_fmt(l)} ${arg}`);
   const lights = ["Off", { TAG: "On", level: 1 }];
   for (let i = 0; i < lights.length; i++) {
-    const self$2 = { value: lights[i] };
-    Light.toggle(self$2);
-    lights[i] = self$2.value;
+    const self = { value: lights[i] };
+    Light.toggle(self);
+    lights[i] = self.value;
   }
   const l$3 = { value: $index(lights, 0) };
   brighter(l$3);

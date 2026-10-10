@@ -84,8 +84,8 @@ function main() {
       const r = item._0;
       console.log(`big ${$displayF64(r)}`);
     } else if (item && (item.TAG === "Circle" || item.TAG === "Sphere")) {
-      const r$1 = item._0;
-      console.log(`small ${$displayF64(r$1)}`);
+      const r = item._0;
+      console.log(`small ${$displayF64(r)}`);
     } else {
       console.log("none");
     }
@@ -94,12 +94,12 @@ function main() {
   if (value.TAG === "Rect" || value.TAG === "Line") {
     console.log(`width ${$displayF64(value.w)}`);
   }
-  const r$2 = { TAG: "Err", _0: 9 };
-  console.log(`${r$2._0}`);
+  const r = { TAG: "Err", _0: 9 };
+  console.log(`${r._0}`);
   const grown = shapes.map((item) => ({ ...item }));
-  for (const s$1 of grown) {
-    if (s$1.TAG === "Circle" || s$1.TAG === "Sphere") {
-      s$1._0 *= 10;
+  for (const s of grown) {
+    if (s.TAG === "Circle" || s.TAG === "Sphere") {
+      s._0 *= 10;
     }
   }
   console.log(`[${grown.map((item) => shapeDebug_fmt(item)).join(", ")}]`);

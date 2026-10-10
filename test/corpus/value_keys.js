@@ -76,8 +76,8 @@ function main() {
   );
   const ann = { owner: "ann", id: BigInt.asUintN(64, 1n << 40n), at: { x: 0, y: 0 } };
   const balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
-  const current$1 = $unwrap(balances.get(ann));
-  balances.set(ann, (current$1 + 5) | 0);
+  const current = $unwrap(balances.get(ann));
+  balances.set(ann, (current + 5) | 0);
   const id = BigInt.asUintN(64, 1n << 41n);
   const base = { ...ann, at: { ...ann.at } };
   const other = { owner: base.owner, id, at: { ...base.at } };

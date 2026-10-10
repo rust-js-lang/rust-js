@@ -1,11 +1,12 @@
 //! A name given apart from another, `label$1` of `label`, or `Error$` of
 //! JS's global, is that name where nothing it would shadow is read (ADR
 //! 0352): an import's, where its module never mentions the name; a local's,
-//! where its item never does. Renaming a name to one its scope never
-//! mentions keeps every read of it its own.
+//! where every read in its item is of what it was before, as JS's scopes
+//! resolve them (ADR 0357): `const n` in a block beside another `n`.
 
 use std::collections::HashSet;
 
+use super::scopes;
 use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
@@ -61,25 +62,46 @@ fn imports(module: &mut js::Module) {
     }
 }
 
-/// Each local of `item`'s, of a name its item never mentions.
+/// Each local of `item`'s, of a name where each read is still of what it
+/// was: its base, `n` of `n$2`, or else the first of `n$1` on that is.
 fn locals(item: &mut js::Item) {
+    let mut tried = HashSet::new();
     loop {
-        let mut mentioned = HashSet::new();
-        names_mut(item, true, &mut |name| {
-            mentioned.insert(name.clone());
-        });
+        let Some(before) = reads(item, None) else { return };
         let mut declared = Vec::new();
         names_mut(item, false, &mut |name| declared.push(name.clone()));
-        let Some((local, base)) =
-            (declared.iter()).find_map(|d| reclaimable(d, &mentioned).map(|base| (d.clone(), base.to_string())))
-        else {
-            return;
-        };
+        let renamed = (declared.iter())
+            .filter(|d| tried.insert((*d).clone()))
+            .find_map(|local| {
+                let base = reclaimable(local, &HashSet::new())?;
+                let suffix: usize = local[base.len() + 1..].parse().unwrap_or(0);
+                std::iter::once(base.to_string())
+                    .chain((1..suffix).map(|i| format!("{base}${i}")))
+                    .find(|to| reads(item, Some((local, to))).as_ref() == Some(&before))
+                    .map(|to| (local.clone(), to))
+            });
+        let Some((local, to)) = renamed else { return };
         names_mut(item, true, &mut |name| {
             if *name == local {
-                name.clone_from(&base);
+                name.clone_from(&to);
             }
         });
+    }
+}
+
+/// Each read in `item`, and what it's of, were `renamed`'s first name its
+/// second.
+fn reads(item: &js::Item, renamed: Option<(&str, &str)>) -> Option<Vec<scopes::Of>> {
+    match item {
+        js::Item::Function(function) => scopes::reads(function, renamed),
+        js::Item::Namespace(namespace) => {
+            let methods = namespace.methods.iter().map(|m| scopes::reads(m, renamed));
+            methods
+                .collect::<Option<Vec<_>>>()
+                .map(|all| all.into_iter().flatten().collect())
+        }
+        js::Item::Const(constant) => scopes::reads_of(&constant.value, renamed),
+        js::Item::Statements(_) => None,
     }
 }
 

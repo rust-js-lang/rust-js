@@ -127,14 +127,14 @@ function main() {
     }
   }
   for (const text of ["1.5,true,x,7", "z,true,x,7", "1,maybe,x,7", "1,true,xy,7", "1,true,x,300"]) {
-    const match$1 = settings(text);
-    if (match$1.TAG === "Ok") {
+    const match = settings(text);
+    if (match.TAG === "Ok") {
       console.log(
-        `ok (${$debugF64(match$1._0[0])}, ${match$1._0[1]}, ${$debugStr(match$1._0[2], "'")}, ${match$1._0[3]})`,
+        `ok (${$debugF64(match._0[0])}, ${match._0[1]}, ${$debugStr(match._0[2], "'")}, ${match._0[3]})`,
       );
     } else {
       console.log(
-        `err ${match$1._0.impl.Display().fmt(match$1._0.value)} / ${match$1._0.impl.Debug().fmt(match$1._0.value)}`,
+        `err ${match._0.impl.Display().fmt(match._0.value)} / ${match._0.impl.Debug().fmt(match._0.value)}`,
       );
     }
   }

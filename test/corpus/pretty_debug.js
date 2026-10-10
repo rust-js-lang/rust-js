@@ -46,11 +46,11 @@ function shapeDebug_fmt(shape, options) {
     const shown = $debugF64(shape.r);
     f += options?.alternate ? $pretty("Circle {", [`r: ${shown}`], "}") : `Circle { r: ${shown} }`;
   } else {
-    const shown$1 = pointDebug_fmt(shape._0, options);
-    const shown$2 = pointDebug_fmt(shape._1, options);
+    const shown = pointDebug_fmt(shape._0, options);
+    const shown$1 = pointDebug_fmt(shape._1, options);
     f += options?.alternate
-      ? $pretty("Line(", [shown$1, shown$2], ")")
-      : `Line(${shown$1}, ${shown$2})`;
+      ? $pretty("Line(", [shown, shown$1], ")")
+      : `Line(${shown}, ${shown$1})`;
   }
   return f;
 }

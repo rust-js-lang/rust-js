@@ -152,8 +152,8 @@ export function changed_in_place(r) {
   dot = f$2.value;
   let radius;
   if (circle.TAG === "Circle") {
-    const r$1 = circle.r;
-    radius = r$1;
+    const r = circle.r;
+    radius = r;
   } else {
     radius = 0;
   }

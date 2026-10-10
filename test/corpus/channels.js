@@ -67,43 +67,43 @@ function main() {
       );
       const match = $tryRecv(rx);
       console.log(`${match.TAG === "Err" && match._0 === "Disconnected"}`);
-      const temporary$1 = $channel();
+      const temporary = $channel();
       let tx$1;
       let rx$1;
       let rx$1$live;
-      tx$1 = temporary$1[0];
-      rx$1 = temporary$1[1];
+      tx$1 = temporary[0];
+      rx$1 = temporary[1];
       rx$1$live = true;
       try {
         rx$1$live = false;
         $dropReceiver(rx$1);
         console.log(`${$send(tx$1, 5).TAG !== "Ok"}`);
-        const temporary$2 = $channel();
-        let tx$2;
+        const temporary = $channel();
+        let tx;
         let tx$2$live;
-        let rx$2;
-        tx$2 = temporary$2[0];
+        let rx;
+        tx = temporary[0];
         tx$2$live = true;
-        rx$2 = temporary$2[1];
+        rx = temporary[1];
         try {
           tx$2$live = false;
           const notify = () => {
-            $unwrapOk($send(tx$2, "done"), undefined, (e) => "SendError { .. }");
+            $unwrapOk($send(tx, "done"), undefined, (e) => "SendError { .. }");
           };
           try {
             notify();
-            const arg = $recv(rx$2);
+            const arg = $recv(rx);
             console.log(`${arg.TAG === "Ok" ? `Ok(${$debugStr(arg._0)})` : "Err(RecvError)"}`);
-            const match$1 = $tryRecv(rx$2);
-            console.log(`${match$1.TAG === "Err" && match$1._0 === "Empty"}`);
+            const match = $tryRecv(rx);
+            console.log(`${match.TAG === "Err" && match._0 === "Empty"}`);
           } finally {
-            $dropSender(tx$2);
+            $dropSender(tx);
           }
-          console.log(`${$recv(rx$2).TAG !== "Ok"}`);
+          console.log(`${$recv(rx).TAG !== "Ok"}`);
         } finally {
-          $dropReceiver(rx$2);
+          $dropReceiver(rx);
           if (tx$2$live) {
-            $dropSender(tx$2);
+            $dropSender(tx);
           }
         }
       } finally {

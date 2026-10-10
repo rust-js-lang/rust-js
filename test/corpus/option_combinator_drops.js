@@ -126,23 +126,23 @@ function parse_flag(flag, BNamed, dropB) {
       }
     }
   } else {
-    const option$1 = BNamed.from_name(flag);
+    const option = BNamed.from_name(flag);
     let option$1$live = true;
-    let result$1;
+    let result;
     try {
       option$1$live = false;
-      result$1 =
-        option$1 != null
-          ? { TAG: "Ok", _0: $someValue(option$1) }
+      result =
+        option != null
+          ? { TAG: "Ok", _0: $someValue(option) }
           : { TAG: "Err", _0: `unknown ${flag}` };
-      if (result$1.TAG === "Err") {
-        return result$1;
+      if (result.TAG === "Err") {
+        return result;
       }
-      parsed = result$1._0;
+      parsed = result._0;
     } finally {
       if (option$1$live) {
-        if (option$1 != null) {
-          dropB?.($someValue(option$1));
+        if (option != null) {
+          dropB?.($someValue(option));
         }
       }
     }
@@ -208,23 +208,21 @@ function parse_pair(a, b, both, BNamed, dropB) {
       }
     }
   } else {
-    const option$2 = BNamed.from_name(a);
+    const option = BNamed.from_name(a);
     let option$2$live = true;
-    let result$2;
+    let result;
     try {
       option$2$live = false;
-      result$2 =
-        option$2 != null
-          ? { TAG: "Ok", _0: $someValue(option$2) }
-          : { TAG: "Err", _0: `unknown ${a}` };
-      if (result$2.TAG === "Err") {
-        return result$2;
+      result =
+        option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
+      if (result.TAG === "Err") {
+        return result;
       }
-      pair = [result$2._0, undefined];
+      pair = [result._0, undefined];
     } finally {
       if (option$2$live) {
-        if (option$2 != null) {
-          dropB?.($someValue(option$2));
+        if (option != null) {
+          dropB?.($someValue(option));
         }
       }
     }
@@ -246,118 +244,118 @@ function main() {
   }
   try {
     console.log(`kept ${!!kept}`);
-    const option$1 = make(3);
-    let kept$2;
+    const option = make(3);
+    let kept$1;
     try {
-      if (option$1 != null && even(option$1)) {
-        kept$2 = option$1;
+      if (option != null && even(option)) {
+        kept$1 = option;
       }
     } finally {
-      if (option$1 != null && kept$2 === undefined) {
-        dDrop_drop(option$1);
+      if (option != null && kept$1 === undefined) {
+        dDrop_drop(option);
       }
     }
-    const dropped = kept$2;
+    const dropped = kept$1;
     try {
       console.log(`dropped ${!dropped}`);
-      const option$2 = make(0);
-      let kept$3;
+      const option = make(0);
+      let kept;
       try {
-        if (option$2 != null && even(option$2)) {
-          kept$3 = option$2;
+        if (option != null && even(option)) {
+          kept = option;
         }
       } finally {
-        if (option$2 != null && kept$3 === undefined) {
-          dDrop_drop(option$2);
+        if (option != null && kept === undefined) {
+          dDrop_drop(option);
         }
       }
-      const option$3 = kept$3;
+      const option$1 = kept;
       try {
-        console.log(`none ${!option$3}`);
+        console.log(`none ${!option$1}`);
       } finally {
-        if (option$3 != null) {
-          dDrop_drop(option$3);
+        if (option$1 != null) {
+          dDrop_drop(option$1);
         }
       }
-      const option$4 = make(5);
+      const option$2 = make(5);
       let option$4$live = true;
-      let kept$4;
+      let kept$1;
       let closure;
       try {
         option$4$live = false;
         try {
-          if (option$4 != null && option$4[0] > 4) {
-            kept$4 = option$4;
+          if (option$2 != null && option$2[0] > 4) {
+            kept$1 = option$2;
           }
         } finally {
-          if (option$4 != null && kept$4 === undefined) {
-            dDrop_drop(option$4);
+          if (option$2 != null && kept$1 === undefined) {
+            dDrop_drop(option$2);
           }
         }
-        closure = kept$4;
+        closure = kept$1;
       } finally {
         if (option$4$live) {
-          if (option$4 != null) {
-            dDrop_drop(option$4);
+          if (option$2 != null) {
+            dDrop_drop(option$2);
           }
         }
       }
       try {
         console.log(`closure ${closure?.[0] ?? 0}`);
-        const option$5 = make(6);
+        const option = make(6);
         let option$5$live = true;
-        let option$6;
+        let option$1;
         try {
           option$5$live = false;
-          option$6 = keep(option$5, (d) => d[0] > 9, dDrop_drop);
+          option$1 = keep(option, (d) => d[0] > 9, dDrop_drop);
           try {
-            console.log(`generic ${!option$6}`);
+            console.log(`generic ${!option$1}`);
           } finally {
-            if (option$6 != null) {
-              dDrop_drop(option$6);
+            if (option$1 != null) {
+              dDrop_drop(option$1);
             }
           }
         } finally {
           if (option$5$live) {
-            if (option$5 != null) {
-              dDrop_drop(option$5);
+            if (option != null) {
+              dDrop_drop(option);
             }
           }
         }
-        const option$7 = $some(make(7));
+        const option$2 = $some(make(7));
         let option$7$live = true;
-        let option$9;
+        let option$3;
         try {
           option$7$live = false;
-          option$9 = keep(option$7, Boolean, (option$8) => {
-            if (option$8 != null) {
-              dDrop_drop(option$8);
+          option$3 = keep(option$2, Boolean, (option) => {
+            if (option != null) {
+              dDrop_drop(option);
             }
           });
           try {
-            console.log(`generic ${option$9 != null}`);
+            console.log(`generic ${option$3 != null}`);
           } finally {
-            if (option$9 != null) {
-              if ($someValue(option$9) != null) {
-                dDrop_drop($someValue(option$9));
+            if (option$3 != null) {
+              if ($someValue(option$3) != null) {
+                dDrop_drop($someValue(option$3));
               }
             }
           }
         } finally {
           if (option$7$live) {
-            if (option$7 != null) {
-              if ($someValue(option$7) != null) {
-                dDrop_drop($someValue(option$7));
+            if (option$2 != null) {
+              if ($someValue(option$2) != null) {
+                dDrop_drop($someValue(option$2));
               }
             }
           }
         }
-        const option$10 = make(8);
+        const option$4 = make(8);
         const fallback = "Nothing";
         let mapped;
-        if (option$10 != null) {
+        if (option$4 != null) {
           try {
-            mapped = { TAG: "One", _0: option$10 };
+            mapped = { TAG: "One", _0: option$4 };
           } finally {
             if (fallback.TAG === "One") {
               dDrop_drop(fallback._0);
@@ -371,33 +369,33 @@ function main() {
           if (one.TAG === "One") {
             console.log(`one ${one._0[0]}`);
           }
-          const option$11 = make(0);
-          const fallback$1 = { TAG: "One", _0: [9] };
-          let mapped$1;
-          if (option$11 != null) {
+          const option = make(0);
+          const fallback = { TAG: "One", _0: [9] };
+          let mapped;
+          if (option != null) {
             try {
-              mapped$1 = { TAG: "One", _0: option$11 };
+              mapped = { TAG: "One", _0: option };
             } finally {
-              if (fallback$1.TAG === "One") {
-                dDrop_drop(fallback$1._0);
+              if (fallback.TAG === "One") {
+                dDrop_drop(fallback._0);
               }
             }
           } else {
-            mapped$1 = fallback$1;
+            mapped = fallback;
           }
-          const nothing = mapped$1;
+          const nothing = mapped;
           try {
             console.log(`nothing ${nothing.TAG === "One"}`);
-            const option$12 = make(10);
+            const option = make(10);
             let option$12$live = true;
             let tmp;
-            let d$1;
+            let d;
             let d$1$live;
-            let mapped$2;
+            let mapped;
             let read;
             try {
-              tmp = option$12;
-              d$1 = [11];
+              tmp = option;
+              d = [11];
               d$1$live = true;
               try {
                 option$12$live = false;
@@ -411,66 +409,65 @@ function main() {
                         dDrop_drop(d);
                       }
                     };
-                    mapped$2 = map(tmp);
+                    mapped = map(tmp);
                   } finally {
-                    dDrop_drop(d$1);
+                    dDrop_drop(d);
                   }
                 } else {
-                  mapped$2 = d$1;
+                  mapped = d;
                 }
-                read = mapped$2;
+                read = mapped;
               } finally {
                 if (d$1$live) {
-                  dDrop_drop(d$1);
+                  dDrop_drop(d);
                 }
               }
             } finally {
               if (option$12$live) {
-                if (option$12 != null) {
-                  dDrop_drop(option$12);
+                if (option != null) {
+                  dDrop_drop(option);
                 }
               }
             }
             try {
               console.log(`read ${read[0]}`);
-              const d$3 = found(make(12), [13], dDrop_drop);
+              const d = found(make(12), [13], dDrop_drop);
               try {
-                console.log(`found ${d$3[0]}`);
+                console.log(`found ${d[0]}`);
               } finally {
-                dDrop_drop(d$3);
+                dDrop_drop(d);
               }
-              const d$5 = found(undefined, [14], dDrop_drop);
+              const d$1 = found(undefined, [14], dDrop_drop);
               try {
-                console.log(`found ${d$5[0]}`);
+                console.log(`found ${d$1[0]}`);
               } finally {
-                dDrop_drop(d$5);
+                dDrop_drop(d$1);
               }
-              const option$13 = make(15);
+              const option = make(15);
               let option$13$live = true;
               let ok;
               try {
                 option$13$live = false;
-                ok = option$13 != null ? { TAG: "Ok", _0: option$13 } : { TAG: "Err", _0: "none" };
+                ok = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "none" };
               } finally {
                 if (option$13$live) {
-                  if (option$13 != null) {
-                    dDrop_drop(option$13);
+                  if (option != null) {
+                    dDrop_drop(option);
                   }
                 }
               }
               try {
                 console.log(`ok ${ok.TAG === "Ok" ? ok._0[0] : 0}`);
-                const option$14 = make(0);
+                const option = make(0);
                 let option$14$live = true;
                 let err;
                 try {
                   option$14$live = false;
-                  err =
-                    option$14 != null ? { TAG: "Ok", _0: option$14 } : { TAG: "Err", _0: "none" };
+                  err = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "none" };
                 } finally {
                   if (option$14$live) {
-                    if (option$14 != null) {
-                      dDrop_drop(option$14);
+                    if (option != null) {
+                      dDrop_drop(option);
                     }
                   }
                 }
@@ -481,11 +478,11 @@ function main() {
                   try {
                     if (result.TAG === "Ok") {
                       result$Ok$0$live = false;
-                      const d$7 = result._0;
+                      const d = result._0;
                       try {
-                        console.log(`parsed ${d$7[0]}`);
+                        console.log(`parsed ${d[0]}`);
                       } finally {
-                        dDrop_drop(d$7);
+                        dDrop_drop(d);
                       }
                     } else {
                       console.log(`${result._0}`);
@@ -502,11 +499,11 @@ function main() {
                   try {
                     if (result$1.TAG === "Ok") {
                       result$1$Ok$0$live = false;
-                      const d$9 = result$1._0;
+                      const d = result$1._0;
                       try {
-                        console.log(`parsed ${d$9[0]}`);
+                        console.log(`parsed ${d[0]}`);
                       } finally {
-                        dDrop_drop(d$9);
+                        dDrop_drop(d);
                       }
                     } else {
                       console.log(`${result$1._0}`);
@@ -519,24 +516,24 @@ function main() {
                     }
                   }
                   for (const flag of ["0x17", "18", "0xy", "z"]) {
-                    const result$2 = parse_flag(flag, dNamed(), dDrop_drop);
+                    const result = parse_flag(flag, dNamed(), dDrop_drop);
                     let result$2$Ok$0$live = true;
                     try {
-                      if (result$2.TAG === "Ok") {
+                      if (result.TAG === "Ok") {
                         result$2$Ok$0$live = false;
-                        const d$11 = result$2._0;
+                        const d = result._0;
                         try {
-                          console.log(`flag ${d$11[0]}`);
+                          console.log(`flag ${d[0]}`);
                         } finally {
-                          dDrop_drop(d$11);
+                          dDrop_drop(d);
                         }
                       } else {
-                        console.log(`${result$2._0}`);
+                        console.log(`${result._0}`);
                       }
                     } finally {
-                      if (result$2.TAG === "Ok") {
+                      if (result.TAG === "Ok") {
                         if (result$2$Ok$0$live) {
-                          dDrop_drop(result$2._0);
+                          dDrop_drop(result._0);
                         }
                       }
                     }
@@ -546,38 +543,38 @@ function main() {
                     ["21", "x", true],
                     ["22", "", false],
                   ]) {
-                    const result$3 = parse_pair(a, b, both, dNamed(), dDrop_drop);
+                    const result = parse_pair(a, b, both, dNamed(), dDrop_drop);
                     let result$3$Ok$0$0$live = true;
                     let result$3$Ok$0$1$live = true;
                     try {
-                      if (result$3.TAG === "Ok") {
+                      if (result.TAG === "Ok") {
                         result$3$Ok$0$0$live = false;
                         result$3$Ok$0$1$live = false;
-                        const d$13 = result$3._0[0];
-                        const e = result$3._0[1];
+                        const d = result._0[0];
+                        const e = result._0[1];
                         try {
-                          const map$1 = (e) => {
+                          const map = (e) => {
                             try {
                               return e[0];
                             } finally {
                               dDrop_drop(e);
                             }
                           };
-                          console.log(`pair ${d$13[0]} ${e != null ? map$1(e) : 0}`);
+                          console.log(`pair ${d[0]} ${e != null ? map(e) : 0}`);
                         } finally {
-                          dDrop_drop(d$13);
+                          dDrop_drop(d);
                         }
                       } else {
-                        console.log(`${result$3._0}`);
+                        console.log(`${result._0}`);
                       }
                     } finally {
-                      if (result$3.TAG === "Ok") {
+                      if (result.TAG === "Ok") {
                         if (result$3$Ok$0$0$live) {
-                          dDrop_drop(result$3._0[0]);
+                          dDrop_drop(result._0[0]);
                         }
                         if (result$3$Ok$0$1$live) {
-                          if (result$3._0[1] != null) {
-                            dDrop_drop(result$3._0[1]);
+                          if (result._0[1] != null) {
+                            dDrop_drop(result._0[1]);
                           }
                         }
                       }

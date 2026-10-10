@@ -18,7 +18,7 @@ function main() {
   const owned = $unwrapOk(
     slice$1.length === 2 ? { TAG: "Ok", _0: slice$1 } : { TAG: "Err" },
     undefined,
-    (e$1) => "TryFromSliceError(())",
+    (e) => "TryFromSliceError(())",
   );
   const slice$2 = $slice(bytes, 0, 3);
   const wrong = slice$2.length === 4 ? { TAG: "Ok", _0: slice$2 } : { TAG: "Err" };
@@ -35,7 +35,7 @@ function main() {
   const pair = $unwrapOk(
     words.length === 2 ? { TAG: "Ok", _0: words } : { TAG: "Err" },
     undefined,
-    (e$2) => "TryFromSliceError(())",
+    (e) => "TryFromSliceError(())",
   );
   console.log(`${pair[0]} ${pair[1]}`);
 }

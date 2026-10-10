@@ -41,7 +41,7 @@ const Mapped = {
         }
       }
     } else {
-      const option$1 = f(mapped._0);
+      const option = f(mapped._0);
       let option$1$live = true;
       let arg;
       let temporary;
@@ -51,14 +51,14 @@ const Mapped = {
       try {
         arg = f(mapped._1);
         option$1$live = false;
-        temporary = [option$1, arg];
+        temporary = [option, arg];
         temporary$0$Some$0$live = true;
         temporary$1$Some$0$live = true;
         value = temporary;
       } finally {
         if (option$1$live) {
-          if (option$1 != null) {
-            dropU?.($someValue(option$1));
+          if (option != null) {
+            dropU?.($someValue(option));
           }
         }
       }

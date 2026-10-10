@@ -54,12 +54,12 @@ function main() {
       const n = current;
       tmp = Math.imul(n, 10);
     } else if (current != null && current < 0) {
-      const n$1 = current;
+      const n = current;
       current = undefined;
-      tmp = n$1;
+      tmp = n;
     } else if (current != null) {
-      const n$2 = current;
-      tmp = n$2;
+      const n = current;
+      tmp = n;
     } else {
       tmp = 0;
     }

@@ -51,7 +51,7 @@ export function replaced(text, pattern, flags, with$) {
 }
 
 export function parts(text, part) {
-  const parts$1 = [
+  const parts = [
     text.slice(1, -1),
     text.slice(-2),
     text.substring(1, 3),
@@ -61,7 +61,7 @@ export function parts(text, part) {
     text.trimEnd(),
   ];
   const at = [text.indexOf(part), text.indexOf(part, 2), text.lastIndexOf(part)];
-  return [parts$1, at, text.length];
+  return [parts, at, text.length];
 }
 
 export function file_name(path) {

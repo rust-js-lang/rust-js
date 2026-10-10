@@ -75,33 +75,33 @@ function main() {
               arg$2 == null ? "None" : `Some(${["Less", "Equal", "Greater"][arg$2 + 1]})`
             }`,
           );
-          const rc$1 = { value: "rust", strong: 1, weak: 0 };
+          const rc = { value: "rust", strong: 1, weak: 0 };
           let rc$1$live = true;
           let fresh;
           try {
             rc$1$live = false;
-            fresh = { title: rc$1, pages: { value: [1, 2], strong: 1, weak: 0 } };
+            fresh = { title: rc, pages: { value: [1, 2], strong: 1, weak: 0 } };
           } finally {
             if (rc$1$live) {
-              $rcDrop(rc$1);
+              $rcDrop(rc);
             }
           }
           try {
             const tmp$1 =
               fresh.title.value === doc.title.value && $eq(fresh.pages.value, doc.pages.value);
-            const rc$2 = { value: 1, strong: 1, weak: 0 };
+            const rc = { value: 1, strong: 1, weak: 0 };
             let tmp;
-            let rc$3;
+            let rc$1;
             try {
-              tmp = rc$2;
-              rc$3 = { value: 1, strong: 1, weak: 0 };
+              tmp = rc;
+              rc$1 = { value: 1, strong: 1, weak: 0 };
               try {
-                console.log(`${tmp$1} ${tmp.value === rc$3.value}`);
+                console.log(`${tmp$1} ${tmp.value === rc$1.value}`);
               } finally {
-                $rcDrop(rc$3);
+                $rcDrop(rc$1);
               }
             } finally {
-              $rcDrop(rc$2);
+              $rcDrop(rc);
             }
             copy.pages = $makeMut(copy.pages, (value) => value.slice());
             copy.pages.value.push(3);
@@ -114,8 +114,8 @@ function main() {
                   total = (total + item) & 255;
                 }
               }
-              const arg$3 = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
-              console.log(`${total} ${arg$3}`);
+              const arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
+              console.log(`${total} ${arg}`);
               const shared = { value: { value: [1] }, strong: 1, weak: 0 };
               let shared$live = true;
               try {
@@ -135,11 +135,11 @@ function main() {
                     value: $borrow(value).value.slice(),
                   })).value;
                   const ref$1 = $borrow(other.value, true);
-                  let arg$4;
+                  let arg;
                   try {
-                    arg$4 = count(other);
+                    arg = count(other);
                     console.log(
-                      `[${owned.map((item) => String(item)).join(", ")}] [${ref$1.value.map((item) => String(item)).join(", ")}] ${arg$4}`,
+                      `[${owned.map((item) => String(item)).join(", ")}] [${ref$1.value.map((item) => String(item)).join(", ")}] ${arg}`,
                     );
                   } finally {
                     $unborrow(ref$1);
@@ -151,27 +151,27 @@ function main() {
                     try {
                       console.log(`${me.value.name} ${owner.strong} ${owner.weak}`);
                       me$live = false;
-                      $rcDrop(me, (value$2) => {
-                        $weakDrop(value$2.me);
+                      $rcDrop(me, (value) => {
+                        $weakDrop(value.me);
                       });
-                      const tmp$2 = owner.strong;
+                      const tmp = owner.strong;
                       const arc = $unwrap($upgrade(owner.value.me));
                       try {
-                        console.log(`${tmp$2} ${owner === arc}`);
+                        console.log(`${tmp} ${owner === arc}`);
                       } finally {
-                        $rcDrop(arc, (value$3) => {
-                          $weakDrop(value$3.me);
+                        $rcDrop(arc, (value) => {
+                          $weakDrop(value.me);
                         });
                       }
                       const defaulted = { value: 0, strong: 1, weak: 0 };
                       try {
-                        const rc$4 = { value: 5, strong: 1, weak: 0 };
-                        let arg$5;
+                        const rc = { value: 5, strong: 1, weak: 0 };
+                        let arg;
                         try {
-                          arg$5 = $cmp(rc$4.value, defaulted.value) > 0;
-                          console.log(`${defaulted.value} ${arg$5}`);
+                          arg = $cmp(rc.value, defaulted.value) > 0;
+                          console.log(`${defaulted.value} ${arg}`);
                         } finally {
-                          $rcDrop(rc$4);
+                          $rcDrop(rc);
                         }
                         const w = $downgrade(defaulted);
                         let w$live = true;
@@ -233,14 +233,14 @@ function main() {
                       }
                     } finally {
                       if (me$live) {
-                        $rcDrop(me, (value$4) => {
-                          $weakDrop(value$4.me);
+                        $rcDrop(me, (value) => {
+                          $weakDrop(value.me);
                         });
                       }
                     }
                   } finally {
-                    $rcDrop(owner, (value$5) => {
-                      $weakDrop(value$5.me);
+                    $rcDrop(owner, (value) => {
+                      $weakDrop(value.me);
                     });
                   }
                 } finally {
@@ -252,8 +252,8 @@ function main() {
                 }
               }
             } finally {
-              for (const item$1 of lists) {
-                $rcDrop(item$1);
+              for (const item of lists) {
+                $rcDrop(item);
               }
             }
           } finally {

@@ -61,8 +61,8 @@ function main() {
   if (r != null) {
     r.value = (r.value + 5) | 0;
   }
-  for (const r$1 of refs) {
-    r$1.value = (r$1.value + 10) | 0;
+  for (const r of refs) {
+    r.value = (r.value + 10) | 0;
   }
   let c = 3;
   const o = {
@@ -73,8 +73,8 @@ function main() {
       c = value;
     },
   };
-  const r$2 = $unwrap(o);
-  r$2.value = (r$2.value + 1) | 0;
+  const r$1 = $unwrap(o);
+  r$1.value = (r$1.value + 1) | 0;
   console.log(`${a} ${b} ${c}`);
 }
 //# sourceMappingURL=case.js.map

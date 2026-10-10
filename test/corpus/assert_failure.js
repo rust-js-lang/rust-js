@@ -14,8 +14,8 @@ function main() {
   }
   console.log("first holds");
   if (total !== 7) {
-    const kind$1 = "Eq";
-    $assertFailed(kind$1, String(total), "7", "totals differ");
+    const kind = "Eq";
+    $assertFailed(kind, String(total), "7", "totals differ");
   }
 }
 //# sourceMappingURL=case.js.map

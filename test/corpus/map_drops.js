@@ -56,15 +56,15 @@ function main() {
         console.log(`has ${n[0]}`);
       }
       sorted$live = false;
-      for (const [, value$3] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value$3);
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        noisyDrop_drop(value);
       }
       console.log("sorted dropped");
       const byName = new Map();
       try {
-        const value$4 = $insert(byName, "x", ["x"]);
-        if (value$4 != null) {
-          noisyDrop_drop(value$4);
+        const value = $insert(byName, "x", ["x"]);
+        if (value != null) {
+          noisyDrop_drop(value);
         }
         $orInsertWith(byName, "y", () => ["y"]);
         console.log(`${byName.size} ${byName.has("y")}`);
@@ -76,18 +76,18 @@ function main() {
             const handles = new Map();
             let handles$live = true;
             try {
-              const value$5 = $insert(handles, "a", $rcClone(shared));
-              if (value$5 != null) {
-                $rcDrop(value$5);
+              const value = $insert(handles, "a", $rcClone(shared));
+              if (value != null) {
+                $rcDrop(value);
               }
-              const value$6 = $insert(handles, "b", $rcClone(shared));
-              if (value$6 != null) {
-                $rcDrop(value$6);
+              const value$1 = $insert(handles, "b", $rcClone(shared));
+              if (value$1 != null) {
+                $rcDrop(value$1);
               }
               console.log(`${shared.strong}`);
-              const value$7 = $remove(handles, "a");
-              if (value$7 != null) {
-                $rcDrop(value$7);
+              const value$2 = $remove(handles, "a");
+              if (value$2 != null) {
+                $rcDrop(value$2);
               }
               console.log(`${shared.strong}`);
               handles$live = false;
@@ -97,8 +97,8 @@ function main() {
               console.log(`${shared.strong}`);
             } finally {
               if (handles$live) {
-                for (const item$1 of handles.values()) {
-                  $rcDrop(item$1);
+                for (const item of handles.values()) {
+                  $rcDrop(item);
                 }
               }
             }
@@ -111,8 +111,8 @@ function main() {
           }
         }
       } finally {
-        for (const item$2 of byName.values()) {
-          noisyDrop_drop(item$2);
+        for (const item of byName.values()) {
+          noisyDrop_drop(item);
         }
       }
     } finally {
@@ -124,8 +124,8 @@ function main() {
     }
   } finally {
     if (sorted$live) {
-      for (const [, value$8] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value$8);
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        noisyDrop_drop(value);
       }
     }
   }

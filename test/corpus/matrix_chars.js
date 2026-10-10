@@ -99,24 +99,24 @@ function main() {
       `${$debugStr(c, "'")}: case ${$debugStr(arg$19)} ${$debugStr(arg$20)} ${$debugStr(arg$21, "'")} ${$debugStr(arg$22, "'")} digit ${arg$23 == null ? "None" : `Some(${arg$23})`} ${arg$24 == null ? "None" : `Some(${arg$24})`} ${arg$25 == null ? "None" : `Some(${arg$25})`} len ${arg$26} ${arg$27} as ${arg$28} ${arg$29} ${$debugStr(arg$30, "'")} ${arg$31 == null ? "None" : `Some(${$debugStr(arg$31, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${arg$32}`,
     );
     for (const d of CHARS) {
-      const arg$33 = $cmp(c, d);
-      const arg$34 = $cmp(c, d) < 0;
-      const arg$35 = $cmp(c, d) > 0 ? c : d;
-      const arg$36 = c === d;
-      const arg$37 = $asciiCase(c) === $asciiCase(d);
+      const arg = $cmp(c, d);
+      const arg$1 = $cmp(c, d) < 0;
+      const arg$2 = $cmp(c, d) > 0 ? c : d;
+      const arg$3 = c === d;
+      const arg$4 = $asciiCase(c) === $asciiCase(d);
       console.log(
         `${$debugStr(c, "'")} ${$debugStr(d, "'")}: ${
-          ["Less", "Equal", "Greater"][arg$33 + 1]
-        } ${arg$34} ${arg$35} ${arg$36} ${arg$37}`,
+          ["Less", "Equal", "Greater"][arg + 1]
+        } ${arg$1} ${arg$2} ${arg$3} ${arg$4}`,
       );
     }
   }
   for (const n of [0, 7, 9, 10, 15, 35, 36]) {
-    const arg$38 = $fromDigit(n, 10);
-    const arg$39 = $fromDigit(n, 16);
-    const arg$40 = $fromDigit(n, 36);
+    const arg = $fromDigit(n, 10);
+    const arg$1 = $fromDigit(n, 16);
+    const arg$2 = $fromDigit(n, 36);
     console.log(
-      `${n}: ${arg$38 == null ? "None" : `Some(${$debugStr(arg$38, "'")})`} ${arg$39 == null ? "None" : `Some(${$debugStr(arg$39, "'")})`} ${arg$40 == null ? "None" : `Some(${$debugStr(arg$40, "'")})`}`,
+      `${n}: ${arg == null ? "None" : `Some(${$debugStr(arg, "'")})`} ${arg$1 == null ? "None" : `Some(${$debugStr(arg$1, "'")})`} ${arg$2 == null ? "None" : `Some(${$debugStr(arg$2, "'")})`}`,
     );
   }
 }

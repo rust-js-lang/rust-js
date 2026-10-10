@@ -104,14 +104,14 @@ function main() {
   }
   let n = 2;
   while (true) {
-    const noisy$1 = make(n);
-    let value$1;
+    const noisy = make(n);
+    let value;
     try {
-      value$1 = Noisy.big(noisy$1) === false;
+      value = Noisy.big(noisy) === false;
     } finally {
-      noisyDrop_drop(noisy$1);
+      noisyDrop_drop(noisy);
     }
-    if (!value$1) {
+    if (!value) {
       break;
     }
     console.log(`round ${n}`);
@@ -120,40 +120,40 @@ function main() {
   let found;
   const _inner = [50];
   try {
-    const noisy$2 = make(5);
+    const noisy = make(5);
     try {
-      found = Noisy.big(noisy$2);
+      found = Noisy.big(noisy);
     } finally {
-      noisyDrop_drop(noisy$2);
+      noisyDrop_drop(noisy);
     }
   } finally {
     noisyDrop_drop(_inner);
   }
   console.log(`found ${found}`);
   console.log(`tail ${tail(6)}`);
-  const noisy$3 = make(7);
-  let noisy$4;
+  const noisy$1 = make(7);
+  let noisy$2;
   try {
-    noisy$4 = [7];
+    noisy$2 = [7];
     try {
-      if (!$eq(noisy$3, noisy$4)) {
+      if (!$eq(noisy$1, noisy$2)) {
         const kind = "Eq";
-        $assertFailed(kind, noisyDebug_fmt(noisy$3), noisyDebug_fmt(noisy$4));
+        $assertFailed(kind, noisyDebug_fmt(noisy$1), noisyDebug_fmt(noisy$2));
       }
     } finally {
-      noisyDrop_drop(noisy$4);
+      noisyDrop_drop(noisy$2);
     }
+  } finally {
+    noisyDrop_drop(noisy$1);
+  }
+  const noisy$3 = make(8);
+  let value$1;
+  try {
+    value$1 = !Noisy.big(noisy$3);
   } finally {
     noisyDrop_drop(noisy$3);
   }
-  const noisy$5 = make(8);
-  let value$2;
-  try {
-    value$2 = !Noisy.big(noisy$5);
-  } finally {
-    noisyDrop_drop(noisy$5);
-  }
-  if (value$2) {
+  if (value$1) {
     throw new Error("assertion failed: make(8).big()");
   }
   const option = early(true);
@@ -194,7 +194,7 @@ function main() {
     }
   };
   console.log(`check ${check(10)}`);
-  const pair$1 = (stop) => {
+  const pair = (stop) => {
     const noisy = make(11);
     let noisy$live = true;
     let a;
@@ -215,7 +215,7 @@ function main() {
     }
     return value;
   };
-  const option$2 = pair$1(true);
+  const option$2 = pair(true);
   try {
     console.log(`pair ${!option$2}`);
   } finally {

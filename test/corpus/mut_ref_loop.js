@@ -13,42 +13,42 @@ function main() {
   }
   console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
   const halves = [1.5, 2.5];
-  for (let i$1 = 0; i$1 < halves.length; i$1++) {
-    halves[i$1] *= 2;
+  for (let i = 0; i < halves.length; i++) {
+    halves[i] *= 2;
   }
   console.log(`[${halves.map((item) => $debugF64(item)).join(", ")}]`);
   const counts = [1, 2];
-  for (let i$2 = 0; i$2 < counts.length; i$2++) {
-    counts[i$2] = (counts[i$2] * 200) & 255;
+  for (let i = 0; i < counts.length; i++) {
+    counts[i] = (counts[i] * 200) & 255;
   }
   console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
   const words = ["a", "b"];
-  for (let i$3 = 0; i$3 < words.length; i$3++) {
-    words[i$3] += "!";
+  for (let i = 0; i < words.length; i++) {
+    words[i] += "!";
   }
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
   const end = $sliceEnd(ints, 1);
-  for (let i$4 = 1; i$4 < end; i$4++) {
-    ints[i$4] = 0;
+  for (let i = 1; i < end; i++) {
+    ints[i] = 0;
   }
   console.log(`[${ints.map((item) => String(item)).join(", ")}]`);
   const ns = [1, 2, 3, 4];
   const end$1 = $sliceEnd(ns, 1, 3);
-  for (let i$5 = 1; i$5 < end$1; i$5++) {
-    ns[i$5] = -ns[i$5] | 0;
+  for (let i = 1; i < end$1; i++) {
+    ns[i] = -ns[i] | 0;
   }
   const end$2 = $sliceEnd(ns, 0, 1);
-  for (let i$6 = 0; i$6 < end$2; i$6++) {
-    ns[i$6] = 9;
+  for (let i = 0; i < end$2; i++) {
+    ns[i] = 9;
   }
   console.log(`[${ns.map((item) => String(item)).join(", ")}]`);
   const v = [1, 2, 3, 4, 5];
-  for (let i$7 = 0; i$7 < v.length; i$7++) {
-    if (v[i$7] % 2 === 0) {
+  for (let i = 0; i < v.length; i++) {
+    if (v[i] % 2 === 0) {
       continue;
     }
-    v[i$7] = Math.imul(v[i$7], 10);
-    if (v[i$7] > 20) {
+    v[i] = Math.imul(v[i], 10);
+    if (v[i] > 20) {
       break;
     }
   }
@@ -57,9 +57,9 @@ function main() {
   const b = [10, 20];
   let cur = a;
   const items = cur;
-  for (let i$8 = 0; i$8 < items.length; i$8++) {
+  for (let i = 0; i < items.length; i++) {
     cur = b;
-    items[i$8] = (items[i$8] + 1) | 0;
+    items[i] = (items[i] + 1) | 0;
     break;
   }
   cur[$at(cur, 0)] = (cur[$at(cur, 0)] + 5) | 0;
@@ -72,9 +72,9 @@ function main() {
   ];
   const h = { list: a$1 };
   const items$1 = h.list;
-  for (let i$9 = 0; i$9 < items$1.length; i$9++) {
+  for (let i = 0; i < items$1.length; i++) {
     h.list = b$1;
-    items$1[i$9] = (items$1[i$9] + 1) | 0;
+    items$1[i] = (items$1[i] + 1) | 0;
     break;
   }
   h.list[$at(h.list, 0)] = (h.list[$at(h.list, 0)] + 5) | 0;

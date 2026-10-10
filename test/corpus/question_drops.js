@@ -173,16 +173,16 @@ function main() {
   console.log(`${arg == null ? "None" : `Some(${arg})`}`);
   const arg$1 = first([5]);
   console.log(`${arg$1 == null ? "None" : `Some(${arg$1})`}`);
-  const d$1 = [0];
+  const d = [0];
   let arg$2;
   try {
-    arg$2 = discarded(d$1);
+    arg$2 = discarded(d);
     console.log(`${arg$2 == null ? "None" : `Some(${arg$2})`}`);
   } finally {
-    dDrop_drop(d$1);
+    dDrop_drop(d);
   }
-  for (const start$1 of [2, 3]) {
-    const result = go([start$1]);
+  for (const start of [2, 3]) {
+    const result = go([start]);
     let result$Err$0$live = true;
     try {
       if (result.TAG === "Ok") {
@@ -204,25 +204,25 @@ function main() {
       }
     }
   }
-  for (const start$2 of [1, 3]) {
-    const option$1 = twice([start$2], dCheckedDouble(), dDrop_drop);
+  for (const start of [1, 3]) {
+    const option = twice([start], dCheckedDouble(), dDrop_drop);
     let option$1$Some$0$live = true;
     try {
-      if (option$1) {
+      if (option) {
         option$1$Some$0$live = false;
-        const d$3 = option$1;
+        const d = option;
         try {
-          console.log(`doubled to ${d$3[0]}`);
+          console.log(`doubled to ${d[0]}`);
         } finally {
-          dDrop_drop(d$3);
+          dDrop_drop(d);
         }
       } else {
         console.log("too big");
       }
     } finally {
-      if (option$1 != null) {
+      if (option != null) {
         if (option$1$Some$0$live) {
-          dDrop_drop(option$1);
+          dDrop_drop(option);
         }
       }
     }

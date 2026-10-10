@@ -95,9 +95,9 @@ export function to_rpn(tokens) {
     }
   }
   while (true) {
-    const t$1 = stack.pop();
-    if (t$1 != null) {
-      out.push(t$1);
+    const t = stack.pop();
+    if (t != null) {
+      out.push(t);
     } else {
       break;
     }
@@ -117,18 +117,18 @@ export function eval$(src) {
       st.push(t._0);
     } else if (t.TAG === "Op") {
       const option = st.pop();
-      const result$1 = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "underflow" };
+      const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "underflow" };
+      if (result.TAG === "Err") {
+        return result;
+      }
+      const b = result._0;
+      const option$1 = st.pop();
+      const result$1 =
+        option$1 != null ? { TAG: "Ok", _0: option$1 } : { TAG: "Err", _0: "underflow" };
       if (result$1.TAG === "Err") {
         return result$1;
       }
-      const b = result$1._0;
-      const option$1 = st.pop();
-      const result$2 =
-        option$1 != null ? { TAG: "Ok", _0: option$1 } : { TAG: "Err", _0: "underflow" };
-      if (result$2.TAG === "Err") {
-        return result$2;
-      }
-      const a = result$2._0;
+      const a = result$1._0;
       let tmp;
       if (t._0 === "+") {
         tmp = a + b;
@@ -146,8 +146,8 @@ export function eval$(src) {
       return { TAG: "Err", _0: "paren" };
     }
   }
-  const option$2 = st.pop();
-  return option$2 != null ? { TAG: "Ok", _0: option$2 } : { TAG: "Err", _0: "empty" };
+  const option = st.pop();
+  return option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "empty" };
 }
 
 export function word_freq(text) {
@@ -200,9 +200,9 @@ export function report() {
     .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
     .join(", ")}]\n`;
   out += `${caesar("Hello, World!", 3)} ${caesar(caesar("abcxyz", 13), 13)}\n`;
-  const arg$1 = first_dup("abcdbe");
-  const arg$2 = first_dup("xyz");
-  out += `${arg$1 == null ? "None" : `Some((${arg$1[0]}, ${$debugStr(arg$1[1], "'")}))`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}\n`;
+  const arg = first_dup("abcdbe");
+  const arg$1 = first_dup("xyz");
+  out += `${arg == null ? "None" : `Some((${arg[0]}, ${$debugStr(arg[1], "'")}))`} ${arg$1 == null ? "None" : `Some((${arg$1[0]}, ${$debugStr(arg$1[1], "'")}))`}\n`;
   const s = "hello world";
   out += `${s.split("o").length} [${$splitBy(s, (c) => c === "l")
     .map((item) => $debugStr(item))

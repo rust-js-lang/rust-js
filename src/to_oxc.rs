@@ -570,12 +570,12 @@ impl<'a> Cx<'a> {
 
     /// `stmts`, each pushed to `out`. An `if` whose branch leaves has no
     /// `else`: what was in it follows, as JS writes it, `if (c) { return a; }
-    /// return b;` (ADR 0237). Its locals stay apart, as every local of a
-    /// function has a name of its own.
+    /// return b;` (ADR 0237). Its locals are the block's, as prepare's
+    /// names see them (ADR 0357).
     fn push_stmts(&self, stmts: &[js::Stmt], out: &mut ArenaVec<'a, Statement<'a>>) {
         for s in stmts {
             match &s.kind {
-                StmtKind::If(cond, then, Some(els)) if leaves(then) => {
+                StmtKind::If(cond, then, Some(els)) if js::leaves(then) => {
                     out.push(Statement::new_if_statement(
                         span(s.span),
                         self.test(cond),
@@ -1541,16 +1541,6 @@ fn restore_sources<'a>(
         );
     }
     out.into_sourcemap()
-}
-
-/// Does running `stmts` always leave, by a `return` or a `throw` last, or an
-/// `if` both of whose branches do?
-fn leaves(stmts: &[js::Stmt]) -> bool {
-    match stmts.last().map(|s| &s.kind) {
-        Some(StmtKind::Return(_) | StmtKind::Throw(_)) => true,
-        Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),
-        _ => false,
-    }
 }
 
 /// Is `name` a JS name, which a key may be as it is?

@@ -26,7 +26,7 @@ function main() {
       ]) {
     c.value = (c.value + 1) | 0;
   }
-  for (const c$1 of count == null
+  for (const c of count == null
     ? []
     : [
         {
@@ -38,10 +38,10 @@ function main() {
           },
         },
       ]) {
-    c$1.value = Math.imul(c$1.value, 10);
+    c.value = Math.imul(c.value, 10);
   }
   let none;
-  for (const c$2 of none == null
+  for (const c of none == null
     ? []
     : [
         {
@@ -53,9 +53,9 @@ function main() {
           },
         },
       ]) {
-    c$2.value = 7;
+    c.value = 7;
   }
-  for (const c$3 of none == null
+  for (const c of none == null
     ? []
     : [
         {
@@ -67,7 +67,7 @@ function main() {
           },
         },
       ]) {
-    c$3.value = 5;
+    c.value = 5;
   }
   console.log(
     `${count == null ? "None" : `Some(${count})`} ${none == null ? "None" : `Some(${none})`}`,
@@ -112,7 +112,7 @@ function main() {
   if (x.TAG === "Ok") {
     x._0.value = Math.imul(x._0.value, 5);
   }
-  for (const x$1 of ok.TAG === "Ok"
+  for (const x of ok.TAG === "Ok"
     ? [
         {
           get value() {
@@ -124,7 +124,7 @@ function main() {
         },
       ]
     : []) {
-    x$1.value = (x$1.value + 1) | 0;
+    x.value = (x.value + 1) | 0;
   }
   const err = { TAG: "Err", _0: "bad" };
   const e = {
@@ -159,7 +159,7 @@ function main() {
     }`,
   );
   const mixed = { TAG: "Err", _0: { x: 1 } };
-  const p$1 =
+  const p =
     mixed.TAG === "Ok"
       ? {
           TAG: "Ok",
@@ -173,8 +173,8 @@ function main() {
           },
         }
       : { TAG: "Err", _0: mixed._0 };
-  if (p$1.TAG === "Err") {
-    p$1._0.x = 9;
+  if (p.TAG === "Err") {
+    p._0.x = 9;
   }
   const number = { TAG: "Ok", _0: 3 };
   const n$1 =

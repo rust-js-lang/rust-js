@@ -236,4 +236,12 @@ export const mutations: Mutation[] = [
     replace: ")\n",
     tests: ["test/lowering.test.ts","-t","property read of what may be None"],
   },
+  {
+    name: "inner-if-leaving-unseen",
+    breaks: "a branch that leaves by an inner `if` both of whose branches return keeps its `else`",
+    file: "src/js.rs",
+    find: "Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),",
+    replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
+    tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
+  },
 ];

@@ -57,12 +57,12 @@ function stockErrorDebug_fmt(stockError, options) {
     const shown = $debugStr(stockError._0);
     f += options?.alternate ? $pretty("UnknownSku(", [shown], ")") : `UnknownSku(${shown})`;
   } else if (stockError.TAG === "OutOfStock") {
-    const shown$1 = $debugStr(stockError.sku);
-    const shown$2 = $formatted(String(stockError.wanted), options, true);
-    const shown$3 = $formatted(String(stockError.have), options, true);
+    const shown = $debugStr(stockError.sku);
+    const shown$1 = $formatted(String(stockError.wanted), options, true);
+    const shown$2 = $formatted(String(stockError.have), options, true);
     f += options?.alternate
-      ? $pretty("OutOfStock {", [`sku: ${shown$1}`, `wanted: ${shown$2}`, `have: ${shown$3}`], "}")
-      : `OutOfStock { sku: ${shown$1}, wanted: ${shown$2}, have: ${shown$3} }`;
+      ? $pretty("OutOfStock {", [`sku: ${shown}`, `wanted: ${shown$1}`, `have: ${shown$2}`], "}")
+      : `OutOfStock { sku: ${shown}, wanted: ${shown$1}, have: ${shown$2} }`;
   } else {
     f += "EmptyOrder";
   }
@@ -305,14 +305,14 @@ function main() {
     ["SAW-2", 2],
   ]);
   const restocked = Array.from(inventory.items)
-    .map(([sku, item$1]) => {
+    .map(([sku, item]) => {
       const value = restock.get(sku);
       if (value == null) {
         return;
       }
       const more = value;
-      item$1.stock = (item$1.stock + more) >>> 0;
-      return [sku, item$1.stock];
+      item.stock = (item.stock + more) >>> 0;
+      return [sku, item.stock];
     })
     .filter(Boolean);
   restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));

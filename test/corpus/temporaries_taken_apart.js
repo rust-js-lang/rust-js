@@ -104,20 +104,20 @@ function main() {
   }
   try {
     console.log(`after let ${x[0]}`);
-    const loud$1 = make(30);
+    const loud = make(30);
     let loud$1$live = true;
-    let arg$1;
+    let arg;
     let pair;
     let right;
     try {
-      arg$1 = make(31);
+      arg = make(31);
       loud$1$live = false;
-      pair = { left: loud$1, right: arg$1 };
+      pair = { left: loud, right: arg };
       right = pair.right;
       loudDrop_drop(pair.left);
     } finally {
       if (loud$1$live) {
-        loudDrop_drop(loud$1);
+        loudDrop_drop(loud);
       }
     }
     try {
@@ -153,21 +153,21 @@ function main() {
         console.log(`after match ${n}`);
       }
       let y;
-      const loud$2 = make(5);
+      const loud = make(5);
       let loud$2$live = true;
-      let arg$2;
-      let temporary$1;
+      let arg;
+      let temporary;
       let temporary$1$0$live;
       let p;
       let p$live;
       try {
-        arg$2 = make(6);
+        arg = make(6);
         loud$2$live = false;
-        temporary$1 = [loud$2, arg$2];
+        temporary = [loud, arg];
         temporary$1$0$live = true;
         try {
           temporary$1$0$live = false;
-          p = temporary$1[0];
+          p = temporary[0];
           p$live = true;
           try {
             console.log("arm");
@@ -180,31 +180,31 @@ function main() {
           }
         } finally {
           if (temporary$1$0$live) {
-            loudDrop_drop(temporary$1[0]);
+            loudDrop_drop(temporary[0]);
           }
-          loudDrop_drop(temporary$1[1]);
+          loudDrop_drop(temporary[1]);
         }
       } finally {
         if (loud$2$live) {
-          loudDrop_drop(loud$2);
+          loudDrop_drop(loud);
         }
       }
       try {
         console.log(`after y ${y[0]}`);
         const option = make(7);
         let option$live = true;
-        let arg$3;
-        let temporary$2;
+        let arg;
+        let temporary;
         let temporary$2$0$Some$0$live;
         try {
-          arg$3 = make(8);
+          arg = make(8);
           option$live = false;
-          temporary$2 = [option, arg$3];
+          temporary = [option, arg];
           temporary$2$0$Some$0$live = true;
           try {
-            if (temporary$2[0]) {
+            if (temporary[0]) {
               temporary$2$0$Some$0$live = false;
-              const z = temporary$2[0];
+              const z = temporary[0];
               try {
                 console.log(`if ${z[0]}`);
               } finally {
@@ -212,12 +212,12 @@ function main() {
               }
             }
           } finally {
-            if (temporary$2[0] != null) {
+            if (temporary[0] != null) {
               if (temporary$2$0$Some$0$live) {
-                loudDrop_drop(temporary$2[0]);
+                loudDrop_drop(temporary[0]);
               }
             }
-            loudDrop_drop(temporary$2[1]);
+            loudDrop_drop(temporary[1]);
           }
         } finally {
           if (option$live) {
@@ -228,55 +228,55 @@ function main() {
         }
         const before = make(1);
         try {
-          const loud$3 = make(40);
+          const loud = make(40);
           let loud$3$live = true;
-          let arg$4;
-          let temporary$3;
-          let a$1;
+          let arg;
+          let temporary;
+          let a;
           try {
-            arg$4 = make(41);
+            arg = make(41);
             loud$3$live = false;
-            temporary$3 = [loud$3, arg$4];
-            a$1 = temporary$3[0];
+            temporary = [loud, arg];
+            a = temporary[0];
           } finally {
             if (loud$3$live) {
-              loudDrop_drop(loud$3);
+              loudDrop_drop(loud);
             }
           }
           try {
-            const loud$4 = make(42);
+            const loud = make(42);
             let loud$4$live = true;
-            let arg$5;
-            let temporary$4;
+            let arg;
+            let temporary$1;
             try {
-              arg$5 = make(43);
+              arg = make(43);
               loud$4$live = false;
-              temporary$4 = [loud$4, arg$5];
+              temporary$1 = [loud, arg];
             } finally {
               if (loud$4$live) {
-                loudDrop_drop(loud$4);
+                loudDrop_drop(loud);
               }
             }
             try {
-              console.log(`in ${before[0]} ${a$1[0]} ${temporary$3[1][0]} ${temporary$4[0][0]}`);
+              console.log(`in ${before[0]} ${a[0]} ${temporary[1][0]} ${temporary$1[0][0]}`);
             } finally {
-              loudDrop_drop(temporary$4[0]);
-              loudDrop_drop(temporary$4[1]);
+              loudDrop_drop(temporary$1[0]);
+              loudDrop_drop(temporary$1[1]);
             }
           } finally {
-            loudDrop_drop(a$1);
-            loudDrop_drop(temporary$3[1]);
+            loudDrop_drop(a);
+            loudDrop_drop(temporary[1]);
           }
         } finally {
           loudDrop_drop(before);
         }
         let whole;
-        const loud$5 = make(9);
+        const loud = make(9);
         let loud$5$live = true;
         let kept;
         try {
           loud$5$live = false;
-          kept = loud$5;
+          kept = loud;
           try {
             whole = kept[0];
           } finally {
@@ -284,43 +284,43 @@ function main() {
           }
         } finally {
           if (loud$5$live) {
-            loudDrop_drop(loud$5);
+            loudDrop_drop(loud);
           }
         }
-        const loud$6 = make(50);
+        const loud$1 = make(50);
         let loud$6$live = true;
-        let arg$6;
+        let arg$1;
         try {
-          arg$6 = make(51);
+          arg$1 = make(51);
           loud$6$live = false;
-          some_borrowed([loud$6, arg$6]);
+          some_borrowed([loud$1, arg$1]);
         } finally {
           if (loud$6$live) {
-            loudDrop_drop(loud$6);
+            loudDrop_drop(loud$1);
           }
         }
-        const loud$7 = make(52);
+        const loud$2 = make(52);
         let loud$7$live = true;
-        let arg$7;
+        let arg$2;
         try {
-          arg$7 = make(53);
+          arg$2 = make(53);
           loud$7$live = false;
-          all_borrowed([loud$7, arg$7]);
+          all_borrowed([loud$2, arg$2]);
         } finally {
           if (loud$7$live) {
-            loudDrop_drop(loud$7);
+            loudDrop_drop(loud$2);
           }
         }
-        const loud$8 = make(54);
+        const loud$3 = make(54);
         let loud$8$live = true;
-        let arg$8;
+        let arg$3;
         try {
-          arg$8 = make(55);
+          arg$3 = make(55);
           loud$8$live = false;
-          all_moved([loud$8, arg$8]);
+          all_moved([loud$3, arg$3]);
         } finally {
           if (loud$8$live) {
-            loudDrop_drop(loud$8);
+            loudDrop_drop(loud$3);
           }
         }
         const closure = (param) => {
@@ -332,16 +332,16 @@ function main() {
             loudDrop_drop(param[1]);
           }
         };
-        const loud$9 = make(56);
+        const loud$4 = make(56);
         let loud$9$live = true;
-        let arg$9;
+        let arg$4;
         try {
-          arg$9 = make(57);
+          arg$4 = make(57);
           loud$9$live = false;
-          closure([loud$9, arg$9]);
+          closure([loud$4, arg$4]);
         } finally {
           if (loud$9$live) {
-            loudDrop_drop(loud$9);
+            loudDrop_drop(loud$4);
           }
         }
         console.log(`end ${whole}`);

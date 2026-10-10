@@ -40,8 +40,8 @@ function main() {
       console.log(`took ${$entryRemove(entry._0)}`);
     } else {
       const key = entry._0[1];
-      const cell$1 = $vacantInsert(entry._0, String(key), true);
-      cell$1.value += "!";
+      const cell = $vacantInsert(entry._0, String(key), true);
+      cell.value += "!";
     }
   }
   console.log(
@@ -52,8 +52,8 @@ function main() {
   const empty = new Map();
   const v = $entry(empty, "z");
   if (v.TAG === "Vacant") {
-    const key$1 = v._0[1];
-    console.log(`${key$1} ${empty.size}`);
+    const key = v._0[1];
+    console.log(`${key} ${empty.size}`);
   }
 }
 //# sourceMappingURL=case.js.map

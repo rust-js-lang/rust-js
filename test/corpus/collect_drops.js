@@ -37,9 +37,9 @@ function main() {
       try {
         const old = fragments;
         fragments = [];
-        const skip$1 = () => true;
+        const skip = () => true;
         const none = $skipWhile(old, (item) => {
-          if (skip$1(item)) {
+          if (skip(item)) {
             noisyDrop_drop(item);
             return true;
           }
@@ -55,11 +55,11 @@ function main() {
             }
           });
           console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-          const keep$1 = (n) => n[0] !== "p2";
+          const keep = (n) => n[0] !== "p2";
           const checked = [["p1"], ["p2"], ["p3"]]
             .values()
             .filter((item) => {
-              if (keep$1(item)) {
+              if (keep(item)) {
                 return true;
               }
               noisyDrop_drop(item);
@@ -87,23 +87,23 @@ function main() {
             }
           }
         } finally {
-          for (const item$1 of none) {
-            noisyDrop_drop(item$1);
+          for (const item of none) {
+            noisyDrop_drop(item);
           }
         }
       } finally {
-        for (const item$2 of fragments) {
-          noisyDrop_drop(item$2);
+        for (const item of fragments) {
+          noisyDrop_drop(item);
         }
       }
     } finally {
-      for (const item$3 of rest) {
-        noisyDrop_drop(item$3);
+      for (const item of rest) {
+        noisyDrop_drop(item);
       }
     }
   } finally {
-    for (const item$4 of long) {
-      noisyDrop_drop(item$4);
+    for (const item of long) {
+      noisyDrop_drop(item);
     }
   }
 }

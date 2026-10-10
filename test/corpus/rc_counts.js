@@ -80,8 +80,8 @@ function main() {
           const shared = $rcClone(a$1);
           let shared$live = true;
           try {
-            const arg$1 = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
-            console.log(`${arg$1 == null ? "None" : `Some(${arg$1.value})`}`);
+            const arg = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
+            console.log(`${arg == null ? "None" : `Some(${arg.value})`}`);
             a$1 = $makeMut(a$1);
             console.log(`${(a$1.value + 1) | 0}`);
             a$1 = $makeMut(a$1);
@@ -98,29 +98,29 @@ function main() {
                 $rcDrop(result._0);
               }
             }
-            const option$1 = $upgrade(weak);
-            let tmp$1;
-            let arg$2;
+            const option = $upgrade(weak);
+            let tmp;
+            let arg$1;
             try {
-              tmp$1 = option$1;
+              tmp = option;
               a$1$live = false;
-              arg$2 = $intoInner(a$1);
+              arg$1 = $intoInner(a$1);
               console.log(
-                `${tmp$1 == null ? "None" : `Some(${tmp$1.value})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+                `${tmp == null ? "None" : `Some(${tmp.value})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
+              );
+            } finally {
+              if (option != null) {
+                $rcDrop(option);
+              }
+            }
+            const option$1 = $upgrade(weak);
+            try {
+              console.log(
+                `${option$1 == null ? "None" : `Some(${option$1.value})`} ${weak.strong} ${$weakCount(weak)}`,
               );
             } finally {
               if (option$1 != null) {
                 $rcDrop(option$1);
-              }
-            }
-            const option$2 = $upgrade(weak);
-            try {
-              console.log(
-                `${option$2 == null ? "None" : `Some(${option$2.value})`} ${weak.strong} ${$weakCount(weak)}`,
-              );
-            } finally {
-              if (option$2 != null) {
-                $rcDrop(option$2);
               }
             }
             const refCell = { value: { strong: 0, weak: 0 } };
@@ -140,15 +140,127 @@ function main() {
             }
             try {
               const ref = $borrow(leaf.value.parent, true);
-              let option$3;
+              let option;
               let option$3$live;
-              let map$1;
-              let arg$3;
+              let map;
+              let arg;
               try {
-                option$3 = $upgrade(ref.value);
+                option = $upgrade(ref.value);
                 option$3$live = true;
                 try {
                   option$3$live = false;
+                  map = (p) => {
+                    const dropNode = (node) => {
+                      $weakDrop(node.parent.value);
+                      for (const item of node.children.value) {
+                        $rcDrop(item, dropNode);
+                      }
+                    };
+                    try {
+                      return p.value.name;
+                    } finally {
+                      $rcDrop(p, dropNode);
+                    }
+                  };
+                  arg = option ? map(option) : undefined;
+                  console.log(`${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
+                } finally {
+                  if (option$3$live) {
+                    if (option != null) {
+                      $rcDrop(option, dropNode);
+                    }
+                  }
+                }
+              } finally {
+                $unborrow(ref);
+              }
+              const refCell = { value: { strong: 0, weak: 0 } };
+              let refCell$1$live = true;
+              let arg$1;
+              let branch;
+              try {
+                arg$1 = { value: [$rcClone(leaf)] };
+                refCell$1$live = false;
+                branch = {
+                  value: { name: "branch", parent: refCell, children: arg$1 },
+                  strong: 1,
+                  weak: 0,
+                };
+              } finally {
+                if (refCell$1$live) {
+                  $weakDrop(refCell.value);
+                }
+              }
+              try {
+                const next = $downgrade(branch);
+                const refMut = $borrowMut(leaf.value.parent, true);
+                try {
+                  $weakDrop(refMut.value);
+                  refMut.value = next;
+                } finally {
+                  $unborrow(refMut);
+                }
+                const ref = $borrow(leaf.value.parent, true);
+                let option;
+                let option$4$live;
+                let map;
+                let tmp;
+                let tmp$1;
+                let tmp$2;
+                let ref$1;
+                try {
+                  option = $upgrade(ref.value);
+                  option$4$live = true;
+                  try {
+                    option$4$live = false;
+                    map = (p) => {
+                      const dropNode = (node) => {
+                        $weakDrop(node.parent.value);
+                        for (const item of node.children.value) {
+                          $rcDrop(item, dropNode);
+                        }
+                      };
+                      try {
+                        return p.value.name;
+                      } finally {
+                        $rcDrop(p, dropNode);
+                      }
+                    };
+                    tmp = option ? map(option) : undefined;
+                    tmp$1 = branch.strong;
+                    tmp$2 = branch.weak;
+                    ref$1 = $borrow(branch.value.children, true);
+                    try {
+                      console.log(
+                        `${tmp == null ? "None" : `Some(${$debugStr(tmp)})`} ${tmp$1} ${tmp$2} ${ref$1.value.length}`,
+                      );
+                    } finally {
+                      $unborrow(ref$1);
+                    }
+                  } finally {
+                    if (option$4$live) {
+                      if (option != null) {
+                        $rcDrop(option, dropNode);
+                      }
+                    }
+                  }
+                } finally {
+                  $unborrow(ref);
+                }
+                console.log(`${leaf.strong}`);
+              } finally {
+                $rcDrop(branch, dropNode);
+              }
+              const ref$1 = $borrow(leaf.value.parent, true);
+              let option$1;
+              let option$5$live;
+              let map$1;
+              let arg$2;
+              try {
+                option$1 = $upgrade(ref$1.value);
+                option$5$live = true;
+                try {
+                  option$5$live = false;
                   map$1 = (p) => {
                     const dropNode = (node) => {
                       $weakDrop(node.parent.value);
@@ -162,131 +274,19 @@ function main() {
                       $rcDrop(p, dropNode);
                     }
                   };
-                  arg$3 = option$3 ? map$1(option$3) : undefined;
-                  console.log(`${arg$3 == null ? "None" : `Some(${$debugStr(arg$3)})`}`);
-                } finally {
-                  if (option$3$live) {
-                    if (option$3 != null) {
-                      $rcDrop(option$3, dropNode);
-                    }
-                  }
-                }
-              } finally {
-                $unborrow(ref);
-              }
-              const refCell$1 = { value: { strong: 0, weak: 0 } };
-              let refCell$1$live = true;
-              let arg$4;
-              let branch;
-              try {
-                arg$4 = { value: [$rcClone(leaf)] };
-                refCell$1$live = false;
-                branch = {
-                  value: { name: "branch", parent: refCell$1, children: arg$4 },
-                  strong: 1,
-                  weak: 0,
-                };
-              } finally {
-                if (refCell$1$live) {
-                  $weakDrop(refCell$1.value);
-                }
-              }
-              try {
-                const next = $downgrade(branch);
-                const refMut = $borrowMut(leaf.value.parent, true);
-                try {
-                  $weakDrop(refMut.value);
-                  refMut.value = next;
-                } finally {
-                  $unborrow(refMut);
-                }
-                const ref$1 = $borrow(leaf.value.parent, true);
-                let option$4;
-                let option$4$live;
-                let map$2;
-                let tmp$2;
-                let tmp$3;
-                let tmp$4;
-                let ref$2;
-                try {
-                  option$4 = $upgrade(ref$1.value);
-                  option$4$live = true;
-                  try {
-                    option$4$live = false;
-                    map$2 = (p) => {
-                      const dropNode = (node) => {
-                        $weakDrop(node.parent.value);
-                        for (const item of node.children.value) {
-                          $rcDrop(item, dropNode);
-                        }
-                      };
-                      try {
-                        return p.value.name;
-                      } finally {
-                        $rcDrop(p, dropNode);
-                      }
-                    };
-                    tmp$2 = option$4 ? map$2(option$4) : undefined;
-                    tmp$3 = branch.strong;
-                    tmp$4 = branch.weak;
-                    ref$2 = $borrow(branch.value.children, true);
-                    try {
-                      console.log(
-                        `${tmp$2 == null ? "None" : `Some(${$debugStr(tmp$2)})`} ${tmp$3} ${tmp$4} ${ref$2.value.length}`,
-                      );
-                    } finally {
-                      $unborrow(ref$2);
-                    }
-                  } finally {
-                    if (option$4$live) {
-                      if (option$4 != null) {
-                        $rcDrop(option$4, dropNode);
-                      }
-                    }
-                  }
-                } finally {
-                  $unborrow(ref$1);
-                }
-                console.log(`${leaf.strong}`);
-              } finally {
-                $rcDrop(branch, dropNode);
-              }
-              const ref$3 = $borrow(leaf.value.parent, true);
-              let option$5;
-              let option$5$live;
-              let map$3;
-              let arg$5;
-              try {
-                option$5 = $upgrade(ref$3.value);
-                option$5$live = true;
-                try {
-                  option$5$live = false;
-                  map$3 = (p) => {
-                    const dropNode = (node) => {
-                      $weakDrop(node.parent.value);
-                      for (const item of node.children.value) {
-                        $rcDrop(item, dropNode);
-                      }
-                    };
-                    try {
-                      return p.value.name;
-                    } finally {
-                      $rcDrop(p, dropNode);
-                    }
-                  };
-                  arg$5 = option$5 ? map$3(option$5) : undefined;
+                  arg$2 = option$1 ? map$1(option$1) : undefined;
                   console.log(
-                    `${arg$5 == null ? "None" : `Some(${$debugStr(arg$5)})`} ${leaf.strong}`,
+                    `${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`} ${leaf.strong}`,
                   );
                 } finally {
                   if (option$5$live) {
-                    if (option$5 != null) {
-                      $rcDrop(option$5, dropNode);
+                    if (option$1 != null) {
+                      $rcDrop(option$1, dropNode);
                     }
                   }
                 }
               } finally {
-                $unborrow(ref$3);
+                $unborrow(ref$1);
               }
               const text = { value: "hi", strong: 1, weak: 0 };
               let text$live = true;

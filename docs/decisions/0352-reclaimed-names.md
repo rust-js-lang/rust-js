@@ -52,3 +52,9 @@ import Error, { catchError } from "next/error";
 - An import named apart from another module's import of its name, which
   naming crate-wide avoids (ADR 0202), is reclaimed too: the mutation that
   named it apart is no longer caught, and is gone.
+
+## Amendment: a local's name is checked by its reads
+
+A local is renamed where every read in its item is of the declaration it
+was, as JS's scopes resolve them (ADR 0357), not only where its item never
+mentions the name. An import keeps the rule above.

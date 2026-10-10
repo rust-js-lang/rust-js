@@ -44,8 +44,8 @@ function main() {
     }
     console.log("end");
   } finally {
-    for (const item$1 of src) {
-      noisyDrop_drop(item$1);
+    for (const item of src) {
+      noisyDrop_drop(item);
     }
   }
 }

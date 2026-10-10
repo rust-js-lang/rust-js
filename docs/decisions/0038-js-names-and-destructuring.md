@@ -89,3 +89,9 @@ Two more follow from reading the output:
 
 A local may take a module's name, and an import a global's, where its
 scope never mentions the name: ADR 0352.
+
+## Amendment: names reused across scopes
+
+A local may share a name with another of its function where JS's scopes
+keep every read its own: a block's `const n` beside the function's `n`
+(ADR 0357).

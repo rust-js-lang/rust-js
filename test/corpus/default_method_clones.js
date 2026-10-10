@@ -16,7 +16,7 @@ function listsIterator_next(self) {
 
 function sTr() {
   if ($sTr === undefined) {
-    $sTr = { a: (h, TClone) => h, b: (h, TClone$1) => ({ ...h, item: h.item.slice() }) };
+    $sTr = { a: (h, TClone) => h, b: (h, TClone) => ({ ...h, item: h.item.slice() }) };
   }
   return $sTr;
 }

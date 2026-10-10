@@ -78,8 +78,8 @@ function main() {
       const _owned = $unwrapOrClone(
         third,
         (value) => probeClone_clone(value),
-        (probe$1) => {
-          $weakDrop(probe$1.me);
+        (probe) => {
+          $weakDrop(probe.me);
         },
       );
       try {
@@ -132,13 +132,13 @@ function main() {
         $weakDrop(_owned.me);
       }
     } finally {
-      $rcDrop(second, (value$2) => {
-        $weakDrop(value$2.me);
+      $rcDrop(second, (value) => {
+        $weakDrop(value.me);
       });
     }
   } finally {
-    $rcDrop(first, (value$3) => {
-      $weakDrop(value$3.me);
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
     });
   }
 }

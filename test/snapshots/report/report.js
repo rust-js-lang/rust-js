@@ -109,8 +109,8 @@ export function table(input) {
     out += `${$pad(capitalize(r.name), 8, "<")}|${String(r.score).padStart(6)}|${$pad(grade(r.score, r.age), 7, "^")}|${r.team.toUpperCase()}\n`;
   }
   const byTeam = new Map();
-  for (const r$1 of rows) {
-    $orInsertWith(byTeam, r$1.team, () => []).push(r$1);
+  for (const r of rows) {
+    $orInsertWith(byTeam, r.team, () => []).push(r);
   }
   for (const [team, members] of $sortedEntries(byTeam, $cmp)) {
     const total = members.map((r) => r.score).reduce((a, b) => (a + b) >>> 0, 0);

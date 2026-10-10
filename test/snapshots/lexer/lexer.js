@@ -131,9 +131,9 @@ export function report() {
     const arg = Lexer.tokens(Lexer.new(src));
     out += `${arg.TAG === "Ok" ? `Ok([${arg._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(arg._0)})`}\n`;
   }
-  const arg$1 = pairs([1, 2, 3, 4, 5]);
-  const arg$2 = pairs([]);
-  out += `([${arg$1[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg$1[1].map((item) => String(item)).join(", ")}]) ([${arg$2[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg$2[1].map((item) => String(item)).join(", ")}])\n`;
+  const arg = pairs([1, 2, 3, 4, 5]);
+  const arg$1 = pairs([]);
+  out += `([${arg[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}]) ([${arg$1[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg$1[1].map((item) => String(item)).join(", ")}])\n`;
   out += `${capitalize("hello")} ${capitalize("ßig")} ${$debugStr(capitalize(""))}\n`;
   const words = $iter("one two three four".split(" "));
   const first = $next(words);

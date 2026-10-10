@@ -60,4 +60,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests,
   },
+  {
+    name: "reclaim-no-lower-suffix",
+    breaks: "`result$2` stays, after `result$1` became `result`, where it could be `result$1`",
+    file: "src/prepare/reclaim.rs",
+    find: "                    .chain((1..suffix).map(|i| format!(\"{base}${i}\")))",
+    replace: "                    .chain((1..1).map(|i| format!(\"{base}${i}\")))",
+    tests: ["test/snapshots.test.ts", "-t", "calc"],
+    snapshots: true,
+  },
 ];

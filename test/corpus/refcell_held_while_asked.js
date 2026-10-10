@@ -92,8 +92,8 @@ const Node = {
     } finally {
       if (option != null) {
         if (option$Some$0$live) {
-          $rcDrop(option, (value$1) => {
-            $weakDrop(value$1.value.me);
+          $rcDrop(option, (value) => {
+            $weakDrop(value.value.me);
           });
         }
       }
@@ -210,12 +210,12 @@ function main() {
   let asked;
   try {
     asked = ref$4.value.map(() => {
-      const result$1 = $tryBorrow(cell, true);
+      const result = $tryBorrow(cell, true);
       try {
-        return result$1.TAG !== "Ok";
+        return result.TAG !== "Ok";
       } finally {
-        if (result$1.TAG === "Ok") {
-          $unborrow(result$1._0);
+        if (result.TAG === "Ok") {
+          $unborrow(result._0);
         }
       }
     });
@@ -239,11 +239,11 @@ function main() {
       console.log(
         `${$withBorrow(node.value, (x) => $withBorrow(copy, (y) => nodePartialEq_eq(x, y)))} RefCell { value: ${$showBorrowed(node.value, (value) => nodeDebug_fmt(value))} }`,
       );
-      const ref$5 = $borrow(node.value, true);
+      const ref = $borrow(node.value, true);
       try {
-        console.log(`${Node.asks(ref$5.value)}`);
+        console.log(`${Node.asks(ref.value)}`);
       } finally {
-        $unborrow(ref$5);
+        $unborrow(ref);
       }
     } finally {
       $weakDrop(copy.value.me);

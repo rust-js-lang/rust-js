@@ -91,23 +91,23 @@ function main() {
       `f64 ${f64_bits(a)}: as ${$f64ToInt(a, -128, 127)} ${$f64ToInt(a, -2147483648, 2147483647)} ${$f64ToBig(a, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(a, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$f64ToInt(a, 0, 255)} ${$f64ToInt(a, 0, 4294967295)} ${$f64ToBig(a, 0n, 18446744073709551615n)} ${$f64ToBig(a, 0n, 340282366920938463463374607431768211455n)} f32 ${f32_bits(Math.fround(a))} f64 ${f64_bits(a)}`,
     );
     for (const b of values) {
-      const arg$1 = f64_bits(a);
-      const arg$2 = f64_bits(b);
-      const arg$3 = f64_bits(a + b);
-      const arg$4 = f64_bits(a - b);
-      const arg$5 = f64_bits(a * b);
-      const arg$6 = f64_bits(a / b);
-      const arg$7 = f64_bits(a % b);
-      const arg$8 = a === b && a === 0 ? "±0" : f64_bits($f64Min(a, b));
-      const arg$9 = a === b && a === 0 ? "±0" : f64_bits($f64Max(a, b));
-      const arg$10 = b - Math.trunc(b) === 0 || !Number.isFinite(b) ? f64_bits($powf(a, b)) : "-";
-      const arg$11 = $totalCmp(a, b);
-      const arg$12 = $partialCmp(a, b);
+      const arg = f64_bits(a);
+      const arg$1 = f64_bits(b);
+      const arg$2 = f64_bits(a + b);
+      const arg$3 = f64_bits(a - b);
+      const arg$4 = f64_bits(a * b);
+      const arg$5 = f64_bits(a / b);
+      const arg$6 = f64_bits(a % b);
+      const arg$7 = a === b && a === 0 ? "±0" : f64_bits($f64Min(a, b));
+      const arg$8 = a === b && a === 0 ? "±0" : f64_bits($f64Max(a, b));
+      const arg$9 = b - Math.trunc(b) === 0 || !Number.isFinite(b) ? f64_bits($powf(a, b)) : "-";
+      const arg$10 = $totalCmp(a, b);
+      const arg$11 = $partialCmp(a, b);
       console.log(
-        `f64 ${arg$1} ${arg$2}: ${arg$3} ${arg$4} ${arg$5} ${arg$6} ${arg$7} min ${arg$8} max ${arg$9} pow ${arg$10} cmp ${
-          ["Less", "Equal", "Greater"][arg$11 + 1]
+        `f64 ${arg} ${arg$1}: ${arg$2} ${arg$3} ${arg$4} ${arg$5} ${arg$6} min ${arg$7} max ${arg$8} pow ${arg$9} cmp ${
+          ["Less", "Equal", "Greater"][arg$10 + 1]
         } ${
-          arg$12 == null ? "None" : `Some(${["Less", "Equal", "Greater"][arg$12 + 1]})`
+          arg$11 == null ? "None" : `Some(${["Less", "Equal", "Greater"][arg$11 + 1]})`
         } ${a === b} ${a < b} ${a >= b}`,
       );
     }
@@ -132,44 +132,42 @@ function main() {
     -Infinity,
     NaN,
   ];
-  for (const a$1 of values$1) {
+  for (const a of values$1) {
     console.log(
-      `f32 ${f32_bits(a$1)}: round ${f32_bits(Math.floor(a$1))} ${f32_bits(Math.ceil(a$1))} ${f32_bits($round(a$1))} ${f32_bits(Math.trunc(a$1))} ${f32_bits(a$1 - Math.trunc(a$1))} abs ${f32_bits(Math.abs(a$1))} ${f32_bits($signum(a$1))} ${f32_bits(Math.fround(a$1 * 57.295780181884766))} sqrt ${f32_bits(Math.fround(Math.sqrt(a$1)))} powi ${f32_bits($powiF32(a$1, 3))} ${f32_bits($powiF32(a$1, -2))} recip ${f32_bits(Math.fround(1 / a$1))} neg ${f32_bits(-a$1)} clamp ${f32_bits($clampFloat(a$1, -1, 1, $debugF32))}`,
+      `f32 ${f32_bits(a)}: round ${f32_bits(Math.floor(a))} ${f32_bits(Math.ceil(a))} ${f32_bits($round(a))} ${f32_bits(Math.trunc(a))} ${f32_bits(a - Math.trunc(a))} abs ${f32_bits(Math.abs(a))} ${f32_bits($signum(a))} ${f32_bits(Math.fround(a * 57.295780181884766))} sqrt ${f32_bits(Math.fround(Math.sqrt(a)))} powi ${f32_bits($powiF32(a, 3))} ${f32_bits($powiF32(a, -2))} recip ${f32_bits(Math.fround(1 / a))} neg ${f32_bits(-a)} clamp ${f32_bits($clampFloat(a, -1, 1, $debugF32))}`,
     );
     console.log(
-      `f32 ${f32_bits(a$1)}: is ${Number.isNaN(a$1)} ${Number.isFinite(a$1)} ${Math.abs(a$1) === Infinity} ${$signNegative(a$1)} ${$isNormal(a$1, 1.1754943508222875e-38)} ${$isNormal(a$1, 1.1754943508222875e-38, true)} ${$classify(a$1, 1.1754943508222875e-38)} bits ${f32_bits($floatFromBits($floatToBits(a$1, 4), 4))}`,
+      `f32 ${f32_bits(a)}: is ${Number.isNaN(a)} ${Number.isFinite(a)} ${Math.abs(a) === Infinity} ${$signNegative(a)} ${$isNormal(a, 1.1754943508222875e-38)} ${$isNormal(a, 1.1754943508222875e-38, true)} ${$classify(a, 1.1754943508222875e-38)} bits ${f32_bits($floatFromBits($floatToBits(a, 4), 4))}`,
     );
-    const tmp$1 = f32_bits(a$1);
-    const result$1 = $parseF32($displayF32(a$1));
-    const arg$13 = result$1.TAG === "Ok" ? { TAG: "Ok", _0: f32_bits(result$1._0) } : result$1;
+    const tmp = f32_bits(a);
+    const result = $parseF32($displayF32(a));
+    const arg = result.TAG === "Ok" ? { TAG: "Ok", _0: f32_bits(result._0) } : result;
     console.log(
-      `f32 ${tmp$1}: fmt ${$displayF32(a$1)} ${$debugF32(a$1)} ${$lowerExp(a$1, true)} ${$lowerExp(a$1, true).replace("e", "E")} ${$toFixed(a$1, 0)} ${$toFixed(a$1, 1)} ${$toFixed(a$1, 3)} [${$toFixed(a$1, 2).padStart(12)}] ${$plus($displayF32(a$1))} [${$zeroPad($toFixed(a$1, 2), 8)}] parse ${arg$13.TAG === "Ok" ? `Ok(${$debugStr(arg$13._0)})` : `Err(${$debugParseError(arg$13._0, "ParseFloatError")})`}`,
+      `f32 ${tmp}: fmt ${$displayF32(a)} ${$debugF32(a)} ${$lowerExp(a, true)} ${$lowerExp(a, true).replace("e", "E")} ${$toFixed(a, 0)} ${$toFixed(a, 1)} ${$toFixed(a, 3)} [${$toFixed(a, 2).padStart(12)}] ${$plus($displayF32(a))} [${$zeroPad($toFixed(a, 2), 8)}] parse ${arg.TAG === "Ok" ? `Ok(${$debugStr(arg._0)})` : `Err(${$debugParseError(arg._0, "ParseFloatError")})`}`,
     );
     console.log(
-      `f32 ${f32_bits(a$1)}: as ${$f64ToInt(a$1, -128, 127)} ${$f64ToInt(a$1, -2147483648, 2147483647)} ${$f64ToBig(a$1, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(a$1, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$f64ToInt(a$1, 0, 255)} ${$f64ToInt(a$1, 0, 4294967295)} ${$f64ToBig(a$1, 0n, 18446744073709551615n)} ${$f64ToBig(a$1, 0n, 340282366920938463463374607431768211455n)} f32 ${f32_bits(a$1)} f64 ${f64_bits(a$1)}`,
+      `f32 ${f32_bits(a)}: as ${$f64ToInt(a, -128, 127)} ${$f64ToInt(a, -2147483648, 2147483647)} ${$f64ToBig(a, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(a, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$f64ToInt(a, 0, 255)} ${$f64ToInt(a, 0, 4294967295)} ${$f64ToBig(a, 0n, 18446744073709551615n)} ${$f64ToBig(a, 0n, 340282366920938463463374607431768211455n)} f32 ${f32_bits(a)} f64 ${f64_bits(a)}`,
     );
-    for (const b$1 of values$1) {
-      const arg$14 = f32_bits(a$1);
-      const arg$15 = f32_bits(b$1);
-      const arg$16 = f32_bits(Math.fround(a$1 + b$1));
-      const arg$17 = f32_bits(Math.fround(a$1 - b$1));
-      const arg$18 = f32_bits(Math.fround(a$1 * b$1));
-      const arg$19 = f32_bits(Math.fround(a$1 / b$1));
-      const arg$20 = f32_bits(a$1 % b$1);
-      const arg$21 = a$1 === b$1 && a$1 === 0 ? "±0" : f32_bits($f64Min(a$1, b$1));
-      const arg$22 = a$1 === b$1 && a$1 === 0 ? "±0" : f32_bits($f64Max(a$1, b$1));
-      const arg$23 =
-        b$1 - Math.trunc(b$1) === 0 || !Number.isFinite(b$1)
-          ? f32_bits(Math.fround($powf(a$1, b$1)))
-          : "-";
-      const arg$24 = $totalCmp(a$1, b$1);
-      const arg$25 = $partialCmp(a$1, b$1);
+    for (const b of values$1) {
+      const arg = f32_bits(a);
+      const arg$1 = f32_bits(b);
+      const arg$2 = f32_bits(Math.fround(a + b));
+      const arg$3 = f32_bits(Math.fround(a - b));
+      const arg$4 = f32_bits(Math.fround(a * b));
+      const arg$5 = f32_bits(Math.fround(a / b));
+      const arg$6 = f32_bits(a % b);
+      const arg$7 = a === b && a === 0 ? "±0" : f32_bits($f64Min(a, b));
+      const arg$8 = a === b && a === 0 ? "±0" : f32_bits($f64Max(a, b));
+      const arg$9 =
+        b - Math.trunc(b) === 0 || !Number.isFinite(b) ? f32_bits(Math.fround($powf(a, b))) : "-";
+      const arg$10 = $totalCmp(a, b);
+      const arg$11 = $partialCmp(a, b);
       console.log(
-        `f32 ${arg$14} ${arg$15}: ${arg$16} ${arg$17} ${arg$18} ${arg$19} ${arg$20} min ${arg$21} max ${arg$22} pow ${arg$23} cmp ${
-          ["Less", "Equal", "Greater"][arg$24 + 1]
+        `f32 ${arg} ${arg$1}: ${arg$2} ${arg$3} ${arg$4} ${arg$5} ${arg$6} min ${arg$7} max ${arg$8} pow ${arg$9} cmp ${
+          ["Less", "Equal", "Greater"][arg$10 + 1]
         } ${
-          arg$25 == null ? "None" : `Some(${["Less", "Equal", "Greater"][arg$25 + 1]})`
-        } ${a$1 === b$1} ${a$1 < b$1} ${a$1 >= b$1}`,
+          arg$11 == null ? "None" : `Some(${["Less", "Equal", "Greater"][arg$11 + 1]})`
+        } ${a === b} ${a < b} ${a >= b}`,
       );
     }
   }

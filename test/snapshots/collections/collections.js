@@ -80,8 +80,8 @@ export function iterate(n) {
   for (const x of v) {
     total = (total + x) >>> 0;
   }
-  for (const x$1 of v) {
-    total = (total + (Math.imul(x$1, 100) >>> 0)) >>> 0;
+  for (const x of v) {
+    total = (total + (Math.imul(x, 100) >>> 0)) >>> 0;
   }
   for (const [k, w] of [
     [1, 2],
@@ -129,9 +129,9 @@ export function toggled(n) {
   $retain(todos, (t) => !t.done);
   let ids = 0;
   let done = 0;
-  for (const todo$1 of todos) {
-    ids = (ids + todo$1.id) >>> 0;
-    if (todo$1.done) {
+  for (const todo of todos) {
+    ids = (ids + todo.id) >>> 0;
+    if (todo.done) {
       done = (done + 1) >>> 0;
     }
   }
@@ -141,8 +141,8 @@ export function toggled(n) {
 export function cell(times) {
   const c = { value: 0 };
   for (let i = 0; i < times; i++) {
-    const cell$1 = $borrowMut(c);
-    cell$1.value = (cell$1.value + 2) | 0;
+    const cell = $borrowMut(c);
+    cell.value = (cell.value + 2) | 0;
   }
   return ($borrow(c).value + 1) | 0;
 }
@@ -274,8 +274,8 @@ export function sorted_maps(text) {
     counts.set(word, (current + 1) >>> 0);
   }
   const order = [];
-  for (const [word$1, n] of $sortedEntries(counts, $cmp)) {
-    order.push(`${word$1}=${n}`);
+  for (const [word, n] of $sortedEntries(counts, $cmp)) {
+    order.push(`${word}=${n}`);
   }
   const set = new Set([30, 4, 100, 7]);
   const tiers = new Map([

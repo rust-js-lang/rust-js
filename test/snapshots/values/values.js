@@ -79,13 +79,13 @@ export const Value = {
     } else if (value.TAG === "Obj") {
       out.value += "{";
       let first = true;
-      for (const [k, x$1] of $sortedEntries(value._0, $cmp)) {
+      for (const [k, x] of $sortedEntries(value._0, $cmp)) {
         if (!first) {
           out.value += ", ";
         }
         first = false;
         out.value += `${$debugStr(k)}: `;
-        Value.pretty(x$1, indent, out);
+        Value.pretty(x, indent, out);
       }
       out.value += "}";
     } else {
@@ -231,15 +231,15 @@ export function boxes() {
   let text = "";
   for (const w of ["a", "b", "c"]) {
     const out = { value: text };
-    const count$2 = { value: n };
-    log(out, w, count$2);
+    const count = { value: n };
+    log(out, w, count);
     text = out.value;
-    n = count$2.value;
+    n = count.value;
   }
   const stats = { hits: 1 };
-  const count$3 = { value: stats.hits };
-  bump(count$3, 4);
-  stats.hits = count$3.value;
+  const count$2 = { value: stats.hits };
+  bump(count$2, 4);
+  stats.hits = count$2.value;
   const slot = { value: stats.last };
   settle(slot);
   stats.last = slot.value;
@@ -247,9 +247,9 @@ export function boxes() {
   settle(slot$1);
   stats.last = slot$1.value;
   const counts = [1, 2, 3];
-  const count$4 = { value: $index(counts, 1) };
-  bump(count$4, 40);
-  counts[$at(counts, 1)] = count$4.value;
+  const count$3 = { value: $index(counts, 1) };
+  bump(count$3, 40);
+  counts[$at(counts, 1)] = count$3.value;
   return `${first} ${total} ${n} ${text} ${stats.hits} ${stats.last == null ? "None" : `Some(${stats.last})`} [${counts.map((item) => String(item)).join(", ")}]`;
 }
 

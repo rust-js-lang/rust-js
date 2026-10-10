@@ -136,7 +136,7 @@ function main() {
               noisyDrop_drop(f);
               return 4;
             },
-            (value$2) => {
+            (value) => {
               noisyDrop_drop(f);
             },
           );

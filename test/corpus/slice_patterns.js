@@ -54,8 +54,8 @@ function main() {
   for (const words of [["hello", "ann"], ["hello", "a", "b"], ["so", "bye"], ["x"]]) {
     console.log(`${greet(words)}`);
   }
-  const xs$1 = [5, 6, 7];
-  if (xs$1[0] >= 3 && xs$1[0] <= 14) {
+  const xs = [5, 6, 7];
+  if (xs[0] >= 3 && xs[0] <= 14) {
     console.log("starts small");
   }
   const found = [1, undefined, 3];

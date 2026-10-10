@@ -59,51 +59,51 @@ function main() {
   } finally {
     $unborrow(g);
   }
-  const result$2 = $tryLock(m, true);
+  const result = $tryLock(m, true);
   let result$2$Ok$0$live = true;
   try {
-    if (result$2.TAG === "Ok") {
+    if (result.TAG === "Ok") {
       result$2$Ok$0$live = false;
-      const g$1 = result$2._0;
+      const g = result._0;
       try {
-        console.log(`${g$1.value}`);
+        console.log(`${g.value}`);
       } finally {
-        $unborrow(g$1);
+        $unborrow(g);
       }
     }
   } finally {
-    if (result$2.TAG === "Ok") {
+    if (result.TAG === "Ok") {
       if (result$2$Ok$0$live) {
-        $unborrow(result$2._0);
+        $unborrow(result._0);
       }
     }
-    if (result$2.TAG === "Err") {
-      if (result$2._0.TAG === "Poisoned") {
-        $unborrow(result$2._0._0.data);
+    if (result.TAG === "Err") {
+      if (result._0.TAG === "Poisoned") {
+        $unborrow(result._0._0.data);
       }
     }
   }
   const l = { value: "a" };
-  const r1 = $unwrapOk($tryLock(l), undefined, (e$1) =>
-    e$1 === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
+  const r1 = $unwrapOk($tryLock(l), undefined, (e) =>
+    e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
   );
   try {
-    const r2 = $unwrapOk($tryLock(l), undefined, (e$2) =>
-      e$2 === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
+    const r2 = $unwrapOk($tryLock(l), undefined, (e) =>
+      e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
     );
     try {
       const tmp = r1.value;
       const tmp$1 = r2.value;
-      const result$3 = $tryLock(l, true);
+      const result = $tryLock(l, true);
       try {
-        console.log(`${tmp} ${tmp$1} ${result$3.TAG !== "Ok"}`);
+        console.log(`${tmp} ${tmp$1} ${result.TAG !== "Ok"}`);
       } finally {
-        if (result$3.TAG === "Ok") {
-          $unborrow(result$3._0);
+        if (result.TAG === "Ok") {
+          $unborrow(result._0);
         }
-        if (result$3.TAG === "Err") {
-          if (result$3._0.TAG === "Poisoned") {
-            $unborrow(result$3._0._0.data);
+        if (result.TAG === "Err") {
+          if (result._0.TAG === "Poisoned") {
+            $unborrow(result._0._0.data);
           }
         }
       }
@@ -113,8 +113,8 @@ function main() {
   } finally {
     $unborrow(r1);
   }
-  const rwLockWriteGuard = $unwrapOk($tryLock(l, true), undefined, (e$3) =>
-    e$3 === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
+  const rwLockWriteGuard = $unwrapOk($tryLock(l, true), undefined, (e) =>
+    e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
   );
   try {
     rwLockWriteGuard.value += "b";
@@ -123,15 +123,15 @@ function main() {
   }
   const w = $lock(l, true);
   try {
-    const e$5 = $unwrapErr($tryLock(l), undefined, (e$4) => $debugStr(e$4.value));
+    const e = $unwrapErr($tryLock(l), undefined, (e) => $debugStr(e.value));
     try {
       const arg = $byteLen(w.value);
       console.log(
-        `${e$5 === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e$5 === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${arg}`,
+        `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${arg}`,
       );
     } finally {
-      if (e$5.TAG === "Poisoned") {
-        $unborrow(e$5._0.data);
+      if (e.TAG === "Poisoned") {
+        $unborrow(e._0.data);
       }
     }
   } finally {

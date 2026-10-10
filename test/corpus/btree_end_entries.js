@@ -40,25 +40,25 @@ function main() {
     ["a", 1],
     ["c", 3],
   ]);
-  const first$2 = $endEntry(counts, $cmp, false);
-  if (first$2) {
-    const first$3 = first$2;
-    const cell$1 = $entryGet(first$3, true);
-    cell$1.value = (cell$1.value + 10) | 0;
-    const old = $entryInsert(first$3, 100);
-    const arg$1 = $entryGet(first$3);
-    console.log(`${old} ${arg$1}`);
+  const first$1 = $endEntry(counts, $cmp, false);
+  if (first$1) {
+    const first = first$1;
+    const cell = $entryGet(first, true);
+    cell.value = (cell.value + 10) | 0;
+    const old = $entryInsert(first, 100);
+    const arg = $entryGet(first);
+    console.log(`${old} ${arg}`);
   }
-  const cell$2 = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
-  cell$2.value = Math.imul(cell$2.value, 7);
+  const cell = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
+  cell.value = Math.imul(cell.value, 7);
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
   const e = $endEntry(counts, $cmp, false);
-  const arg$2 = e ? $entryRemove(e) : undefined;
-  console.log(`${arg$2 == null ? "None" : `Some(${arg$2})`}`);
+  const arg = e ? $entryRemove(e) : undefined;
+  console.log(`${arg == null ? "None" : `Some(${arg})`}`);
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)

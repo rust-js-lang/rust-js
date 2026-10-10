@@ -191,8 +191,8 @@ export function App() {
     setProject(Project.adding(project, path, live()));
     const file = $rsplitOnce(path, "/")?.[1] ?? path;
     const module = $stripSuffix(file, ".rs") ?? file;
-    const text$1 = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
-    setStatus(say(text$1, "Plain"));
+    const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
+    setStatus(say(text, "Plain"));
   };
   const openOutput = (path) => {
     if (output.TAG === "Files") {

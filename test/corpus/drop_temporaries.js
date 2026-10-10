@@ -63,39 +63,39 @@ function main() {
   const kept = noisy$3;
   try {
     console.log(`kept ${kept[0]}`);
-    const noisy$4 = make("e");
-    const field = noisy$4[0];
+    const noisy = make("e");
+    const field = noisy[0];
     try {
       console.log(`field ${field}`);
     } finally {
-      noisyDrop_drop(noisy$4);
+      noisyDrop_drop(noisy);
     }
   } finally {
     noisyDrop_drop(noisy$3);
   }
-  const noisy$5 = make("f");
+  const noisy$4 = make("f");
   let noisy$5$live = true;
   let arg;
   let last;
   try {
     arg = make("g");
     noisy$5$live = false;
-    last = two(noisy$5, arg);
+    last = two(noisy$4, arg);
   } finally {
     if (noisy$5$live) {
-      noisyDrop_drop(noisy$5);
+      noisyDrop_drop(noisy$4);
     }
   }
-  const noisy$6 = make("h");
+  const noisy$5 = make("h");
   let noisy$6$live = true;
   let arg$1;
   try {
     arg$1 = make("i");
     noisy$6$live = false;
-    console.log(`${last} ${all([noisy$6, arg$1])}`);
+    console.log(`${last} ${all([noisy$5, arg$1])}`);
   } finally {
     if (noisy$6$live) {
-      noisyDrop_drop(noisy$6);
+      noisyDrop_drop(noisy$5);
     }
   }
   console.log("end");

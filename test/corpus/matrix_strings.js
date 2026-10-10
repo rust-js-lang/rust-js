@@ -118,22 +118,22 @@ function main() {
       `${$debugStr(a)}: find ${arg$25 == null ? "None" : `Some(${arg$25})`} ${arg$26 == null ? "None" : `Some(${arg$26})`} ${arg$27 == null ? "None" : `Some(${arg$27})`} ${arg$28} replace ${$debugStr(arg$29)} ${$debugStr(arg$30)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${arg$31.TAG === "Ok" ? `Ok(${arg$31._0})` : `Err(${$debugParseError(arg$31._0, "ParseIntError")})`} ${arg$32.TAG === "Ok" ? `Ok(${$debugF64(arg$32._0)})` : `Err(${$debugParseError(arg$32._0, "ParseFloatError")})`} lossy ${$debugStr(arg$33._0)} all ${arg$34}`,
     );
     for (const b of STRINGS) {
-      const arg$35 = a.startsWith(b);
-      const arg$36 = a.endsWith(b);
-      const arg$37 = a.includes(b);
-      const arg$38 = $cmp(a, b);
-      const arg$39 = $cmp(a, b) < 0;
-      const arg$40 = $cmp(a, b) > 0 ? a : b;
-      const arg$41 = a === b;
-      const arg$42 = $asciiCase(a) === $asciiCase(b);
-      const arg$43 = $find(a, b);
-      const arg$44 = $stripPrefix(a, b);
-      const arg$45 = $stripSuffix(a, b);
-      const arg$46 = $byteLen(a + b);
+      const arg = a.startsWith(b);
+      const arg$1 = a.endsWith(b);
+      const arg$2 = a.includes(b);
+      const arg$3 = $cmp(a, b);
+      const arg$4 = $cmp(a, b) < 0;
+      const arg$5 = $cmp(a, b) > 0 ? a : b;
+      const arg$6 = a === b;
+      const arg$7 = $asciiCase(a) === $asciiCase(b);
+      const arg$8 = $find(a, b);
+      const arg$9 = $stripPrefix(a, b);
+      const arg$10 = $stripSuffix(a, b);
+      const arg$11 = $byteLen(a + b);
       console.log(
-        `${$debugStr(a)} ${$debugStr(b)}: ${arg$35} ${arg$36} ${arg$37} ${
-          ["Less", "Equal", "Greater"][arg$38 + 1]
-        } ${arg$39} ${arg$40} ${arg$41} ${arg$42} ${arg$43 == null ? "None" : `Some(${arg$43})`} ${arg$44 == null ? "None" : `Some(${$debugStr(arg$44)})`} ${arg$45 == null ? "None" : `Some(${$debugStr(arg$45)})`} ${arg$46}`,
+        `${$debugStr(a)} ${$debugStr(b)}: ${arg} ${arg$1} ${arg$2} ${
+          ["Less", "Equal", "Greater"][arg$3 + 1]
+        } ${arg$4} ${arg$5} ${arg$6} ${arg$7} ${arg$8 == null ? "None" : `Some(${arg$8})`} ${arg$9 == null ? "None" : `Some(${$debugStr(arg$9)})`} ${arg$10 == null ? "None" : `Some(${$debugStr(arg$10)})`} ${arg$11}`,
       );
     }
   }

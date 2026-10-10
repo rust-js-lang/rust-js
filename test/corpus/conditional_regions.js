@@ -34,10 +34,10 @@ function both(take) {
     x = x$1.value;
     tmp = result;
   } else {
-    const x$2 = { value: y };
-    const result$1 = bump(x$2);
-    y = x$2.value;
-    tmp = result$1;
+    const x = { value: y };
+    const result = bump(x);
+    y = x.value;
+    tmp = result;
   }
   const picked = tmp;
   return (((Math.imul(x, 1000) + Math.imul(y, 100)) | 0) + picked) | 0;
@@ -90,31 +90,31 @@ function main() {
   x = x$1.value;
   let tmp;
   if (result === 1) {
-    const x$2 = { value: x };
-    const result$1 = bump(x$2);
-    x = x$2.value;
-    tmp = result$1;
+    const x$1 = { value: x };
+    const result = bump(x$1);
+    x = x$1.value;
+    tmp = result;
   } else {
-    const x$3 = { value: x };
-    const result$2 = bump(x$3);
-    x = x$3.value;
-    tmp = (result$2 + 10) | 0;
+    const x$1 = { value: x };
+    const result = bump(x$1);
+    x = x$1.value;
+    tmp = (result + 10) | 0;
   }
   const picked = tmp;
   console.log(`${x} ${picked}`);
   let total = 0;
   for (let i = 0; i < 4; i++) {
-    let tmp$1;
+    let tmp;
     if (i % 2 === 0) {
-      const x$4 = { value: total };
-      const result$3 = bump(x$4);
-      total = x$4.value;
-      tmp$1 = result$3;
+      const x = { value: total };
+      const result = bump(x);
+      total = x.value;
+      tmp = result;
     } else {
-      tmp$1 = 7;
+      tmp = 7;
     }
-    const picked$1 = tmp$1;
-    console.log(`${total} ${picked$1}`);
+    const picked = tmp;
+    console.log(`${total} ${picked}`);
   }
 }
 //# sourceMappingURL=case.js.map

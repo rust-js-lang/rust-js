@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Prop, Stmt, StmtKind};
 
 mod reclaim;
+mod scopes;
 
 pub fn module(module: &mut js::Module) {
     for function in module.items.iter_mut().flat_map(js::Item::functions_mut) {

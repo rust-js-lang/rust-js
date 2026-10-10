@@ -75,7 +75,7 @@ function sum(text) {
 }
 
 export function words(text) {
-  const words$1 = text
+  const words = text
     .split(/\p{White_Space}+/u)
     .filter((word) => word !== "")
     .map((w) => w);
@@ -83,7 +83,7 @@ export function words(text) {
   const match = sum(text);
   const total = match.TAG === "Ok" ? `sum ${match._0}` : `error: ${match._0}`;
   const pieces = $splitBy(text, (c) => /^[0-9]$/.test(c) || c === "\r").map((p) => p);
-  return [words$1, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
+  return [words, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
 }
 
 export function slices(v) {
@@ -129,12 +129,12 @@ export function report() {
     ".5",
     " 1",
   ]) {
-    const arg$3 = parses(s);
-    out += `${$debugStr(s)} ${arg$3}\n`;
+    const arg = parses(s);
+    out += `${$debugStr(s)} ${arg}\n`;
   }
-  for (const s$1 of ["true", "false", "True", "x", "é", "ab"]) {
-    const arg$4 = parses(s$1);
-    out += `${$debugStr(s$1)} ${arg$4}\n`;
+  for (const s of ["true", "false", "True", "x", "é", "ab"]) {
+    const arg = parses(s);
+    out += `${$debugStr(s)} ${arg}\n`;
   }
   for (const text of [
     "1 2	3",
@@ -147,11 +147,11 @@ export function report() {
     "\n",
     "\r",
   ]) {
-    const arg$5 = words(text);
-    out += `([${arg$5[0].map((item) => $debugStr(item)).join(", ")}], [${arg$5[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(arg$5[2])}, [${arg$5[3].map((item) => $debugStr(item)).join(", ")}], ${arg$5[4]})\n`;
+    const arg = words(text);
+    out += `([${arg[0].map((item) => $debugStr(item)).join(", ")}], [${arg[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(arg[2])}, [${arg[3].map((item) => $debugStr(item)).join(", ")}], ${arg[4]})\n`;
   }
-  const arg$6 = slices([1, 2, 3, 4]);
-  out += `([${arg$6[0].map((item) => String(item)).join(", ")}], [${arg$6[1].map((item) => String(item)).join(", ")}], [${arg$6[2].map((item) => String(item)).join(", ")}], [${arg$6[3].map((item) => String(item)).join(", ")}], ${arg$6[4]})\n${escapes()}\n`;
+  const arg = slices([1, 2, 3, 4]);
+  out += `([${arg[0].map((item) => String(item)).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}], [${arg[2].map((item) => String(item)).join(", ")}], [${arg[3].map((item) => String(item)).join(", ")}], ${arg[4]})\n${escapes()}\n`;
   out += `${$debugStr(templates(7))}\n`;
   return out;
 }

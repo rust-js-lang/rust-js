@@ -23,10 +23,10 @@ function many(base) {
 }
 
 function list(n) {
-  const dropList = (list$1) => {
-    if (list$1.TAG === "Cons") {
-      noisyDrop_drop(list$1._0);
-      dropList(list$1._1);
+  const dropList = (list) => {
+    if (list.TAG === "Cons") {
+      noisyDrop_drop(list._0);
+      dropList(list._1);
     }
   };
   let at = "Nil";
@@ -51,16 +51,16 @@ function list(n) {
 }
 
 function main() {
-  const dropMany = (many$1) => {
-    noisyDrop_drop(many$1.a);
-    noisyDrop_drop(many$1.b);
-    noisyDrop_drop(many$1.c);
-    noisyDrop_drop(many$1.d);
-    noisyDrop_drop(many$1.e);
-    noisyDrop_drop(many$1.f);
-    noisyDrop_drop(many$1.g);
-    noisyDrop_drop(many$1.h);
-    noisyDrop_drop(many$1.i);
+  const dropMany = (many) => {
+    noisyDrop_drop(many.a);
+    noisyDrop_drop(many.b);
+    noisyDrop_drop(many.c);
+    noisyDrop_drop(many.d);
+    noisyDrop_drop(many.e);
+    noisyDrop_drop(many.f);
+    noisyDrop_drop(many.g);
+    noisyDrop_drop(many.h);
+    noisyDrop_drop(many.i);
   };
   const dropTwo = (two) => {
     if (two[0] != null) {
@@ -70,10 +70,10 @@ function main() {
       dropMany(two[1]);
     }
   };
-  const dropList = (list$1) => {
-    if (list$1.TAG === "Cons") {
-      noisyDrop_drop(list$1._0);
-      dropList(list$1._1);
+  const dropList = (list) => {
+    if (list.TAG === "Cons") {
+      noisyDrop_drop(list._0);
+      dropList(list._1);
     }
   };
   const _two = [undefined, many(10)];

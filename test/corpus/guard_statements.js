@@ -66,17 +66,17 @@ function main() {
     console.log(`${i} ${odd}`);
   }
   let tries = 0;
-  for (const s$1 of shapes) {
+  for (const s of shapes) {
     let label;
     arms: {
-      if (s$1.TAG === "Rect") {
+      if (s.TAG === "Rect") {
         tries = (tries + 1) | 0;
-        if (s$1.w === s$1.h) {
+        if (s.w === s.h) {
           label = "square rect";
           break arms;
         }
       }
-      if (s$1.TAG === "Rect") {
+      if (s.TAG === "Rect") {
         label = "rect";
       } else {
         label = "not a rect";

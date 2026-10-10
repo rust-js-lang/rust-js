@@ -11,7 +11,7 @@ function main() {
   for (let i = 0; i < 149; i++) {
     power = Math.fround(power * 0.5);
   }
-  for (let i$1 = 0; i$1 < 277; i$1++) {
+  for (let i = 0; i < 277; i++) {
     console.log(`${$displayF32(power)} ${$debugF32(power)}`);
     power = Math.fround(power * 2);
   }
@@ -20,18 +20,18 @@ function main() {
     seed = ((Math.imul(seed, 1664525) >>> 0) + 1013904223) >>> 0;
     return seed;
   };
-  for (let i$2 = 0; i$2 < 3000; i$2++) {
+  for (let i = 0; i < 3000; i++) {
     const significand = Math.fround(next() >>> 8);
     let x = significand;
     const scale = next() % 270;
     if (scale < 150) {
       const end = (scale + 23) >>> 0;
-      for (let i$3 = 0; i$3 < end; i$3++) {
+      for (let i = 0; i < end; i++) {
         x = Math.fround(x * 0.5);
       }
     } else {
-      const end$1 = (scale - 150) >>> 0;
-      for (let i$4 = 0; i$4 < end$1; i$4++) {
+      const end = (scale - 150) >>> 0;
+      for (let i = 0; i < end; i++) {
         x = Math.fround(x * 2);
       }
     }

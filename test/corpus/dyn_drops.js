@@ -149,8 +149,8 @@ function main() {
     }
   } finally {
     if (all$live) {
-      for (const item$1 of all) {
-        item$1.impl.$drop?.(item$1.value);
+      for (const item of all) {
+        item.impl.$drop?.(item.value);
       }
     }
   }

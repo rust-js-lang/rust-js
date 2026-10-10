@@ -108,12 +108,12 @@ function main() {
   for (const value of values) {
     console.log(`${describe(value)} | ${valueDebug_fmt(value)}`);
   }
-  const value$1 = $index(values, 8);
-  if (Array.isArray(value$1)) {
-    value$1.push(3);
+  const value = $index(values, 8);
+  if (Array.isArray(value)) {
+    value.push(3);
   }
-  const value$2 = $index(values, 8);
-  const copy = Array.isArray(value$2) ? value$2.slice() : value$2;
+  const value$1 = $index(values, 8);
+  const copy = Array.isArray(value$1) ? value$1.slice() : value$1;
   values[$at(values, 8)] = [];
   const arg = $index(values, 8);
   const arg$1 = $eq(copy, [1, 2, 3]);
@@ -157,9 +157,9 @@ function main() {
     const pair = { held: ["p"], other: ["q"] };
     let pair$other$live = true;
     pair$other$live = false;
-    const other$1 = pair.other;
+    const other = pair.other;
     try {
-      console.log(`moved ${other$1[0]}`);
+      console.log(`moved ${other[0]}`);
       if (typeof pair.held === "number") {
         console.log(`quiet ${pair.held}`);
       }
@@ -168,11 +168,11 @@ function main() {
       try {
         if (typeof both === "object" && !Array.isArray(both)) {
           both$Both$0$first$live = false;
-          const first$1 = both.first;
+          const first = both.first;
           try {
-            console.log(`took ${first$1[0]}`);
+            console.log(`took ${first[0]}`);
           } finally {
-            noisyDrop_drop(first$1);
+            noisyDrop_drop(first);
           }
         }
         const held = [1, ["a"]];
@@ -209,7 +209,7 @@ function main() {
         }
       }
     } finally {
-      noisyDrop_drop(other$1);
+      noisyDrop_drop(other);
       if (Array.isArray(pair.held)) {
         noisyDrop_drop(pair.held);
       }

@@ -46,7 +46,7 @@ function main() {
   const error = $unwrapErr(
     $getDisjointMut(v, [3, 3], true),
     undefined,
-    (e$1) => `[${e$1.map((item) => String(item.value)).join(", ")}]`,
+    (e) => `[${e.map((item) => String(item.value)).join(", ")}]`,
   );
   console.log(`${error === "OverlappingIndices"}`);
   const value$1 = $getDisjointMut(v, [
@@ -90,15 +90,15 @@ function main() {
     true,
   );
   if (value$2.TAG === "Ok") {
-    const value$3 = $index(value$2._0[1], 0);
-    value$2._0[0][$at(value$2._0[0], 1)] = value$3;
+    const value = $index(value$2._0[1], 0);
+    value$2._0[0][$at(value$2._0[0], 1)] = value;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const tmp = $getDisjointMut(v, [1, 4], true)._0;
   tmp[0].value = (tmp[0].value + tmp[1].value) | 0;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const cells = [{ n: 1 }, { n: 2 }, { n: 3 }];
-  const [first, last] = $unwrapOk($getDisjointMut(cells, [0, 2]), undefined, (e$2) => e$2);
+  const [first, last] = $unwrapOk($getDisjointMut(cells, [0, 2]), undefined, (e) => e);
   first.n = (first.n + last.n) | 0;
   last.n = 0;
   console.log(`[${cells.map((item) => cellDebug_fmt(item)).join(", ")}]`);

@@ -40,9 +40,9 @@ function main() {
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const part = $iter($mutItems($view(v, 2)));
   while (true) {
-    const x$1 = $next(part);
-    if (x$1 != null) {
-      x$1.value = -x$1.value | 0;
+    const x = $next(part);
+    if (x != null) {
+      x.value = -x.value | 0;
     } else {
       break;
     }
@@ -66,8 +66,8 @@ function main() {
   const q = $iter($mutItems(queue));
   const cell$1 = $unwrap($next(q));
   cell$1.value = (cell$1.value + 10) & 255;
-  for (const x$2 of q) {
-    x$2.value = (x$2.value * 2) & 255;
+  for (const x of q) {
+    x.value = (x.value * 2) & 255;
   }
   console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
 }

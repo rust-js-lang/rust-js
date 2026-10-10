@@ -26,8 +26,8 @@ function slots(take) {
       const next = (n + 3) | 0;
       tmp = next;
     } else {
-      const next$1 = (n + 5) | 0;
-      tmp = next$1;
+      const next = (n + 5) | 0;
+      tmp = next;
     }
     n = tmp;
     map.set(0, n);

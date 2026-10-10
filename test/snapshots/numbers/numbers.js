@@ -137,10 +137,10 @@ export function grids(n) {
     }
   }
   const t = Array.from({ length: n }, () => new Array(n).fill(0));
-  for (const [i$1, row] of m.entries()) {
-    for (const [j$1, v] of row.entries()) {
-      const items$1 = $index(t, j$1);
-      items$1[$at(items$1, i$1)] = v;
+  for (const [i, row] of m.entries()) {
+    for (const [j, v] of row.entries()) {
+      const items = $index(t, j);
+      items[$at(items, i)] = v;
     }
   }
   const cell = { hits: 0 };
@@ -190,13 +190,13 @@ export function report() {
   ]) {
     out += `${integers(a, b)}\n`;
   }
-  for (const [a$1, b$1] of [
+  for (const [a, b] of [
     [-5, 7],
     [127, 128],
     [-128, 0],
     [6, 64],
   ]) {
-    out += `${narrow(a$1, b$1)}\n`;
+    out += `${narrow(a, b)}\n`;
   }
   for (const x of [2.5, -2.5, 0.49999999999999994, -1.25, 9, -0, 1e21, NaN, Infinity]) {
     out += `${floats(x)}\n`;

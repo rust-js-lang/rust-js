@@ -79,7 +79,7 @@ function main() {
   const highest = [3, 9, 4].reduce((a, b) => Math.max(a, b), -2147483648);
   const lowest = [5n, -2n, 8n].reduce((a, b) => $bigMin(a, b), 9223372036854775807n);
   const widest = [1.5, 0.25].reduce($f64Max, 0);
-  const distances = [-7n, 4n].map((n$1) => BigInt.asIntN(64, $bigAbs(n$1)));
+  const distances = [-7n, 4n].map((n) => BigInt.asIntN(64, $bigAbs(n)));
   const sorted = [3, 1, 2];
   sorted.sort((a, b) => $cmp(a, b));
   console.log(

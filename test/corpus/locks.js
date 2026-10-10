@@ -109,11 +109,11 @@ function main() {
         .map((item) => String(item))
         .join(", ")}]`,
     );
-    const r$1 = $lockRead(text, true);
+    const r = $lockRead(text, true);
     try {
-      console.log(`${r$1.value} ${$byteLen(r$1.value)} ${$displayF64($borrow(cell$3).value)}`);
+      console.log(`${r.value} ${$byteLen(r.value)} ${$displayF64($borrow(cell$3).value)}`);
     } finally {
-      $unborrow(r$1);
+      $unborrow(r);
     }
   } finally {
     if (first$live) {

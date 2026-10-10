@@ -34,9 +34,9 @@ function main() {
     const again = ["again"];
     let again$live = true;
     try {
-      const arg$1 = second(true);
+      const arg = second(true);
       again$live = false;
-      console.log(`${pair(again, arg$1)}`);
+      console.log(`${pair(again, arg)}`);
     } finally {
       if (again$live) {
         noisyDrop_drop(again);

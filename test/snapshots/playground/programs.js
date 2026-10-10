@@ -121,10 +121,10 @@ export function prepare(files, modules, styles, rootFile, test, run) {
   const imports = /^import (?:[^;]+? from )?"([^"]+)";/gm;
   const external = [];
   for (const [path, code] of sources) {
-    for (const [, specifier$1] of Array.from(code.matchAll(imports))) {
-      const target = resolve(path, specifier$1);
-      if (!sources.some(([p]) => p === target) && !external.includes(specifier$1)) {
-        external.push(specifier$1);
+    for (const [, specifier] of Array.from(code.matchAll(imports))) {
+      const target = resolve(path, specifier);
+      if (!sources.some(([p]) => p === target) && !external.includes(specifier)) {
+        external.push(specifier);
       }
     }
   }

@@ -86,9 +86,9 @@ function main() {
   const arg = $fmtTry(() => {
     try {
       u += hoursDisplay_fmt([5]);
-    } catch (error$1) {
-      u += $fmtPartial(error$1);
-      throw error$1;
+    } catch (error) {
+      u += $fmtPartial(error);
+      throw error;
     }
   });
   console.log(`${arg === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(u)}`);
@@ -109,8 +109,8 @@ function main() {
   try {
     text += spanDisplay_fmt([[1], [2]]);
     text += "\n";
-  } catch (error$2) {
-    $fmtPrintFailed(error$2, text, false);
+  } catch (error) {
+    $fmtPrintFailed(error, text, false);
   }
   $print(text);
 }

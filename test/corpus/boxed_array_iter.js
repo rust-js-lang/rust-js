@@ -24,8 +24,8 @@ function main() {
   for (const p of points) {
     p.x = (p.x + 1) | 0;
   }
-  for (const p$1 of points.toReversed()) {
-    p$1.x = Math.imul(p$1.x, 2);
+  for (const p of points.toReversed()) {
+    p.x = Math.imul(p.x, 2);
   }
   console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
   const seen = [];

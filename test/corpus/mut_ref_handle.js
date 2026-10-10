@@ -122,14 +122,14 @@ function main() {
     o.value = (o.value + 1) | 0;
   }
   console.log(`${m}`);
-  let [i$1, j] = [1, 2];
+  let [i, j] = [1, 2];
   const refs = [
     {
       get value() {
-        return i$1;
+        return i;
       },
       set value(value) {
-        i$1 = value;
+        i = value;
       },
     },
     {
@@ -141,10 +141,10 @@ function main() {
       },
     },
   ];
-  for (const r$1 of refs) {
-    r$1.value = Math.imul(r$1.value, 7);
+  for (const r of refs) {
+    r.value = Math.imul(r.value, 7);
   }
-  console.log(`${i$1} ${j}`);
+  console.log(`${i} ${j}`);
   let [u, w] = [5, 6];
   const result = pick(
     false,

@@ -154,8 +154,8 @@ function main() {
             if (_some != null) {
               noisyDrop_drop(_some);
             }
-            for (const item$1 of _list) {
-              noisyDrop_drop(item$1);
+            for (const item of _list) {
+              noisyDrop_drop(item);
             }
           }
         } finally {

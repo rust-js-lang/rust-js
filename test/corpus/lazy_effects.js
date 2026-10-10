@@ -24,55 +24,55 @@ function main() {
   console.log(`${a} ${y}`);
   let tmp$1 = t;
   if (!tmp$1) {
-    const x$1 = { value: y };
-    const result$1 = bump(x$1);
-    y = x$1.value;
-    tmp$1 = result$1;
+    const x = { value: y };
+    const result = bump(x);
+    y = x.value;
+    tmp$1 = result;
   }
   console.log(`${tmp$1}`);
   let tmp$2 = t;
   if (!tmp$2) {
-    const x$2 = { value: y };
-    const result$2 = bump(x$2);
-    y = x$2.value;
-    tmp$2 = result$2;
+    const x = { value: y };
+    const result = bump(x);
+    y = x.value;
+    tmp$2 = result;
   }
   if (tmp$2) {
     console.log("if ||");
   }
   let tmp$3 = f;
   if (tmp$3) {
-    const x$3 = { value: y };
-    const result$3 = bump(x$3);
-    y = x$3.value;
-    tmp$3 = result$3;
+    const x = { value: y };
+    const result = bump(x);
+    y = x.value;
+    tmp$3 = result;
   }
   if (tmp$3) {
     console.log("never");
   }
   let tmp$4 = f;
   if (!tmp$4) {
-    const x$4 = { value: y };
-    const result$4 = bump(x$4);
-    y = x$4.value;
-    tmp$4 = result$4;
+    const x = { value: y };
+    const result = bump(x);
+    y = x.value;
+    tmp$4 = result;
   }
   const b = tmp$4;
   console.log(`${b} ${y}`);
   let n = 0;
   while (true) {
-    let tmp$6 = n < 2;
-    if (tmp$6) {
-      let tmp$5 = f;
-      if (!tmp$5) {
-        const x$5 = { value: y };
-        const result$5 = bump(x$5);
-        y = x$5.value;
-        tmp$5 = !result$5;
+    let tmp = n < 2;
+    if (tmp) {
+      let tmp$1 = f;
+      if (!tmp$1) {
+        const x = { value: y };
+        const result = bump(x);
+        y = x.value;
+        tmp$1 = !result;
       }
-      tmp$6 = tmp$5;
+      tmp = tmp$1;
     }
-    if (!tmp$6) {
+    if (!tmp) {
       break;
     }
     n = (n + 1) | 0;

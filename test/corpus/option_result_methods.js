@@ -53,10 +53,10 @@ function main() {
   }
   const kept = some != null ? (some + 1) | 0 : undefined;
   if (none != null) {
-    const inspected$1 = (x) => {
+    const inspected = (x) => {
       seen.push(x);
     };
-    inspected$1(none);
+    inspected(none);
   }
   const arg$11 = some != null ? Math.imul(some, 10) : 0;
   const arg$12 = none != null ? Math.imul(none, 10) : 0;
@@ -160,28 +160,28 @@ function main() {
   );
   const log = [];
   if (good.TAG === "Ok") {
-    const inspected$2 = (x) => {
+    const inspected = (x) => {
       log.push(`ok ${x}`);
     };
-    inspected$2(good._0);
+    inspected(good._0);
   }
   if (good.TAG === "Err") {
-    const inspected$3 = (e) => {
+    const inspected = (e) => {
       log.push(`err ${e}`);
     };
-    inspected$3(good._0);
+    inspected(good._0);
   }
   if (bad.TAG === "Ok") {
-    const inspected$4 = (x) => {
+    const inspected = (x) => {
       log.push(`ok ${x}`);
     };
-    inspected$4(bad._0);
+    inspected(bad._0);
   }
   if (bad.TAG === "Err") {
-    const inspected$5 = (e) => {
+    const inspected = (e) => {
       log.push(`err ${e}`);
     };
-    inspected$5(bad._0);
+    inspected(bad._0);
   }
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
   console.log(

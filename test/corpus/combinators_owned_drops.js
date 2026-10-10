@@ -73,14 +73,14 @@ function main() {
   try {
     result$live = false;
     if (result.TAG === "Ok") {
-      const holds$3 = (n) => {
+      const holds = (n) => {
         try {
           return n[0] === 4;
         } finally {
           noisyDrop_drop(n);
         }
       };
-      holds$2 = holds$3(result._0);
+      holds$2 = holds(result._0);
     } else {
       noisyDrop_drop(result._0);
       holds$2 = false;
@@ -98,23 +98,23 @@ function main() {
   }
   const result$1 = ok(5);
   let result$1$live = true;
-  let holds$4;
+  let holds$3;
   try {
     result$1$live = false;
     if (result$1.TAG === "Err") {
-      const holds$5 = (n) => {
+      const holds = (n) => {
         try {
           return n[0] === 5;
         } finally {
           noisyDrop_drop(n);
         }
       };
-      holds$4 = holds$5(result$1._0);
+      holds$3 = holds(result$1._0);
     } else {
       noisyDrop_drop(result$1._0);
-      holds$4 = false;
+      holds$3 = false;
     }
-    console.log(`${holds$4}`);
+    console.log(`${holds$3}`);
   } finally {
     if (result$1$live) {
       if (result$1.TAG === "Ok") {
@@ -165,7 +165,7 @@ function main() {
       }
     };
     console.log(`${kept != null ? map(kept) : 0}`);
-    const option$3 = some(7);
+    const option = some(7);
     let option$3$live = true;
     let map$1;
     try {
@@ -177,15 +177,15 @@ function main() {
           noisyDrop_drop(n);
         }
       };
-      console.log(`${option$3 != null ? map$1(option$3) : 0}`);
+      console.log(`${option != null ? map$1(option) : 0}`);
     } finally {
       if (option$3$live) {
-        if (option$3 != null) {
-          noisyDrop_drop(option$3);
+        if (option != null) {
+          noisyDrop_drop(option);
         }
       }
     }
-    const result$2 = ok(8);
+    const result = ok(8);
     let result$2$live = true;
     let map$2;
     let fallback;
@@ -205,18 +205,18 @@ function main() {
           noisyDrop_drop(e);
         }
       };
-      console.log(`${result$2.TAG === "Ok" ? map$2(result$2._0) : fallback(result$2._0)}`);
+      console.log(`${result.TAG === "Ok" ? map$2(result._0) : fallback(result._0)}`);
     } finally {
       if (result$2$live) {
-        if (result$2.TAG === "Ok") {
-          noisyDrop_drop(result$2._0);
+        if (result.TAG === "Ok") {
+          noisyDrop_drop(result._0);
         }
-        if (result$2.TAG === "Err") {
-          noisyDrop_drop(result$2._0);
+        if (result.TAG === "Err") {
+          noisyDrop_drop(result._0);
         }
       }
     }
-    const result$3 = ok(9);
+    const result$1 = ok(9);
     let result$3$live = true;
     let fallback$1;
     let noisy;
@@ -229,7 +229,7 @@ function main() {
           noisyDrop_drop(e);
         }
       };
-      noisy = result$3.TAG === "Ok" ? result$3._0 : fallback$1(result$3._0);
+      noisy = result$1.TAG === "Ok" ? result$1._0 : fallback$1(result$1._0);
       try {
         console.log(`${noisy[0]}`);
       } finally {
@@ -237,23 +237,23 @@ function main() {
       }
     } finally {
       if (result$3$live) {
-        if (result$3.TAG === "Ok") {
-          noisyDrop_drop(result$3._0);
+        if (result$1.TAG === "Ok") {
+          noisyDrop_drop(result$1._0);
         }
-        if (result$3.TAG === "Err") {
-          noisyDrop_drop(result$3._0);
+        if (result$1.TAG === "Err") {
+          noisyDrop_drop(result$1._0);
         }
       }
     }
-    const result$4 = ok(10);
+    const result$2 = ok(10);
     let value;
-    if (result$4.TAG === "Ok") {
-      value = result$4._0;
+    if (result$2.TAG === "Ok") {
+      value = result$2._0;
     } else {
-      noisyDrop_drop(result$4._0);
+      noisyDrop_drop(result$2._0);
       value = undefined;
     }
-    const option$4 = value;
+    const option$1 = value;
     let option$4$live = true;
     let map$3;
     let arg;
@@ -266,91 +266,91 @@ function main() {
           noisyDrop_drop(n);
         }
       };
-      arg = option$4 ? map$3(option$4) : undefined;
+      arg = option$1 ? map$3(option$1) : undefined;
       console.log(`${arg == null ? "None" : `Some(${arg})`}`);
     } finally {
       if (option$4$live) {
-        if (option$4 != null) {
-          noisyDrop_drop(option$4);
+        if (option$1 != null) {
+          noisyDrop_drop(option$1);
         }
       }
     }
-    const result$5 = ok(11);
+    const result$3 = ok(11);
     let result$5$live = true;
-    let holds$6;
+    let holds;
     let tmp;
-    let result$6;
+    let result$4;
     let result$6$live;
-    let holds$8;
+    let holds$1;
     try {
       result$5$live = false;
-      if (result$5.TAG === "Ok") {
-        const holds$7 = (n) => {
+      if (result$3.TAG === "Ok") {
+        const holds$1 = (n) => {
           try {
             return n[0] > 0;
           } finally {
             noisyDrop_drop(n);
           }
         };
-        holds$6 = holds$7(result$5._0);
+        holds = holds$1(result$3._0);
       } else {
-        noisyDrop_drop(result$5._0);
-        holds$6 = false;
+        noisyDrop_drop(result$3._0);
+        holds = false;
       }
-      tmp = holds$6;
-      result$6 = ok(12);
+      tmp = holds;
+      result$4 = ok(12);
       result$6$live = true;
       try {
         result$6$live = false;
-        if (result$6.TAG === "Err") {
-          const holds$9 = (n) => {
+        if (result$4.TAG === "Err") {
+          const holds = (n) => {
             try {
               return n[0] > 0;
             } finally {
               noisyDrop_drop(n);
             }
           };
-          holds$8 = holds$9(result$6._0);
+          holds$1 = holds(result$4._0);
         } else {
-          noisyDrop_drop(result$6._0);
-          holds$8 = false;
+          noisyDrop_drop(result$4._0);
+          holds$1 = false;
         }
-        console.log(`${tmp} ${holds$8}`);
+        console.log(`${tmp} ${holds$1}`);
       } finally {
         if (result$6$live) {
-          if (result$6.TAG === "Ok") {
-            noisyDrop_drop(result$6._0);
+          if (result$4.TAG === "Ok") {
+            noisyDrop_drop(result$4._0);
           }
-          if (result$6.TAG === "Err") {
-            noisyDrop_drop(result$6._0);
+          if (result$4.TAG === "Err") {
+            noisyDrop_drop(result$4._0);
           }
         }
       }
     } finally {
       if (result$5$live) {
-        if (result$5.TAG === "Ok") {
-          noisyDrop_drop(result$5._0);
+        if (result$3.TAG === "Ok") {
+          noisyDrop_drop(result$3._0);
         }
-        if (result$5.TAG === "Err") {
-          noisyDrop_drop(result$5._0);
+        if (result$3.TAG === "Err") {
+          noisyDrop_drop(result$3._0);
         }
       }
     }
-    const result$7 = ok(13);
+    const result$5 = ok(13);
     let value$1;
-    if (result$7.TAG === "Ok") {
-      value$1 = result$7._0;
+    if (result$5.TAG === "Ok") {
+      value$1 = result$5._0;
     } else {
-      noisyDrop_drop(result$7._0);
+      noisyDrop_drop(result$5._0);
       value$1 = undefined;
     }
-    const option$5 = value$1;
+    const option$2 = value$1;
     let option$5$live = true;
     let map$4;
     let tmp$1;
-    let result$8;
+    let result$6;
     let error;
-    let option$6;
+    let option$3;
     let option$6$live;
     let map$5;
     let arg$1;
@@ -363,15 +363,15 @@ function main() {
           noisyDrop_drop(n);
         }
       };
-      tmp$1 = option$5 ? map$4(option$5) : undefined;
-      result$8 = ok(14);
-      if (result$8.TAG === "Err") {
-        error = result$8._0;
+      tmp$1 = option$2 ? map$4(option$2) : undefined;
+      result$6 = ok(14);
+      if (result$6.TAG === "Err") {
+        error = result$6._0;
       } else {
-        noisyDrop_drop(result$8._0);
+        noisyDrop_drop(result$6._0);
         error = undefined;
       }
-      option$6 = error;
+      option$3 = error;
       option$6$live = true;
       try {
         option$6$live = false;
@@ -382,25 +382,25 @@ function main() {
             noisyDrop_drop(n);
           }
         };
-        arg$1 = option$6 ? map$5(option$6) : undefined;
+        arg$1 = option$3 ? map$5(option$3) : undefined;
         console.log(
           `${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
         );
       } finally {
         if (option$6$live) {
-          if (option$6 != null) {
-            noisyDrop_drop(option$6);
+          if (option$3 != null) {
+            noisyDrop_drop(option$3);
           }
         }
       }
     } finally {
       if (option$5$live) {
-        if (option$5 != null) {
-          noisyDrop_drop(option$5);
+        if (option$2 != null) {
+          noisyDrop_drop(option$2);
         }
       }
     }
-    const result$9 = ok(15);
+    const result$7 = ok(15);
     let result$9$live = true;
     let tmp$2;
     let noisy$1;
@@ -408,7 +408,7 @@ function main() {
     let mapped;
     let noisy$2;
     try {
-      tmp$2 = result$9;
+      tmp$2 = result$7;
       noisy$1 = [100];
       noisy$1$live = true;
       try {
@@ -437,15 +437,15 @@ function main() {
       }
     } finally {
       if (result$9$live) {
-        if (result$9.TAG === "Ok") {
-          noisyDrop_drop(result$9._0);
+        if (result$7.TAG === "Ok") {
+          noisyDrop_drop(result$7._0);
         }
-        if (result$9.TAG === "Err") {
-          noisyDrop_drop(result$9._0);
+        if (result$7.TAG === "Err") {
+          noisyDrop_drop(result$7._0);
         }
       }
     }
-    const result$10 = ok(16);
+    const result$8 = ok(16);
     let result$10$live = true;
     let tmp$3;
     let noisy$3;
@@ -453,7 +453,7 @@ function main() {
     let mapped$1;
     let noisy$4;
     try {
-      tmp$3 = result$10;
+      tmp$3 = result$8;
       noisy$3 = [101];
       noisy$3$live = true;
       try {
@@ -482,53 +482,53 @@ function main() {
       }
     } finally {
       if (result$10$live) {
-        if (result$10.TAG === "Ok") {
-          noisyDrop_drop(result$10._0);
+        if (result$8.TAG === "Ok") {
+          noisyDrop_drop(result$8._0);
         }
-        if (result$10.TAG === "Err") {
-          noisyDrop_drop(result$10._0);
+        if (result$8.TAG === "Err") {
+          noisyDrop_drop(result$8._0);
         }
       }
     }
-    const result$11 = half(17);
+    const result$9 = half(17);
     let result$11$live = true;
-    let holds$10;
+    let holds$2;
     let tmp$4;
-    let result$12;
+    let result$10;
     let result$12$live;
-    let holds$11;
+    let holds$3;
     try {
       result$11$live = false;
-      if (result$11.TAG === "Ok") {
-        holds$10 = result$11._0 > 0;
+      if (result$9.TAG === "Ok") {
+        holds$2 = result$9._0 > 0;
       } else {
-        noisyDrop_drop(result$11._0);
-        holds$10 = false;
+        noisyDrop_drop(result$9._0);
+        holds$2 = false;
       }
-      tmp$4 = holds$10;
-      result$12 = half(18);
+      tmp$4 = holds$2;
+      result$10 = half(18);
       result$12$live = true;
       try {
         result$12$live = false;
-        holds$11 = (n) => {
+        holds$3 = (n) => {
           try {
             return n[0] > 0;
           } finally {
             noisyDrop_drop(n);
           }
         };
-        console.log(`${tmp$4} ${result$12.TAG === "Err" && holds$11(result$12._0)}`);
+        console.log(`${tmp$4} ${result$10.TAG === "Err" && holds$3(result$10._0)}`);
       } finally {
         if (result$12$live) {
-          if (result$12.TAG === "Err") {
-            noisyDrop_drop(result$12._0);
+          if (result$10.TAG === "Err") {
+            noisyDrop_drop(result$10._0);
           }
         }
       }
     } finally {
       if (result$11$live) {
-        if (result$11.TAG === "Err") {
-          noisyDrop_drop(result$11._0);
+        if (result$9.TAG === "Err") {
+          noisyDrop_drop(result$9._0);
         }
       }
     }

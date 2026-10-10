@@ -50,11 +50,11 @@ function main() {
     ["bob", "b"],
     ["cy", "c"],
   ]);
-  for (const item$1 of $mutEntries(
+  for (const item of $mutEntries(
     names,
     $treeRange(names, $cmp, false, "BTreeMap", true, "b", false, undefined, false),
   )) {
-    item$1[1].value = item$1[1].value + "!";
+    item[1].value = item[1].value + "!";
   }
   const value = $mutEntries(
     names,

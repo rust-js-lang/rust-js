@@ -68,17 +68,17 @@ function main() {
     }
   }
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
-  const top$1 = $unwrap($peekMut(heap, $cmp));
+  const top = $unwrap($peekMut(heap, $cmp));
   try {
-    const cell$1 = $peekMutTop(top$1, true);
-    cell$1.value = (cell$1.value - 10) | 0;
-    console.log(`${top$1.heap[0]} PeekMut(${top$1.heap[0]})`);
+    const cell = $peekMutTop(top, true);
+    cell.value = (cell.value - 10) | 0;
+    console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
   } finally {
-    $peekMutDrop(top$1);
+    $peekMutDrop(top);
   }
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
-  const top$2 = $unwrap($peekMut(heap, $cmp));
-  console.log(`popped ${$peekMutPop(top$2)}`);
+  const top$1 = $unwrap($peekMut(heap, $cmp));
+  console.log(`popped ${$peekMutPop(top$1)}`);
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
   const loud = [];
   $heapPush(loud, [2], loudOrd_cmp);
@@ -89,11 +89,11 @@ function main() {
   try {
     if (option$1) {
       option$1$Some$0$live = false;
-      const top$3 = option$1;
+      const top = option$1;
       try {
-        console.log(`top ${top$3.heap[0][0]}`);
+        console.log(`top ${top.heap[0][0]}`);
       } finally {
-        $peekMutDrop(top$3);
+        $peekMutDrop(top);
       }
     }
   } finally {
@@ -109,11 +109,11 @@ function main() {
   try {
     if (option$2) {
       option$2$Some$0$live = false;
-      const top$4 = option$2;
+      const top = option$2;
       try {
-        $peekMutTop(top$4)[0] = 1;
+        $peekMutTop(top)[0] = 1;
       } finally {
-        $peekMutDrop(top$4);
+        $peekMutDrop(top);
       }
     }
   } finally {

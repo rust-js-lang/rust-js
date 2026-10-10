@@ -133,7 +133,7 @@ function main() {
   let w = 5;
   if (w != null) {
     w = (w + 1) | 0;
-    const arg$3 = {
+    const arg = {
       get value() {
         return w;
       },
@@ -141,7 +141,7 @@ function main() {
         w = value;
       },
     };
-    console.log(`${arg$3.value} ${arg$3.value}`);
+    console.log(`${arg.value} ${arg.value}`);
   }
 }
 //# sourceMappingURL=case.js.map

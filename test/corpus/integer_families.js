@@ -27,68 +27,64 @@ function main() {
       `${arg == null ? "None" : `Some(${arg})`} ${arg$1} (${arg$2[0]}, ${arg$2[1]}) ${arg$3 == null ? "None" : `Some(${arg$3})`}`,
     );
   }
-  for (const x$1 of [0, 1, 200]) {
-    const arg$4 = $checked(-x$1, 0, 255);
-    const arg$5 = [-x$1 & 255, x$1 !== 0];
-    console.log(
-      `${arg$4 == null ? "None" : `Some(${arg$4})`} ${-x$1 & 255} (${arg$5[0]}, ${arg$5[1]})`,
-    );
+  for (const x of [0, 1, 200]) {
+    const arg = $checked(-x, 0, 255);
+    const arg$1 = [-x & 255, x !== 0];
+    console.log(`${arg == null ? "None" : `Some(${arg})`} ${-x & 255} (${arg$1[0]}, ${arg$1[1]})`);
   }
-  const arg$6 = $bigChecked(
+  const arg = $bigChecked(
     $bigAbs(-9223372036854775808n),
     -9223372036854775808n,
     9223372036854775807n,
   );
   console.log(
-    `${-9223372036854775808n} ${18446744073709551609n} ${arg$6 == null ? "None" : `Some(${arg$6})`}`,
+    `${-9223372036854775808n} ${18446744073709551609n} ${arg == null ? "None" : `Some(${arg})`}`,
   );
   console.log(
     `${Math.abs(-2147483648) | 0} ${(Math.abs(-7) << 24) >> 24} ${(Math.abs(-128) << 24) >> 24}`,
   );
-  const arg$7 = $overflowing(4, 250 + 10, 0, 255);
-  const arg$8 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
-  const arg$9 = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
-  console.log(`(${arg$7[0]}, ${arg$7[1]}) (${arg$8[0]}, ${arg$8[1]}) (${arg$9[0]}, ${arg$9[1]})`);
-  const arg$10 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
-  const arg$11 = $overflowing(127, -128 - 1, -128, 127);
-  const arg$12 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
-  console.log(
-    `(${arg$10[0]}, ${arg$10[1]}) (${arg$11[0]}, ${arg$11[1]}) (${arg$12[0]}, ${arg$12[1]})`,
-  );
+  const arg$1 = $overflowing(4, 250 + 10, 0, 255);
+  const arg$2 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
+  const arg$3 = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
+  console.log(`(${arg$1[0]}, ${arg$1[1]}) (${arg$2[0]}, ${arg$2[1]}) (${arg$3[0]}, ${arg$3[1]})`);
+  const arg$4 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
+  const arg$5 = $overflowing(127, -128 - 1, -128, 127);
+  const arg$6 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
+  console.log(`(${arg$4[0]}, ${arg$4[1]}) (${arg$5[0]}, ${arg$5[1]}) (${arg$6[0]}, ${arg$6[1]})`);
   const exact = 18446744073709551615n + 1n;
   const tmp = $overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n);
   const exact$1 = -9223372036854775808n * -1n;
-  const arg$13 = $overflowing(
+  const arg$7 = $overflowing(
     BigInt.asIntN(64, exact$1),
     exact$1,
     -9223372036854775808n,
     9223372036854775807n,
   );
-  console.log(`(${tmp[0]}, ${tmp[1]}) (${arg$13[0]}, ${arg$13[1]})`);
-  const arg$14 = $checkedRem(7, 2, -2147483648);
-  const arg$15 = $checkedRem(7, 0, -2147483648);
-  const arg$16 = $checkedRem(-2147483648, -1, -2147483648);
-  const arg$17 = $checkedRem(-8, 2, -2147483648);
+  console.log(`(${tmp[0]}, ${tmp[1]}) (${arg$7[0]}, ${arg$7[1]})`);
+  const arg$8 = $checkedRem(7, 2, -2147483648);
+  const arg$9 = $checkedRem(7, 0, -2147483648);
+  const arg$10 = $checkedRem(-2147483648, -1, -2147483648);
+  const arg$11 = $checkedRem(-8, 2, -2147483648);
   console.log(
-    `${arg$14 == null ? "None" : `Some(${arg$14})`} ${arg$15 == null ? "None" : `Some(${arg$15})`} ${arg$16 == null ? "None" : `Some(${arg$16})`} ${arg$17 == null ? "None" : `Some(${arg$17})`}`,
+    `${arg$8 == null ? "None" : `Some(${arg$8})`} ${arg$9 == null ? "None" : `Some(${arg$9})`} ${arg$10 == null ? "None" : `Some(${arg$10})`} ${arg$11 == null ? "None" : `Some(${arg$11})`}`,
   );
   console.log(
     `${$wrappingDiv(-2147483648, -1, -2147483648)} ${$wrappingDiv(-7, 2, -2147483648)} ${$wrappingRem(-2147483648, -1, -2147483648)} ${$wrappingRem(-7, 2, -2147483648)}`,
   );
-  const arg$18 = $wrappingDiv(0, -5, -2147483648);
-  const arg$19 = $wrappingRem(9n, 4n);
-  const arg$20 = $checkedRem(-9223372036854775808n, -1n, -9223372036854775808n);
-  console.log(`${arg$18} ${arg$19} ${arg$20 == null ? "None" : `Some(${arg$20})`}`);
+  const arg$12 = $wrappingDiv(0, -5, -2147483648);
+  const arg$13 = $wrappingRem(9n, 4n);
+  const arg$14 = $checkedRem(-9223372036854775808n, -1n, -9223372036854775808n);
+  console.log(`${arg$12} ${arg$13} ${arg$14 == null ? "None" : `Some(${arg$14})`}`);
   const by = 33;
-  const arg$21 = 4 < 32 ? (1 << 4) | 0 : undefined;
-  const arg$22 = by < 32 ? (1 << by) | 0 : undefined;
+  const arg$15 = 4 < 32 ? (1 << 4) | 0 : undefined;
+  const arg$16 = by < 32 ? (1 << by) | 0 : undefined;
   console.log(
-    `${arg$21 == null ? "None" : `Some(${arg$21})`} ${arg$22 == null ? "None" : `Some(${arg$22})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
+    `${arg$15 == null ? "None" : `Some(${arg$15})`} ${arg$16 == null ? "None" : `Some(${arg$16})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
   );
-  const arg$23 = 2 < 32 ? -16 >> 2 : undefined;
-  const arg$24 = 64 < 64 ? BigInt.asUintN(64, 1n << 0n) : undefined;
+  const arg$17 = 2 < 32 ? -16 >> 2 : undefined;
+  const arg$18 = 64 < 64 ? BigInt.asUintN(64, 1n << 0n) : undefined;
   console.log(
-    `${arg$23 == null ? "None" : `Some(${arg$23})`} ${arg$24 == null ? "None" : `Some(${arg$24})`} ${BigInt.asUintN(64, 1n << 1n)}`,
+    `${arg$17 == null ? "None" : `Some(${arg$17})`} ${arg$18 == null ? "None" : `Some(${arg$18})`} ${BigInt.asUintN(64, 1n << 1n)}`,
   );
   console.log(
     `${$pow(3, 21)} ${$pow(2, 9) & 255} ${$saturatingPow(-2, 31, -2147483648, 2147483647)} ${$saturatingPow(-2, 32, -2147483648, 2147483647)}`,

@@ -51,9 +51,9 @@ function main() {
   for (const n of $mutValues(stock)) {
     n.value = (n.value + 1) | 0;
   }
-  for (const item$1 of $mutEntries(stock)) {
-    if (item$1[0].startsWith("a")) {
-      item$1[1].value = Math.imul(item$1[1].value, 2);
+  for (const item of $mutEntries(stock)) {
+    if (item[0].startsWith("a")) {
+      item[1].value = Math.imul(item[1].value, 2);
     }
   }
   const sorted = Array.from(stock).map(([k, v]) => [k, v]);
@@ -66,13 +66,13 @@ function main() {
   $mutValues(ordered, $sortedEntries(ordered, $cmp)).forEach((x) => {
     x.value *= 2;
   });
-  for (const item$2 of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
-    item$2[1].value = item$2[1].value + 0.25;
+  for (const item of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
+    item[1].value = item[1].value + 0.25;
   }
   const visited = [];
-  for (const item$3 of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
-    visited.push(item$3[0]);
-    item$3[1].value = item$3[1].value - 0.5;
+  for (const item of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
+    visited.push(item[0]);
+    item[1].value = item[1].value - 0.5;
   }
   const halves = $mutValues(ordered, $sortedEntries(ordered, $cmp)).map((x) => x.value / 2);
   console.log(
@@ -113,8 +113,8 @@ function main() {
   }
   const cells = [1, 2, 3];
   const refs = $mutItems(cells).filter((c) => c.value !== 2);
-  for (const r$1 of refs) {
-    r$1.value = -r$1.value | 0;
+  for (const r of refs) {
+    r.value = -r.value | 0;
   }
   console.log(`${seen} ${found} [${cells.map((item) => String(item)).join(", ")}]`);
 }

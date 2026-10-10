@@ -555,11 +555,11 @@ function anythingDebug_fmt(anything) {
 function eitherDeserialize_deserialize(json) {
   return json.untagged("data did not match any variant of untagged enum Either", [
     (content) =>
-      content.enum("Either", ["A", "B"], (variant, content$1) => {
+      content.enum("Either", ["A", "B"], (variant, content) => {
         if (variant === "A") {
-          return { TAG: "A", _0: content$1.newtype($json.u8) };
+          return { TAG: "A", _0: content.newtype($json.u8) };
         }
-        return content$1.struct("struct variant Either::B", [["x", $json.u8]], ([x]) => ({
+        return content.struct("struct variant Either::B", [["x", $json.u8]], ([x]) => ({
           TAG: "B",
           x,
         }));
@@ -1664,10 +1664,10 @@ export function report() {
     out += `err ${$displayJsonError(match$164._0)} / ${$debugJsonError(match$164._0)}\n`;
   }
   let ignored = '{"value":0,"children":[],"skip":';
-  for (let i$1 = 0; i$1 < 200; i$1++) {
+  for (let i = 0; i < 200; i++) {
     ignored += "[";
   }
-  for (let i$2 = 0; i$2 < 200; i$2++) {
+  for (let i = 0; i < 200; i++) {
     ignored += "]";
   }
   ignored += "}";
@@ -2311,18 +2311,18 @@ export function report() {
   } else {
     out += `err ${$displayJsonError(match$266._0)} / ${$debugJsonError(match$266._0)}\n`;
   }
-  for (const text$1 of ['{"kind":"Tagged","id":1}', '{"id":1}', '{"kind":5,"id":1}']) {
-    const match$267 = $fromJson(text$1, taggedDeserialize_deserialize);
-    if (match$267.TAG === "Ok") {
-      out += `ok ${taggedDebug_fmt(match$267._0)}\n`;
+  for (const text of ['{"kind":"Tagged","id":1}', '{"id":1}', '{"kind":5,"id":1}']) {
+    const match = $fromJson(text, taggedDeserialize_deserialize);
+    if (match.TAG === "Ok") {
+      out += `ok ${taggedDebug_fmt(match._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match$267._0)}\n`;
+      out += `err ${$displayJsonError(match._0)}\n`;
     }
-    const match$268 = $fromJson(text$1, strictTaggedDeserialize_deserialize);
-    if (match$268.TAG === "Ok") {
-      out += `ok ${strictTaggedDebug_fmt(match$268._0)}\n`;
+    const match$1 = $fromJson(text, strictTaggedDeserialize_deserialize);
+    if (match$1.TAG === "Ok") {
+      out += `ok ${strictTaggedDebug_fmt(match$1._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match$268._0)}\n`;
+      out += `err ${$displayJsonError(match$1._0)}\n`;
     }
   }
   return out;

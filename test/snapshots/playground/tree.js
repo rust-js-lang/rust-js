@@ -14,9 +14,9 @@ export function buildTree(paths) {
           folder.push([part, { TAG: "Folder", _0: [] }]);
         }
         let tmp;
-        const match$1 = folder.find(([n]) => n === part);
-        if (match$1 && match$1[1].TAG === "Folder") {
-          tmp = match$1[1]._0;
+        const match = folder.find(([n]) => n === part);
+        if (match && match[1].TAG === "Folder") {
+          tmp = match[1]._0;
         } else {
           throw new Error("internal error: entered unreachable code: a folder, found or just made");
         }

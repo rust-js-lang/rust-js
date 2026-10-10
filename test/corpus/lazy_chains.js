@@ -89,11 +89,11 @@ function main() {
   )) {
     console.log(`body ${x}`);
   }
-  for (const [i, x$1] of v
+  for (const [i, x] of v
     .values()
     .filter((x) => noisy("odd", x) % 2 === 1)
     .map((x, i) => [i, x])) {
-    console.log(`${i} ${x$1}`);
+    console.log(`${i} ${x}`);
   }
   const total = v.map((x) => noisy("sum", x)).reduce((a, b) => (a + b) | 0, 0);
   const inspect = (x) => {
@@ -107,8 +107,8 @@ function main() {
     .filter((x) => x > 2).length;
   console.log(`${total} ${count}`);
   const kept$1 = v.values().map((x) => noisy("kept", x));
-  for (const x$2 of kept$1) {
-    console.log(`kept body ${x$2}`);
+  for (const x of kept$1) {
+    console.log(`kept body ${x}`);
   }
   const counted = v.values().filter((x) => noisy("counted", x) > 1);
   console.log(`${counted.toArray().length}`);

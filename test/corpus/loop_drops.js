@@ -65,46 +65,46 @@ function main() {
   console.log("after vec");
   const items$1 = [["x"], ["y"]].values();
   try {
-    for (const n$1 of items$1) {
+    for (const n of items$1) {
       try {
-        console.log(`array ${n$1[0]}`);
+        console.log(`array ${n[0]}`);
       } finally {
-        noisyDrop_drop(n$1);
+        noisyDrop_drop(n);
       }
     }
   } finally {
-    for (const left$1 of items$1) {
-      noisyDrop_drop(left$1);
+    for (const left of items$1) {
+      noisyDrop_drop(left);
     }
   }
   const option = ["some"];
   const items$2 = (option == null ? [] : [option]).values();
   try {
-    for (const n$2 of items$2) {
+    for (const n of items$2) {
       try {
-        console.log(`option ${n$2[0]}`);
+        console.log(`option ${n[0]}`);
       } finally {
-        noisyDrop_drop(n$2);
+        noisyDrop_drop(n);
       }
     }
   } finally {
-    for (const left$2 of items$2) {
-      noisyDrop_drop(left$2);
+    for (const left of items$2) {
+      noisyDrop_drop(left);
     }
   }
   const none = undefined;
   const items$3 = (none == null ? [] : [none]).values();
   try {
-    for (const n$3 of items$3) {
+    for (const n of items$3) {
       try {
-        console.log(`never ${n$3[0]}`);
+        console.log(`never ${n[0]}`);
       } finally {
-        noisyDrop_drop(n$3);
+        noisyDrop_drop(n);
       }
     }
   } finally {
-    for (const left$3 of items$3) {
-      noisyDrop_drop(left$3);
+    for (const left of items$3) {
+      noisyDrop_drop(left);
     }
   }
   const items$4 = [["unnamed"]].values();
@@ -117,8 +117,8 @@ function main() {
       }
     }
   } finally {
-    for (const left$4 of items$4) {
-      noisyDrop_drop(left$4);
+    for (const left of items$4) {
+      noisyDrop_drop(left);
     }
   }
   const items$5 = [
@@ -126,55 +126,55 @@ function main() {
     [2, ["t2"]],
   ].values();
   try {
-    for (const item$1 of items$5) {
-      const n$4 = item$1[1];
+    for (const item of items$5) {
+      const n = item[1];
       try {
-        console.log(`pair ${item$1[0]} ${n$4[0]}`);
+        console.log(`pair ${item[0]} ${n[0]}`);
       } finally {
-        noisyDrop_drop(n$4);
+        noisyDrop_drop(n);
       }
     }
   } finally {
-    for (const left$5 of items$5) {
-      noisyDrop_drop(left$5[1]);
+    for (const left of items$5) {
+      noisyDrop_drop(left[1]);
     }
   }
   const items$6 = [["m1"], ["m2"]].values();
   try {
-    for (let n$5 of items$6) {
+    for (let n of items$6) {
       let n$5$live = true;
       try {
-        if (n$5[0] === "m1") {
+        if (n[0] === "m1") {
           if (n$5$live) {
-            noisyDrop_drop(n$5);
+            noisyDrop_drop(n);
           }
-          n$5 = ["m1b"];
+          n = ["m1b"];
           n$5$live = true;
         } else {
           n$5$live = false;
-          noisyDrop_drop(n$5);
+          noisyDrop_drop(n);
           console.log("moved");
           continue;
         }
-        console.log(`kept ${n$5[0]}`);
+        console.log(`kept ${n[0]}`);
       } finally {
         if (n$5$live) {
-          noisyDrop_drop(n$5);
+          noisyDrop_drop(n);
         }
       }
     }
   } finally {
-    for (const left$6 of items$6) {
-      noisyDrop_drop(left$6);
+    for (const left of items$6) {
+      noisyDrop_drop(left);
     }
   }
   const items$7 = [["r1"], ["r2"]].values();
   try {
     outer: for (const row of items$7) {
       try {
-        const items$8 = [["x1"], ["x2"]].values();
+        const items = [["x1"], ["x2"]].values();
         try {
-          for (const cell of items$8) {
+          for (const cell of items) {
             try {
               if (cell[0] === "x2" && row[0] === "r1") {
                 break outer;
@@ -185,8 +185,8 @@ function main() {
             }
           }
         } finally {
-          for (const left$7 of items$8) {
-            noisyDrop_drop(left$7);
+          for (const left of items) {
+            noisyDrop_drop(left);
           }
         }
       } finally {
@@ -194,18 +194,18 @@ function main() {
       }
     }
   } finally {
-    for (const left$8 of items$7) {
-      noisyDrop_drop(left$8);
+    for (const left of items$7) {
+      noisyDrop_drop(left);
     }
   }
-  for (const n$6 of $iterator([3], countdownIterator_next)) {
+  for (const n of $iterator([3], countdownIterator_next)) {
     try {
-      if (n$6[0] === "c1") {
+      if (n[0] === "c1") {
         break;
       }
-      console.log(`count ${n$6[0]}`);
+      console.log(`count ${n[0]}`);
     } finally {
-      noisyDrop_drop(n$6);
+      noisyDrop_drop(n);
     }
   }
   const arg = first_long([["s"], ["long"], ["rest"]]);
