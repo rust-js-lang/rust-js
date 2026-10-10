@@ -786,6 +786,24 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             )?;
             Some(Expr::object(vec![Prop::Field("value".into(), inner)]))
         }
+        // A range, `{ start, end }`, as one made at run time is (ADR 0129):
+        // an inclusive one's `exhausted`, false of one not yet iterated.
+        ty::Adt(adt, _)
+            if tcx.is_lang_item(adt.did(), LangItem::Range)
+                || tcx.is_lang_item(adt.did(), LangItem::RangeInclusiveStruct) =>
+        {
+            let items = children()?;
+            if let Some(exhausted) = items.get(2)
+                && exhausted.try_to_bool() != Some(false)
+            {
+                return None;
+            }
+            let [start, end] = [items.first()?, items.get(1)?].map(|&v| const_js(tcx, v));
+            Some(Expr::object(vec![
+                Prop::Field("start".into(), start?),
+                Prop::Field("end".into(), end?),
+            ]))
+        }
         ty::Adt(adt, _) if adt.is_struct() && !super::recognition::struct_is_its_fields(tcx, adt.did()) => None,
         ty::Adt(adt, _) if adt.is_struct() => {
             let variant = adt.non_enum_variant();

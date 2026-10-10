@@ -86,6 +86,8 @@ struct Locals {
     writes: IndexVec<Local, usize>,
     /// Each one whose place is borrowed: it stays a variable.
     borrowed: IndexVec<Local, bool>,
+    /// The fields each is read by, as an operand, `copy _5.0`.
+    fields: IndexVec<Local, Vec<usize>>,
     /// Each one a `&mut` is the place of, a number's: a call made while
     /// it lives, a closure's say, may assign it.
     changed: IndexVec<Local, bool>,
@@ -103,6 +105,8 @@ struct State<'m, 'tcx> {
     locals: Locals,
     /// Temporaries made and not yet used, in the order they were made.
     pending: Vec<(Local, Value<'tcx>)>,
+    /// Each list read by its fields, once for each taken.
+    taken: Vec<Local>,
     /// The blocks being lowered whose label a `break` or a `continue` names.
     labels: Vec<BasicBlock>,
     /// The names of the locals borrowed, which a call may change.
@@ -190,6 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             graph: cfg::Graph::of(mir_body),
             locals,
             pending: Vec::new(),
+            taken: Vec::new(),
             labels: Vec::new(),
             borrowed_names: Default::default(),
             own_names: Default::default(),
@@ -347,6 +352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             reads: IndexVec::from_elem_n(0, n),
             writes: IndexVec::from_elem_n(0, n),
             borrowed: IndexVec::from_elem_n(false, n),
+            fields: IndexVec::from_elem_n(Vec::new(), n),
             changed: IndexVec::from_elem_n(false, n),
             declared: IndexVec::from_elem_n(false, n),
             user: IndexVec::from_elem_n(false, n),
@@ -477,7 +483,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         matches!(kind, LocalKind::Temp | LocalKind::ReturnPointer)
             && !state.locals.user[local]
             && state.locals.writes[local] == 1
-            && state.locals.reads[local] == 1
+            && (state.locals.reads[local] == 1 || split(&state.locals, local))
             && !state.locals.borrowed[local]
     }
 
@@ -1032,7 +1038,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.refs.insert(local, target.clone());
             return Ok(());
         }
-        if place.projection.is_empty() && self.foldable(state, local) {
+        // One read by its fields, each once, a `format_args!`'s tuple: a list
+        // whose items are each read where its field is.
+        let parts = match &value {
+            Value::List(items) => {
+                let mut read = state.locals.fields[local].clone();
+                read.sort();
+                read == (0..items.len()).collect::<Vec<_>>()
+            }
+            _ => false,
+        };
+        if place.projection.is_empty() && self.foldable(state, local) && (state.locals.reads[local] == 1 || parts) {
             state.pending.push((local, value));
             return Ok(());
         }
@@ -1374,12 +1390,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A field of a list made and not yet read, `copy _5.0`, or a reborrow
+    /// of what it refers to, `&(*(_5.0))`, a `format_args!`'s argument: its
+    /// item, where those before it are taken already, or move freely.
+    fn take_field(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        place: &Place<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Value<'tcx>>> {
+        let (PlaceElem::Field(field, _), [] | [PlaceElem::Deref]) = (
+            place.projection.first().copied().unwrap_or(PlaceElem::Deref),
+            place.projection.get(1..).unwrap_or(&[]),
+        ) else {
+            return Ok(None);
+        };
+        let field = field.as_usize();
+        let pending = state.pending.iter().find(|(l, _)| *l == place.local).map(|(_, v)| v);
+        let Some(Value::List(items)) = pending else {
+            return Ok(None);
+        };
+        // Read out of order, or one that does something before others that
+        // do, which made after it would run first: the list made whole
+        // first, its fields read by its name.
+        let in_order = items[..field].iter().all(|item| movable(state, item))
+            && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));
+        if !in_order || !self.admit(state, &[place.local], true, out)? {
+            if let Some(at) = state.pending.iter().position(|(l, _)| *l == place.local) {
+                let rest = state.pending.split_off(at + 1);
+                self.flush(state, out)?;
+                state.pending = rest;
+            }
+            return Ok(None);
+        }
+        let at = state
+            .pending
+            .iter()
+            .position(|(l, _)| *l == place.local)
+            .expect("admitted");
+        let Value::List(items) = &mut state.pending[at].1 else {
+            unreachable!("a list")
+        };
+        let item = std::mem::replace(&mut items[field], Value::Expr(Expr::undefined()));
+        state.taken.push(place.local);
+        if state.taken.iter().filter(|&&l| l == place.local).count() == items.len() {
+            state.pending.remove(at);
+        }
+        Ok(Some(item))
+    }
+
     fn mir_operand_read(
         &mut self,
         state: &mut State<'_, 'tcx>,
         operand: &Operand<'tcx>,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        if let Operand::Copy(place) | Operand::Move(place) = operand
+            && let Some(item) = self.take_field(state, place, out)?
+        {
+            return Ok(item);
+        }
         match operand {
             // A local's value, read through references to it, as it is.
             Operand::Copy(place) | Operand::Move(place) if self.through_values(state.body, place, true) => {
@@ -1434,6 +1504,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && self.const_static(c).is_none()
         {
             return self.mir_const(state, &referred);
+        }
+        // A promoted reference to a variant without fields, `&None` of generic
+        // code, which can't be evaluated: the variant, as it's made.
+        if let Const::Unevaluated(uv, _) = c.const_
+            && let Some(promoted) = uv.promoted
+            && let Some((made, variant)) = referred_variant(tcx, &state.promoted[promoted])
+        {
+            return self.adt_value(made, variant, Vec::new(), c.span);
         }
         // A named constant, as THIR's lowering writes one (ADR 0031); a
         // `const { .. }` block, its value, or as one (ADR 0127).
@@ -1527,6 +1605,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(ty::Value { ty, valtree })
             }
             Const::Val(value, _) => {
+                // A variant without fields, of an enum whose value isn't a
+                // tree, `None` of an `Option<Box<T>>`: its index, as a tree of
+                // an enum starts.
+                if ty.is_enum()
+                    && let Some(made) = self.tcx.try_destructure_mir_constant_for_user_output(value, ty)
+                    && made.fields.is_empty()
+                    && let Some(variant) = made.variant
+                {
+                    let index = ty::ValTree::from_scalar_int(self.tcx, variant.as_u32().into());
+                    let index = ty::Const::new_value(self.tcx, index, self.tcx.types.u32);
+                    return Some(ty::Value {
+                        ty,
+                        valtree: ty::ValTree::from_branches(self.tcx, [index]),
+                    });
+                }
                 if let Some(scalar) = value.try_to_scalar_int() {
                     return Some(ty::Value {
                         ty,
@@ -1549,6 +1642,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Some(ty::Value {
                         ty,
                         valtree: ty::ValTree::from_raw_bytes(self.tcx, bytes),
+                    });
+                }
+                // What has no fields, `Marker`'s, a tree of none.
+                if let mir::ConstValue::ZeroSized = value {
+                    return Some(ty::Value {
+                        ty,
+                        valtree: ty::ValTree::zst(self.tcx),
                     });
                 }
                 if !matches!(value, mir::ConstValue::Slice { .. }) {
@@ -1581,6 +1681,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A reference is what it refers to (ADR 0023): a `&mut` to a
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
+                // `&(*(_5.0))`, the reference `_5.0` is, a list's item.
+                if matches!(kind, BorrowKind::Shared)
+                    && let Some(item) = self.take_field(state, place, out)?
+                {
+                    return Ok(item);
+                }
                 let pointee = place.ty(decls, tcx).ty;
                 if matches!(kind, BorrowKind::Mut { .. }) && self.is_cell_pointee(pointee) {
                     return Ok(Value::Ref(self.mir_place(state, *place, span, out)?));
@@ -1642,6 +1748,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if self.recognition().is_dyn_iter(*to) {
                             let iterator = from.builtin_deref(true).unwrap_or(from);
                             return Ok(Value::Expr(self.as_js_iterator(value, iterator, span)?));
+                        }
+                        // A `&dyn Debug` is the string it shows (ADR 0060), made
+                        // where it's read: by `{:#?}`, as that shows it.
+                        if self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {
+                            return Ok(Value::Fmt(Std::FmtDebug, self.pointee(from), value));
                         }
                         return Ok(Value::Expr(self.unsize_trait(from, *to, value, span, out)?));
                     }
@@ -2422,7 +2533,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Std::FmtUsize => self.tcx.types.usize,
                     _ => first_ty().expect("a type argument"),
                 };
-                let value = self.value_expr(values.next().expect("an argument"), span)?;
+                let value = match values.next().expect("an argument") {
+                    // A `&dyn Debug`, shown as what it's made of is.
+                    Value::Fmt(Std::FmtDebug, made, value) if known == Std::FmtDebug => {
+                        return Ok(Value::Fmt(known, made, value));
+                    }
+                    value => self.value_expr(value, span)?,
+                };
                 return Ok(Value::Fmt(known, ty, value));
             }
             Std::FmtNew => {
@@ -2868,6 +2985,9 @@ fn assert_operands<'m, 'tcx>(msg: &'m AssertKind<Operand<'tcx>>) -> Vec<&'m Oper
 fn count_operand(locals: &mut Locals, operand: &Operand<'_>) {
     if let Operand::Copy(place) | Operand::Move(place) = operand {
         count_place(locals, place, false);
+        if let [PlaceElem::Field(field, _)] = place.projection[..] {
+            locals.fields[place.local].push(field.as_usize());
+        }
     }
 }
 
@@ -2903,6 +3023,11 @@ fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>) {
         Rvalue::Aggregate(_, operands) => operands.iter().for_each(|o| count_operand(locals, o)),
         Rvalue::Ref(_, kind, place) => {
             count_place(locals, place, false);
+            if let [PlaceElem::Field(field, _), PlaceElem::Deref] = place.projection[..]
+                && matches!(kind, BorrowKind::Shared)
+            {
+                locals.fields[place.local].push(field.as_usize());
+            }
             // The whole borrowed mutably may be written through the borrow: a
             // `let`, which a closure that captured it writes.
             if matches!(kind, BorrowKind::Mut { .. }) && place.projection.is_empty() {
@@ -3077,4 +3202,46 @@ fn terminator_reads(terminator: &mir::Terminator<'_>) -> Vec<Local> {
         TerminatorKind::Drop { place, .. } => vec![place.local],
         _ => Vec::new(),
     }
+}
+
+/// Whether `local` is read only by its fields, each once, as an operand.
+fn split(locals: &Locals, local: Local) -> bool {
+    let fields = &locals.fields[local];
+    let mut distinct = fields.clone();
+    distinct.sort();
+    distinct.dedup();
+    !fields.is_empty() && fields.len() == locals.reads[local] && distinct.len() == fields.len()
+}
+
+/// The variant without fields a promoted body refers to, `_1 =
+/// Option::<T>::None; _0 = &_1`, which generic code can't evaluate: its
+/// type and variant.
+fn referred_variant<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Option<(Ty<'tcx>, VariantIdx)> {
+    if body.basic_blocks.len() != 1 {
+        return None;
+    }
+    let mut made = None;
+    let mut referred = None;
+    for statement in &body.basic_blocks[mir::START_BLOCK].statements {
+        match &statement.kind {
+            StatementKind::Assign(assign) => match &**assign {
+                (place, Rvalue::Aggregate(kind, operands)) if place.projection.is_empty() && operands.is_empty() => {
+                    let AggregateKind::Adt(did, variant, args, _, _) = **kind else {
+                        return None;
+                    };
+                    made = Some((place.local, Ty::new_adt(tcx, tcx.adt_def(did), args), variant));
+                }
+                (place, Rvalue::Ref(_, BorrowKind::Shared, target))
+                    if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
+                {
+                    referred = Some(target.local);
+                }
+                _ => return None,
+            },
+            StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop => {}
+            _ => return None,
+        }
+    }
+    let (local, ty, variant) = made?;
+    (Some(local) == referred).then_some((ty, variant))
 }

@@ -1384,4 +1384,12 @@ export const mutations: Mutation[] = [
       "borrowed for a prop is its value"
     ]
   },
+  {
+    name: "wrapping-const-unknown",
+    breaks: "a constant `Wrapping(x)` is refused",
+    file: "src/lower/recognition.rs",
+    find: "        || tcx.is_diagnostic_item(Symbol::intern(\"Wrapping\"), id)\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","trait_default_bounds"],
+  },
 ];

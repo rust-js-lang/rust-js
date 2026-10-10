@@ -283,4 +283,12 @@ export const mutations: Mutation[] = [
     replace: "        !ty.is_ref()\n",
     tests: ["test/corpus.test.ts","-t","mut_ref_to_ref"],
   },
+  {
+    name: "const-range-swapped",
+    breaks: "a constant range's start is its end",
+    file: "src/lower/representation.rs",
+    find: "                Prop::Field(\"start\".into(), start?),\n",
+    replace: "                Prop::Field(\"start\".into(), end.clone()?),\n",
+    tests: ["test/mir.test.ts","-t","pretty_debug"],
+  },
 ];

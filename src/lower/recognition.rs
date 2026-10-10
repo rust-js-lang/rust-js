@@ -4024,6 +4024,8 @@ pub(super) fn struct_is_its_fields(tcx: TyCtxt<'_>, id: DefId) -> bool {
     ![sym::std, sym::core, sym::alloc].contains(&tcx.crate_name(id.krate))
         || tcx.is_lang_item(id, LangItem::PhantomData)
         || tcx.item_name(id).as_str() == "Reverse"
+        // `Wrapping(x)`, `[x]` (ADR 0175).
+        || tcx.is_diagnostic_item(Symbol::intern("Wrapping"), id)
 }
 
 pub(super) fn ordering_value(tcx: TyCtxt<'_>, enum_def: DefId, variant: Symbol) -> Option<i128> {
