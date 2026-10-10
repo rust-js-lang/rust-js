@@ -2230,6 +2230,37 @@ pub fn Labeled<C: ReactNode>(LabeledProps { children }: LabeledProps<C>) -> JSX:
   expect(renderToStaticMarkup(createElement(Labeled, { children: ["A ", createElement("code", null, "b")] }))).toBe('<h2 title="Link for this heading">A <code>b</code></h2>');
 });
 
+// Children of a type parameter left out are React's empty node, none, as
+// next/document's `<Head />` has them: of any props, whose type doesn't say.
+test("JSX leaves out children of a type parameter", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+#[derive(Default)]
+pub struct PanelProps<C> {
+    pub children: C,
+}
+pub fn Panel<C: ReactNode>(PanelProps { children }: PanelProps<C>) -> JSX::Element {
+    jsx! { <section>{children}</section> }
+}
+pub struct CardProps<'a, C> {
+    pub title: &'a str,
+    pub children: C,
+}
+pub fn Card<C: ReactNode>(CardProps { title, children }: CardProps<C>) -> JSX::Element {
+    jsx! { <article title={title}>{children}</article> }
+}
+pub fn Page() -> JSX::Element {
+    jsx! { <main><Panel /><Card title="t" /><Panel>{"x"}</Panel></main> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('<Panel />');
+  expect(jsx).toContain('<Card title="t" />');
+  const { Page } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Page())).toBe('<main><section></section><article title="t"></article><section>x</section></main>');
+});
+
 // JSX among a `vec!`'s items is JSX, as among an array's: `vec!`'s tokens
 // are a macro's, which rustc expands after JSX is read (ADR 0259).
 test("JSX among a vec!'s items is elements", async () => {

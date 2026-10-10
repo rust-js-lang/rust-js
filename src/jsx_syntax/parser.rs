@@ -902,9 +902,15 @@ pub(super) fn props_companion(
     props: &HashSet<String>,
     written_default: &HashSet<String>,
 ) -> Option<Box<ast::Item>> {
-    let ItemKind::Struct(ident, _, ast::VariantData::Struct { fields, .. }) = &item.kind else {
+    let ItemKind::Struct(ident, generics, ast::VariantData::Struct { fields, .. }) = &item.kind else {
         return None;
     };
+    // Its type parameters, `C` of `children: C`, whose type a prop left out
+    // doesn't say.
+    let params: Vec<String> = (generics.params.iter())
+        .filter(|p| matches!(p.kind, ast::GenericParamKind::Type { .. }))
+        .map(|p| p.ident.as_str().to_string())
+        .collect();
     let attrs = super::configured_attrs(sess, &item.attrs)?;
     let derives_default = attrs.iter().any(|attr| {
         attr.has_name(rustc_span::sym::derive)
@@ -942,6 +948,9 @@ pub(super) fn props_companion(
         let defaulted = tool(&attrs, "default");
         let empty = if defaulted || matches!(last.as_deref(), Some("Option" | "Rest")) {
             "omitted"
+        } else if field_name == "children" && last.as_ref().is_some_and(|last| params.contains(last)) {
+            // Of a type parameter: React's empty node, none.
+            "node"
         } else if field_name == "children" {
             "children"
         } else {
@@ -954,7 +963,7 @@ pub(super) fn props_companion(
         && flatten.is_none()
         && own
             .iter()
-            .all(|&(_, empty, defaulted)| !defaulted && empty != "required");
+            .all(|&(_, empty, defaulted)| !defaulted && empty != "required" && empty != "node");
     let arms = if simple {
         vec![
             given,
@@ -1035,6 +1044,10 @@ pub(super) fn props_companion(
         );
         arms.push("(@slot omitted $name:literal []) => { ::react::__omitted() }".to_string());
         arms.push("(@slot children $name:literal []) => { ::core::default::Default::default() }".to_string());
+        arms.push(
+            "(@slot node $name:literal []) => { <::react::JSX::Element as ::core::default::Default>::default() }"
+                .to_string(),
+        );
         arms
     };
     let source = format!("macro {name} {{ {} }}", arms.join(", ")).replace("NAME", &name);

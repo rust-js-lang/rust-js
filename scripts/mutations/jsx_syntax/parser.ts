@@ -290,4 +290,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "JSX attributes take the values @types/react types them as"],
   },
+  {
+    name: "children-param-defaulted",
+    breaks: "children of a type parameter left out are its `Default`, a type rustc can't infer",
+    file: "src/jsx_syntax/parser.rs",
+    find: "        } else if field_name == \"children\" && last.as_ref().is_some_and(|last| params.contains(last)) {",
+    replace: "        } else if false && last.as_ref().is_some_and(|last| params.contains(last)) {",
+    tests: ["test/jsx.test.ts", "-t", "children of a type parameter"],
+  },
 ];

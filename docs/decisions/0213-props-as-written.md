@@ -98,3 +98,12 @@ error: missing prop `href` of `ButtonLinkProps`
 - **A Rust caller still writes `Some(..)`** of an `Option` prop.
 - **A component's props type beside it, or a `Default` struct, has a
   companion**: one elsewhere is given a struct literal, as before.
+
+## Since
+
+- **Children of a type parameter left out are React's empty node**
+  (2026-10-10), `Element`'s default, `undefined`: `<Head />` of
+  next/document's `HeadProps<C>`, whose `C` a `Default::default()` left
+  rustc nothing to infer of. A JSX test renders a component of
+  `Default` props and one of required props, each with its children
+  left out, and given.
