@@ -505,7 +505,7 @@ pub fn Pictured() -> JSX::Element {
     jsx! {
         <picture>
             <img {...props} />
-            <next::image::Image src={&LOGO} alt="Logo" placeholder={Some("blur")} />
+            <next::image::Image src={&LOGO} alt="Logo" placeholder={Some("empty")} />
             <p>{pending}</p>
         </picture>
     }
@@ -643,7 +643,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(aboutHtml).toMatch(/<img alt="Logo"[^>]* src="\/_next\/static\/media\/logo\.[^"]+\.svg"/);
   expect(aboutHtml).toContain('alt="Next.js"');
   expect(linkedJsx).toContain('const { props } = getImageProps({ src: "/next.svg", alt: "Next.js", width: 90, height: 18 });');
-  expect(linkedJsx).toContain('<img {...props} />\n      <Image src={LOGO} alt="Logo" placeholder="blur" />');
+  expect(linkedJsx).toContain('<img {...props} />\n      <Image src={LOGO} alt="Logo" placeholder="empty" />');
   expect(linkedJsx).toContain("const pending = useLinkStatus().pending;");
   // next/navigation.
   expect(linkedJsx).toContain('const query = useSearchParams().get("q") ?? "";');
