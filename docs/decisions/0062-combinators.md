@@ -82,3 +82,14 @@ value written in place,** as `Option::map` already was:
   bounds must panic in both.
 - **The common case reads as JS.** `h ?? 99` is what a person would
   write, not a call of a helper.
+
+## Since
+
+- **The path tested may be a key written out** (2026-10-10):
+  `dict::get(files, "/src/styles.css").and_then(|f| js::get(*f, "visible"))`
+  is `files["/src/styles.css"]?.visible`, as react.dev's SandpackRoot
+  writes it, where it was `files["/src/styles.css"] != null ?
+  files["/src/styles.css"].visible : undefined`: `x["k"]` is the same
+  path as `x["k"]`, of the same text. A lowering test reads a property of
+  an `Option` and of a dictionary's entry, and keeps a key that isn't a
+  name, `file["a-b"]`, tested; a mutation tells no keys the same.

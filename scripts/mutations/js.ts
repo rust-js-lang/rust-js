@@ -212,4 +212,12 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "consts: the generated JS"],
     snapshots: true,
   },
+  {
+    name: "same-path-index-unseen",
+    breaks: "`files[\"/x\"] != null ? files[\"/x\"].visible : undefined` isn't `files[\"/x\"]?.visible`",
+    file: "src/js.rs",
+    find: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {\n",
+    replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => {\n",
+    tests: ["test/lowering.test.ts","-t","property read of what may be None"],
+  },
 ];

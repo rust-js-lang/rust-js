@@ -89,6 +89,10 @@ pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
         (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
         (ExprKind::Member(x, f), ExprKind::Member(y, g)) => f == g && same_path(x, y),
         (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),
+        // A key written out, `files["/styles.css"]`.
+        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {
+            matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j) && same_path(x, y)
+        }
         _ => false,
     }
 }

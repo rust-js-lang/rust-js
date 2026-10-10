@@ -1305,6 +1305,32 @@ pub fn page(code: u32) -> Page {
   expect([page(0), page(3)]).toEqual([{ notFound: true }, { props: 3 }]);
 });
 
+// A property of what may be `None`, `file.and_then(|f| js::get(f, "visible"))`,
+// is `file?.visible`, and of a dictionary's, `files["/styles.css"]?.visible`,
+// as react.dev's SandpackRoot reads it: a key that's a name. Another stays a test, `file != null ? file["a-b"] : undefined`.
+test("a property read of what may be None is an optional chain", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("optional-property");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Dict, Unknown, dict};
+pub fn styled(files: &Dict<&Unknown>) -> bool {
+    !js::truthy(dict::get(files, "/styles.css").and_then(|f| js::get(*f, "visible")))
+}
+pub fn visible(file: Option<&Unknown>) -> bool {
+    !js::truthy(file.and_then(|f| js::get(f, "visible")))
+}
+pub fn dashed(file: Option<&Unknown>) -> bool {
+    js::truthy(file.and_then(|f| js::get(f, "a-b")))
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return !file?.visible;");
+  expect(js).toContain('return !files["/styles.css"]?.visible;');
+  expect(js).toContain('file != null ? file["a-b"] : undefined');
+  const { visible, dashed, styled } = await import(join(dir, "lib.js"));
+  expect([styled({}), styled({ "/styles.css": { visible: true } }), visible(undefined), visible({}), visible({ visible: 1 }), dashed({ "a-b": 1 }), dashed(undefined)]).toEqual([true, false, true, true, false, true, false]);
+});
+
 // `matches!` of a kind's literal says the literal: `x === "a"` holds of no
 // other kind, nor of `null`, so neither `typeof` nor `!= null` is said, and
 // what's tested once is read where it's tested, as react.dev's Link tests
