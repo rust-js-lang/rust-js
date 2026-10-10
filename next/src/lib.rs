@@ -28,6 +28,7 @@ pub mod form;
 pub mod head;
 pub mod headers;
 pub mod image;
+mod instrumentation;
 pub mod legacy;
 pub mod link;
 pub mod metadata;
@@ -37,6 +38,7 @@ pub mod og;
 mod pages;
 pub mod router;
 pub mod script;
+mod segment;
 pub mod server;
 pub mod web_vitals;
 
@@ -55,6 +57,11 @@ pub use data_fetching::{
     Redirect, Revalidate, RevalidateReason, ServerNotFound, ServerProps, ServerRedirect, StaticNotFound, StaticPath, StaticPathParams,
     StaticProps, StaticRedirect, StatusRedirect,
 };
+pub use instrumentation::{
+    ErrorRequest, Instrumentation, RequestErrorContext, RouterTransitionEvent, RouterTransitionPrefetchIntent, RouterTransitionStartEvent,
+    RouterTransitionType,
+};
+pub use segment::{Instant, InstantConfig, InstantSample, SampleCookie};
 pub use pages::{
     ApiConfig, BodyParser, BodyParserLimit, ClearPreviewDataOptions, DraftModeOptions, FileSizeSuffix, NextApiHandler, NextApiRequest,
     NextApiResponse, NextComponentType, NextPage, NextPageContext, PageConfig, PreviewData, PreviewDataOptions, QueryValue, ResponseLimit,

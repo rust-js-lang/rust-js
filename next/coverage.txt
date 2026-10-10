@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 138 of 2093 (6.6%)
-# members: 305 of 433 (70.4%)
-# next 30 of 42, members 102 of 199
+# exports: 144 of 2093 (6.9%)
+# members: 317 of 433 (73.2%)
+# next 36 of 42, members 114 of 199
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
 - next#AdapterOutput.APP_ROUTE
@@ -53,14 +53,14 @@
 + next#GetStaticPropsResult.revalidate
 - type next#InferGetServerSidePropsType
 - type next#InferGetStaticPropsType
-- type next#Instant
-- next#Instant.level
-- next#Instant.unstable_disableBuildValidation
-- next#Instant.unstable_disableDevValidation
-- next#Instant.unstable_disableValidation
-- next#Instant.unstable_from
-- next#Instant.unstable_samples
-- type next#Instrumentation
++ type next#Instant
++ next#Instant.level
++ next#Instant.unstable_disableBuildValidation
++ next#Instant.unstable_disableDevValidation
++ next#Instant.unstable_disableValidation
++ next#Instant.unstable_from
++ next#Instant.unstable_samples
++ type next#Instrumentation
 + type next#Metadata
 + next#Metadata.abstract
 + next#Metadata.alternates
@@ -228,16 +228,16 @@
 - next#Route.source
 - next#Route.sourceRegex
 - next#Route.status
-- type next#RouterTransitionEvent
-- next#RouterTransitionEvent.id
-- next#RouterTransitionEvent.timestamp
-- type next#RouterTransitionPrefetchIntent
-- type next#RouterTransitionStartEvent
-- next#RouterTransitionStartEvent.fromRoutes
-- next#RouterTransitionStartEvent.id
-- next#RouterTransitionStartEvent.prefetchIntent
-- next#RouterTransitionStartEvent.timestamp
-- type next#RouterTransitionType
++ type next#RouterTransitionEvent
++ next#RouterTransitionEvent.id
++ next#RouterTransitionEvent.timestamp
++ type next#RouterTransitionPrefetchIntent
++ type next#RouterTransitionStartEvent
++ next#RouterTransitionStartEvent.fromRoutes
++ next#RouterTransitionStartEvent.id
++ next#RouterTransitionStartEvent.prefetchIntent
++ next#RouterTransitionStartEvent.timestamp
++ type next#RouterTransitionType
 + type next#ServerRuntime
 + type next#SizeLimit
 + type next#Viewport

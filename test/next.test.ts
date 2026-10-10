@@ -103,7 +103,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   writeFileSync(join(dir, "app/robots.rs"), robots);
@@ -135,6 +135,9 @@ js::export_default!(Later);
   mkdirSync(join(dir, "app/api/hello"), { recursive: true });
   writeFileSync(join(dir, "app/api/hello/route.rs"), route);
   writeFileSync(join(dir, "proxy.rs"), proxy);
+  // Instrumentation, the server's and the client's.
+  writeFileSync(join(dir, "instrumentation.rs"), instrumentation);
+  writeFileSync(join(dir, "instrumentation-client.rs"), instrumentationClient);
   // An image drawn from JSX, next/og's.
   mkdirSync(join(dir, "app/og"));
   writeFileSync(join(dir, "app/og/route.rs"), og);
@@ -292,6 +295,34 @@ use react::{CSSProperties, jsx};
 pub async fn GET() -> &'static Response {
     let image = jsx! { <div style={CSSProperties::new().display("flex").font_size(64)}>{"Rust"}</div> };
     image_response::new_with_options(image, ImageResponseOptions { width: Some(600), height: Some(315), ..Default::default() })
+}
+`;
+
+const instrumentation = `#![allow(non_snake_case, non_upper_case_globals)]
+
+use js::Unknown;
+use next::{ErrorRequest, Instrumentation, RequestErrorContext};
+
+pub fn register() {
+    println!("instrumentation registered");
+}
+
+pub fn onRequestError(_: &'static Unknown, request: &'static ErrorRequest, context: &'static RequestErrorContext) {
+    let _ = (request.path.len(), context.route_type.len());
+}
+
+// Its type, as Next.js names it.
+pub static handled: Instrumentation::onRequestError = onRequestError;
+`;
+
+const instrumentationClient = `#![allow(non_snake_case)]
+
+use next::{RouterTransitionStartEvent, RouterTransitionType};
+
+pub fn onRouterTransitionStart(url: &str, navigation_type: RouterTransitionType, event: Option<&RouterTransitionStartEvent>) {
+    if navigation_type == RouterTransitionType::Push && event.is_some() {
+        let _ = url.len();
+    }
 }
 `;
 
@@ -702,6 +733,9 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(routeJs).toContain('import { NextResponse, after, connection, userAgent } from "next/server";');
   expect(routeJs).toContain("const response = NextResponse.json({ hello, bot });");
   expect(readFileSync(join(dir, "app/og/route.jsx"), "utf8")).toContain("return new ImageResponse(image, { width: 600, height: 315 });");
+  // Instrumentation, as Next.js reads it.
+  expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("export function register() {");
+  expect(readFileSync(join(dir, "instrumentation-client.js"), "utf8")).toContain('if (navigationType === "push" && event) {');
   const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
   expect(proxyJs).toContain('export const config = { matcher: "/old" };');
   expect(proxyJs).toContain('const about = new URL("/about", request.url);\n  const response = NextResponse.rewrite(about);\n  return response;');
@@ -854,6 +888,9 @@ test("rust-js-next dev serves Rust routes, refreshes a save in place, and recove
     // The Server Action sets the cookie, and the route is rendered again.
     await page.getByRole("button", { name: "Lighten" }).click();
     await page.getByText(/^light \d+ live \d+$/).waitFor();
+
+    // The server's instrumentation, registered as it started.
+    expect(output).toContain("instrumentation registered");
 
     // The Pages Router's page and API route, each of the request.
     await page.goto(`http://localhost:${port}/codes/3`);

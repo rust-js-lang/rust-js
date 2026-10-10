@@ -4,7 +4,7 @@
 use core::marker::PhantomData;
 
 use js::{Dict, JsObject, Promise, Unknown};
-use react::{ComponentType, ComponentValue, ElementType};
+use react::{ComponentValue, ElementType};
 
 use crate::{NextComponentType, NextPageContext};
 use crate::router::NextRouter;
