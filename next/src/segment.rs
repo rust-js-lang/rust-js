@@ -1,5 +1,5 @@
 //! A route segment's config, what its `page.rs` or `layout.rs` exports as
-//! Next.js reads it: its `instant`.
+//! Next.js reads it: its `instant`, and its parameters' matching.
 
 use js::Dict;
 
@@ -47,3 +47,26 @@ pub struct SampleCookie<'a> {
     #[cfg_attr(rust_js, rust_js::nullable)]
     pub value: Option<&'a str>,
 }
+
+/// How a dynamic segment's parameter is matched, of a path not generated,
+/// as `ParamMatchingMode` types it.
+pub enum ParamMatchingMode {
+    /// A 404.
+    #[cfg_attr(rust_js, rust_js::name = "not-found")]
+    NotFound,
+    /// Rendered on the request, which waits.
+    #[cfg_attr(rust_js, rust_js::name = "blocking")]
+    Blocking,
+    /// Its fallback shell first.
+    #[cfg_attr(rust_js, rust_js::name = "fallback")]
+    Fallback,
+    /// Rendered on each request.
+    #[cfg_attr(rust_js, rust_js::name = "dynamic")]
+    Dynamic,
+}
+
+/// A segment's `unstable_paramMatching`, as `ParamMatching` types it: each
+/// parameter's mode by its name. A struct of the route's parameters, each an
+/// `Option<ParamMatchingMode>`, is its form of the names, as
+/// `ParamMatching<"slug">` is.
+pub type ParamMatching<'a> = &'a Dict<ParamMatchingMode>;

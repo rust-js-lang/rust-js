@@ -149,7 +149,7 @@ pub struct NextConfig<'a> {
     #[cfg_attr(rust_js, rust_js::name = "cacheComponents")]
     pub cache_components: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "partialPrefetching")]
-    pub partial_prefetching: Option<PartialPrefetching>,
+    pub partial_prefetching: Option<bool>,
     /// `cacheLife`'s profiles, by their names.
     #[cfg_attr(rust_js, rust_js::name = "cacheLife")]
     pub cache_life: Option<&'a Dict<CacheLifeProfile>>,
@@ -180,6 +180,15 @@ pub struct NextConfig<'a> {
     #[cfg_attr(rust_js, rust_js::name = "htmlLimitedBots")]
     pub html_limited_bots: Option<&'a RegExp>,
     pub experimental: Option<ExperimentalConfig<'a>>,
+    /// Behaviors Next.js deprecated, kept on.
+    pub deprecated: Option<DeprecatedConfig>,
+}
+
+#[derive(Default)]
+pub struct DeprecatedConfig {
+    /// `Some(true)`: routes matched as before Next.js 16.4, loosely.
+    #[cfg_attr(rust_js, rust_js::name = "looseRouteMatching")]
+    pub loose_route_matching: Option<bool>,
 }
 
 /// A path's page, of a static export, as `ExportPathMap` has it.
@@ -543,6 +552,13 @@ pub struct ReactCompilerOptions {
     pub compilation_mode: Option<CompilationMode>,
     #[cfg_attr(rust_js, rust_js::name = "panicThreshold")]
     pub panic_threshold: Option<PanicThreshold>,
+    pub environment: Option<ReactCompilerEnvironment>,
+}
+
+#[derive(Default)]
+pub struct ReactCompilerEnvironment {
+    #[cfg_attr(rust_js, rust_js::name = "enablePreserveExistingMemoizationGuarantees")]
+    pub enable_preserve_existing_memoization_guarantees: Option<bool>,
 }
 
 /// Which components and hooks the React Compiler compiles.
@@ -772,19 +788,23 @@ pub struct TurbopackOptions<'a> {
     pub chunk_loading_global: Option<&'a str>,
 }
 
-/// What an import is aliased to, `string | string[] | Record<string,
-/// string | string[]>`: a module, the first of these that resolves, or one
-/// of each condition; each the value itself.
+/// What an import is aliased to, `false | string | string[] |
+/// Record<string, false | string | string[]>`: nothing, a module, the
+/// first of these that resolves, or one of each condition; each the value
+/// itself.
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum ResolveAlias<'a> {
+    /// `false`: an import of nothing, an empty module.
+    Bool(bool),
     Module(&'a str),
     Modules(&'a [&'a str]),
     Conditional(&'a Dict<ResolveAliasTarget<'a>>),
 }
 
-/// A condition's module, or the first of these that resolves.
+/// A condition's module, nothing, or the first of these that resolves.
 #[cfg_attr(rust_js, rust_js::untagged)]
 pub enum ResolveAliasTarget<'a> {
+    Bool(bool),
     Module(&'a str),
     Modules(&'a [&'a str]),
 }
@@ -895,6 +915,8 @@ pub enum TurbopackModuleType {
     Css,
     #[cfg_attr(rust_js, rust_js::name = "css-module")]
     CssModule,
+    #[cfg_attr(rust_js, rust_js::name = "json")]
+    Json,
     #[cfg_attr(rust_js, rust_js::name = "wasm")]
     Wasm,
     #[cfg_attr(rust_js, rust_js::name = "raw")]
@@ -981,14 +1003,6 @@ pub enum BrowserToTerminal {
     Warn,
 }
 
-/// `boolean | "unstable_eager"`: each the value itself.
-#[cfg_attr(rust_js, rust_js::untagged)]
-pub enum PartialPrefetching {
-    Bool(bool),
-    #[cfg_attr(rust_js, rust_js::name = "unstable_eager")]
-    UnstableEager,
-}
-
 /// A `cacheLife` profile's times, in seconds.
 #[derive(Default)]
 pub struct CacheLifeProfile {
@@ -1008,12 +1022,20 @@ pub struct WatchOptions {
 /// `ExperimentalConfig` types them: what may change, or go, in any release.
 #[derive(Default)]
 pub struct ExperimentalConfig<'a> {
+    /// The coding agents' rules Next.js upgrades to, `false` none.
+    #[cfg_attr(rust_js, rust_js::name = "agentUpgrade")]
+    pub agent_upgrade: Option<AgentUpgrade>,
+    #[cfg_attr(rust_js, rust_js::name = "agentFeedback")]
+    pub agent_feedback: Option<bool>,
+    /// Directories outside its root Turbopack reads, by their names.
+    #[cfg_attr(rust_js, rust_js::name = "turbopackAdditionalRoots")]
+    pub turbopack_additional_roots: Option<&'a Dict<TurbopackAdditionalRoot<'a>>>,
     #[cfg_attr(rust_js, rust_js::name = "outputHashSalt")]
     pub output_hash_salt: Option<&'a str>,
-    #[cfg_attr(rust_js, rust_js::name = "appNewScrollHandler")]
-    pub app_new_scroll_handler: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "coldCacheBadge")]
     pub cold_cache_badge: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "collapseAdapterRoutes")]
+    pub collapse_adapter_routes: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "useSkewCookie")]
     pub use_skew_cookie: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "cacheHandlers")]
@@ -1022,6 +1044,8 @@ pub struct ExperimentalConfig<'a> {
     pub multi_zone_draft_mode: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "appNavFailHandling")]
     pub app_nav_fail_handling: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "parallelRouteMetadata")]
+    pub parallel_route_metadata: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "prerenderEarlyExit")]
     pub prerender_early_exit: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "linkNoTouchStart")]
@@ -1034,10 +1058,14 @@ pub struct ExperimentalConfig<'a> {
     pub cached_navigations: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "dynamicOnHover")]
     pub dynamic_on_hover: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "reactBrowserBailout")]
+    pub react_browser_bailout: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "useOffline")]
     pub use_offline: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "optimisticRouting")]
     pub optimistic_routing: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "concurrentRouterQueue")]
+    pub concurrent_router_queue: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "instrumentationClientRouterTransitionEvents")]
     pub instrumentation_client_router_transition_events: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "varyParams")]
@@ -1081,6 +1109,8 @@ pub struct ExperimentalConfig<'a> {
     pub img_opt_max_input_pixels: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "imgOptSequentialRead")]
     pub img_opt_sequential_read: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "imgOptMozjpeg")]
+    pub img_opt_mozjpeg: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "optimisticClientCache")]
     pub optimistic_client_cache: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "expireTime")]
@@ -1157,10 +1187,12 @@ pub struct ExperimentalConfig<'a> {
     pub gesture_transition: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackMemoryEviction")]
     pub turbopack_memory_eviction: Option<TurbopackMemoryEviction>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackGc")]
+    pub turbopack_gc: Option<TurbopackGc>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackPluginRuntimeStrategy")]
     pub turbopack_plugin_runtime_strategy: Option<TurbopackPluginRuntimeStrategy>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackMinify")]
-    pub turbopack_minify: Option<bool>,
+    pub turbopack_minify: Option<TurbopackMinify>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackImportTypeBytes")]
     pub turbopack_import_type_bytes: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackScopeHoisting")]
@@ -1175,12 +1207,18 @@ pub struct ExperimentalConfig<'a> {
     pub turbopack_client_side_nested_async_chunking: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackServerSideNestedAsyncChunking")]
     pub turbopack_server_side_nested_async_chunking: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackLazyDynamicImports")]
+    pub turbopack_lazy_dynamic_imports: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackLazyDynamicImportsSSR")]
+    pub turbopack_lazy_dynamic_imports_ssr: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackFileSystemCacheForDev")]
     pub turbopack_file_system_cache_for_dev: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackFileSystemCacheForBuild")]
     pub turbopack_file_system_cache_for_build: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackSeedCacheFromWorktree")]
     pub turbopack_seed_cache_from_worktree: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackStaleOutputMaxAge")]
+    pub turbopack_stale_output_max_age: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackSourceMaps")]
     pub turbopack_source_maps: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackInputSourceMaps")]
@@ -1195,6 +1233,14 @@ pub struct ExperimentalConfig<'a> {
     pub turbopack_infer_module_side_effects: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackCjsTreeShaking")]
     pub turbopack_cjs_tree_shaking: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackMangleExportNames")]
+    pub turbopack_mangle_export_names: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackMangleViaMaterializedNamespaceObject")]
+    pub turbopack_mangle_via_materialized_namespace_object: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackCjsScopeHoisting")]
+    pub turbopack_cjs_scope_hoisting: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackCrossModuleConstants")]
+    pub turbopack_cross_module_constants: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackUseBuiltinBabel")]
     pub turbopack_use_builtin_babel: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackUseBuiltinSass")]
@@ -1234,6 +1280,8 @@ pub struct ExperimentalConfig<'a> {
     pub server_actions: Option<ServerActions<'a>>,
     #[cfg_attr(rust_js, rust_js::name = "maxPostponedStateSize")]
     pub max_postponed_state_size: Option<SizeLimit<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "disableResumeDataCacheCompression")]
+    pub disable_resume_data_cache_compression: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "serverMinification")]
     pub server_minification: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "serverSourceMaps")]
@@ -1282,10 +1330,14 @@ pub struct ExperimentalConfig<'a> {
     pub use_cache: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "durableUseCacheEntries")]
     pub durable_use_cache_entries: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "useCacheStaticRootParamTracking")]
+    pub use_cache_static_root_param_tracking: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "slowModuleDetection")]
     pub slow_module_detection: Option<SlowModuleDetection>,
     #[cfg_attr(rust_js, rust_js::name = "globalNotFound")]
     pub global_not_found: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "explicitParallelRouteChildren")]
+    pub explicit_parallel_route_children: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "turbopackRustReactCompiler")]
     pub turbopack_rust_react_compiler: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "browserDebugInfoInTerminal")]
@@ -1296,6 +1348,8 @@ pub struct ExperimentalConfig<'a> {
     pub proxy_client_max_body_size: Option<SizeLimit<'a>>,
     #[cfg_attr(rust_js, rust_js::name = "mcpServer")]
     pub mcp_server: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "exposeRuntimeErrorsToHMR")]
+    pub expose_runtime_errors_to_hmr: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "lockDistDir")]
     pub lock_dist_dir: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "hideLogsAfterAbort")]
@@ -1470,6 +1524,58 @@ pub enum TurbopackPluginRuntimeStrategy {
     WorkerThreads,
     #[cfg_attr(rust_js, rust_js::name = "childProcesses")]
     ChildProcesses,
+    #[cfg_attr(rust_js, rust_js::name = "forceWorkerThreads")]
+    ForceWorkerThreads,
+}
+
+/// `"security" | "latest" | "experimental-future" | false`: each the
+/// value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum AgentUpgrade {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "security")]
+    Security,
+    #[cfg_attr(rust_js, rust_js::name = "latest")]
+    Latest,
+    #[cfg_attr(rust_js, rust_js::name = "experimental-future")]
+    ExperimentalFuture,
+}
+
+/// A directory outside Turbopack's root it reads.
+pub struct TurbopackAdditionalRoot<'a> {
+    pub path: &'a str,
+    #[cfg_attr(rust_js, rust_js::name = "ignoreIfMissing")]
+    pub ignore_if_missing: Option<bool>,
+}
+
+/// Turbopack's garbage collection, on, or of its options: each the value
+/// itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TurbopackGc {
+    Bool(bool),
+    Options(TurbopackGcOptions),
+}
+
+#[derive(Default)]
+pub struct TurbopackGcOptions {
+    #[cfg_attr(rust_js, rust_js::name = "minProgressMs")]
+    pub min_progress_ms: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "rootTtlMs")]
+    pub root_ttl_ms: Option<f64>,
+}
+
+/// Turbopack's minifying, on, or of each build: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TurbopackMinify {
+    Bool(bool),
+    Options(TurbopackMinifyOptions),
+}
+
+#[derive(Default)]
+pub struct TurbopackMinifyOptions {
+    pub server: Option<bool>,
+    pub client: Option<bool>,
+    pub edge: Option<bool>,
 }
 
 /// How Turbopack chunks a production build.
@@ -1479,6 +1585,8 @@ pub struct TurbopackChunking<'a> {
     pub first_page_load_priority: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "priorityRoutes")]
     pub priority_routes: Option<&'a [&'a RegExp]>,
+    /// Routes chunked together, each cluster its patterns.
+    pub clusters: Option<&'a [&'a [&'a RegExp]]>,
     #[cfg_attr(rust_js, rust_js::name = "priorityBoost")]
     pub priority_boost: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "requestCost")]

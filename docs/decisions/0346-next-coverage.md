@@ -81,3 +81,11 @@ another file's `Route` members, and next/legacy/image's `ImageProps`
 next/image's. Each export now carries where it's declared, `path#name`,
 following re-exports and imports, a default import's too, and its
 members are that declaration's.
+
+## Amendment: Next.js 16.4.0
+
+The example, and so the coverage, is of Next.js 16.4.0: `NextConfig`'s
+`deprecated`, its experiments' changes, a segment's `ParamMatching`, and
+next/cache's `CacheEntry`, `CacheHandler`, `prefetch` and `navigation` are
+bound. `CacheLifeProfiles`, an empty interface an app augments with its
+profiles' names, has no Rust form, as the `Infer…` types haven't.

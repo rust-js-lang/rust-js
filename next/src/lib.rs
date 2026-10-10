@@ -65,7 +65,7 @@ pub use instrumentation::{
     ErrorRequest, Instrumentation, RequestErrorContext, RouterTransitionEvent, RouterTransitionPrefetchIntent, RouterTransitionStartEvent,
     RouterTransitionType,
 };
-pub use segment::{Instant, InstantConfig, InstantSample, SampleCookie};
+pub use segment::{Instant, InstantConfig, InstantSample, ParamMatching, ParamMatchingMode, SampleCookie};
 pub use pages::{
     ApiConfig, BodyParser, BodyParserLimit, ClearPreviewDataOptions, DraftModeOptions, FileSizeSuffix, NextApiHandler, NextApiRequest,
     NextApiResponse, NextComponentType, NextPage, NextPageContext, PageConfig, PreviewData, PreviewDataOptions, QueryValue, ResponseLimit,

@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 146 of 2093 (7.0%)
-# members: 386 of 427 (90.4%)
-# next 38 of 42, members 179 of 191
+# exports: 151 of 2099 (7.2%)
+# members: 398 of 439 (90.7%)
+# next 39 of 43, members 180 of 192
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
 - next#AdapterOutput.APP_ROUTE
@@ -138,6 +138,7 @@
 + next#NextConfig.compress
 + next#NextConfig.crossOrigin
 + next#NextConfig.deploymentId
++ next#NextConfig.deprecated
 + next#NextConfig.devIndicators
 + next#NextConfig.distDir
 + next#NextConfig.enablePrerenderSourceMaps
@@ -206,6 +207,7 @@
 + next#PageConfig.runtime
 + next#PageConfig.unstable_JsPreload
 + next#PageConfig.unstable_runtimeJS
++ type next#ParamMatching
 + type next#PreviewData
 + type next#Redirect
 + next#Redirect.basePath
@@ -252,10 +254,26 @@
 + next/app#NextWebVitalsMetric.name
 + next/app#NextWebVitalsMetric.startTime
 + next/app#NextWebVitalsMetric.value
-# next/cache 11 of 11, members 0 of 0
+# next/cache 15 of 16, members 11 of 11
++ type next/cache#CacheEntry
++ next/cache#CacheEntry.expire
++ next/cache#CacheEntry.revalidate
++ next/cache#CacheEntry.stale
++ next/cache#CacheEntry.tags
++ next/cache#CacheEntry.timestamp
++ next/cache#CacheEntry.value
++ type next/cache#CacheHandler
++ next/cache#CacheHandler.get
++ next/cache#CacheHandler.getExpiration
++ next/cache#CacheHandler.refreshTags
++ next/cache#CacheHandler.set
++ next/cache#CacheHandler.updateTags
 + next/cache#cacheLife
+- type next/cache#CacheLifeProfiles
 + next/cache#cacheTag
 + next/cache#io
++ next/cache#navigation
++ next/cache#prefetch
 + next/cache#refresh
 + next/cache#revalidatePath
 + next/cache#revalidateTag

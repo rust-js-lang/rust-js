@@ -2,6 +2,7 @@
 //! how long what a `"use cache"` module renders is kept, and making it stale.
 
 use js::Promise;
+use react::webapi::ReadableStream;
 
 /// Keep what this `"use cache"` renders for `profile`'s time: a profile's
 /// name, `"default"`, `"seconds"`, `"minutes"`, `"hours"`, `"days"`,
@@ -119,6 +120,21 @@ pub fn io() -> Promise<()> {
     unreachable!()
 }
 
+/// Leave what follows out of the shell, as `await prefetch()`: rendered on a
+/// prefetch, `<Link prefetch>`'s, or a navigation, where `partialPrefetching`
+/// is on. It needs `cacheComponents`.
+#[cfg_attr(rust_js, rust_js::link_name = "next/cache#prefetch")]
+pub fn prefetch() -> Promise<()> {
+    unreachable!()
+}
+
+/// Leave what follows out of a runtime prefetch, as `await navigation()`:
+/// rendered on the navigation itself. It needs `cacheComponents`.
+#[cfg_attr(rust_js, rust_js::link_name = "next/cache#navigation")]
+pub fn navigation() -> Promise<()> {
+    unreachable!()
+}
+
 /// `cb`, its results kept across requests by its arguments and
 /// `key_parts`, as `unstable_cache(cb, keyParts, options)`: an async
 /// function.
@@ -153,4 +169,43 @@ pub enum Revalidate {
     Seconds(f64),
     /// `false`: kept for good.
     Never(bool),
+}
+
+/// A `"use cache"` entry, as a [`CacheHandler`] keeps it, as `CacheEntry`
+/// types it: its value's bytes, its tags, and its times.
+pub struct CacheEntry {
+    pub value: &'static ReadableStream,
+    pub tags: Vec<String>,
+    /// How long a client may keep it, in seconds.
+    pub stale: f64,
+    /// When it was made, in milliseconds since 1970.
+    pub timestamp: f64,
+    /// How long it lasts, in seconds.
+    pub expire: f64,
+    /// When it's made again, in seconds.
+    pub revalidate: f64,
+}
+
+/// A `"use cache"` handler, as `CacheHandler` types it: the object a
+/// module of `cacheHandlers`' exports by default, each method a closure.
+pub struct CacheHandler {
+    /// The entry of `cache_key`, `None` where there's none or one of
+    /// `soft_tags` made it stale.
+    pub get: Box<dyn Fn(String, Vec<String>) -> Promise<Option<&'static CacheEntry>>>,
+    /// Keep the entry of `cache_key` once it's made.
+    pub set: Box<dyn Fn(String, Promise<&'static CacheEntry>) -> Promise<()>>,
+    /// Read the tags' expirations again, as other servers changed them.
+    #[cfg_attr(rust_js, rust_js::name = "refreshTags")]
+    pub refresh_tags: Box<dyn Fn() -> Promise<()>>,
+    /// When the latest of these tags expired, in milliseconds since 1970.
+    #[cfg_attr(rust_js, rust_js::name = "getExpiration")]
+    pub get_expiration: Box<dyn Fn(Vec<String>) -> Promise<f64>>,
+    /// Expire these tags, now or after `durations`' `expire`.
+    #[cfg_attr(rust_js, rust_js::name = "updateTags")]
+    pub update_tags: Box<dyn Fn(Vec<String>, Option<&'static TagDurations>) -> Promise<()>>,
+}
+
+/// How long until updated tags expire.
+pub struct TagDurations {
+    pub expire: Option<f64>,
 }

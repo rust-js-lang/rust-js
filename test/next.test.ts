@@ -103,7 +103,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\n#[path = \"../next.config.rs\"]\nmod next_config;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod post;\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\n#[path = \"../next.config.rs\"]\nmod next_config;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   writeFileSync(join(dir, "app/robots.rs"), robots);
@@ -129,6 +129,10 @@ js::export_default!(Later);
   // dynamic, and a Server Action that sets them.
   mkdirSync(join(dir, "app/request"));
   writeFileSync(join(dir, "app/request/page.rs"), request);
+  // A dynamic segment's page of its parameter's matching, compiled, not
+  // routed: matching, prefetch() and navigation() need `cacheComponents`,
+  // which this app's routes aren't.
+  writeFileSync(join(dir, "app/post.rs"), post);
   writeFileSync(join(dir, "app/actions.rs"), actions);
   writeFileSync(join(dir, "app/cached.rs"), cached);
   // A Route Handler, and a proxy that rewrites a path to another route.
@@ -217,6 +221,39 @@ js::on_load! {
 `);
   return dir;
 }
+
+// A post's page, its slug rendered on the request where it wasn't
+// generated, as its `unstable_paramMatching` says.
+const post = `#![allow(non_snake_case, non_upper_case_globals)]
+
+use next::ParamMatchingMode;
+use react::{JSX, jsx};
+
+pub struct Params {
+    pub slug: String,
+}
+
+pub async fn Post(PostProps { params }: PostProps) -> JSX::Element {
+    let Params { slug } = params.await;
+    // What follows, out of the shell and of a runtime prefetch.
+    next::cache::prefetch().await;
+    next::cache::navigation().await;
+    jsx! { <h1>{"Post "}{slug}</h1> }
+}
+
+pub struct PostProps {
+    pub params: js::Promise<Params>,
+}
+
+// Its parameters' matching, each by its name.
+pub struct Matching {
+    pub slug: Option<ParamMatchingMode>,
+}
+
+pub static unstable_paramMatching: Matching = Matching { slug: Some(ParamMatchingMode::Blocking) };
+
+js::export_default!(Post);
+`;
 
 const request = `#![allow(non_snake_case)]
 
@@ -312,6 +349,17 @@ const instrumentation = `#![allow(non_snake_case, non_upper_case_globals)]
 
 use js::Unknown;
 use next::{ErrorRequest, Instrumentation, RequestErrorContext};
+
+// A "use cache" handler of nothing, as cacheHandlers' modules export one.
+pub fn handler() -> next::cache::CacheHandler {
+    next::cache::CacheHandler {
+        get: Box::new(|_, _| js::promise(async { None })),
+        set: Box::new(|_, _| js::promise(async {})),
+        refresh_tags: Box::new(|| js::promise(async {})),
+        get_expiration: Box::new(|_| js::promise(async { 0.0 })),
+        update_tags: Box::new(|_, _| js::promise(async {})),
+    }
+}
 
 pub fn register() {
     println!("instrumentation registered of {}", next::og::image_response::DISPLAY_NAME);
@@ -832,6 +880,11 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // Instrumentation, as Next.js reads it.
   expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("console.log(`instrumentation registered of ${ImageResponse.displayName}`);");
   expect(readFileSync(join(dir, "pages/_app.jsx"), "utf8")).toContain("return await App.origGetInitialProps(context);");
+  expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("getExpiration: async () => 0,");
+  // next/cache's prefetch and navigation, and a segment's parameters' matching.
+  const postJsx = readFileSync(join(dir, "app/post.jsx"), "utf8");
+  expect(postJsx).toContain("await prefetch();\n  await navigation();");
+  expect(postJsx).toContain('export const unstable_paramMatching = { slug: "blocking" };');
   expect(readFileSync(join(dir, "instrumentation-client.js"), "utf8")).toContain('if (navigationType === "push" && event) {');
   const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
   expect(proxyJs).toContain('export const config = { matcher: "/old" };');
