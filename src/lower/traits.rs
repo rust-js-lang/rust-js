@@ -1777,26 +1777,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `x as &dyn Trait`: `{ value, impl }`, or for a trait object, the same
-    /// value with its supertrait's dictionary. `out` gets a value computed once.
-    pub(super) fn unsize_trait(
-        &mut self,
-        source: Ty<'tcx>,
-        target: Ty<'tcx>,
-        value: Expr,
-        span: Span,
-        out: &mut Vec<js::Stmt>,
-    ) -> R<Expr> {
+    /// An unsizing JS can't make: of a pointer of the crate's own, or to a
+    /// struct whose last field is a `dyn`.
+    pub(super) fn check_unsize(&self, target: Ty<'tcx>, span: Span) -> R<()> {
         // A pointer of the crate's own, as `#[derive(CoercePointee)]` makes
         // one, would hold a `dyn`'s value and impl where it holds the value.
         if let ty::Adt(adt, _) = target.kind()
             && (adt.did().is_local() || self.krate.foreign.in_library(adt.did()))
         {
             return Err(self.unsupported(span, &format!("unsizing a `{target}`")));
-        }
-        // A `&dyn Debug` is the string it shows (ADR 0060).
-        if self.is_dyn_debug(target) && !self.is_dyn_debug(source) {
-            return self.dyn_debug_string(value, self.pointee(source), span);
         }
         // `&Fat<Bar>` to `&Fat<dyn ToBar>`: the struct's last field would
         // be a `dyn`'s value and impl, or a `dyn Debug`'s string, which it
@@ -1809,6 +1798,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if traits.principal_def_id().is_some_and(|id| self.is_rust_trait(id)) || self.is_dyn_debug(tail))
         {
             return Err(self.unsupported(span, &format!("a `{pointee}`, whose last field is a `dyn`")));
+        }
+        Ok(())
+    }
+
+    /// `x as &dyn Trait`: `{ value, impl }`, or for a trait object, the same
+    /// value with its supertrait's dictionary. `out` gets a value computed once.
+    pub(super) fn unsize_trait(
+        &mut self,
+        source: Ty<'tcx>,
+        target: Ty<'tcx>,
+        value: Expr,
+        span: Span,
+        out: &mut Vec<js::Stmt>,
+    ) -> R<Expr> {
+        self.check_unsize(target, span)?;
+        // A `&dyn Debug` is the string it shows (ADR 0060).
+        if self.is_dyn_debug(target) && !self.is_dyn_debug(source) {
+            return self.dyn_debug_string(value, self.pointee(source), span);
         }
         if self.dynamic_trait(target).is_none() {
             return Ok(value);

@@ -3,11 +3,177 @@
 
 use crate::js::{Expr, Stmt};
 use crate::lower::calls::Call;
+use crate::lower::combinators::{Comb, StepOp};
+use crate::lower::drops::Drops;
 use crate::lower::recognition::Std;
+use crate::lower::std_types::any::AnyOp;
+use crate::lower::std_types::heap::HeapOp;
+use crate::lower::std_types::lazy::LazyOp;
+use crate::lower::std_types::map::MapOp;
+use crate::lower::std_types::once::OnceOp;
 use crate::lower::{FnCx, R};
-use rustc_middle::ty::Ty;
+use rustc_ast::Mutability;
+use rustc_middle::ty::{self, Ty};
+use rustc_span::Span;
+use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A std function that takes a value with a destructor, or changes a
+    /// place that holds one, must keep or give back what it takes: these
+    /// do. Another might drop it, which JS wouldn't (ADR 0098); one of a type
+    /// parameter's only is one its callers give none of (ADR 0190). `tys`:
+    /// its arguments' types; `drained`: a chain it takes owns its items.
+    pub(in crate::lower) fn check_takes_drops(
+        &mut self,
+        known: Std,
+        def_id: DefId,
+        tys: &[Ty<'tcx>],
+        drained: bool,
+        span: Span,
+    ) -> R<()> {
+        let holds_drops = |ty: Ty<'tcx>| self.drops(ty) != Drops::Nothing;
+        let takes_drops = tys.iter().any(|&ty| match *ty.kind() {
+            ty::Ref(_, inner, Mutability::Mut) => holds_drops(inner),
+            ty::Ref(..) => false,
+            _ => holds_drops(ty),
+        });
+        // Its value moves into the `Ok`; its function, run only for a `None`,
+        // would be dropped unrun, so it mustn't hold one.
+        let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(tys[1]);
+        if takes_drops
+            && !drained
+            && !keeps_value
+            && !matches!(
+                known,
+                Std::Drop
+                    | Std::Forget
+                    | Std::Swap
+                    | Std::Replace
+                    | Std::Push
+                    | Std::Same
+                    | Std::Leak
+                    // Counts what it takes, or gives it back (ADR 0320).
+                    | Std::Rc(_)
+                    // A map keeps what it takes, and gives back what it replaces or
+                    // removes; `or_insert_with` runs its function only to insert
+                    // (ADR 0321).
+                    | Std::Map(
+                        MapOp::Insert
+                            | MapOp::Remove
+                            | MapOp::Get
+                            | MapOp::Index
+                            | MapOp::Has
+                            | MapOp::Iter(_)
+                            | MapOp::Entry
+                            | MapOp::OrInsertWith
+                            | MapOp::OrDefault
+                            | MapOp::Len
+                            | MapOp::IsEmpty
+                    )
+                    // A cell keeps it, and gives the old one back; a `Cell` of one is
+                    // refused by its type (ADR 0320).
+                    | Std::CellNew
+                    | Std::CellReplace
+                    | Std::CellTake
+                    | Std::CellReplaceWith
+                    // Moves its value into the function, which owns it then, and
+                    // drops the other variant's, or passes it on (ADR 0179).
+                    | Std::OptionMap
+                    | Std::Comb(
+                        Comb::ResultMap
+                            | Comb::Filter
+                            | Comb::MapOr
+                            | Comb::MapOrElse
+                            | Comb::AndThen
+                            | Comb::UnwrapOrElse
+                            | Comb::IsSomeAnd
+                            | Comb::IsNoneOr
+                            | Comb::MapErr
+                            | Comb::ResultMapOr
+                            | Comb::ResultMapOrElse
+                            | Comb::ResultAndThen
+                            | Comb::ResultUnwrapOrElse
+                            | Comb::IsOkAnd
+                            | Comb::IsErrAnd
+                            | Comb::Err
+                    )
+                    | Std::ResultOk
+                    | Std::VecMacro
+                    | Std::Unwrap
+                    | Std::UnwrapErr
+                    | Std::UnwrapUnchecked
+                    | Std::UnwrapOk
+                    | Std::Method("pop")
+                    | Std::Index
+                    | Std::Len
+                    | Std::IsEmpty
+                    // What a guard guards, through its `&mut` (ADR 0328).
+                    | Std::GuardValue { .. }
+                    // A heap's top, through its `PeekMut`, and the top it pops (ADR 0333).
+                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)
+            )
+        {
+            // Of a type parameter's only, a generic iterator's chrono folds:
+            // one its callers give none of (ADR 0190).
+            let held: Vec<Ty<'tcx>> = tys
+                .iter()
+                .filter_map(|&ty| match *ty.kind() {
+                    ty::Ref(_, inner, Mutability::Mut) => Some(inner),
+                    ty::Ref(..) => None,
+                    _ => Some(ty),
+                })
+                .filter(|&ty| self.drops(ty) != Drops::Nothing)
+                .collect();
+            if !held
+                .iter()
+                .all(|&ty| self.drop_query().drops_but_params(ty) == Drops::Nothing)
+            {
+                let path = self.tcx.def_path_str(def_id);
+                return Err(self.unsupported(span, &format!("`{path}` of a value with a destructor")));
+            }
+            for ty in held {
+                self.require_no_drops(ty);
+            }
+        }
+        Ok(())
+    }
+
+    /// Whether `known` gives an `Option` whose `Some` is boxed where it looks
+    /// like `None` (ADR 0051), and isn't one of those that make one boxed.
+    pub(in crate::lower) fn refuses_boxed_option(&self, known: Std, output: Ty<'tcx>) -> bool {
+        self.option_of(output).is_some_and(|inner| self.boxed_payload(inner))
+            && !matches!(
+                known,
+                Std::Same
+            | Std::OptionMap
+            | Std::Method("pop")
+            | Std::First
+            | Std::SliceLast
+            | Std::SliceGet
+            | Std::OptionCloned
+            | Std::Comb(Comb::Then | Comb::ThenSome)
+            // An `Option` of the same type, or the closure's own.
+            | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)
+            | Std::Last
+            // `as_ref()`: the same value, box and all.
+            | Std::Pointee
+            | Std::ResultOk
+            // A downcast's `Some`, boxed as it's made (ADR 0331).
+            | Std::Any(AnyOp::DowncastRef | AnyOp::DowncastMut)
+            | Std::ArrayMethod("find")
+            | Std::Extreme(_)
+            | Std::Step(StepOp::Next | StepOp::NextBack | StepOp::Peek)
+            // The old value, as it's kept: boxed already.
+            | Std::OptionTake
+            // A `OnceCell`'s, kept as `$some` makes it, and a `LazyCell`'s.
+            | Std::Once(OnceOp::Get | OnceOp::Take)
+            | Std::Lazy(LazyOp::Get)
+            | Std::OptionReplace
+            // The inner `Option`, box and all.
+            | Std::OptionFlatten
+            )
+    }
+
     /// A std function rust-js knows, of its arguments' values: what THIR
     /// and MIR both lower its call to (ADR 0364). `boxed`: whether the
     /// `Option` it gives boxes its `Some` (ADR 0051); `output`, what it gives.

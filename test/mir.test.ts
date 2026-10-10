@@ -1,6 +1,7 @@
 // Bodies lowered from their MIR (ADR 0364), while the proof of concept
 // runs: each corpus case `mir-corpus.txt` lists, compiled with
-// `RUST_JS_MIR=1`, does what native Rust does. The list only grows: a case
+// `RUST_JS_MIR=1`, does what native Rust does, or one `compile-fail` says
+// rust-js refuses is refused, its first error the same. The list only grows: a case
 // that passes is added, and one listed that fails is a regression.
 //
 //   bun scripts/mirCorpus.ts   the corpus under MIR, and what's not yet lowered
@@ -22,6 +23,14 @@ for (const name of listed) {
     const dir = fixture(`mir-${name.replace(/\.rs$/, "")}`);
     const source = readFileSync(file, "utf8");
     const edition = /^\/\/@ edition: (\d+)$/m.exec(source)?.[1] ?? "2024";
+    const refused = /^\/\/@ compile-fail: (.+)$/m.exec(source)?.[1];
+    if (refused !== undefined) {
+      const compiled = compileJs(file, dir, edition, false, { RUST_JS_MIR: "1" });
+      if (!("error" in compiled)) throw new Error("compiled, but `compile-fail` says it can't be");
+      if (compiled.kind === "crashed") throw new Error(compiled.error);
+      expect(compiled.error.split("\n").find((line) => line.startsWith("error")) ?? "").toContain(refused);
+      return;
+    }
     const native = runNative(file, dir, edition);
     if (typeof native === "string") throw new Error(native);
     const compiled = compileJs(file, dir, edition, false, { RUST_JS_MIR: "1" });

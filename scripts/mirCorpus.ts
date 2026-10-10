@@ -1,5 +1,5 @@
 // The corpus with bodies lowered from their MIR (ADR 0364): how many cases
-// run as native Rust does, which pass that `test/mir-corpus.txt` doesn't
+// run as native Rust does, or are refused as `compile-fail` says, which pass that `test/mir-corpus.txt` doesn't
 // list yet, and what MIR lowering doesn't support yet, most often first.
 //
 //   bun scripts/mirCorpus.ts           report
@@ -20,7 +20,7 @@ const log = run.stdout.toString() + run.stderr.toString();
 const failed = new Set([...log.matchAll(/\(fail\) ([a-z0-9_]+\.rs)/g)].map((m) => m[1]));
 const running = readdirSync(corpus)
   .filter((f) => f.endsWith(".rs"))
-  .filter((f) => !/^\/\/@ (compile-fail|ignore-rust-js)/m.test(readFileSync(join(corpus, f), "utf8")));
+  .filter((f) => !/^\/\/@ ignore-rust-js/m.test(readFileSync(join(corpus, f), "utf8")));
 const passing = running.filter((f) => !failed.has(f)).sort();
 // A case passes only if it ran: a compiler that doesn't build runs none.
 const passes = Number(/^ (\d+) pass$/m.exec(log)?.[1] ?? 0);
@@ -32,7 +32,7 @@ const listFile = join(root, "test/mir-corpus.txt");
 const listed = new Set(readFileSync(listFile, "utf8").split("\n").filter(Boolean));
 const fresh = passing.filter((f) => !listed.has(f));
 const lost = [...listed].filter((f) => !passing.includes(f));
-console.log(`${passing.length} of ${running.length} running cases pass from their MIR`);
+console.log(`${passing.length} of ${running.length} cases pass from their MIR`);
 if (fresh.length) console.log(`new: ${fresh.join(" ")}`);
 if (lost.length) console.log(`REGRESSED: ${lost.join(" ")}`);
 const reasons = new Map<string, number>();

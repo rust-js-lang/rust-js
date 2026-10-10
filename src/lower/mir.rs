@@ -1223,6 +1223,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(Expr::member(base, variant_field(self.tcx, adt.variant(variant), i)))
             }
+            (ty::Adt(adt, _), _) if adt.is_union() => Err(self.unsupported(span, "unions")),
             (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
@@ -1268,6 +1269,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // of it, as THIR's `copy_if_needed` makes. A temporary's is its own.
         let copied = matches!(operand, Operand::Copy(place)
             if !state.pending.iter().any(|(l, _)| *l == place.local));
+        // A copy of a closure that changes what it captured would share it,
+        // as a copy of a JS function does (ADR 0246).
+        if let Operand::Copy(place) = operand
+            && state.locals.reads[place.local] > 1
+            && self.copies_own_captures(operand.ty(&state.body.local_decls, self.tcx))
+        {
+            let span = state.body.local_decls[place.local].source_info.span;
+            return Err(self.unsupported(span, "copying a closure that changes what it captured"));
+        }
         match self.mir_operand_read(state, operand, out)? {
             Value::Expr(e) if copied => {
                 let ty = operand.ty(&state.body.local_decls, self.tcx);
@@ -1553,6 +1563,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Ok(Value::Expr(self.unsize_trait(from, *to, value, span, out)?));
                     }
                     PointerCoercion::Unsize | PointerCoercion::MutToConstPointer | PointerCoercion::ArrayToPointer => {
+                        if *coercion == PointerCoercion::Unsize {
+                            self.check_unsize(*to, span)?;
+                        }
                         return self.mir_operand(state, operand, out);
                     }
                     // A function, or a closure that captures nothing, as a `fn`:
@@ -2204,6 +2217,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let first_ty = || generic_args.types().next();
         let tcx = self.tcx;
+        // One whose `Some` is boxed where it looks like `None` (ADR 0051).
+        if self.refuses_boxed_option(known, output) {
+            return Err(self.unsupported(span, "this call, for an `Option` of what could look like `None`"));
+        }
+        // A value with a destructor taken, refused as THIR refuses it; a chain
+        // that owns its items is `mir_iter_call`'s, so none here does.
+        self.check_takes_drops(known, def_id, arg_tys, false, span)?;
         // `v[i]` through `index_mut`, of a value JS can't change in place: the
         // element's place, checked as `$index` checks it (ADR 0099).
         if known == Std::Index

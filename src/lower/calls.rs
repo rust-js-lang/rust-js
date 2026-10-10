@@ -1,25 +1,17 @@
 //! Calls to local functions, JavaScript bindings, closures and standard operations.
 
 use super::bindings::{JsForm, is_binding, is_method, is_omitted, is_variadic, js_form, nullable_params};
-use super::combinators::Comb;
-use super::combinators::StepOp;
 use super::display::append_written;
-use super::drops::Drops;
 use super::fn_def;
 use super::recognition::{
     Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
-use super::std_types::any::AnyOp;
-use super::std_types::heap::HeapOp;
-use super::std_types::lazy::LazyOp;
-use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
-use super::std_types::once::OnceOp;
 use super::{Dest, FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::runtime::Helper;
-use rustc_ast::{LitKind, Mutability};
+use rustc_ast::LitKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::find_attr;
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -654,110 +646,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.mark_owned_drain(receiver);
         }
         let drained = args.first().is_some_and(|&a| self.is_drained(a));
-        let holds_drops = |ty: Ty<'tcx>| self.drops(ty) != Drops::Nothing;
-        let takes_drops = args.iter().any(|&a| match *self.thir[a].ty.kind() {
-            ty::Ref(_, inner, Mutability::Mut) => holds_drops(inner),
-            ty::Ref(..) => false,
-            _ => holds_drops(self.thir[a].ty),
-        });
-        // Its value moves into the `Ok`; its function, run only for a `None`,
-        // would be dropped unrun, so it mustn't hold one.
-        let keeps_value = known == Std::Comb(Comb::OkOrElse) && !holds_drops(self.thir[args[1]].ty);
-        if takes_drops
-            && !drained
-            && !keeps_value
-            && !matches!(
-                known,
-                Std::Drop
-                    | Std::Forget
-                    | Std::Swap
-                    | Std::Replace
-                    | Std::Push
-                    | Std::Same
-                    | Std::Leak
-                    // Counts what it takes, or gives it back (ADR 0320).
-                    | Std::Rc(_)
-                    // A map keeps what it takes, and gives back what it replaces or
-                    // removes; `or_insert_with` runs its function only to insert
-                    // (ADR 0321).
-                    | Std::Map(
-                        MapOp::Insert
-                            | MapOp::Remove
-                            | MapOp::Get
-                            | MapOp::Index
-                            | MapOp::Has
-                            | MapOp::Iter(_)
-                            | MapOp::Entry
-                            | MapOp::OrInsertWith
-                            | MapOp::OrDefault
-                            | MapOp::Len
-                            | MapOp::IsEmpty
-                    )
-                    // A cell keeps it, and gives the old one back; a `Cell` of one is
-                    // refused by its type (ADR 0320).
-                    | Std::CellNew
-                    | Std::CellReplace
-                    | Std::CellTake
-                    | Std::CellReplaceWith
-                    // Moves its value into the function, which owns it then, and
-                    // drops the other variant's, or passes it on (ADR 0179).
-                    | Std::OptionMap
-                    | Std::Comb(
-                        Comb::ResultMap
-                            | Comb::Filter
-                            | Comb::MapOr
-                            | Comb::MapOrElse
-                            | Comb::AndThen
-                            | Comb::UnwrapOrElse
-                            | Comb::IsSomeAnd
-                            | Comb::IsNoneOr
-                            | Comb::MapErr
-                            | Comb::ResultMapOr
-                            | Comb::ResultMapOrElse
-                            | Comb::ResultAndThen
-                            | Comb::ResultUnwrapOrElse
-                            | Comb::IsOkAnd
-                            | Comb::IsErrAnd
-                            | Comb::Err
-                    )
-                    | Std::ResultOk
-                    | Std::VecMacro
-                    | Std::Unwrap
-                    | Std::UnwrapErr
-                    | Std::UnwrapUnchecked
-                    | Std::UnwrapOk
-                    | Std::Method("pop")
-                    | Std::Index
-                    | Std::Len
-                    | Std::IsEmpty
-                    // What a guard guards, through its `&mut` (ADR 0328).
-                    | Std::GuardValue { .. }
-                    // A heap's top, through its `PeekMut`, and the top it pops (ADR 0333).
-                    | Std::Heap(HeapOp::PeekTop { .. } | HeapOp::PeekPop)
-            )
-        {
-            // Of a type parameter's only, a generic iterator's chrono folds:
-            // one its callers give none of (ADR 0190).
-            let held: Vec<Ty<'tcx>> = args
-                .iter()
-                .filter_map(|&a| match *self.thir[a].ty.kind() {
-                    ty::Ref(_, inner, Mutability::Mut) => Some(inner),
-                    ty::Ref(..) => None,
-                    _ => Some(self.thir[a].ty),
-                })
-                .filter(|&ty| self.drops(ty) != Drops::Nothing)
-                .collect();
-            if !held
-                .iter()
-                .all(|&ty| self.drop_query().drops_but_params(ty) == Drops::Nothing)
-            {
-                let path = self.tcx.def_path_str(def_id);
-                return Err(self.unsupported(span, &format!("`{path}` of a value with a destructor")));
-            }
-            for ty in held {
-                self.require_no_drops(ty);
-            }
-        }
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
+        self.check_takes_drops(known, def_id, &tys, drained, span)?;
         // A std function that makes an `Option` of a generic `T` must box it
         // (ADR 0051); these do, and others aren't supported.
         // Normalized, so an iterator's `Self::Item` is the item's type.
@@ -787,41 +677,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("a `{cell}` from `{path}` used as a value")));
             }
         }
-        // One whose `Some` is boxed where it looks like `None` (ADR 0051): only
-        // these make one.
+        // One whose `Some` is boxed where it looks like `None` (ADR 0051).
         let boxed = self.option_of(output).is_some_and(|inner| self.boxed_payload(inner));
-        if boxed
-            && !matches!(
-                known,
-                Std::Same
-                    | Std::OptionMap
-                    | Std::Method("pop")
-                    | Std::First
-                    | Std::SliceLast
-                    | Std::SliceGet
-                    | Std::OptionCloned
-                    | Std::Comb(Comb::Then | Comb::ThenSome)
-                    // An `Option` of the same type, or the closure's own.
-                    | Std::Comb(Comb::Filter | Comb::Or | Comb::OrElse | Comb::AndThen)
-                    | Std::Last
-                    // `as_ref()`: the same value, box and all.
-                    | Std::Pointee
-                    | Std::ResultOk
-                    // A downcast's `Some`, boxed as it's made (ADR 0331).
-                    | Std::Any(AnyOp::DowncastRef | AnyOp::DowncastMut)
-                    | Std::ArrayMethod("find")
-                    | Std::Extreme(_)
-                    | Std::Step(StepOp::Next | StepOp::NextBack | StepOp::Peek)
-                    // The old value, as it's kept: boxed already.
-                    | Std::OptionTake
-                    // A `OnceCell`'s, kept as `$some` makes it, and a `LazyCell`'s.
-                    | Std::Once(OnceOp::Get | OnceOp::Take)
-                    | Std::Lazy(LazyOp::Get)
-                    | Std::OptionReplace
-                    // The inner `Option`, box and all.
-                    | Std::OptionFlatten
-            )
-        {
+        if self.refuses_boxed_option(known, output) {
             return Err(self.unsupported(span, "this call, for an `Option` of what could look like `None`"));
         }
         if let Std::Map(op) = known {
