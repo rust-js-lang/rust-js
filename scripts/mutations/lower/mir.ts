@@ -234,4 +234,20 @@ export const mutations: Mutation[] = [
     replace: "            let _ = (callee, exprs);\n            return Err(self.unsupported(span, \"a call\"));\n        };\n",
     tests: ["test/mir.test.ts","-t","static_fns"],
   },
+  {
+    name: "mir-ctor-call-unapplied",
+    breaks: "a constructor called from MIR is its arrow, not what it makes",
+    file: "src/lower/mir.rs",
+    find: "            return Ok(Value::Expr(super::calls::apply(made, exprs)));\n",
+    replace: "            let _ = exprs;\n            return Ok(Value::Expr(made));\n",
+    tests: ["test/mir.test.ts","-t","function_values"],
+  },
+  {
+    name: "mir-rc-call-refused",
+    breaks: "an `Rc`'s function from MIR is refused",
+    file: "src/lower/mir.rs",
+    find: "                self.rc_values(op, (exprs, arg_tys), span, out)?\n",
+    replace: "                return Err(self.unsupported(span, \"an Rc's\"));\n",
+    tests: ["test/mir.test.ts","-t","as_deref_counted"],
+  },
 ];

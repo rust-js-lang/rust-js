@@ -1,5 +1,6 @@
 array_repeat.rs
 as_deref.rs
+as_deref_counted.rs
 assert_failure.rs
 assignment_order_compound.rs
 associated_consts.rs
@@ -51,6 +52,7 @@ fn_items_as_values.rs
 folded_call_panic_drops.rs
 format_args_order.rs
 formatter_asked.rs
+function_values.rs
 generic_associated_types.rs
 generic_borrow.rs
 generic_fmt_traits.rs
@@ -101,6 +103,7 @@ refcell_borrow_while_mut.rs
 refcell_clone_while_mut.rs
 refcell_double_borrow.rs
 refcell_eq_while_mut.rs
+refcell_held_while_asked.rs
 refcell_replace_while_borrowed.rs
 refcell_swap_itself.rs
 refcell_unwind_releases.rs

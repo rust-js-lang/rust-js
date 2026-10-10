@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "rc-make-mut-unassigned",
     breaks: "`make_mut`'s new `Rc` isn't its place's",
     file: "src/lower/std_types/rc.rs",
-    find: "                out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));\n",
-    replace: "                out.push(StmtKind::Expr(made).at(self.js_span(span)));\n",
+    find: "            out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));\n",
+    replace: "            out.push(StmtKind::Expr(made).at(self.js_span(span)));\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "make-mut-drop-unknown",
     breaks: "`make_mut` that drops the last `Rc` leaves what it points at undropped",
     file: "src/lower/std_types/rc.rs",
-    find: "                let mut given = vec![place.clone(), self.clone_arg(item, span)?];\n                given.extend(self.drop_function(item, span)?);\n",
-    replace: "                let given = vec![place.clone(), self.clone_arg(item, span)?];\n",
+    find: "            let mut given = vec![place.clone(), self.clone_arg(item, span)?];\n            given.extend(self.drop_function(item, span)?);\n",
+    replace: "            let given = vec![place.clone(), self.clone_arg(item, span)?];\n",
     tests: ["test/corpus.test.ts", "-t", "rc_clone_sees_owners"],
   },
   {

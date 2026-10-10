@@ -34,6 +34,7 @@ use super::recognition::{Std, StdItem};
 use super::representation::{const_js, variant_field};
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
+use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
 use super::std_types::text::TextOp;
 use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
@@ -1827,6 +1828,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let arg_tys = arg_tys.to_vec();
         let tcx = self.tcx;
+        // A constructor called, `f(Shape::Rect)`'s: the arrow making what it
+        // makes (ADR 0125), applied.
+        if matches!(tcx.def_kind(def_id), DefKind::Ctor(_, rustc_hir::def::CtorKind::Fn)) {
+            let made = self.constructor_value(def_id, generic_args, span)?;
+            let exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            return Ok(Value::Expr(super::calls::apply(made, exprs)));
+        }
         // An `Ok` `fmt::Result` is nothing in JS (ADR 0054): its `unwrap()` is
         // `()`, after what made it ran (ADR 0148), `is_ok()` `true`.
         if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))
@@ -2276,6 +2287,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.extend(end);
                     self.view_call(if checked { "$viewGet" } else { "$view" }, list)
                 }
+            }
+            // An `Rc`'s or a `Weak`'s, but `make_mut`, which writes its place.
+            Std::Rc(op) if op != RcOp::MakeMut => {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.rc_values(op, (exprs, arg_tys), span, out)?
             }
             // A string's or a slice's method, but one of a range or a part of
             // it, which THIR lowers from its place.

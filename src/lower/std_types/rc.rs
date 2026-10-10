@@ -53,10 +53,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// One of `RcOp`'s, of a counted `Rc` or a `Weak`.
     pub(in crate::lower) fn rc_call(&mut self, op: RcOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let pointee = args.first().and_then(|&first| {
-            let first = self.thir[first].ty.peel_refs();
+        let first = args.first().map(|&first| self.thir[first].ty);
+        // `make_mut` changes which `Rc` its place holds: the place is
+        // given the one `$makeMut` gives.
+        if op == RcOp::MakeMut {
+            let item = first
+                .and_then(|first| self.counted_rc(first.peel_refs()))
+                .expect("a counted `Rc`");
+            self.counted_here(item, span)?;
+            self.runtime.insert(Helper::Rc);
+            let Some((place, _)) = self.ref_place(args[0]) else {
+                return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
+            };
+            let mut given = vec![place.clone(), self.clone_arg(item, span)?];
+            given.extend(self.drop_function(item, span)?);
+            let made = Expr::call(Expr::var("$makeMut"), given);
+            out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));
+            return Ok(self.through_rc(place, item));
+        }
+        let values = self.operands(args, out)?;
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
+        self.rc_values(op, (values, &tys), span, out)
+    }
+
+    /// An `Rc`'s or a `Weak`'s function, of its arguments' values, `tys`
+    /// their types: what THIR and MIR both lower it to (ADR 0364).
+    pub(in crate::lower) fn rc_values(
+        &mut self,
+        op: RcOp,
+        (values, tys): (Vec<Expr>, &[Ty<'tcx>]),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let pointee = tys.first().and_then(|first| {
+            let first = first.peel_refs();
             self.counted_rc(first).or(self.weak_of(first))
         });
+        let mut values = values.into_iter();
         if let Some(pointee) = pointee {
             self.counted_here(pointee, span)?;
         }
@@ -68,31 +101,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Prop::Field("weak".into(), Expr::int(0)),
             ]),
             RcOp::NewCyclic => {
-                let f = self.expr(args[0], out)?;
+                let f = values.next().expect("a function");
                 helper("$newCyclic", vec![f])
             }
-            // `make_mut` changes which `Rc` its place holds: the place is
-            // given the one `$makeMut` gives.
-            RcOp::MakeMut => {
-                let item = pointee.expect("a counted `Rc`");
-                let Some((place, _)) = self.ref_place(args[0]) else {
-                    return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
-                };
-                let mut given = vec![place.clone(), self.clone_arg(item, span)?];
-                given.extend(self.drop_function(item, span)?);
-                let made = helper("$makeMut", given);
-                out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));
-                self.through_rc(place, item)
-            }
+            RcOp::MakeMut => return Err(self.unsupported(span, "`Rc::make_mut`, of its value alone")),
             _ => {
-                let rc = self.expr(args[0], out)?;
+                let rc = values.next().expect("an `Rc`");
                 let item = pointee.expect("a counted `Rc` or a `Weak`");
                 match op {
                     RcOp::StrongCount | RcOp::WeakStrongCount => Expr::member(rc, "strong"),
                     RcOp::WeakCount => Expr::member(rc, "weak"),
                     RcOp::WeakWeakCount => helper("$weakCount", vec![rc]),
                     RcOp::PtrEq => {
-                        let other = self.expr(args[1], out)?;
+                        let other = values.next().expect("another");
                         Expr::bin(Op::Eq, rc, other)
                     }
                     RcOp::Downgrade => helper("$downgrade", vec![rc]),
