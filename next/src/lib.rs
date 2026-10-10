@@ -26,6 +26,7 @@ mod data_fetching;
 pub mod document;
 pub mod dynamic;
 pub mod error;
+pub mod font;
 pub mod form;
 pub mod head;
 pub mod headers;

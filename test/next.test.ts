@@ -103,8 +103,11 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod post;\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\n#[path = \"../next.config.rs\"]\nmod next_config;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
-    .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod post;\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\n#[path = \"../next.config.rs\"]\nmod next_config;\nmod counter;\nmod fonts;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />\n                    <fonts::Fonted />'));
+  // Fonts, Google's, which the example's layout loads too, and a file's.
+  writeFileSync(join(dir, "app/fonts.rs"), fonts);
+  writeFileSync(join(dir, "app/mono.woff2"), "a font's bytes, as Next.js copies them");
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   writeFileSync(join(dir, "app/robots.rs"), robots);
   writeFileSync(join(dir, "app/sitemap.rs"), sitemap);
@@ -253,6 +256,48 @@ pub struct Matching {
 pub static unstable_paramMatching: Matching = Matching { slug: Some(ParamMatchingMode::Blocking) };
 
 js::export_default!(Post);
+`;
+
+// next/font: a variable Google Font of a CSS variable, a static one of
+// its weight, and a local file, each at the module's top, as Next.js's
+// compiler reads them.
+const fonts = `#![allow(non_snake_case, non_upper_case_globals)]
+
+use next::OneOrMany;
+use next::font::NextFont;
+use next::font::google::{Abel, FontWeight, Inter, StaticFont, Subset, VariableFont};
+use next::font::local::{AdjustFontFallback, LocalFont, LocalFontSrc, localFont};
+use react::{JSX, jsx};
+
+thread_local! {
+    static inter: NextFont = Inter(VariableFont { subsets: Some(&[Subset::Latin]), variable: Some("--font-inter"), ..Default::default() });
+    static abel: NextFont = Abel(StaticFont {
+        weight: OneOrMany::One(FontWeight::W400),
+        style: None,
+        display: None,
+        variable: None,
+        preload: None,
+        fallback: None,
+        adjust_font_fallback: None,
+        subsets: Some(&[Subset::Latin]),
+    });
+    static mono: NextFont = localFont(LocalFont {
+        src: LocalFontSrc::Path("./mono.woff2"),
+        display: None,
+        weight: None,
+        style: None,
+        adjust_font_fallback: Some(AdjustFontFallback::Bool(false)),
+        fallback: None,
+        preload: None,
+        variable: None,
+        declarations: None,
+    });
+}
+
+pub fn Fonted() -> JSX::Element {
+    let classes = [inter.with(|f| f.class_name.clone()), mono.with(|f| f.class_name.clone())].join(" ");
+    jsx! { <p className={classes} style={abel.with(|f| react::CSSProperties::new().font_family(f.style.font_family.clone()))}>{"Fonted"}</p> }
+}
 `;
 
 const request = `#![allow(non_snake_case)]
@@ -825,6 +870,15 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // Its JS modules, next.config.js among them, are ES modules to Node too,
   // of the package's `"type": "module"`: not guessed at.
   expect(output).not.toContain("MODULE_TYPELESS_PACKAGE_JSON");
+  // next/font's loaders, as Next.js's compiler reads them, and their classes.
+  const fontsJsx = readFileSync(join(dir, "app/fonts.jsx"), "utf8");
+  for (const written of ['import { Abel, Inter } from "next/font/google";', 'import localFont from "next/font/local";',
+    'const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });', 'const abel = Abel({ weight: "400", subsets: ["latin"] });',
+    'const mono = localFont({ src: "./mono.woff2", adjustFontFallback: false });']) {
+    expect(fontsJsx).toContain(written);
+  }
+  const indexHtml = readFileSync(join(dir, ".next/server/app/index.html"), "utf8");
+  expect(indexHtml).toMatch(/<p class="[\w-]+ [\w-]+" style="font-family:[^"]*Abel[^"]*">Fonted<\/p>/);
   // The config's experiments, as Next.js lists them.
   expect(output).toMatch(/Experiments[^\n]*\n(?:.*\n)*?.*✓ scrollRestoration/);
   // What Cargo writes isn't the app's, which Turbopack watches: node_modules'.
