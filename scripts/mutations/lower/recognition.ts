@@ -867,4 +867,20 @@ export const mutations: Mutation[] = [
     replace: "    false",
     tests: ["test/corpus.test.ts", "-t", "thread_local_borrow_inside"],
   },
+  {
+    name: "box-pin-unknown",
+    breaks: "`Box::pin` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"pin\" | \"into_pin\" if owner.is_box() => Std::Same,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+  },
+  {
+    name: "pin-deref-same",
+    breaks: "`*pin` of a pinned `&mut` to a number is its box",
+    file: "src/lower/recognition.rs",
+    find: "            if self.pinned(ty).is_some() {\n",
+    replace: "            if false {\n",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+  },
 ];

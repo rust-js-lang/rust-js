@@ -115,15 +115,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","pretty_debug"],
   },
   {
-    name: "plain-call-given-false",
-    breaks: "a plain call of a `Debug` that takes nothing after it is given `false`: right, but not the JS a person writes",
-    file: "src/lower/display.rs",
-    find: "        (self.writers_take_options() && !matches!(pretty, Pretty::Plain)).then(|| pretty.options())",
-    replace: "        self.writers_take_options().then(|| pretty.options())",
-    tests: ["test/corpus.test.ts","-t","pretty_debug"],
-    snapshots: true,
-  },
-  {
     name: "debug-leaf-ignores-options",
     breaks: "a part of a `{:?}` ignores the options it's given, so `{:5?}` of `Some(1)` pads nothing",
     file: "src/lower/display.rs",

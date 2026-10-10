@@ -14,6 +14,7 @@ use super::std_types::map::{MapOp, Part};
 use super::std_types::number::{DurationOp, NumOp};
 use super::std_types::once::OnceOp;
 use super::std_types::option::OptionPlaceOp;
+use super::std_types::pin::PinOp;
 use super::std_types::range::{RangeKind, RangeOp};
 use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
@@ -130,6 +131,8 @@ pub(super) enum Std {
     },
     /// A lock's `into_inner()` and `get_mut()`: `Ok` of its `value`.
     Lock,
+    /// A `Pin`'s functions, each its pointer's (ADR 0329).
+    Pin(PinOp),
     /// An atomic's operations (ADR 0096), on its `{ value }` as a `Cell`'s:
     /// `load` and `into_inner`, `store`, `swap`, the `fetch_` ones, with
     /// the operator or whether it's `fetch_max`, and `compare_exchange`.
@@ -426,6 +429,7 @@ impl Std {
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
                 | Std::CellGetMut
                 | Std::GuardValue { mutable: true }
+                | Std::Pin(PinOp::Mut | PinOp::Map)
                 | Std::Text(TextOp::EncodeUtf8)
                 | Std::OptionPlace(
                     OptionPlaceOp::GetOrInsert
@@ -716,6 +720,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || self.is_js_object(ty)
                 || self.is_rc(ty)
                 || self.is_vec_like(ty);
+            // What a `Pin`'s pointer points at (ADR 0329).
+            if self.pinned(ty).is_some() {
+                return Some(Some(Std::Pin(match diagnostic("deref_mut_method") {
+                    true => PinOp::Mut,
+                    false => PinOp::Ref,
+                })));
+            }
             // What a guard guards, its cell's `value` (ADR 0328).
             if self.is_guard(ty) {
                 return Some(Some(Std::GuardValue {
@@ -1366,6 +1377,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // Kept for good, a `&'static` of it: in JS, which frees nothing
             // itself, the value itself.
             "leak" if adt("Vec") || string || owner.is_box() => Std::Same,
+            // A `Pin` is its pointer (ADR 0329).
+            "pin" | "into_pin" if owner.is_box() => Std::Same,
+            "new" | "new_unchecked" | "into_inner" | "into_inner_unchecked" | "get_ref" | "static_ref"
+                if self.pinned(owner).is_some() =>
+            {
+                Std::Same
+            }
+            "as_mut" | "get_mut" | "get_unchecked_mut" | "static_mut" if self.pinned(owner).is_some() => {
+                Std::Pin(PinOp::Mut)
+            }
+            "as_ref" | "into_ref" if self.pinned(owner).is_some() => Std::Pin(PinOp::Ref),
+            "set" if self.pinned(owner).is_some() => Std::Pin(PinOp::Set),
+            "map_unchecked" | "map_unchecked_mut" if self.pinned(owner).is_some() => Std::Pin(PinOp::Map),
             "new" if adt("Cell") || adt("RefCell") || adt("Atomic") || adt("Mutex") || adt("RwLock") => Std::CellNew,
             // On one thread a lock is never contested by another: always `Ok`
             // (ADR 0025), but locked again while held, a deadlock (ADR 0328).
@@ -2591,8 +2615,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .unwrap_or(ty)
     }
 
+    /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
+    pub(super) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
+        match ty.kind() {
+            ty::Adt(adt, args) if self.tcx.is_lang_item(adt.did(), LangItem::Pin) => args.types().next(),
+            _ => None,
+        }
+    }
+
     pub(super) fn is_std_wrapper(&self, ty: Ty<'tcx>) -> bool {
         ty.is_box()
+            || self.pinned(ty).is_some()
             || self.is_lang_adt(ty, LangItem::String)
             || self.is_rc(ty)
             || self.is_guard(ty)
@@ -2618,7 +2651,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let pointee = |mut ty: Ty<'tcx>| loop {
             ty = match ty.kind() {
                 ty::Ref(_, inner, _) => *inner,
-                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => args.type_at(0),
+                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.pinned(ty).is_some() => args.type_at(0),
                 _ => break ty,
             };
         };

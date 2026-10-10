@@ -299,22 +299,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "the test && the child"],
   },
   {
-    name: "option-object-not-narrowed",
-    breaks: "`variant.icon.map(|Icon| ..)` is `variant.Icon != null && ..`, not `variant.Icon && ..`",
-    file: "src/lower/jsx.rs",
-    find: "if matches!(null.kind, js::ExprKind::Null) && self.maps_js_object(child) =>",
-    replace: "if matches!(null.kind, js::ExprKind::Null) && false =>",
-    tests: ["test/jsx.test.ts", "-t", "ElementType, rendered as a tag"],
-  },
-  {
-    name: "option-any-narrowed",
-    breaks: "`count.map(..)` of an `Option<u32>` is `count && ..`, which renders 0 as text",
-    file: "src/lower/jsx.rs",
-    find: "if matches!(null.kind, js::ExprKind::Null) && self.maps_js_object(child) =>",
-    replace: "if matches!(null.kind, js::ExprKind::Null) =>",
-    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
-  },
-  {
     name: "children-tuple-not-recursed",
     breaks: "only a first child, of the tuple of tuples `jsx!` makes, is `test && ..`: the next keep `? .. : undefined`",
     file: "src/lower/jsx.rs",

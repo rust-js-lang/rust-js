@@ -144,7 +144,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Drop => {
                 let ty = self.thir[args[0]].ty;
                 let value = arg();
-                // Nothing to drop, a guard say: only what computing it does.
+                // Nothing to drop, a `Vec` of numbers say: only what computing it does.
                 if !self.has_drops(ty) {
                     if value.has_effects() {
                         out.push(StmtKind::Expr(value).at(js_span));

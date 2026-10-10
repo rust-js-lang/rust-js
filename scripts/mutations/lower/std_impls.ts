@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "eq-without-cells",
     breaks: "`o == Some(&mut 7)` of an `Option<&mut i32>` compares the cells, not what they point at",
     file: "src/lower/std_impls.rs",
-    find: "        let (a, _) = self.through_refs(a, ty);\n        let (b, ty) = self.through_refs(b, ty);\n",
-    replace: "        let ty = ty.peel_refs();\n",
+    find: "        let (mut a, _) = self.through_refs(a, ty);\n        let (mut b, mut ty) = self.through_refs(b, ty);\n",
+    replace: "        let (mut a, mut b, mut ty) = (a, b, ty.peel_refs());\n",
     tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
@@ -249,5 +249,21 @@ export const mutations: Mutation[] = [
     find: "                let cell = match std(StdItem::RefCell) {\n                    true => {\n                        self.runtime.insert(Helper::Borrow);\n                        Expr::call(Expr::var(\"$borrow\"), vec![place])",
     replace: "                let cell = match false {\n                    true => {\n                        self.runtime.insert(Helper::Borrow);\n                        Expr::call(Expr::var(\"$borrow\"), vec![place])",
     tests: ["test/corpus.test.ts", "-t", "refcell_clone_while_mut"],
+  },
+  {
+    name: "eq-of-box-as-constant",
+    breaks: "`==` of `Box`es of a unit struct with its own `eq` skips it",
+    file: "src/lower/std_impls.rs",
+    find: "                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => {\n                    ty = args.type_at(0);",
+    replace: "                ty::Adt(_, args) if false => {\n                    ty = args.type_at(0);",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+  },
+  {
+    name: "eq-of-pin-as-constant",
+    breaks: "`==` of `Pin`s of a unit struct with its own `eq` skips it",
+    file: "src/lower/std_impls.rs",
+    find: "                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => {\n                    let pointer",
+    replace: "                ty::Adt(_, args) if false => {\n                    let pointer",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
 ];

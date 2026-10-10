@@ -24,7 +24,8 @@ each compile is measured against std itself and only grows.**
 
 - **The registry**: `recognition/registry.rs` lists std's data structures,
   each by its name and where std defines it: `Vec` to `Cow`, `OnceCell`
-  and `LazyLock`, `Box`, and `str`, slices, arrays and `char`.
+  and `LazyLock`, `Box`, and `str`, slices, arrays and `char`. (Amended by
+  ADR 0329: `Pin` too.)
 - **The measure**: `rust-js --std-coverage <file>` writes each stable
   inherent method of each, `+ Vec::push` where `classify` knows it, `-
   Vec::shrink_to` where it doesn't, under `# Vec 18 of 48`.

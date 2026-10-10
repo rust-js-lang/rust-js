@@ -259,4 +259,12 @@ export const mutations: Mutation[] = [
     replace: "            || self.is_vec_like(ty)\n",
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
+  {
+    name: "pin-boxable-itself",
+    breaks: "a `&mut` to a pinned `&mut` is a box of the box",
+    file: "src/lower/representation.rs",
+    find: "            return self.is_boxable(pointer);",
+    replace: "            return !self.is_object(pointer);",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+  },
 ];

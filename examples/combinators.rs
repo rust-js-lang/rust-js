@@ -127,6 +127,10 @@ pub fn other_name<'a>(flag: Option<u32>, named: &'a Named) -> Option<&'a str> {
 pub fn label_of(named: Option<&Named>) -> &str {
     named.map_or("none", |named| named.label.as_str())
 }
+// Not where the fallback is a value: `?.` would give `undefined`.
+pub fn label_or_else(named: Option<&Named>) -> &str {
+    named.map_or_else(|| "none", |named| named.label.as_str())
+}
 pub fn report() -> String {
     let mut out = String::new();
     for n in [0, 4, 5, 8] {
@@ -144,6 +148,7 @@ pub fn report() -> String {
         out.push_str(&format!("{:?} {:?}\n", name_of(Some(&named)), name_of(None)));
         out.push_str(&format!("{:?} {:?}\n", other_name(None, &named), other_name(Some(n), &named)));
         out.push_str(&format!("{:?} {:?}\n", label_of(Some(&named)), label_of(None)));
+        out.push_str(&format!("{:?} {:?}\n", label_or_else(Some(&named)), label_or_else(None)));
     }
     out
 }

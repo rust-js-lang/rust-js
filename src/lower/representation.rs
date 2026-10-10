@@ -25,6 +25,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty = match ty.kind() {
                 ty::Ref(_, inner, _) => *inner,
                 ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => args.type_at(0),
+                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => args.type_at(0),
                 _ => return ty,
             };
         }
@@ -52,6 +53,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A value that a `&mut` to must be a box to change (ADR 0072): one that
     /// isn't a JS object, as a `String`, a number or a fieldless enum is.
     pub(super) fn is_boxable(&self, ty: Ty<'tcx>) -> bool {
+        // A `Pin` is its pointer (ADR 0329).
+        if let Some(pointer) = self.recognition().pinned(ty) {
+            return self.is_boxable(pointer);
+        }
         !ty.is_ref()
             && !self.is_unknown(ty)
             && !self.is_object(ty)

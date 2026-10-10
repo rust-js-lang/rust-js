@@ -963,6 +963,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(Expr::handle(self.fixed_place(place, self.thir[place].span, out)?))
             }
+            // `&mut` to a `Pin` of a reference is the pin, which only what it
+            // points at is changed through (ADR 0329).
+            ExprKind::Borrow {
+                borrow_kind: BorrowKind::Mut { .. },
+                arg,
+            } if self
+                .recognition()
+                .pinned(self.thir[arg].ty)
+                .is_some_and(|pointer| pointer.is_ref()) =>
+            {
+                match self.place(arg) {
+                    Some((place, _)) => Ok(place),
+                    None => self.referent(arg, out),
+                }
+            }
             ExprKind::Borrow { arg, .. } => {
                 Err(self.unsupported(span, &format!("`&mut` to a `{}`", self.thir[arg].ty)))
             }

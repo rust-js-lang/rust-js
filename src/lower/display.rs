@@ -1491,10 +1491,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What a writer function is given after its value, where the crate's
-    /// take options (ADRs 0058, 0137): none for a plain one, which takes
-    /// nothing after it.
+    /// take options (ADRs 0058, 0137): `undefined` for a plain one, which
+    /// the printer leaves out where it's last.
     pub(super) fn options_arg(&self, pretty: &Pretty) -> Option<Expr> {
-        (self.writers_take_options() && !matches!(pretty, Pretty::Plain)).then(|| pretty.options())
+        self.writers_take_options().then(|| pretty.options())
     }
 
     /// A call of the crate's own `fmt`, `Debug`'s or `Display`'s, given
@@ -1539,7 +1539,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         match ty.kind() {
             ty::Tuple(tys) => !tys.is_empty(),
-            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.debug_reads_parts(args.type_at(0)),
+            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {
+                self.debug_reads_parts(args.type_at(0))
+            }
             _ => self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result),
         }
     }

@@ -137,7 +137,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, b) = (Expr::member(a, "value"), Expr::member(b, "value"));
                 self.cmp_value(a, b, args.type_at(0), partial, span, out)
             }
-            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {
+            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {
                 self.cmp_value(a, b, args.type_at(0), partial, span, out)
             }
             // `Reverse(x)`: `x`s the other way round, as its impl has it.

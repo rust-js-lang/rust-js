@@ -81,9 +81,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .types()
                 .next()
                 .is_some_and(|index| self.needs_clone_in(index, seen)),
-            ty::Adt(adt, args) if ty.is_box() || !self.is_std(adt.did()) || self.is_known_std(ty) => adt
-                .all_fields()
-                .any(|f| self.needs_clone_in(self.field_ty(f, args), seen)),
+            ty::Adt(adt, args)
+                if ty.is_box()
+                    || self.recognition().pinned(ty).is_some()
+                    || !self.is_std(adt.did())
+                    || self.is_known_std(ty) =>
+            {
+                adt.all_fields()
+                    .any(|f| self.needs_clone_in(self.field_ty(f, args), seen))
+            }
             // Another std type: `clone_value` says it can't.
             ty::Adt(..) => true,
             _ => false,
@@ -239,7 +245,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             ty::Array(item, _) => return self.clone_items(place, *item, span),
             ty::Adt(_, args) if self.is_vec_like(ty) => return self.clone_items(place, args.type_at(0), span),
-            ty::Adt(_, args) if ty.is_box() => return self.clone_value(place, args.type_at(0), span, out),
+            ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
+                return self.clone_value(place, args.type_at(0), span, out);
+            }
             // A `RefCell`'s, while it's borrowed (ADR 0328): checked free to,
             // and held where its value's clone may ask.
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
@@ -650,8 +658,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$eq(a, b)` for what compares field by field. A derived `==` of a
     /// type with a custom part compares its parts one by one.
     pub(super) fn eq_value(&mut self, a: Expr, b: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let (a, _) = self.through_refs(a, ty);
-        let (b, ty) = self.through_refs(b, ty);
+        let (mut a, _) = self.through_refs(a, ty);
+        let (mut b, mut ty) = self.through_refs(b, ty);
+        // A `Box`, an `Rc` and a `Pin` compare what they point at, which
+        // they are in JS (ADRs 0023, 0329), its own `==` too.
+        loop {
+            match ty.kind() {
+                ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) && self.counted_rc(ty).is_none() => {
+                    ty = args.type_at(0);
+                }
+                ty::Adt(_, args) if self.recognition().pinned(ty).is_some() => {
+                    let pointer = args.type_at(0);
+                    (a, _) = self.through_refs(a, pointer);
+                    (b, ty) = self.through_refs(b, pointer);
+                }
+                _ => break,
+            }
+        }
         // `o == Some(true)` of an `Option<bool>`: `!!o`, which a test reads
         // as `o`, as JS tests a flag that may be missing (ADR 0298).
         if self.option_of(ty).is_some_and(|inner| inner.is_bool()) {
@@ -756,7 +779,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span,
                 out,
             ),
-            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.eq_value(a, b, args.type_at(0), span, out),
             // Two `RefCell`s', each while it's borrowed (ADR 0328), held where
             // their values' `==` may ask.
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {

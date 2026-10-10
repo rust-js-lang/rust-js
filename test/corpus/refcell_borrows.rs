@@ -33,6 +33,10 @@ fn main() {
     let text = RefCell::new(String::new());
     *text.borrow_mut() = String::from("t");
     println!("{:?} {} {}", cell.borrow(), number.borrow(), text.borrow());
+    let grid = RefCell::new([1, 2, 3]);
+    grid.borrow_mut()[0] = 3;
+    grid.borrow_mut()[1] += 3;
+    println!("{:?} {}", grid.borrow(), grid.borrow()[2]);
     let counter = Counter { hits: RefCell::new(0) };
     counter.hit();
     println!("{}", counter.hit());

@@ -308,7 +308,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .fold((0, false), |(n, r), (m, q)| (n + m, r || q))
         };
         let (size, recursive) = match ty.kind() {
-            ty::Adt(_, args) if ty.is_box() => self.drop_size(args.type_at(0), stack),
+            ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
+                self.drop_size(args.type_at(0), stack)
+            }
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_size(args.type_at(0), stack),
             ty::Array(item, _) | ty::Slice(item) => self.drop_size(*item, stack),
             // A `RefCell`'s value, and what a counted `Rc` points at, after its
@@ -404,7 +406,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         let js_span = self.js_span(span);
         match ty.kind() {
-            ty::Adt(_, args) if ty.is_box() => self.drop_in(value, args.type_at(0), span, made, out)?,
+            // A `Pin` is its pointer (ADR 0329).
+            ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
+                self.drop_in(value, args.type_at(0), span, made, out)?
+            }
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_items(value, args.type_at(0), span, made, out)?,
             // A channel's end (ADR 0142).
             ty::Adt(..) if let Some(end) = self.recognition().channel_end(ty) => {
@@ -1524,7 +1529,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             // Its drop drops what it holds, not the function.
             ty::Closure(..) => true,
-            ty::Adt(_, args) if ty.is_box() => self.drops_once(args.type_at(0)),
+            ty::Adt(_, args) if ty.is_box() || self.recognition().pinned(ty).is_some() => {
+                self.drops_once(args.type_at(0))
+            }
             ty::Adt(adt, args) => {
                 self.tcx
                     .adt_destructor(adt.did())
@@ -1675,7 +1682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let target = match self.place(lhs) {
             Some((target, _)) => target,
             // Dropped, then written: a guard's cell is read twice.
-            None => match self.guarded_target(lhs, out)?.map(|t| t.kind) {
+            None => match self.deref_target(lhs, out)?.map(|t| t.kind) {
                 Some(js::ExprKind::Member(guard, name)) => {
                     let guard = if guard.reads_same() {
                         *guard
@@ -1916,21 +1923,15 @@ fn keep_arguments(e: &mut Expr, kept: &HashSet<(DefId, u32)>) {
         krate: rustc_span::def_id::LOCAL_CRATE,
         index: rustc_span::def_id::DefIndex::from_u32(item),
     };
+    // One left last, `undefined`, is no argument: prepare leaves it out.
     let keep = |args: &mut Vec<Expr>| {
-        let mut given = Vec::new();
-        for arg in std::mem::take(args) {
-            match arg.kind {
-                js::ExprKind::DropArgument(item, index, drop) if kept.contains(&(local(item), index)) => {
-                    given.push((*drop, true));
-                }
-                js::ExprKind::DropArgument(..) => {}
-                _ => given.push((arg, false)),
-            }
-        }
-        while matches!(given.last(), Some((drop, true)) if matches!(drop.kind, js::ExprKind::Undefined)) {
-            given.pop();
-        }
-        *args = given.into_iter().map(|(arg, _)| arg).collect();
+        *args = std::mem::take(args)
+            .into_iter()
+            .filter_map(|arg| match arg.kind {
+                js::ExprKind::DropArgument(item, index, drop) => kept.contains(&(local(item), index)).then_some(*drop),
+                _ => Some(arg),
+            })
+            .collect();
     };
     let has_drops = |args: &[Expr]| args.iter().any(|a| matches!(a.kind, js::ExprKind::DropArgument(..)));
     let callee = match &mut e.kind {

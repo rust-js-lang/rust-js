@@ -1065,6 +1065,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(js) = self.lazy_call(known, call, &mut values, out)? {
             return Ok(js);
         }
+        if let Some(js) = self.pin_call(known, call, &mut values, out)? {
+            return Ok(js);
+        }
         if let Some(js) = self.channel_call(known, call, &mut values, out)? {
             return Ok(js);
         }
@@ -1195,6 +1198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::NotPoisoned => unreachable!("lowered by cell_call"),
             Std::Once(_) => unreachable!("lowered by once_call"),
             Std::Lazy(_) => unreachable!("lowered by lazy_call"),
+            Std::Pin(_) => unreachable!("lowered by pin_call"),
             Std::Cow(_) => unreachable!("lowered by cow_call"),
             Std::Rc(_) => unreachable!("lowered by rc_call"),
             Std::Slice(_) => unreachable!("lowered by slice_call"),

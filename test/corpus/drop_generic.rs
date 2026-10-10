@@ -35,6 +35,18 @@ fn keep<T>(value: T) -> T {
     value
 }
 
+// Drops a `T` it makes, so takes nothing but its drop.
+fn made<T: Default>() {
+    let _value = T::default();
+    println!("made");
+}
+
+impl Default for Noisy {
+    fn default() -> Self {
+        Noisy("default")
+    }
+}
+
 fn first<T: Clone>(items: Vec<T>) -> T {
     items[0].clone()
 }
@@ -59,6 +71,8 @@ impl std::fmt::Display for Noisy {
 fn main() {
     consume(Noisy("a"));
     consume(5);
+    made::<Noisy>();
+    made::<u8>();
     let kept = keep(Noisy("b"));
     let copy = first(vec![Noisy("c"), Noisy("d")]);
     relay(Noisy("e"));

@@ -545,7 +545,7 @@
 - String::try_reserve
 - String::try_reserve_exact
 + String::with_capacity
-# Box 2 of 17
+# Box 4 of 17
 - Box::as_mut_ptr
 - Box::as_ptr
 - Box::assume_init
@@ -553,7 +553,7 @@
 - Box::from_non_null
 - Box::from_raw
 - Box::into_non_null
-- Box::into_pin
++ Box::into_pin
 - Box::into_raw
 + Box::leak
 + Box::new
@@ -561,8 +561,25 @@
 - Box::new_uninit_slice
 - Box::new_zeroed
 - Box::new_zeroed_slice
-- Box::pin
++ Box::pin
 - Box::write
+# Pin 15 of 16
+- Pin::as_deref_mut
++ Pin::as_mut
++ Pin::as_ref
++ Pin::get_mut
++ Pin::get_ref
++ Pin::get_unchecked_mut
++ Pin::into_inner
++ Pin::into_inner_unchecked
++ Pin::into_ref
++ Pin::map_unchecked
++ Pin::map_unchecked_mut
++ Pin::new
++ Pin::new_unchecked
++ Pin::set
++ Pin::static_mut
++ Pin::static_ref
 # str 67 of 83
 + str::as_bytes
 - str::as_bytes_mut

@@ -37,6 +37,6 @@ function main() {
   const arg$3 = into.toUpperCase();
   console.log(`${fromString} ${arg$2} ${$debugStr(into)} ${arg$3}`);
   const copy = fromString;
-  console.log(`${$eq(copy, fromString)} ${copy === "héllo"}`);
+  console.log(`${copy === fromString} ${copy === "héllo"}`);
 }
 //# sourceMappingURL=case.js.map

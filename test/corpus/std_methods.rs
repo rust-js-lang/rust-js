@@ -95,6 +95,8 @@ impl fmt::Debug for Table {
 
 fn main() {
     let mut a = Some(3);
+    // Nothing to drop: what making it does, and nothing more.
+    drop(vec![a.unwrap_or(0)]);
     let taken = a.take();
     let mut b = Some(1);
     let old = b.replace(5);

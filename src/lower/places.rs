@@ -2,6 +2,7 @@
 
 use super::std_types::map;
 use super::std_types::number::assign_op;
+use super::std_types::pin::PinOp;
 use super::{Dest, FnCx, R, Std, is_union, js_name};
 use crate::js::{self, Expr, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -496,8 +497,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some((place, _)) => Ok(vec![place, self.expr(index, out)?]),
             // An element that's indexed in turn, `grid[i][j]`: the row itself,
             // not the copy reading it as a value makes, which `grid[i][j] = x`
-            // would change instead.
-            None if self.element(items).is_some() => {
+            // would change instead. So is what a reference a call made points
+            // at, `c.borrow_mut()[0] = x`'s array (ADR 0328).
+            None if self.element(items).is_some()
+                || matches!(self.thir[self.strip(items)].kind, ExprKind::Deref { .. }) =>
+            {
                 let mut row = self.referent(items, out)?;
                 let index = self.evaluated(index)?;
                 if !index.statements.is_empty() && !row.is_constant() {
@@ -606,23 +610,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Ok(Expr::member(cell, "value"))
             }
-            _ if let Some(target) = self.guarded_target(e, out)? => Ok(target),
+            _ if let Some(target) = self.deref_target(e, out)? => Ok(target),
             _ => self.assignee(e),
         }
     }
 
-    /// `*c.borrow_mut()` of a guard just made, as a place to write: its
-    /// cell's `value` (ADR 0328).
-    pub(super) fn guarded_target(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+    /// A place to write that a std call's `&mut` points at: `*c.borrow_mut()`
+    /// of a guard just made, its cell's `value` (ADR 0328), and `*pin` of a
+    /// `Pin`'s `&mut` to a number or text, its box's (ADR 0329).
+    pub(super) fn deref_target(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
         let ExprKind::Deref { arg } = self.thir[self.strip(e)].kind else {
             return Ok(None);
         };
-        match self.thir[self.strip(arg)].kind {
-            ExprKind::Call { fun, ref args, .. }
-                if self.place(e).is_none() && matches!(self.std_fn(fun), Some(Std::GuardValue { .. })) =>
-            {
+        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(arg)].kind else {
+            return Ok(None);
+        };
+        if self.place(e).is_some() {
+            return Ok(None);
+        }
+        match self.std_fn(fun) {
+            Some(Std::GuardValue { .. }) => {
                 let guard = self.expr(args[0], out)?;
                 Ok(Some(Expr::member(guard, "value")))
+            }
+            Some(Std::Pin(PinOp::Mut)) if self.is_boxable(self.thir[e].ty) => {
+                let pointer = self.expr(arg, out)?;
+                Ok(Some(Expr::member(pointer, "value")))
             }
             _ => Ok(None),
         }

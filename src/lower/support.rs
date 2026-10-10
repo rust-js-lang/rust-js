@@ -142,6 +142,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return self.unsupported_in(*inner, seen);
             }
+            // A `&mut` to a `Pin` of a reference is the pin, which only what
+            // it points at is changed through (ADR 0329).
+            ty::Ref(_, inner, Mutability::Mut)
+                if self
+                    .recognition()
+                    .pinned(*inner)
+                    .is_some_and(|pointer| pointer.is_ref()) =>
+            {
+                return self.unsupported_in(*inner, seen);
+            }
             // A `&mut` to anything else is a cell (ADR 0099).
             ty::Ref(_, inner, Mutability::Mut) if self.is_cell_pointee(*inner) => return None,
             ty::Array(elem, _) | ty::Slice(elem) => return self.unsupported_in(*elem, seen),

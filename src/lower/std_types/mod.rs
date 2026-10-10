@@ -17,6 +17,7 @@
 //! | `BinaryHeap` | an `Array` in heap order | `heap` |
 //! | ranges | `{ start, end }` | `range` |
 //! | `mpsc` channels | a queue | `channel` |
+//! | `Pin` | its pointer | `pin` |
 //!
 //! Which std type each is, and how much of each is known, is
 //! `recognition/registry.rs`'s and `docs/std-coverage.txt`'s.
@@ -30,6 +31,7 @@ pub(super) mod map;
 pub(super) mod number;
 pub(super) mod once;
 pub(super) mod option;
+pub(super) mod pin;
 pub(super) mod range;
 pub(super) mod rc;
 pub(super) mod result;

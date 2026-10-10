@@ -333,7 +333,7 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
   expect(js).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");
   // A closure of an `async` block, an async arrow.
-  expect(js).toContain("const loading = async () => {\n    taskLog.value.push(1);");
+  expect(js).toContain("const loading = async () => {\n    $borrowMut(taskLog).value.push(1);");
   // A future in a variable is the promise; `.await` on it is `await`.
   expect(js).toContain("const first = setTimeout(5, 1);");
   expect(js).toContain("return ((await first) + (await second)) >>> 0;");

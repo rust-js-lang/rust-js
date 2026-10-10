@@ -2,7 +2,7 @@
 
 import { $index } from "@rust-js/runtime";
 
-var $noisyDisplay;
+var $noisyDefault, $noisyDisplay;
 
 export function entry() {
   main();
@@ -30,6 +30,26 @@ function consume(value, dropT) {
 
 function keep(value) {
   return value;
+}
+
+function made(TDefault, dropT) {
+  const _value = TDefault.default();
+  try {
+    console.log("made");
+  } finally {
+    dropT?.(_value);
+  }
+}
+
+export function noisyDefault() {
+  if ($noisyDefault === undefined) {
+    $noisyDefault = { default: noisyDefault_default, $drop: noisyDrop_drop };
+  }
+  return $noisyDefault;
+}
+
+function noisyDefault_default() {
+  return ["default"];
 }
 
 function first(items, TClone, dropT) {
@@ -69,6 +89,8 @@ function noisyDisplay_fmt(noisy) {
 function main() {
   consume(["a"], noisyDrop_drop);
   consume(5);
+  made(noisyDefault(), noisyDrop_drop);
+  made({ default: () => 0 });
   const kept = keep(["b"]);
   try {
     const copy = first([["c"], ["d"]], { clone: (value) => value }, noisyDrop_drop);

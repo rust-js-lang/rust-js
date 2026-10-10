@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "            true => value,\n",
     tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
+  {
+    name: "pin-shown-as-pointer-box",
+    breaks: "`{}` of a pinned `&mut` to a number shows its box",
+    file: "src/lower/std_types/rc.rs",
+    find: "            if let Some(pointer) = self.recognition().pinned(ty) {",
+    replace: "            if let Some(pointer) = self.recognition().pinned(ty).filter(|_| false) {",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+  },
 ];

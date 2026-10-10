@@ -12,11 +12,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "drop-of-nothing-kept",
-    breaks: "`drop(guard)` keeps an unused `const value = ..`: right, but not the JS a person writes",
+    breaks: "`drop(vec![..])` keeps an unused `const value = ..`: right, but not the JS a person writes",
     file: "src/lower/std_types/cell.rs",
     find: "                if !self.has_drops(ty) {",
     replace: "                if false {",
-    tests: ["test/corpus.test.ts", "-t", "^locks"],
+    tests: ["test/corpus.test.ts", "-t", "std_methods"],
     snapshots: true,
   },
   {

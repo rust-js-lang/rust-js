@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "                let total = true || !partial || parts.iter().all(|&(_, _, t)| self.is_total(t));",
     tests: ["test/compiler.test.ts", "-t", "PartialOrd and Ord compare with \\$cmp, a hand-written cmp, or the parts in turn"],
   },
+  {
+    name: "pin-cmp-unknown",
+    breaks: "`<` of pinned `Box`es is an error",
+    file: "src/lower/ordering.rs",
+    find: "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {",
+    replace: "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
+  },
 ];

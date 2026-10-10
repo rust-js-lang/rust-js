@@ -590,11 +590,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return value;
         }
         let test = match &test.kind {
-            js::ExprKind::Binary(js::Op::LooseNe, x, null)
-                if matches!(null.kind, js::ExprKind::Null) && self.maps_js_object(child) =>
-            {
-                (**x).clone()
-            }
             // `!!error` of a value never falsy (ADR 0298): `error`, which
             // renders nothing when it isn't there.
             js::ExprKind::Unary(js::UnaryOp::Not, not)

@@ -126,7 +126,7 @@ export const mutations: Mutation[] = [
     name: "guard-not-a-place",
     breaks: "`*c.borrow_mut() = vec![7]` is an error, where it writes the guard's cell's `value`",
     file: "src/lower/places.rs",
-    find: "            _ if let Some(target) = self.guarded_target(e, out)? => Ok(target),\n",
+    find: "            _ if let Some(target) = self.deref_target(e, out)? => Ok(target),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
@@ -215,5 +215,13 @@ export const mutations: Mutation[] = [
     replace: "                    if [\"$none\"].contains(&v.as_str())) =>",
     tests: ["test/snapshots.test.ts", "-t", "inventory: the generated JS"],
     snapshots: true,
+  },
+  {
+    name: "pin-target-unwritten",
+    breaks: "`*pin += 1` of a pinned `&mut` to a number is an error",
+    file: "src/lower/places.rs",
+    find: "            Some(Std::Pin(PinOp::Mut)) if self.is_boxable(self.thir[e].ty) => {",
+    replace: "            Some(Std::Pin(PinOp::Mut)) if false => {",
+    tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
 ];

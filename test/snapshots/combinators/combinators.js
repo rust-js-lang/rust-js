@@ -165,6 +165,10 @@ export function label_of(named) {
   return named?.label ?? "none";
 }
 
+export function label_or_else(named) {
+  return named != null ? named.label : "none";
+}
+
 export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {
@@ -196,6 +200,7 @@ export function report() {
     const arg$11 = other_name(n$1, named);
     out += `${arg$10 == null ? "None" : `Some(${$debugStr(arg$10)})`} ${arg$11 == null ? "None" : `Some(${$debugStr(arg$11)})`}\n`;
     out += `${$debugStr(label_of(named))} ${$debugStr(label_of(undefined))}\n`;
+    out += `${$debugStr(label_or_else(named))} ${$debugStr(label_or_else(undefined))}\n`;
   }
   return out;
 }

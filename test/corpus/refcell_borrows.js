@@ -112,6 +112,15 @@ function main() {
         .value.map((item) => String(item))
         .join(", ")}] ${$borrow(number).value} ${$borrow(text).value}`,
     );
+    const grid = { value: [1, 2, 3] };
+    $borrowMut(grid).value[0] = 3;
+    const items = $borrowMut(grid).value;
+    items[1] = (items[1] + 3) | 0;
+    console.log(
+      `[${$borrow(grid)
+        .value.map((item) => String(item))
+        .join(", ")}] ${$borrow(grid).value[2]}`,
+    );
     const counter = { hits: { value: 0 } };
     Counter.hit(counter);
     console.log(`${Counter.hit(counter)}`);

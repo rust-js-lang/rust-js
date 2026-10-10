@@ -63,7 +63,11 @@ pub(in crate::lower) fn data_structures(tcx: TyCtxt<'_>) -> Vec<(&'static str, V
             adt.map(|adt| tcx.inherent_impls(adt).to_vec()).unwrap_or_default(),
         ));
     }
-    for (name, item) in [("String", LangItem::String), ("Box", LangItem::OwnedBox)] {
+    for (name, item) in [
+        ("String", LangItem::String),
+        ("Box", LangItem::OwnedBox),
+        ("Pin", LangItem::Pin),
+    ] {
         let adt = tcx.lang_items().get(item);
         types.push((
             name,
