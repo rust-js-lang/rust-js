@@ -113,6 +113,7 @@ index_out_of_bounds.rs
 int_error_kind.rs
 integer_bits.rs
 integer_families.rs
+integers_128.rs
 iter_flatten.rs
 iterator_stepped_by_hand.rs
 kept_element_ref.rs
@@ -174,6 +175,7 @@ refcell_replace_while_borrowed.rs
 refcell_swap_itself.rs
 refcell_unwind_releases.rs
 remainder_sign.rs
+replace_through_mut.rs
 replacement_character.rs
 returned_references.rs
 rotate_past_end.rs
@@ -190,6 +192,7 @@ static_mut.rs
 static_mut_reference.rs
 static_mut_shared.rs
 static_raw_address.rs
+statics.rs
 std_errors_boxed.rs
 std_function_value_panic.rs
 std_struct_const.rs

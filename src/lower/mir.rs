@@ -1030,6 +1030,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let target = self.mir_place(state, place, span, out)?;
         self.flush(state, out)?;
+        // `*r = v` of a `&mut` to an object: the object becomes `v`, so each
+        // name for it sees it, as THIR's `assign` writes it.
+        let decls = &state.body.local_decls;
+        if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
+            && matches!(
+                Place::ty_from(base.local, base.projection, decls, self.tcx).ty.kind(),
+                ty::Ref(_, _, ty::Mutability::Mut)
+            )
+            && let pointee = place.ty(decls, self.tcx).ty
+            && !self.is_cell_pointee(pointee)
+            && self.is_object(pointee)
+        {
+            self.runtime.insert(Helper::Assign);
+            let assigned = Expr::call(Expr::var("$assign"), vec![target, value]);
+            out.push(StmtKind::Expr(assigned).at(js_span));
+            return Ok(());
+        }
         out.push(StmtKind::Assign(target, value).at(js_span));
         Ok(())
     }
@@ -1300,9 +1317,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         // A `Copy` value a variable holds, of a type changed in place: a copy
-        // of it, as THIR's `copy_if_needed` makes. A temporary's is its own.
+        // of it, as THIR's `copy_if_needed` makes. A temporary's is its own,
+        // but not what it refers to, a static's.
         let copied = matches!(operand, Operand::Copy(place)
-            if !state.pending.iter().any(|(l, _)| *l == place.local));
+            if place.is_indirect() || !state.pending.iter().any(|(l, _)| *l == place.local));
         // A copy of a closure that changes what it captured would share it,
         // as a copy of a JS function does (ADR 0246).
         if let Operand::Copy(place) = operand
@@ -2471,6 +2489,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.text_values(op, exprs, arg_tys, generic_args, span, out)?
+            }
+            // `x.to_int_unchecked()`: the cast `as` is, where it's in range.
+            Std::Number(NumOp::ToIntUnchecked) => {
+                let value = self.value_expr(values.next().expect("the float"), span)?;
+                self.cast(value, arg_tys[0], output, span)?
             }
             Std::Number(op) => {
                 // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.

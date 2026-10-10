@@ -402,4 +402,28 @@ export const mutations: Mutation[] = [
     replace: "                        && false && !is_js_iterator(&e) =>\n",
     tests: ["test/mir.test.ts","-t","integer_bits"],
   },
+  {
+    name: "mir-to-int-unchecked-uncast",
+    breaks: "`x.to_int_unchecked()` under MIR reaches `number_call`, which has none",
+    file: "src/lower/mir.rs",
+    find: "            Std::Number(NumOp::ToIntUnchecked) => {\n",
+    replace: "            Std::Number(NumOp::ToIntUnchecked) if false => {\n",
+    tests: ["test/mir.test.ts","-t","integers_128"],
+  },
+  {
+    name: "mir-static-copy-shared",
+    breaks: "`let mut p = ORIGIN;` of a `Copy` static changes the static",
+    file: "src/lower/mir.rs",
+    find: "if place.is_indirect() || !state.pending",
+    replace: "if !state.pending",
+    tests: ["test/mir.test.ts","-t","statics"],
+  },
+  {
+    name: "mir-object-replace-rebinds",
+    breaks: "`*self = v` through a `&mut` to an object rebinds `self`, not the object",
+    file: "src/lower/mir.rs",
+    find: "            && self.is_object(pointee)\n",
+    replace: "            && false && self.is_object(pointee)\n",
+    tests: ["test/mir.test.ts","-t","replace_through_mut"],
+  },
 ];
