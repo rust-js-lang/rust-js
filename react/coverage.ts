@@ -34,7 +34,7 @@ async function declared(file: string): Promise<Map<string, Kind>> {
   const ts = await open([file]);
   const { declarations } = await ts.read(file);
   await ts.close();
-  const react = declarations.find((d: any) => d.kind === "namespace" && d.name === "React");
+  const react: any = declarations.find((d: any) => d.kind === "namespace" && d.name === "React");
   const out = new Map<string, Kind>();
   // A namespace's declarations are each exported; a module's, those it says.
   const walk = (list: any[], prefix: string, all: boolean) => {

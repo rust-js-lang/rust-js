@@ -58,7 +58,6 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   seen.add(path);
   const exported = new Map<string, Kind>();
   const local = new Map<string, Kind>();
-  const imported = new Map<string, [string, string]>();
   // A session reads the files it's opened with: one each.
   const ts = await open([path]);
   const { declarations } = await ts.read(path);
@@ -72,10 +71,10 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   for (const d of declarations) {
     if ("name" in d && typeof d.name === "string" && ["interface", "type", "const", "function", "class", "enum"].includes(d.kind)) {
       local.set(d.name, kindOf(d));
-      if (d.exported) exported.set(d.name, kindOf(d));
+      if ("exported" in d && d.exported) exported.set(d.name, kindOf(d));
     }
-    if (d.kind === "export-from") await reexport(d.from, d.names, Boolean(d.typeOnly));
-    if (d.kind === "export-default") exported.set("default", local.get(d.name) ?? (imported.has(d.name) ? "value" : "value"));
+    if (d.kind === "export-from") await reexport(d.from, d.names, false);
+    if (d.kind === "export-default") exported.set("default", local.get(d.name) ?? "value");
     if (d.kind === "other") {
       // The model leaves a class as text, after its doc comment.
       const text: string = d.text.replace(/^(\s*\/\*[\s\S]*?\*\/)*\s*/, "");
@@ -94,8 +93,6 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
           return [name, as ?? name] as [string, string];
         });
         await reexport(m[3], names, Boolean(m[1]));
-      } else if ((m = text.match(/^import (\w+) from ['"](.+)['"]/))) {
-        imported.set(m[1], [m[2], "default"]);
       } else if ((m = text.match(/^export default (\w+)/))) {
         exported.set("default", local.get(m[1]) ?? "value");
       }
