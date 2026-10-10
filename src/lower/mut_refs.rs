@@ -197,10 +197,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         generic_args: ty::GenericArgsRef<'tcx>,
         args: &[ExprId],
     ) -> Option<Ty<'tcx>> {
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
+        self.makes_items_of(output, generic_args, &tys)
+    }
+
+    /// `makes_items`, of its arguments' types (ADR 0364).
+    pub(in crate::lower) fn makes_items_of(
+        &self,
+        output: Ty<'tcx>,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        tys: &[Ty<'tcx>],
+    ) -> Option<Ty<'tcx>> {
         let cells = |ty: Ty<'tcx>| ty.walk().filter_map(|part| part.as_type()).filter(|&t| self.is_cell(t));
-        let given: Vec<_> = args
+        let given: Vec<_> = tys
             .iter()
-            .map(|&a| self.thir[a].ty)
+            .copied()
             .chain(generic_args.types())
             .flat_map(|t| cells(t).chain(self.iterator_item(t).into_iter().flat_map(cells)))
             .collect();
@@ -236,7 +247,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The helper that makes `item_handles`' handles, if `known` of `args`
     /// hands out `&mut`s to items.
     fn handle_helper(&self, known: Std, args: &[ExprId]) -> Option<(Helper, &'static str)> {
-        let receiver = self.thir[*args.first()?].ty.peel_refs();
+        self.handle_helper_of(known, self.thir[*args.first()?].ty.peel_refs())
+    }
+
+    /// `handle_helper`, of the receiver's type.
+    fn handle_helper_of(&self, known: Std, receiver: Ty<'tcx>) -> Option<(Helper, &'static str)> {
         let sequence = receiver.is_array() || receiver.is_slice() || self.is_vec_like(receiver);
         let map = self.is_map(receiver) && !self.is_set(receiver);
         Some(match known {
@@ -288,11 +303,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let Some((helper, name)) = self.handle_helper(known, args) else {
+        if self.handle_helper(known, args).is_none() {
+            return Ok(None);
+        }
+        let receiver = self.thir[args[0]].ty.peel_refs();
+        let values = self.operands(args, out)?;
+        self.item_handles_of(known, values, receiver, span, out)
+    }
+
+    /// `item_handles`, of its arguments' values and its receiver's type: what
+    /// THIR and MIR both lower it to (ADR 0364).
+    pub(in crate::lower) fn item_handles_of(
+        &mut self,
+        known: Std,
+        mut values: Vec<Expr>,
+        receiver: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let Some((helper, name)) = self.handle_helper_of(known, receiver) else {
             return Ok(None);
         };
-        let receiver = self.thir[args[0]].ty.peel_refs();
-        let mut values = self.operands(args, out)?;
         match known {
             Std::First => values.push(Expr::int(0)),
             Std::SliceLast => values.push(Expr::int(-1)),

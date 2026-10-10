@@ -76,6 +76,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             false => it,
         };
         let item = self.iterator_item(iter_ty);
+        // An item with a destructor a method may leave undropped, `filter`'s
+        // or `count`'s: what std drops, refused till it's dropped here.
+        let keeps_each = matches!(
+            name,
+            "map"
+                | "for_each"
+                | "fold"
+                | "collect"
+                | "any"
+                | "all"
+                | "position"
+                | "enumerate"
+                | "by_ref"
+                | "fuse"
+                | "sum"
+                | "product"
+                | "count"
+        );
+        if !keeps_each && item.is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing) {
+            return Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")));
+        }
         let mut arg = || values.next().expect("rustc checked the arguments");
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match name {
@@ -112,13 +133,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = self.binary_callback(arg());
                 method("reduce", it, vec![f, init])
             }
+            // Each item counted, and dropped as `count` drops it.
             "count" => {
                 let n = self.fresh("n");
-                let f = Expr::arrow(
-                    vec![n.clone().into()],
-                    vec![StmtKind::Return(Some(Expr::bin(Op::Add, Expr::var(&n), Expr::int(1)))).at(js::Span::NONE)],
-                );
-                method("reduce", it, vec![f, Expr::int(0)])
+                let x = self.fresh("item");
+                let mut body = Vec::new();
+                if let Some(item) = item {
+                    self.drop_value(Expr::var(&x), item, span, &mut body)?;
+                }
+                let mut params = vec![n.clone().into()];
+                if !body.is_empty() {
+                    params.push(x.into());
+                }
+                body.push(StmtKind::Return(Some(Expr::bin(Op::Add, Expr::var(&n), Expr::int(1)))).at(js::Span::NONE));
+                method("reduce", it, vec![Expr::arrow(params, body), Expr::int(0)])
             }
             "sum" | "product" => {
                 let num = Num::of(output)

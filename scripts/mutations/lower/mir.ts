@@ -266,4 +266,28 @@ export const mutations: Mutation[] = [
     replace: "                            if e.reads_same() =>\n",
     tests: ["test/mir.test.ts","-t","atomics|operands_before_replace"],
   },
+  {
+    name: "mir-index-mut-a-value",
+    breaks: "`v[i] += 1` of numbers through `index_mut` changes a copy of the element",
+    file: "src/lower/mir.rs",
+    find: "            return Ok(Value::Ref(Expr::index(items, index)));\n",
+    replace: "            return Ok(Value::Expr(Expr::index(items, index)));\n",
+    tests: ["test/mir.test.ts","-t","compound_assignment_order"],
+  },
+  {
+    name: "mir-item-handles-skipped",
+    breaks: "`iter_mut()` of strings gives the strings, not handles on them, so a write to one is lost",
+    file: "src/lower/mir.rs",
+    find: "            if let Some(handles) = self.item_handles_of(known, exprs, receiver, span, out)? {\n",
+    replace: "            if let Some(handles) = self.item_handles_of(known, exprs, receiver, span, out)?.filter(|_| false) {\n",
+    tests: ["test/mir.test.ts", "-t", "mut_ref_std_items"],
+  },
+  {
+    name: "mir-cell-deref-skipped",
+    breaks: "a reborrow through a handle on a `Box<dyn Trait>` is the handle, not the pair it holds",
+    file: "src/lower/mir.rs",
+    find: "                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell_pointee(*inner)))\n",
+    replace: "                            && true)\n",
+    tests: ["test/mir.test.ts","-t","dyn_mut"],
+  },
 ];

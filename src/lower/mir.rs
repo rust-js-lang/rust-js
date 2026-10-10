@@ -107,7 +107,8 @@ struct State<'m, 'tcx> {
     /// change by any call.
     own_names: std::collections::HashSet<String>,
     /// Of a closure: what it captured, each its environment's field.
-    captures: Vec<Expr>,
+    /// And whether each is the place a `&mut` it captured is to.
+    captures: Vec<(Expr, bool)>,
     /// What each `Drop` drops (`drops.rs`), and the flag of each path whose
     /// drop a flag says.
     drops: Option<drops::Elaboration<'tcx>>,
@@ -166,7 +167,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A body's parameters and statements. A closure's, given what it
     /// captured, reads them in place of its environment's fields.
-    fn mir_function(&mut self, mir: &Mir<'tcx>, captures: Option<Vec<Expr>>) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
+    fn mir_function(
+        &mut self,
+        mir: &Mir<'tcx>,
+        captures: Option<Vec<(Expr, bool)>>,
+    ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         let drops = self.mir_elaboration(mir_body);
         let mut locals = self.mir_locals(mir_body);
@@ -213,7 +218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let boxed = match captures {
                     // A closure's, by what it points at.
                     Some(_) => matches!(mir_body.local_decls[local].ty.kind(),
-                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.boxed_by_ref(*pointee)),
+                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee)),
                     None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
                 };
                 if boxed {
@@ -286,23 +291,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let mut captures = Vec::new();
-        for value in captured {
-            captures.push(match value {
-                Value::Ref(place) | Value::Place(place) => place,
-                value => {
-                    let e = self.value_expr(value, span)?;
-                    let changes = matches!(&e.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] > 1));
-                    if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
-                        e
-                    } else {
-                        self.flush(state, out)?;
-                        self.spill("captured", e, out)
-                    }
-                }
-            });
-        }
         let Some(body) = def_id
             .as_local()
             .and_then(|local| self.krate.closures.get(&local))
@@ -313,6 +301,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(mir) = &body.mir else {
             return Err(self.unsupported(span, "this closure, without its MIR"));
         };
+        let mut captures = Vec::new();
+        for (i, value) in captured.into_iter().enumerate() {
+            captures.push(match value {
+                Value::Ref(place) | Value::Place(place) => (place, true),
+                // One it took and changes is its own: a `let` of it, made here.
+                value if writes_capture(&mir.body, i) => {
+                    let e = self.value_expr(value, span)?;
+                    self.flush(state, out)?;
+                    let name = self.fresh(match &e.kind {
+                        js::ExprKind::Var(name) => name,
+                        _ => "captured",
+                    });
+                    out.push(StmtKind::Let(name.clone(), Some(e)).at(self.js_span(span)));
+                    (Expr::var(&name), false)
+                }
+                value => {
+                    let e = self.value_expr(value, span)?;
+                    let changes = matches!(&e.kind, js::ExprKind::Var(name)
+                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] > 1));
+                    let e = if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
+                        e
+                    } else {
+                        self.flush(state, out)?;
+                        self.spill("captured", e, out)
+                    };
+                    (e, false)
+                }
+            });
+        }
         let (params, stmts) = self.mir_function(mir, Some(captures))?;
         Ok(Expr::arrow(params, stmts))
     }
@@ -995,13 +1012,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn derefs_handle(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>) -> bool {
         place.projection.first() == Some(&PlaceElem::Deref)
             && matches!(body.local_decls[place.local].ty.kind(),
-                ty::Ref(_, pointee, ty::Mutability::Mut) if self.boxed_by_ref(*pointee))
-    }
-
-    /// Whether a `&mut` to a `pointee` is its place, not a JS value: one JS
-    /// can't change in place, a number's, as a closure's isn't.
-    fn boxed_by_ref(&self, pointee: Ty<'tcx>) -> bool {
-        !self.is_object(pointee) && !matches!(pointee.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..))
+                ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee))
     }
 
     /// The arguments of a call of the crate's: a `&mut` to a value JS can't
@@ -1137,7 +1148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `value`, but where the place is already named.
             if elem == PlaceElem::Deref
                 && let ty::Ref(_, pointee, ty::Mutability::Mut) = ty.ty.kind()
-                && self.boxed_by_ref(*pointee)
+                && self.is_cell_pointee(*pointee)
             {
                 if !std::mem::take(&mut placed) {
                     value = Expr::member(value, "value");
@@ -1149,7 +1160,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             value = match (ty.ty.peel_refs().kind(), elem) {
                 // Of a closure's environment, `(*_1).0`: what it captured.
                 (ty::Closure(..), PlaceElem::Field(field, _)) if !state.captures.is_empty() => {
-                    state.captures[field.as_usize()].clone()
+                    let (capture, is_place) = state.captures[field.as_usize()].clone();
+                    placed = is_place;
+                    capture
                 }
                 _ => self.project_mir(state, value, ty, elem, span, out)?,
             };
@@ -1225,7 +1238,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut ty = mir::PlaceTy::from_ty(body.local_decls[place.local].ty);
         for elem in place.projection {
             let through = match elem {
-                PlaceElem::Deref => ty.ty.is_box() || (read && ty.ty.is_ref()),
+                // Not through a `&mut` to a cell, a box's or a handle's `value`.
+                PlaceElem::Deref => {
+                    ty.ty.is_box()
+                        || (read
+                            && ty.ty.is_ref()
+                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell_pointee(*inner)))
+                }
                 PlaceElem::Field(..) => self.transparent(ty.ty),
                 _ => false,
             };
@@ -1470,7 +1489,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
                 let pointee = place.ty(decls, tcx).ty;
-                if matches!(kind, BorrowKind::Mut { .. }) && self.boxed_by_ref(pointee) {
+                if matches!(kind, BorrowKind::Mut { .. }) && self.is_cell_pointee(pointee) {
                     return Ok(Value::Ref(self.mir_place(state, *place, span, out)?));
                 }
                 if self.through_values(state.body, place, true) {
@@ -2184,6 +2203,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let first_ty = || generic_args.types().next();
+        let tcx = self.tcx;
+        // `v[i]` through `index_mut`, of a value JS can't change in place: the
+        // element's place, checked as `$index` checks it (ADR 0099).
+        if known == Std::Index
+            && tcx
+                .trait_of_assoc(def_id)
+                .is_some_and(|t| tcx.is_lang_item(t, LangItem::IndexMut))
+            && let ty::Ref(_, item, _) = output.kind()
+            && self.is_cell_pointee(*item)
+        {
+            let mut exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let index = exprs.pop().expect("an index");
+            let items = exprs.pop().expect("the items");
+            self.flush(state, out)?;
+            let items = if items.reads_same() {
+                items
+            } else {
+                self.spill("items", items, out)
+            };
+            let index = if index.is_constant() {
+                index
+            } else {
+                self.spill("index", index, out)
+            };
+            self.runtime.insert(Helper::Index);
+            let check = Expr::call(Expr::var("$index"), vec![items.clone(), index.clone()]);
+            out.push(StmtKind::Expr(check).at(self.js_span(span)));
+            return Ok(Value::Ref(Expr::index(items, index)));
+        }
+        // A `&mut` it made to an item JS can't change in place: a handle on
+        // each, as THIR's `item_handles` makes (ADR 0152).
+        if let Some(cell) = self.makes_items_of(output, generic_args, arg_tys) {
+            let exprs = values
+                .iter()
+                .cloned()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let receiver = arg_tys.first().map_or(tcx.types.unit, |t| t.peel_refs());
+            if let Some(handles) = self.item_handles_of(known, exprs, receiver, span, out)? {
+                return Ok(Value::Expr(match self.implements_iterator(output) {
+                    true => self.js_iterator(handles),
+                    false => handles,
+                }));
+            }
+            if !known.gives_its_cell() {
+                let path = tcx.def_path_str(def_id);
+                return Err(self.unsupported(span, &format!("a `{cell}` from `{path}` used as a value, from its MIR")));
+            }
+        }
         let mut values = values.into_iter();
         Ok(Value::Expr(match known {
             // `format_args!`'s parts, kept until `Arguments::new` shows them.
@@ -2304,6 +2375,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // one a `&mut` lends, stepped through what can't close it.
             Std::IterComb(comb) => {
                 let iter_ty = arg_tys[0].peel_refs();
+                // Items with a destructor a combinator may leave undropped.
+                if self
+                    .iterator_item(iter_ty)
+                    .is_some_and(|item| self.drops(item) != super::drops::Drops::Nothing)
+                {
+                    return Err(self.unsupported(
+                        span,
+                        "an iterator's combinator of items with a destructor, from its MIR",
+                    ));
+                }
                 let lent = matches!(arg_tys[0].kind(), ty::Ref(_, _, ty::Mutability::Mut));
                 let mut exprs = values
                     .map(|v| match v {
@@ -2723,4 +2804,28 @@ fn fixed_place(place: &Expr) -> bool {
         }
         _ => false,
     }
+}
+
+/// Whether a closure's `body` writes what it captured `i`th: assigns it,
+/// or takes a `&mut` to it, through its environment `_1`.
+fn writes_capture(body: &mir::Body<'_>, i: usize) -> bool {
+    let env = Local::from_usize(1);
+    let captured = |place: &Place<'_>| {
+        place.local == env
+            && place
+                .projection
+                .iter()
+                .find(|elem| !matches!(elem, PlaceElem::Deref))
+                .is_some_and(|elem| matches!(elem, PlaceElem::Field(field, _) if field.as_usize() == i))
+    };
+    body.basic_blocks.iter().any(|data| {
+        data.statements.iter().any(|statement| match &statement.kind {
+            StatementKind::Assign(assign) => {
+                let (place, rvalue) = &**assign;
+                captured(place)
+                    || matches!(rvalue, Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) if captured(borrowed))
+            }
+            _ => false,
+        }) || matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if captured(destination))
+    })
 }
