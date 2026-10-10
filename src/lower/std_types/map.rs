@@ -174,11 +174,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
-        let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
-            this.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
-        };
         // `or_insert` and the rest take the entry apart: `[m, k]`.
         if matches!(op, MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault) {
             let (map, key) = self.entry_parts(args[0], out)?;
@@ -192,11 +187,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if op == MapOp::ExtractIf {
             return self.map_extract_if(args, span, out);
         }
+        let values = self.operands(args, out)?;
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
+        self.map_values(op, (values, &tys), generic_args, discarded, span, out)
+    }
+
+    /// A map's or a set's method, of its arguments' values, `tys` their
+    /// types: what THIR and MIR both lower it to (ADR 0364). `discarded`:
+    /// whether what it gives is unused.
+    pub(in crate::lower) fn map_values(
+        &mut self,
+        op: MapOp,
+        (values, tys): (Vec<Expr>, &[Ty<'tcx>]),
+        generic_args: ty::GenericArgsRef<'tcx>,
+        discarded: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
+        let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+            this.runtime.insert(helper);
+            Expr::call(Expr::var(name), list)
+        };
         // The map or set a method of ADR 0325's is of, its type's arguments, and
         // a B-tree's keys' `cmp` where the method orders them.
-        let receiver = args
-            .first()
-            .map_or(self.tcx.types.unit, |&a| self.thir[a].ty.peel_refs());
+        let receiver = tys.first().map_or(self.tcx.types.unit, |ty| ty.peel_refs());
         let set = self.is_set(receiver);
         let types: Vec<Ty<'tcx>> = match receiver.kind() {
             ty::Adt(_, map) => map.types().collect(),
@@ -214,7 +229,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, Some(&key)) => Some(self.cmp_fn(key, false, span)?),
             _ => None,
         };
-        let mut values = self.operands(args, out)?.into_iter();
+        let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let map_ops = |cx: &mut Self, name: &str, list: Vec<Expr>| {
             cx.runtime.insert(Helper::MapOps);
@@ -275,14 +290,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::TreeAppend => map_ops(self, "$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
-                let items = self.items_of(items, args[1], span, out)?;
+                let items = self.items_of(items, tys[1], span, out)?;
                 map_ops(self, "$extendMap", vec![m, items, Expr::bool(set)])
             }
-            MapOp::TreeRange { .. } | MapOp::ExtractIf => unreachable!("lowered above"),
+            MapOp::TreeRange { .. } | MapOp::ExtractIf => {
+                return Err(self.unsupported(span, "a map's range, of its value alone"));
+            }
             MapOp::New { set } => Expr::new_(self.made(set, generic_args), Vec::new()),
             MapOp::From { set } => {
                 let items = arg();
-                let items = self.items_of(items, args[0], span, out)?;
+                let items = self.items_of(items, tys[0], span, out)?;
                 Expr::new_(self.made(set, generic_args), vec![items])
             }
             MapOp::Insert if discarded => {
@@ -335,7 +352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "size"), Expr::int(0)),
             MapOp::Iter(part) => {
                 let m = arg();
-                let map_ty = self.thir[args[0]].ty;
+                let map_ty = tys[0];
                 // A B-tree's in its keys' order.
                 if self.is_sorted(map_ty) {
                     let entries = self.in_order_of(m, map_ty, span)?;
@@ -395,14 +412,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 map_ops(self, "$entryRemove", list)
             }
-            MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => unreachable!("taken apart above"),
+            MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => {
+                return Err(self.unsupported(span, "an entry's value, of its value alone"));
+            }
         })
     }
 
     /// What a map or a set is made of, or extended by: a range's items, as a
     /// range kept as a value is an object (ADR 0129); anything else as it is.
-    fn items_of(&mut self, items: Expr, arg: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let ty = self.thir[arg].ty;
+    fn items_of(&mut self, items: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         match self.range_kind(ty.peel_refs()) {
             Some(_) => self.range_items(items, ty.peel_refs(), span, out),
             None => Ok(items),

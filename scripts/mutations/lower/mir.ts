@@ -130,4 +130,20 @@ export const mutations: Mutation[] = [
     replace: "        if false && arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))\n",
     tests: ["test/mir.test.ts","-t","string_pushes"],
   },
+  {
+    name: "mir-comb-subject-dropped",
+    breaks: "an `Option`'s combinator from MIR is given its argument where its subject goes",
+    file: "src/lower/mir.rs",
+    find: "                self.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?\n",
+    replace: "                self.comb_values(comb, (exprs[1..].to_vec(), &arg_tys[1..]), made, generic_args, span, out)?\n",
+    tests: ["test/mir.test.ts","-t","option_as_deref|combinators_owned_drops"],
+  },
+  {
+    name: "mir-map-call-refused",
+    breaks: "a map's method from MIR is refused, as if THIR alone lowered it",
+    file: "src/lower/mir.rs",
+    find: "                self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?\n",
+    replace: "                return Err(self.unsupported(span, \"a map's method\"));\n",
+    tests: ["test/mir.test.ts","-t","map_index_missing"],
+  },
 ];

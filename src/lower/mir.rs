@@ -32,6 +32,7 @@ use rustc_span::Span;
 
 use super::recognition::{Std, StdItem};
 use super::representation::{const_js, variant_field};
+use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
 use super::std_types::text::TextOp;
 use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
@@ -2014,6 +2015,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = self.value_expr(values.next().expect("the items"), span)?;
                 let range = self.value_expr(values.next().expect("the range"), span)?;
                 self.slice_range_values(op, items, (range, arg_tys[1]), span, out)?
+            }
+            // An `Option`'s or a `Result`'s combinator: of its arguments' values,
+            // the subject one just made where it's a call's.
+            Std::Comb(comb) => {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                let made = matches!(exprs[0].kind, js::ExprKind::Call(..));
+                self.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?
+            }
+            // A map's or a set's method, but an entry's value or a range, which
+            // THIR takes apart from its places.
+            Std::Map(op)
+                if !matches!(
+                    op,
+                    MapOp::OrInsert
+                        | MapOp::OrInsertWith
+                        | MapOp::OrDefault
+                        | MapOp::TreeRange { .. }
+                        | MapOp::ExtractIf
+                ) =>
+            {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?
             }
             // A string's or a slice's method, but one of a range or a part of
             // it, which THIR lowers from its place.

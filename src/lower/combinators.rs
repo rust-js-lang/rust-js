@@ -538,12 +538,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let subject_ty = self.thir[args[0]].ty.peel_refs();
+        let values = self.operands(args, out)?;
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
+        let made = matches!(self.thir[self.strip(args[0])].kind, ExprKind::Call { .. });
+        self.comb_values(comb, (values, &tys), made, generic_args, span, out)
+    }
+
+    /// An `Option`'s or a `Result`'s combinator, of its arguments' values,
+    /// `tys` their types: what THIR and MIR both lower it to (ADR 0364).
+    /// `made`: whether the subject was just made by a call, so no other
+    /// variable shares it.
+    pub(in crate::lower) fn comb_values(
+        &mut self,
+        comb: Comb,
+        (mut values, tys): (Vec<Expr>, &[Ty<'tcx>]),
+        made: bool,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let subject_ty = tys[0].peel_refs();
         // An `Option` whose `Some` may be boxed (ADR 0051).
         let boxed = self
             .option_of(subject_ty)
             .is_some_and(|inner| self.boxed_payload(inner));
-        let mut values = self.operands(args, out)?;
         if let Comb::Then | Comb::ThenSome = comb {
             let some = generic_args.type_at(0);
             let (test, value) = (values.remove(0), values.remove(0));
@@ -566,10 +584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `map_err(|e| e.to_string())` of a parse error, whose message is
         // already a string: the same `Result`. Only one just made, so no
         // other variable is left sharing it.
-        if matches!(comb, Comb::ResultMap | Comb::MapErr)
-            && values[1].is_identity()
-            && matches!(self.thir[self.strip(args[0])].kind, ExprKind::Call { .. })
-        {
+        if matches!(comb, Comb::ResultMap | Comb::MapErr) && values[1].is_identity() && made {
             return Ok(values.remove(0));
         }
         let subject = values.remove(0);
@@ -673,7 +688,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A fallback with a destructor, unused, is dropped once `f` has
             // run, or thrown, as Rust drops an argument (ADR 0179).
-            Comb::MapOr if self.drops(self.thir[args[1]].ty) != Drops::Nothing => {
+            Comb::MapOr if self.drops(tys[1]) != Drops::Nothing => {
                 let fallback = next();
                 let fallback = match fallback.kind {
                     js::ExprKind::Var(_) => fallback,
@@ -685,7 +700,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let result = self.fresh("mapped");
                 body.push(StmtKind::Assign(Expr::var(&result), mapped).at(js::Span::NONE));
                 let mut dropped = Vec::new();
-                self.drop_value(fallback.clone(), self.thir[args[1]].ty, span, &mut dropped)?;
+                self.drop_value(fallback.clone(), tys[1], span, &mut dropped)?;
                 let js_span = self.js_span(span);
                 out.push(StmtKind::Let(result.clone(), None).at(js_span));
                 out.push(
@@ -746,10 +761,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Err` with a destructor is dropped, and a fallback with one
             // once `f` has run, or thrown (ADR 0179).
             Comb::ResultMapOr
-                if self.drops(generic_args.type_at(1)) != Drops::Nothing
-                    || self.drops(self.thir[args[1]].ty) != Drops::Nothing =>
+                if self.drops(generic_args.type_at(1)) != Drops::Nothing || self.drops(tys[1]) != Drops::Nothing =>
             {
-                let fallback_ty = self.thir[args[1]].ty;
+                let fallback_ty = tys[1];
                 let fallback = next();
                 let fallback = match fallback.kind {
                     js::ExprKind::Var(_) => fallback,
@@ -899,7 +913,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let other_none = Expr::bin(Op::LooseEq, other.clone(), Expr::null());
                     Expr::cond(some, Expr::cond(other_none, subject, Expr::undefined()), other)
                 } else {
-                    let other_inner = self.option_of(self.thir[args[1]].ty).expect("an `Option`");
+                    let other_inner = self.option_of(tys[1]).expect("an `Option`");
                     let other_value = match self.boxed_payload(other_inner) {
                         true => self.some_value(other),
                         false => other,
