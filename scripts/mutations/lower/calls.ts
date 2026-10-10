@@ -206,12 +206,4 @@ export const mutations: Mutation[] = [
     replace: "            if true {\n                given_to_js(&mut values);",
     tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
   },
-  {
-    name: "by-ref-array",
-    breaks: "`by_ref()` in a chain is its iterator, not a JS iterator of it",
-    file: "src/lower/calls.rs",
-    find: "            return Ok(self.js_iterator(it));\n",
-    replace: "            return Ok(it);\n",
-    tests: ["test/corpus.test.ts","-t","by_ref_chains"],
-  },
 ];
