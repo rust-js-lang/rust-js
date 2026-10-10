@@ -1,6 +1,6 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
 # exports: 126 of 2093 (6.0%)
-# members: 224 of 400 (56.0%)
+# members: 233 of 400 (58.3%)
 # next 30 of 42, members 101 of 199
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
@@ -2393,23 +2393,23 @@
 + next/legacy/image#StaticImageData.height
 + next/legacy/image#StaticImageData.src
 + next/legacy/image#StaticImageData.width
-# next/link 3 of 3, members 5 of 14
+# next/link 3 of 3, members 14 of 14
 + next/link#default
 + type next/link#LinkProps
-- next/link#LinkProps.as
++ next/link#LinkProps.as
 + next/link#LinkProps.href
-- next/link#LinkProps.legacyBehavior
-- next/link#LinkProps.locale
-- next/link#LinkProps.onClick
-- next/link#LinkProps.onMouseEnter
-- next/link#LinkProps.onNavigate
-- next/link#LinkProps.onTouchStart
++ next/link#LinkProps.legacyBehavior
++ next/link#LinkProps.locale
++ next/link#LinkProps.onClick
++ next/link#LinkProps.onMouseEnter
++ next/link#LinkProps.onNavigate
++ next/link#LinkProps.onTouchStart
 + next/link#LinkProps.passHref
 + next/link#LinkProps.prefetch
 + next/link#LinkProps.replace
 + next/link#LinkProps.scroll
-- next/link#LinkProps.shallow
-- next/link#LinkProps.transitionTypes
++ next/link#LinkProps.shallow
++ next/link#LinkProps.transitionTypes
 + next/link#useLinkStatus
 # next/navigation 17 of 17, members 0 of 4
 + next/navigation#forbidden

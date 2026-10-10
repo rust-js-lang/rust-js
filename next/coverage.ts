@@ -228,22 +228,29 @@ function rustMembers(): Map<string, Set<string>> {
     }
     return "";
   };
-  for (const file of rust(crate)) {
+  // A flattened field's are its struct's, React's attributes' among them.
+  const flattened: [string, string][] = [];
+  for (const file of [...rust(crate), ...rust(join(import.meta.dir, "../react/src"))]) {
     const text = readFileSync(file, "utf8");
+    const react = file.includes("/react/src/");
     for (const m of text.matchAll(/pub struct (\w+)[^;{(]*\{/g)) {
+      // React's own are only what a flattened field of this crate's holds.
+      const owner = react ? `react::${m[1]}` : m[1];
       let name: string | undefined;
       let flatten = false;
       for (const line of block(text, m.index! + m[0].length - 1).split("\n")) {
         name = line.match(/rust_js::name = "([^"]+)"/)?.[1] ?? name;
         flatten ||= /rust_js::flatten/.test(line);
-        const field = line.match(/^\s*pub (?:r#)?(\w+):/);
+        const field = line.match(/^\s*pub (?:r#)?(\w+):\s*(?:&(?:'\w+ )?)?(?:[\w:]+::)?(\w*)/);
         if (field) {
-          if (!flatten) add(m[1], name ?? field[1]);
+          if (flatten) flattened.push([owner, `react::${field[2]}`]);
+          else add(owner, name ?? field[1]);
           name = undefined;
           flatten = false;
         }
       }
     }
+    if (react) continue;
     for (const m of text.matchAll(/\nimpl(?:<[^>]*>)? (\w+)(?:<[^>]*>)? \{/g)) {
       for (const link of block(text, m.index! + m[0].length - 1).matchAll(/link_name = "(?:get |set )?([\w$]+)"/g)) add(m[1], link[1]);
     }
@@ -255,6 +262,15 @@ function rustMembers(): Map<string, Set<string>> {
     }
     for (const m of text.matchAll(/pub use [\w:]*?(\w+) as (\w+);/g)) aliases.push([m[2], m[1]]);
   }
+  const merged = (owner: string, seen: Set<string>): void => {
+    for (const [from, into] of flattened) {
+      if (from !== owner || seen.has(into)) continue;
+      seen.add(into);
+      merged(into, seen);
+      for (const member of members.get(into) ?? []) add(owner, member);
+    }
+  };
+  for (const [owner] of flattened) if (!owner.startsWith("react::")) merged(owner, new Set());
   for (const [union, payload] of payloads) for (const member of members.get(payload) ?? []) add(union, member);
   for (const [alias, target] of aliases) if (!members.has(alias) && members.has(target)) members.set(alias, members.get(target)!);
   return members;

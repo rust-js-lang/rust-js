@@ -451,6 +451,20 @@ pub fn Linked() -> JSX::Element {
     jsx! { <Link href="/" ref={Some(anchor)} title={Some("Home")} className={Some(classes(true))} passHref={Some(true)}>{label(true)}</Link> }
 }
 
+// A link loaded ahead as Next.js chooses, that stays where it is when told
+// to, and the transitions it animates by.
+pub fn Guarded() -> JSX::Element {
+    jsx! {
+        <Link
+            href="/about"
+            prefetch={Some(next::link::Prefetch::Auto)}
+            onNavigate={Some(Box::new(|event: &next::link::NavigateEvent| event.prevent_default()))}
+            transitionTypes={Some(&["slide"])}>
+            {"About"}
+        </Link>
+    }
+}
+
 // An image titled, as react.dev's TopNav titles its logo.
 pub fn Titled() -> JSX::Element {
     jsx! { <next::image::Image src="/next.svg" alt="Next.js logo" title={Some("Next.js")} width={Some(90)} height={Some(18)} /> }
@@ -626,6 +640,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(statements("app/page.jsx")[0]).not.toBe('"use client";');
   expect(readFileSync(join(dir, "app/page.jsx"), "utf8")).toContain("export default Home;");
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('import Link from "next/link";');
+  expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link\n      href="/about"\n      prefetch="auto"\n      onNavigate={(event) => {\n        event.preventDefault();\n      }}\n      transitionTypes={["slide"]}\n    >');
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link href="/" ref={anchor} title="Home" className={classes(true)} passHref>\n      {label(true)}');
   expect(readFileSync(join(dir, "pages/codes/[code].jsx"), "utf8")).toContain("return defaultHead().length;");
   const routePath = readFileSync(join(dir, "app/route_path.js"), "utf8");

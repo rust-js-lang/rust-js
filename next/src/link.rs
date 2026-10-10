@@ -1,6 +1,9 @@
 //! [`next/link`](https://nextjs.org/docs/app/api-reference/components/link):
 //! an `<a>` that goes to another route without loading the page again.
 
+use core::marker::PhantomData;
+
+use js::JsObject;
 use react::attributes::AnchorHTMLAttributes;
 use react::webapi::HTMLAnchorElement;
 use react::{JSX, ReactNode, RefObject};
@@ -28,8 +31,31 @@ pub struct LinkProps<'a, C> {
     pub replace: Option<bool>,
     /// Scroll to the top of the new page, or keep where it is: `true`.
     pub scroll: Option<bool>,
-    /// Load the route ahead, as the link is seen: in production only.
-    pub prefetch: Option<bool>,
+    /// Load the route ahead, as the link is seen, in production: all of it,
+    /// `Prefetch::Bool(true)`, none, or `Prefetch::Auto`, its default.
+    pub prefetch: Option<Prefetch>,
+    /// The path the browser shows, where it isn't `href`'s: the Pages
+    /// Router's, deprecated.
+    #[cfg_attr(rust_js, rust_js::name = "as")]
+    pub r#as: Option<&'a str>,
+    /// Go there without its `getStaticProps` or `getServerSideProps` run
+    /// again: the Pages Router's.
+    pub shallow: Option<bool>,
+    /// The locale it goes to, or `LinkLocale::Bool(false)`, none: the Pages
+    /// Router's i18n.
+    pub locale: Option<LinkLocale<'a>>,
+    /// Its child is the `<a>`, as before Next.js 13: deprecated.
+    #[cfg_attr(rust_js, rust_js::name = "legacyBehavior")]
+    pub legacy_behavior: Option<bool>,
+    /// Called as it goes, on the client: `event.prevent_default()` stays.
+    #[cfg_attr(rust_js, rust_js::name = "onNavigate")]
+    pub on_navigate: Option<Box<dyn Fn(&NavigateEvent)>>,
+    /// The transition types React's `<ViewTransition>`s animate it by.
+    #[cfg_attr(rust_js, rust_js::name = "transitionTypes")]
+    pub transition_types: Option<&'a [&'a str]>,
+    /// Load the route ahead as it's hovered, all of it.
+    #[cfg_attr(rust_js, rust_js::name = "unstable_dynamicOnHover")]
+    pub unstable_dynamic_on_hover: Option<bool>,
     /// Send `href` to its child, as a child that isn't an `<a>` needs: `false`.
     #[cfg_attr(rust_js, rust_js::name = "passHref")]
     pub pass_href: Option<bool>,
@@ -64,4 +90,30 @@ pub fn use_link_status() -> LinkStatus {
 pub struct LinkStatus {
     /// Going to the link's route, not there yet.
     pub pending: bool,
+}
+
+/// A [`LinkProps`]'s `prefetch`, `boolean | "auto"`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Prefetch {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "auto")]
+    Auto,
+}
+
+/// A [`LinkProps`]'s `locale`, `string | false`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum LinkLocale<'a> {
+    Str(&'a str),
+    Bool(bool),
+}
+
+/// What a [`LinkProps`]'s `on_navigate` is given.
+pub struct NavigateEvent(PhantomData<JsObject>);
+
+impl NavigateEvent {
+    /// Stay where it is.
+    #[cfg_attr(rust_js, rust_js::link_name = "preventDefault")]
+    pub fn prevent_default(&self) {
+        unreachable!()
+    }
 }

@@ -67,7 +67,7 @@ private ones aside. One imported and exported again, `ImageProps` of
 image-external, is read where it's declared. What a type has of React's,
 an element's attributes, is React's, counted by its crate. Each is bound
 where the Rust item of its name has it: a field by its JS name, not a
-flattened one's; a method of its `impl`s by its link name, `get cookies`
+flattened one's struct's, React's among them; a method of its `impl`s by its link name, `get cookies`
 a `cookies`; a static, `next/server#NextResponse.json`; an untagged enum's,
 its payloads'; a type alias's, its type's. A member Next.js declares only
 to throw, `NextRequest.page`, isn't bound, and stays `-`. A type a function
