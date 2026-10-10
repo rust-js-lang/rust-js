@@ -915,6 +915,12 @@ export function $rangeNext(range) {
   return range.start < range.end ? range.start++ : undefined;
 }
 
+// A `RangeInclusive`'s `next()`, `{ start, end }`: its start, moved past,
+// while it's at most its end. Past its end, as Rust's, it gives nothing.
+export function $rangeInclusiveNext(range) {
+  return range.start <= range.end ? range.start++ : undefined;
+}
+
 export function $rangeNextBack(range) {
   return range.start < range.end ? --range.end : undefined;
 }
