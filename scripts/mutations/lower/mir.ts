@@ -346,4 +346,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","generic_associated_types"],
   },
+  {
+    name: "mir-format-width-dropped",
+    breaks: "`{:5?}` from MIR pads nothing",
+    file: "src/lower/mir.rs",
+    find: "                                None => spec.width.map(|w| Expr::int(w.into())),\n",
+    replace: "                                None => None,\n",
+    tests: ["test/mir.test.ts","-t","debug_options"],
+  },
+  {
+    name: "mir-format-precision-dropped",
+    breaks: "`{:.1?}` from MIR shows every digit",
+    file: "src/lower/mir.rs",
+    find: "                                None => spec.precision.map(|p| Expr::int(p.into())),\n",
+    replace: "                                None => None,\n",
+    tests: ["test/mir.test.ts","-t","debug_options"],
+  },
+  {
+    name: "mir-format-width-argument-dropped",
+    breaks: "`{:>w$}` from MIR pads nothing",
+    file: "src/lower/mir.rs",
+    find: "                            let width = match spec.width_from {\n                                Some(from) => Some(item(from).ok_or_else(bad)?.2),\n",
+    replace: "                            let width = match spec.width_from {\n                                Some(_) => None,\n",
+    tests: ["test/mir.test.ts","-t","format_width_arguments"],
+  },
 ];

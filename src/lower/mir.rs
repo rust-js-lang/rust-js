@@ -2263,10 +2263,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     parts.push(match piece {
                         super::format_args::Piece::Text(text) => Expr::str(text),
                         super::format_args::Piece::Argument(i, spec) => {
-                            let Some(Value::Fmt(kind, ty, value)) = items.get(i).cloned() else {
-                                return Err(self.unsupported(span, "this format argument, from its MIR"));
+                            let bad = || self.unsupported(span, "this format argument, from its MIR");
+                            let item = |i: usize| match items.get(i) {
+                                Some(Value::Fmt(kind, ty, value)) => Some((*kind, *ty, value.clone())),
+                                _ => None,
                             };
-                            self.format_value(value, (kind, ty), spec, (None, None), span)?
+                            let (kind, ty, value) = item(i).ok_or_else(bad)?;
+                            // `{:1$}`'s width, or `{:.*}`'s precision, another argument.
+                            let width = match spec.width_from {
+                                Some(from) => Some(item(from).ok_or_else(bad)?.2),
+                                None => spec.width.map(|w| Expr::int(w.into())),
+                            };
+                            let precision = match spec.precision_from {
+                                Some(from) => Some(item(from).ok_or_else(bad)?.2),
+                                None => spec.precision.map(|p| Expr::int(p.into())),
+                            };
+                            self.format_value(value, (kind, ty), spec, (width, precision), span)?
                         }
                     });
                 }
