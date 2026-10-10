@@ -388,4 +388,64 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
+  {
+    "name": "plain-refcell-never",
+    "breaks": "a field's `RefCell` only borrowed for a moment stays `{ value }`, `$borrowMut(parent.children).value.push(node)`",
+    "file": "src/lower/drops.rs",
+    "find": "            && (self.krate.plain_ref_cells)\n                .get_or_init(|| self.find_plain_ref_cells())\n                .contains(&ty)\n",
+    "replace": "            && (self.krate.plain_ref_cells)\n                .get_or_init(|| self.find_plain_ref_cells())\n                .contains(&ty)\n            && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only borrowed for a moment"
+    ]
+  },
+  {
+    "name": "plain-refcell-any-borrow",
+    "breaks": "a field's `RefCell` borrowed while something may ask, counted, is taken for its value",
+    "file": "src/lower/drops.rs",
+    "find": "                    && facts.momentary.contains(&fun)\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only borrowed for a moment"
+    ]
+  },
+  {
+    "name": "plain-refcell-lent-kept",
+    "breaks": "a field's `RefCell` lent whole, whose borrows the callee counts, is taken for its value",
+    "file": "src/lower/drops.rs",
+    "find": "                        false => cells.insert(expr.ty),",
+    "replace": "                        false => plain.insert(expr.ty),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only borrowed for a moment"
+    ]
+  },
+  {
+    "name": "plain-refcell-bound-kept",
+    "breaks": "a field's `RefCell` a pattern binds, a cell of its own, is taken for its value",
+    "file": "src/lower/drops.rs",
+    "find": "                    self.found.insert(field.pattern.ty);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only borrowed for a moment"
+    ]
+  },
+  {
+    "name": "plain-refcell-derive-kept",
+    "breaks": "a derive's `RefCell` field, which it reads itself, is taken for its value",
+    "file": "src/lower/drops.rs",
+    "find": "                && super::recognition::known_derive(tcx, imp.to_def_id())\n",
+    "replace": "                && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only borrowed for a moment"
+    ]
+  },
 ];

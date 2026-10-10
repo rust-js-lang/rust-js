@@ -15,7 +15,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::{self as hir, HirId, Node};
 use rustc_middle::middle::region;
 use rustc_middle::thir::{BlockId, ExprId, ExprKind, LocalVarId, Pat, StmtKind as ThirStmt};
-use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt};
+use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
@@ -55,6 +55,34 @@ struct Owned<'tcx> {
 /// A part of a value, field by field: each step the variant it's in, by
 /// index, for an enum's, and the field.
 pub(super) type Path = Vec<(Option<u32>, usize)>;
+
+/// Each `RefCell` a pattern binds of a field, not as `_` (ADR 0362).
+struct BoundRefCells<'a, 'b, 'tcx> {
+    recognition: super::recognition::Recognition<'a, 'tcx>,
+    thir: &'b rustc_middle::thir::Thir<'tcx>,
+    found: &'b mut HashSet<Ty<'tcx>>,
+}
+
+impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_, 'b, 'tcx> {
+    fn thir(&self) -> &'b rustc_middle::thir::Thir<'tcx> {
+        self.thir
+    }
+
+    fn visit_pat(&mut self, pat: &'b Pat<'tcx>) {
+        if let rustc_middle::thir::PatKind::Variant { ref subpatterns, .. }
+        | rustc_middle::thir::PatKind::Leaf { ref subpatterns } = pat.kind
+        {
+            for field in subpatterns {
+                if !matches!(field.pattern.kind, rustc_middle::thir::PatKind::Wild)
+                    && self.recognition.is_std_type(field.pattern.ty, StdItem::RefCell)
+                {
+                    self.found.insert(field.pattern.ty);
+                }
+            }
+        }
+        rustc_middle::thir::visit::walk_pat(self, pat);
+    }
+}
 
 /// A temporary that ends with the statement being lowered.
 pub(super) struct Temp<'tcx> {
@@ -743,6 +771,106 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// This body's facts, found the first time they're asked for; what it
     /// does that isn't supported is an error then.
+    /// A `RefCell` type a field holds as its value (ADR 0362): each field of
+    /// one in the crate is only ever borrowed for a moment, where nothing can
+    /// ask, so no borrow of it is counted, its count stays 0, and its checks
+    /// can't fail. A cell lent, bound, moved, replaced or cloned, of a derive,
+    /// or of a type with a destructor, or a library's, is a cell.
+    pub(super) fn plain_ref_cell(&self, ty: Ty<'tcx>) -> bool {
+        self.is_std_type(ty, StdItem::RefCell)
+            && (self.krate.plain_ref_cells)
+                .get_or_init(|| self.find_plain_ref_cells())
+                .contains(&ty)
+    }
+
+    fn find_plain_ref_cells(&self) -> HashSet<Ty<'tcx>> {
+        let tcx = self.tcx;
+        if self.krate.library {
+            return HashSet::new();
+        }
+        // Each body's own facts, asked with no dictionaries: a type
+        // parameter's drop is then a maybe, and its borrow counted.
+        let query = DropQuery {
+            recognition: self.recognition(),
+            evidence: self.no_evidence_query(),
+            library: false,
+            counted: self.krate.counted,
+            state: &self.drop_state.types,
+        };
+        let mut plain = HashSet::new();
+        let mut cells = HashSet::new();
+        let bodies = (self.krate.bodies.values().copied()).chain(self.krate.closures.values().copied());
+        for body in bodies {
+            let thir = &body.thir;
+            let facts = find_facts(&query, thir, body.def_id.to_def_id());
+            // `x.f` lent to a borrow held for a moment: `x.f.borrow_mut().push(..)`.
+            let mut for_a_moment = HashSet::new();
+            for expr in thir.exprs.iter() {
+                if let ExprKind::Call { fun, ref args, .. } = expr.kind
+                    && facts.momentary.contains(&fun)
+                    && let Some(&lent) = args.first()
+                    && let ExprKind::Borrow { arg, .. } = thir[super::body_queries::strip(thir, lent)].kind
+                {
+                    for_a_moment.insert(super::body_queries::strip(thir, arg));
+                }
+            }
+            for (id, expr) in thir.exprs.iter_enumerated() {
+                if let ExprKind::Field { .. } = expr.kind
+                    && self.is_std_type(expr.ty, StdItem::RefCell)
+                {
+                    match for_a_moment.contains(&id) {
+                        true => plain.insert(expr.ty),
+                        false => cells.insert(expr.ty),
+                    };
+                }
+            }
+            // One bound by a pattern is a value of its own, a cell.
+            let mut bound = BoundRefCells {
+                recognition: self.recognition(),
+                thir,
+                found: &mut cells,
+            };
+            for expr in thir.exprs.iter() {
+                if let ExprKind::Let { ref pat, .. } = expr.kind {
+                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
+                }
+            }
+            for stmt in thir.stmts.iter() {
+                if let ThirStmt::Let { ref pattern, .. } = stmt.kind {
+                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pattern);
+                }
+            }
+            for arm in thir.arms.iter() {
+                rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, &arm.pattern);
+            }
+            for param in thir.params.iter() {
+                if let Some(pat) = &param.pat {
+                    rustc_middle::thir::visit::Visitor::visit_pat(&mut bound, pat);
+                }
+            }
+        }
+        // A derive's, which reads its fields itself (ADR 0049).
+        for imp in tcx.hir_crate_items(()).definitions() {
+            if matches!(tcx.def_kind(imp), DefKind::Impl { of_trait: true })
+                && super::recognition::known_derive(tcx, imp.to_def_id())
+                && let ty::Adt(adt, args) = tcx.type_of(imp).instantiate_identity().skip_normalization().kind()
+            {
+                for field in adt.all_fields() {
+                    let field_ty = field.ty(tcx, args).skip_normalization();
+                    if self.is_std_type(field_ty, StdItem::RefCell) {
+                        cells.insert(field_ty);
+                    }
+                }
+            }
+        }
+        // A generic one may be any of them.
+        if cells.iter().any(|ty| ty.has_param()) {
+            return HashSet::new();
+        }
+        plain.retain(|ty| !cells.contains(ty) && !ty.has_param() && !query.has_drops(*ty));
+        plain
+    }
+
     pub(super) fn drop_facts(&mut self) -> R<Rc<Facts>> {
         let key = std::ptr::from_ref(self.thir) as usize;
         if let Some(facts) = self.drop_state.facts.get(&key) {

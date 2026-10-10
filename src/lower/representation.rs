@@ -274,19 +274,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What a field of type `ty` is, read where it's `field`: itself, or of
     /// a `Cell`, a handle on it, as a `Cell` in a field is the value it
-    /// holds, the property set in place (ADR 0288). Every use of a cell,
-    /// `.value`, reads and writes the property through it.
+    /// holds, the property set in place (ADR 0288), and so is a `RefCell`
+    /// never counted (ADR 0362). Every use of a cell, `.value`, reads and
+    /// writes the property through it.
     pub(super) fn held(&self, field: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.is_std_type(ty, StdItem::Cell) {
+        match self.is_std_type(ty, StdItem::Cell) || self.plain_ref_cell(ty) {
             true => Expr::handle(field),
             false => field,
         }
     }
 
     /// What a field of type `ty` holds of `value`, a field's value made: of
-    /// a `Cell`, what the cell holds (ADR 0288).
+    /// a `Cell`, what the cell holds (ADR 0288), and of a `RefCell` never
+    /// counted (ADR 0362).
     pub(super) fn holding(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.is_std_type(ty, StdItem::Cell) {
+        match self.is_std_type(ty, StdItem::Cell) || self.plain_ref_cell(ty) {
             true => Expr::member(value, "value"),
             false => value,
         }

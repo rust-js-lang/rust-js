@@ -92,4 +92,16 @@ export const mutations: Mutation[] = [
     replace: "            Std::CellSwap if false && self.is_std_type(",
     tests: ["test/corpus.test.ts", "-t", "refcell_swap_itself"],
   },
+  {
+    "name": "plain-refcell-local-unchecked",
+    "breaks": "a local `RefCell` of a type a field holds as its value isn't checked, so a `borrow_mut` beside a held `borrow` doesn't panic",
+    "file": "src/lower/std_types/cell.rs",
+    "find": "            if matches!(self.thir[self.strip(arg)].kind, ExprKind::Field { .. })\n                && self.plain_ref_cell(self.thir[arg].ty))",
+    "replace": "            if self.plain_ref_cell(self.thir[arg].ty))",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only borrowed for a moment"
+    ]
+  },
 ];

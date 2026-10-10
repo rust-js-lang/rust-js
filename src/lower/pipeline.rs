@@ -194,6 +194,7 @@ pub fn lower_crate<'tcx>(
     let drop_checks = RefCell::new(Vec::new());
     let drop_uses = RefCell::new(super::drops::DropUses::new(tcx, &drop_params));
     let called_bodies = rustc_arena::TypedArena::default();
+    let plain_ref_cells = std::cell::OnceCell::new();
     let crate_facts = CrateFacts {
         called_bodies: &called_bodies,
         foreign: &foreign,
@@ -223,6 +224,7 @@ pub fn lower_crate<'tcx>(
         plain_locals: &plain_locals,
         plain_cells: &plain_cells,
         read_at_once: &read_at_once,
+        plain_ref_cells: &plain_ref_cells,
         named_expressions: &named_expressions,
         local_functions: &local_functions,
     };
@@ -623,7 +625,10 @@ pub fn lower_crate<'tcx>(
                 }
             }
             let reexports = reexports(tcx, module, &fns, &paths, default_from);
-            let declarations = super::declarations::module(tcx, module, default_export, &paths, &reexports);
+            let no_plain = HashSet::new();
+            let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
+            let declarations =
+                super::declarations::module(tcx, module, default_export, &paths, &reexports, plain_ref_cells);
             let lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),

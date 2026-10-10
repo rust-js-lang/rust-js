@@ -515,6 +515,122 @@ pub fn constants() -> (Settled, Settled) {
     .toEqual([true, false]);
 });
 
+// ADR 0362: a `RefCell` in a field that's only ever borrowed for a moment,
+// where nothing can ask, is never counted, so it's the value it holds, as
+// react.dev's nested table of contents pushes onto a node's `children`.
+test("a field's RefCell only borrowed for a moment is its value", async () => {
+  const dir = fixture("plain-refcell-field");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+pub struct Item {
+    pub depth: u32,
+    pub url: String,
+}
+
+pub struct Node {
+    pub item: Option<Rc<Item>>,
+    pub children: RefCell<Vec<Rc<Node>>>,
+}
+
+pub fn nested(toc: Vec<Rc<Item>>) -> Rc<Node> {
+    let mut ancestors: HashMap<u32, Rc<Node>> = HashMap::new();
+    let root = Rc::new(Node { item: None, children: RefCell::new(vec![]) });
+    for item in toc {
+        let parent = ancestors.get(&(item.depth - 1)).cloned().unwrap_or_else(|| root.clone());
+        let node = Rc::new(Node { item: Some(item.clone()), children: RefCell::new(vec![]) });
+        parent.children.borrow_mut().push(node.clone());
+        ancestors.insert(item.depth, node);
+    }
+    root
+}
+
+pub fn width(node: &Node) -> usize {
+    node.children.borrow().len()
+}
+
+// A local of the same type is a cell still, its borrows checked.
+pub fn both(node: Rc<Node>) -> usize {
+    let spare: RefCell<Vec<Rc<Node>>> = RefCell::new(vec![]);
+    let reading = spare.borrow();
+    spare.borrow_mut().push(node);
+    reading.len()
+}
+
+// One lent whole stays a cell: what it's lent counts its borrows.
+pub struct Held {
+    pub values: RefCell<Vec<u32>>,
+}
+
+fn first(values: &RefCell<Vec<u32>>) -> Option<u32> {
+    values.borrow().first().copied()
+}
+
+pub fn held(n: u32) -> Option<u32> {
+    let held = Held { values: RefCell::new(vec![n]) };
+    first(&held.values)
+}
+
+// One bound by a pattern is a cell of its own.
+pub struct Bound {
+    pub values: RefCell<Vec<u16>>,
+}
+
+pub fn bound(n: u16) -> usize {
+    let Bound { values } = Bound { values: RefCell::new(vec![n]) };
+    values.borrow().len()
+}
+
+pub fn peek(bound: &Bound) -> usize {
+    bound.values.borrow().len()
+}
+
+// One held while something may ask is counted.
+pub struct Asked {
+    pub values: RefCell<Vec<u8>>,
+}
+
+fn ask(asked: &Asked) -> usize {
+    asked.values.borrow().len()
+}
+
+pub fn asked(n: u8) -> usize {
+    let asked = Asked { values: RefCell::new(vec![n]) };
+    let guard = asked.values.borrow();
+    let len = guard.len() + ask(&asked);
+    drop(guard);
+    len
+}
+
+// A derive's reads its fields itself.
+#[derive(Clone)]
+pub struct Derived {
+    pub values: RefCell<Vec<i32>>,
+}
+
+pub fn derived(n: i32) -> usize {
+    let derived = Derived { values: RefCell::new(vec![n]) };
+    let copy = derived.clone();
+    copy.values.borrow_mut().push(1);
+    copy.values.borrow().len() + derived.values.borrow().len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("{ children: [] }");
+  expect(js).toContain("parent.children.push(node);");
+  expect(js.slice(js.indexOf("export function nested"), js.indexOf("export function both"))).not.toContain("$borrow");
+  // Each of the others is a cell: lent, bound, counted, derived.
+  expect(js.match(/\{ values: \{ value: \[n\] \} \}/g)?.length).toBe(4);
+  const lib = await import(join(dir, "lib.js"));
+  const items = [1, 2, 2, 3, 2].map((depth, i) => ({ depth, url: `#${i}` }));
+  const root = lib.nested(items);
+  expect([lib.width(root), root.children[0].children.length, root.children[0].children[1].children[0].item.url]).toEqual([1, 3, "#3"]);
+  expect([lib.held(4), lib.bound(1), lib.asked(1), lib.derived(1)]).toEqual([4, 1, 2, 3]);
+  expect(() => lib.both(root)).toThrow("already borrowed");
+});
+
 // ADR 0214: an untagged enum's `Dict` is a plain object, of no class: told
 // apart as an object, as a parsed URL's query, text or parsed, is.
 test("an untagged enum's dictionary is told apart as an object", async () => {

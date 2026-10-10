@@ -9,6 +9,15 @@ use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty::{self};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `lent`, a borrow's cell, is a field's `RefCell` never
+    /// counted, `&x.f` (ADR 0362): a local's is a cell, whose borrows count.
+    fn plain_ref_cell_field(&self, lent: ExprId) -> bool {
+        let lent = self.strip(lent);
+        matches!(self.thir[lent].kind, ExprKind::Borrow { arg, .. }
+            if matches!(self.thir[self.strip(arg)].kind, ExprKind::Field { .. })
+                && self.plain_ref_cell(self.thir[arg].ty))
+    }
+
     /// What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098): `None` if `known` is another.
     pub(in crate::lower) fn cell_call(
         &mut self,
@@ -106,6 +115,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::NotPoisoned => Expr::bool(false),
             // A guard is its cell, checked free to borrow so, and counted
             // while it's held where something could ask (ADR 0328).
+            // Of a field's `RefCell` never counted, the field itself, whose
+            // check can't fail (ADR 0362).
+            Std::Borrow { lock: false, .. } if self.plain_ref_cell_field(args[0]) => arg(),
             Std::Borrow { mutable, lock } => {
                 let hold = !self.drop_facts()?.momentary.contains(&fun);
                 let name = match (lock, mutable) {

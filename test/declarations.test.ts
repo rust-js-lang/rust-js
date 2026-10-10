@@ -331,6 +331,15 @@ pub struct Tally {
     pub count: std::cell::Cell<u32>,
 }
 
+pub struct Shelf {
+    pub books: std::cell::RefCell<Vec<String>>,
+}
+
+pub fn shelved(shelf: &Shelf, book: String) -> usize {
+    shelf.books.borrow_mut().push(book);
+    shelf.books.borrow().len()
+}
+
 pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     cell.get()
 }
@@ -376,6 +385,8 @@ pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     'export type Open = {\n    kind: "on";\n} | any;',
     // A `Cell` in a field is what it holds; one lent is `{ value }` (ADR 0288).
     "export interface Tally {\n    count: number;\n}",
+    // So is a `RefCell` only ever borrowed for a moment (ADR 0362).
+    "export interface Shelf {\n    books: string[];\n}",
     "export function tallied(cell: {\n    value: number;\n}): number;",
   ]) {
     expect(declarations).toContain(line);

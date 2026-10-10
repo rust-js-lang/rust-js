@@ -6,7 +6,7 @@
 //! to less than Rust holds it to. They're the model of @rust-js/typescript
 //! (ADR 0206), which TypeScript prints (ADR 0207).
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use crate::program::LoweredImport;
 use rustc_hir as hir;
@@ -26,17 +26,19 @@ use super::representation::Num;
 
 /// What a module's `.d.ts` declares, but its header: `None` where it
 /// exports nothing.
-pub(super) fn module(
-    tcx: TyCtxt<'_>,
+pub(super) fn module<'tcx>(
+    tcx: TyCtxt<'tcx>,
     module: LocalModId,
     default_export: Option<DefId>,
     files: &HashMap<LocalModId, Vec<String>>,
     reexports: &[LoweredImport],
+    plain_ref_cells: &HashSet<Ty<'tcx>>,
 ) -> Option<Value> {
     let mut out = Declarations {
         tcx,
         module,
         files,
+        plain_ref_cells,
         imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
         foreign: BTreeMap::new(),
@@ -174,6 +176,8 @@ fn is_any(ty: &Value) -> bool {
 struct Declarations<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
     module: LocalModId,
+    /// The `RefCell`s a field holds as their value (ADR 0362).
+    plain_ref_cells: &'a HashSet<Ty<'tcx>>,
     /// The crate's modules that have a file, by their path: those whose
     /// types another's declarations import (ADR 0210).
     files: &'a HashMap<LocalModId, Vec<String>>,
@@ -641,10 +645,15 @@ impl<'tcx> Declarations<'_, 'tcx> {
 
     /// `ty` as a TypeScript type.
     /// A field's type: of a `Cell`, what it holds, as a `Cell` in a field
-    /// is the property set in place (ADR 0288).
+    /// is the property set in place (ADR 0288), and of a `RefCell` never
+    /// counted (ADR 0362).
     fn field_ts(&mut self, ty: Ty<'tcx>) -> Value {
         match ty.kind() {
-            ty::Adt(adt, args) if is_std_def(self.tcx, adt.did(), StdItem::Cell) => self.ts(args.type_at(0)),
+            ty::Adt(adt, args)
+                if is_std_def(self.tcx, adt.did(), StdItem::Cell) || self.plain_ref_cells.contains(&ty) =>
+            {
+                self.ts(args.type_at(0))
+            }
             _ => self.ts(ty),
         }
     }

@@ -20,9 +20,8 @@ export function entry() {
 
 const Counter = {
   hit(counter) {
-    const cell = $borrowMut(counter.hits);
-    cell.value = (cell.value + 1) >>> 0;
-    return $borrow(counter.hits).value;
+    counter.hits = (counter.hits + 1) >>> 0;
+    return counter.hits;
   },
 };
 
@@ -121,7 +120,7 @@ function main() {
         .value.map((item) => String(item))
         .join(", ")}] ${$borrow(grid).value[2]}`,
     );
-    const counter = { hits: { value: 0 } };
+    const counter = { hits: 0 };
     Counter.hit(counter);
     console.log(`${Counter.hit(counter)}`);
     const shared = { value: "a" };
