@@ -1,16 +1,16 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 107 of 2093 (5.1%)
-# next 11 of 42
+# exports: 126 of 2093 (6.0%)
+# next 30 of 42
 - type next#AdapterOutput
 - next#default
-- type next#FileSizeSuffix
-- type next#GetServerSideProps
-- type next#GetServerSidePropsContext
-- type next#GetServerSidePropsResult
-- type next#GetStaticPaths
++ type next#FileSizeSuffix
++ type next#GetServerSideProps
++ type next#GetServerSidePropsContext
++ type next#GetServerSidePropsResult
++ type next#GetStaticPaths
 + type next#GetStaticPathsContext
 + type next#GetStaticPathsResult
-- type next#GetStaticProps
++ type next#GetStaticProps
 + type next#GetStaticPropsContext
 + type next#GetStaticPropsResult
 - type next#InferGetServerSidePropsType
@@ -20,28 +20,28 @@
 + type next#Metadata
 + type next#MetadataRoute
 - type next#NextAdapter
-- type next#NextApiHandler
-- type next#NextApiRequest
-- type next#NextApiResponse
-- type next#NextComponentType
++ type next#NextApiHandler
++ type next#NextApiRequest
++ type next#NextApiResponse
++ type next#NextComponentType
 - type next#NextConfig
-- type next#NextPage
-- type next#NextPageContext
-- type next#PageConfig
-- type next#PreviewData
-- type next#Redirect
++ type next#NextPage
++ type next#NextPageContext
++ type next#PageConfig
++ type next#PreviewData
++ type next#Redirect
 + type next#ResolvedMetadata
 + type next#ResolvedViewport
 + type next#ResolvingMetadata
 + type next#ResolvingViewport
-- type next#ResponseLimit
-- type next#Route
++ type next#ResponseLimit
++ type next#Route
 - type next#RouterTransitionEvent
 - type next#RouterTransitionPrefetchIntent
 - type next#RouterTransitionStartEvent
 - type next#RouterTransitionType
-- type next#ServerRuntime
-- type next#SizeLimit
++ type next#ServerRuntime
++ type next#SizeLimit
 + type next#Viewport
 # next/app 1 of 6
 - type next/app#AppContext

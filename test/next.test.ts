@@ -103,7 +103,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   writeFileSync(join(dir, "app/robots.rs"), robots);
@@ -144,6 +144,10 @@ js::export_default!(Later);
   // and not found for one, as react.dev's errors page is.
   mkdirSync(join(dir, "pages/codes"), { recursive: true });
   writeFileSync(join(dir, "pages/codes/[code].rs"), code);
+  // A page rendered for each request, and an API route.
+  writeFileSync(join(dir, "pages/agent.rs"), agent);
+  mkdirSync(join(dir, "pages/api"));
+  writeFileSync(join(dir, "pages/api/greet.rs"), apiHello);
   // The Pages Router's app, which renders each page in it, as react.dev's
   // _app does.
   writeFileSync(join(dir, "pages/_app.rs"), `#![allow(non_snake_case)]
@@ -338,8 +342,8 @@ pub async fn remember(theme: String) {
 const code = `#![allow(non_snake_case)]
 
 use next::{
-    GetStaticPathsContext, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, StaticNotFound, StaticPath,
-    StaticPathParams, StaticProps,
+    GetStaticPathsContext, GetStaticPathsFallback, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, PermanentRedirect,
+    Redirect, Revalidate, StaticNotFound, StaticPath, StaticPathParams, StaticProps, StaticRedirect,
 };
 use react::{JSX, jsx};
 
@@ -364,15 +368,61 @@ js::export_default!(Code);
 
 pub async fn getStaticProps(GetStaticPropsContext { params, .. }: GetStaticPropsContext<Params>) -> GetStaticPropsResult<CodeProps> {
     match params {
-        Some(Params { code }) if code != "0" => GetStaticPropsResult::Props(StaticProps { props: CodeProps { code } }),
-        _ => GetStaticPropsResult::NotFound(StaticNotFound { not_found: true }),
+        // An old code, which goes to its new one.
+        Some(Params { code }) if code == "3" => GetStaticPropsResult::Redirect(StaticRedirect {
+            redirect: Redirect::Permanent(PermanentRedirect { permanent: false, destination: "/codes/1", base_path: None }),
+            revalidate: None,
+        }),
+        Some(Params { code }) if code != "0" => GetStaticPropsResult::Props(StaticProps { props: CodeProps { code }, revalidate: Some(Revalidate::Seconds(60.0)) }),
+        _ => GetStaticPropsResult::NotFound(StaticNotFound { not_found: true, revalidate: None }),
     }
 }
 
 pub async fn getStaticPaths(_: GetStaticPathsContext) -> GetStaticPathsResult<Params> {
-    let params = |code: &str| StaticPath::Params(StaticPathParams { params: Params { code: code.to_string() } });
-    GetStaticPathsResult { paths: vec![params("0"), params("1"), StaticPath::Path("/codes/2".to_string())], fallback: false }
+    let params = |code: &str| StaticPath::Params(StaticPathParams { params: Params { code: code.to_string() }, locale: None });
+    // Another code is rendered as it's asked for.
+    GetStaticPathsResult { paths: vec![params("0"), params("1"), StaticPath::Path("/codes/2".to_string())], fallback: GetStaticPathsFallback::Str("blocking") }
 }
+`;
+
+const agent = `#![allow(non_snake_case)]
+
+use next::{GetServerSidePropsContext, GetServerSidePropsResult, ServerProps};
+use react::{JSX, jsx};
+
+pub struct AgentProps {
+    pub url: String,
+    pub method: String,
+}
+
+pub fn Agent(AgentProps { url, method }: AgentProps) -> JSX::Element {
+    jsx! { <p>{method}{" "}{url}</p> }
+}
+
+js::export_default!(Agent);
+
+pub async fn getServerSideProps(context: GetServerSidePropsContext<()>) -> GetServerSidePropsResult<AgentProps> {
+    let method = context.req.method().unwrap_or_default();
+    GetServerSidePropsResult::Props(ServerProps { props: AgentProps { url: context.resolved_url, method } })
+}
+`;
+
+const apiHello = `use next::{NextApiRequest, NextApiResponse, QueryValue};
+
+pub struct Hello {
+    pub hello: String,
+    pub method: String,
+}
+
+pub fn handler(req: &'static NextApiRequest, res: &'static NextApiResponse<Hello>) {
+    let hello = match js::dict::get(req.query(), "name") {
+        Some(QueryValue::One(name)) => name.clone(),
+        _ => "nobody".to_string(),
+    };
+    res.status(200).json(Hello { hello, method: req.method().unwrap_or_default() });
+}
+
+js::export_default!(handler);
 `;
 
 const linked = `#![allow(non_snake_case)]
@@ -663,6 +713,12 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // A page's module has no declarations beside it, which Turbopack would
   // take as a page of its own; another module has (ADR 0276).
   expect([existsSync(join(dir, "pages/codes/[code].d.ts")), existsSync(join(dir, "app/linked.d.ts"))]).toEqual([false, true]);
+  // A page of getServerSideProps, and an API route, each the request's.
+  expect([output.includes("ƒ /agent"), output.includes("ƒ /api/greet")]).toEqual([true, true]);
+  const codeJsx = readFileSync(join(dir, "pages/codes/[code].jsx"), "utf8");
+  expect(codeJsx).toContain('return { redirect: { permanent: false, destination: "/codes/1" } };');
+  expect(codeJsx).toContain("revalidate: 60 };");
+  expect(readFileSync(join(dir, "pages/api/greet.js"), "utf8")).toContain("res.status(200).json({ hello, method: req.method ?? \"\" });");
   // The Pages Router's page, built for each path but the one not found.
   const built = (path: string) => existsSync(join(dir, `.next/server/pages/codes/${path}.html`));
   expect([built("0"), built("1"), built("2")]).toEqual([false, true, true]);
@@ -757,6 +813,15 @@ test("rust-js-next dev serves Rust routes, refreshes a save in place, and recove
     // The Server Action sets the cookie, and the route is rendered again.
     await page.getByRole("button", { name: "Lighten" }).click();
     await page.getByText(/^light \d+ live \d+$/).waitFor();
+
+    // The Pages Router's page and API route, each of the request.
+    await page.goto(`http://localhost:${port}/codes/3`);
+    await page.getByText("Code 1").waitFor();
+    expect(new URL(page.url()).pathname).toBe("/codes/1");
+    await page.goto(`http://localhost:${port}/agent`);
+    await page.getByText("GET /agent").waitFor();
+    const api = await page.request.get(`http://localhost:${port}/api/greet?name=Ada`);
+    expect(await api.json()).toEqual({ hello: "Ada", method: "GET" });
 
     // next/server: the Route Handler's JSON and cookie, and the proxy's
     // rewrite of /old to /about, its URL kept.

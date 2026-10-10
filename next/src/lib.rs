@@ -34,6 +34,7 @@ pub mod metadata;
 pub mod navigation;
 pub mod offline;
 pub mod og;
+mod pages;
 pub mod router;
 pub mod script;
 pub mod server;
@@ -49,6 +50,13 @@ pub enum OneOrMany<'a, T> {
 }
 
 pub use data_fetching::{
-    GetStaticPathsContext, GetStaticPathsResult, GetStaticPropsContext, GetStaticPropsResult, RevalidateReason, StaticNotFound,
-    StaticPath, StaticPathParams, StaticProps,
+    GetServerSideProps, GetServerSidePropsContext, GetServerSidePropsResult, GetStaticPaths, GetStaticPathsContext,
+    GetStaticPathsFallback, GetStaticPathsResult, GetStaticProps, GetStaticPropsContext, GetStaticPropsResult, PermanentRedirect,
+    Redirect, Revalidate, RevalidateReason, ServerNotFound, ServerProps, ServerRedirect, StaticNotFound, StaticPath, StaticPathParams,
+    StaticProps, StaticRedirect, StatusRedirect,
+};
+pub use pages::{
+    ApiConfig, BodyParser, BodyParserLimit, ClearPreviewDataOptions, DraftModeOptions, FileSizeSuffix, NextApiHandler, NextApiRequest,
+    NextApiResponse, NextComponentType, NextPage, NextPageContext, PageConfig, PreviewData, PreviewDataOptions, QueryValue, ResponseLimit,
+    RevalidateOptions, Route, ServerRuntime, SizeLimit,
 };

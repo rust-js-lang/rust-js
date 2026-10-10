@@ -16,6 +16,7 @@ path = "src/lib.rs"
 
 [dependencies]
 js = { package = "rust-js-builtins", path = "../builtins", version = "~0.0.1" }
+node = { package = "rust-js-node", path = "../node", version = "~0.0.1" }
 react = { package = "rust-js-react", path = "../react", version = "~0.0.3" }
 
 # The npm package it binds, which an app has beside it.
