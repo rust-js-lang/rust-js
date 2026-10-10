@@ -1108,37 +1108,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Extreme(max) => {
                 let item = generic_args.types().next().and_then(|i| self.iterator_item(i));
-                match item {
-                    // Of what JS's `<` doesn't order: with its `cmp` (ADR 0057).
-                    Some(item) if !self.is_primitive_ord(item) => {
-                        let compare = self.cmp_fn(item, false, span)?;
-                        self.runtime.insert(if max { Helper::MaxBy } else { Helper::MinBy });
-                        let mut list = vec![items, compare];
-                        if self.boxed_payload(item) {
-                            self.runtime.insert(Helper::Some);
-                            list.push(Expr::bool(true));
-                        }
-                        Expr::call(Expr::var(if max { "$maxBy" } else { "$minBy" }), list)
-                    }
-                    _ => {
-                        self.runtime.insert(if max { Helper::Max } else { Helper::Min });
-                        Expr::call(Expr::var(if max { "$max" } else { "$min" }), vec![items])
-                    }
-                }
+                self.extreme_of(max, items, item, span)?
             }
-            Std::Last => match generic_args.types().next().and_then(|i| self.iterator_item(i)) {
-                // An item that looks like `None` is boxed (ADR 0051).
-                Some(item) if self.boxed_payload(item) => {
-                    let items = if items.reads_same() {
-                        items
-                    } else {
-                        self.spill("items", items, out)
-                    };
-                    let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
-                    self.some_at(items, last)
-                }
-                _ => method(items, "at", vec![Expr::int(-1)]),
-            },
+            Std::Last => {
+                let item = generic_args.types().next().and_then(|i| self.iterator_item(i));
+                self.last_of(items, item, out)
+            }
             Std::Cloned => {
                 let item = generic_args.types().nth(1).expect("`cloned` names its item");
                 if self.needs_clone(item) {
@@ -1156,6 +1131,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `max()` or `min()` of `items`, an array of `item`s: of what JS's `<`
+    /// doesn't order, by its `cmp` (ADR 0057). What THIR and MIR share.
+    pub(in crate::lower) fn extreme_of(
+        &mut self,
+        max: bool,
+        items: Expr,
+        item: Option<ty::Ty<'tcx>>,
+        span: Span,
+    ) -> R<Expr> {
+        Ok(match item {
+            Some(item) if !self.is_primitive_ord(item) => {
+                let compare = self.cmp_fn(item, false, span)?;
+                self.runtime.insert(if max { Helper::MaxBy } else { Helper::MinBy });
+                let mut list = vec![items, compare];
+                if self.boxed_payload(item) {
+                    self.runtime.insert(Helper::Some);
+                    list.push(Expr::bool(true));
+                }
+                Expr::call(Expr::var(if max { "$maxBy" } else { "$minBy" }), list)
+            }
+            _ => {
+                self.runtime.insert(if max { Helper::Max } else { Helper::Min });
+                Expr::call(Expr::var(if max { "$max" } else { "$min" }), vec![items])
+            }
+        })
+    }
+
+    /// `last()` of `items`, an array of `item`s: one that looks like `None`
+    /// boxed (ADR 0051). What THIR and MIR share.
+    pub(in crate::lower) fn last_of(&mut self, items: Expr, item: Option<ty::Ty<'tcx>>, out: &mut Vec<Stmt>) -> Expr {
+        match item {
+            Some(item) if self.boxed_payload(item) => {
+                let items = if items.reads_same() {
+                    items
+                } else {
+                    self.spill("items", items, out)
+                };
+                let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
+                self.some_at(items, last)
+            }
+            _ => Expr::call(Expr::member(items, "at"), vec![Expr::int(-1)]),
+        }
+    }
+
     /// `v.sort()`, or `v.sort_by_key(key)`: in place (ADR 0036), of the items'
     /// value. JS's `sort()` compares as strings: right for `bool`s, and
     /// numbers need `a - b`, strings `$cmp`, by code point (ADR 0183). What

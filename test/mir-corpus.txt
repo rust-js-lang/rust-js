@@ -44,6 +44,7 @@ dyn_drops.rs
 dyn_mut.rs
 early_bound_method_lifetime.rs
 empty_pattern.rs
+enum_order.rs
 evaluation_order.rs
 f32_parse.rs
 float_clamp_nan.rs
@@ -53,6 +54,7 @@ folded_call_panic_drops.rs
 format_args_order.rs
 formatter_asked.rs
 function_values.rs
+generic_as_ref.rs
 generic_associated_types.rs
 generic_borrow.rs
 generic_fmt_traits.rs
@@ -87,6 +89,7 @@ nested_generic_types.rs
 nested_type_chain.rs
 number_methods.rs
 once_cell_reentrant.rs
+opaque_iterators.rs
 option_as_deref.rs
 option_rest_pattern.rs
 or_bindings.rs
@@ -109,6 +112,7 @@ refcell_swap_itself.rs
 refcell_unwind_releases.rs
 remainder_sign.rs
 replacement_character.rs
+returned_references.rs
 rotate_past_end.rs
 scope_temporaries.rs
 size_of.rs

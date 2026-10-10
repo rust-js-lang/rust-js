@@ -281,8 +281,8 @@ export const mutations: Mutation[] = [
     name: "boxed-last-unboxed",
     breaks: "`last()` of `()`s is `undefined`, and reads as `None`",
     file: "src/lower/iterators.rs",
-    find: "                // An item that looks like `None` is boxed (ADR 0051).\n                Some(item) if self.boxed_payload(item) => {",
-    replace: "                // An item that looks like `None` is boxed (ADR 0051).\n                Some(item) if false && self.boxed_payload(item) => {",
+    find: "            Some(item) if self.boxed_payload(item) => {\n                let items = if items.reads_same() {",
+    replace: "            Some(item) if false && self.boxed_payload(item) => {\n                let items = if items.reads_same() {",
     tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
@@ -457,8 +457,8 @@ export const mutations: Mutation[] = [
     name: "last-is-first",
     breaks: "`path.split(\"/\").last()` is the first piece, `.at(0)`, not the last",
     file: "src/lower/iterators.rs",
-    find: "                _ => method(items, \"at\", vec![Expr::int(-1)]),",
-    replace: "                _ => method(items, \"at\", vec![Expr::int(0)]),",
+    find: "            _ => Expr::call(Expr::member(items, \"at\"), vec![Expr::int(-1)]),",
+    replace: "            _ => Expr::call(Expr::member(items, \"at\"), vec![Expr::int(0)]),",
     tests: ["test/compiler.test.ts", "-t", "string methods are JS's, and format! is a template literal"],
   },
   {

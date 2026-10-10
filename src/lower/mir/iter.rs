@@ -147,6 +147,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 None => return Ok(None),
             },
+            // Of all the items, in order, as THIR's of an array.
+            "max" | "min" => {
+                let items = method("toArray", it, Vec::new());
+                self.extreme_of(name == "max", items, item, span)?
+            }
+            "last" => {
+                let items = method("toArray", it, Vec::new());
+                let mut made = Vec::new();
+                let last = self.last_of(items, item, &mut made);
+                if !made.is_empty() {
+                    return Err(self.unsupported(span, "`last` of what looks like `None`, from its MIR"));
+                }
+                last
+            }
             "by_ref" => it,
             "fuse" => it,
             "collect" => {
