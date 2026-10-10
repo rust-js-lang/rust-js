@@ -161,6 +161,13 @@ const actions = `js::directive!("use server");
 
 use next::headers::{CookieOptions, DeletedCookie, SameSite, cookies};
 
+pub async fn leave(forbidden: bool) {
+    if forbidden {
+        next::navigation::forbidden();
+    }
+    next::navigation::redirect_with_type("/", next::navigation::RedirectType::Replace);
+}
+
 pub async fn remember(theme: String) {
     let jar = cookies().await;
     jar.set_with_options("theme", &theme, CookieOptions { max_age: Some(3600.0), same_site: Some(SameSite::Str("lax")), ..Default::default() });
@@ -294,6 +301,24 @@ pub fn Missing() -> JSX::Element {
     jsx! { <Shown text="again"><next::error::Error statusCode={404} title={Some("Gone")} /></Shown> }
 }
 
+pub struct Slug {
+    pub slug: String,
+}
+
+// The route, its query, segment and parameters, and going on with options,
+// as next/navigation gives them.
+pub fn Navigator() -> JSX::Element {
+    let router = next::navigation::use_router();
+    let query = next::navigation::use_search_params().get("q").unwrap_or_default();
+    let segment = next::navigation::use_selected_layout_segment().unwrap_or_default();
+    let Slug { slug } = next::navigation::use_params();
+    jsx! {
+        <button key={router.bfcache_id()} onClick={move |_| router.push_with_options("/about", next::navigation::NavigateOptions { scroll: Some(false), ..Default::default() })}>
+            {query}{segment}{slug}
+        </button>
+    }
+}
+
 pub fn Location() -> JSX::Element {
     jsx! { <Located prefix="at " /> }
 }
@@ -389,6 +414,12 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(linkedJsx).toContain('import Error$, { catchError } from "next/error";');
   expect(linkedJsx).toContain("export const Shown = catchError(({ text }, info) => (\n  <button onClick={() => info.reset()}>{text}</button>\n));");
   expect(linkedJsx).toContain('<Shown text="again">\n      <Error$ statusCode={404} title="Gone" />\n    </Shown>');
+  // next/navigation.
+  expect(linkedJsx).toContain('const query = useSearchParams().get("q") ?? "";');
+  expect(linkedJsx).toContain("const { slug } = useParams();");
+  expect(linkedJsx).toContain('router.push("/about", { scroll: false })');
+  expect(linkedJsx).toContain("<button key={router.bfcacheId} onClick={() => router.push(");
+  expect(readFileSync(join(dir, "app/actions.js"), "utf8")).toContain('  if (forbidden$1) {\n    forbidden();\n  }\n  redirect("/", "replace");');
   // next/headers: the request's route is dynamic, rendered as it's asked.
   expect(output).toContain("ƒ /request");
   const requestJsx = readFileSync(join(dir, "app/request/page.jsx"), "utf8");

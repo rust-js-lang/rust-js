@@ -1,5 +1,5 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 42 of 2095 (2.0%)
+# exports: 54 of 2095 (2.6%)
 # next 4 of 42
 - type next#AdapterOutput
 - next#default
@@ -2063,24 +2063,24 @@
 + next/link#default
 + type next/link#LinkProps
 - next/link#useLinkStatus
-# next/navigation 5 of 17
-- next/navigation#forbidden
+# next/navigation 17 of 17
++ next/navigation#forbidden
 + next/navigation#notFound
-- next/navigation#permanentRedirect
-- next/navigation#ReadonlyURLSearchParams
++ next/navigation#permanentRedirect
++ next/navigation#ReadonlyURLSearchParams
 + next/navigation#redirect
-- next/navigation#RedirectType
-- next/navigation#ServerInsertedHTMLContext
-- next/navigation#unauthorized
-- next/navigation#unstable_isUnrecognizedActionError
-- next/navigation#unstable_rethrow
-- next/navigation#useParams
++ next/navigation#RedirectType
++ next/navigation#ServerInsertedHTMLContext
++ next/navigation#unauthorized
++ next/navigation#unstable_isUnrecognizedActionError
++ next/navigation#unstable_rethrow
++ next/navigation#useParams
 + next/navigation#usePathname
 + next/navigation#useRouter
 + next/navigation#useSearchParams
-- next/navigation#useSelectedLayoutSegment
-- next/navigation#useSelectedLayoutSegments
-- next/navigation#useServerInsertedHTML
++ next/navigation#useSelectedLayoutSegment
++ next/navigation#useSelectedLayoutSegments
++ next/navigation#useServerInsertedHTML
 # next/offline 1 of 1
 + next/offline#useOffline
 # next/og 0 of 1

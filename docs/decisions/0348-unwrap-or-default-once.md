@@ -41,4 +41,5 @@ still, kept first.
 
 ## Consequences
 
-- No corpus, snapshot or react.dev output had one: none changed.
+- No corpus or snapshot output had one; react.dev's `PageHeading` did,
+  `$splitBy(asPath, ..)[0] ?? ""` now, its `const option` gone.

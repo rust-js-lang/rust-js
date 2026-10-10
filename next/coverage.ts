@@ -108,7 +108,9 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   return exported;
 }
 
-// What the crate binds: each value's `link_name`, and each item's name.
+// What the crate binds: each value's `link_name`, and each item's name: a
+// type's, or a value's an item stands for, a class's struct, or the enum of
+// a const object's strings, `RedirectType`.
 function bindings(): { links: Set<string>; items: Set<string> } {
   const rust = (dir: string): string[] =>
     readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? rust(join(dir, f)) : f.endsWith(".rs") ? [join(dir, f)] : []));
@@ -126,7 +128,7 @@ export async function measure(): Promise<Module[]> {
     const exports = [...(await exportsOf(join(next, path)))]
       .filter(([e]) => !e.startsWith("_"))
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([e, kind]) => ({ name: e, kind, bound: kind === "value" ? links.has(`${name}#${e}`) : items.has(e) }));
+      .map(([e, kind]) => ({ name: e, kind, bound: links.has(`${name}#${e}`) || items.has(e) }));
     modules.push({ name, exports });
   }
   return modules;
