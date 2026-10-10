@@ -365,9 +365,10 @@ fn constants(body: &mut Vec<Stmt>) {
     });
 }
 
-/// A `const` nothing reads, of a value whose making does nothing, is no
-/// statement: a guard's binding, which the guard reads in place, in an arm
-/// that never reads it, `const code = params.code;`.
+/// A `const` nothing reads, of a value whose making calls nothing and reads
+/// only variables, is no statement: `const lock = { value: 1 };`. Not one
+/// of a property, which a binding's getter may be, `el.offsetWidth`, that
+/// lays the page out (ADR 0356).
 fn unread(body: &mut Vec<Stmt>) {
     loop {
         let mut read = HashSet::new();
@@ -378,7 +379,7 @@ fn unread(body: &mut Vec<Stmt>) {
         js::each_block_mut(body, &mut |stmts| {
             stmts.retain(|s| {
                 let unread = matches!(&s.kind, StmtKind::Const(name, value)
-                    if !read.contains(name) && !value.has_effects());
+                    if !read.contains(name) && value.reads_only_vars());
                 dropped |= unread;
                 !unread
             });

@@ -1,5 +1,7 @@
 //! Bindings, destructuring and match/let-chain evaluation regions.
 
+use std::collections::HashSet;
+
 use super::fn_def;
 use super::recognition::{Std, StdItem};
 use super::{
@@ -13,7 +15,7 @@ use rustc_hir::def::DefKind;
 use rustc_hir::{BindingMode, ByRef, RangeEnd};
 use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::visit::{self, Visitor};
-use rustc_middle::thir::{self, ArmId, ExprId, ExprKind, LogicalOp, Pat, PatKind, PatRangeBoundary};
+use rustc_middle::thir::{self, ArmId, ExprId, ExprKind, LocalVarId, LogicalOp, Pat, PatKind, PatRangeBoundary};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::def_id::DefId;
 use rustc_span::{DesugaringKind, Span};
@@ -1000,7 +1002,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut body = Vec::new();
             let mark = self.owned_mark();
             self.clear_parts(scrutinee, &arm.pattern, &mut body);
-            self.bind_all(bindings, stable, items, pat_span, &mut body)?;
+            // A binding the body never reads, only a guard, which reads it in
+            // place, needs no `const` (ADR 0356); one that owns what it binds
+            // still drops it as the arm ends.
+            let read = self.vars_read(arm.body);
+            let mut kept = Vec::new();
+            for b in bindings {
+                if read.contains(&b.var) || b.mutable || b.by_ref_mut || self.is_owner(b.var)? {
+                    kept.push(b);
+                }
+            }
+            self.bind_all(kept, stable, items, pat_span, &mut body)?;
             // Rust checked the match is exhaustive, so if we reach the last
             // unguarded arm, it matches. No need to test it.
             if i == arms.len() - 1 && arm.guard.is_none() {
@@ -1711,6 +1723,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (None, None) => Expr::bool(true),
         };
         Ok(Some(test))
+    }
+
+    /// The variables `e` reads, anywhere in it, a closure's captures too.
+    fn vars_read(&self, e: ExprId) -> HashSet<LocalVarId> {
+        struct Reads<'a, 'tcx> {
+            thir: &'a thir::Thir<'tcx>,
+            vars: HashSet<LocalVarId>,
+        }
+        impl<'a, 'tcx> Visitor<'a, 'tcx> for Reads<'a, 'tcx> {
+            fn thir(&self) -> &'a thir::Thir<'tcx> {
+                self.thir
+            }
+            fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
+                match expr.kind {
+                    ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => {
+                        self.vars.insert(id);
+                    }
+                    // What a closure captures, which THIR's walk leaves out.
+                    ExprKind::Closure(ref closure) => {
+                        for &upvar in &closure.upvars {
+                            self.visit_expr(&self.thir[upvar]);
+                        }
+                    }
+                    _ => {}
+                }
+                visit::walk_expr(self, expr);
+            }
+        }
+        let mut reads = Reads {
+            thir: self.thir,
+            vars: HashSet::new(),
+        };
+        reads.visit_expr(&self.thir[e]);
+        reads.vars
     }
 
     /// Does `e`, or anything in it, make a value with a destructor, whose

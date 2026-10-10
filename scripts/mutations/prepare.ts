@@ -3,6 +3,14 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unread-property-dropped",
+    breaks: "`const _width = el.offsetWidth;`, a binding's getter that lays the page out, is dropped",
+    file: "src/prepare.rs",
+    find: "                    if !read.contains(name) && value.reads_only_vars());",
+    replace: "                    if !read.contains(name));",
+    tests: ["test/lowering.test.ts", "-t", "an unread getter of a binding"],
+  },
+  {
     name: "unread-once",
     breaks: "`const code = params.code; const _kept = code;` drops `_kept` alone, leaving `code`, which only it read",
     file: "src/prepare.rs",
@@ -11,19 +19,11 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
   },
   {
-    name: "unread-effects-dropped",
-    breaks: "`const _last = items.pop();`, unread, is dropped, and the item never popped",
-    file: "src/prepare.rs",
-    find: "                    if !read.contains(name) && !value.has_effects());",
-    replace: "                    if !read.contains(name));",
-    tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
-  },
-  {
     name: "unread-read-dropped",
     breaks: "a `const` that's read is dropped too, `{ code: code$1 }` of nothing",
     file: "src/prepare.rs",
-    find: "                    if !read.contains(name) && !value.has_effects());",
-    replace: "                    if !value.has_effects());",
+    find: "                    if !read.contains(name) && value.reads_only_vars());",
+    replace: "                    if value.reads_only_vars());",
     tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
   },
   {

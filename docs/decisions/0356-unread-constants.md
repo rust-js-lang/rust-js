@@ -31,3 +31,13 @@ _last = items.pop();`, stays.
 - The corpus loses 22 lines in 7 files: Rust's unused `let`s, `const lock =
   { value: 1 };`, and a closure never called.
 - The react.dev port's JS is unchanged.
+
+## Amendment: a property read stays
+
+A binding's getter is written as a property, `el.offsetWidth`, and a
+getter may do something: reading `offsetWidth` lays the page out, which
+restarts a CSS animation. So the pass drops only a `const` whose value
+reads nothing but variables, `reads_only_vars`: no call, no property. The
+guard's binding, a property of Rust's own data, is left out where it's
+lowered instead: a match arm binds only what its body reads, its closures'
+captures among them, or what it owns and so drops as the arm ends.

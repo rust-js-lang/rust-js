@@ -793,6 +793,28 @@ pub fn most(x: u32) -> bool {
   expect([lib.has("b"), lib.has("c"), lib.changed(), lib.most(4294967295)]).toEqual([true, false, ["z", "a"], true]);
 });
 
+// An unread getter's read stays: a binding's getter may do something, as
+// `el.offsetWidth` lays the page out again, which restarts an animation.
+test("an unread getter of a binding is still read", async () => {
+  const dir = fixture("unread-getter");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "get offsetWidth"]
+    safe fn offset_width(this: &js::JsObject) -> f64;
+}
+
+pub fn reflow(el: &js::JsObject) {
+    let _width = offset_width(el);
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("el.offsetWidth");
+  const lib = await import(join(dir, "lib.js"));
+  let laidOut = 0;
+  lib.reflow({ get offsetWidth() { laidOut += 1; return 10; } });
+  expect(laidOut).toBe(1);
+});
+
 // A block's `const` is named as Rust names it where every read is still of
 // what it was, a JS scope's own shadowing another's, as a person writes an
 // early return: `if (a) { const n = 1; return n + 1; } const n = 2;`. One
@@ -874,9 +896,9 @@ pub fn pick(params: Option<Params>) -> Option<Props> {
 }
 
 // One unread, of another only it reads.
-pub fn cascade(params: Params) -> u32 {
-    let code = params.code;
-    let _kept = code;
+pub fn cascade(n: u32) -> u32 {
+    let next = n + 1;
+    let _kept = next;
     1
 }
 
@@ -885,13 +907,47 @@ pub fn popped(mut items: Vec<u32>) -> usize {
     let _last = items.pop();
     items.len()
 }
+
+// One read, kept.
+pub fn doubled(n: u32) -> u32 {
+    let next = n + 1;
+    next * 2
+}
+
+pub struct Noisy(pub u32);
+
+impl Drop for Noisy {
+    fn drop(&mut self) {
+        println!("dropped {}", self.0);
+    }
+}
+
+// One a guard alone reads that owns what it binds, dropped as its arm ends.
+pub fn guarded(noisy: Option<Noisy>, go: bool) -> u32 {
+    match noisy {
+        Some(owned) if go => {
+            println!("arm");
+            1
+        }
+        _ => 0,
+    }
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain('if (params && params.code === "3") {\n    return;\n  }');
-  expect(js).toContain("export function cascade(params) {\n  return 1;\n}");
+  expect(js).toContain("export function cascade(n) {\n  return 1;\n}");
   const lib = await import(join(dir, "lib.js"));
-  expect([lib.pick({ code: "3" }), lib.pick({ code: "1" }), lib.pick({ code: "0" }), lib.popped([1, 2])]).toEqual([undefined, { code: "1" }, undefined, 1]);
+  expect([lib.pick({ code: "3" }), lib.pick({ code: "1" }), lib.pick({ code: "0" }), lib.popped([1, 2]), lib.doubled(2)]).toEqual([undefined, { code: "1" }, undefined, 1, 6]);
+  const logged: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    lib.guarded([7], true);
+  } finally {
+    console.log = log;
+  }
+  expect(logged).toEqual(["arm", "dropped 7"]);
 });
 
 // ADR 0030: a property chain of an option's value ends where it's `None`,
