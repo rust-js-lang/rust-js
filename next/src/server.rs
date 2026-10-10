@@ -13,6 +13,9 @@ use react::webapi::{
 
 use crate::headers::{CookieOptions, DeletedCookie, RequestCookie, ResponseCookie};
 
+/// What `next/server` gives of `next/og`.
+pub use crate::og::ImageResponseOptions;
+
 /// [`NextRequest`](https://nextjs.org/docs/app/api-reference/functions/next-request):
 /// a `Request`, its cookies and its URL Next.js's.
 pub struct NextRequest(PhantomData<JsObject>);

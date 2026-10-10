@@ -71,7 +71,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
@@ -88,6 +88,9 @@ function app(name: string): string {
   mkdirSync(join(dir, "app/api/hello"), { recursive: true });
   writeFileSync(join(dir, "app/api/hello/route.rs"), route);
   writeFileSync(join(dir, "proxy.rs"), proxy);
+  // An image drawn from JSX, next/og's.
+  mkdirSync(join(dir, "app/og"));
+  writeFileSync(join(dir, "app/og/route.rs"), og);
   mkdirSync(join(dir, "app/about"));
   writeFileSync(join(dir, "app/about/page.rs"), about);
   // A Pages Router page built for the paths it gives, each with its props,
@@ -181,6 +184,18 @@ pub async fn GET(request: &'static NextRequest) -> &'static Response {
     let response = next_response::json(Greeting { hello, bot });
     response.cookies().set("seen", "1");
     response
+}
+`;
+
+const og = `#![allow(non_snake_case)]
+
+use next::og::{ImageResponseOptions, image_response};
+use react::webapi::Response;
+use react::{CSSProperties, jsx};
+
+pub async fn GET() -> &'static Response {
+    let image = jsx! { <div style={CSSProperties::new().display("flex").font_size(64)}>{"Rust"}</div> };
+    image_response::new_with_options(image, ImageResponseOptions { width: Some(600), height: Some(315), ..Default::default() })
 }
 `;
 
@@ -461,6 +476,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const routeJs = readFileSync(join(dir, "app/api/hello/route.js"), "utf8");
   expect(routeJs).toContain('import { NextResponse, after, connection, userAgent } from "next/server";');
   expect(routeJs).toContain("const response = NextResponse.json({ hello, bot });");
+  expect(readFileSync(join(dir, "app/og/route.jsx"), "utf8")).toContain("return new ImageResponse(image, { width: 600, height: 315 });");
   const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
   expect(proxyJs).toContain('export const config = { matcher: "/old" };');
   expect(proxyJs).toContain('const about = new URL("/about", request.url);\n  const response = NextResponse.rewrite(about);\n  return response;');
@@ -577,6 +593,8 @@ test("rust-js-next dev serves Rust routes, refreshes a save in place, and recove
     // rewrite of /old to /about, its URL kept.
     const hello = await page.request.get(`http://localhost:${port}/api/hello?name=Ada`);
     expect([await hello.json(), hello.headers()["set-cookie"]?.startsWith("seen=1")]).toEqual([{ hello: "Ada", bot: false }, true]);
+    const image = await page.request.get(`http://localhost:${port}/og`);
+    expect([image.status(), image.headers()["content-type"]]).toEqual([200, "image/png"]);
     await page.goto(`http://localhost:${port}/old`);
     await page.getByRole("heading", { name: "About, in Rust" }).waitFor();
     expect(new URL(page.url()).pathname).toBe("/old");

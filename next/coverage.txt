@@ -1,5 +1,5 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 67 of 2095 (3.2%)
+# exports: 69 of 2095 (3.3%)
 # next 4 of 42
 - type next#AdapterOutput
 - next#default
@@ -2083,8 +2083,8 @@
 + next/navigation#useServerInsertedHTML
 # next/offline 1 of 1
 + next/offline#useOffline
-# next/og 0 of 1
-- next/og#ImageResponse
+# next/og 1 of 1
++ next/og#ImageResponse
 # next/router 5 of 7
 + next/router#default
 + type next/router#NextRouter
@@ -2099,11 +2099,11 @@
 + next/script#initScriptLoader
 + type next/script#Props
 + type next/script#ScriptProps
-# next/server 13 of 14
+# next/server 14 of 14
 + next/server#after
 + next/server#connection
 + next/server#ImageResponse
-- type next/server#ImageResponseOptions
++ type next/server#ImageResponseOptions
 + type next/server#MiddlewareConfig
 + next/server#NextFetchEvent
 + type next/server#NextMiddleware
