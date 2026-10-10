@@ -19,7 +19,6 @@ use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use super::bindings::variant_name;
 use super::recognition::{ChannelEnd, StdItem};
 use super::representation::variant_field;
 use super::traits::item_drop_key;
@@ -598,7 +597,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if fields.is_empty() {
                             continue;
                         }
-                        let tag = Expr::str(variant_name(self.tcx, variant));
+                        let tag = super::bindings::variant_tag(self.tcx, variant);
                         let test = match adt.variants().len() {
                             1 => Expr::bool(true),
                             _ if untagged => self.untagged_variant_test(ty, variant, &value),
@@ -705,7 +704,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => Expr::bin(
                             Op::Eq,
                             Expr::member(value.clone(), super::bindings::tag_key(self.tcx, adt.did())),
-                            Expr::str(variant_name(self.tcx, variant)),
+                            super::bindings::variant_tag(self.tcx, variant),
                         ),
                     };
                     out.push(StmtKind::If(test, fields, None).at(js_span));

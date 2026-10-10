@@ -491,6 +491,59 @@ pub fn constants() -> (Settled, Settled) {
     .toEqual([true, false]);
 });
 
+// ADR 0284: a tag may be `true` or `false`, react-dom's `FormStatus`
+// `{ pending: true, data, .. } | { pending: false, .. }`, as ReScript's
+// `@as(true)` is.
+test("a discriminated union's tag may be a boolean", async () => {
+  const dir = fixture("tagged-bool");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::tag = "pending")]
+#[derive(Clone, Debug, PartialEq)]
+pub enum Status {
+    #[cfg_attr(rust_js, rust_js::name = true)]
+    Pending { data: String },
+    #[cfg_attr(rust_js, rust_js::name = false)]
+    Idle,
+}
+
+pub fn made(data: &str) -> Vec<Status> {
+    vec![Status::Pending { data: data.to_string() }, Status::Idle]
+}
+
+pub fn told(s: &Status) -> String {
+    match s {
+        Status::Pending { data } => format!("sending {data}"),
+        Status::Idle => "idle".to_string(),
+    }
+}
+
+pub fn same(a: &Status, b: &Status) -> bool {
+    a.clone() == *b
+}
+
+pub fn shown(s: &Status) -> String {
+    format!("{s:?}")
+}
+
+const IDLE: Status = Status::Idle;
+
+pub fn constant() -> Status {
+    IDLE
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("{ pending: true, data }");
+  expect(js).toContain("if (s.pending === true) {");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.made("a")).toEqual([{ pending: true, data: "a" }, { pending: false }]);
+  expect(lib.constant()).toEqual({ pending: false });
+  // What JS made, as useFormStatus does, is read as Rust's.
+  expect([lib.told({ pending: true, data: "b" }), lib.told({ pending: false, data: null })]).toEqual(["sending b", "idle"]);
+  expect([lib.same({ pending: true, data: "b" }, { pending: true, data: "b" }), lib.same({ pending: false }, { pending: true, data: "b" })])
+    .toEqual([true, false]);
+  expect(lib.shown({ pending: false })).toBe("Idle");
+});
+
 // ADR 0029: an awaited reference given to a generic `&T` is awaited, though
 // rustc reborrows it inside the `.await`.
 test("an awaited reference given to a generic function is awaited", async () => {

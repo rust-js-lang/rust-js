@@ -356,4 +356,14 @@ export const mutations: Mutation[] = [
     replace: "    let ty::Adt(adt, args) = ty.kind() else {\n",
     tests: ["test/declarations.test.ts", "-t", "declarations type what a module exports"],
   },
+  {
+    "name": "bool-tag-declared-string",
+    "breaks": "a boolean tag is declared the string `\"true\"`",
+    "file": "src/lower/declarations.rs",
+    "find": "|b| json!(b));",
+    "replace": "|b| json!(b.to_string()));",
+    "tests": [
+      "test/declarations.test.ts"
+    ]
+  },
 ];

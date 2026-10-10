@@ -234,7 +234,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let tag = (adt.adt_def.is_enum()).then(|| {
             (
                 bindings::tag_key(self.tcx, adt.adt_def.did()),
-                bindings::variant_name(self.tcx, variant),
+                bindings::variant_tag(self.tcx, variant),
             )
         });
         let shape = match tag {
@@ -463,7 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let tag = (adt_def.is_enum()).then(|| {
                 (
                     bindings::tag_key(self.tcx, adt_def.did()),
-                    bindings::variant_name(self.tcx, variant),
+                    bindings::variant_tag(self.tcx, variant),
                 )
             });
             let shape = match tag {

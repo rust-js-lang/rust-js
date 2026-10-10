@@ -745,4 +745,16 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "components"],
     snapshots: true,
   },
+  {
+    "name": "bool-tag-matched-by-name",
+    "breaks": "a match on a boolean tag compares it to its name's string",
+    "file": "src/lower/patterns.rs",
+    "find": "                let name = bindings::variant_tag(self.tcx, variant);",
+    "replace": "                let name = Expr::str(bindings::variant_name(self.tcx, variant));",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "tag may be a boolean"
+    ]
+  },
 ];

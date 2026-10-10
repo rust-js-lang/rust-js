@@ -247,4 +247,16 @@ export const mutations: Mutation[] = [
     replace: "                    !bindings::has_flatten(self.tcx, ty) && !self.contains_mutated(ty)",
     tests: ["test/lowering.test.ts","-t","a struct updated from one it owns"],
   },
+  {
+    "name": "bool-tag-made-by-name",
+    "breaks": "a variant of a boolean tag is made with its name's string",
+    "file": "src/lower/aggregates.rs",
+    "find": "                bindings::variant_tag(self.tcx, variant),\n            )\n        });\n        let shape = match tag {\n            Some(_) => Shape::Object(self.variant_fields(variant, adt.args)),",
+    "replace": "                Expr::str(bindings::variant_name(self.tcx, variant)),\n            )\n        });\n        let shape = match tag {\n            Some(_) => Shape::Object(self.variant_fields(variant, adt.args)),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "tag may be a boolean"
+    ]
+  },
 ];

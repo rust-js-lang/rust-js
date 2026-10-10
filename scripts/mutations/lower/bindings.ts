@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     name: "given-variant-name-ignored",
     breaks: "a variant's `#[rust_js::name = \"not-equal\"]` is ignored: it's its Rust name, `\"NotEqual\"`, which JS never gives",
     file: "src/lower/bindings.rs",
-    find: "    given_name(tcx, variant.def_id).unwrap_or_else(|| variant.name.to_string())",
+    find: "    (given_name(tcx, variant.def_id))\n        .or_else(|| given_bool(tcx, variant.def_id).map(|b| b.to_string()))\n        .unwrap_or_else(|| variant.name.to_string())",
     replace: "    variant.name.to_string()",
     tests: ["test/bindings.test.ts", "-t", "Atomics are JS's, of a view of a shared buffer"],
   },
@@ -209,5 +209,41 @@ export const mutations: Mutation[] = [
     find: "        \"+ \\\"\\\"\" => return JsForm::Text,\n",
     replace: "",
     tests: ["test/bindings.test.ts","-t","react.dev's Console"],
+  },
+  {
+    "name": "bool-tag-string",
+    "breaks": "a discriminated union's `#[rust_js::name = true]` tag is the string `\"true\"`",
+    "file": "src/lower/bindings.rs",
+    "find": "        Some(b) => js::Expr::bool(b),",
+    "replace": "        Some(b) => js::Expr::str(b.to_string()),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "tag may be a boolean"
+    ]
+  },
+  {
+    "name": "bool-name-of-untagged-accepted",
+    "breaks": "a boolean `rust_js::name` of an enum without a tag is accepted, its variant `true`",
+    "file": "src/lower/bindings.rs",
+    "find": "                    && declared_tag(tcx, tcx.parent(named)).is_some()\n",
+    "replace": "",
+    "tests": [
+      "test/diagnostics.test.ts",
+      "-t",
+      "boolean name of"
+    ]
+  },
+  {
+    "name": "variant-names-unchecked",
+    "breaks": "a variant's `rust_js::name` isn't checked, only an item's",
+    "file": "src/lower/bindings.rs",
+    "find": "        for named in std::iter::once(def.to_def_id()).chain(variants) {",
+    "replace": "        for named in std::iter::once(def.to_def_id()) {",
+    "tests": [
+      "test/diagnostics.test.ts",
+      "-t",
+      "name of"
+    ]
   },
 ];

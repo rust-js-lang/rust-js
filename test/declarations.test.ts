@@ -303,6 +303,18 @@ pub fn lit(light: Light) -> bool {
     matches!(light, Light::On)
 }
 
+#[rust_js::tag = "pending"]
+pub enum Status {
+    #[rust_js::name = true]
+    Pending { data: String },
+    #[rust_js::name = false]
+    Idle,
+}
+
+pub fn status(s: Status) -> bool {
+    matches!(s, Status::Pending { .. })
+}
+
 #[rust_js::tag = "kind"]
 pub enum Open {
     #[rust_js::name = "on"]
@@ -358,6 +370,8 @@ pub fn tallied(cell: &std::cell::Cell<u32>) -> u32 {
     'export type Settled = {\n    status: "fulfilled";\n    value: number;\n} | {\n    status: "pending";\n};',
     // A tagged enum's variants are objects of its tag, those of no fields too.
     'export type Light = {\n    kind: "on";\n} | {\n    kind: "Off";\n};',
+    // A tag may be `true` or `false`.
+    "export type Status = {\n    pending: true;\n    data: string;\n} | {\n    pending: false;\n};",
     // An `otherwise`, any other object, is the object it holds (ADR 0284).
     'export type Open = {\n    kind: "on";\n} | any;',
     // A `Cell` in a field is what it holds; one lent is `{ value }` (ADR 0288).

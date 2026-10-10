@@ -104,6 +104,26 @@ pub(super) fn validate(tcx: TyCtxt<'_>) -> bool {
                 }
             }
         }
+        // A name is a string, but a discriminated union's variant's, its tag,
+        // may be `true` or `false` (ADR 0284).
+        let variants = match tcx.def_kind(def) {
+            DefKind::Enum => tcx.adt_def(def).variants().iter().map(|v| v.def_id).collect(),
+            _ => Vec::new(),
+        };
+        for named in std::iter::once(def.to_def_id()).chain(variants) {
+            if let Some(attr) = tcx
+                .get_attrs_by_path(named, &[Symbol::intern("rust_js"), sym::name])
+                .next()
+                && attr.value_str().is_none()
+                && !(matches!(tcx.def_kind(named), DefKind::Variant)
+                    && declared_tag(tcx, tcx.parent(named)).is_some()
+                    && given_bool(tcx, named).is_some())
+            {
+                let message = "rust-js: `#[rust_js::name]` is a string, or `true` or `false` of a variant of a `#[rust_js::tag]` enum, its tag";
+                tcx.dcx().span_err(tcx.def_span(named), message);
+                valid = false;
+            }
+        }
         // Two fields that are one JS property would overwrite each other.
         if matches!(tcx.def_kind(def), DefKind::Struct | DefKind::Enum) {
             for variant in tcx.adt_def(def).variants() {
@@ -290,7 +310,30 @@ pub(super) fn unit_name(tcx: TyCtxt<'_>, def_id: DefId) -> Option<String> {
 }
 
 pub(super) fn variant_name(tcx: TyCtxt<'_>, variant: &VariantDef) -> String {
-    given_name(tcx, variant.def_id).unwrap_or_else(|| variant.name.to_string())
+    (given_name(tcx, variant.def_id))
+        .or_else(|| given_bool(tcx, variant.def_id).map(|b| b.to_string()))
+        .unwrap_or_else(|| variant.name.to_string())
+}
+
+/// A variant's tag: its name, or a discriminated union's `true` or
+/// `false`, `#[rust_js::name = true]`, react-dom's `FormStatus`'s
+/// `pending` (ADR 0284).
+pub(super) fn variant_tag(tcx: TyCtxt<'_>, variant: &VariantDef) -> js::Expr {
+    match given_bool(tcx, variant.def_id) {
+        Some(b) => js::Expr::bool(b),
+        None => js::Expr::str(variant_name(tcx, variant)),
+    }
+}
+
+/// A discriminated union's variant's `#[rust_js::name = true]` or `false`.
+pub(super) fn given_bool(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+    let attr = tcx
+        .get_attrs_by_path(def_id, &[Symbol::intern("rust_js"), sym::name])
+        .next()?;
+    match attr.value_lit()?.kind {
+        LitKind::Bool(b) => Some(b),
+        _ => None,
+    }
 }
 
 /// The property an enum's variant is told by: `TAG` (ADR 0033), or the
@@ -315,7 +358,7 @@ pub(super) fn is_tagged_otherwise(tcx: TyCtxt<'_>, adt: DefId, variant: &Variant
 /// A variant without fields: its name (ADR 0013), or of a discriminated
 /// union an object of it, `{ status: "pending" }` (ADR 0284).
 pub(super) fn unit_variant(tcx: TyCtxt<'_>, adt: DefId, variant: &VariantDef) -> js::Expr {
-    let name = js::Expr::str(variant_name(tcx, variant));
+    let name = variant_tag(tcx, variant);
     match declared_tag(tcx, adt) {
         Some(key) => js::Expr::object(vec![js::Prop::Field(key, name)]),
         None => name,

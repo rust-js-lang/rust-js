@@ -2,7 +2,6 @@
 //! implementation: derived ones and std types' (ADRs 0052, 0053). A
 //! hand-written one is called instead.
 
-use super::bindings::variant_name;
 use super::recognition::{StdItem, std_item};
 use super::representation::Num;
 use super::{FnCx, R, Shape, is_fieldless_enum, lower_first};
@@ -388,7 +387,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let test = Expr::bin(
                         Op::Eq,
                         Expr::member(place.clone(), super::bindings::tag_key(self.tcx, adt.did())),
-                        Expr::str(variant_name(self.tcx, variant)),
+                        super::bindings::variant_tag(self.tcx, variant),
                     );
                     value = Expr::cond(test, copy, value);
                 }
@@ -866,10 +865,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if !fields.iter().any(|&(_, t)| self.custom_eq(t)) {
                         continue;
                     }
-                    let name = variant_name(self.tcx, variant);
+                    let name = super::bindings::variant_tag(self.tcx, variant);
                     let key = super::bindings::tag_key(self.tcx, adt.did());
-                    let tag =
-                        |x: &Expr| Expr::bin(Op::Eq, Expr::member(x.clone(), key.clone()), Expr::str(name.clone()));
+                    let tag = |x: &Expr| Expr::bin(Op::Eq, Expr::member(x.clone(), key.clone()), name.clone());
                     let mut same = tag(&b);
                     for (field, t) in fields {
                         let field = self.eq_value(

@@ -1963,7 +1963,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut tests: Vec<Expr> = (adt_def.variants().iter())
                         .filter(|other| other.def_id != variant.def_id)
                         .map(|other| {
-                            let name = Expr::str(bindings::variant_name(self.tcx, other));
+                            let name = bindings::variant_tag(self.tcx, other);
                             Expr::bin(Op::Ne, Expr::member(subject.clone(), &key), name)
                         })
                         .collect();
@@ -1972,7 +1972,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     return Ok(tests.into_iter().reduce(|a, b| Expr::bin(Op::And, a, b)));
                 }
-                let name = Expr::str(bindings::variant_name(self.tcx, variant));
+                let name = bindings::variant_tag(self.tcx, variant);
                 let mut tests = Vec::new();
                 if adt_def.variants().len() > 1 {
                     let key = bindings::tag_key(self.tcx, adt_def.did());

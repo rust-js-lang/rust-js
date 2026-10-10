@@ -23,6 +23,9 @@ for (const [name, source, message, crate] of [
   ["a nullable parameter that isn't there", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(m)]\n#[allow(unused_variables)]\npub fn f(n: Option<u32>) {}', "`#[rust_js::nullable(m)]` names no parameter"],
   // A discriminated union's variants are named fields beside its tag (ADR 0284).
   ["a tagged enum's tuple variant", '#[rust_js::tag = "kind"]\npub enum E { A(u32) }\npub fn f() -> E { E::A(1) }', "has a tuple variant, whose fields have no names"],
+  // Only its tag may be `true` or `false`: another enum's variant is its name, a string.
+  ["a boolean name of an enum's variant", 'pub enum E { #[rust_js::name = true] A, B }\npub fn f() -> E { E::A }', "`#[rust_js::name]` is a string"],
+  ["a number name of a tagged enum's variant", '#[rust_js::tag = "kind"]\npub enum E { #[rust_js::name = 1] A { n: u32 }, B { n: u32 } }\npub fn f() -> E { E::A { n: 1 } }', "`#[rust_js::name]` is a string"],
   // Its `otherwise` is any other object, which a derive would take for one of its own.
   ["an otherwise variant not last", '#[rust_js::tag = "kind"]\npub enum E { #[rust_js::otherwise] O(&\'static js::JsObject), A { n: u32 } }\npub fn f() -> E { E::A { n: 1 } }', "`otherwise` variant is its last", "js"],
   ["a derive of an open union", '#[rust_js::tag = "kind"]\n#[derive(Clone)]\npub enum E { A { n: u32 }, #[rust_js::otherwise] O(&\'static js::JsObject) }\npub fn f(e: &E) -> E { e.clone() }', "deriving `Clone` of a discriminated union with an `otherwise`", "js"],

@@ -737,7 +737,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             Some(Expr::object(
                 std::iter::once(Prop::Field(
                     super::bindings::tag_key(tcx, adt.did()),
-                    Expr::str(super::bindings::variant_name(tcx, variant)),
+                    super::bindings::variant_tag(tcx, variant),
                 ))
                 .chain(props)
                 .collect(),

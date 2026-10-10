@@ -115,3 +115,32 @@ message.type !== "resize"               // matches!(message, SandpackMessage::Ot
 - It's the last, so no variant after it is never matched, and a derive
   of the enum is an error: `Clone`, `PartialEq` and the rest would take
   its object for a variant of the enum's own.
+
+## Amendment: a tag of `true` or `false`
+
+react-dom's `useFormStatus` gives `{ pending: true, data, method, action }`
+or `{ pending: false, data: null, .. }`: a union TypeScript tells apart by
+a boolean, as it does by a string. ReScript's `@as(true)` names a
+constructor's value so. So a discriminated union's variant's
+`rust_js::name` may be `true` or `false`, its tag's value:
+
+```rust
+#[rust_js::tag = "pending"]
+pub enum FormStatus {
+    #[rust_js::name = true]
+    Pending { data: &'static FormData, .. },
+    #[rust_js::name = false]
+    NotPending,
+}
+```
+
+```js
+{ pending: false }                    // FormStatus::NotPending
+if (status.pending === true) { .. }   // FormStatus::Pending { data, .. }
+```
+
+- Its declaration's tag is the literal, `pending: true`.
+- A `rust_js::name` that isn't a string is an error anywhere else: an
+  enum without a tag is its variants' names, which are strings, and a
+  number would be a new rule with no API asking for it.
+- Its `{:?}` is the Rust name, as a renamed variant's is (ADR 0060).
