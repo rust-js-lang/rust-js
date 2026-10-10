@@ -1,4 +1,6 @@
+array_repeat.rs
 assert_failure.rs
+associated_consts.rs
 begin_panic_str.rs
 begin_panic_string.rs
 bindings_before_branch.rs
@@ -8,9 +10,11 @@ block_modules.rs
 clamp_reversed.rs
 closure_clone_shared.rs
 conditional_move_drops.rs
+const_generic_traits.rs
 const_generic_values.rs
 const_too_large.rs
 default_method_clones.rs
+destructuring_assignment.rs
 drop_deref_temporary.rs
 drop_functions.rs
 drop_impl_param.rs
@@ -30,6 +34,7 @@ formatter_asked.rs
 generic_impl_consts.rs
 generic_into.rs
 generic_operators.rs
+guard_statements.rs
 guarded_bindings.rs
 higher_ranked_bound.rs
 ilog_zero.rs
@@ -38,9 +43,11 @@ index_out_of_bounds.rs
 integer_families.rs
 kept_element_ref.rs
 labeled_blocks.rs
+lazy_effects.rs
 loop_values.rs
 marker_traits.rs
 match_index.rs
+mut_number_args.rs
 nested_generic_types.rs
 nested_type_chain.rs
 once_cell_reentrant.rs

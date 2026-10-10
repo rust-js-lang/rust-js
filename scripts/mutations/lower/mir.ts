@@ -66,4 +66,28 @@ export const mutations: Mutation[] = [
     replace: "                && index.is_constant()\n",
     tests: ["test/mir.test.ts","-t","kept_element_ref"],
   },
+  {
+    name: "mir-box-param-unread",
+    breaks: "a `&mut` number parameter is the box, not the place its `value` is, so writes through it are lost",
+    file: "src/lower/mir.rs",
+    find: "                    state.refs.insert(local, Expr::member(Expr::var(&name), \"value\"));\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","mut_number_args"],
+  },
+  {
+    name: "mir-box-not-copied-back",
+    breaks: "a box given for a `&mut` number isn't copied back, so the caller never sees what the call wrote",
+    file: "src/lower/mir.rs",
+    find: "                                called.push(StmtKind::Assign(place, back).at(self.js_span(span)));\n",
+    replace: "                                let _ = (place, back);\n",
+    tests: ["test/mir.test.ts","-t","mut_number_args"],
+  },
+  {
+    name: "mir-iterator-ref-refused",
+    breaks: "a `&mut` to a std iterator is refused, as if it were a number's",
+    file: "src/lower/mir.rs",
+    find: "                    Value::Ref(iterator) => Ok(iterator),\n",
+    replace: "",
+    tests: ["test/mir.test.ts"],
+  },
 ];

@@ -107,6 +107,11 @@ struct State<'m, 'tcx> {
     /// Each local that's a `&mut` to a number's place that's always the
     /// same, `COUNT.value`: the place, named where it's used.
     refs: std::collections::HashMap<Local, Expr>,
+    /// The boxes a call is given for its `&mut`s to numbers, each copied
+    /// back to its place once the call returns (ADR 0074).
+    copy_backs: Vec<(Expr, String)>,
+    /// The parameters that are boxes their callers give (ADR 0074).
+    boxes: std::collections::HashSet<String>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -167,6 +172,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             drops,
             unwind: None,
             refs: Default::default(),
+            copy_backs: Vec::new(),
+            boxes: Default::default(),
         };
         state.borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
@@ -179,10 +186,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip(skip)
             .map(|local| {
                 state.locals.declared[local] = true;
-                js::Pattern::Name(match state.locals.names[local].as_str() {
+                let name = match state.locals.names[local].as_str() {
                     "" => self.fresh("_"),
                     name => name.to_string(),
-                })
+                };
+                // A `&mut` to a value JS can't change in place: the box its
+                // caller gives, its place the box's `value` (ADR 0074).
+                if let ty::Ref(_, pointee, ty::Mutability::Mut) = mir_body.local_decls[local].ty.kind()
+                    && self.boxed_by_ref(*pointee)
+                {
+                    state.refs.insert(local, Expr::member(Expr::var(&name), "value"));
+                    state.boxes.insert(name.clone());
+                }
+                js::Pattern::Name(name)
             })
             .collect();
         let mut out = Vec::new();
@@ -603,6 +619,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match target {
                     Some(target) => {
                         self.mir_store(state, *destination, value, span, &mut called)?;
+                        // Each box given, copied back once the call returns.
+                        if !state.copy_backs.is_empty() {
+                            self.flush(state, &mut called)?;
+                            for (place, boxed) in std::mem::take(&mut state.copy_backs) {
+                                let back = Expr::member(Expr::var(&boxed), "value");
+                                called.push(StmtKind::Assign(place, back).at(self.js_span(span)));
+                            }
+                        }
                         self.unwinding_to(state, unwind, called, &mut out)?;
                         state.unwind = unwind.filter(|_| !self.acting(state).is_empty());
                         out.extend(self.mir_branch(state, block, *target)?);
@@ -841,8 +865,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Place::from(local),
             false => place,
         };
-        if place.projection.is_empty() && state.locals.names[local].is_empty() {
-            // Of `()`: what made it ran, and it holds nothing.
+        let unread = !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local];
+        if place.projection.is_empty() && (state.locals.names[local].is_empty() || unread) {
+            // Of `()`, or a temporary nothing reads: what made it runs.
             let expr = self.value_expr(value, span)?;
             if expr.has_effects() {
                 self.flush(state, out)?;
@@ -881,6 +906,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.flush(state, out)?;
         out.push(StmtKind::Assign(target, value).at(js_span));
         Ok(())
+    }
+
+    /// Whether a `&mut` to a `pointee` is its place, not a JS value: one JS
+    /// can't change in place, a number's, as a closure's isn't.
+    fn boxed_by_ref(&self, pointee: Ty<'tcx>) -> bool {
+        !self.is_object(pointee) && !matches!(pointee.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..))
+    }
+
+    /// The arguments of a call of the crate's: a `&mut` to a value JS can't
+    /// change in place is a box, named for its parameter, copied back once
+    /// the call returns (ADR 0074). What's given before it that does
+    /// something runs first, before the box reads the place.
+    fn boxed_args(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        values: Vec<Value<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Vec<Expr>> {
+        let mut exprs: Vec<Expr> = Vec::new();
+        for (i, value) in values.into_iter().enumerate() {
+            let Value::Ref(place) = value else {
+                exprs.push(self.value_expr(value, span)?);
+                continue;
+            };
+            // A box this function was given, given on as it is.
+            if let js::ExprKind::Member(boxed, field) = &place.kind
+                && field == "value"
+                && let js::ExprKind::Var(name) = &boxed.kind
+                && state.boxes.contains(name)
+            {
+                exprs.push((**boxed).clone());
+                continue;
+            }
+            // What it returns can hold the borrow: a box would be copied back
+            // before it's used.
+            if self.result_borrows(def_id, i) {
+                return Err(self.unsupported(span, "a `&mut` of a number given back, from its MIR"));
+            }
+            self.flush(state, out)?;
+            for expr in &mut exprs {
+                if expr.has_effects() {
+                    let made = std::mem::replace(expr, Expr::undefined());
+                    *expr = self.spill("arg", made, out);
+                }
+            }
+            let names = self.tcx.fn_arg_idents(def_id);
+            let base = names
+                .get(i)
+                .copied()
+                .flatten()
+                .map_or("value".to_string(), |i| i.name.to_string());
+            let name = self.fresh(&super::camel_case(&base));
+            let boxed = Expr::object(vec![Prop::Field("value".into(), place.clone())]);
+            out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
+            state.copy_backs.push((place, name.clone()));
+            exprs.push(Expr::var(&name));
+        }
+        Ok(exprs)
     }
 
     /// A place, for a read or a write.
@@ -1206,11 +1291,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
                 let pointee = place.ty(decls, tcx).ty;
-                if matches!(kind, BorrowKind::Mut { .. })
-                    && !place.is_indirect()
-                    && !self.is_object(pointee)
-                    && !matches!(pointee.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..))
-                {
+                if matches!(kind, BorrowKind::Mut { .. }) && !place.is_indirect() && self.boxed_by_ref(pointee) {
                     return Ok(Value::Ref(self.mir_place(state, *place, span, out)?));
                 }
                 if self.through_values(state.body, place, true) {
@@ -1572,12 +1653,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Assign(place.clone(), value).at(self.js_span(span)));
             return Ok(Value::Expr(Expr::undefined()));
         }
-        // A std iterator's method: a JS iterator's, lazy as Rust's.
+        // A std iterator's method: a JS iterator's, lazy as Rust's. A `&mut`
+        // to one is it, an object its helpers step in place.
         if tcx.trait_of_assoc(def_id).is_some() {
             let exprs = values
                 .clone()
                 .into_iter()
-                .map(|v| self.value_expr(v, span))
+                .map(|v| match v {
+                    Value::Ref(iterator) => Ok(iterator),
+                    v => self.value_expr(v, span),
+                })
                 .collect::<R<Vec<_>>>()?;
             if let Some(call) = self.mir_iter_call(def_id, &arg_tys, exprs, output, span)? {
                 return Ok(Value::Expr(call));
@@ -1593,21 +1678,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .resolve_instance(def_id, generic_args)?
                     .is_some_and(|i| self.is_rust_fn(i.def_id())))
         {
-            let exprs = values
-                .clone()
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
+            let exprs = self.boxed_args(state, def_id, values.clone(), span, out)?;
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
                 return Ok(Value::Expr(call));
             }
         }
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
-            let mut exprs = values
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
+            let mut exprs = self.boxed_args(state, def_id, values, span, out)?;
             exprs.extend(self.evidence_args(def_id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(def_id), exprs);
             return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));
