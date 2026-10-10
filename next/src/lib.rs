@@ -32,6 +32,7 @@ pub mod navigation;
 pub mod offline;
 pub mod router;
 pub mod script;
+pub mod server;
 pub mod web_vitals;
 
 pub use data_fetching::{

@@ -25,8 +25,9 @@ only grows.**
   imports (`next`, `next/app` to `next/web-vitals`, `next/font/google`,
   `next/font/local`, `next/offline`) from the installed Next.js's `.d.ts`,
   following its re-exports, and lists each export, `+ next/link#default`
-  where the crate binds it, a value by its `link_name`, a type by an item
-  of its name, as is a value an item stands for, a class by its struct or
+  where the crate binds it, a value by its `link_name`, a constructor's
+  `new next/server#NextRequest` and a static's too, a type by an item
+  of its name, or a `pub use` of it, as is a value an item stands for, a class by its struct or
   a const object of strings, `RedirectType`, by its enum; `-` where it
   doesn't, under `# next/link 2 of 3`.
 - **Left out**: build tooling (`next/babel`, `next/jest`), Next.js's

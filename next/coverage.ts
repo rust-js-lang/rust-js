@@ -108,7 +108,9 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   return exported;
 }
 
-// What the crate binds: each value's `link_name`, and each item's name: a
+// What the crate binds: each value's `link_name`, a constructor's, `new
+// next/server#NextRequest`, and a static's, `next/server#NextResponse.json`,
+// its class's; and each item's name: a
 // type's, or a value's an item stands for, a class's struct, or the enum of
 // a const object's strings, `RedirectType`.
 function bindings(): { links: Set<string>; items: Set<string> } {
@@ -116,8 +118,8 @@ function bindings(): { links: Set<string>; items: Set<string> } {
     readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? rust(join(dir, f)) : f.endsWith(".rs") ? [join(dir, f)] : []));
   const sources = rust(crate).map((f) => readFileSync(f, "utf8")).join("\n");
   return {
-    links: new Set([...sources.matchAll(/link_name = "(next[^"#]*)#([^"]+)"/g)].map((m) => `${m[1]}#${m[2]}`)),
-    items: new Set([...sources.matchAll(/pub (?:struct|enum|type|trait) (\w+)/g)].map((m) => m[1])),
+    links: new Set([...sources.matchAll(/link_name = "(?:new )?(next[^"#]*)#(\w+)/g)].map((m) => `${m[1]}#${m[2]}`)),
+    items: new Set([...sources.matchAll(/pub (?:struct|enum|type|trait) (\w+)|pub use [\w:]+ as (\w+);/g)].map((m) => m[1] ?? m[2])),
   };
 }
 

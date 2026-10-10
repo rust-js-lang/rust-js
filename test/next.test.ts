@@ -71,7 +71,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
@@ -84,6 +84,10 @@ function app(name: string): string {
   mkdirSync(join(dir, "app/request"));
   writeFileSync(join(dir, "app/request/page.rs"), request);
   writeFileSync(join(dir, "app/actions.rs"), actions);
+  // A Route Handler, and a proxy that rewrites a path to another route.
+  mkdirSync(join(dir, "app/api/hello"), { recursive: true });
+  writeFileSync(join(dir, "app/api/hello/route.rs"), route);
+  writeFileSync(join(dir, "proxy.rs"), proxy);
   mkdirSync(join(dir, "app/about"));
   writeFileSync(join(dir, "app/about/page.rs"), about);
   // A Pages Router page built for the paths it gives, each with its props,
@@ -155,6 +159,43 @@ pub async fn Request() -> JSX::Element {
 }
 
 js::export_default!(Request);
+`;
+
+const route = `#![allow(non_snake_case)]
+
+use next::server::{NextRequest, after, connection, next_response, user_agent};
+use react::webapi::Response;
+
+pub struct Greeting {
+    pub hello: String,
+    pub bot: bool,
+}
+
+pub async fn GET(request: &'static NextRequest) -> &'static Response {
+    connection().await;
+    let hello = request.next_url().search_params().get("name").unwrap_or_default();
+    let bot = user_agent(request).is_bot;
+    after(|| {
+        let _ = 1;
+    });
+    let response = next_response::json(Greeting { hello, bot });
+    response.cookies().set("seen", "1");
+    response
+}
+`;
+
+const proxy = `use next::server::{Matcher, MiddlewareConfig, NextMiddlewareResult, NextRequest, next_response};
+use react::webapi::{Response, url};
+
+// /old is /about, the browser's URL kept.
+pub fn proxy(request: &'static NextRequest) -> NextMiddlewareResult {
+    let about = url::new_with_base("/about", &request.url());
+    let response: &Response = next_response::rewrite(about);
+    Some(response)
+}
+
+#[allow(non_upper_case_globals)]
+pub static config: MiddlewareConfig<'static> = MiddlewareConfig { matcher: Some(Matcher::Path("/old")), regions: None, unstable_allow_dynamic: None };
 `;
 
 const actions = `js::directive!("use server");
@@ -414,6 +455,15 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(linkedJsx).toContain('import Error$, { catchError } from "next/error";');
   expect(linkedJsx).toContain("export const Shown = catchError(({ text }, info) => (\n  <button onClick={() => info.reset()}>{text}</button>\n));");
   expect(linkedJsx).toContain('<Shown text="again">\n      <Error$ statusCode={404} title="Gone" />\n    </Shown>');
+  // next/server: a Route Handler, and a proxy of its config.
+  expect(output).toContain("ƒ /api/hello");
+  expect(output).toContain("ƒ Proxy");
+  const routeJs = readFileSync(join(dir, "app/api/hello/route.js"), "utf8");
+  expect(routeJs).toContain('import { NextResponse, after, connection, userAgent } from "next/server";');
+  expect(routeJs).toContain("const response = NextResponse.json({ hello, bot });");
+  const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
+  expect(proxyJs).toContain('export const config = { matcher: "/old" };');
+  expect(proxyJs).toContain('const about = new URL("/about", request.url);\n  const response = NextResponse.rewrite(about);\n  return response;');
   // next/navigation.
   expect(linkedJsx).toContain('const query = useSearchParams().get("q") ?? "";');
   expect(linkedJsx).toContain("const { slug } = useParams();");
@@ -522,6 +572,14 @@ test("rust-js-next dev serves Rust routes, refreshes a save in place, and recove
     await page.context().addCookies([{ name: "theme", value: "dark", url: `http://localhost:${port}` }]);
     await page.goto(`http://localhost:${port}/request`);
     await page.getByText(/^dark \d+ live \d+$/).waitFor();
+
+    // next/server: the Route Handler's JSON and cookie, and the proxy's
+    // rewrite of /old to /about, its URL kept.
+    const hello = await page.request.get(`http://localhost:${port}/api/hello?name=Ada`);
+    expect([await hello.json(), hello.headers()["set-cookie"]?.startsWith("seen=1")]).toEqual([{ hello: "Ada", bot: false }, true]);
+    await page.goto(`http://localhost:${port}/old`);
+    await page.getByRole("heading", { name: "About, in Rust" }).waitFor();
+    expect(new URL(page.url()).pathname).toBe("/old");
   } finally {
     await browser?.close();
     server.kill("SIGTERM");
