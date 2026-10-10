@@ -645,7 +645,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/patterns.rs",
     find: "                    && !self.has_drops(self.thir[init].ty)\n                    && let Some((pattern, mutable)) = self.js_pattern(pat)",
     replace: "                    && let Some((pattern, mutable)) = self.js_pattern(pat)",
-    tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
+    tests: ["test/corpus.test.ts", "-t", "drop"],
   },
   {
     name: "place-let-nothing-bound",
