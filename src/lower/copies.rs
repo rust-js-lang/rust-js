@@ -348,6 +348,8 @@ pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             ty::Bool | ty::Char | ty::Int(_) | ty::Uint(_) | ty::Float(_) | ty::Str => true,
             ty::FnPtr(..) | ty::FnDef(..) | ty::Closure(..) | ty::Dynamic(..) => true,
             ty::Ref(_, inner, Mutability::Not) => walk(tcx, *inner, seen),
+            // A thread-local, its module's one variable, which every use is (ADR 0037).
+            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => true,
             ty::Array(item, _) | ty::Slice(item) => walk(tcx, *item, seen),
             ty::Tuple(items) => items.iter().all(|item| walk(tcx, item, seen)),
             ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => walk(tcx, args.type_at(0), seen),

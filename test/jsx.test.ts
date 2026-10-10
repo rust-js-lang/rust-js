@@ -69,8 +69,8 @@ pub(crate) fn Card(p: Props) -> JSX::Element {
   run(args);
   snapshot(dir, "modules");
   const code = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(code).toContain('import { Card } from "./ui/card.jsx";');
-  expect(code).toContain('<Card title="Numbers">');
+  expect(code).toContain('import { Card as Panel } from "./ui/card.jsx";');
+  expect(code).toContain('<Panel title="Numbers">');
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.App())).toBe('<section><h1>Numbers</h1><ul class="list"><li>0</li><li>1</li><li>2</li></ul></section><p data-state="ready">done</p>');
   expect(renderToStaticMarkup(result.Spread())).toBe('<section><h1>Spread</h1><span>child</span></section>');
@@ -646,6 +646,47 @@ pub fn items(paths: &[String]) -> Vec<JSX::Element> {
   expect(js).toContain("<Item key={path} value={path} />");
 });
 
+// A component's key that reads the same wherever it's read goes first with
+// its children in place: it can't see what they do, nor they it, as
+// react.dev's InlineTocItem writes `<LI key={node.item.url}>`. One the
+// children change is still read after them.
+test("a key that reads alike keeps a component's children in place", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub struct RowProps<C: ReactNode> {
+    pub children: C,
+}
+pub fn Row<C: ReactNode>(RowProps { children }: RowProps<C>) -> JSX::Element {
+    jsx! { <li>{children}</li> }
+}
+pub struct Entry {
+    pub url: String,
+}
+pub fn rows(entries: &[Entry]) -> Vec<JSX::Element> {
+    entries.iter().map(|entry| jsx! { <Row key={&entry.url}><b>{entry.url.as_str()}</b><i /></Row> }).collect()
+}
+pub struct Counter {
+    pub count: u32,
+}
+fn bump(counter: &mut Counter) -> u32 {
+    counter.count += 1;
+    counter.count
+}
+pub fn bumped() -> JSX::Element {
+    let mut counter = Counter { count: 0 };
+    jsx! { <Row key={counter.count}>{bump(&mut counter)}</Row> }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(js).toContain("<Row key={entry.url}>\n      <b>{entry.url}</b>");
+  // JSX reads a key where it's written, before the children.
+  expect(js).toContain("const children = bump(counter);\n  return <Row key={counter.count}>{children}</Row>;");
+  const { bumped } = await import(join(dir, "lib.jsx"));
+  expect(bumped().key).toBe("1");
+});
+
 test("nested component JSX stays readable, contextually typed and mapped to the original Rust", async () => {
   const source = `#![deny(warnings)]
 #![allow(non_snake_case)]
@@ -1135,16 +1176,16 @@ thread_local! {
   const code = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(code).toContain('<Generic value={7} />');
   expect(code).toContain('<Generic value={8} />');
-  expect(code).toContain('<MEMO label="memo" />');
-  expect(code).toContain('<THEME value="dark">');
-  expect(code).toContain('<THEME.Provider value="legacy">');
+  expect(code).toContain('<Cached label="memo" />');
+  expect(code).toContain('<Theme value="dark">');
+  expect(code).toContain('<Theme.Provider value="legacy">');
   expect(code).toContain('<FORWARD label="forward" />');
   expect(code).toContain('<LAZY />');
   expect(code).not.toContain('component(');
   const source = readFileSync(join(dir, "lib.rs"), "utf8");
   const map = JSON.parse(readFileSync(join(dir, "lib.jsx.map"), "utf8"));
   const lines = code.split("\n");
-  for (const [generated, original] of [["<MEMO label=\"memo\"", "<Cached label=\"memo\""], ["<THEME.Provider", "<Theme.Provider"], ["<Generic value={8}", "<Generic::<i32>"]]) {
+  for (const [generated, original] of [["<Cached label=\"memo\"", "<Cached label=\"memo\""], ["<Theme.Provider", "<Theme.Provider"], ["<Generic value={8}", "<Generic::<i32>"]]) {
     const line = lines.findIndex(l => l.includes(generated));
     expect(lookup(decodeMappings(map.mappings), line, lines[line].indexOf(generated))?.srcLine)
       .toBe(source.split("\n").findIndex(l => l.includes(original)));
@@ -1947,6 +1988,33 @@ pub fn App() -> JSX::Element {
   refused(flattened.replace("pub children: C,", "pub children: C,\n    pub rest: react::Rest,").replace("{ size, children, anchor }", "{ size, children, anchor, .. }"), "one rest");
 });
 
+// Children that do something stay in place before a flattened struct none
+// of whose fields is given, made of constants, which they can't change, as
+// react.dev's `<UL>{items.map(..)}</UL>` has them.
+test("children stay in place before a flattened struct of nothing given", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::HTMLAttributes;
+use react::webapi::HTMLUListElement;
+use react::{JSX, ReactNode, jsx};
+pub struct ElementProps<'a, C: ReactNode, T> {
+    pub children: C,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub html: HTMLAttributes<'a, T>,
+}
+pub fn UL<C: ReactNode>(p: ElementProps<C, HTMLUListElement>) -> JSX::Element {
+    jsx! { <ul className="list" {...p} /> }
+}
+pub fn List(names: &[&'static str]) -> JSX::Element {
+    jsx! { <UL>{names.iter().map(|name| jsx! { <li key={*name}>{*name}</li> }).collect::<Vec<_>>()}</UL> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx.includes("const children")).toBe(false);
+  const { List } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(List(["a", "b"]))).toBe('<ul class="list"><li>a</li><li>b</li></ul>');
+});
+
 // A struct of two flattened fields is made as JS spreads two objects,
 // `{ ...base, ...over }`, the second's keys over the first's, as react.dev's
 // SandpackRoot gives Sandpack `{...template, ...files}`. JS's object has
@@ -2747,6 +2815,157 @@ pub fn A(p: P) -> JSX::Element {
 `);
   const refused = Bun.spawnSync(matched.args, { cwd: matched.dir });
   expect([refused.exitCode === 0, refused.stderr.toString().includes("a `Rest` of props taken apart here")]).toEqual([false, true]);
+});
+
+// A struct spread through a reference is the struct's spread, as react.dev's
+// Image spreads `rest`, then reads its `src` after.
+test("JSX spreads a struct through a reference as the struct", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::ImgHTMLAttributes;
+use react::{JSX, jsx};
+pub struct ImageProps<'a> {
+    pub alt: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub rest: ImgHTMLAttributes<'a>,
+}
+pub fn Image(ImageProps { alt, rest }: ImageProps) -> JSX::Element {
+    jsx! { <img alt={alt} className="wide" {...&rest} src={rest.src.map(|src| format!("/base{src}"))} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain(`<img alt={alt} className="wide" {...rest} src=`);
+  const { Image } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Image, { alt: "A", src: "/a.png", title: "T" }))).toBe('<link rel="preload" as="image" href="/base/a.png"/><img alt="A" class="wide" src="/base/a.png" title="T"/>');
+});
+
+// A `{" "}` the formatter makes text pairs with nothing, and a tag it breaks
+// onto lines keeps its mappings in order, as react.dev's LanguageList and
+// YouTubeIframe have them.
+test("a tag broken onto lines keeps its mappings in order", () => {
+  const source = `#![allow(non_snake_case)]
+use react::attributes::IframeHTMLAttributes;
+use react::{JSX, jsx};
+fn first_more() -> &'static str {
+    "z"
+}
+pub fn Item(first: JSX::Element, second: JSX::Element) -> JSX::Element {
+    jsx! {
+        <li>
+            {first}{" "}{"— "}{second}
+            <b className="bold">{"y"}</b>
+            <i className="it">{first_more()}</i>
+        </li>
+    }
+}
+pub fn YouTubeIframe(props: IframeHTMLAttributes<'static>) -> JSX::Element {
+    jsx! {
+        <div className="relative h-0 overflow-hidden pt-[56.25%]">
+            <iframe
+                className="absolute inset-0 w-full h-full"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen={true}
+                title="YouTube video player"
+                {...props}
+            />
+        </div>
+    }
+}
+pub fn After() -> JSX::Element {
+    jsx! { <hr /> }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const js = readFileSync(join(dir, "lib.jsx"), "utf8").split("\n");
+  const map = JSON.parse(readFileSync(join(dir, "lib.jsx.map"), "utf8"));
+  const segments = decodeMappings(map.mappings);
+  for (const text of ["<li>", "<b", "<i", "allow=", "title=", "<hr"]) {
+    const line = js.findIndex(l => l.includes(text));
+    expect(lookup(segments, line, js[line].indexOf(text))?.srcLine, text).toBe(source.split("\n").findIndex(l => l.includes(text)));
+  }
+});
+
+// Making an element runs nothing of the crate's, so a field's `RefCell`
+// borrowed for a prop is borrowed only for a moment, and is its value (ADR
+// 0362), as react.dev's InlineToc passes `items={root.children}`.
+test("a field's RefCell borrowed for a prop is its value", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use std::cell::RefCell;
+use std::rc::Rc;
+use react::{JSX, jsx};
+pub struct Node {
+    pub name: &'static str,
+    pub children: RefCell<Vec<Rc<Node>>>,
+}
+pub struct ItemsProps<'a> {
+    pub items: &'a [Rc<Node>],
+}
+pub fn Items(ItemsProps { items }: ItemsProps) -> JSX::Element {
+    jsx! {
+        <ul>
+            {items.iter().map(|node| jsx! {
+                <li key={node.name}>
+                    {node.name}
+                    {if node.children.borrow().len() > 0 { Some(jsx! { <Items items={&node.children.borrow()} /> }) } else { None }}
+                </li>
+            }).collect::<Vec<_>>()}
+        </ul>
+    }
+}
+pub fn Tree() -> JSX::Element {
+    let root = Rc::new(Node { name: "root", children: RefCell::new(vec![]) });
+    let leaf = Rc::new(Node { name: "leaf", children: RefCell::new(vec![]) });
+    root.children.borrow_mut().push(leaf);
+    jsx! { <Items items={&root.children.borrow()} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect([jsx.includes("$borrow"), jsx.includes("<Items items={node.children} />"), jsx.includes("<Items items={root.children} />")]).toEqual([false, true, true]);
+  const { Tree } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(Tree))).toBe("<ul><li>leaf</li></ul>");
+});
+
+// A constant's thread-local component is the module's variable, which every
+// use shares, as react.dev's MDXComponents table holds `pre: CodeBlock`, a
+// memo.
+test("a constant holds a thread-local by reference as its variable", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use std::thread::LocalKey;
+use react::{JSX, MemoExoticComponent, jsx};
+mod memoized;
+use memoized::{Memoized, Props};
+pub fn Plain(Props { name }: Props) -> JSX::Element {
+    jsx! { <i>{name}</i> }
+}
+pub struct Table {
+    pub plain: fn(Props) -> JSX::Element,
+    pub memo: &'static LocalKey<MemoExoticComponent<Props>>,
+}
+pub const TABLE: Table = Table { plain: Plain, memo: &Memoized };
+`, {
+    "memoized.rs": `use react::{JSX, MemoExoticComponent, jsx, memo};
+pub struct Props {
+    pub name: &'static str,
+}
+fn Bold(Props { name }: Props) -> JSX::Element {
+    jsx! { <b>{name}</b> }
+}
+thread_local! {
+    pub static Memoized: MemoExoticComponent<Props> = memo(Bold);
+}
+`,
+  });
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export const TABLE = { plain: Plain, memo: Memoized };");
+  const { TABLE } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(TABLE.memo, { name: "m" }))).toBe("<b>m</b>");
 });
 
 // An async handler is the async function itself, as react.dev's

@@ -74,3 +74,15 @@ AST, and it writes no source map.
 - A mapping inside a node, rather than at its start, keeps its offset from
   the node's start, which is right unless the formatter changed the text
   between them.
+
+## Amendment: what the formatter lays out pairs with nothing
+
+The nodes paired are those `transformed`'s check compares (ADR 0117),
+JSX's text and a `{" "}` left out. Where oxfmt made a `{" "}` text,
+`{a}{" "}— {b}` to `{a} — {b}`, the `{" "}` was paired with the next
+`{..}` and its `" "` with a later string, and every node after with
+one after it: react.dev's MDXComponents had each mapping after its
+LanguageList a line early, one going back a line, which oxc's encoder
+panics on. A JSX test of a `{" "}` made text, before a tag the formatter
+breaks onto lines, finds each mapping on its line; a mutation pairs
+every node again.

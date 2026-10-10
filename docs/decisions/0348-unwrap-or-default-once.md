@@ -43,3 +43,13 @@ still, kept first.
 
 - No corpus or snapshot output had one; react.dev's `PageHeading` did,
   `$splitBy(asPath, ..)[0] ?? ""` now, its `const option` gone.
+
+## Amendment: `unwrap_or_else`
+
+`unwrap_or_else(f)` of an `Option` whose `Some` isn't boxed is
+`subject ?? f()` too, `f` called only where it's `None`, as Rust calls
+it: react.dev's calculateNestedToc writes
+`currentAncestors.get(item.depth - 1) || root`. A closure of statements
+is its arrow, made first, which does nothing. A lowering test reads one
+of each once, its fallback run only where it's needed; a mutation keeps
+the `const option`.

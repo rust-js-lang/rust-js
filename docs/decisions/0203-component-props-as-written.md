@@ -42,3 +42,13 @@ the order it makes them.**
   struct's order and finds them as written, with nothing read into a
   `const`, and one whose children change its base renders what Rust's
   does; `test/next.test.ts`'s `Link` is given its rest first.
+
+## Amendment: an object of constants after the children
+
+Children that do something were read into a `const` before a prop after
+them that isn't a constant, which a flattened struct none of whose fields
+is given is, `{}`: react.dev's `<UL>{items.map(..)}</UL>`, whose props
+flatten an element's attributes, was `const children = items.map(..)`.
+An object made of constants is made nowhere either, and children can't
+change it: they stay in place. A JSX test renders one; a mutation takes
+only a constant again.

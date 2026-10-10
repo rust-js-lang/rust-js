@@ -56,3 +56,13 @@ function join(greeting) {
   A JSX test's module renaming next/link's default has `import NextLink
   from "next/link"`, another's keeps `Link`, and a `static` renamed
   `banner_img` is `bannerImg`.
+
+## Amendment: a crate module's named import by its `use`'s name
+
+A `use` that renames another module's function of the crate imports it
+by that name, `use inner::client as sandpack` is `import { client as
+sandpack } from "./inner.js"`, as react.dev's MDXComponents imports
+`{SandpackClient as Sandpack}` and keeps `Sandpack` in its table, a
+default import already was. A module test imports two so; a mutation
+drops the name. The JSX snapshots that rename a component, `Card as
+Panel`, `MEMO as Cached` and `THEME as Theme`, print those names.

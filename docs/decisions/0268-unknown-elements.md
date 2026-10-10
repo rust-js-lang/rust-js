@@ -67,3 +67,8 @@ return <Type key={key} {...props} />;
   to refuse when it renders. `let Type = ElementType::from_unknown(Type);`
   is `Type` itself (ADR 0277): `<Type key={key} {...props} />`, as the
   errors page has it.
+
+- **A struct spread through a reference is the struct's spread**:
+  `{...&rest}`, as react.dev's Image spreads `rest` and reads
+  `rest.src` after it, is `{...rest}`. A reference is the object it's
+  of (2026-10-10).

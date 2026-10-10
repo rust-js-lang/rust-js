@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "props-read-before-constant-base",
     breaks: "a component's props are read into `const`s before its children where only a base's constant comes after them",
     file: "src/lower/jsx.rs",
-    find: "                (value.has_effects() && !self.reads_unchanging(children, out))\n                    || (children.has_effects() && !value.is_constant())",
+    find: "                (value.has_effects() && !self.reads_unchanging(children, out))\n                    || (children.has_effects() && !value.is_made_of_constants())",
     replace: "                true",
     tests: ["test/jsx.test.ts", "-t", "no dictionary"],
   },
@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "base-read-before-children-that-change-it",
     breaks: "`<Tally {..base}>{bump(&mut base)}</Tally>` reads `base.n` before `bump` changes it",
     file: "src/lower/jsx.rs",
-    find: "\n                    || (children.has_effects() && !value.is_constant())",
+    find: "\n                    || (children.has_effects() && !value.is_made_of_constants())",
     replace: "",
     tests: ["test/jsx.test.ts", "-t", "children that change the base"],
   },
@@ -134,16 +134,16 @@ export const mutations: Mutation[] = [
     name: "jsx-prop-read-first-for-any-child",
     breaks: "a prop before children that aren't simple is read into a `const` first, though their JS needs no statements",
     file: "src/lower/jsx.rs",
-    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty()) {\n",
-    replace: "        if !self.is_simple(value) || (name != \"children\" && !jsx.children.is_empty()) {\n",
+    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
+    replace: "        if !self.is_simple(value) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
     tests: ["test/jsx.test.ts", "-t", "a prop before children"],
   },
   {
     name: "jsx-prop-read-first-for-reads",
     breaks: "a child's statement that only reads makes the attributes before it `const`s first, `const className = props.className`",
     file: "src/lower/jsx.rs",
-    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty()) {\n",
-    replace: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty()) {\n",
+    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
+    replace: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
     tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
   },
   {
@@ -433,5 +433,53 @@ export const mutations: Mutation[] = [
     find: "                    Prop::Spread(v) if v.span.is_none() => true,\n",
     replace: "                    Prop::Spread(v) if v.span.is_none() => false,\n",
     tests: ["test/jsx.test.ts", "-t", "props updated from a reference are spread"],
+  },
+  {
+    "name": "jsx-spread-reference-refused",
+    "breaks": "a struct spread through a reference, `{...&rest}`, is refused as a spread of a non-struct",
+    "file": "src/lower/jsx.rs",
+    "find": "        let spread = self.thir[value].ty.peel_refs();",
+    "replace": "        let spread = self.thir[value].ty;",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "spreads a struct through a reference"
+    ]
+  },
+  {
+    "name": "jsx-key-alike-moves-children",
+    "breaks": "a component's key that reads the same anywhere puts its children in `const`s first",
+    "file": "src/lower/jsx.rs",
+    "find": "        let alike = first.is_empty() && lowered.as_ref().is_some_and(|v| self.reads_alike(v, out));",
+    "replace": "        let alike = false && first.is_empty() && lowered.as_ref().is_some_and(|v| self.reads_alike(v, out));",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "a key that reads alike keeps"
+    ]
+  },
+  {
+    "name": "jsx-key-any-alike",
+    "breaks": "a key that does something is printed before children it runs after, its call reordered",
+    "file": "src/lower/jsx.rs",
+    "find": "        let alike = first.is_empty() && lowered.as_ref().is_some_and(|v| self.reads_alike(v, out));",
+    "replace": "        let alike = true;",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "a key that reads alike keeps"
+    ]
+  },
+  {
+    "name": "jsx-constant-object-moves-children",
+    "breaks": "children that do something are put in a `const` before a flattened struct of nothing given",
+    "file": "src/lower/jsx.rs",
+    "find": "                    || (children.has_effects() && !value.is_made_of_constants())",
+    "replace": "                    || (children.has_effects() && !value.is_constant())",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "flattened struct of nothing given"
+    ]
   },
 ];

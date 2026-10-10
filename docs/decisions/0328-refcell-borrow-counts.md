@@ -113,3 +113,13 @@ try {
   read under a write, and the error shown. Mutations never block, block
   a read beside a read, leave the guard uncounted, show it wrong, and
   refuse each. `docs/std-coverage.txt`: `Mutex` 7 of 7, `RwLock` 9 of 9.
+
+- **Making an element or an object asks nothing** (2026-10-10): a
+  binding whose JS is a JSX element, `<*>`, an attribute, `prop x`, an
+  object, `{}`, or the value itself, `this`, runs no code, as a component
+  given is called when React renders it. A guard held while one is made,
+  `<Items items={&node.children.borrow()} />`, is checked and not
+  counted, so a field's `RefCell` lent to a prop is its value (ADR 0362),
+  as react.dev's InlineToc gives `items={root.children}`. A JSX test
+  renders a tree of them, no `$borrow` in its JS; a mutation takes
+  making an element for code that may ask.

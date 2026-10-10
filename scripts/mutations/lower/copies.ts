@@ -139,4 +139,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","const_block_values"],
   },
+  {
+    "name": "local-key-unshared",
+    "breaks": "a constant holding a thread-local by reference, a memo component, is refused",
+    "file": "src/lower/copies.rs",
+    "find": "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => true,",
+    "replace": "            ty::Adt(adt, _) if super::recognition::is_std_def(tcx, adt.did(), StdItem::LocalKey) => false,",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "thread-local by reference as its variable"
+    ]
+  },
 ];

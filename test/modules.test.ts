@@ -425,6 +425,21 @@ test("a pub use of another module's function is re-exported from it", async () =
   expect([lib.helper(), lib.renamed(), lib.own()]).toEqual([1, 2, 3]);
 });
 
+// A `use` that renames another module's function imports it by that name,
+// `import { client as sandpack }`, as react.dev's MDXComponents imports
+// `{SandpackClient as Sandpack}`.
+test("a use that renames another module's function imports it as that", async () => {
+  const dir = fixture("renamed-import");
+  writeFileSync(join(dir, "lib.rs"), "mod inner;\nuse inner::client as sandpack;\nuse inner::other as second;\n\npub fn run() -> u32 {\n    sandpack() + second() + 1\n}\n");
+  writeFileSync(join(dir, "inner.rs"), "pub fn client() -> u32 {\n    1\n}\n\npub fn other() -> u32 {\n    2\n}\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import { client as sandpack, other as second } from "./inner.js";');
+  expect(js).toContain("sandpack() + second()");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run()).toBe(4);
+});
+
 // A module of re-exports only is a file of them, as react.dev's
 // Sidebar/index is `export {SidebarLink} from './SidebarLink'`.
 test("a module of only pub uses is a file of re-exports", async () => {

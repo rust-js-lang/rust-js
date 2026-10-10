@@ -58,3 +58,13 @@ import Error, { catchError } from "next/error";
 A local is renamed where every read in its item is of the declaration it
 was, as JS's scopes resolve them (ADR 0357), not only where its item never
 mentions the name. An import keeps the rule above.
+
+## Amendment: a module's own function or `const`
+
+A function or `const` of a module's own that it doesn't export is
+reclaimed as an import is, where its module never mentions the name:
+react.dev's MDXComponents writes `function Math({children})`, which was
+`Math$`. One another module imports keeps its name, which the importer
+reads it by, and one in a module that reads the global, `Math.imul`,
+stays apart. A lowering test has all three; mutations keep the name
+apart, and reclaim an exported one.

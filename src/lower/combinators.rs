@@ -611,6 +611,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let fallback = self.default_value(inner, span)?;
             return Ok(Expr::bin(Op::Coalesce, subject, fallback));
         }
+        // And `f` called only where it's `None`: `get(n) ?? root`. A closure
+        // of statements is its arrow, made first, which does nothing.
+        if comb == Comb::UnwrapOrElse && !boxed {
+            let fallback = self.call_with(values.remove(0), Vec::new(), "fallback", out);
+            return Ok(Expr::bin(Op::Coalesce, subject, fallback));
+        }
         // The subject is read more than once.
         let spilled_at = (!subject.reads_same()).then_some(out.len());
         let subject = if subject.reads_same() {

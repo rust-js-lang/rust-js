@@ -68,7 +68,8 @@ pub fn transformed(
     let allocator = Allocator::default();
     let before = node_starts(&allocator, code, source_type).map_err(|e| format!("was given JS it can't read: {e}"))?;
     let after = node_starts(&allocator, &text, source_type).map_err(|e| format!("gave what isn't JS: {e}"))?;
-    let (was, is) = (layout_free(&before, code), layout_free(&after, &text));
+    let kinds = |nodes: Vec<(AstType, u32)>| nodes.into_iter().map(|(kind, _)| kind).collect::<Vec<_>>();
+    let (was, is) = (kinds(layout_free(&before, code)), kinds(layout_free(&after, &text)));
     if let Some(at) = (0..was.len().max(is.len())).find(|&i| was.get(i) != is.get(i)) {
         // Taken out, with what's in it, if the rest is what the rest was;
         // added, if what was there is the rest; or else made another.
@@ -86,9 +87,9 @@ pub fn transformed(
     Ok((text, map))
 }
 
-/// The kinds of `nodes`, of `code`, but for what a formatter lays out
-/// otherwise: JSX's text, and the `{" "}` that stands for its spaces.
-fn layout_free(nodes: &[(AstType, u32)], code: &str) -> Vec<AstType> {
+/// `nodes`, of `code`, but for what a formatter lays out otherwise: JSX's
+/// text, and the `{" "}` that stands for its spaces.
+fn layout_free(nodes: &[(AstType, u32)], code: &str) -> Vec<(AstType, u32)> {
     let mut kinds = Vec::with_capacity(nodes.len());
     let mut space = false;
     for &(kind, at) in nodes {
@@ -96,7 +97,7 @@ fn layout_free(nodes: &[(AstType, u32)], code: &str) -> Vec<AstType> {
         space = kind == AstType::JSXExpressionContainer
             && ["{\" \"}", "{' '}"].iter().any(|s| code[at as usize..].starts_with(s));
         if !(space || spaces || kind == AstType::JSXText) {
-            kinds.push(kind);
+            kinds.push((kind, at));
         }
     }
     kinds
@@ -112,7 +113,10 @@ fn moved(
     after: &[(AstType, u32)],
     js_file_name: &str,
 ) -> String {
-    let pairs = pair(before, after);
+    // A `{" "}` the formatter made text, `{a}{" "}— {b}` to `{a} — {b}`,
+    // pairs with nothing: paired, it would pair each node after it with a
+    // later one.
+    let pairs = pair(&layout_free(before, code), &layout_free(after, text));
     let (old_lines, new_lines) = (Lines::new(code), Lines::new(text));
 
     let mut out = SourceMapBuilder::default();

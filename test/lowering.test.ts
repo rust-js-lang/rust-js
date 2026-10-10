@@ -4145,6 +4145,42 @@ pub fn nested(n: u32) -> Option<u32> {
   expect([lib.shown(3), lib.shown(0), lib.nested(2), lib.nested(1), lib.nested(0)]).toEqual(["3", "", 2, undefined, undefined]);
 });
 
+// `unwrap_or_else(f)` of a call reads it once too, and calls `f` only where
+// it's `None`, as react.dev's calculateNestedToc writes
+// `currentAncestors.get(item.depth - 1) || root`; a closure of statements
+// is its arrow, made first.
+test("unwrap_or_else of a call is its value or the closure's", async () => {
+  const dir = fixture("unwrap-or-else");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
+
+pub fn parent(ancestors: &HashMap<u32, String>, depth: u32, root: &str) -> String {
+    ancestors.get(&depth).cloned().unwrap_or_else(|| root.to_string())
+}
+
+pub fn counted(ancestors: &HashMap<u32, String>, depth: u32, log: &mut Vec<u32>) -> String {
+    ancestors.get(&depth).cloned().unwrap_or_else(|| {
+        log.push(depth);
+        String::from("none")
+    })
+}
+
+pub fn run() -> (String, String, String, String, Vec<u32>) {
+    let mut ancestors = HashMap::new();
+    ancestors.insert(1, String::from("one"));
+    let mut log = Vec::new();
+    let found = counted(&ancestors, 1, &mut log);
+    let missing = counted(&ancestors, 2, &mut log);
+    (parent(&ancestors, 1, "root"), parent(&ancestors, 2, "root"), found, missing, log)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return ancestors.get(depth) ?? root;");
+  expect(js).toContain("return ancestors.get(depth) ?? fallback();");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run()).toEqual(["one", "root", "one", "none", [2]]);
+});
+
 // A flattened field is a struct's (ADR 0204): an enum variant's was nested,
 // `{ type: "article", base: { .. } }`, where JS holds it flat. It's refused,
 // at the field.
@@ -4327,6 +4363,52 @@ pub fn stringed(n: u32) -> String {
   expect(js).toContain('import { String as String$ } from "./names.js";');
   const lib = await import(join(dir, "lib.js"));
   expect(lib.stringed(3)).toBe("93");
+});
+
+// A function of the module's own, not exported, named as a global its
+// module never reads is the global's name, as react.dev's MDXComponents
+// writes `function Math({children})` (ADR 0352). One in a module that
+// reads the global stays apart, and so does one another module imports by
+// its name.
+test("a module's own function named as a global it never reads is the name", async () => {
+  const dir = fixture("reclaimed-own-item");
+  writeFileSync(join(dir, "lib.rs"), `#[allow(non_snake_case)]
+fn Math(x: u32) -> u32 {
+    x + 1
+}
+
+pub fn twice(x: u32) -> u32 {
+    Math(Math(x))
+}
+
+pub fn shared(x: u32) -> u32 {
+    exported::Math(x)
+}
+
+pub mod exported {
+    #[allow(non_snake_case)]
+    pub fn Math(x: u32) -> u32 {
+        x + 2
+    }
+}
+
+pub mod rounded {
+    #[allow(non_snake_case)]
+    fn Math(x: f64) -> f64 {
+        x.floor()
+    }
+
+    pub fn floored(x: f64) -> f64 {
+        Math(x)
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const rounded = readFileSync(join(dir, "rounded.js"), "utf8");
+  expect([js.includes("function Math(x) {"), rounded.includes("function Math$(x) {")]).toEqual([true, true]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.twice(1), lib.shared(2)]).toEqual([3, 4]);
 });
 
 // An untagged enum's variant of a fieldless enum is a string, its variant's

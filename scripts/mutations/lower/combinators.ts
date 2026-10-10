@@ -442,4 +442,16 @@ export const mutations: Mutation[] = [
     replace: "                    None => pointee,",
     tests: ["test/corpus.test.ts","-t","as_deref_counted"],
   },
+  {
+    "name": "unwrap-or-else-option-kept",
+    "breaks": "`unwrap_or_else` of a call keeps it in a `const option` first, where `??` reads it once",
+    "file": "src/lower/combinators.rs",
+    "find": "        if comb == Comb::UnwrapOrElse && !boxed {",
+    "replace": "        if comb == Comb::UnwrapOrElse && !boxed && false {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "unwrap_or_else of a call"
+    ]
+  },
 ];

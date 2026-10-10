@@ -3152,6 +3152,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let ty::InstanceKind::Item(id) = instance.def else {
             return true;
         };
+        // What makes a JSX element or an object, or casts a value, runs no
+        // code: a component given is called when React renders it.
+        if super::bindings::is_binding(self.tcx, id)
+            && matches!(
+                super::bindings::js_form(self.tcx, id),
+                super::bindings::JsForm::Jsx(_)
+                    | super::bindings::JsForm::Prop(_)
+                    | super::bindings::JsForm::Object(_)
+                    | super::bindings::JsForm::This
+            )
+        {
+            return false;
+        }
         !self.is_std(id) || self.asks_borrows(id) || !self.bounds_quiet(id, instance.args, 0)
     }
 

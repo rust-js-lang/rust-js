@@ -255,8 +255,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Read before the children, where a prop after them, a base's, is
         // made after them, as Rust makes it, and the order shows: it does
         // something, or reads what children that do something might change,
-        // `{..base}` of `bump(&mut base)`. A constant is made nowhere, and
-        // children that read only what never changes read the same after.
+        // `{..base}` of `bump(&mut base)`. A constant is made nowhere, nor
+        // is an object of them, a flattened struct none of whose fields is
+        // given, and children that read only what never changes read the same after.
         if let Some(i) = fields
             .iter()
             .position(|p| matches!(p, Prop::Field(name, _) if name == "children"))
@@ -264,7 +265,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && fields[i + 1..].iter().any(|p| {
                 let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = p;
                 (value.has_effects() && !self.reads_unchanging(children, out))
-                    || (children.has_effects() && !value.is_constant())
+                    || (children.has_effects() && !value.is_made_of_constants())
             })
         {
             for prop in &mut fields {
@@ -719,7 +720,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `js::Unknown` read from JSON say, or none, `undefined`, which JS
         // spreads as nothing (ADR 0268).
         let js_object = |ty: Ty<'tcx>| self.recognition().is_js_object(ty.peel_refs());
-        let spread = self.thir[value].ty;
+        // Through a reference, the struct itself, which JS spreads alike.
+        let spread = self.thir[value].ty.peel_refs();
         if name == "..."
             && !matches!(self.shape(spread), Shape::Object(_))
             && !js_object(spread)
@@ -742,10 +744,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // children. Likewise, statements introduced by an argument must not
         // jump ahead of any deferred receiver evaluations. These temporaries
         // preserve Rust evaluation order, independently of output formatting.
+        // A value that reads the same wherever it's read, with nothing to do
+        // first, a key's `entry.url`, can't see what the children do, nor
+        // they it (ADR 0254).
+        let alike = first.is_empty() && lowered.as_ref().is_some_and(|v| self.reads_alike(v, out));
         let js::ExprKind::Jsx(jsx) = &mut element.kind else {
             unreachable!("checked above")
         };
-        if (!first.is_empty() && !self.is_simple(value)) || (name != "children" && !jsx.children.is_empty()) {
+        if (!first.is_empty() && !self.is_simple(value)) || (name != "children" && !jsx.children.is_empty() && !alike) {
             // One read already, a `const` of its own, is read as it is (ADR 0194).
             for prop in &mut jsx.props {
                 let (base, value) = match prop {

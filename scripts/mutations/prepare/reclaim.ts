@@ -61,4 +61,28 @@ export const mutations: Mutation[] = [
     tests: ["test/snapshots.test.ts", "-t", "calc"],
     snapshots: true,
   },
+  {
+    "name": "own-item-kept-apart",
+    "breaks": "a module's own function named as a global it never reads stays `Math$`",
+    "file": "src/prepare/reclaim.rs",
+    "find": "    imports(module);\n    own_items(module);",
+    "replace": "    imports(module);",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "own function named as a global"
+    ]
+  },
+  {
+    "name": "own-item-exported-reclaimed",
+    "breaks": "an exported function named as a global is renamed, and a module that imports it by its name finds nothing",
+    "file": "src/prepare/reclaim.rs",
+    "find": "            js::Item::Function(function) if !function.export => Some(function.name.clone()),",
+    "replace": "            js::Item::Function(function) => Some(function.name.clone()),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "own function named as a global"
+    ]
+  },
 ];

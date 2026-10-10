@@ -1,6 +1,7 @@
 //! A name given apart from another, `label$1` of `label`, or `Error$` of
 //! JS's global, is that name where nothing it would shadow is read (ADR
-//! 0352): an import's, where its module never mentions the name; a local's,
+//! 0352): an import's, or a function's or `const`'s of the module's own
+//! that it doesn't export, where its module never mentions the name; a local's,
 //! where every read in its item is of what it was before, as JS's scopes
 //! resolve them (ADR 0357): `const n` in a block beside another `n`.
 
@@ -11,6 +12,7 @@ use crate::js::{self, Expr, ExprKind, Stmt, StmtKind};
 
 pub(super) fn module(module: &mut js::Module) {
     imports(module);
+    own_items(module);
     for item in &mut module.items {
         locals(item);
     }
@@ -54,6 +56,37 @@ fn imports(module: &mut js::Module) {
         }
         module.default_export.iter_mut().for_each(&mut rename);
         for item in &mut module.items {
+            names_mut(item, true, &mut rename);
+        }
+    }
+}
+
+/// Each function or `const` of the module's own, not exported, of a name
+/// its module never mentions: another module reads an exported one by the
+/// name it has.
+fn own_items(module: &mut js::Module) {
+    let own: Vec<String> = (module.items.iter())
+        .filter_map(|item| match item {
+            js::Item::Function(function) if !function.export => Some(function.name.clone()),
+            js::Item::Const(constant) if !constant.export => Some(constant.name.clone()),
+            _ => None,
+        })
+        .collect();
+    for local in own {
+        let mentioned = mentions(module);
+        let Some(base) = reclaimable(&local, &mentioned).map(str::to_string) else {
+            continue;
+        };
+        let mut rename = |name: &mut String| {
+            if *name == local {
+                name.clone_from(&base);
+            }
+        };
+        module.default_export.iter_mut().for_each(&mut rename);
+        for item in &mut module.items {
+            if let js::Item::Const(constant) = item {
+                rename(&mut constant.name);
+            }
             names_mut(item, true, &mut rename);
         }
     }

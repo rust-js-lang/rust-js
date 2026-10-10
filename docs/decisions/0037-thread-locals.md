@@ -98,3 +98,12 @@ export function bump() {
 statement, the thread-local in its parameter's place: `KEY.f();`, as
 react.dev's runESLint writes `linter.defineRules({..})`. It was the
 closure called in place, `((it) => { it.f(); })(KEY)`.
+
+## Amendment: a constant holds a thread-local as its variable
+
+A constant's `&'static LocalKey<T>` is the thread-local's variable,
+which every use of the constant shares as every use of the key does:
+react.dev's MDXComponents table holds `pre: CodeBlock`, a memo
+component, `export const MDXComponents = { .., pre: CodeBlock, .. }`.
+It was refused as a constant of a type rust-js can't share. A JSX test
+renders a table's memo; a mutation refuses it again.

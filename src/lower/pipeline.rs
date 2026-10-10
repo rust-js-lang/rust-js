@@ -512,16 +512,21 @@ pub fn lower_crate<'tcx>(
             f.export = true;
         }
     }
-    // What each module imports of another: its item's name, and the
-    // module's default's, by what the importer's `use` names it.
-    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String, Option<String>)>> = HashMap::new();
+    // What each module imports of another: its item's name, or the
+    // module's default, each by what the importer's `use` names it,
+    // `import { SandpackClient as Sandpack }`.
+    let mut targets: HashMap<LocalModId, HashSet<(LocalModId, String, bool, String)>> = HashMap::new();
     for &(from, id) in &pass.references {
         let info = &fns[&id];
         let name = info.owner.as_ref().unwrap_or(&info.name).clone();
-        let default = defaulted
-            .contains(&id)
-            .then(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()));
-        targets.entry(from).or_default().insert((info.module, name, default));
+        let local = match info.owner {
+            Some(_) => name.clone(),
+            None => renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),
+        };
+        targets
+            .entry(from)
+            .or_default()
+            .insert((info.module, name, defaulted.contains(&id), local));
     }
     let lowered = modules
         .into_iter()
@@ -668,17 +673,13 @@ pub fn lower_crate<'tcx>(
                 located: located(tcx, module),
             };
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
-            imports.sort_by(|(a, an, _), (b, bn, _)| (&paths[a], an).cmp(&(&paths[b], bn)));
+            imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));
             let candidates: Vec<_> = imports
                 .into_iter()
-                .map(|(target, name, default)| ImportRequest {
+                .map(|(target, name, default, local)| ImportRequest {
                     symbol: module_symbol(target, &name),
-                    export: if default.is_some() {
-                        "default".to_string()
-                    } else {
-                        name.clone()
-                    },
-                    local: default.unwrap_or(name),
+                    export: if default { "default".to_string() } else { name },
+                    local,
                     path: paths[&target].clone(),
                 })
                 .collect();

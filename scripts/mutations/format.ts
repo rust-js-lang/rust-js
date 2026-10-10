@@ -34,4 +34,16 @@ export const mutations: Mutation[] = [
     replace: "    if let Some(width) = format.print_width.filter(|_| false) {",
     tests: ["test/settings.test.ts", "-t", "formatter's options"],
   },
+  {
+    "name": "format-pairs-layout",
+    "breaks": "a `{\" \"}` the formatter made text is paired with a later node, and every mapping after it points a line early",
+    "file": "src/format.rs",
+    "find": "    let pairs = pair(&layout_free(before, code), &layout_free(after, text));",
+    "replace": "    let pairs = pair(before, after);",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "keeps its mappings in order"
+    ]
+  },
 ];

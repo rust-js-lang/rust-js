@@ -126,16 +126,16 @@ export const mutations: Mutation[] = [
     name: "default-imported-by-name",
     breaks: "a module's default export is imported by its name, `import { Memoized as Label }`",
     file: "src/lower/pipeline.rs",
-    find: "export: if default.is_some() {",
-    replace: "export: if false {",
+    find: "export: if default { \"default\".to_string() } else { name },",
+    replace: "export: if false { \"default\".to_string() } else { name },",
     tests: ["test/declarations.test.ts","-t","default export is imported as one"],
   },
   {
     name: "default-import-unrenamed",
     breaks: "a default import is named as its item is, `import Memoized`, not as the importer's `use .. as Label` names it",
     file: "src/lower/pipeline.rs",
-    find: ".then(|| renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()));",
-    replace: ".then(|| name.clone());",
+    find: "            None => renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
+    replace: "            None if defaulted.contains(&id) => name.clone(),\n            None => renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
     tests: ["test/declarations.test.ts","-t","default export is imported as one"],
   },
   {
@@ -281,5 +281,17 @@ export const mutations: Mutation[] = [
     find: "    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {\n        return false;\n    }\n",
     replace: "",
     tests: ["test/modules.test.ts", "-t", "path"],
+  },
+  {
+    "name": "named-import-alias-dropped",
+    "breaks": "a `use` that renames another module's function imports it by its own name",
+    "file": "src/lower/pipeline.rs",
+    "find": "            None => renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
+    "replace": "            None if !defaulted.contains(&id) => name.clone(),\n            None => renamed_in(tcx, from).remove(&id).unwrap_or_else(|| name.clone()),",
+    "tests": [
+      "test/modules.test.ts",
+      "-t",
+      "renames another module's function"
+    ]
   },
 ];

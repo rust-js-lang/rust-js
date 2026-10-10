@@ -56,3 +56,15 @@ it was written, among its props: `jsx!` reads each in that order already,
 captured or not. One written before `{..base}`, whose spread is put first
 (ADR 0250), comes before it: `<Panel key={k} {...props} wide />`. An
 element's was where it was written already.
+
+## Amendment: a key that reads alike leaves the children in place
+
+A component's key, given last, after its children, as `.key(k)`, put
+its children in `const`s first, so the key, written first, didn't read
+ahead of them: `const children = <Link ..>; <LI key={item.url}>{children}</LI>`.
+A key that reads the same wherever it's read, a field of a value nothing
+changes (`reads_alike`), can't see what they do, nor they it, and they
+stay in place, as react.dev's InlineTocItem and LanguageList write them.
+One the children change, `key={counter.count}` beside
+`{bump(&mut counter)}`, still has them read first. A JSX test has both;
+mutations keep the children first always, and never.

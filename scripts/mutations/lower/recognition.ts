@@ -1372,4 +1372,16 @@ export const mutations: Mutation[] = [
     replace: "                    into: false,\n                });",
     tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
   },
+  {
+    "name": "jsx-builders-ask",
+    "breaks": "making an element counts as code that may ask, so a field's `RefCell` lent to a prop is a counted cell",
+    "file": "src/lower/recognition.rs",
+    "find": "                super::bindings::JsForm::Jsx(_)\n                    | super::bindings::JsForm::Prop(_)",
+    "replace": "                super::bindings::JsForm::Text\n                    | super::bindings::JsForm::Prop(_)",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "borrowed for a prop is its value"
+    ]
+  },
 ];
