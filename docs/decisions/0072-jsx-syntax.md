@@ -80,3 +80,17 @@ namespace. See the [syntax guide](../jsx.md) for the complete current boundary.
 Tests cover handwritten-style output, runtime rendering, evaluation order,
 props errors, module loading, original source lines, native/WASM output parity,
 browser compilation and state preservation through actual Vite edits in Chromium.
+
+## Since
+
+- **The formatter indents a statement's continued lines** (2026-10-10).
+  Rust in a `jsx!` brace had each line at its block's indent, so a let
+  chain's `&&`, a method chain's `.` and what `=` gives on the next line
+  lost the 4 rustfmt gives them, and a file the formatter had laid out
+  wasn't one rustfmt would. A line that continues a statement, one whose
+  previous token ended none (`;`, `,` or a block), is 4 in from it; a
+  block that opens a line, after a condition of several, is at its
+  statement's. react.dev's port has seven files laid out anew, the same
+  JS. A format test lays out each, from a flattened copy and from itself;
+  mutations keep a continued line flat, indent a block's line, and indent
+  every line after a statement's first.

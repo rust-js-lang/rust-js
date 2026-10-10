@@ -42,4 +42,28 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n            self.output = Some(visitor.layout.finish());",
     tests: ["test/format.test.ts", "-t", "formatter check is read-only and invalid input prevents selected-file writes"],
   },
+  {
+    name: "continued-line-flat",
+    breaks: "a statement's continued line is at its statement's indent",
+    file: "src/jsx_syntax/formatting.rs",
+    find: "let at = self.mark(tree.span(), if starts || block { indent } else { indent + 4 });",
+    replace: "let at = self.mark(tree.span(), indent);",
+    tests: ["test/format.test.ts", "-t", "continued lines"],
+  },
+  {
+    name: "block-line-continued",
+    breaks: "a block that opens a line, after a condition of several, is 4 in",
+    file: "src/jsx_syntax/formatting.rs",
+    find: "let at = self.mark(tree.span(), if starts || block { indent } else { indent + 4 });",
+    replace: "let at = self.mark(tree.span(), if starts { indent } else { indent + 4 });",
+    tests: ["test/format.test.ts", "-t", "continued lines"],
+  },
+  {
+    name: "statement-never-ends",
+    breaks: "every line after a statement's first is 4 in",
+    file: "src/jsx_syntax/formatting.rs",
+    find: "                block || matches!(tree, TokenTree::Token(t, _) if matches!(t.kind, TokenKind::Semi | TokenKind::Comma));",
+    replace: "                false;",
+    tests: ["test/format.test.ts", "-t", "continued lines"],
+  },
 ];

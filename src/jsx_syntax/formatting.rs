@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use rustc_ast::mut_visit::{self, FnKind, MutVisitor};
-use rustc_ast::token::TokenKind;
+use rustc_ast::token::{Delimiter, TokenKind};
 use rustc_ast::tokenstream::{DelimSpan, TokenStream, TokenTree};
 use rustc_ast::visit::AssocCtxt;
 use rustc_ast::{self as ast, AttrVec, ExprKind, NodeId};
@@ -184,9 +184,17 @@ impl Layout {
     fn rust(&mut self, sess: &Session, tokens: &TokenStream, indent: usize) -> Result<(), ErrorGuaranteed> {
         let tokens: Vec<_> = tokens.iter().collect();
         let mut i = 0;
+        // Whether the next token starts a statement, an item or an element of
+        // a list: after `;`, `,` or a block. A line that continues one is 4
+        // in from it, as rustfmt lays out a let chain's `&&` or a method
+        // chain's `.`; a block that opens a line is at its statement's.
+        let mut starts = true;
         while i < tokens.len() {
             let tree = tokens[i];
-            let at = self.mark(tree.span(), indent);
+            let block = matches!(tree, TokenTree::Delimited(_, _, Delimiter::Brace, _));
+            let at = self.mark(tree.span(), if starts || block { indent } else { indent + 4 });
+            starts =
+                block || matches!(tree, TokenTree::Token(t, _) if matches!(t.kind, TokenKind::Semi | TokenKind::Comma));
             // Macro bodies have their own grammar. Recurse only into jsx!,
             // leaving stringify!, macro definitions, and other DSLs intact.
             if let TokenTree::Token(t, _) = tree
@@ -201,6 +209,7 @@ impl Layout {
                         parser::formatted(sess, inner.clone(), t.span.to(span.close), at + 4, self)?;
                         self.mark(span.close, at);
                     }
+                    starts = matches!(tokens.get(group), Some(TokenTree::Delimited(_, _, Delimiter::Brace, _)));
                     i = group + 1;
                     continue;
                 }

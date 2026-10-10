@@ -56,8 +56,8 @@ pub fn Editor(EditorProps { state, view, on_submit }: EditorProps) -> JSX::Eleme
             // Before CodeMirror sees it, since its own Mod-Enter inserts a line.
             onKeyDownCapture={move |e: &KeyboardEvent<_>| {
                 if let Some(submit) = &on_submit
-                && (e.meta_key() || e.ctrl_key())
-                && e.key() == "Enter"
+                    && (e.meta_key() || e.ctrl_key())
+                    && e.key() == "Enter"
                 {
                     e.prevent_default();
                     e.stop_propagation();

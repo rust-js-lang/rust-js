@@ -48,16 +48,16 @@ pub fn ContactList() -> JSX::Element {
         Loaded::Contacts(contacts) => jsx! {
             <ul className="contacts">
                 {contacts
-                .iter()
-                .map(|contact| {
-                    jsx! {
-                        <li key={contact.id}>
-                            <a href={format!("#/contacts/{}", contact.id)}>{contact.name.clone()}</a>
-                            <span className="email">{contact.email.clone()}</span>
-                        </li>
-                    }
-                })
-                .collect::<Vec<_>>()}
+                    .iter()
+                    .map(|contact| {
+                        jsx! {
+                            <li key={contact.id}>
+                                <a href={format!("#/contacts/{}", contact.id)}>{contact.name.clone()}</a>
+                                <span className="email">{contact.email.clone()}</span>
+                            </li>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
             </ul>
         },
     };

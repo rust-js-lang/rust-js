@@ -34,6 +34,40 @@ test("JSX formatter aligns nested props and callbacks and is idempotent", () => 
   expect(format(expected).stdout.toString()).toBe(expected);
 });
 
+// A statement's line that continues it, a let chain's `&&`, a method
+// chain's `.` or what `=` gives, is 4 in from it, as rustfmt lays it out;
+// a block that opens a line, after a condition of several, is at its
+// statement's (react.dev's Console).
+test("JSX formatter indents a statement's continued lines", () => {
+  const expected = `fn view(data: Vec<u32>) {
+    jsx! {
+        <div>
+            {data.iter().map(|&msg| {
+                let children;
+                if let Some(value) = msg.checked_sub(1)
+                    && value > 2
+                {
+                    children = value;
+                } else {
+                    children = 0;
+                }
+                let total: u32 = data
+                    .iter()
+                    .sum();
+                let shown =
+                    format!("{children}-{total}");
+                jsx! { <span>{shown}</span> }
+            })}
+        </div>
+    }
+}
+`;
+  const result = format(expected.replace(/^ +/gm, " ").replace(" jsx! {\n <div>", "    jsx! {\n <div>"));
+  expect(result.exitCode, result.stderr.toString()).toBe(0);
+  expect(result.stdout.toString()).toBe(expected);
+  expect(format(expected).stdout.toString()).toBe(expected);
+});
+
 // A tag that's a value, `<Comp>`, may take attributes after its spread, as
 // a DOM element may (ADR 0220): laid out where they are.
 test("JSX formatter lays out attributes after a tag value's spread", () => {
