@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 145 of 2093 (6.9%)
-# members: 317 of 433 (73.2%)
-# next 37 of 42, members 114 of 199
+# exports: 146 of 2093 (7.0%)
+# members: 381 of 433 (88.0%)
+# next 38 of 42, members 178 of 199
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
 - next#AdapterOutput.APP_ROUTE
@@ -121,72 +121,72 @@
 + next#NextApiResponse.status
 + type next#NextComponentType
 + next#NextComponentType.getInitialProps
-- type next#NextConfig
-- next#NextConfig.adapterPath
-- next#NextConfig.agentRules
-- next#NextConfig.allowedDevOrigins
-- next#NextConfig.assetPrefix
-- next#NextConfig.basePath
-- next#NextConfig.bundlePagesRouterDependencies
-- next#NextConfig.cacheComponents
-- next#NextConfig.cacheHandler
-- next#NextConfig.cacheHandlers
-- next#NextConfig.cacheLife
-- next#NextConfig.cacheMaxMemorySize
-- next#NextConfig.cleanDistDir
-- next#NextConfig.compiler
-- next#NextConfig.compress
-- next#NextConfig.crossOrigin
-- next#NextConfig.deploymentId
-- next#NextConfig.devIndicators
-- next#NextConfig.distDir
-- next#NextConfig.enablePrerenderSourceMaps
-- next#NextConfig.env
-- next#NextConfig.excludeDefaultMomentLocales
++ type next#NextConfig
++ next#NextConfig.adapterPath
++ next#NextConfig.agentRules
++ next#NextConfig.allowedDevOrigins
++ next#NextConfig.assetPrefix
++ next#NextConfig.basePath
++ next#NextConfig.bundlePagesRouterDependencies
++ next#NextConfig.cacheComponents
++ next#NextConfig.cacheHandler
++ next#NextConfig.cacheHandlers
++ next#NextConfig.cacheLife
++ next#NextConfig.cacheMaxMemorySize
++ next#NextConfig.cleanDistDir
++ next#NextConfig.compiler
++ next#NextConfig.compress
++ next#NextConfig.crossOrigin
++ next#NextConfig.deploymentId
++ next#NextConfig.devIndicators
++ next#NextConfig.distDir
++ next#NextConfig.enablePrerenderSourceMaps
++ next#NextConfig.env
++ next#NextConfig.excludeDefaultMomentLocales
 - next#NextConfig.experimental
-- next#NextConfig.expireTime
-- next#NextConfig.exportPathMap
-- next#NextConfig.generateBuildId
-- next#NextConfig.generateEtags
-- next#NextConfig.headers
-- next#NextConfig.htmlLimitedBots
-- next#NextConfig.httpAgentOptions
-- next#NextConfig.i18n
-- next#NextConfig.images
-- next#NextConfig.instrumentationClientInject
-- next#NextConfig.logging
-- next#NextConfig.modularizeImports
-- next#NextConfig.onDemandEntries
-- next#NextConfig.output
-- next#NextConfig.outputFileTracingExcludes
-- next#NextConfig.outputFileTracingIncludes
-- next#NextConfig.outputFileTracingRoot
-- next#NextConfig.outputHashSalt
-- next#NextConfig.pageExtensions
-- next#NextConfig.partialPrefetching
-- next#NextConfig.poweredByHeader
-- next#NextConfig.productionBrowserSourceMaps
-- next#NextConfig.reactCompiler
-- next#NextConfig.reactMaxHeadersLength
-- next#NextConfig.reactProductionProfiling
-- next#NextConfig.reactStrictMode
-- next#NextConfig.redirects
-- next#NextConfig.rewrites
-- next#NextConfig.sassOptions
-- next#NextConfig.serverExternalPackages
-- next#NextConfig.skipMiddlewareUrlNormalize
-- next#NextConfig.skipProxyUrlNormalize
-- next#NextConfig.skipTrailingSlashRedirect
-- next#NextConfig.staticPageGenerationTimeout
-- next#NextConfig.supportsImmutableAssets
-- next#NextConfig.trailingSlash
-- next#NextConfig.transpilePackages
-- next#NextConfig.turbopack
-- next#NextConfig.typedRoutes
-- next#NextConfig.typescript
-- next#NextConfig.useFileSystemPublicRoutes
-- next#NextConfig.watchOptions
-- next#NextConfig.webpack
++ next#NextConfig.expireTime
++ next#NextConfig.exportPathMap
++ next#NextConfig.generateBuildId
++ next#NextConfig.generateEtags
++ next#NextConfig.headers
++ next#NextConfig.htmlLimitedBots
++ next#NextConfig.httpAgentOptions
++ next#NextConfig.i18n
++ next#NextConfig.images
++ next#NextConfig.instrumentationClientInject
++ next#NextConfig.logging
++ next#NextConfig.modularizeImports
++ next#NextConfig.onDemandEntries
++ next#NextConfig.output
++ next#NextConfig.outputFileTracingExcludes
++ next#NextConfig.outputFileTracingIncludes
++ next#NextConfig.outputFileTracingRoot
++ next#NextConfig.outputHashSalt
++ next#NextConfig.pageExtensions
++ next#NextConfig.partialPrefetching
++ next#NextConfig.poweredByHeader
++ next#NextConfig.productionBrowserSourceMaps
++ next#NextConfig.reactCompiler
++ next#NextConfig.reactMaxHeadersLength
++ next#NextConfig.reactProductionProfiling
++ next#NextConfig.reactStrictMode
++ next#NextConfig.redirects
++ next#NextConfig.rewrites
++ next#NextConfig.sassOptions
++ next#NextConfig.serverExternalPackages
++ next#NextConfig.skipMiddlewareUrlNormalize
++ next#NextConfig.skipProxyUrlNormalize
++ next#NextConfig.skipTrailingSlashRedirect
++ next#NextConfig.staticPageGenerationTimeout
++ next#NextConfig.supportsImmutableAssets
++ next#NextConfig.trailingSlash
++ next#NextConfig.transpilePackages
++ next#NextConfig.turbopack
++ next#NextConfig.typedRoutes
++ next#NextConfig.typescript
++ next#NextConfig.useFileSystemPublicRoutes
++ next#NextConfig.watchOptions
++ next#NextConfig.webpack
 + type next#NextPage
 + type next#NextPageContext
 + next#NextPageContext.AppTree

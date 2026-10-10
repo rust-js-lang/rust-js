@@ -7,6 +7,8 @@ use core::marker::PhantomData;
 use js::{JsObject, Promise, Unknown};
 use node::http::{IncomingMessage, ServerResponse};
 
+use crate::NextConfig;
+
 /// `next(options)`: Next.js's server, to `prepare` and hand requests to, as
 /// `createServer` types it.
 #[cfg_attr(rust_js, rust_js::link_name = "next#default")]
@@ -36,7 +38,7 @@ pub struct NextServerOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "experimentalHttpsServer")]
     pub experimental_https_server: Option<bool>,
     /// Its config, in place of `next.config.js`'s.
-    pub conf: Option<&'a Unknown>,
+    pub conf: Option<NextConfig<'a>>,
     /// Bundled by Turbopack, its default.
     pub turbopack: Option<bool>,
     /// What `turbopack` was named.

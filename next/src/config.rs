@@ -1,0 +1,1004 @@
+//! [`next.config.js`](https://nextjs.org/docs/app/api-reference/config/next-config-js):
+//! the app's config, `NextConfig`, as Next.js types it: what a function
+//! the module exports by default gives, of the phase it's for.
+//!
+//! ```rust,ignore
+//! pub fn nextConfig(phase: &str) -> NextConfig<'static> {
+//!     NextConfig { output: Some(Output::Export), ..Default::default() }
+//! }
+//!
+//! js::export_default!(nextConfig);
+//! ```
+
+use js::{Dict, Json, Promise, RegExp, Unknown};
+use react::webapi::URL;
+
+use crate::QueryValue;
+
+/// The app's config, each `None` but what's given, as `NextConfig` types it.
+#[derive(Default)]
+pub struct NextConfig<'a> {
+    /// The origins, besides the server's own, a development server takes
+    /// requests from: `"local-origin.dev"`, `"*.local-origin.dev"`.
+    #[cfg_attr(rust_js, rust_js::name = "allowedDevOrigins")]
+    pub allowed_dev_origins: Option<&'a [&'a str]>,
+    /// The paths a static export writes, of the default map Next.js makes.
+    #[cfg_attr(rust_js, rust_js::name = "exportPathMap")]
+    pub export_path_map: Option<Box<dyn Fn(&'static Dict<ExportPathMapEntry<'static>>, ExportPathMapContext) -> Promise<&'static Dict<ExportPathMapEntry<'static>>>>>,
+    /// Internationalized routing, the Pages Router's.
+    pub i18n: Option<I18NConfig<'a>>,
+    pub typescript: Option<TypeScriptConfig<'a>>,
+    /// Typed links, `Route`'s of each route.
+    #[cfg_attr(rust_js, rust_js::name = "typedRoutes")]
+    pub typed_routes: Option<bool>,
+    /// The headers of each path's response.
+    pub headers: Option<Box<dyn Fn() -> Promise<Vec<Header<'static>>>>>,
+    /// The paths each served as another's.
+    pub rewrites: Option<Box<dyn Fn() -> Promise<Rewrites<'static>>>>,
+    /// The paths each sent to another.
+    pub redirects: Option<Box<dyn Fn() -> Promise<Vec<Redirect<'static>>>>>,
+    #[cfg_attr(rust_js, rust_js::name = "excludeDefaultMomentLocales")]
+    pub exclude_default_moment_locales: Option<bool>,
+    /// webpack's config, as Next.js gives it: `config`, changed, or another.
+    pub webpack: Option<Box<dyn Fn(&'static Unknown, &'static WebpackConfigContext) -> &'static Unknown>>,
+    /// Each path with a trailing slash, `/about/`, the others redirected.
+    #[cfg_attr(rust_js, rust_js::name = "trailingSlash")]
+    pub trailing_slash: Option<bool>,
+    /// Environment variables, inlined in the app's JS.
+    pub env: Option<&'a Dict<Option<&'a str>>>,
+    /// Its build's directory: `.next`.
+    #[cfg_attr(rust_js, rust_js::name = "distDir")]
+    pub dist_dir: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "cleanDistDir")]
+    pub clean_dist_dir: Option<bool>,
+    /// A CDN's URL its assets are served from.
+    #[cfg_attr(rust_js, rust_js::name = "assetPrefix")]
+    pub asset_prefix: Option<&'a str>,
+    /// The module of its cache's handler.
+    #[cfg_attr(rust_js, rust_js::name = "cacheHandler")]
+    pub cache_handler: Option<&'a str>,
+    /// The module of its deployment's adapter.
+    #[cfg_attr(rust_js, rust_js::name = "adapterPath")]
+    pub adapter_path: Option<&'a str>,
+    /// The module of each `"use cache"` handler, by its name: `default`,
+    /// `remote`, `static`, or another.
+    #[cfg_attr(rust_js, rust_js::name = "cacheHandlers")]
+    pub cache_handlers: Option<&'a Dict<Option<&'a str>>>,
+    /// Its cache's size in memory, in bytes; `0`, none.
+    #[cfg_attr(rust_js, rust_js::name = "cacheMaxMemorySize")]
+    pub cache_max_memory_size: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "useFileSystemPublicRoutes")]
+    pub use_file_system_public_routes: Option<bool>,
+    /// Its build's ID, `None` Next.js's own.
+    #[cfg_attr(rust_js, rust_js::name = "generateBuildId")]
+    pub generate_build_id: Option<Box<dyn Fn() -> Promise<Option<String>>>>,
+    #[cfg_attr(rust_js, rust_js::name = "generateEtags")]
+    pub generate_etags: Option<bool>,
+    /// The extensions a page's file has: `["tsx", "ts", "jsx", "js"]`.
+    #[cfg_attr(rust_js, rust_js::name = "pageExtensions")]
+    pub page_extensions: Option<&'a [&'a str]>,
+    /// The modules the client's instrumentation imports first.
+    #[cfg_attr(rust_js, rust_js::name = "instrumentationClientInject")]
+    pub instrumentation_client_inject: Option<&'a [&'a str]>,
+    /// Responses gzipped.
+    pub compress: Option<bool>,
+    /// The `x-powered-by` header.
+    #[cfg_attr(rust_js, rust_js::name = "poweredByHeader")]
+    pub powered_by_header: Option<bool>,
+    /// next/image's config.
+    pub images: Option<ImageConfig<'a>>,
+    /// The development server's indicator, `false` none.
+    #[cfg_attr(rust_js, rust_js::name = "devIndicators")]
+    pub dev_indicators: Option<DevIndicators>,
+    /// How long a development server keeps a page it isn't asked for.
+    #[cfg_attr(rust_js, rust_js::name = "onDemandEntries")]
+    pub on_demand_entries: Option<OnDemandEntries>,
+    /// Its deployment's ID, of version skew protection.
+    #[cfg_attr(rust_js, rust_js::name = "deploymentId")]
+    pub deployment_id: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "supportsImmutableAssets")]
+    pub supports_immutable_assets: Option<bool>,
+    /// The path the app is below: `"/docs"`.
+    #[cfg_attr(rust_js, rust_js::name = "basePath")]
+    pub base_path: Option<&'a str>,
+    /// Sass's options, its `implementation` among them.
+    #[cfg_attr(rust_js, rust_js::name = "sassOptions")]
+    pub sass_options: Option<&'a Dict<Json<'a>>>,
+    #[cfg_attr(rust_js, rust_js::name = "productionBrowserSourceMaps")]
+    pub production_browser_source_maps: Option<bool>,
+    /// The React Compiler, on, or of its options.
+    #[cfg_attr(rust_js, rust_js::name = "reactCompiler")]
+    pub react_compiler: Option<ReactCompiler>,
+    #[cfg_attr(rust_js, rust_js::name = "reactProductionProfiling")]
+    pub react_production_profiling: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "reactStrictMode")]
+    pub react_strict_mode: Option<bool>,
+    /// The longest a response's headers React writes may be.
+    #[cfg_attr(rust_js, rust_js::name = "reactMaxHeadersLength")]
+    pub react_max_headers_length: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "httpAgentOptions")]
+    pub http_agent_options: Option<HttpAgentOptions>,
+    /// How long a static page's build may take, in seconds.
+    #[cfg_attr(rust_js, rust_js::name = "staticPageGenerationTimeout")]
+    pub static_page_generation_timeout: Option<f64>,
+    /// The `crossorigin` of the `<script>`s Next.js writes.
+    #[cfg_attr(rust_js, rust_js::name = "crossOrigin")]
+    pub cross_origin: Option<CrossOrigin>,
+    /// Its compiler's transforms.
+    pub compiler: Option<CompilerConfig<'a>>,
+    /// A standalone server, or a static export.
+    pub output: Option<Output>,
+    /// The packages Next.js compiles, as its own.
+    #[cfg_attr(rust_js, rust_js::name = "transpilePackages")]
+    pub transpile_packages: Option<&'a [&'a str]>,
+    pub turbopack: Option<TurbopackOptions<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "skipMiddlewareUrlNormalize")]
+    pub skip_middleware_url_normalize: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "skipProxyUrlNormalize")]
+    pub skip_proxy_url_normalize: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "skipTrailingSlashRedirect")]
+    pub skip_trailing_slash_redirect: Option<bool>,
+    /// Each package's imports, written as imports of its modules.
+    #[cfg_attr(rust_js, rust_js::name = "modularizeImports")]
+    pub modularize_imports: Option<&'a Dict<ModularizeImport<'a>>>,
+    /// What a development server logs, `false` none.
+    pub logging: Option<Logging<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "enablePrerenderSourceMaps")]
+    pub enable_prerender_source_maps: Option<bool>,
+    /// Cache Components: `"use cache"`, and Partial Prerendering.
+    #[cfg_attr(rust_js, rust_js::name = "cacheComponents")]
+    pub cache_components: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "partialPrefetching")]
+    pub partial_prefetching: Option<PartialPrefetching>,
+    /// `cacheLife`'s profiles, by their names.
+    #[cfg_attr(rust_js, rust_js::name = "cacheLife")]
+    pub cache_life: Option<&'a Dict<CacheLifeProfile>>,
+    /// How long a page's cache lasts, in seconds, of its `Cache-Control`.
+    #[cfg_attr(rust_js, rust_js::name = "expireTime")]
+    pub expire_time: Option<f64>,
+    /// The rules Next.js writes for coding agents.
+    #[cfg_attr(rust_js, rust_js::name = "agentRules")]
+    pub agent_rules: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "bundlePagesRouterDependencies")]
+    pub bundle_pages_router_dependencies: Option<bool>,
+    /// The packages the server requires, not bundled.
+    #[cfg_attr(rust_js, rust_js::name = "serverExternalPackages")]
+    pub server_external_packages: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "outputFileTracingRoot")]
+    pub output_file_tracing_root: Option<&'a str>,
+    /// The files a route's trace leaves out, by its glob.
+    #[cfg_attr(rust_js, rust_js::name = "outputFileTracingExcludes")]
+    pub output_file_tracing_excludes: Option<&'a Dict<&'a [&'a str]>>,
+    /// The files a route's trace takes in, by its glob.
+    #[cfg_attr(rust_js, rust_js::name = "outputFileTracingIncludes")]
+    pub output_file_tracing_includes: Option<&'a Dict<&'a [&'a str]>>,
+    #[cfg_attr(rust_js, rust_js::name = "outputHashSalt")]
+    pub output_hash_salt: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "watchOptions")]
+    pub watch_options: Option<WatchOptions>,
+    /// The bots streaming metadata waits for, by their user agents.
+    #[cfg_attr(rust_js, rust_js::name = "htmlLimitedBots")]
+    pub html_limited_bots: Option<&'a RegExp>,
+}
+
+/// A path's page, of a static export, as `ExportPathMap` has it.
+pub struct ExportPathMapEntry<'a> {
+    pub page: &'a str,
+    pub query: Option<&'a Dict<QueryValue>>,
+}
+
+/// What `exportPathMap` is given besides the default map.
+pub struct ExportPathMapContext {
+    pub dev: bool,
+    pub dir: String,
+    #[cfg_attr(rust_js, rust_js::name = "outDir")]
+    pub out_dir: Option<String>,
+    #[cfg_attr(rust_js, rust_js::name = "distDir")]
+    pub dist_dir: String,
+    #[cfg_attr(rust_js, rust_js::name = "buildId")]
+    pub build_id: String,
+}
+
+/// Internationalized routing's locales, as `I18NConfig` types it.
+pub struct I18NConfig<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "defaultLocale")]
+    pub default_locale: &'a str,
+    /// Each domain's locales.
+    pub domains: Option<&'a [DomainLocale<'a>]>,
+    /// `Some(false)`: no locale detected of a request's `Accept-Language`.
+    #[cfg_attr(rust_js, rust_js::name = "localeDetection")]
+    pub locale_detection: Option<bool>,
+    pub locales: &'a [&'a str],
+}
+
+/// A domain's locales, as `DomainLocale` types it.
+pub struct DomainLocale<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "defaultLocale")]
+    pub default_locale: &'a str,
+    pub domain: &'a str,
+    /// `Some(true)`: the domain is served over HTTP.
+    pub http: Option<bool>,
+    pub locales: Option<&'a [&'a str]>,
+}
+
+pub struct TypeScriptConfig<'a> {
+    /// A build of TypeScript's errors goes on.
+    #[cfg_attr(rust_js, rust_js::name = "ignoreBuildErrors")]
+    pub ignore_build_errors: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "tsconfigPath")]
+    pub tsconfig_path: Option<&'a str>,
+}
+
+/// A path's headers, as `Header` types it.
+pub struct Header<'a> {
+    /// The path, a pattern: `"/about"`, `"/blog/:slug"`.
+    pub source: &'a str,
+    /// `Some(false)`: `source` without the app's base path.
+    #[cfg_attr(rust_js, rust_js::name = "basePath")]
+    pub base_path: Option<bool>,
+    /// `Some(false)`: `source` without its locale.
+    pub locale: Option<bool>,
+    pub headers: &'a [HeaderEntry<'a>],
+    /// What the request has, for the headers to be its.
+    pub has: Option<&'a [RouteHas<'a>]>,
+    /// What it hasn't.
+    pub missing: Option<&'a [RouteHas<'a>]>,
+}
+
+/// A header's name and value.
+pub struct HeaderEntry<'a> {
+    pub key: &'a str,
+    pub value: &'a str,
+}
+
+/// A path served as another, as `Rewrite` types it.
+pub struct Rewrite<'a> {
+    pub source: &'a str,
+    pub destination: &'a str,
+    #[cfg_attr(rust_js, rust_js::name = "basePath")]
+    pub base_path: Option<bool>,
+    pub locale: Option<bool>,
+    pub has: Option<&'a [RouteHas<'a>]>,
+    pub missing: Option<&'a [RouteHas<'a>]>,
+}
+
+/// What `rewrites` gives: rewrites after the app's files, or of each phase,
+/// each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Rewrites<'a> {
+    AfterFiles(Vec<Rewrite<'a>>),
+    Phases(RewritePhases<'a>),
+}
+
+/// The rewrites before the app's files, after them, and after its dynamic
+/// routes.
+#[derive(Default)]
+pub struct RewritePhases<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "beforeFiles")]
+    pub before_files: Option<Vec<Rewrite<'a>>>,
+    #[cfg_attr(rust_js, rust_js::name = "afterFiles")]
+    pub after_files: Option<Vec<Rewrite<'a>>>,
+    pub fallback: Option<Vec<Rewrite<'a>>>,
+}
+
+/// A path sent to another, as `Redirect` types it: for good or not, or by
+/// its status, each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Redirect<'a> {
+    Permanent(PermanentRedirect<'a>),
+    Status(StatusRedirect<'a>),
+}
+
+/// A redirect for good, a 308, or not, a 307.
+pub struct PermanentRedirect<'a> {
+    pub source: &'a str,
+    pub destination: &'a str,
+    pub permanent: bool,
+    #[cfg_attr(rust_js, rust_js::name = "basePath")]
+    pub base_path: Option<bool>,
+    pub locale: Option<bool>,
+    pub has: Option<&'a [RouteHas<'a>]>,
+    pub missing: Option<&'a [RouteHas<'a>]>,
+    pub priority: Option<bool>,
+}
+
+/// A redirect of its status: `301`, `302`, `303`, `307` or `308`.
+pub struct StatusRedirect<'a> {
+    pub source: &'a str,
+    pub destination: &'a str,
+    #[cfg_attr(rust_js, rust_js::name = "statusCode")]
+    pub status_code: u16,
+    #[cfg_attr(rust_js, rust_js::name = "basePath")]
+    pub base_path: Option<bool>,
+    pub locale: Option<bool>,
+    pub has: Option<&'a [RouteHas<'a>]>,
+    pub missing: Option<&'a [RouteHas<'a>]>,
+    pub priority: Option<bool>,
+}
+
+/// What a request has, as `RouteHas` types it: a header, a cookie or a
+/// query's parameter, or its host, each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum RouteHas<'a> {
+    Keyed(KeyedRouteHas<'a>),
+    Host(HostRouteHas<'a>),
+}
+
+/// A header, a cookie or a query's parameter of its name, and of its
+/// value's pattern.
+pub struct KeyedRouteHas<'a> {
+    pub r#type: RouteHasType,
+    pub key: &'a str,
+    pub value: Option<&'a str>,
+}
+
+pub enum RouteHasType {
+    #[cfg_attr(rust_js, rust_js::name = "header")]
+    Header,
+    #[cfg_attr(rust_js, rust_js::name = "cookie")]
+    Cookie,
+    #[cfg_attr(rust_js, rust_js::name = "query")]
+    Query,
+}
+
+/// The host, of its pattern.
+pub struct HostRouteHas<'a> {
+    /// Always [`HostType::Host`].
+    pub r#type: HostType,
+    pub value: &'a str,
+}
+
+pub enum HostType {
+    #[cfg_attr(rust_js, rust_js::name = "host")]
+    Host,
+}
+
+/// What `webpack` is given besides its config, as `WebpackConfigContext`
+/// types it.
+pub struct WebpackConfigContext {
+    pub dir: String,
+    pub dev: bool,
+    /// Whether it's the server's build.
+    #[cfg_attr(rust_js, rust_js::name = "isServer")]
+    pub is_server: bool,
+    #[cfg_attr(rust_js, rust_js::name = "buildId")]
+    pub build_id: String,
+    /// The app's config, of Next.js's defaults.
+    pub config: &'static Unknown,
+    /// Next.js's loaders: `babel`.
+    #[cfg_attr(rust_js, rust_js::name = "defaultLoaders")]
+    pub default_loaders: &'static Unknown,
+    #[cfg_attr(rust_js, rust_js::name = "totalPages")]
+    pub total_pages: f64,
+    /// webpack itself.
+    pub webpack: &'static Unknown,
+    /// The build's runtime, `None` of the client's.
+    #[cfg_attr(rust_js, rust_js::name = "nextRuntime")]
+    pub next_runtime: Option<NextRuntime>,
+}
+
+pub enum NextRuntime {
+    #[cfg_attr(rust_js, rust_js::name = "nodejs")]
+    Nodejs,
+    #[cfg_attr(rust_js, rust_js::name = "edge")]
+    Edge,
+}
+
+/// next/image's config, each `None` but what's given, as `ImageConfig`
+/// types it.
+#[derive(Default)]
+pub struct ImageConfig<'a> {
+    /// The widths of the devices an image is made for.
+    #[cfg_attr(rust_js, rust_js::name = "deviceSizes")]
+    pub device_sizes: Option<&'a [f64]>,
+    /// The widths of an image of `sizes` smaller than a device.
+    #[cfg_attr(rust_js, rust_js::name = "imageSizes")]
+    pub image_sizes: Option<&'a [f64]>,
+    pub loader: Option<LoaderValue>,
+    /// The URL images are optimized at: `"/_next/image"`.
+    pub path: Option<&'a str>,
+    /// The module of its loader, a `custom` one.
+    #[cfg_attr(rust_js, rust_js::name = "loaderFile")]
+    pub loader_file: Option<&'a str>,
+    /// The hosts remote images may be from, what `remotePatterns` replaced.
+    pub domains: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "disableStaticImages")]
+    pub disable_static_images: Option<bool>,
+    /// How long an optimized image is cached, in seconds.
+    #[cfg_attr(rust_js, rust_js::name = "minimumCacheTTL")]
+    pub minimum_cache_ttl: Option<f64>,
+    pub formats: Option<&'a [ImageFormat]>,
+    #[cfg_attr(rust_js, rust_js::name = "maximumDiskCacheSize")]
+    pub maximum_disk_cache_size: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "maximumRedirects")]
+    pub maximum_redirects: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "maximumResponseBody")]
+    pub maximum_response_body: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "dangerouslyAllowLocalIP")]
+    pub dangerously_allow_local_ip: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "dangerouslyAllowSVG")]
+    pub dangerously_allow_svg: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "contentSecurityPolicy")]
+    pub content_security_policy: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "contentDispositionType")]
+    pub content_disposition_type: Option<ContentDispositionType>,
+    /// The URLs remote images may be from.
+    #[cfg_attr(rust_js, rust_js::name = "remotePatterns")]
+    pub remote_patterns: Option<&'a [RemotePatternOrUrl<'a>]>,
+    /// The paths local images may be at.
+    #[cfg_attr(rust_js, rust_js::name = "localPatterns")]
+    pub local_patterns: Option<&'a [LocalPattern<'a>]>,
+    /// The qualities an image may be of.
+    pub qualities: Option<&'a [f64]>,
+    /// Each image as it is, not optimized.
+    pub unoptimized: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "customCacheHandler")]
+    pub custom_cache_handler: Option<bool>,
+}
+
+/// next/image's loader, as `LoaderValue` types it.
+pub enum LoaderValue {
+    #[cfg_attr(rust_js, rust_js::name = "default")]
+    Default,
+    #[cfg_attr(rust_js, rust_js::name = "imgix")]
+    Imgix,
+    #[cfg_attr(rust_js, rust_js::name = "cloudinary")]
+    Cloudinary,
+    #[cfg_attr(rust_js, rust_js::name = "akamai")]
+    Akamai,
+    #[cfg_attr(rust_js, rust_js::name = "custom")]
+    Custom,
+}
+
+pub enum ImageFormat {
+    #[cfg_attr(rust_js, rust_js::name = "image/avif")]
+    Avif,
+    #[cfg_attr(rust_js, rust_js::name = "image/webp")]
+    Webp,
+}
+
+pub enum ContentDispositionType {
+    #[cfg_attr(rust_js, rust_js::name = "inline")]
+    Inline,
+    #[cfg_attr(rust_js, rust_js::name = "attachment")]
+    Attachment,
+}
+
+/// Where a remote image may be from, `URL | RemotePattern`: each the value
+/// itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum RemotePatternOrUrl<'a> {
+    Url(&'a URL),
+    Pattern(RemotePattern<'a>),
+}
+
+/// The URLs a remote image may be at, as `RemotePattern` types them.
+pub struct RemotePattern<'a> {
+    pub protocol: Option<Protocol>,
+    pub hostname: &'a str,
+    pub port: Option<&'a str>,
+    pub pathname: Option<&'a str>,
+    pub search: Option<&'a str>,
+}
+
+pub enum Protocol {
+    #[cfg_attr(rust_js, rust_js::name = "http")]
+    Http,
+    #[cfg_attr(rust_js, rust_js::name = "https")]
+    Https,
+}
+
+/// The paths a local image may be at, as `LocalPattern` types them.
+#[derive(Default)]
+pub struct LocalPattern<'a> {
+    pub pathname: Option<&'a str>,
+    pub search: Option<&'a str>,
+}
+
+/// The development server's indicator, `false | { position }`: each the
+/// value itself, `false` none.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum DevIndicators {
+    Bool(bool),
+    Options(DevIndicatorsOptions),
+}
+
+pub struct DevIndicatorsOptions {
+    pub position: Option<DevIndicatorsPosition>,
+}
+
+pub enum DevIndicatorsPosition {
+    #[cfg_attr(rust_js, rust_js::name = "top-left")]
+    TopLeft,
+    #[cfg_attr(rust_js, rust_js::name = "top-right")]
+    TopRight,
+    #[cfg_attr(rust_js, rust_js::name = "bottom-left")]
+    BottomLeft,
+    #[cfg_attr(rust_js, rust_js::name = "bottom-right")]
+    BottomRight,
+}
+
+#[derive(Default)]
+pub struct OnDemandEntries {
+    /// How long a page is kept, in milliseconds.
+    #[cfg_attr(rust_js, rust_js::name = "maxInactiveAge")]
+    pub max_inactive_age: Option<f64>,
+    /// How many pages are kept.
+    #[cfg_attr(rust_js, rust_js::name = "pagesBufferLength")]
+    pub pages_buffer_length: Option<f64>,
+}
+
+/// The React Compiler, `boolean | ReactCompilerOptions`: each the value
+/// itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ReactCompiler {
+    Bool(bool),
+    Options(ReactCompilerOptions),
+}
+
+#[derive(Default)]
+pub struct ReactCompilerOptions {
+    #[cfg_attr(rust_js, rust_js::name = "compilationMode")]
+    pub compilation_mode: Option<CompilationMode>,
+    #[cfg_attr(rust_js, rust_js::name = "panicThreshold")]
+    pub panic_threshold: Option<PanicThreshold>,
+}
+
+/// Which components and hooks the React Compiler compiles.
+pub enum CompilationMode {
+    #[cfg_attr(rust_js, rust_js::name = "infer")]
+    Infer,
+    /// Those of `"use memo"`.
+    #[cfg_attr(rust_js, rust_js::name = "annotation")]
+    Annotation,
+    #[cfg_attr(rust_js, rust_js::name = "all")]
+    All,
+}
+
+/// What errors of the React Compiler's fail the build.
+pub enum PanicThreshold {
+    #[cfg_attr(rust_js, rust_js::name = "none")]
+    None,
+    #[cfg_attr(rust_js, rust_js::name = "critical_errors")]
+    CriticalErrors,
+    #[cfg_attr(rust_js, rust_js::name = "all_errors")]
+    AllErrors,
+}
+
+#[derive(Default)]
+pub struct HttpAgentOptions {
+    #[cfg_attr(rust_js, rust_js::name = "keepAlive")]
+    pub keep_alive: Option<bool>,
+}
+
+pub enum CrossOrigin {
+    #[cfg_attr(rust_js, rust_js::name = "anonymous")]
+    Anonymous,
+    #[cfg_attr(rust_js, rust_js::name = "use-credentials")]
+    UseCredentials,
+}
+
+/// The compiler's transforms, as `NextConfig`'s `compiler` types them.
+#[derive(Default)]
+pub struct CompilerConfig<'a> {
+    /// JSX's props of `data-test`, or of these patterns, removed.
+    #[cfg_attr(rust_js, rust_js::name = "reactRemoveProperties")]
+    pub react_remove_properties: Option<ReactRemoveProperties<'a>>,
+    pub relay: Option<RelayConfig<'a>>,
+    /// `console.*` calls removed.
+    #[cfg_attr(rust_js, rust_js::name = "removeConsole")]
+    pub remove_console: Option<RemoveConsole<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "styledComponents")]
+    pub styled_components: Option<StyledComponents<'a>>,
+    pub emotion: Option<Emotion<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "styledJsx")]
+    pub styled_jsx: Option<StyledJsx>,
+    /// Each name, replaced with its value, in the app's code.
+    pub define: Option<&'a Dict<DefineValue<'a>>>,
+    /// Each name, replaced with its value, in the server's code.
+    #[cfg_attr(rust_js, rust_js::name = "defineServer")]
+    pub define_server: Option<&'a Dict<DefineValue<'a>>>,
+    /// What runs after a production build's compile.
+    #[cfg_attr(rust_js, rust_js::name = "runAfterProductionCompile")]
+    pub run_after_production_compile: Option<Box<dyn Fn(CompileMetadata) -> Promise<()>>>,
+}
+
+/// `boolean | { properties }`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ReactRemoveProperties<'a> {
+    Bool(bool),
+    Options(ReactRemovePropertiesOptions<'a>),
+}
+
+/// The patterns of the props removed.
+pub struct ReactRemovePropertiesOptions<'a> {
+    pub properties: Option<&'a [&'a str]>,
+}
+
+/// Relay's config.
+pub struct RelayConfig<'a> {
+    pub src: &'a str,
+    #[cfg_attr(rust_js, rust_js::name = "artifactDirectory")]
+    pub artifact_directory: Option<&'a str>,
+    pub language: Option<RelayLanguage>,
+    #[cfg_attr(rust_js, rust_js::name = "eagerEsModules")]
+    pub eager_es_modules: Option<bool>,
+}
+
+pub enum RelayLanguage {
+    #[cfg_attr(rust_js, rust_js::name = "typescript")]
+    Typescript,
+    #[cfg_attr(rust_js, rust_js::name = "javascript")]
+    Javascript,
+    #[cfg_attr(rust_js, rust_js::name = "flow")]
+    Flow,
+}
+
+/// `boolean | { exclude }`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum RemoveConsole<'a> {
+    Bool(bool),
+    Options(RemoveConsoleOptions<'a>),
+}
+
+/// The `console` methods kept: `["error"]`.
+pub struct RemoveConsoleOptions<'a> {
+    pub exclude: Option<&'a [&'a str]>,
+}
+
+/// `boolean | StyledComponentsConfig`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum StyledComponents<'a> {
+    Bool(bool),
+    Config(StyledComponentsConfig<'a>),
+}
+
+#[derive(Default)]
+pub struct StyledComponentsConfig<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "displayName")]
+    pub display_name: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "topLevelImportPaths")]
+    pub top_level_import_paths: Option<&'a [&'a str]>,
+    pub ssr: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "fileName")]
+    pub file_name: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "meaninglessFileNames")]
+    pub meaningless_file_names: Option<&'a [&'a str]>,
+    pub minify: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "transpileTemplateLiterals")]
+    pub transpile_template_literals: Option<bool>,
+    pub namespace: Option<&'a str>,
+    pub pure: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "cssProp")]
+    pub css_prop: Option<bool>,
+}
+
+/// `boolean | EmotionConfig`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Emotion<'a> {
+    Bool(bool),
+    Config(EmotionConfig<'a>),
+}
+
+#[derive(Default)]
+pub struct EmotionConfig<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "sourceMap")]
+    pub source_map: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "autoLabel")]
+    pub auto_label: Option<AutoLabel>,
+    /// A label's format: `"[local]"`.
+    #[cfg_attr(rust_js, rust_js::name = "labelFormat")]
+    pub label_format: Option<&'a str>,
+    /// Each import's of each module, as emotion's own.
+    #[cfg_attr(rust_js, rust_js::name = "importMap")]
+    pub import_map: Option<&'a Dict<&'a Dict<EmotionImport<'a>>>>,
+}
+
+pub enum AutoLabel {
+    #[cfg_attr(rust_js, rust_js::name = "dev-only")]
+    DevOnly,
+    #[cfg_attr(rust_js, rust_js::name = "always")]
+    Always,
+    #[cfg_attr(rust_js, rust_js::name = "never")]
+    Never,
+}
+
+/// What an import is of emotion's: its module and export.
+#[derive(Default)]
+pub struct EmotionImport<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "canonicalImport")]
+    pub canonical_import: Option<(&'a str, &'a str)>,
+    #[cfg_attr(rust_js, rust_js::name = "styledBaseImport")]
+    pub styled_base_import: Option<(&'a str, &'a str)>,
+}
+
+/// `boolean | { useLightningcss }`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum StyledJsx {
+    Bool(bool),
+    Options(StyledJsxOptions),
+}
+
+pub struct StyledJsxOptions {
+    #[cfg_attr(rust_js, rust_js::name = "useLightningcss")]
+    pub use_lightningcss: Option<bool>,
+}
+
+/// A defined name's value, `string | number | boolean`: each the value
+/// itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum DefineValue<'a> {
+    Str(&'a str),
+    Number(f64),
+    Bool(bool),
+}
+
+/// What `runAfterProductionCompile` is given.
+pub struct CompileMetadata {
+    #[cfg_attr(rust_js, rust_js::name = "projectDir")]
+    pub project_dir: String,
+    #[cfg_attr(rust_js, rust_js::name = "distDir")]
+    pub dist_dir: String,
+}
+
+/// A standalone server, or a static export.
+pub enum Output {
+    #[cfg_attr(rust_js, rust_js::name = "standalone")]
+    Standalone,
+    #[cfg_attr(rust_js, rust_js::name = "export")]
+    Export,
+}
+
+/// Turbopack's options, as `TurbopackOptions` types them.
+#[derive(Default)]
+pub struct TurbopackOptions<'a> {
+    /// The module each import is of instead.
+    #[cfg_attr(rust_js, rust_js::name = "resolveAlias")]
+    pub resolve_alias: Option<&'a Dict<ResolveAlias<'a>>>,
+    /// The extensions an import may leave out.
+    #[cfg_attr(rust_js, rust_js::name = "resolveExtensions")]
+    pub resolve_extensions: Option<&'a [&'a str]>,
+    /// The loaders of each file, by its glob.
+    pub rules: Option<&'a Dict<TurbopackRuleConfigCollection<'a>>>,
+    /// The directory it resolves files below.
+    pub root: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "debugIds")]
+    pub debug_ids: Option<bool>,
+    /// The issues it doesn't show.
+    #[cfg_attr(rust_js, rust_js::name = "ignoreIssue")]
+    pub ignore_issue: Option<&'a [IgnoreIssue<'a>]>,
+    #[cfg_attr(rust_js, rust_js::name = "chunkLoadingGlobal")]
+    pub chunk_loading_global: Option<&'a str>,
+}
+
+/// What an import is aliased to, `string | string[] | Record<string,
+/// string | string[]>`: a module, the first of these that resolves, or one
+/// of each condition; each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ResolveAlias<'a> {
+    Module(&'a str),
+    Modules(&'a [&'a str]),
+    Conditional(&'a Dict<ResolveAliasTarget<'a>>),
+}
+
+/// A condition's module, or the first of these that resolves.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ResolveAliasTarget<'a> {
+    Module(&'a str),
+    Modules(&'a [&'a str]),
+}
+
+/// A glob's rule, or its loaders and rules, each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TurbopackRuleConfigCollection<'a> {
+    Rule(TurbopackRuleConfigItem<'a>),
+    Many(&'a [TurbopackLoaderOrRule<'a>]),
+}
+
+/// A loader, by its module or of its options, or a rule: each the value
+/// itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TurbopackLoaderOrRule<'a> {
+    Module(&'a str),
+    Options(TurbopackLoaderOptions<'a>),
+    Rule(TurbopackRuleConfigItem<'a>),
+}
+
+/// A loader, by its module, or of its options: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TurbopackLoaderItem<'a> {
+    Module(&'a str),
+    Options(TurbopackLoaderOptions<'a>),
+}
+
+pub struct TurbopackLoaderOptions<'a> {
+    pub loader: &'a str,
+    pub options: Option<&'a Dict<Json<'a>>>,
+}
+
+/// A rule: its loaders, what its files are as, of what condition.
+#[derive(Default)]
+pub struct TurbopackRuleConfigItem<'a> {
+    pub loaders: Option<&'a [TurbopackLoaderItem<'a>]>,
+    /// The file's name the loaders' output has: `"*.js"`.
+    pub r#as: Option<&'a str>,
+    pub condition: Option<TurbopackRuleCondition<'a>>,
+    pub r#type: Option<TurbopackModuleType>,
+}
+
+/// What a file is for a rule to be its, as `TurbopackRuleCondition` types
+/// it: each the value itself, a built-in condition its name.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TurbopackRuleCondition<'a> {
+    All(TurbopackRuleAll<'a>),
+    Any(TurbopackRuleAny<'a>),
+    Not(TurbopackRuleNot<'a>),
+    #[cfg_attr(rust_js, rust_js::name = "browser")]
+    Browser,
+    /// A file of node_modules'.
+    #[cfg_attr(rust_js, rust_js::name = "foreign")]
+    Foreign,
+    #[cfg_attr(rust_js, rust_js::name = "development")]
+    Development,
+    #[cfg_attr(rust_js, rust_js::name = "production")]
+    Production,
+    #[cfg_attr(rust_js, rust_js::name = "node")]
+    Node,
+    #[cfg_attr(rust_js, rust_js::name = "edge-light")]
+    EdgeLight,
+    Match(TurbopackRuleMatch<'a>),
+}
+
+/// Each of these conditions.
+pub struct TurbopackRuleAll<'a> {
+    pub all: &'a [TurbopackRuleCondition<'a>],
+}
+
+/// Any of these conditions.
+pub struct TurbopackRuleAny<'a> {
+    pub any: &'a [TurbopackRuleCondition<'a>],
+}
+
+/// Not this condition.
+pub struct TurbopackRuleNot<'a> {
+    pub not: &'a TurbopackRuleCondition<'a>,
+}
+
+/// A file of this path, content, query or content type.
+#[derive(Default)]
+pub struct TurbopackRuleMatch<'a> {
+    pub path: Option<StrOrRegExp<'a>>,
+    pub content: Option<&'a RegExp>,
+    /// Its import's query: `"?raw"`.
+    pub query: Option<StrOrRegExp<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "contentType")]
+    pub content_type: Option<StrOrRegExp<'a>>,
+}
+
+/// `string | RegExp`: a glob, or a pattern, each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum StrOrRegExp<'a> {
+    Str(&'a str),
+    RegExp(&'a RegExp),
+}
+
+/// What a file is as, as `TurbopackModuleType` types it.
+pub enum TurbopackModuleType {
+    #[cfg_attr(rust_js, rust_js::name = "asset")]
+    Asset,
+    #[cfg_attr(rust_js, rust_js::name = "ecmascript")]
+    Ecmascript,
+    #[cfg_attr(rust_js, rust_js::name = "typescript")]
+    Typescript,
+    #[cfg_attr(rust_js, rust_js::name = "css")]
+    Css,
+    #[cfg_attr(rust_js, rust_js::name = "css-module")]
+    CssModule,
+    #[cfg_attr(rust_js, rust_js::name = "wasm")]
+    Wasm,
+    #[cfg_attr(rust_js, rust_js::name = "raw")]
+    Raw,
+    #[cfg_attr(rust_js, rust_js::name = "node")]
+    Node,
+    #[cfg_attr(rust_js, rust_js::name = "bytes")]
+    Bytes,
+    #[cfg_attr(rust_js, rust_js::name = "text")]
+    Text,
+}
+
+/// An issue Turbopack doesn't show, of its path, title and description.
+pub struct IgnoreIssue<'a> {
+    pub path: StrOrRegExp<'a>,
+    pub title: Option<StrOrRegExp<'a>>,
+    pub description: Option<StrOrRegExp<'a>>,
+}
+
+/// A package's imports, as imports of its modules.
+pub struct ModularizeImport<'a> {
+    /// The module of each import: `"lodash/{{member}}"`, or by its name.
+    pub transform: ModularizeTransform<'a>,
+    #[cfg_attr(rust_js, rust_js::name = "preventFullImport")]
+    pub prevent_full_import: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "skipDefaultConversion")]
+    pub skip_default_conversion: Option<bool>,
+}
+
+/// `string | Record<string, string>`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ModularizeTransform<'a> {
+    Str(&'a str),
+    Each(&'a Dict<&'a str>),
+}
+
+/// What a development server logs, `LoggingConfig | false`: each the value
+/// itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Logging<'a> {
+    Bool(bool),
+    Config(LoggingConfig<'a>),
+}
+
+#[derive(Default)]
+pub struct LoggingConfig<'a> {
+    pub fetches: Option<FetchesLogging>,
+    #[cfg_attr(rust_js, rust_js::name = "incomingRequests")]
+    pub incoming_requests: Option<IncomingRequests<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "serverFunctions")]
+    pub server_functions: Option<bool>,
+    /// The browser's logs, in the terminal: each, or of these levels.
+    #[cfg_attr(rust_js, rust_js::name = "browserToTerminal")]
+    pub browser_to_terminal: Option<BrowserToTerminal>,
+}
+
+#[derive(Default)]
+pub struct FetchesLogging {
+    #[cfg_attr(rust_js, rust_js::name = "fullUrl")]
+    pub full_url: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "hmrRefreshes")]
+    pub hmr_refreshes: Option<bool>,
+}
+
+/// `boolean | IncomingRequestLoggingConfig`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum IncomingRequests<'a> {
+    Bool(bool),
+    Config(IncomingRequestLoggingConfig<'a>),
+}
+
+/// The requests not logged, by their URLs' patterns.
+pub struct IncomingRequestLoggingConfig<'a> {
+    pub ignore: Option<&'a [&'a RegExp]>,
+}
+
+/// `boolean | "error" | "warn"`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum BrowserToTerminal {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "error")]
+    Error,
+    #[cfg_attr(rust_js, rust_js::name = "warn")]
+    Warn,
+}
+
+/// `boolean | "unstable_eager"`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum PartialPrefetching {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "unstable_eager")]
+    UnstableEager,
+}
+
+/// A `cacheLife` profile's times, in seconds.
+#[derive(Default)]
+pub struct CacheLifeProfile {
+    pub stale: Option<f64>,
+    pub revalidate: Option<f64>,
+    pub expire: Option<f64>,
+}
+
+#[derive(Default)]
+pub struct WatchOptions {
+    /// How often files are polled, in milliseconds.
+    #[cfg_attr(rust_js, rust_js::name = "pollIntervalMs")]
+    pub poll_interval_ms: Option<f64>,
+}

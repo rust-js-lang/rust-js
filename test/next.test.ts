@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import { chromium } from "@playwright/test";
@@ -103,7 +103,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\n#[path = \"../next.config.rs\"]\nmod next_config;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   writeFileSync(join(dir, "app/robots.rs"), robots);
@@ -138,6 +138,9 @@ js::export_default!(Later);
   // Instrumentation, the server's and the client's.
   writeFileSync(join(dir, "instrumentation.rs"), instrumentation);
   writeFileSync(join(dir, "instrumentation-client.rs"), instrumentationClient);
+  // The app's config, in Rust: next.config.js, as Next.js reads it.
+  rmSync(join(dir, "next.config.mjs"));
+  writeFileSync(join(dir, "next.config.rs"), nextConfig);
   // A custom server, Next.js's handed each request but its own.
   writeFileSync(join(dir, "server.rs"), customServer(3700 + Math.floor(Math.random() * 300)));
   // An image drawn from JSX, next/og's.
@@ -326,6 +329,56 @@ pub fn onRouterTransitionStart(url: &str, navigation_type: RouterTransitionType,
         let _ = url.len();
     }
 }
+`;
+
+// The app's config, a function of its phase, as Next.js's docs write one:
+// its build's ID, a header, a redirect, remote images, and no
+// `x-powered-by`.
+const nextConfig = `#![allow(non_snake_case)]
+
+use next::NextConfig;
+use next::config::{Header, HeaderEntry, ImageConfig, PermanentRedirect, Protocol, Redirect, RemotePattern, RemotePatternOrUrl};
+
+pub fn nextConfig(_phase: &str) -> NextConfig<'static> {
+    NextConfig {
+        powered_by_header: Some(false),
+        generate_build_id: Some(Box::new(|| js::promise(async { Some("rust-build".to_string()) }))),
+        headers: Some(Box::new(|| {
+            js::promise(async {
+                let headers = &[HeaderEntry { key: "x-rust", value: "config" }];
+                vec![Header { source: "/about", base_path: None, locale: None, headers, has: None, missing: None }]
+            })
+        })),
+        redirects: Some(Box::new(|| {
+            js::promise(async {
+                let redirect = PermanentRedirect {
+                    source: "/about-us",
+                    destination: "/about",
+                    permanent: true,
+                    base_path: None,
+                    locale: None,
+                    has: None,
+                    missing: None,
+                    priority: None,
+                };
+                vec![Redirect::Permanent(redirect)]
+            })
+        })),
+        images: Some(ImageConfig {
+            remote_patterns: Some(&[RemotePatternOrUrl::Pattern(RemotePattern {
+                protocol: Some(Protocol::Https),
+                hostname: "example.com",
+                port: None,
+                pathname: None,
+                search: None,
+            })]),
+            ..Default::default()
+        }),
+        ..Default::default()
+    }
+}
+
+js::export_default!(nextConfig);
 `;
 
 // A custom server, as Next.js's docs write one: Next.js prepared, then
@@ -829,6 +882,10 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // Its getInitialProps, set on it, and its scripts' nonce.
   expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain("MyDocument.getInitialProps = initial;");
   expect(documented).toContain('nonce="n0nce"');
+  // The config, as Next.js read it.
+  const configJs = readFileSync(join(dir, "next.config.js"), "utf8");
+  expect([configJs.includes("generateBuildId: async () => \"rust-build\","), configJs.includes("export default nextConfig;")]).toEqual([true, true]);
+  expect(readFileSync(join(dir, ".next/BUILD_ID"), "utf8")).toBe("rust-build");
   // The custom server, run as Next.js's docs run one: `node server.js`.
   expect(readFileSync(join(dir, "server.js"), "utf8")).toContain('import next from "next";');
   const custom = spawn("node", ["server.js"], { cwd: dir, env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" } });
@@ -842,7 +899,12 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
     }
     const at = `http://localhost:${served.match(/ready on (\d+)/)![1]}`;
     expect(await (await fetch(`${at}/custom`)).text()).toBe("custom server");
-    expect(await (await fetch(`${at}/about`)).text()).toContain("About, in Rust");
+    const about = await fetch(`${at}/about`);
+    expect(await about.text()).toContain("About, in Rust");
+    // The config's header, and no `x-powered-by`.
+    expect([about.headers.get("x-rust"), about.headers.get("x-powered-by")]).toEqual(["config", null]);
+    const moved = await fetch(`${at}/about-us`, { redirect: "manual" });
+    expect([moved.status, moved.headers.get("location")]).toEqual([308, "/about"]);
   } finally {
     custom.kill();
   }

@@ -20,6 +20,7 @@
 
 pub mod app;
 pub mod cache;
+pub mod config;
 mod custom_server;
 mod data_fetching;
 pub mod document;
@@ -58,6 +59,7 @@ pub use data_fetching::{
     Redirect, Revalidate, RevalidateReason, ServerNotFound, ServerProps, ServerRedirect, StaticNotFound, StaticPath, StaticPathParams,
     StaticProps, StaticRedirect, StatusRedirect,
 };
+pub use config::NextConfig;
 pub use custom_server::{NextServer, NextServerOptions, RequestHandler, next};
 pub use instrumentation::{
     ErrorRequest, Instrumentation, RequestErrorContext, RouterTransitionEvent, RouterTransitionPrefetchIntent, RouterTransitionStartEvent,
