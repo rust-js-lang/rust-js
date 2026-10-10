@@ -114,4 +114,20 @@ export const mutations: Mutation[] = [
     replace: "            let mut out = vec![StmtKind::If(test, otherwise, None).at(span)];\n",
     tests: ["test/mir.test.ts","-t","question_early_returns"],
   },
+  {
+    name: "mir-push-str-lost",
+    breaks: "`write!` or `push_str` to a `String` from MIR writes nothing",
+    file: "src/lower/mir.rs",
+    find: "                super::display::append_written(&place, value, false, self.js_span(span), out);\n",
+    replace: "                let _ = (place, value);\n",
+    tests: ["test/mir.test.ts", "-t", "string_pushes"],
+  },
+  {
+    name: "mir-fmt-result-unwrapped",
+    breaks: "`write!(s, ..).unwrap()` unwraps the nothing an `Ok` `fmt::Result` is in JS, as if it were a `Result`",
+    file: "src/lower/mir.rs",
+    find: "        if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))\n",
+    replace: "        if false && arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))\n",
+    tests: ["test/mir.test.ts","-t","string_pushes"],
+  },
 ];

@@ -358,7 +358,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             return self.str_part(op, args, span, out);
         }
-        let mut values = self.operands(args, out)?;
+        let values = self.operands(args, out)?;
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
+        self.text_values(op, values, &tys, generic_args, span, out)
+    }
+
+    /// A string's or a slice's method of its arguments' values, `tys`
+    /// their types: what THIR and MIR both lower it to (ADR 0364).
+    pub(in crate::lower) fn text_values(
+        &mut self,
+        op: TextOp,
+        mut values: Vec<Expr>,
+        tys: &[Ty<'tcx>],
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         // A set of `char`s as a pattern is the predicate of being one of
         // them, as a closure or a function is a predicate (ADR 0157).
         if matches!(
@@ -368,8 +383,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | TextOp::FindBy(_)
                 | TextOp::StartsBy { .. }
                 | TextOp::TrimMatches { .. }
-        ) && let Some(&pattern) = args.get(1)
-            && let ty::Array(item, _) | ty::Slice(item) = self.thir[pattern].ty.peel_refs().kind()
+        ) && let Some(pattern) = tys.get(1)
+            && let ty::Array(item, _) | ty::Slice(item) = pattern.peel_refs().kind()
             && item.is_char()
         {
             let set = values[1].clone();
@@ -493,7 +508,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
             TextOp::StrSliceBounds => call(self, Helper::StrSlice, "$strSlice", vec![arg(), arg(), arg()]),
             TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. } => {
-                unreachable!("a part of a string is made above")
+                return Err(self.unsupported(span, "a part of a string, of its value alone"));
             }
             TextOp::SliceSplitAt { checked } => {
                 let mut list = vec![arg(), arg()];
@@ -616,7 +631,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | TextOp::Drain
             | TextOp::Splice
             | TextOp::ExtendFromWithin => {
-                unreachable!("handled above")
+                return Err(self.unsupported(span, "a range of a string or a slice, of its value alone"));
             }
         })
     }
@@ -693,6 +708,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// it, `v` itself, as `&s[..]` of a string is. Out of bounds, it panics,
     /// as Rust does.
     fn slice_range(&mut self, op: TextOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+        let items = self.operands(&[args[0]], out)?.remove(0);
+        let (start, end) = self.range_bounds(args[1], span, out)?;
+        Ok(self.sliced(op, items, start, end))
+    }
+
+    /// `slice_range`'s, of its operands' values (ADR 0364): `items`, and
+    /// `range`, a `range_ty`.
+    pub(in crate::lower) fn slice_range_values(
+        &mut self,
+        op: TextOp,
+        items: Expr,
+        (range, range_ty): (Expr, Ty<'tcx>),
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let (start, end) = self.range_value_bounds(range, range_ty, span, out)?;
+        Ok(self.sliced(op, items, start, end))
+    }
+
+    /// `items` from `start` to `end`, or to their end, as `op` takes them.
+    fn sliced(&mut self, op: TextOp, items: Expr, start: Expr, end: Option<Expr>) -> Expr {
         let (helper, name) = match op {
             TextOp::Drain => (Helper::Drain, "$drain"),
             TextOp::StrSlice => (Helper::StrSlice, "$strSlice"),
@@ -700,21 +736,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::SliceGet => (Helper::SliceGet, "$sliceGet"),
             _ => (Helper::SliceRange, "$slice"),
         };
-        let items = self.operands(&[args[0]], out)?.remove(0);
-        let (start, end) = self.range_bounds(args[1], span, out)?;
         // `&s[..]` of a string: all of it, which is never out of bounds, nor
         // inside a character.
         if matches!(op, TextOp::StrSlice | TextOp::StrGet) && start.as_int() == Some(0) && end.is_none() {
-            return Ok(items);
+            return items;
         }
         // `&v[..]` of a slice: all of it, never out of bounds (ADR 0335).
         if helper == Helper::SliceRange && start.as_int() == Some(0) && end.is_none() {
-            return Ok(items);
+            return items;
         }
         self.runtime.insert(helper);
         let mut list = vec![items, start];
         list.extend(end);
-        Ok(Expr::call(Expr::var(name), list))
+        Expr::call(Expr::var(name), list)
     }
 
     /// A part of a string as a `&mut str` (ADR 0334): `$strPart(cell, a, b)`
@@ -779,30 +813,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let range = self.strip(range);
         let range_ty = self.thir[range].ty;
         let kind = self.range_kind(range_ty);
-        // `..=1` is `..2`.
-        let past = |end: Expr| match end.as_int() {
-            Some(n) => Expr::int(n + 1),
-            None => Expr::bin(Op::Add, end, Expr::int(1)),
-        };
         let fields: Vec<(usize, ExprId)> = match self.thir[range].kind {
             ExprKind::Adt(ref adt) if kind != Some(RangeKind::ToInclusive) => {
                 adt.fields.iter().map(|f| (f.name.as_usize(), f.expr)).collect()
             }
             // A range kept as a value, or `a..=b` or `..=b` (ADR 0129): its bounds.
             _ => {
-                let Some(kind) = kind else {
-                    return Err(self.unsupported(span, "slicing by this range"));
-                };
                 let value = self.operands(&[range], out)?.remove(0);
-                let parts = self.range_parts(value, kind, out);
-                return Ok(match (kind, parts.as_slice()) {
-                    (RangeKind::Exclusive, [start, end]) => (start.clone(), Some(end.clone())),
-                    (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end.clone()))),
-                    (RangeKind::From, [start]) => (start.clone(), None),
-                    (RangeKind::To, [end]) => (Expr::int(0), Some(end.clone())),
-                    (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone()))),
-                    _ => (Expr::int(0), None),
-                });
+                return self.range_value_bounds(value, range_ty, span, out);
             }
         };
         let bound = |i: usize| fields.iter().find(|&&(n, _)| n == i).map(|&(_, e)| e);
@@ -824,6 +842,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Expr::int(0),
         };
         Ok((start, end.map(|_| values.next().expect("an end"))))
+    }
+
+    /// `range_bounds`'s, of a range's value, a `range_ty`.
+    pub(in crate::lower) fn range_value_bounds(
+        &mut self,
+        value: Expr,
+        range_ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<(Expr, Option<Expr>)> {
+        let Some(kind) = self.range_kind(range_ty) else {
+            return Err(self.unsupported(span, "slicing by this range"));
+        };
+        // `..=1` is `..2`.
+        let past = |end: Expr| match end.as_int() {
+            Some(n) => Expr::int(n + 1),
+            None => Expr::bin(Op::Add, end, Expr::int(1)),
+        };
+        let parts = self.range_parts(value, kind, out);
+        Ok(match (kind, parts.as_slice()) {
+            (RangeKind::Exclusive, [start, end]) => (start.clone(), Some(end.clone())),
+            (RangeKind::Inclusive, [start, end]) => (start.clone(), Some(past(end.clone()))),
+            (RangeKind::From, [start]) => (start.clone(), None),
+            (RangeKind::To, [end]) => (Expr::int(0), Some(end.clone())),
+            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone()))),
+            _ => (Expr::int(0), None),
+        })
     }
 }
 

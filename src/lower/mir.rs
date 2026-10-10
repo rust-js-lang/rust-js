@@ -33,6 +33,7 @@ use rustc_span::Span;
 use super::recognition::{Std, StdItem};
 use super::representation::{const_js, variant_field};
 use super::std_types::number::NumOp;
+use super::std_types::text::TextOp;
 use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
@@ -1710,6 +1711,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
         let values = self.take_operands(state, &operands, out)?;
         let tcx = self.tcx;
+        // An `Ok` `fmt::Result` is nothing in JS (ADR 0054): its `unwrap()` is
+        // `()`, after what made it ran (ADR 0148), `is_ok()` `true`.
+        if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))
+            && tcx.def_kind(def_id) == DefKind::AssocFn
+        {
+            let Some(answer) = super::recognition::fmt_result_answer(tcx, def_id) else {
+                return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR"));
+            };
+            if self.krate.any_failing {
+                return Err(self.unsupported(span, "methods of a `fmt::Result` that may fail, from its MIR"));
+            }
+            for value in values {
+                let value = self.value_expr(value, span)?;
+                if value.has_effects() {
+                    self.flush(state, out)?;
+                    out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                }
+            }
+            return Ok(Value::Expr(match answer {
+                super::recognition::FmtResultAnswer::Unwrap | super::recognition::FmtResultAnswer::Expect => {
+                    Expr::undefined()
+                }
+                super::recognition::FmtResultAnswer::Is(ok) => Expr::bool(ok),
+            }));
+        }
         // `x?`: `Try::branch(x)`, kept as `x` (`Value::Branch`), and what it
         // returns, `FromResidual::from_residual(r)`, THIR's (ADR 0052).
         if tcx.is_lang_item(def_id, LangItem::TryTraitBranch) {
@@ -1815,12 +1841,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A trait's method: its impl's, a dictionary's, or what rust-js
         // writes itself, `==` of a struct say (ADRs 0049, 0052).
         let known = self.recognition().classify(def_id, generic_args);
+        let rust_impl = tcx.trait_of_assoc(def_id).is_some()
+            && self
+                .resolve_instance(def_id, generic_args)?
+                .is_some_and(|i| self.is_rust_fn(i.def_id()));
+        // A `&mut` to a number is boxed for the crate's own trait or impl;
+        // std's, `write!` to a `String` say, takes its place below.
+        let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
         if !matches!(known, Some(Std::Any(_)))
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
-            && (super::recognition::operational(tcx, self.krate.foreign, trait_id)
-                || self
-                    .resolve_instance(def_id, generic_args)?
-                    .is_some_and(|i| self.is_rust_fn(i.def_id())))
+            && (rust_impl
+                || (super::recognition::operational(tcx, self.krate.foreign, trait_id)
+                    && (!gives_ref || self.is_rust_trait(trait_id))))
         {
             let exprs = self.boxed_args(state, def_id, values.clone(), span, out)?;
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
@@ -1950,6 +1982,58 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Range(op) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.range_call(op, exprs, arg_tys, span, out)?
+            }
+            // `s.push_str(t)`, `write!(s, ..)`: JS strings don't change, so `s`
+            // gets a new one, as THIR's `push_str` writes it.
+            Std::PushStr => {
+                let place = match values.next() {
+                    Some(Value::Ref(place)) => place,
+                    Some(Value::Expr(place))
+                        if matches!(place.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) =>
+                    {
+                        place
+                    }
+                    _ => return Err(self.unsupported(span, "`push_str` on this, from its MIR")),
+                };
+                if self.krate.any_failing {
+                    return Err(self.unsupported(span, "a `write!` here of what may fail, from its MIR"));
+                }
+                let value = self.value_expr(values.next().expect("what's pushed"), span)?;
+                self.flush(state, out)?;
+                super::display::append_written(&place, value, false, self.js_span(span), out);
+                Expr::undefined()
+            }
+            // `&v[a..b]`, `s.get(a..)`, `v.drain(..b)`: of the items and the range's
+            // value. Not `&mut v[a..b]`, a view of them, not a copy.
+            Std::Text(op @ (TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::SliceGet | TextOp::Drain))
+                if !self
+                    .tcx
+                    .trait_of_assoc(def_id)
+                    .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::IndexMut)) =>
+            {
+                let items = self.value_expr(values.next().expect("the items"), span)?;
+                let range = self.value_expr(values.next().expect("the range"), span)?;
+                self.slice_range_values(op, items, (range, arg_tys[1]), span, out)?
+            }
+            // A string's or a slice's method, but one of a range or a part of
+            // it, which THIR lowers from its place.
+            Std::Text(op)
+                if !matches!(
+                    op,
+                    TextOp::Slice
+                        | TextOp::StrSlice
+                        | TextOp::StrGet
+                        | TextOp::SliceGet
+                        | TextOp::Drain
+                        | TextOp::Splice
+                        | TextOp::ExtendFromWithin
+                        | TextOp::StrPart { .. }
+                        | TextOp::StrGetMut
+                        | TextOp::StrSplitAtMut { .. }
+                ) =>
+            {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.text_values(op, exprs, arg_tys, generic_args, span, out)?
             }
             Std::Number(op) => {
                 // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.

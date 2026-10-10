@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "slice-to-inclusive-end-dropped",
     breaks: "`&v[..=1]` stops before index 1",
     file: "src/lower/std_types/text.rs",
-    find: "                    (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone()))),",
-    replace: "                    (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(end.clone())),",
+    find: "            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(past(end.clone()))),",
+    replace: "            (RangeKind::ToInclusive, [end]) => (Expr::int(0), Some(end.clone())),",
     tests: ["test/corpus.test.ts","-t","range_values"],
   },
   {
@@ -235,5 +235,13 @@ export const mutations: Mutation[] = [
     find: "                if end || eq.is_some() {\n                    list.push(Expr::bool(end));",
     replace: "                if end || eq.is_some() {\n                    list.push(Expr::bool(false));",
     tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
+  },
+  {
+    name: "range-value-from-start",
+    breaks: "a slice by a range kept as a value starts at 0, not at the range's start",
+    file: "src/lower/std_types/text.rs",
+    find: "            (RangeKind::From, [start]) => (start.clone(), None),\n",
+    replace: "            (RangeKind::From, [_]) => (Expr::int(0), None),\n",
+    tests: ["test/mir.test.ts","-t","slice_|string_slice"],
   },
 ];
