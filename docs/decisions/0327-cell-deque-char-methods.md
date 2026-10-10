@@ -56,3 +56,14 @@ ADR 0314's count had `Cell` at 6 of its 13 methods, `RefCell` 7 of 13,
   numbers without handles, and copy `get_mut`'s number.
 - `docs/std-coverage.txt`: `Cell` 9 of 13, `RefCell` 9 of 13, `VecDeque`
   45 of 55, `char` 37 of 38, arrays 5 of 5.
+
+## Since
+
+- **A deque's `range_mut(r)` is a slice's `iter_mut()` of `&mut d[r]`**
+  (2026-10-10): `$mutItems($view(d, a, b))` of numbers or text, the view
+  itself of objects, checked as `&mut d[a..b]` is, whose panics are
+  `slice::range`'s. It was refused. The `deque_range_mut` corpus case
+  runs, against native Rust, numbers after a `push_front`, strings,
+  tuples, a kept one stepped, and a range of one; `deque_range_mut_panic`
+  one past the end. Mutations give numbers for handles, and refuse it.
+  `docs/std-coverage.txt`: `VecDeque` 49 of 55.

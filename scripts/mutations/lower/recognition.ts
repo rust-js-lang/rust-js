@@ -1316,4 +1316,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","iter_mut_kept"],
   },
+  {
+    name: "deque-range-mut-unknown",
+    breaks: "a deque's `range_mut` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"range_mut\" if deque => Std::Slice(SliceOp::DequeRangeMut),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","deque_range_mut"],
+  },
+  {
+    name: "deque-range-mut-not-cell",
+    breaks: "a deque's `range_mut` items aren't cells it makes",
+    file: "src/lower/recognition.rs",
+    find: "                | Std::Slice(SliceOp::DequeRangeMut)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","deque_range_mut"],
+  },
 ];

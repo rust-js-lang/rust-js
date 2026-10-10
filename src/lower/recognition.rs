@@ -446,6 +446,7 @@ impl Std {
                 | Std::Map(
                     MapOp::EntryGet { mutable: true } | MapOp::VacantInsert | MapOp::TreeRange { mutable: true }
                 )
+                | Std::Slice(SliceOp::DequeRangeMut)
                 | Std::Comb(Comb::ResultIterMut | Comb::ResultAsMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
@@ -1581,6 +1582,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "pop_front_if" if deque => Std::Slice(SliceOp::PopFrontIf),
             "partition_point" if deque => Std::Slice(SliceOp::PartitionPoint),
             "range" if deque => Std::Text(TextOp::Slice),
+            "range_mut" if deque => Std::Slice(SliceOp::DequeRangeMut),
             "escape_default" | "escape_debug" | "escape_unicode" if owner.is_char() || owner.is_str() => {
                 Std::Text(TextOp::Escape {
                     kind: match name.as_str() {

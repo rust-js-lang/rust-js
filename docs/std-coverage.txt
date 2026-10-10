@@ -47,7 +47,7 @@
 - Vec::try_reserve
 - Vec::try_reserve_exact
 + Vec::with_capacity
-# VecDeque 48 of 55
+# VecDeque 49 of 55
 + VecDeque::append
 - VecDeque::as_mut_slices
 - VecDeque::as_slices
@@ -82,7 +82,7 @@
 + VecDeque::push_front
 + VecDeque::push_front_mut
 + VecDeque::range
-- VecDeque::range_mut
++ VecDeque::range_mut
 + VecDeque::remove
 + VecDeque::reserve
 + VecDeque::reserve_exact

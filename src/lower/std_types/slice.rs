@@ -75,6 +75,9 @@ pub(in crate::lower) enum SliceOp {
     View {
         checked: bool,
     },
+    /// A `VecDeque`'s `range_mut(a..b)`: a view of those items, checked as
+    /// `&mut v[a..b]` is, a handle on each number or text, as `iter_mut`'s.
+    DequeRangeMut,
     /// `chunks_mut(n)`: views of each `n` items, the last fewer.
     ChunksMut,
     /// `split_at_mut(mid)`, or `split_at_mut_checked` (`checked`): views
@@ -432,6 +435,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.extend(end);
                 self.view_call(if checked { "$viewGet" } else { "$view" }, list)
             }
+            SliceOp::DequeRangeMut => {
+                let view = self.slice_call(SliceOp::View { checked: false }, args, generic_args, span, out)?;
+                if !self.is_boxable(item()) {
+                    return Ok(view);
+                }
+                self.runtime.insert(Helper::MutItems);
+                Expr::call(Expr::var("$mutItems"), vec![view])
+            }
             SliceOp::CopyWithin => {
                 let items = self.operands(&args[..1], out)?.remove(0);
                 let (start, end) = self.range_bounds(args[1], span, out)?;
@@ -550,6 +561,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                     SliceOp::View { .. }
+                    | SliceOp::DequeRangeMut
                     | SliceOp::ExtractIf { .. }
                     | SliceOp::SortUnstable { .. }
                     | SliceOp::SelectNth { .. }

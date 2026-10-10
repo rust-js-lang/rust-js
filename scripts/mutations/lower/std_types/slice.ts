@@ -348,4 +348,12 @@ export const mutations: Mutation[] = [
     replace: "        let size = layout.size.bytes() * 2;\n",
     tests: ["test/corpus.test.ts","-t","sort_unstable_wasm32"],
   },
+  {
+    name: "deque-range-mut-no-handles",
+    breaks: "a deque's `range_mut` of numbers gives the numbers",
+    file: "src/lower/std_types/slice.rs",
+    find: "                if !self.is_boxable(item()) {\n                    return Ok(view);",
+    replace: "                if true {\n                    return Ok(view);",
+    tests: ["test/corpus.test.ts","-t","deque_range_mut"],
+  },
 ];
