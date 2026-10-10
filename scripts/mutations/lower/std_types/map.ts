@@ -99,4 +99,20 @@ export const mutations: Mutation[] = [
     replace: "MapOp::Entry => Expr::array(vec![arg(), arg()]),",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
   },
+  {
+    name: "range-mut-no-handles",
+    breaks: "a B-tree's `range_mut` of numbers gives the numbers",
+    file: "src/lower/std_types/map.rs",
+    find: "        let handles = mutable && self.is_boxable(map.type_at(1));",
+    replace: "        let handles = false;",
+    tests: ["test/corpus.test.ts","-t","btree_range_mut"],
+  },
+  {
+    name: "range-mut-handles-objects",
+    breaks: "a B-tree's `range_mut` of tuples gives handles on them",
+    file: "src/lower/std_types/map.rs",
+    find: "        let handles = mutable && self.is_boxable(map.type_at(1));",
+    replace: "        let handles = mutable;",
+    tests: ["test/corpus.test.ts","-t","btree_range_mut"],
+  },
 ];

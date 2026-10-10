@@ -58,3 +58,30 @@ its keys' `cmp`.**
   no handle, and keep what `take` takes.
 - `docs/std-coverage.txt`: `HashMap` 25 of 33, `HashSet` 24 of 30,
   `BTreeMap` 27 of 31, `BTreeSet` 26 of 27.
+
+## Since
+
+- **A B-tree map's `range_mut` is its `range`, each value of numbers or
+  text a handle on it, as `iter_mut`'s is** (2026-10-10), and a `for` takes
+  a B-tree's range as the array it is, which it refused.
+
+  ```rust
+  for (k, v) in scores.range_mut(2..5) {
+      *v += *k as i32;
+  }
+  ```
+
+  ```js
+  for (const item of $mutEntries(
+    scores,
+    $treeRange(scores, $cmp, false, "BTreeMap", true, 2, true, 5, false),
+  )) {
+    item[1].value = (item[1].value + (item[0] | 0)) | 0;
+  }
+  ```
+
+  The `btree_range_mut` corpus case runs, against native Rust, numbers
+  and strings written in a `for`, a `map`, `last()` and a stepped
+  iterator, tuples written in place, an empty range, and a `for` over a
+  set's range. Mutations give numbers for handles and handles for tuples,
+  and refuse each. `docs/std-coverage.txt`: `BTreeMap` 31 of 31.

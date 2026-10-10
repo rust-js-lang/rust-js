@@ -69,7 +69,10 @@ pub(in crate::lower) enum MapOp {
         last: bool,
         pop: bool,
     },
-    TreeRange,
+    /// A B-tree's `range(r)`, or `range_mut(r)` (`mutable`).
+    TreeRange {
+        mutable: bool,
+    },
     /// A B-tree's `first_entry()` or `last_entry()`: its least or greatest
     /// key's `OccupiedEntry`, `[m, key]` as `entry`'s is, or `None` (ADR
     /// 0345).
@@ -183,8 +186,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         }
         // A B-tree's range of its keys (ADR 0325).
-        if op == MapOp::TreeRange {
-            return self.tree_range(args, span, out);
+        if let MapOp::TreeRange { mutable } = op {
+            return self.tree_range(args, mutable, span, out);
         }
         if op == MapOp::ExtractIf {
             return self.map_extract_if(args, span, out);
@@ -275,7 +278,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = self.items_of(items, args[1], span, out)?;
                 map_ops(self, "$extendMap", vec![m, items, Expr::bool(set)])
             }
-            MapOp::TreeRange | MapOp::ExtractIf => unreachable!("lowered above"),
+            MapOp::TreeRange { .. } | MapOp::ExtractIf => unreachable!("lowered above"),
             MapOp::New { set } => Expr::new_(self.made(set, generic_args), Vec::new()),
             MapOp::From { set } => {
                 let items = arg();
@@ -414,7 +417,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let set = self.is_set(receiver);
         let (m, entries) = match self.is_sorted(receiver) {
             true => {
-                let range = self.tree_range(&args[..2], span, out)?;
+                let range = self.tree_range(&args[..2], false, span, out)?;
                 let js::ExprKind::Call(callee, mut list) = range.kind else {
                     unreachable!("a B-tree's range is `$treeRange`'s")
                 };
@@ -438,7 +441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `m.range(a..b)` of a B-tree: its entries, or items, in the bounds, in
     /// order, by its keys' `cmp` (ADR 0325).
-    fn tree_range(&mut self, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    fn tree_range(&mut self, args: &[ExprId], mutable: bool, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let receiver = self.thir[args[0]].ty.peel_refs();
         let set = self.is_set(receiver);
         let ty::Adt(adt, map) = receiver.kind() else {
@@ -452,6 +455,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let cmp = self.cmp_fn(map.type_at(0), false, span)?;
         let [m, range]: [Expr; 2] = self.operands(&[args[0], args[1]], out)?.try_into().ok().unwrap();
         let parts = self.range_parts(range, kind, out);
+        // `range_mut` of numbers or strings: each value a handle on it, as
+        // `iter_mut`'s is (ADR 0152).
+        let handles = mutable && self.is_boxable(map.type_at(1));
+        let m = match handles && !m.reads_same() {
+            true => self.spill("map", m, out),
+            false => m,
+        };
         let none = Expr::undefined;
         let (start, end, included) = match (kind, parts.as_slice()) {
             (RangeKind::Exclusive, [start, end]) => (Some(start.clone()), Some(end.clone()), false),
@@ -462,10 +472,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => (None, None, false),
         };
         self.runtime.insert(Helper::MapOps);
-        Ok(Expr::call(
+        let range = Expr::call(
             Expr::var("$treeRange"),
             vec![
-                m,
+                m.clone(),
                 cmp,
                 Expr::bool(set),
                 Expr::str(&name),
@@ -475,7 +485,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 end.unwrap_or_else(none),
                 Expr::bool(included),
             ],
-        ))
+        );
+        if !handles {
+            return Ok(range);
+        }
+        self.runtime.insert(Helper::MutEntries);
+        Ok(Expr::call(Expr::var("$mutEntries"), vec![m, range]))
     }
 
     /// The map and the key of `m.entry(k)`, each read more than once.

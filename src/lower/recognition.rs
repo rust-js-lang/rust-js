@@ -443,7 +443,9 @@ impl Std {
             Std::Once(OnceOp::GetMut)
                 | Std::Leak
                 | Std::OptionIterMut
-                | Std::Map(MapOp::EntryGet { mutable: true } | MapOp::VacantInsert)
+                | Std::Map(
+                    MapOp::EntryGet { mutable: true } | MapOp::VacantInsert | MapOp::TreeRange { mutable: true }
+                )
                 | Std::Comb(Comb::ResultIterMut | Comb::ResultAsMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
@@ -1443,7 +1445,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "last_key_value" | "last" if std_map || set => Std::Map(MapOp::TreeEnd { last: true, pop: false }),
             "pop_first" if std_map || set => Std::Map(MapOp::TreeEnd { last: false, pop: true }),
             "pop_last" if std_map || set => Std::Map(MapOp::TreeEnd { last: true, pop: true }),
-            "range" if std_map || set => Std::Map(MapOp::TreeRange),
+            "range" if std_map || set => Std::Map(MapOp::TreeRange { mutable: false }),
+            "range_mut" if std_map => Std::Map(MapOp::TreeRange { mutable: true }),
             // Lazy, as each is asked for (ADR 0344).
             "extract_if" if std_map || set => Std::Map(MapOp::ExtractIf),
             "split_off" if std_map || set => Std::Map(MapOp::TreeSplitOff),
@@ -2861,7 +2864,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 || self.is_str_split(ty))
             // A map's `iter()`, `keys()` and `values()` are arrays too (ADR 0059).
             || ((krate == sym::alloc || krate == sym::std)
-                && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_set::Iter", "btree_set::IntoIter"]
+                && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_map::Range", "btree_map::RangeMut", "btree_set::Iter", "btree_set::IntoIter", "btree_set::Range"]
                     .iter()
                     .any(|name| path == format!("std::collections::{name}")))
             || (krate == sym::std

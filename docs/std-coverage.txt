@@ -189,7 +189,7 @@
 + HashSet::with_capacity
 - HashSet::with_capacity_and_hasher
 - HashSet::with_hasher
-# BTreeMap 30 of 31
+# BTreeMap 31 of 31
 + BTreeMap::append
 + BTreeMap::clear
 + BTreeMap::contains_key
@@ -214,7 +214,7 @@
 + BTreeMap::pop_first
 + BTreeMap::pop_last
 + BTreeMap::range
-- BTreeMap::range_mut
++ BTreeMap::range_mut
 + BTreeMap::remove
 + BTreeMap::remove_entry
 + BTreeMap::retain
