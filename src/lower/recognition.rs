@@ -443,6 +443,7 @@ impl Std {
             Std::Once(OnceOp::GetMut)
                 | Std::Leak
                 | Std::OptionIterMut
+                | Std::Map(MapOp::EntryGet { mutable: true })
                 | Std::Comb(Comb::ResultIterMut | Comb::ResultAsMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
@@ -1279,6 +1280,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // std's own maps, not serde_json's (ADR 0325).
         let std_map = adt("HashMap") || adt("BTreeMap");
         let entry = adt("HashMapEntry") || adt("BTreeEntry");
+        // A map's `OccupiedEntry`, `[m, key]` (ADR 0345).
+        let occupied = self.is_occupied_entry(owner);
         let name = tcx.item_name(def_id);
         // A `Duration`'s: of its nanoseconds (ADR 0188).
         if is_duration_ty(owner) {
@@ -1449,6 +1452,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "keys" if map => Std::Map(MapOp::Iter(Part::Keys)),
             "values" | "values_mut" if map => Std::Map(MapOp::Iter(Part::Values)),
             "entry" if map => Std::Map(MapOp::Entry),
+            "first_entry" | "last_entry" if adt("BTreeMap") => Std::Map(MapOp::EndEntry {
+                last: name.as_str() == "last_entry",
+            }),
+            "key" if occupied => Std::Map(MapOp::EntryKey),
+            "get" | "get_mut" | "into_mut" if occupied => Std::Map(MapOp::EntryGet {
+                mutable: name.as_str() != "get",
+            }),
+            "insert" if occupied => Std::Map(MapOp::EntryInsert),
+            "remove" | "remove_entry" if occupied => Std::Map(MapOp::EntryRemove {
+                entry: name.as_str() == "remove_entry",
+            }),
             "or_insert" if entry => Std::Map(MapOp::OrInsert),
             "or_insert_with" if entry => Std::Map(MapOp::OrInsertWith),
             "or_default" if entry => Std::Map(MapOp::OrDefault),
@@ -3729,6 +3743,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(super) fn is_generic_iter(&self, ty: ty::Ty<'tcx>) -> bool {
         self.bounded_by(ty, sym::Iterator)
+    }
+
+    /// A map's `OccupiedEntry`, `[m, key]` (ADR 0345).
+    pub(super) fn is_occupied_entry(&self, ty: ty::Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
+            && self.tcx.item_name(adt.did()).as_str() == "OccupiedEntry")
     }
 
     /// An `extract_if`'s iterator, a JS one that takes out what it gives as

@@ -75,4 +75,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => Ok(items),",
     tests: ["test/corpus.test.ts","-t","range_into_set"],
   },
+  {
+    name: "entry-get-no-handle",
+    breaks: "an entry's `get_mut` of a number is the number",
+    file: "src/lower/std_types/map.rs",
+    find: "                if mutable && types.get(1).is_some_and(|&value| self.is_boxable(value)) {",
+    replace: "                if false {",
+    tests: ["test/corpus.test.ts","-t","btree_end_entries"],
+  },
 ];

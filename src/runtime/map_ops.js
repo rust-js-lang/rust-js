@@ -134,3 +134,32 @@ function $extendMap(m, items, set) {
     else m.set(item[0], item[1]);
   }
 }
+
+// A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or
+// greatest key's `OccupiedEntry`, `[m, key]`, or `undefined` (ADR 0345).
+function $endEntry(m, cmp, last) {
+  let end;
+  for (const key of m.keys()) {
+    if (end === undefined || (last ? cmp(key, end[1]) > 0 : cmp(key, end[1]) < 0)) end = [m, key];
+  }
+  return end;
+}
+
+// An `OccupiedEntry`'s `get()`, or a handle on what's there (`handle`).
+function $entryGet([m, key], handle) {
+  return handle ? $mutGet(m, key) : m.get(key);
+}
+
+// Its `insert(v)`: what was there.
+function $entryInsert([m, key], value) {
+  const old = m.get(key);
+  m.set(key, value);
+  return old;
+}
+
+// Its `remove()`, or `remove_entry()` (`entry`): what's taken out.
+function $entryRemove([m, key], entry) {
+  const value = m.get(key);
+  m.delete(key);
+  return entry ? [key, value] : value;
+}

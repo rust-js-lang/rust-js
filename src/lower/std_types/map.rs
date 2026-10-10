@@ -70,6 +70,25 @@ pub(in crate::lower) enum MapOp {
         pop: bool,
     },
     TreeRange,
+    /// A B-tree's `first_entry()` or `last_entry()`: its least or greatest
+    /// key's `OccupiedEntry`, `[m, key]` as `entry`'s is, or `None` (ADR
+    /// 0345).
+    EndEntry {
+        last: bool,
+    },
+    /// An `OccupiedEntry`'s `key()`.
+    EntryKey,
+    /// Its `get()`, or `get_mut()` and `into_mut()` (`mutable`): what's at
+    /// its key, a handle on a number or text where it's `mutable`.
+    EntryGet {
+        mutable: bool,
+    },
+    /// Its `insert(v)`: what was there.
+    EntryInsert,
+    /// Its `remove()`, or `remove_entry()` (`entry`): what's taken out.
+    EntryRemove {
+        entry: bool,
+    },
     /// `extract_if(f)`, of a B-tree `extract_if(range, f)`: a JS iterator,
     /// taking out what it gives as it's asked (ADR 0344).
     ExtractIf,
@@ -340,6 +359,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])
             }
             MapOp::Entry => Expr::array(vec![arg(), arg()]),
+            MapOp::EndEntry { last } => {
+                let cmp = self.cmp_fn(types[0], false, span)?;
+                map_ops(self, "$endEntry", vec![arg(), cmp, Expr::bool(last)])
+            }
+            MapOp::EntryKey => Expr::index(arg(), Expr::int(1)),
+            MapOp::EntryGet { mutable } => {
+                let mut list = vec![arg()];
+                if mutable && types.get(1).is_some_and(|&value| self.is_boxable(value)) {
+                    self.runtime.insert(Helper::MutGet);
+                    list.push(Expr::bool(true));
+                }
+                map_ops(self, "$entryGet", list)
+            }
+            MapOp::EntryInsert => map_ops(self, "$entryInsert", vec![arg(), arg()]),
+            MapOp::EntryRemove { entry } => {
+                let mut list = vec![arg()];
+                if entry {
+                    list.push(Expr::bool(true));
+                }
+                map_ops(self, "$entryRemove", list)
+            }
             MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => unreachable!("taken apart above"),
         })
     }

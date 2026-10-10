@@ -1999,6 +1999,35 @@ export function $extendMap(m, items, set) {
   }
 }
 
+// A B-tree's `first_entry()`, or `last_entry()` (`last`): its least or
+// greatest key's `OccupiedEntry`, `[m, key]`, or `undefined` (ADR 0345).
+export function $endEntry(m, cmp, last) {
+  let end;
+  for (const key of m.keys()) {
+    if (end === undefined || (last ? cmp(key, end[1]) > 0 : cmp(key, end[1]) < 0)) end = [m, key];
+  }
+  return end;
+}
+
+// An `OccupiedEntry`'s `get()`, or a handle on what's there (`handle`).
+export function $entryGet([m, key], handle) {
+  return handle ? $mutGet(m, key) : m.get(key);
+}
+
+// Its `insert(v)`: what was there.
+export function $entryInsert([m, key], value) {
+  const old = m.get(key);
+  m.set(key, value);
+  return old;
+}
+
+// Its `remove()`, or `remove_entry()` (`entry`): what's taken out.
+export function $entryRemove([m, key], entry) {
+  const value = m.get(key);
+  m.delete(key);
+  return entry ? [key, value] : value;
+}
+
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
 // (ADR 0327).
 

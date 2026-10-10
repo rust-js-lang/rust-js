@@ -1212,4 +1212,20 @@ export const mutations: Mutation[] = [
     replace: "            \"extract_if\" if adt(\"LinkedList\") => {",
     tests: ["test/corpus.test.ts","-t","extract_if"],
   },
+  {
+    name: "last-entry-first",
+    breaks: "`last_entry` is `first_entry`",
+    file: "src/lower/recognition.rs",
+    find: "                last: name.as_str() == \"last_entry\",",
+    replace: "                last: false,",
+    tests: ["test/corpus.test.ts","-t","btree_end_entries"],
+  },
+  {
+    name: "occupied-entry-unknown",
+    breaks: "an `OccupiedEntry` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            && self.tcx.item_name(adt.did()).as_str() == \"OccupiedEntry\")",
+    replace: "            && self.tcx.item_name(adt.did()).as_str() == \"NotOccupiedEntry\")",
+    tests: ["test/corpus.test.ts","-t","btree_end_entries"],
+  },
 ];
