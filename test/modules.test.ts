@@ -127,6 +127,40 @@ pub fn f() -> u32 {
   expect(top()).toBe(42);
 });
 
+// So is the JS of a module in a `#[path]` directory, `sandpack-rsc/bridge.rs`
+// of `#[path = "sandpack-rsc"] mod sandpack_rsc { mod bridge; }`, which no
+// module path can name.
+test("a module in a #[path] directory has its JS beside its file", async () => {
+  const dir = fixture("path-directory");
+  mkdirSync(join(dir, "sandpack-rsc"));
+  writeFileSync(join(dir, "lib.rs"), `#[path = "sandpack-rsc"]
+pub mod sandpack_rsc {
+    pub mod bridge;
+
+    pub fn one() -> u32 {
+        1
+    }
+}
+
+pub fn top() -> u32 {
+    sandpack_rsc::bridge::f() + sandpack_rsc::one()
+}
+
+pub fn base() -> u32 {
+    40
+}
+`);
+  writeFileSync(join(dir, "sandpack-rsc/bridge.rs"), `pub fn f() -> u32 {
+    crate::base() + 1
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('import { f } from "./sandpack-rsc/bridge.js";');
+  expect(readFileSync(join(dir, "sandpack-rsc/bridge.js"), "utf8")).toContain('import { base } from "../lib.js";');
+  const { top } = await import(join(dir, "lib.js"));
+  expect(top()).toBe(42);
+});
+
 test("methods across modules, in a thread-local, and camelCase", async () => {
   const { fixture, compiler } = await import("./support");
   const { writeFileSync } = await import("node:fs");

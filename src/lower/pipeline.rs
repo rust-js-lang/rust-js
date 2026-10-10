@@ -10,9 +10,10 @@ use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::find_attr;
 use rustc_middle::ty::{self, TyCtxt};
-use rustc_span::def_id::{DefId, LocalModId};
+use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalModId};
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::Arc;
 
 /// Retained functions and their dependencies, grouped for output.
 #[derive(Default)]
@@ -636,7 +637,7 @@ pub fn lower_crate<'tcx>(
                 declarations,
                 runtime: Vec::new(),
                 jsx: pass.jsx.contains(&module),
-                located: find_attr!(tcx, module.to_def_id(), Path(..)),
+                located: located(tcx, module),
             };
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, _), (b, bn, _)| (&paths[a], an).cmp(&(&paths[b], bn)));
@@ -775,5 +776,29 @@ fn declared(statement: &js::Stmt) -> Vec<String> {
         StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.clone()],
         StmtKind::Destructure { pattern, .. } => pattern.names().into_iter().map(str::to_owned).collect(),
         _ => Vec::new(),
+    }
+}
+
+/// Whether a `#[path]` placed `module`'s file (ADR 0273), its own or an
+/// enclosing module's, `sandpack-rsc/bridge.rs` of `#[path = "sandpack-rsc"]
+/// mod sandpack_rsc { mod bridge; }`: where no module path can name it. Not
+/// an inline module's, which is its parent's file.
+fn located(tcx: TyCtxt<'_>, module: LocalModId) -> bool {
+    if module == CRATE_MOD_ID {
+        return false;
+    }
+    let parent = tcx.parent_module_from_def_id(module.to_local_def_id());
+    if Arc::ptr_eq(&module_file(tcx, module), &module_file(tcx, parent)) {
+        return false;
+    }
+    let mut at = module;
+    loop {
+        if find_attr!(tcx, at.to_def_id(), Path(..)) {
+            return true;
+        }
+        if at == CRATE_MOD_ID {
+            return false;
+        }
+        at = tcx.parent_module_from_def_id(at.to_local_def_id());
     }
 }

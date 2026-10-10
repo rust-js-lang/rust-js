@@ -49,3 +49,13 @@ as the compiler placed it.
   the output's directory, where a direct compile writes, not beside a file
   outside it. A Cargo build in source writes it beside its file still, as
   the manifest says it's a `#[path]` module's, `located`.
+- **So is a module in a `#[path]` directory** (2026-10-10):
+  `sandpack-rsc/RscFileBridge.rs` of react.dev's `#[path = "sandpack-rsc"]
+  mod sandpack_rsc { mod RscFileBridge; }` had its JS at
+  `sandpack_rsc/RscFileBridge.js`, where its importer, which names the
+  directory, found nothing. A module of a file of its own whose `#[path]`
+  is its own or an enclosing module's is placed beside its file; an inline
+  module, whose file is its parent's, keeps its module path's place. A
+  module test has a `#[path]` directory's inline module of a function and
+  its file module import the root and each other; mutations place the file
+  module by its module path, and the inline one beside the root's file.
