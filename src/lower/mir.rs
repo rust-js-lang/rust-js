@@ -1554,10 +1554,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Rvalue::BinaryOp(op, operands) => {
                 let (l, r) = &**operands;
-                let ty = l.ty(decls, tcx);
+                let (ty, r_ty) = (l.ty(decls, tcx), r.ty(decls, tcx));
                 let [l, r]: [Value<'tcx>; 2] = self.take_operands(state, &[l, r], out)?.try_into().ok().expect("two");
                 let l = self.value_expr(l, span)?;
-                let r = self.value_expr(r, span)?;
+                // A shift's amount of another type: a number, `Number(n & 63n)`.
+                let r = super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty);
                 match op {
                     BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow => {
                         return Err(self.unsupported(span, "arithmetic checked for overflow, from its MIR"));
@@ -2002,6 +2003,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let ty = arg_tys[0].peel_refs();
             let rhs = self.value_expr(rhs.clone(), span)?;
+            let rhs = super::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);
             let value = if self.is_lang_adt(ty, LangItem::String) && op == BinOp::Add {
                 Expr::bin(Op::Add, place.clone(), rhs)
             } else if super::representation::Num::of(ty).is_some() {
@@ -2060,7 +2062,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));
         }
         if let Some(known) = known {
-            return self.mir_std_call(
+            let value = self.mir_std_call(
                 state,
                 (known, def_id),
                 generic_args,
@@ -2069,7 +2071,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 output,
                 span,
                 out,
-            );
+            )?;
+            // A std iterator THIR's lowering makes an array of, `bytes()`'s:
+            // a JS iterator, which MIR steps.
+            return Ok(match value {
+                Value::Expr(e)
+                    if self.implements_iterator(output)
+                        && self.range_kind(output).is_none()
+                        && !self.is_user_iterator(output)
+                        && !is_js_iterator(&e) =>
+                {
+                    Value::Expr(self.js_iterator(e))
+                }
+                value => value,
+            });
         }
         Err(self.unsupported(
             span,
@@ -2833,4 +2848,19 @@ fn writes_capture(body: &mir::Body<'_>, i: usize) -> bool {
             _ => false,
         }) || matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if captured(destination))
     })
+}
+
+/// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, or a
+/// collection's `values()`, `keys()` or `entries()`.
+fn is_js_iterator(e: &Expr) -> bool {
+    let js::ExprKind::Call(callee, _) = &e.kind else {
+        return false;
+    };
+    match &callee.kind {
+        js::ExprKind::Member(object, name) => {
+            matches!(name.as_str(), "values" | "keys" | "entries")
+                || (name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator"))
+        }
+        _ => false,
+    }
 }

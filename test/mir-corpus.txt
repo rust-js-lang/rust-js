@@ -94,6 +94,7 @@ formatter_queries.rs
 function_values.rs
 generic_as_ref.rs
 generic_associated_types.rs
+generic_bitwise_operators.rs
 generic_borrow.rs
 generic_fmt_traits.rs
 generic_impl_consts.rs
@@ -110,6 +111,7 @@ ilog_zero.rs
 impl_names.rs
 index_out_of_bounds.rs
 int_error_kind.rs
+integer_bits.rs
 integer_families.rs
 iter_flatten.rs
 iterator_stepped_by_hand.rs
@@ -121,9 +123,11 @@ lazy_effects.rs
 leak.rs
 loop_values.rs
 map_collect_drops.rs
+map_entry_match.rs
 map_index_missing.rs
 marker_traits.rs
 match_index.rs
+matrix_chars.rs
 matrix_integers.rs
 moved_closure.rs
 mut_number_args.rs
@@ -146,6 +150,7 @@ operands_before_replace.rs
 option_as_deref.rs
 option_map_drops.rs
 option_rest_pattern.rs
+option_result_mut.rs
 options_handed_on.rs
 or_bindings.rs
 or_pattern_part_moves.rs
@@ -190,6 +195,8 @@ std_function_value_panic.rs
 std_struct_const.rs
 stepped_nested.rs
 str_circumfix.rs
+string_bytes.rs
+string_patterns.rs
 string_pushes.rs
 string_slice_boundary.rs
 string_slice_bounds.rs
@@ -213,5 +220,6 @@ unwrap_string_debug.rs
 unwrap_typed_debug.rs
 user_fmt_traits.rs
 utf8_unwrap_panic.rs
+wrapping.rs
 wrapping_rem_zero.rs
 wrapping_unary.rs

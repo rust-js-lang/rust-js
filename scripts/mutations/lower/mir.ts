@@ -378,4 +378,28 @@ export const mutations: Mutation[] = [
     replace: "                .is_some_and(|pointee| false && !pointee.is_sized(self.tcx, self.typing_env))\n",
     tests: ["test/mir.test.ts","-t","dyn_generic"],
   },
+  {
+    name: "mir-shift-amount-bigint",
+    breaks: "`22i32 >> by` of an `i64` `by` shifts a number by a BigInt",
+    file: "src/lower/mir.rs",
+    find: "super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty)",
+    replace: "{ let _ = r_ty; self.value_expr(r, span)? }",
+    tests: ["test/mir.test.ts","-t","wrapping"],
+  },
+  {
+    name: "mir-assign-shift-amount-bigint",
+    breaks: "`c <<= &3i64` of a `u32` shifts a number by a BigInt",
+    file: "src/lower/mir.rs",
+    find: "            let rhs = super::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","generic_bitwise_operators"],
+  },
+  {
+    name: "mir-std-iterator-array",
+    breaks: "`text.bytes()` is an array MIR steps as an iterator",
+    file: "src/lower/mir.rs",
+    find: "                        && !is_js_iterator(&e) =>\n",
+    replace: "                        && false && !is_js_iterator(&e) =>\n",
+    tests: ["test/mir.test.ts","-t","integer_bits"],
+  },
 ];
