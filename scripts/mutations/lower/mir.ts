@@ -250,4 +250,28 @@ export const mutations: Mutation[] = [
     replace: "                return Err(self.unsupported(span, \"an Rc's\"));\n",
     tests: ["test/mir.test.ts","-t","as_deref_counted"],
   },
+  {
+    name: "mir-copy-shared",
+    breaks: "a `Copy` struct read from a variable is the same JS object, so a change to the copy changes it",
+    file: "src/lower/mir.rs",
+    find: "            Value::Expr(e) if copied => {\n",
+    replace: "            Value::Expr(e) if false && copied => {\n",
+    tests: ["test/mir.test.ts","-t","array_map"],
+  },
+  {
+    name: "mir-drop-uses-unnoted",
+    breaks: "a generic function from MIR isn't given the drop functions it uses, so what it drops isn't",
+    file: "src/lower/mir.rs",
+    find: "        self.note_drop_uses(def_id);\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","arm_temporaries"],
+  },
+  {
+    name: "mir-object-unboxed",
+    breaks: "an object given where a generic `&mut T` goes isn't boxed, so the callee reads `value` of it",
+    file: "src/lower/mir.rs",
+    find: "                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) => object,\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","generic_traits|mut_ref_as_generic|generic_mut_ref"],
+  },
 ];

@@ -1,3 +1,5 @@
+arm_temporaries.rs
+array_map.rs
 array_repeat.rs
 as_deref.rs
 as_deref_counted.rs
@@ -7,6 +9,7 @@ associated_consts.rs
 associated_type_fields.rs
 begin_panic_str.rs
 begin_panic_string.rs
+binding_after_at.rs
 bindings_before_branch.rs
 bit_methods.rs
 bitwise_operators.rs
@@ -32,7 +35,9 @@ destructuring_assignment.rs
 drain_from_past_len.rs
 drop_deref_temporary.rs
 drop_functions.rs
+drop_impl_indirect.rs
 drop_impl_param.rs
+drop_impl_param_call.rs
 drop_on_panic.rs
 drop_operand_panic.rs
 drop_params.rs
@@ -60,7 +65,9 @@ generic_borrow.rs
 generic_fmt_traits.rs
 generic_impl_consts.rs
 generic_into.rs
+generic_mut_ref.rs
 generic_operators.rs
+generic_traits.rs
 guard_statements.rs
 guarded_bindings.rs
 higher_ranked_bound.rs
@@ -84,15 +91,19 @@ marker_traits.rs
 match_index.rs
 mut_number_args.rs
 mut_number_handles.rs
+mut_ref_as_generic.rs
 mut_ref_loop_bounds.rs
+nested_element_writes.rs
 nested_generic_types.rs
 nested_type_chain.rs
 number_methods.rs
 once_cell_reentrant.rs
 opaque_iterators.rs
 option_as_deref.rs
+option_map_drops.rs
 option_rest_pattern.rs
 or_bindings.rs
+or_pattern_part_moves.rs
 overflowing_literals.rs
 panic_display.rs
 parse_error_order.rs
@@ -123,6 +134,7 @@ slice_split_at_panic.rs
 slice_start_past_len.rs
 slice_to_array.rs
 static_fns.rs
+static_mut.rs
 static_mut_shared.rs
 std_errors_boxed.rs
 std_function_value_panic.rs

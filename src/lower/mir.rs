@@ -135,6 +135,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let evidence = self.evidence_params(def_id);
         let (mut params, out) = self.mir_function(mir, None)?;
         params.extend(evidence);
+        // The drops it used, which its callers give it (ADR 0300).
+        self.note_drop_uses(def_id);
         Ok(LoweredFn {
             function: js::Function {
                 name: self.krate.fns[&def_id].name.clone(),
@@ -203,9 +205,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // A `&mut` to a value JS can't change in place: the box its
                 // caller gives, its place the box's `value` (ADR 0074).
-                if let ty::Ref(_, pointee, ty::Mutability::Mut) = mir_body.local_decls[local].ty.kind()
-                    && self.boxed_by_ref(*pointee)
-                {
+                let boxed = match captures {
+                    // A closure's, by what it points at.
+                    Some(_) => matches!(mir_body.local_decls[local].ty.kind(),
+                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.boxed_by_ref(*pointee)),
+                    None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
+                };
+                if boxed {
                     state.refs.insert(local, Expr::member(Expr::var(&name), "value"));
                     state.boxes.insert(name.clone());
                 }
@@ -1001,16 +1007,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn boxed_args(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        def_id: rustc_span::def_id::DefId,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
         values: Vec<Value<'tcx>>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Vec<Expr>> {
+        // What's called, as THIR's `boxed_callee` says: a trait's method
+        // resolved to its impl's, whose parameters say which are boxes, or
+        // the crate's trait's own, a dictionary's; not a `dyn`'s, whose pair
+        // is its `&mut`, nor std's.
+        let fn_id = match self.tcx.trait_of_assoc(def_id) {
+            None => Some(def_id),
+            Some(trait_id) => match self.impl_method(def_id, generic_args)? {
+                Some((method, _)) => Some(method),
+                None if self.is_rust_trait(trait_id) && !matches!(generic_args.type_at(0).kind(), ty::Dynamic(..)) => {
+                    Some(def_id)
+                }
+                None => None,
+            },
+        };
         let mut exprs: Vec<Expr> = Vec::new();
         for (i, value) in values.into_iter().enumerate() {
-            let Value::Ref(place) = value else {
-                exprs.push(self.value_expr(value, span)?);
-                continue;
+            let place = match value {
+                Value::Ref(place) => place,
+                // An object given where a box goes, a generic `&mut T`'s: boxed,
+                // and copied back where it's a place.
+                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) => object,
+                value => {
+                    exprs.push(self.value_expr(value, span)?);
+                    continue;
+                }
             };
             // A box this function was given, given on as it is.
             if let js::ExprKind::Member(boxed, field) = &place.kind
@@ -1046,7 +1072,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let name = self.fresh(&super::camel_case(&base));
             let boxed = Expr::object(vec![Prop::Field("value".into(), place.clone())]);
             out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
-            state.copy_backs.push((place, name.clone()));
+            if fixed_place(&place) {
+                state.copy_backs.push((place, name.clone()));
+            }
             exprs.push(Expr::var(&name));
         }
         Ok(exprs)
@@ -1208,6 +1236,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Values ──────────────────────────────────────────────────────────
 
     fn mir_operand(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        operand: &Operand<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        // A `Copy` value a variable holds, of a type changed in place: a copy
+        // of it, as THIR's `copy_if_needed` makes. A temporary's is its own.
+        let copied = matches!(operand, Operand::Copy(place)
+            if !state.pending.iter().any(|(l, _)| *l == place.local));
+        match self.mir_operand_read(state, operand, out)? {
+            Value::Expr(e) if copied => {
+                let ty = operand.ty(&state.body.local_decls, self.tcx);
+                Ok(Value::Expr(self.copy_if_needed(e, ty)))
+            }
+            value => Ok(value),
+        }
+    }
+
+    fn mir_operand_read(
         &mut self,
         state: &mut State<'_, 'tcx>,
         operand: &Operand<'tcx>,
@@ -1984,14 +2031,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || (super::recognition::operational(tcx, self.krate.foreign, trait_id)
                     && (!gives_ref || self.is_rust_trait(trait_id))))
         {
-            let exprs = self.boxed_args(state, def_id, values.clone(), span, out)?;
+            let exprs = self.boxed_args(state, (def_id, generic_args), values.clone(), span, out)?;
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
                 return Ok(Value::Expr(call));
             }
         }
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
-            let mut exprs = self.boxed_args(state, def_id, values, span, out)?;
+            let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
             exprs.extend(self.evidence_args(def_id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(def_id), exprs);
             return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));

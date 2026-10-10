@@ -28,5 +28,13 @@ for (const name of listed) {
     if ("error" in compiled) throw new Error(compiled.error);
     const run = runJs([node ?? "node"], compiled.js, dir, "mir");
     expect(agree(run, native) ? "agrees" : `ended ${show(run.outcome)}, native Rust ${show(native.outcome)}`).toBe("agrees");
+    // Built as a library too, as the corpus builds it (ADR 0360), but where
+    // a directive says that's refused.
+    if (!/^\/\/@ library-refused:/m.test(source)) {
+      const library = compileJs(file, dir, edition, true, { RUST_JS_MIR: "1" });
+      if ("error" in library) throw new Error(library.error);
+      const libraryRun = runJs([node ?? "node"], library.js, dir, "mir-library");
+      expect(agree(libraryRun, native) ? "agrees" : `as a library, ended ${show(libraryRun.outcome)}`).toBe("agrees");
+    }
   }, 120_000);
 }
