@@ -754,6 +754,49 @@ pub fn most(x: u32) -> bool {
   expect([lib.has("b"), lib.has("c"), lib.changed(), lib.most(4294967295)]).toEqual([true, false, ["z", "a"], true]);
 });
 
+// A guard's binding, which the guard reads in place, gets no `const` its arm
+// never reads, as Next.js's getStaticProps has it: in a library, whose
+// pattern's bindings are `const`s, as another crate may change what's
+// matched (ADR 0100), and in a program.
+test("a binding only a guard reads gets no const", async () => {
+  const dir = fixture("guard-binding");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Params {
+    pub code: String,
+}
+
+pub struct Props {
+    pub code: String,
+}
+
+pub fn pick(params: Option<Params>) -> Option<Props> {
+    match params {
+        Some(Params { code }) if code == "3" => None,
+        Some(Params { code }) if code != "0" => Some(Props { code }),
+        _ => None,
+    }
+}
+
+// One unread, of another only it reads.
+pub fn cascade(params: Params) -> u32 {
+    let code = params.code;
+    let _kept = code;
+    1
+}
+
+// One unread whose making does something, kept.
+pub fn popped(mut items: Vec<u32>) -> usize {
+    let _last = items.pop();
+    items.len()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "manifest.json")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('if (params && params.code === "3") {\n    return;\n  }');
+  expect(js).toContain("export function cascade(params) {\n  return 1;\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.pick({ code: "3" }), lib.pick({ code: "1" }), lib.pick({ code: "0" }), lib.popped([1, 2])]).toEqual([undefined, { code: "1" }, undefined, 1]);
+});
+
 // ADR 0030: a property chain of an option's value ends where it's `None`,
 // `o?.inner.v`, one chain, as `map` does: `(o?.inner).v` would read `.v` of
 // `undefined`.

@@ -3,6 +3,30 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unread-once",
+    breaks: "`const code = params.code; const _kept = code;` drops `_kept` alone, leaving `code`, which only it read",
+    file: "src/prepare.rs",
+    find: "        if !dropped {",
+    replace: "        if true || !dropped {",
+    tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
+  },
+  {
+    name: "unread-effects-dropped",
+    breaks: "`const _last = items.pop();`, unread, is dropped, and the item never popped",
+    file: "src/prepare.rs",
+    find: "                    if !read.contains(name) && !value.has_effects());",
+    replace: "                    if !read.contains(name));",
+    tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
+  },
+  {
+    name: "unread-read-dropped",
+    breaks: "a `const` that's read is dropped too, `{ code: code$1 }` of nothing",
+    file: "src/prepare.rs",
+    find: "                    if !read.contains(name) && !value.has_effects());",
+    replace: "                    if !value.has_effects());",
+    tests: ["test/lowering.test.ts", "-t", "a binding only a guard reads"],
+  },
+  {
     name: "entries-kept",
     breaks: "`Object.fromEntries([[\"/index.html\", code]])` stays a call where it's the object literal `{ \"/index.html\": code }`",
     file: "src/prepare.rs",

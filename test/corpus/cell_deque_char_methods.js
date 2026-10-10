@@ -45,8 +45,6 @@ function main() {
       .value.map((item) => String(item))
       .join(", ")}]`,
   );
-  const lock = { value: 1 };
-  const rw = { value: 2 };
   console.log(`${false} ${false}`);
   const deque = $range(1, 6 + 1);
   console.log(

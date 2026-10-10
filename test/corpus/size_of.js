@@ -8,9 +8,7 @@ function main() {
   console.log("1 4 8 8");
   console.log("4 4 8");
   console.log("10 1 8");
-  const w = { a: 1n, b: 2 };
   console.log("16 2");
-  const numbers = [1, 2, 3];
   console.log("12 2");
 }
 //# sourceMappingURL=case.js.map

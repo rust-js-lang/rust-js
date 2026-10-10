@@ -12,7 +12,6 @@ function greet(err) {
 }
 
 function table(rows) {
-  const stdout = undefined;
   let out;
   for (let row = 0; row < rows; row++) {
     $print(`${Math.imul(row, row) >>> 0} `);
@@ -34,7 +33,6 @@ function main() {
   const pair = [false, ""];
   const boxedStr = "";
   const boxedSlice = [];
-  const marker = undefined;
   console.log(
     `[${text}] [${none.map((item) => String(item)).join(", ")}] [${zeros.map((item) => String(item)).join(", ")}] (${pair[0]}, ${$debugStr(pair[1])}) [${boxedStr}] [${boxedSlice.map((item) => String(item)).join(", ")}] PhantomData<u8>`,
   );

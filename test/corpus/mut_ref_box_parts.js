@@ -60,18 +60,17 @@ function main() {
   n = o$2.value;
   generic({}, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
   let [a, b] = [2, 7];
-  const tmp = n;
   const o$3 = { value: a };
   const p = { value: b };
   const result = pair(o$3, p);
   a = o$3.value;
   b = p.value;
-  const tmp$1 = result;
+  const tmp = result;
   const o$4 = { value: b };
   const p$1 = { value: a };
   const result$1 = pair(o$4, p$1);
   b = o$4.value;
   a = p$1.value;
-  console.log(`${x} ${s} ${n == null ? "None" : `Some(${n})`} ${tmp$1} ${result$1}`);
+  console.log(`${x} ${s} ${n == null ? "None" : `Some(${n})`} ${tmp} ${result$1}`);
 }
 //# sourceMappingURL=case.js.map

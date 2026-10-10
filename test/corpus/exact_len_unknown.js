@@ -11,7 +11,6 @@ function foreverIterator_next(self) {
 }
 
 function main() {
-  const it = undefined;
   console.log(`${$exactLen([0, undefined])}`);
 }
 //# sourceMappingURL=case.js.map

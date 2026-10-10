@@ -78,15 +78,6 @@ function main() {
       console.log(`${once()}`);
       const d = ["d"];
       const d2 = ["d2"];
-      const _unused = () => {
-        try {
-          noisyDrop_drop(d);
-          const _kept = d2;
-          return 3;
-        } finally {
-          noisyDrop_drop(d2);
-        }
-      };
       try {
         console.log("made");
       } finally {

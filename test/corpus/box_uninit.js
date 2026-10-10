@@ -11,7 +11,6 @@ function pointDebug_fmt(point) {
 }
 
 function main() {
-  const slot = undefined;
   const five = 5;
   console.log(`${five}`);
   let point;

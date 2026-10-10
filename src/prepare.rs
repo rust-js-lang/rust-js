@@ -37,6 +37,7 @@ fn prepared(function: &mut js::Function) {
     });
     constants(&mut function.body);
     tested_constants(&mut function.body);
+    unread(&mut function.body);
     js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
     js::each_block_mut(&mut function.body, &mut |stmts| {
         for stmt in stmts {
@@ -361,6 +362,30 @@ fn constants(body: &mut Vec<Stmt>) {
             }
         }
     });
+}
+
+/// A `const` nothing reads, of a value whose making does nothing, is no
+/// statement: a guard's binding, which the guard reads in place, in an arm
+/// that never reads it, `const code = params.code;`.
+fn unread(body: &mut Vec<Stmt>) {
+    loop {
+        let mut read = HashSet::new();
+        js::visit_stmts(body, &mut |name| {
+            read.insert(name.to_string());
+        });
+        let mut dropped = false;
+        js::each_block_mut(body, &mut |stmts| {
+            stmts.retain(|s| {
+                let unread = matches!(&s.kind, StmtKind::Const(name, value)
+                    if !read.contains(name) && !value.has_effects());
+                dropped |= unread;
+                !unread
+            });
+        });
+        if !dropped {
+            return;
+        }
+    }
 }
 
 /// The variable a place is, `x`: `x.a = 1` sets none.
