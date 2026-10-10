@@ -1,3 +1,4 @@
+//@ library-refused: another crate may share
 // A map drops its values as Rust's does (ADR 0321): what `insert` replaces
 // and `remove` takes are the caller's, and the map drops the rest, a
 // `BTreeMap` in its keys' order.

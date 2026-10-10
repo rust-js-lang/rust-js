@@ -1,3 +1,4 @@
+//@ library-refused: a value with a destructor made before what may panic or leave early
 // A bound is found however it's written (ADR 0049): `<I as Int>::T: NonZero`
 // is `J: NonZero` of an `I: Int<T = J>`, a supertrait's arguments are what
 // they normalize to, `T: ToString` is a dictionary of its own, and a

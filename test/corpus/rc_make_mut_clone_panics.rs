@@ -1,3 +1,4 @@
+//@ library-refused: another crate may share
 //@ run-fail: clone failed
 // A `make_mut` whose clone panics leaves the `Rc` shared, its count as it
 // was, as std's does: what drops as the panic unwinds sees every owner.

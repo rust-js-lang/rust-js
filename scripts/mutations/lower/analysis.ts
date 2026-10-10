@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "generic-impl-const-bodies-uncollected",
     breaks: "a generic impl's constant of its parameters, `Wrapping(T::ZERO)`, is an error",
     file: "src/lower/analysis.rs",
-    find: "            DefKind::AssocConst { .. } => tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| {",
-    replace: "            DefKind::AssocConst { .. } => tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| false && {",
+    find: "                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| {",
+    replace: "                tcx.trait_impl_of_assoc(def_id.to_def_id()).is_some_and(|imp| false && {",
     tests: ["test/corpus.test.ts", "-t", "generic_impl_consts"],
   },
   {
@@ -90,5 +90,13 @@ export const mutations: Mutation[] = [
     replace: "                .and_then(|value| super::const_js(tcx, value))\n                .is_none_or(|_| true)\n            {\n                coded.push(local);",
     tests: ["test/corpus.test.ts","-t","const_blocks_and_let_guards"],
     snapshots: true,
+  },
+  {
+    name: "trait-default-const-unread",
+    breaks: "a trait's default constant's initializer isn't read, so a library's dictionary can't copy it in",
+    file: "src/lower/analysis.rs",
+    find: "                }) || (tcx.trait_of_assoc(def_id.to_def_id()).is_some()\n                    && tcx.hir_maybe_body_owned_by(def_id).is_some())",
+    replace: "                })",
+    tests: ["test/lowering.test.ts", "-t", "default constant of Self"],
   },
 ];

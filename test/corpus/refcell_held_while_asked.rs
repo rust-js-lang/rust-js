@@ -1,3 +1,4 @@
+//@ library-refused: another crate may share
 // A borrow is held while code that can ask whether its cell is borrowed
 // runs, as std holds it (ADR 0328): a temporary's `Drop`, an item's
 // `Clone` a std method calls, a closure, and a cell's own `clone`, `==` and

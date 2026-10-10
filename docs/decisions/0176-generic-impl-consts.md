@@ -45,3 +45,13 @@ get ZERO() {
   code, with native Rust.
 - **It's the JS a person writes:** the value, worked out from the
   parameters' own, where it's asked for.
+
+## Amendment: a trait's default, copied into the impl
+
+A trait's default constant of `Self`, `const B: u32 = Self::A + 1`, that
+rustc can't compute for a generic impl is its initializer copied into the
+impl, as a default method is (ADR 0049), `Self` the impl's type: a getter
+of the dictionary. In a library every trait default is, never computed,
+as a consumer may never read it and rustc reports one it can't compute,
+`360 / Self::A` of 0, only where it's read; one that's a literal is the
+field, `NAME: "shape"`.

@@ -1390,9 +1390,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A generic impl's constant of its parameters (ADR 0176): its initializer,
     /// `() => [TConstZero.ZERO]`, lowered in its dictionary, which has the
     /// impl's evidence.
-    /// The impl's own, `id`; a trait's default, of `Self`, isn't yet.
-    fn impl_const_getter(&mut self, id: Option<DefId>, span: Span) -> R<Expr> {
-        let id = id.ok_or_else(|| self.unsupported(span, "a generic impl's default constant of its parameters"))?;
+    /// The impl's own, `id`, or the trait's default.
+    fn impl_const_getter(&mut self, id: DefId, span: Span) -> R<Expr> {
         let body = id
             .as_local()
             .and_then(|local| self.krate.closures.get(&local).copied())
@@ -1900,14 +1899,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !self.krate.library && !self.krate.generic_consts.contains(&item.def_id) {
                     continue;
                 }
-                let Some(value) = eval_const(self.tcx, self.typing_env, item.def_id, tr.args, span)
-                    .and_then(|value| const_js(self.tcx, value))
-                else {
+                let own = self.tcx.impl_item_implementor_ids(id).get(&item.def_id).copied();
+                // A library's of a trait's default isn't computed: a consumer
+                // may never read it, and rustc reports one it can't compute,
+                // `360 / Self::SIDES` of 0, only where it's read (ADR 0176).
+                let evaluated = match (self.krate.library, own) {
+                    (true, None) => None,
+                    _ => eval_const(self.tcx, self.typing_env, item.def_id, tr.args, span),
+                };
+                let Some(value) = evaluated.and_then(|value| const_js(self.tcx, value)) else {
                     // Of its parameters, `Wrapping(T::ZERO)`: its initializer, read
-                    // each time, as a constant is, of the impl's evidence (ADR 0176).
-                    let own = self.tcx.impl_item_implementor_ids(id).get(&item.def_id).copied();
-                    let getter = self.impl_const_getter(own, span)?;
-                    props.push(Prop::Getter(bindings::fn_name(self.tcx, item.def_id), getter));
+                    // each time, as a constant is, of the impl's evidence (ADR 0176);
+                    // a trait's default's, of the dictionary's.
+                    let getter = match own {
+                        Some(own) => self.impl_const_getter(own, span)?,
+                        // The trait's default, copied into the impl as a default
+                        // method is, `Self` the impl's type (ADR 0049).
+                        None => self.default_method(item.def_id, tr.args)?,
+                    };
+                    let name = bindings::fn_name(self.tcx, item.def_id);
+                    // A literal, `"shape"`, is the value itself: nothing to compute.
+                    let literal = match &getter.kind {
+                        js::ExprKind::Arrow(params, body) if params.is_empty() => match body.as_slice() {
+                            [
+                                js::Stmt {
+                                    kind: StmtKind::Return(Some(value)),
+                                    ..
+                                },
+                            ] if value.is_constant() => Some(value.clone()),
+                            _ => None,
+                        },
+                        _ => None,
+                    };
+                    props.push(match literal {
+                        Some(value) => Prop::Field(name, value),
+                        None => Prop::Getter(name, getter),
+                    });
                     continue;
                 };
                 let ty = self
@@ -2292,7 +2319,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             const_names.push(name);
         }
         let outer_consts = std::mem::replace(&mut self.given.const_params, consts);
-        let body = self.krate.bodies[&id];
+        // A method's, or a constant's initializer, a trait's default (ADR 0176).
+        let body = match self.krate.bodies.get(&id) {
+            Some(body) => *body,
+            None => id
+                .as_local()
+                .and_then(|local| self.krate.closures.get(&local).copied())
+                .ok_or_else(|| self.unsupported(span, "a trait's default of another crate"))?,
+        };
         let nested = super::Nested::Default {
             evidence: specialized,
             self_args: args,
@@ -2302,7 +2336,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let enclosing = self.enter_body(body, id, nested)?;
         let mut rest = Vec::new();
-        let signature = self.lower_signature(id, &body.thir.params.raw, body.expr, &mut rest);
+        let signature = match self.tcx.def_kind(id) {
+            // A constant's initializer: of nothing, its value given back.
+            DefKind::AssocConst { .. } => self.expr(body.expr, &mut rest).map(|value| {
+                rest.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
+                (Vec::new(), false)
+            }),
+            _ => self.lower_signature(id, &body.thir.params.raw, body.expr, &mut rest),
+        };
         self.given.const_params = outer_consts;
         let (mut params, is_async) = signature?;
         params.extend(const_names.into_iter().map(Into::into));

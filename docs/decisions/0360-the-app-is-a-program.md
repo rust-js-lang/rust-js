@@ -36,3 +36,13 @@ Cargo builds a crate again when it changes.**
   and the whole workspace: program, library, program, library.
 - The react.dev port: one line, `formatStr(consoleData.data)`, as react.dev
   writes it, where a library copied the array.
+
+## Amendment: the corpus as libraries
+
+Each corpus program is compiled as a library too and run against native
+Rust. What a library refuses that a program doesn't is its directive,
+`//@ library-refused: <text>`, asserted, and an error once it compiles:
+seven counted `Rc`s another crate may share (ADR 0320), and two values
+with destructors. A trait's default constant a library computed where no
+consumer reads it, an error rustc never gave, is now its initializer
+(ADR 0176).

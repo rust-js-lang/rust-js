@@ -322,6 +322,55 @@ pub fn all(flags: &[bool]) -> Vec<i8> {
     .toEqual([1, 0, 1n, 1, 233, 128512n, [1, 0]]);
 });
 
+// A trait's default constant of `Self`, in a generic impl's dictionary, is
+// its initializer copied into the impl, as a default method is (ADR 0176):
+// read on each use, `Self` the impl's type. In a library, every one is,
+// never computed where no consumer reads it, as rustc computes one only
+// where it's read: `Wrap`'s would divide by zero.
+test("a trait's default constant of Self is its initializer, copied into the impl", async () => {
+  const dir = fixture("default-const-of-self");
+  const source = `pub trait K {
+    const A: u32;
+    const B: u32 = Self::A + 1;
+    const PER: u32 = 360 / Self::A;
+    const NAME: &'static str = "k";
+}
+
+pub struct W<T>(pub T);
+
+impl<T: K> K for W<T> {
+    const A: u32 = T::A;
+}
+
+impl K for u8 {
+    const A: u32 = 1;
+}
+
+pub struct Zero;
+
+impl K for Zero {
+    const A: u32 = 0;
+}
+
+fn b<S: K>() -> u32 {
+    S::B
+}
+
+pub fn f() -> u32 {
+    b::<W<u8>>()
+}
+`;
+  writeFileSync(join(dir, "lib.rs"), source);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  expect((await import(join(dir, "lib.js"))).f()).toBe(2);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "library", "lib.js"), "--library", "--manifest", join(dir, "library", "manifest.json")]);
+  const library = readFileSync(join(dir, "library", "lib.js"), "utf8");
+  expect(library).toContain("get PER() {");
+  // A literal is the value itself.
+  expect(library).toContain('NAME: "k",');
+  expect((await import(join(dir, "library", "lib.js"))).f()).toBe(2);
+});
+
 // A struct updated from one it owns, `..file`, is that one spread, then the
 // fields named, as a reference's is (ADR 0250): `{ ...code, hidden: true }`,
 // as react.dev's RSC template hides its files. One of a type changed in

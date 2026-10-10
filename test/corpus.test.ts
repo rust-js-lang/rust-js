@@ -39,14 +39,18 @@ type Expect =
   | { kind: "ignore-rust-js"; reason: string };
 
 /** What a case's directives say, or the problems with them. */
-function directives(source: string): (Expect & { edition: string; native: "host" | "wasm32" }) | string {
+function directives(source: string): (Expect & { edition: string; native: "host" | "wasm32"; libraryRefused?: string }) | string {
   const found: Expect[] = [];
   let edition = "2024";
   let native: "host" | "wasm32" = "host";
+  // What a library can't do that a program can, and rust-js refuses it of
+  // one built as a library (ADR 0360): the refusal's text.
+  let libraryRefused: string | undefined;
   for (const [, line] of source.matchAll(/^\/\/@(.*)$/gm)) {
     const [, name, value] = /^ ([a-z-]+)(?:: (.+))?$/.exec(line) ?? [];
     if (name === "edition" && value && ["2015", "2018", "2021", "2024"].includes(value)) edition = value;
     else if (name === "native" && value === "wasm32") native = "wasm32";
+    else if (name === "library-refused" && value) libraryRefused = value;
     else if (name === "run-pass" && value === undefined) found.push({ kind: "run-pass" });
     else if (name === "run-fail" && value) found.push({ kind: "run-fail", message: value.replaceAll("\\n", "\n") });
     else if (name === "compile-fail" && value) found.push({ kind: "compile-fail", text: value });
@@ -56,7 +60,7 @@ function directives(source: string): (Expect & { edition: string; native: "host"
   if (found.length > 1) return "more than one directive";
   const expect = found[0] ?? { kind: "run-pass" };
   if (native === "wasm32" && expect.kind !== "run-pass") return "`native: wasm32` aborts on a panic: only of a case that runs to its end";
-  return { ...expect, edition, native };
+  return { ...expect, edition, native, libraryRefused };
 }
 
 
@@ -128,6 +132,20 @@ async function check(file: string): Promise<string[]> {
     if (typeof run.outcome === "string" || !same(run.outcome, native.outcome as Outcome)) {
       problems.push(`${name} ended ${show(run.outcome)}, native Rust ${show(native.outcome)}`);
     }
+  }
+  // Built as a library, as a crate another crate uses is (ADR 0360): it
+  // does what native Rust does too, or it's refused, as its directive says.
+  const library = compileJs(file, dir, want.edition, true);
+  if ("error" in library) {
+    if (!want.libraryRefused) problems.push(`rust-js can't compile it as a library:\n${library.error}`);
+    else if (library.kind === "crashed" || !library.error.includes(want.libraryRefused)) {
+      problems.push(`as a library, rust-js doesn't refuse it with \`${want.libraryRefused}\`:\n${library.error}`);
+    }
+  } else if (want.libraryRefused) {
+    problems.push(`it compiles as a library now: remove \`library-refused: ${want.libraryRefused}\``);
+  } else {
+    const run = runJs([node ?? "node"], library.js, dir, "library");
+    if (!agree(run, native)) problems.push(`as a library, it ended ${show(run.outcome)}, native Rust ${show(native.outcome)}, or printed otherwise`);
   }
   return problems;
 }

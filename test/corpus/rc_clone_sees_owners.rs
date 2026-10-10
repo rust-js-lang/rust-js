@@ -1,3 +1,4 @@
+//@ library-refused: another crate may share
 // `make_mut` and `unwrap_or_clone` of a shared `Rc` clone what it points at
 // while it's still shared: the clone sees every owner, as std's does, and
 // then drop the `Rc`, the last of which drops what it points at.

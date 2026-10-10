@@ -1,3 +1,4 @@
+//@ library-refused: another crate may share
 // Counted `Rc`s and `Arc`s where other code meets them (ADR 0320): a value
 // with a destructor dropped by the last one, generic code, which counts
 // every `Rc`, traits, loops, `new_cyclic`, and `make_mut` of a field.
