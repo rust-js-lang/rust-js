@@ -3572,3 +3572,28 @@ pub fn hi() -> String {
   expect([lib.unescaped(undefined), lib.unescaped(""), lib.unescaped("%")]).toEqual([true, true, false]);
   expect([lib.joined([1, 2]), lib.shifted([1, 2, 3]), lib.drained([1, 2, 3]), lib.both([1], [2, 3]), lib.hi()]).toEqual([" 1 2", " 2 3", 6, [1, 2, 3], "Ada"]);
 });
+
+// `unwrap_or_default()` of a call reads the call once, `get(n) ?? ""`, as
+// `unwrap_or` does, where it was kept in a `const option` first. A boxed
+// `Some`, which `??` can't read, is still kept first.
+test("unwrap_or_default of a call is its value or the default", async () => {
+  const dir = fixture("unwrap-or-default");
+  writeFileSync(join(dir, "lib.rs"), `pub fn get(n: u32) -> Option<String> {
+    if n > 0 { Some(n.to_string()) } else { None }
+}
+
+pub fn shown(n: u32) -> String {
+    get(n).unwrap_or_default()
+}
+
+pub fn nested(n: u32) -> Option<u32> {
+    let inner = if n > 1 { Some(Some(n)) } else if n > 0 { Some(None) } else { None };
+    inner.map(|x| x).unwrap_or_default()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('export function shown(n) {\n  return get(n) ?? "";\n}');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shown(3), lib.shown(0), lib.nested(2), lib.nested(1), lib.nested(0)]).toEqual(["3", "", 2, undefined, undefined]);
+});

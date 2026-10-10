@@ -3,6 +3,22 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "unwrap-or-default-spilled",
+    breaks: "`get(n).unwrap_or_default()` keeps the call in a `const option` before its `??`",
+    file: "src/lower/combinators.rs",
+    find: "        if comb == Comb::UnwrapOrDefault && !boxed {",
+    replace: "        if false && comb == Comb::UnwrapOrDefault && !boxed {",
+    tests: ["test/lowering.test.ts", "-t", "unwrap_or_default of a call"],
+  },
+  {
+    name: "unwrap-or-default-boxed-coalesced",
+    breaks: "a boxed `Some(None)`'s `unwrap_or_default()` is `??`, which gives the box",
+    file: "src/lower/combinators.rs",
+    find: "        if comb == Comb::UnwrapOrDefault && !boxed {",
+    replace: "        if comb == Comb::UnwrapOrDefault {",
+    tests: ["test/lowering.test.ts", "-t", "unwrap_or_default of a call"],
+  },
+  {
     name: "contains-by-identity",
     breaks: "`refs.contains(&&mut 2)` is `includes`, which compares the cells by identity",
     file: "src/lower/combinators.rs",

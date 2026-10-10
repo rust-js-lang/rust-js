@@ -604,6 +604,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return Ok(Expr::bin(Op::Or, text, other));
         }
+        // A `Some` not boxed is read once by `??`, and the default made only
+        // where it's `None`, as Rust makes it: `get(n) ?? ""`.
+        if comb == Comb::UnwrapOrDefault && !boxed {
+            let inner = self.option_of(subject_ty).expect("an `Option`");
+            let fallback = self.default_value(inner, span)?;
+            return Ok(Expr::bin(Op::Coalesce, subject, fallback));
+        }
         // The subject is read more than once.
         let spilled_at = (!subject.reads_same()).then_some(out.len());
         let subject = if subject.reads_same() {
@@ -652,13 +659,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Expr::bin(Op::Coalesce, subject, fallback),
                 }
             }
+            // A boxed `Some`'s; one not boxed is `??`, above.
             Comb::UnwrapOrDefault => {
                 let inner = self.option_of(subject_ty).expect("an `Option`");
                 let fallback = self.default_value(inner, span)?;
-                match boxed {
-                    true => Expr::cond(some, value, fallback),
-                    false => Expr::bin(Op::Coalesce, subject, fallback),
-                }
+                Expr::cond(some, value, fallback)
             }
             // A fallback with a destructor, unused, is dropped once `f` has
             // run, or thrown, as Rust drops an argument (ADR 0179).
