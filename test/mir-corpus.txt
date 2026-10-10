@@ -49,6 +49,8 @@ float_normal.rs
 folded_call_panic_drops.rs
 format_args_order.rs
 formatter_asked.rs
+generic_borrow.rs
+generic_fmt_traits.rs
 generic_impl_consts.rs
 generic_into.rs
 generic_operators.rs
@@ -86,6 +88,7 @@ parse_error_order.rs
 path_text.rs
 pretty_debug_derived.rs
 question_early_returns.rs
+radix_negative.rs
 radix_out_of_range.rs
 range_searches.rs
 refcell_borrow_while_mut.rs

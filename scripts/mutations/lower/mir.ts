@@ -178,4 +178,20 @@ export const mutations: Mutation[] = [
     replace: "                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, false, span, out)?\n",
     tests: ["test/mir.test.ts","-t","iter_flatten"],
   },
+  {
+    name: "mir-radix-argument-unseen",
+    breaks: "a `{:x}` argument from MIR isn't one `format_args!` shows by its spec",
+    file: "src/lower/mir.rs",
+    find: "            Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
+    replace: "            Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
+    tests: ["test/mir.test.ts","-t","radix_negative"],
+  },
+  {
+    name: "mir-sort-unsorted",
+    breaks: "`v.sort()` from MIR leaves the items as they were",
+    file: "src/lower/mir.rs",
+    find: "                self.sort_values(key, items, arg_tys[0], generic_args, span, out)?\n",
+    replace: "                items\n",
+    tests: ["test/mir.test.ts","-t","generic_borrow"],
+  },
 ];

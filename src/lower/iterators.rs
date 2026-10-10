@@ -1148,10 +1148,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
             Std::Fuse => items,
+            Std::Sort => self.sort_values(None, items, receiver_ty, generic_args, span, out)?,
+            Std::SortByKey => self.sort_values(Some(next()), items, receiver_ty, generic_args, span, out)?,
+            _ => unreachable!("not an iterator's method"),
+        })
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// `v.sort()`, or `v.sort_by_key(key)`: in place (ADR 0036), of the items'
+    /// value. JS's `sort()` compares as strings: right for `bool`s, and
+    /// numbers need `a - b`, strings `$cmp`, by code point (ADR 0183). What
+    /// THIR and MIR both lower it to (ADR 0364).
+    pub(in crate::lower) fn sort_values(
+        &mut self,
+        key: Option<Expr>,
+        items: Expr,
+        receiver_ty: ty::Ty<'tcx>,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
+        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        Ok(match key {
             // Sorting, in place (ADR 0036). JS's `sort()` compares as strings:
             // right for `bool`s, and numbers need `a - b`, strings `$cmp`, by
             // code point (ADR 0183).
-            Std::Sort => {
+            None => {
                 let elem = match receiver_ty.peel_refs().kind() {
                     ty::Slice(t) | ty::Array(t, _) => *t,
                     _ => return Err(self.unsupported(span, "sorting this")),
@@ -1171,8 +1195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     method(items, "sort", vec![self.cmp_fn(elem, false, span)?])
                 }
             }
-            Std::SortByKey => {
-                let key = next();
+            Some(key) => {
                 let key = if matches!(key.kind, js::ExprKind::Var(_)) {
                     key
                 } else {
@@ -1195,7 +1218,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = Expr::arrow(vec!["a".into(), "b".into()], body);
                 method(items, "sort", vec![f])
             }
-            _ => unreachable!("not an iterator's method"),
         })
     }
 }

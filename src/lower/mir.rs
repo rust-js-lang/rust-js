@@ -1977,8 +1977,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = values.into_iter();
         Ok(Value::Expr(match known {
             // `format_args!`'s parts, kept until `Arguments::new` shows them.
-            Std::FmtDisplay | Std::FmtDebug => {
-                let ty = first_ty().expect("a type argument");
+            Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {
+                // `{:x}`'s and the like, which `format_value` writes by its spec.
+                let ty = match known {
+                    Std::FmtUsize => self.tcx.types.usize,
+                    _ => first_ty().expect("a type argument"),
+                };
                 let value = self.value_expr(values.next().expect("an argument"), span)?;
                 return Ok(Value::Fmt(known, ty, value));
             }
@@ -2104,6 +2108,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => it,
                 };
                 self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
+            }
+            // `v.sort()`, `v.sort_by_key(key)`: in place, THIR's.
+            Std::Sort | Std::SortByKey => {
+                let items = self.value_expr(values.next().expect("the items"), span)?;
+                let key = match known {
+                    Std::SortByKey => Some(self.value_expr(values.next().expect("the key"), span)?),
+                    _ => None,
+                };
+                self.sort_values(key, items, arg_tys[0], generic_args, span, out)?
             }
             // A string's or a slice's method, but one of a range or a part of
             // it, which THIR lowers from its place.
