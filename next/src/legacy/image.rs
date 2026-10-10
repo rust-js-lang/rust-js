@@ -4,6 +4,9 @@
 
 use react::JSX;
 
+/// `next/legacy/image`'s types, `next/image`'s.
+pub use crate::image::{ImageLoader, ImageLoaderProps, StaticImageData};
+
 /// `<Image src="/photo.jpg" layout={Some("fill")} objectFit={Some("cover")} alt={Some("..")} {..Default::default()} />`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/legacy/image#default")]
 pub fn Image(props: ImageProps<'_>) -> JSX::Element {

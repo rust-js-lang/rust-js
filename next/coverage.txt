@@ -1,5 +1,5 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 91 of 2093 (4.3%)
+# exports: 100 of 2093 (4.8%)
 # next 4 of 42
 - type next#AdapterOutput
 - next#default
@@ -2037,30 +2037,30 @@
 # next/form 2 of 2
 + next/form#default
 + type next/form#FormProps
-# next/head 1 of 2
+# next/head 2 of 2
 + next/head#default
-- next/head#defaultHead
++ next/head#defaultHead
 # next/headers 3 of 3
 + next/headers#cookies
 + next/headers#draftMode
 + next/headers#headers
-# next/image 2 of 6
+# next/image 6 of 6
 + next/image#default
-- next/image#getImageProps
-- type next/image#ImageLoader
-- type next/image#ImageLoaderProps
++ next/image#getImageProps
++ type next/image#ImageLoader
++ type next/image#ImageLoaderProps
 + type next/image#ImageProps
-- type next/image#StaticImageData
-# next/legacy/image 2 of 5
++ type next/image#StaticImageData
+# next/legacy/image 5 of 5
 + next/legacy/image#default
-- type next/legacy/image#ImageLoader
-- type next/legacy/image#ImageLoaderProps
++ type next/legacy/image#ImageLoader
++ type next/legacy/image#ImageLoaderProps
 + type next/legacy/image#ImageProps
-- type next/legacy/image#StaticImageData
-# next/link 2 of 3
++ type next/legacy/image#StaticImageData
+# next/link 3 of 3
 + next/link#default
 + type next/link#LinkProps
-- next/link#useLinkStatus
++ next/link#useLinkStatus
 # next/navigation 17 of 17
 + next/navigation#forbidden
 + next/navigation#notFound

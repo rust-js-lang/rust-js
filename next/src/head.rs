@@ -13,3 +13,11 @@ pub fn Head<C: ReactNode>(props: HeadProps<C>) -> JSX::Element {
 pub struct HeadProps<C> {
     pub children: C,
 }
+
+/// What Next.js puts in every page's `<head>` itself, as `defaultHead()`:
+/// its `<meta charSet>` and viewport. The Pages Router's: the App Router's
+/// `next/head` is Next.js's no-op, which has none.
+#[cfg_attr(rust_js, rust_js::link_name = "next/head#defaultHead")]
+pub fn default_head() -> Vec<JSX::Element> {
+    unreachable!()
+}

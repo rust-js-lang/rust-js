@@ -26,6 +26,9 @@ pub fn About() -> JSX::Element {
             <HomeLink className="home" {..Default::default()} />
             <Script id={Some("inline")}>{"window.inlined = true;"}</Script>
             <Loaded />
+            <Link href="/">
+                <crate::linked::Pictured />
+            </Link>
         </main>
     }
 }
@@ -80,6 +83,7 @@ function app(name: string): string {
     .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\nmod counter;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
+  cpSync(join(dir, "public/next.svg"), join(dir, "app/logo.svg"));
   writeFileSync(join(dir, "app/later.rs"), `#![allow(non_snake_case)]
 js::directive!("use client");
 
@@ -302,6 +306,11 @@ pub fn Code(CodeProps { code }: CodeProps) -> JSX::Element {
     jsx! { <p>{"Code "}{code}</p> }
 }
 
+// What Next.js puts in a Pages Router page's head, next/head's.
+pub fn heads() -> usize {
+    next::head::default_head().len()
+}
+
 js::export_default!(Code);
 
 pub async fn getStaticProps(GetStaticPropsContext { params, .. }: GetStaticPropsContext<Params>) -> GetStaticPropsResult<CodeProps> {
@@ -434,6 +443,25 @@ thread_local! {
     );
 }
 
+// next/image's image a module imports, its props for a <picture>, and a
+// link's status, as next/link gives it to what it holds.
+unsafe extern "Rust" {
+    #[link_name = "./logo.svg#default"]
+    safe static LOGO: next::image::StaticImageData;
+}
+
+pub fn Pictured() -> JSX::Element {
+    let next::image::ImageResult { props } = next::image::get_image_props(next::image::ImageProps { src: "/next.svg", alt: "Next.js", width: Some(90), height: Some(18), ..Default::default() });
+    let pending = next::link::use_link_status().pending;
+    jsx! {
+        <picture>
+            <img {...props} />
+            <next::image::Image src={&LOGO} alt="Logo" placeholder={Some("blur")} />
+            <p>{pending}</p>
+        </picture>
+    }
+}
+
 pub fn Location() -> JSX::Element {
     jsx! { <Located prefix="at " /> }
 }
@@ -500,6 +528,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, "app/page.jsx"), "utf8")).toContain("export default Home;");
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('import Link from "next/link";');
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Link href="/" ref={anchor} title="Home" className={classes(true)} passHref>\n      {label(true)}');
+  expect(readFileSync(join(dir, "pages/codes/[code].jsx"), "utf8")).toContain("return defaultHead().length;");
   const routePath = readFileSync(join(dir, "app/route_path.js"), "utf8");
   expect(routePath.includes("return useRouter().asPath;")).toBe(true);
   expect([routePath.includes('import Router, { useRouter } from "next/router";'), routePath.includes("Router.push(url);")]).toEqual([true, true]);
@@ -552,6 +581,13 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(aboutJsx).toContain('export const Loaded = dynamic(() => import("../later.jsx"));');
   expect(aboutHtml).toContain("Loaded later");
   expect(linkedJsx).toContain('export const Browsed = dynamic(() => import("./later.jsx"), {\n  loading: () => <p>Loading</p>,\n  ssr: false,\n});');
+  // next/image's static import and props, next/link's status, next/head's own.
+  expect(linkedJsx).toContain('import LOGO from "./logo.svg";');
+  expect(aboutHtml).toMatch(/<img alt="Logo"[^>]* src="\/_next\/static\/media\/logo\.[^"]+\.svg"/);
+  expect(aboutHtml).toContain('alt="Next.js"');
+  expect(linkedJsx).toContain('const { props } = getImageProps({ src: "/next.svg", alt: "Next.js", width: 90, height: 18 });');
+  expect(linkedJsx).toContain('<img {...props} />\n      <Image src={LOGO} alt="Logo" placeholder="blur" />');
+  expect(linkedJsx).toContain("const pending = useLinkStatus().pending;");
   // next/navigation.
   expect(linkedJsx).toContain('const query = useSearchParams().get("q") ?? "";');
   expect(linkedJsx).toContain("const { slug } = useParams();");

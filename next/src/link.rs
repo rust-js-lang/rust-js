@@ -51,3 +51,17 @@ pub struct LinkProps<'a, C> {
     /// the props, which a call may make.
     pub children: C,
 }
+
+/// Whether the [`Link`] it's rendered in is going to its route, as
+/// `useLinkStatus()`: a component's in a `Link`'s children, a client
+/// component's.
+#[cfg_attr(rust_js, rust_js::link_name = "next/link#useLinkStatus")]
+pub fn use_link_status() -> LinkStatus {
+    unreachable!()
+}
+
+/// What [`use_link_status`] gives.
+pub struct LinkStatus {
+    /// Going to the link's route, not there yet.
+    pub pending: bool,
+}
