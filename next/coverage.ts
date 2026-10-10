@@ -39,9 +39,14 @@ const MODULES: Record<string, string> = {
   "next/web-vitals": "web-vitals.d.ts",
 };
 
+// What's left to JavaScript, chosen with the user: the app's config,
+// next.config.js, and a deployment adapter, the module it names (ADR 0354).
+// Each is `~`, and counted apart.
+const LEFT_TO_JS = new Set(["next#NextConfig", "next#NextAdapter", "next#AdapterOutput"]);
+
 type Kind = "value" | "type";
 export type Member = { name: string; bound: boolean };
-export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; members: Member[] }[] };
+export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; left: boolean; members: Member[] }[] };
 
 // Each type's and class's own members, by its file and name, `path#Route`,
 // as two files may each have a `Route` of their own: an interface's, and
@@ -317,6 +322,7 @@ export async function measure(): Promise<Module[]> {
         name: e,
         kind,
         bound: links.has(`${name}#${e}`) || items.has(e),
+        left: LEFT_TO_JS.has(`${name}#${e}`),
         // Of the type it is where it's declared, `ImageProps` of get-img-props'.
         members: (shapes.get(origin ?? "") ?? []).sort().map((m) => ({ name: m, bound: owned.get(e)?.has(m) ?? false })),
       }));
@@ -328,20 +334,24 @@ export async function measure(): Promise<Module[]> {
 /** The baseline's text: each module's counts, then each export, `+` bound,
  * and its members, each a line of its own after it. */
 export function render(modules: Module[]): string {
-  const all = modules.flatMap((m) => m.exports);
+  // What's left to JavaScript is counted apart, its members with it.
+  const counted = (m: Module) => m.exports.filter((e) => !e.left);
+  const all = modules.flatMap(counted);
   const members = all.flatMap((e) => e.members);
+  const left = modules.flatMap((m) => m.exports.filter((e) => e.left));
   const percent = (n: number, of: number) => `${n} of ${of} (${((100 * n) / of).toFixed(1)}%)`;
+  const mark = (e: { bound: boolean }, left: boolean) => (left ? "~" : e.bound ? "+" : "-");
   return [
     `# The next crate against Next.js's public modules: bun test test/next-coverage.test.ts`,
-    `# exports: ${percent(all.filter((e) => e.bound).length, all.length)}`,
+    `# exports: ${percent(all.filter((e) => e.bound).length, all.length)}, and ${left.length} left to JS (~)`,
     `# members: ${percent(members.filter((e) => e.bound).length, members.length)}`,
     ...modules.flatMap((m) => {
-      const own = m.exports.flatMap((e) => e.members);
+      const own = counted(m).flatMap((e) => e.members);
       return [
-        `# ${m.name} ${m.exports.filter((e) => e.bound).length} of ${m.exports.length}, members ${own.filter((e) => e.bound).length} of ${own.length}`,
+        `# ${m.name} ${counted(m).filter((e) => e.bound).length} of ${counted(m).length}, members ${own.filter((e) => e.bound).length} of ${own.length}`,
         ...m.exports.flatMap((e) => [
-          `${e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`,
-          ...e.members.map((member) => `${member.bound ? "+" : "-"} ${m.name}#${e.name}.${member.name}`),
+          `${mark(e, e.left)} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`,
+          ...e.members.map((member) => `${mark(member, e.left)} ${m.name}#${e.name}.${member.name}`),
         ]),
       ];
     }),

@@ -89,3 +89,10 @@ The example, and so the coverage, is of Next.js 16.4.0: `NextConfig`'s
 next/cache's `CacheEntry`, `CacheHandler`, `prefetch` and `navigation` are
 bound. `CacheLifeProfiles`, an empty interface an app augments with its
 profiles' names, has no Rust form, as the `Infer…` types haven't.
+
+## Amendment: what's left to JavaScript
+
+The app's config, next.config.js, and a deployment adapter, the module its
+`adapterPath` names, stay JavaScript, the user's choice: `NextConfig`,
+`NextAdapter` and `AdapterOutput` are `~`, their members too, counted apart
+from what's bound and what's missing (ADR 0354).

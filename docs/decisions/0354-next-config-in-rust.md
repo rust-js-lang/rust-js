@@ -1,6 +1,10 @@
 # 0354. An app's `next.config` is Rust
 
-Status: Accepted. Part of [0346](0346-next-coverage.md).
+Status: Superseded: the app's config stays JavaScript, the user's choice
+(2026-10-10). `next::NextConfig`, its types and the deployment adapter's
+are gone; next.config.js and an adapter are JS, `~` in the coverage, and
+the amendment on `"type": "module"` stands. Part of
+[0346](0346-next-coverage.md).
 
 ## Context
 
