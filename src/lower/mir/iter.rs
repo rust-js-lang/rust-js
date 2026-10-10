@@ -41,6 +41,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // collection's items are a JS iterator of them.
         if is_std_def(tcx, trait_id, StdItem::IntoIterator) && name == "into_iter" {
             let value = values.into_iter().next().expect("the receiver");
+            // A generic one is an array or a JS iterator, as its caller has
+            // it: `Iterator.from` takes either (ADR 0061).
+            if matches!(receiver_ty.kind(), ty::Param(_)) {
+                return Ok(Some(self.js_iterator(value)));
+            }
             if self.range_kind(iter_ty).is_some() || self.implements_iterator(receiver_ty) {
                 return Ok(Some(value));
             }

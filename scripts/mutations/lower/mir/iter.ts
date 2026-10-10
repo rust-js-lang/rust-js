@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "        match self.array_source(ty).filter(|_| false) {\n            Some(_) => match from_iterator(value) {\n",
     tests: ["test/mir.test.ts","-t","iterator_clones"],
   },
+  {
+    name: "mir-generic-into-iter-unwrapped",
+    breaks: "`for x in items` of a generic `IntoIterator` given an array steps the array",
+    file: "src/lower/mir/iter.rs",
+    find: "            if matches!(receiver_ty.kind(), ty::Param(_)) {\n",
+    replace: "            if false && matches!(receiver_ty.kind(), ty::Param(_)) {\n",
+    tests: ["test/mir.test.ts","-t","user_collections"],
+  },
 ];

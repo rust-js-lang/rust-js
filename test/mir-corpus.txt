@@ -235,6 +235,7 @@ unsized_struct_slice.rs
 unwrap_none.rs
 unwrap_string_debug.rs
 unwrap_typed_debug.rs
+user_collections.rs
 user_fmt_traits.rs
 utf8_unwrap_panic.rs
 wrapping.rs
