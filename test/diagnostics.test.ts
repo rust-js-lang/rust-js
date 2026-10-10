@@ -130,7 +130,8 @@ for (const [name, source, message, crate] of [
   // A variadic binding's rest arguments are its last parameter, a slice (ADR 0221).
   ["a variadic binding of no slice", 'unsafe extern "Rust" {\n    #[link_name = "Math.max"]\n    #[rust_js::variadic]\n    safe fn max(a: f64, b: f64) -> f64;\n}\npub fn f() -> f64 { max(1.0, 2.0) }', "isn't a slice"],
   ["an untagged enum's otherwise variant before another", '#[rust_js::untagged] pub enum E { #[rust_js::otherwise] A(String), B(u32) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 0, E::B(n) => n } }', "is its last"],
-  ["an untagged enum's variant of no value", '#[rust_js::untagged] pub enum E { A(u32), B }\npub fn f(e: E) -> u32 { match e { E::A(n) => n, E::B => 0 } }', "holds one value"],
+  // One of no value is its name's string (ADR 0214); one of two isn't one.
+  ["an untagged enum's variant of two values", '#[rust_js::untagged] pub enum E { A(u32), B(u32, u32) }\npub fn f(e: E) -> u32 { match e { E::A(n) => n, E::B(a, _) => a } }', "holds one value"],
   ["an untagged enum's variant of an Option", '#[rust_js::untagged] pub enum E { A(Option<u32>), B(String) }\npub fn f(e: &E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }', "from another variant's value"],
   ["a From into an untagged enum that does more", '#[rust_js::untagged] pub enum E { A(u32), B(String) }\nimpl From<u32> for E { fn from(n: u32) -> Self { E::A(n + 1) } }\npub fn f(n: u32) -> E { n.into() }', "is its variant of its argument"],
   ["serde of an untagged enum", '#[rust_js::untagged]\n#[derive(serde::Serialize)] pub enum E { A(u32), B(String) }\npub fn f(e: &E) -> String { serde_json::to_string(e).unwrap() }', "serde of the untagged enum", "serde"],
