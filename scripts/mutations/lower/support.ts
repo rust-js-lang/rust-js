@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "                    .is_some_and(|t| false && super::bindings::is_jsx_node(self.tcx, t)) =>",
     tests: ["test/jsx.test.ts", "-t", "dyn ReactNode is the node"],
   },
+  {
+    name: "vacant-entry-unsupported",
+    breaks: "a `VacantEntry` value is refused",
+    file: "src/lower/support.rs",
+    find: "            || self.recognition().is_vacant_entry(ty)\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
 ];

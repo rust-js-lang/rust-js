@@ -2028,6 +2028,19 @@ export function $entryRemove([m, key], entry) {
   return entry ? [key, value] : value;
 }
 
+// `m.entry(key)` kept or matched: `Occupied` or `Vacant`, as its key is
+// there or not, of `[m, key]`, which its methods are of (ADR 0345).
+export function $entry(m, key) {
+  return { TAG: m.has(key) ? "Occupied" : "Vacant", _0: [m, key] };
+}
+
+// A `VacantEntry`'s `insert(v)`: `v` put in, and a `&mut` to it, a handle
+// on a number or text (`handle`).
+export function $vacantInsert([m, key], value, handle) {
+  m.set(key, value);
+  return handle ? $mutGet(m, key) : value;
+}
+
 // A `char`'s or a `str`'s escapes, as text, and a `char`'s UTF-8 and UTF-16
 // (ADR 0327).
 

@@ -1228,4 +1228,28 @@ export const mutations: Mutation[] = [
     replace: "            && self.tcx.item_name(adt.did()).as_str() == \"NotOccupiedEntry\")",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
   },
+  {
+    name: "vacant-key-unknown",
+    breaks: "a `VacantEntry`'s `key` is refused",
+    file: "src/lower/recognition.rs",
+    find: "\"key\" if occupied || vacant =>",
+    replace: "\"key\" if occupied =>",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
+  {
+    name: "vacant-insert-unknown",
+    breaks: "a `VacantEntry`'s `insert` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"insert\" if vacant => Std::Map(MapOp::VacantInsert),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
+  {
+    name: "vacant-into-key-unknown",
+    breaks: "a `VacantEntry`'s `into_key` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"into_key\" if vacant => Std::Map(MapOp::EntryKey),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
 ];

@@ -83,4 +83,20 @@ export const mutations: Mutation[] = [
     replace: "                if false {",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
   },
+  {
+    name: "vacant-insert-not-boxed",
+    breaks: "a `VacantEntry`'s `insert` of text asks no handle",
+    file: "src/lower/std_types/map.rs",
+    find: "                    list.push(Expr::bool(true));\n                }\n                map_ops(self, \"$vacantInsert\", list)",
+    replace: "                }\n                map_ops(self, \"$vacantInsert\", list)",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
+  {
+    name: "entry-not-tagged",
+    breaks: "a matched entry is `[m, key]`, untagged",
+    file: "src/lower/std_types/map.rs",
+    find: "MapOp::Entry => map_ops(self, \"$entry\", vec![arg(), arg()]),",
+    replace: "MapOp::Entry => Expr::array(vec![arg(), arg()]),",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
 ];

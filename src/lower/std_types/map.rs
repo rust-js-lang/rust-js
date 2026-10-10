@@ -85,6 +85,8 @@ pub(in crate::lower) enum MapOp {
     },
     /// Its `insert(v)`: what was there.
     EntryInsert,
+    /// A `VacantEntry`'s `insert(v)`: a `&mut` to what it put in.
+    VacantInsert,
     /// Its `remove()`, or `remove_entry()` (`entry`): what's taken out.
     EntryRemove {
         entry: bool,
@@ -358,7 +360,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items])
             }
-            MapOp::Entry => Expr::array(vec![arg(), arg()]),
+            // Kept or matched: `Occupied` or `Vacant` of `[m, key]`, as std's
+            // enum is (ADR 0345).
+            MapOp::Entry => map_ops(self, "$entry", vec![arg(), arg()]),
+            MapOp::VacantInsert => {
+                let mut list = vec![arg(), arg()];
+                if types.get(1).is_some_and(|&value| self.is_boxable(value)) {
+                    self.runtime.insert(Helper::MutGet);
+                    list.push(Expr::bool(true));
+                }
+                map_ops(self, "$vacantInsert", list)
+            }
             MapOp::EndEntry { last } => {
                 let cmp = self.cmp_fn(types[0], false, span)?;
                 map_ops(self, "$endEntry", vec![arg(), cmp, Expr::bool(last)])

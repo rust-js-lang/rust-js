@@ -443,7 +443,7 @@ impl Std {
             Std::Once(OnceOp::GetMut)
                 | Std::Leak
                 | Std::OptionIterMut
-                | Std::Map(MapOp::EntryGet { mutable: true })
+                | Std::Map(MapOp::EntryGet { mutable: true } | MapOp::VacantInsert)
                 | Std::Comb(Comb::ResultIterMut | Comb::ResultAsMut)
                 | Std::Lazy(LazyOp::GetMut | LazyOp::ForceMut)
                 | Std::Rc(RcOp::GetMut | RcOp::MakeMut)
@@ -1282,6 +1282,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let entry = adt("HashMapEntry") || adt("BTreeEntry");
         // A map's `OccupiedEntry`, `[m, key]` (ADR 0345).
         let occupied = self.is_occupied_entry(owner);
+        let vacant = self.is_vacant_entry(owner);
         let name = tcx.item_name(def_id);
         // A `Duration`'s: of its nanoseconds (ADR 0188).
         if is_duration_ty(owner) {
@@ -1455,7 +1456,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "first_entry" | "last_entry" if adt("BTreeMap") => Std::Map(MapOp::EndEntry {
                 last: name.as_str() == "last_entry",
             }),
-            "key" if occupied => Std::Map(MapOp::EntryKey),
+            "key" if occupied || vacant => Std::Map(MapOp::EntryKey),
+            "into_key" if vacant => Std::Map(MapOp::EntryKey),
+            "insert" if vacant => Std::Map(MapOp::VacantInsert),
             "get" | "get_mut" | "into_mut" if occupied => Std::Map(MapOp::EntryGet {
                 mutable: name.as_str() != "get",
             }),
@@ -3743,6 +3746,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(super) fn is_generic_iter(&self, ty: ty::Ty<'tcx>) -> bool {
         self.bounded_by(ty, sym::Iterator)
+    }
+
+    /// A map's `VacantEntry`, `[m, key]` (ADR 0345).
+    pub(super) fn is_vacant_entry(&self, ty: ty::Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
+            && self.tcx.item_name(adt.did()).as_str() == "VacantEntry")
     }
 
     /// A map's `OccupiedEntry`, `[m, key]` (ADR 0345).

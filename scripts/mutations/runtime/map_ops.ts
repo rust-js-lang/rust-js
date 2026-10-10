@@ -106,4 +106,28 @@ export const mutations: Mutation[] = [
     replace: "  return value;",
     tests: ["test/corpus.test.ts","-t","btree_end_entries"],
   },
+  {
+    name: "entry-always-vacant",
+    breaks: "a matched entry is `Vacant` with its key there",
+    file: "src/runtime/map_ops.js",
+    find: "TAG: m.has(key) ? \"Occupied\" : \"Vacant\"",
+    replace: "TAG: \"Vacant\"",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
+  {
+    name: "vacant-insert-not-set",
+    breaks: "a `VacantEntry`'s `insert` puts nothing in",
+    file: "src/runtime/map_ops.js",
+    find: "  m.set(key, value);\n  return handle ? $mutGet(m, key) : value;",
+    replace: "  return handle ? $mutGet(m, key) : value;",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
+  {
+    name: "vacant-insert-no-handle",
+    breaks: "a `VacantEntry`'s `insert` of text gives the text, not a `&mut`",
+    file: "src/runtime/map_ops.js",
+    find: "  return handle ? $mutGet(m, key) : value;",
+    replace: "  return value;",
+    tests: ["test/corpus.test.ts","-t","map_entry_match"],
+  },
 ];
