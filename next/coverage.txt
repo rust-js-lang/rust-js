@@ -1,5 +1,5 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 29 of 2075 (1.4%)
+# exports: 32 of 2075 (1.5%)
 # next 4 of 37
 - type next#AdapterOutput
 - next#default
@@ -2028,10 +2028,10 @@
 # next/head 1 of 2
 + next/head#default
 - next/head#defaultHead
-# next/headers 0 of 3
-- next/headers#cookies
-- next/headers#draftMode
-- next/headers#headers
+# next/headers 3 of 3
++ next/headers#cookies
++ next/headers#draftMode
++ next/headers#headers
 # next/image 1 of 2
 + next/image#default
 - next/image#getImageProps

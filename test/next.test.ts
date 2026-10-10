@@ -71,7 +71,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
@@ -79,6 +79,11 @@ function app(name: string): string {
   // A link of a ref and passHref, as react.dev's SidebarLink has it.
   writeFileSync(join(dir, "app/linked.rs"), linked);
   writeFileSync(join(dir, "app/route_path.rs"), "pub fn route_path() -> String {\n    next::router::use_router().as_path().to_string()\n}\n\n" + routeEvents);
+  // A route of the request, its headers and cookies, which make it
+  // dynamic, and a Server Action that sets them.
+  mkdirSync(join(dir, "app/request"));
+  writeFileSync(join(dir, "app/request/page.rs"), request);
+  writeFileSync(join(dir, "app/actions.rs"), actions);
   mkdirSync(join(dir, "app/about"));
   writeFileSync(join(dir, "app/about/page.rs"), about);
   // A Pages Router page built for the paths it gives, each with its props,
@@ -131,6 +136,37 @@ js::export_default!(MyDocument);
 `);
   return dir;
 }
+
+const request = `#![allow(non_snake_case)]
+
+use next::headers::{cookies, draft_mode, headers};
+use react::{JSX, jsx};
+
+pub async fn Request() -> JSX::Element {
+    let agent = headers().await.get("user-agent").unwrap_or_default();
+    let jar = cookies().await;
+    let theme = match jar.get("theme") {
+        Some(cookie) => cookie.value,
+        None => "light",
+    };
+    let draft = draft_mode().await.is_enabled();
+    let mode = if draft { "draft" } else { "live" };
+    jsx! { <p>{theme}{" "}{jar.size()}{" "}{mode}{" "}{agent.len()}</p> }
+}
+
+js::export_default!(Request);
+`;
+
+const actions = `js::directive!("use server");
+
+use next::headers::{CookieOptions, DeletedCookie, SameSite, cookies};
+
+pub async fn remember(theme: String) {
+    let jar = cookies().await;
+    jar.set_with_options("theme", &theme, CookieOptions { max_age: Some(3600.0), same_site: Some(SameSite::Str("lax")), ..Default::default() });
+    jar.delete_cookie(DeletedCookie { name: "old", domain: None, path: Some("/"), secure: None, same_site: None, partitioned: None, http_only: None, max_age: None, priority: None });
+}
+`;
 
 const code = `#![allow(non_snake_case)]
 
@@ -313,6 +349,14 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(aboutJsx).toContain('<Script id="inline">window.inlined = true;</Script>');
   expect(aboutHtml).toContain("window.inlined = true;");
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain("handleClientScriptLoad(props(src));\n  initScriptLoader([props(src)]);");
+  // next/headers: the request's route is dynamic, rendered as it's asked.
+  expect(output).toContain("ƒ /request");
+  const requestJsx = readFileSync(join(dir, "app/request/page.jsx"), "utf8");
+  expect(requestJsx).toContain("const jar = await cookies();");
+  expect(requestJsx).toContain("(await draftMode()).isEnabled");
+  const actionsJs = readFileSync(join(dir, "app/actions.js"), "utf8");
+  expect(actionsJs).toContain('jar.set("theme", theme, { sameSite: "lax", maxAge: 3600 });');
+  expect(actionsJs).toContain('jar.delete({ name: "old", path: "/" });');
   // A page's module has no declarations beside it, which Turbopack would
   // take as a page of its own; another module has (ADR 0276).
   expect([existsSync(join(dir, "pages/codes/[code].d.ts")), existsSync(join(dir, "app/linked.d.ts"))]).toEqual([false, true]);
@@ -402,6 +446,11 @@ test("rust-js-next dev serves Rust routes, refreshes a save in place, and recove
     await button.filter({ hasText: "Taps 0" }).waitFor();
     expect(await page.evaluate(() => (window as any).loaded)).toBe(true);
     expect(existsSync(join(dir, "app/about/page.jsx"))).toBe(true);
+
+    // next/headers: the request's cookie, as the route reads it.
+    await page.context().addCookies([{ name: "theme", value: "dark", url: `http://localhost:${port}` }]);
+    await page.goto(`http://localhost:${port}/request`);
+    await page.getByText(/^dark \d+ live \d+$/).waitFor();
   } finally {
     await browser?.close();
     server.kill("SIGTERM");
