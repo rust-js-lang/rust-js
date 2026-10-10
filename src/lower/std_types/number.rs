@@ -1089,6 +1089,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A number `From` a `bool`, `flag ? 1 : 0`, of a float too, which `as`
+    /// can't make, or a `char`, as `as` makes it (ADR 0358).
+    pub(in crate::lower) fn number_from(&mut self, v: Expr, from: Ty<'tcx>, to: Ty<'tcx>, span: Span) -> R<Expr> {
+        if from.is_bool() {
+            let num = self.num(to, span)?;
+            return Ok(Expr::cond(v, num.literal(1), num.literal(0)));
+        }
+        self.cast(v, from, to, span)
+    }
+
     pub(in crate::lower) fn cast(&mut self, v: Expr, from: Ty<'tcx>, to: Ty<'tcx>, span: Span) -> R<Expr> {
         let target = self.num(to, span)?;
         if from.is_bool() && !target.float() {
@@ -1381,6 +1391,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(fits, Self::ok(value), Self::err(Expr::undefined()))
             }
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![arg()]),
+            Std::Cast { into } => {
+                let (from, to) = match into {
+                    true => (generic_args.type_at(0), generic_args.type_at(1)),
+                    false => (generic_args.type_at(1), generic_args.type_at(0)),
+                };
+                let value = arg();
+                self.number_from(value, from, to, span)?
+            }
             Std::TryFromInt { into } => {
                 let target = if into {
                     generic_args.type_at(1)

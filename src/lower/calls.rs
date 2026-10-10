@@ -1247,6 +1247,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::OptionPlace(_) => unreachable!("lowered by option_place"),
             Std::PtrEq => unreachable!("lowered by ptr_eq"),
             Std::ToBig
+            | Std::Cast { .. }
             | Std::Duration(_)
             | Std::SliceToArray { .. }
             | Std::TryFromInt { .. }

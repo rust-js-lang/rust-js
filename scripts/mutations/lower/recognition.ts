@@ -1356,4 +1356,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","try_lock"],
   },
+  {
+    name: "number-from-bool-unrecognized",
+    breaks: "`usize::from(flag)` and `u32::from(c)` are refused, which std has",
+    file: "src/lower/recognition.rs",
+    find: "            if (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {",
+    replace: "            if false && (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {",
+    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+  },
+  {
+    name: "number-into-as-from",
+    breaks: "`flag.into()` takes its target for its source, a `bool` for the `u64`",
+    file: "src/lower/recognition.rs",
+    find: "                    into: tcx.is_diagnostic_item(sym::Into, trait_),\n                });",
+    replace: "                    into: false,\n                });",
+    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+  },
 ];

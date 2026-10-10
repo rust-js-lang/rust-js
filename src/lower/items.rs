@@ -260,6 +260,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IsSome => Expr::bin(Op::LooseNe, x, Expr::null()),
             Std::IsNone => Expr::bin(Op::LooseEq, x, Expr::null()),
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![x]),
+            Std::Cast { .. } => self.number_from(x, input, sig.output(), span)?,
             Std::ToString => self.display_string(x, input, span)?,
             Std::Text(TextOp::Is(regex)) => Expr::call(Expr::member(Expr::regex(regex), "test"), vec![x]),
             // An `f32`'s rounded to one, as its call is, but for those that are

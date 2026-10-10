@@ -90,4 +90,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::Leak => x,\n",
     tests: ["test/corpus.test.ts","-t","leaked_string_written"],
   },
+  {
+    name: "number-from-function-unconverted",
+    breaks: "`.map(i8::from)` of bools gives the bools",
+    file: "src/lower/items.rs",
+    find: "            Std::Cast { .. } => self.number_from(x, input, sig.output(), span)?,",
+    replace: "            Std::Cast { .. } => x,",
+    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+  },
 ];

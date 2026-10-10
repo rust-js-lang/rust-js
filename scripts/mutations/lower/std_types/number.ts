@@ -228,4 +228,12 @@ export const mutations: Mutation[] = [
     replace: "                    .or_else(|| r.as_bigint())\n                    .is_none_or(|d| d != 0 && !(num.signed() && d == -1));",
     tests: ["test/compiler.test.ts", "-t", "64-bit integers are BigInts, wrapped as release Rust wraps them"],
   },
+  {
+    name: "number-from-bool-as-cast",
+    breaks: "`f64::from(flag)` goes the way of `as`, which has no `bool` as a float",
+    file: "src/lower/std_types/number.rs",
+    find: "        if from.is_bool() {\n            let num = self.num(to, span)?;",
+    replace: "        if false && from.is_bool() {\n            let num = self.num(to, span)?;",
+    tests: ["test/lowering.test.ts", "-t", "from a bool or a char"],
+  },
 ];

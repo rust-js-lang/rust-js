@@ -87,6 +87,11 @@ pub(super) enum Std {
     Pointee,
     /// `u64::from(x)` of a number that isn't a BigInt: `BigInt(x)` (ADR 0086).
     ToBig,
+    /// `usize::from(flag)` or `u32::from(c)`, `flag.into()` (`into`): a
+    /// number from a `bool` or a `char`, as `as` makes it (ADR 0358).
+    Cast {
+        into: bool,
+    },
     /// `u8::try_from(x)` (`into: false`) or `x.try_into()` between
     /// integers: `Ok` of it in range, or a `TryFromIntError`.
     TryFromInt {
@@ -1229,6 +1234,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                         if self.is_std_adt(from_ty, sym::Vec) && vec.type_at(0) == *item))
             {
                 return Some(Std::Same);
+            }
+            // A number from a `bool` or a `char`, as `as` makes it (ADR 0358).
+            if (from_ty.is_bool() || from_ty.is_char()) && Num::of(to_ty).is_some() {
+                return Some(Std::Cast {
+                    into: tcx.is_diagnostic_item(sym::Into, trait_),
+                });
             }
             // Into a BigInt from a number (ADR 0086), else the same.
             if let (Some(from), Some(to)) = (Num::of(from_ty.peel_refs()), Num::of(to_ty)) {

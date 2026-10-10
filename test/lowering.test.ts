@@ -283,6 +283,45 @@ pub fn page() -> String {
   expect(page()).toBe("<main>\n  <h1>Hi</h1>\n</main>|a\nb");
 });
 
+// std's `From<bool>` of each number and `From<char>` of `u32`, `u64` and
+// `u128` are what `as` makes of them: `flag ? 1 : 0`, `c.codePointAt(0)`,
+// a BigInt of 64 bits and more (ADR 0086), as a function too.
+test("a number from a bool or a char is its cast", async () => {
+  const dir = fixture("from-bool-char");
+  writeFileSync(join(dir, "lib.rs"), `pub fn counted(flag: bool) -> usize {
+    usize::from(flag)
+}
+
+pub fn wide(flag: bool) -> u64 {
+    flag.into()
+}
+
+pub fn half(flag: bool) -> f64 {
+    f64::from(flag)
+}
+
+pub fn code(c: char) -> u32 {
+    u32::from(c)
+}
+
+pub fn big_code(c: char) -> u128 {
+    c.into()
+}
+
+pub fn all(flags: &[bool]) -> Vec<i8> {
+    flags.iter().copied().map(i8::from).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return flag ? 1 : 0;");
+  expect(js).toContain("return flag ? 1n : 0n;");
+  expect(js).toContain("return c.codePointAt(0);");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.counted(true), lib.counted(false), lib.wide(true), lib.half(true), lib.code("é"), lib.big_code("😀"), lib.all([true, false])])
+    .toEqual([1, 0, 1n, 1, 233, 128512n, [1, 0]]);
+});
+
 // A struct updated from one it owns, `..file`, is that one spread, then the
 // fields named, as a reference's is (ADR 0250): `{ ...code, hidden: true }`,
 // as react.dev's RSC template hides its files. One of a type changed in
