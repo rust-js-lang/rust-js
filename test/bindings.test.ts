@@ -723,6 +723,38 @@ pub fn twice(path: &str) -> String {
   expect([lib.twice(join(dir, "note.md")), lib.twice(join(dir, "none.md"))]).toEqual(["# Note# Note", "missingmissing"]);
 });
 
+// Node's http request and response, as a server's handler is given them,
+// and Next.js's Pages Router: what's read of one and written to the other.
+test("node's http request is read and its response written", async () => {
+  const dir = fixture("node-http");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::http::{IncomingMessage, ServerResponse};
+
+pub fn handle(req: &IncomingMessage, res: &ServerResponse) {
+    res.set_status_code(201.0);
+    res.set_header("x-method", req.method().unwrap_or_default().as_str());
+    res.set_header("x-many", &["a", "b"][..]);
+    let seen = req.has_header_named("x-seen");
+    res.end_with(&format!("{} {} {}", req.url().unwrap_or_default(), req.http_version(), seen));
+}
+`.replace("let seen = req.has_header_named(\"x-seen\");", "let seen = req.raw_headers().iter().any(|h| h == \"x-seen\");"));
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("res.statusCode = 201;");
+  expect(js).toContain('res.setHeader("x-many", ["a", "b"]);');
+  const { handle } = await import(join(dir, "lib.js"));
+  const { createServer } = await import("node:http");
+  const server = createServer(handle);
+  await new Promise<void>((done) => server.listen(0, done));
+  try {
+    const { port } = server.address() as { port: number };
+    const response = await fetch(`http://localhost:${port}/search?q=rust`, { headers: { "x-seen": "1" } });
+    expect([response.status, response.headers.get("x-method"), response.headers.get("x-many"), await response.text()]).toEqual([201, "GET", "a, b", "/search?q=rust 1.1 true"]);
+  } finally {
+    server.close();
+  }
+});
+
 // The `history` global, a window's, as `document` is, as react.dev's _app
 // sets `history.scrollRestoration` where the browser is Safari.
 test("the history global is the page's history", async () => {
