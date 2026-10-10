@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 7 of 1538 (0.5%)
+# exports: 26 of 1538 (1.7%)
 # assert 0 of 28
 - assert#Assert
 - assert#AssertionError
@@ -914,26 +914,26 @@
 - type os#UserInfoOptionsWithBufferEncoding
 - type os#UserInfoOptionsWithStringEncoding
 - os#version
-# path 0 of 19
-- path#basename
-- path#delimiter
-- path#dirname
-- path#extname
-- path#format
-- type path#FormatInputPathObject
-- path#isAbsolute
-- path#join
-- path#matchesGlob
-- path#normalize
-- path#parse
-- type path#ParsedPath
-- type path#PlatformPath
-- path#posix
-- path#relative
-- path#resolve
-- path#sep
-- path#toNamespacedPath
-- path#win32
+# path 19 of 19
++ path#basename
++ path#delimiter
++ path#dirname
++ path#extname
++ path#format
++ type path#FormatInputPathObject
++ path#isAbsolute
++ path#join
++ path#matchesGlob
++ path#normalize
++ path#parse
++ type path#ParsedPath
++ type path#PlatformPath
++ path#posix
++ path#relative
++ path#resolve
++ path#sep
++ path#toNamespacedPath
++ path#win32
 # path/posix 0 of 0
 # path/win32 0 of 0
 # perf_hooks 0 of 27

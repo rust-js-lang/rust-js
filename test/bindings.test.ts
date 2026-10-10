@@ -723,6 +723,84 @@ pub fn twice(path: &str) -> String {
   expect([lib.twice(join(dir, "note.md")), lib.twice(join(dir, "none.md"))]).toEqual(["# Note# Note", "missingmissing"]);
 });
 
+// ADR 0272: `path`, each of @types/node's: its functions, its constants,
+// and a platform's own, `win32.join`, as Node's `path` has them.
+test("node's path module is bound whole", async () => {
+  const dir = fixture("node-path");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::path::{self, FormatInputPathObject, ParsedPath, PlatformPath};
+
+fn parts(parsed: ParsedPath) -> String {
+    format!("{}|{}|{}|{}|{}", parsed.root, parsed.dir, parsed.base, parsed.ext, parsed.name)
+}
+
+pub fn all() -> Vec<String> {
+    vec![
+        path::normalize("/a//b/../c"),
+        path::join(&["a", "b", "../c"]),
+        path::resolve(&["/a", "b"]),
+        path::relative("/a/b", "/a/c"),
+        path::dirname("/a/b.txt"),
+        path::basename("/a/b.txt"),
+        path::basename_with_suffix("/a/b.txt", ".txt"),
+        path::extname("x.md"),
+        path::sep.to_string(),
+        path::delimiter.to_string(),
+        parts(path::parse("/home/u/file.txt")),
+        path::format(FormatInputPathObject { dir: Some("/x"), base: Some("y.js"), ..Default::default() }),
+        path::to_namespaced_path("/a"),
+        format!("{} {}", path::is_absolute("/a"), path::matches_glob("a/b.js", "a/*.js")),
+    ]
+}
+
+pub fn platform(platform: &PlatformPath) -> Vec<String> {
+    vec![
+        platform.join(&["a", "b"]),
+        platform.sep(),
+        platform.delimiter(),
+        platform.basename_with_suffix("c:/x/y.txt", ".txt"),
+        parts(platform.parse("/a/b.c")),
+        platform.posix().sep(),
+    ]
+}
+
+pub fn platforms() -> Vec<Vec<String>> {
+    vec![platform(path::posix), platform(path::win32)]
+}
+
+pub fn spread(parts: &[&str]) -> String {
+    path::join(parts)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('join("a", "b", "../c")');
+  expect(js).toContain("return join(...parts);");
+  expect(js).toContain('platform.join("a", "b")');
+  const lib = await import(join(dir, "lib.js"));
+  const path = await import("node:path");
+  const parts = (p: { root: string; dir: string; base: string; ext: string; name: string }) => [p.root, p.dir, p.base, p.ext, p.name].join("|");
+  expect(lib.all()).toEqual([
+    path.normalize("/a//b/../c"),
+    path.join("a", "b", "../c"),
+    path.resolve("/a", "b"),
+    path.relative("/a/b", "/a/c"),
+    path.dirname("/a/b.txt"),
+    path.basename("/a/b.txt"),
+    "b",
+    ".md",
+    path.sep,
+    path.delimiter,
+    "/|/home/u|file.txt|.txt|file",
+    "/x/y.js",
+    path.toNamespacedPath("/a"),
+    "true true",
+  ]);
+  const platform = (p: typeof path.posix) => [p.join("a", "b"), p.sep, p.delimiter, p.basename("c:/x/y.txt", ".txt"), parts(p.parse("/a/b.c")), "/"];
+  expect(lib.platforms()).toEqual([platform(path.posix), platform(path.win32)]);
+  expect(lib.spread(["x", "y"])).toBe(path.join("x", "y"));
+});
+
 // Node's http request and response, as a server's handler is given them,
 // and Next.js's Pages Router: what's read of one and written to the other.
 test("node's http request is read and its response written", async () => {

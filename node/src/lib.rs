@@ -20,6 +20,7 @@
 
 pub mod fs;
 pub mod http;
+pub mod path;
 pub mod process;
 
 /// [How text is bytes](https://nodejs.org/api/buffer.html#buffers-and-character-encodings),
