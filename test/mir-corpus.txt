@@ -65,6 +65,7 @@ index_out_of_bounds.rs
 int_error_kind.rs
 integer_families.rs
 iter_flatten.rs
+iterator_stepped_by_hand.rs
 kept_element_ref.rs
 labeled_blocks.rs
 lazy_effects.rs

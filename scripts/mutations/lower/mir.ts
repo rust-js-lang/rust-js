@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    Value::Ref(iterator) => Ok(iterator),\n",
     replace: "",
-    tests: ["test/mir.test.ts"],
+    tests: ["test/mir.test.ts", "-t", "iterator_stepped_by_hand"],
   },
   {
     name: "mir-branch-continue-is-break",

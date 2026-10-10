@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "it.items.slice(it.at)",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
+  {
+    name: "rest-of-js-iterator",
+    breaks: "what's left of a generic iterator stepped by hand is read as a stepped array's",
+    file: "src/runtime/rest.js",
+    find: "  if (it.items === undefined) {\n    return Array.from(it);\n  }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","^iterator_stepped_by_hand.rs$"],
+  },
 ];
