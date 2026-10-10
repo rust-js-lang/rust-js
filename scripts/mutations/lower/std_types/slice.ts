@@ -244,4 +244,28 @@ export const mutations: Mutation[] = [
     replace: "                    (None, true) => \"$sliceSplitOff\",",
     tests: ["test/corpus.test.ts","-t","slice_split_off"],
   },
+  {
+    name: "disjoint-handle-dropped",
+    breaks: "`get_disjoint_mut` of numbers gives no handles",
+    file: "src/lower/std_types/slice.rs",
+    find: "                        let handle = index.is_usize() && self.is_boxable(item());",
+    replace: "                        let handle = false;",
+    tests: ["test/corpus.test.ts","-t","slice_disjoint"],
+  },
+  {
+    name: "disjoint-inclusive-dropped",
+    breaks: "`get_disjoint_mut` of `a..=b` takes `a..b`",
+    file: "src/lower/std_types/slice.rs",
+    find: "                        if inclusive {\n                            list.push(Expr::bool(true));\n                        }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_disjoint"],
+  },
+  {
+    name: "disjoint-unchecked-result",
+    breaks: "`get_disjoint_unchecked_mut` gives a `Result`",
+    file: "src/lower/std_types/slice.rs",
+    find: "                            true => Expr::member(result, \"_0\"),",
+    replace: "                            true => result,",
+    tests: ["test/corpus.test.ts","-t","slice_disjoint"],
+  },
 ];

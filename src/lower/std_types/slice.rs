@@ -8,6 +8,7 @@ use rustc_span::Span;
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::recognition::trait_method;
 use crate::lower::representation::Num;
+use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 
@@ -98,6 +99,12 @@ pub(in crate::lower) enum SliceOp {
     SplitOff {
         end: Option<bool>,
         mutable: bool,
+    },
+    /// `get_disjoint_mut(indices)`: `Ok` of a `&mut` to each item or range,
+    /// or `Err` of why not; `get_disjoint_unchecked_mut` (`unchecked`) the
+    /// `&mut`s (ADR 0339).
+    GetDisjointMut {
+        unchecked: bool,
     },
     SortByCachedKey,
     /// A byte slice's `to_ascii_uppercase()` or `to_ascii_lowercase()`, and
@@ -348,6 +355,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                     SliceOp::View { .. } | SliceOp::SplitOff { .. } => unreachable!("lowered above"),
+                    // Each index's item, a handle on a number or text, or each
+                    // range's view, `$getDisjointMut(v, [0, 5], true)`.
+                    SliceOp::GetDisjointMut { unchecked } => {
+                        let index = generic_args.type_at(1);
+                        let mut list = vec![arg(), arg()];
+                        let handle = index.is_usize() && self.is_boxable(item());
+                        let inclusive = self.range_kind(index) == Some(RangeKind::Inclusive);
+                        if handle || inclusive {
+                            list.push(Expr::bool(handle));
+                        }
+                        if inclusive {
+                            list.push(Expr::bool(true));
+                        }
+                        let result = self.view_call("$getDisjointMut", list);
+                        match unchecked {
+                            true => Expr::member(result, "_0"),
+                            false => result,
+                        }
+                    }
                     SliceOp::AsArray => {
                         let n = self.chunk_length(generic_args, span)?;
                         let items = arg();

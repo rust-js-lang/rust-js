@@ -446,7 +446,10 @@ impl Std {
                 | Std::Pin(PinOp::Mut | PinOp::Map)
                 | Std::Heap(HeapOp::PeekTop { mutable: true })
                 | Std::Slice(
-                    SliceOp::PushMut { .. } | SliceOp::SplitEndMut { .. } | SliceOp::SplitOff { mutable: true, .. }
+                    SliceOp::PushMut { .. }
+                        | SliceOp::SplitEndMut { .. }
+                        | SliceOp::SplitOff { mutable: true, .. }
+                        | SliceOp::GetDisjointMut { .. }
                 )
                 | Std::Any(AnyOp::DowncastMut)
                 | Std::Uninit(UninitOp::Write | UninitOp::InitMut)
@@ -1888,6 +1891,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Std::Slice(SliceOp::SplitOff {
                     end: (base != "split_off").then_some(base == "split_off_last"),
                     mutable: base != name.as_str(),
+                })
+            }
+            "get_disjoint_mut" | "get_disjoint_unchecked_mut" if owner.is_slice() => {
+                Std::Slice(SliceOp::GetDisjointMut {
+                    unchecked: name.as_str() == "get_disjoint_unchecked_mut",
                 })
             }
             // A slice as arrays of `N`, and arrays as one slice (ADR 0337).

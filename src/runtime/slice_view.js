@@ -158,3 +158,21 @@ function $sliceSplitOffMut(v, n, back) {
 function $sliceSplitOffEndMut(v, last, handle) {
   return $sliceSplitOffEnd(v, last, $view, handle ? $mutAt : undefined);
 }
+
+// `get_disjoint_mut(indices)` (ADR 0339): `Ok` of each index's item, a
+// handle on a number or text (`handle`), or each range's view, `a..=b`
+// where `inclusive`; or `Err` of why not, checked as std checks them, in
+// order: each in bounds, then apart from those before it.
+function $getDisjointMut(v, indices, handle = false, inclusive = false) {
+  const bounds = indices.map((at) => (typeof at === "number" ? [at, at + 1] : [at.start, inclusive ? at.end + 1 : at.end]));
+  for (let i = 0; i < bounds.length; i++) {
+    const [start, end] = bounds[i];
+    // `a..=b` is in bounds where `a <= b`: where `a` is before `b + 1`.
+    if (start > end || (inclusive && start === end) || end > v.length) return { TAG: "Err", _0: "IndexOutOfBounds" };
+    for (let j = 0; j < i; j++) {
+      if (start < bounds[j][1] && bounds[j][0] < end) return { TAG: "Err", _0: "OverlappingIndices" };
+    }
+  }
+  const take = (at, i) => (typeof at !== "number" ? $view(v, ...bounds[i]) : handle ? $mutAt(v, at) : v[at]);
+  return { TAG: "Ok", _0: indices.map(take) };
+}
