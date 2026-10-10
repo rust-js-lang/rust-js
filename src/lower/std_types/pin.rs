@@ -35,9 +35,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Std::Pin(op) = known else {
             return Ok(None);
         };
-        let Call { args, span, .. } = call;
+        let Call { tys, span, .. } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
-        let given = self.thir[args[0]].ty;
+        let given = tys[0];
         let pin = given.peel_refs();
         let pointer = self.recognition().pinned(pin).expect("a `Pin`");
         let target = match *pointer.kind() {

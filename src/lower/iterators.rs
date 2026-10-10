@@ -1203,7 +1203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -1233,7 +1233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => (Helper::FromFn, "$fromFn"),
                 };
                 let boxed = self.boxed_payload(item);
-                let mut list: Vec<Expr> = (0..args.len()).map(|_| arg()).collect();
+                let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 if boxed {
                     list.push(Expr::bool(true));
                 }

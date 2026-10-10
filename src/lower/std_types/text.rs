@@ -837,7 +837,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -846,7 +846,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Concat => Expr::bin(Op::Add, arg(), arg()),
             Std::Method(name) => {
                 let this = arg();
-                let mut rest: Vec<Expr> = (1..args.len()).map(|_| arg()).collect();
+                let mut rest: Vec<Expr> = (1..tys.len()).map(|_| arg()).collect();
                 // `replacen`'s count: of one, the first, JS's `replace`.
                 if name == "replace" {
                     if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {

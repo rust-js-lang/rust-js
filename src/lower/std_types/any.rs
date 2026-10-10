@@ -38,7 +38,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -49,16 +49,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let value = values.next().expect("rustc checked the arguments");
         if op == AnyOp::TypeIdOfValue {
-            return self
-                .type_id_of(value, self.thir[args[0]].ty.peel_refs(), span, out)
-                .map(Some);
+            return self.type_id_of(value, tys[0].peel_refs(), span, out).map(Some);
         }
         let pair = if value.reads_same() {
             value
         } else {
             self.spill("any", value, out)
         };
-        let any = self.thir[args[0]].ty.peel_refs();
+        let any = tys[0].peel_refs();
         let is = Expr::bin(
             Op::Eq,
             self.type_id_of(pair.clone(), self.pointee_of(any), span, out)?,

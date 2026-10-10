@@ -307,6 +307,14 @@ pub fn lower_crate<'tcx>(
         let initializer = initialized.iter().any(|body| body.def_id.to_def_id() == def_id);
         let result = match body {
             Some(body) if initializer => cx.lower_initializer(body),
+            // A writer, whose `Formatter` is the string it returns (ADR 0054),
+            // is THIR's still (ADR 0364).
+            Some(body)
+                if let Some(mir) = &body.mir
+                    && cx.formatter_param(def_id).is_none() =>
+            {
+                cx.lower_fn_mir(body, mir)
+            }
             Some(body) => cx.lower_fn(body),
             None if codecs.contains(&def_id) => cx.lower_codec(def_id).map(|function| super::LoweredFn {
                 function,

@@ -173,7 +173,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// An integer's bits and a float's bytes, the same for every width: of a
     /// number or a BigInt, as num-traits' `PrimInt` and `Float` ask. `None`
     /// if `op` is another.
-    fn bits_call(&mut self, op: NumOp, args: &[ExprId], num: Num, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
+    fn bits_call(&mut self, op: NumOp, values: Vec<Expr>, num: Num) -> R<Result<Expr, Vec<Expr>>> {
         let width = Expr::int(num.bits().into());
         let signed = Expr::bool(num.signed());
         let bytes = Expr::int((num.bits() / 8).into());
@@ -193,11 +193,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | NumOp::FloatFromBytes { .. }
         );
         if !ops {
-            return Ok(None);
+            return Ok(Err(values));
         }
-        let mut values = self.operands(args, out)?.into_iter();
+        let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
-        Ok(Some(match op {
+        Ok(Ok(match op {
             NumOp::EdgeOnes { trailing } => {
                 let mut list = vec![arg(), width];
                 if trailing {
@@ -299,25 +299,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.binary(op, a, rhs, None, inner, span)
     }
 
+    /// A number's method, of its arguments' values.
     pub(in crate::lower) fn number_call(
         &mut self,
         op: NumOp,
-        args: &[ExprId],
+        values: Vec<Expr>,
         ty: Ty<'tcx>,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let num = Num::of(ty).expect("a number's method");
-        if let Some(value) = self.bits_call(op, args, num, out)? {
-            return Ok(value);
-        }
+        let values = match self.bits_call(op, values, num)? {
+            Ok(value) => return Ok(value),
+            Err(values) => values,
+        };
         if num.big() {
-            return self.big_number_call(op, args, ty, num, span, out);
+            return self.big_number_call(op, values, ty, num, span, out);
         }
         // A number's range, of 32 bits at most.
         let (lo, hi) = num.range();
         let hi = hi as i128;
-        let mut values = self.operands(args, out)?.into_iter();
+        let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let math = |name: &str, list: Vec<Expr>| Expr::call(Expr::member(Expr::var("Math"), name), list);
         let number = |name: &str, list: Vec<Expr>| Expr::call(Expr::member(Expr::var("Number"), name), list);
@@ -684,7 +686,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn big_number_call(
         &mut self,
         op: NumOp,
-        args: &[ExprId],
+        values: Vec<Expr>,
         ty: Ty<'tcx>,
         num: Num,
         span: Span,
@@ -692,7 +694,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let (lo, hi) = num.range();
         let (lo, hi) = (num.literal(lo), num.literal(hi as i128));
-        let mut values = self.operands(args, out)?.into_iter();
+        let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
             this.runtime.insert(helper);
@@ -1308,7 +1310,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -1438,7 +1440,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::var("$cmp"), vec![arg(), arg()])
             }
             Std::MaxOf(max) => {
-                let num = Num::of(self.thir[args[0]].ty.peel_refs());
+                let num = Num::of(tys[0].peel_refs());
                 let callee = if num.is_some_and(Num::float) {
                     self.runtime.insert(if max { Helper::F64Max } else { Helper::F64Min });
                     Expr::var(if max { "$f64Max" } else { "$f64Min" })

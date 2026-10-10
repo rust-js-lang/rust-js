@@ -785,7 +785,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn find_plain_ref_cells(&self) -> HashSet<Ty<'tcx>> {
         let tcx = self.tcx;
-        if self.krate.library {
+        // Of THIR's borrows: MIR keeps every one a cell for now (ADR 0364).
+        if self.krate.library || super::mir_mode() {
             return HashSet::new();
         }
         // Each body's own facts, asked with no dictionaries: a type

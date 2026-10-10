@@ -30,6 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             fun,
             generic_args,
             args,
+            tys,
             span,
             ..
         } = call;
@@ -41,13 +42,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A thread-local that's its module's `let` is what it holds
             // (ADR 0270).
             // So is a cell that's its function's `let` (ADR 0287).
-            Std::CellGet if self.plain_local(args[0]) || self.plain_cell(args[0]).is_some() => {
+            Std::CellGet
+                if args.first().is_some_and(|&a| self.plain_local(a))
+                    || args.first().is_some_and(|&a| self.plain_cell(a).is_some()) =>
+            {
                 self.copy_if_needed(arg(), generic_args.type_at(0))
             }
             Std::CellGet => self.copy_if_needed(Expr::member(arg(), "value"), generic_args.type_at(0)),
             Std::CellSet => {
                 let (cell, value) = (arg(), arg());
-                let place = if self.plain_local(args[0]) || self.plain_cell(args[0]).is_some() {
+                let place = if args.first().is_some_and(|&a| self.plain_local(a))
+                    || args.first().is_some_and(|&a| self.plain_cell(a).is_some())
+                {
                     cell
                 } else {
                     Expr::member(cell, "value")
@@ -72,7 +78,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
-                let cell = match self.is_std_type(self.thir[args[0]].ty.peel_refs(), StdItem::RefCell) {
+                let cell = match self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) {
                     true => {
                         self.runtime.insert(Helper::Borrow);
                         Expr::call(Expr::var("$borrowMut"), vec![cell])
@@ -92,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 true => arg(),
                 false => Expr::member(arg(), "value"),
             },
-            Std::CellSwap if self.is_std_type(self.thir[args[0]].ty.peel_refs(), StdItem::RefCell) => {
+            Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
                 self.runtime.insert(Helper::Borrow);
                 Expr::call(Expr::var("$refCellSwap"), vec![arg(), arg()])
             }
@@ -117,9 +123,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // while it's held where something could ask (ADR 0328).
             // Of a field's `RefCell` never counted, the field itself, whose
             // check can't fail (ADR 0362).
-            Std::Borrow { lock: false, .. } if self.plain_ref_cell_field(args[0]) => arg(),
+            Std::Borrow { lock: false, .. } if args.first().is_some_and(|&a| self.plain_ref_cell_field(a)) => arg(),
             Std::Borrow { mutable, lock } => {
-                let hold = !self.drop_facts()?.momentary.contains(&fun);
+                // Of a call from MIR, held: what's momentary is THIR's to say.
+                let hold = match fun {
+                    Some(fun) => !self.drop_facts()?.momentary.contains(&fun),
+                    None => true,
+                };
                 let name = match (lock, mutable) {
                     (false, false) => "$borrow",
                     (false, true) => "$borrowMut",
@@ -154,7 +164,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Lock => Self::ok(Expr::member(arg(), "value")),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
             Std::Drop => {
-                let ty = self.thir[args[0]].ty;
+                let ty = tys[0];
                 let value = arg();
                 // Nothing to drop, a `Vec` of numbers say: only what computing it does.
                 if !self.has_drops(ty) {
@@ -183,7 +193,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | Std::AtomicFetch(_)
             | Std::AtomicFetchMax(_)
             | Std::AtomicCompareExchange => {
-                let ty::Adt(_, atomic) = self.thir[args[0]].ty.peel_refs().kind() else {
+                let ty::Adt(_, atomic) = tys[0].peel_refs().kind() else {
                     return Err(self.unsupported(span, "this atomic"));
                 };
                 let item = atomic.type_at(0);
@@ -261,7 +271,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 crate::lower::calls::apply_in(f, vec![key], out)
             }
             // A plain one's `f` asks nothing of borrows (ADR 0328).
-            Std::LocalBorrow { .. } if self.plain_local(args[0]) => {
+            Std::LocalBorrow { .. } if args.first().is_some_and(|&a| self.plain_local(a)) => {
                 let (key, f) = (arg(), arg());
                 apply(f, vec![key])
             }

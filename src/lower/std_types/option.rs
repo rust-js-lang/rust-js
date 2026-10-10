@@ -26,7 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Option<Expr>> {
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -56,7 +56,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::str("Ok"),
             ),
             Std::UnwrapOk => {
-                let mut list: Vec<Expr> = (0..args.len()).map(|_| arg()).collect();
+                let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 // An `Ok(x)` just made, as a `to_value` that can't fail is: `x`.
                 if let js::ExprKind::Object(props) = &list[0].kind
                     && let [Prop::Field(tag, name), Prop::Field(field, value)] = props.as_slice()
@@ -77,7 +77,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::var("$unwrapOk"), list)
             }
             Std::UnwrapErr => {
-                let mut list: Vec<Expr> = (0..args.len()).map(|_| arg()).collect();
+                let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 if let Some(value) = generic_args.types().next() {
                     self.typed_debug(&mut list, value, span)?;
                 }
@@ -128,7 +128,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Unwrap => {
                 self.runtime.insert(Helper::Unwrap);
                 // `expect` has a message too.
-                let list = (0..args.len()).map(|_| arg()).collect();
+                let list = (0..tys.len()).map(|_| arg()).collect();
                 let unwrapped = Expr::call(Expr::var("$unwrap"), list);
                 if self.boxed_payload(generic_args.type_at(0)) {
                     self.some_value(unwrapped)
@@ -175,7 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // By a function giving each variant its own name, the option
                 // itself: `section.map(Section::as_str)` is `section` (ADR 0264).
                 // So by a binding that's the value itself, `map(js::unknown)`.
-                if let Some((function, _)) = crate::lower::fn_def(self.thir[args[1]].ty)
+                if let Some((function, _)) = crate::lower::fn_def(tys[1])
                     && (self.gives_own_name(function)
                         || crate::lower::bindings::is_binding(self.tcx, function)
                             && matches!(
@@ -281,16 +281,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a number or text, a handle on the `Option`'s own place: `Some(x)`
             // of one is `x` (ADR 0030), so writing it writes the `Option`.
             Std::OptionIterMut => {
-                let item = self
-                    .option_of(self.thir[args[0]].ty.peel_refs())
-                    .expect("an `Option` has a `T`");
+                let item = self.option_of(tys[0].peel_refs()).expect("an `Option` has a `T`");
                 let option = arg();
-                self.option_items_mut(option, self.thir[args[0]].ty, item, span, out)?
+                self.option_items_mut(option, tys[0], item, span, out)?
             }
             Std::OptionIter => {
-                let item = self
-                    .option_of(self.thir[args[0]].ty.peel_refs())
-                    .expect("an `Option` has a `T`");
+                let item = self.option_of(tys[0].peel_refs()).expect("an `Option` has a `T`");
                 let option = arg();
                 self.option_items(option, item, out)
             }

@@ -51,14 +51,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         boxed: bool,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let Call { args, span, .. } = call;
+        let Call { args, tys, span, .. } = call;
         let mut arg = || values.next().expect("rustc checked the arguments");
         let js_span = self.js_span(span);
         Ok(Some(match known {
             // The separator `&T` between each two, or `&[T]`'s items; each
             // item cloned, as `Join`'s are.
             Std::JoinItems => {
-                let separator = self.thir[args[1]].ty.peel_refs();
+                let separator = tys[1].peel_refs();
                 let (item, spread) = match separator.kind() {
                     ty::Slice(item) | ty::Array(item, _) => (*item, true),
                     ty::Adt(_, items) if self.is_vec_like(separator) => (items.type_at(0), true),
@@ -98,8 +98,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of what it borrows, `to_vec()`'s, each item a clone too.
             Std::ToVec => match arg() {
                 items if matches!(items.kind, js::ExprKind::Array(_)) => items,
-                items => match self.slice_item(self.thir[args[0]].ty) {
-                    Some(item) if self.thir[args[0]].ty.is_ref() => self.clone_items(items, item, span)?,
+                items => match self.slice_item(tys[0]) {
+                    Some(item) if tys[0].is_ref() => self.clone_items(items, item, span)?,
                     _ => Expr::call(Expr::member(items, "slice"), vec![]),
                 },
             },
@@ -109,9 +109,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Text is falsy only where it's empty, `!text` (ADR 0266): an empty
             // array is truthy.
-            Std::IsEmpty if self.is_string_like(self.thir[args[0]].ty.peel_refs()) => {
-                Expr::unary(js::UnaryOp::Not, arg())
-            }
+            Std::IsEmpty if self.is_string_like(tys[0].peel_refs()) => Expr::unary(js::UnaryOp::Not, arg()),
             Std::IsEmpty => Expr::bin(Op::Eq, Expr::member(arg(), "length"), Expr::num(0)),
             // What it's given does what it does, of a capacity too (ADR 0315).
             Std::VecNew | Std::Nothing => {
@@ -135,22 +133,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `count()` of one that knows where it is (ADR 0071): what it has left,
             // which it then has none of.
-            Std::Len if self.is_stepping(args[0]) => {
+            Std::Len if args.first().is_some_and(|&a| self.is_stepping(a)) => {
                 self.runtime.insert(Helper::Rest);
                 Expr::member(Expr::call(Expr::var("$rest"), vec![arg()]), "length")
             }
             // `count()` of a JS iterator (ADR 0055) takes all of it.
-            Std::Len if self.is_lazy_value(args[0]) => {
-                let items = self.iter_source(arg(), self.thir[args[0]].ty, span, out)?;
+            Std::Len if args.first().is_some_and(|&a| self.is_lazy_value(a)) => {
+                let items = self.iter_source(arg(), tys[0], span, out)?;
                 Expr::member(Expr::call(Expr::member(items, "toArray"), vec![]), "length")
             }
             // A range's, which is an object, is its items' (ADR 0129).
-            Std::Len if self.range_kind(self.thir[args[0]].ty.peel_refs()).is_some() => {
-                let items = self.iter_source(arg(), self.thir[args[0]].ty.peel_refs(), span, out)?;
+            Std::Len if self.range_kind(tys[0].peel_refs()).is_some() => {
+                let items = self.iter_source(arg(), tys[0].peel_refs(), span, out)?;
                 Expr::member(items, "length")
             }
             Std::Len => Expr::member(arg(), "length"),
-            Std::Index => self.checked_index(call.fun, args[0], vec![arg(), arg()]),
+            Std::Index => match (call.fun, args.first()) {
+                (Some(fun), Some(&items)) => self.checked_index(fun, items, vec![arg(), arg()]),
+                // Of a call from MIR, checked: what's in bounds is THIR's to say.
+                _ => {
+                    self.runtime.insert(Helper::Index);
+                    Expr::call(Expr::var("$index"), vec![arg(), arg()])
+                }
+            },
             Std::Clear => {
                 out.push(StmtKind::Assign(Expr::member(arg(), "length"), Expr::num(0)).at(js_span));
                 Expr::undefined()

@@ -127,13 +127,19 @@ fn main() {
 export type CompileError = { kind: "rejected" | "crashed"; reason: string; error: string };
 
 // As JS, the case is the crate's root, with `entry` exported to call `main`.
-export function compileJs(file: string, dir: string, edition = "2024", library = false): { js: string } | CompileError {
+export function compileJs(
+  file: string,
+  dir: string,
+  edition = "2024",
+  library = false,
+  env: Record<string, string> = {},
+): { js: string } | CompileError {
   const wrapper = join(dir, "lib.rs");
   writeFileSync(wrapper, `include!(${rustString(file)});\npub fn entry() {\n    main()\n}\n`);
   // As a library, as a crate another uses is (ADR 0100): in a folder of its own.
   const js = library ? join(dir, "library", "case.js") : join(dir, "case.js");
   const mode = library ? ["--library", "--manifest", join(dir, "library", "case.manifest.json")] : [];
-  const p = runSync([compiler, wrapper, "-o", js, ...mode, "--", `--edition=${edition}`, "-Awarnings"], root, compileTimeout);
+  const p = runSync([compiler, wrapper, "-o", js, ...mode, "--", `--edition=${edition}`, "-Awarnings"], root, compileTimeout, env);
   if (p.code === 0 && !stopped(p, compileTimeout)) return { js };
   const { kind, reason } = compileFailure(p, compileTimeout);
   return { kind, reason, error: kind === "crashed" ? `rust-js crashed: ${reason}\n${p.stderr}` : p.stderr };

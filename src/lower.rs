@@ -58,6 +58,7 @@ mod jsx;
 mod jsx_api;
 mod library;
 mod loops;
+mod mir;
 mod mut_refs;
 mod ordering;
 mod patterns;
@@ -78,8 +79,9 @@ mod untagged;
 use crate::names::{fresh_in, js_ident};
 use crate::program::TestFn;
 use crate::runtime::Helper;
-pub use analysis::{collect_bodies, collect_initializers};
+pub use analysis::{collect_bodies, collect_initializers, collect_mir};
 use bindings::{Export, JsForm, is_binding, js_form, js_name};
+pub use mir::mir_mode;
 pub use pipeline::lower_crate;
 use recognition::{Std, TypeFact};
 use representation::{
@@ -98,6 +100,8 @@ pub struct Body<'tcx> {
     thir: Thir<'tcx>,
     expr: ExprId,
     facts: body_queries::BodyFacts,
+    /// Its MIR, which the body is lowered from where it's read (ADR 0364).
+    mir: Option<mir::Mir<'tcx>>,
 }
 
 /// Where a function or a `const` ends up in the JS: its module's file,

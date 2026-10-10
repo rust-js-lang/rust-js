@@ -99,9 +99,32 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
                 thir,
                 expr,
                 facts,
+                mir: None,
             })
         })
         .collect()
+}
+
+/// Each body's MIR, as borrowck reads it (ADR 0364), read once every
+/// body's THIR is copied: building MIR steals a body's THIR. One whose MIR
+/// is gone already, a constant's evaluated in type checking, keeps none.
+pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
+    for body in bodies {
+        if !matches!(
+            tcx.def_kind(body.def_id),
+            DefKind::Fn | DefKind::AssocFn | DefKind::Closure
+        ) {
+            continue;
+        }
+        let (built, promoted) = tcx.mir_promoted(body.def_id);
+        if built.is_stolen() || promoted.is_stolen() {
+            continue;
+        }
+        body.mir = Some(super::mir::Mir {
+            body: built.borrow().clone(),
+            promoted: promoted.borrow().clone(),
+        });
+    }
 }
 
 /// The `const { .. }` blocks of functions that aren't generic, whose
@@ -164,6 +187,7 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
                 thir,
                 expr,
                 facts,
+                mir: None,
             })
         })
         .collect()
@@ -365,9 +389,17 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             recognition.asks_no_borrows(&body.thir)
         })
     };
-    let plain_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
+    // What THIR shows of cells, made plain: MIR, which reads borrows its
+    // own way, keeps every one a cell for now (ADR 0364).
+    let plain_locals = match super::mir_mode() {
+        true => HashMap::new(),
+        false => plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet),
+    };
     let counted = counted_rcs(tcx, all_bodies);
-    let plain_cells = plain_locals::plain_cells(tcx, all_bodies, &counted);
+    let plain_cells = match super::mir_mode() {
+        true => HashMap::new(),
+        false => plain_locals::plain_cells(tcx, all_bodies, &counted),
+    };
     let read_at_once = plain_locals::read_at_once(tcx, all_bodies);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,

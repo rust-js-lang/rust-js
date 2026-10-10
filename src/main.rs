@@ -19,6 +19,7 @@
 
 #![feature(rustc_private)]
 
+extern crate rustc_abi;
 extern crate rustc_arena;
 extern crate rustc_ast;
 extern crate rustc_const_eval;
@@ -27,6 +28,7 @@ extern crate rustc_driver;
 extern crate rustc_expand;
 extern crate rustc_hir;
 extern crate rustc_hir_analysis;
+extern crate rustc_index;
 extern crate rustc_interface;
 extern crate rustc_lexer;
 extern crate rustc_middle;
@@ -147,6 +149,11 @@ impl Callbacks for Syntax {
 impl Callbacks for RustJs {
     fn config(&mut self, config: &mut rustc_interface::interface::Config) {
         register_tool(config);
+        // Integers wrap, as the release profile has them: MIR read for what
+        // runs says so, where it would check each operation (ADR 0364).
+        if lower::mir_mode() {
+            config.opts.cg.overflow_checks = Some(false);
+        }
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
@@ -169,8 +176,12 @@ impl Callbacks for RustJs {
         // 0. `#[serde(..)]`, which only the expanded crate still has (ADR 0077).
         let serde_attrs = lower::serde_attributes(tcx);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
-        let bodies = lower::collect_bodies(tcx);
+        let mut bodies = lower::collect_bodies(tcx);
         let initializers = lower::collect_initializers(tcx);
+        // Then, read from their MIR, what runs (ADR 0364).
+        if lower::mir_mode() {
+            lower::collect_mir(tcx, &mut bodies);
+        }
 
         // 2. Run rustc's full analysis: type check, borrow check, lints.
         tcx.ensure_ok().analysis(());

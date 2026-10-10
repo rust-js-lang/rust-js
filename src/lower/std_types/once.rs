@@ -33,7 +33,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::var("$onceSet"), vec![arg(), arg()])
             }
             // A `OnceLock`'s that sets it deadlocks in Rust: rust-js's error.
-            OnceOp::GetOrInit if self.recognition().is_lock_cell(self.thir[args[0]].ty.peel_refs()) => {
+            OnceOp::GetOrInit if self.recognition().is_lock_cell(tys[0].peel_refs()) => {
                 self.runtime.insert(Helper::GetOrInitLock);
                 Expr::call(Expr::var("$getOrInitLock"), vec![arg(), arg()])
             }

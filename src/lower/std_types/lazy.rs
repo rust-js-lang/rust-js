@@ -35,7 +35,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -49,7 +49,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(Expr::object(vec![Prop::Field("init".into(), lazy)])));
         }
         // A `LazyLock`'s init that uses it deadlocks in Rust: rust-js's error.
-        let (helper, force) = match self.recognition().is_lock_cell(self.thir[args[0]].ty.peel_refs()) {
+        let (helper, force) = match self.recognition().is_lock_cell(tys[0].peel_refs()) {
             true => (Helper::ForceLock, "$forceLock"),
             false => (Helper::Force, "$force"),
         };

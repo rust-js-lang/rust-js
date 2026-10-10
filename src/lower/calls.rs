@@ -33,10 +33,15 @@ use super::format_args::without_newline;
 /// arguments, and whether its value is used.
 #[derive(Clone, Copy)]
 pub(super) struct Call<'c, 'tcx> {
-    pub(super) fun: ExprId,
+    /// The function, as THIR has it: none of a call lowered from MIR, whose
+    /// arguments are their values alone (ADR 0364).
+    pub(super) fun: Option<ExprId>,
     pub(super) def_id: DefId,
     pub(super) generic_args: ty::GenericArgsRef<'tcx>,
+    /// Its arguments, as THIR has them: none of one lowered from MIR.
     pub(super) args: &'c [ExprId],
+    /// Each argument's type.
+    pub(super) tys: &'c [Ty<'tcx>],
     pub(super) discarded: bool,
     pub(super) span: Span,
 }
@@ -95,11 +100,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let path = self.tcx.def_path_str(def_id);
             return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
         }
+        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
         let call = Call {
-            fun,
+            fun: Some(fun),
             def_id,
             generic_args,
             args,
+            tys: &tys,
             discarded,
             span,
         };
@@ -214,7 +221,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args,
             discarded,
             span,
+            ..
         } = call;
+        let fun = fun.expect("a call lowered from THIR");
         // A function giving each variant its own name gives what it's given,
         // `section.as_str()` is `section` (ADR 0264).
         if let [arg] = args
@@ -624,7 +633,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             args,
             discarded,
             span,
+            ..
         } = call;
+        let fun = fun.expect("a call lowered from THIR");
         if known == Std::PtrEq {
             return self.ptr_eq(generic_args.type_at(0), args, span, out);
         }
@@ -876,7 +887,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (NumOp::FromBytes { .. } | NumOp::FloatFromBytes { .. } | NumOp::FromBits, _) => output,
                 _ => self.thir[args[0]].ty.peel_refs(),
             };
-            return self.number_call(op, args, ty, span, out);
+            let values = self.operands(args, out)?;
+            return self.number_call(op, values, ty, span, out);
         }
         if let Std::ToJson(pretty) = known {
             let ty = generic_args.type_at(0);
@@ -1094,10 +1106,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if fails {
             return self.failing_consumer(known, call, out);
         }
-        let mut values = self.operands(args, out)?.into_iter();
+        let values = self.operands(args, out)?;
+        self.std_values(known, call, values, boxed, output, out)
+    }
+
+    /// A std function rust-js knows, of its arguments' values: what THIR
+    /// and MIR both lower its call to (ADR 0364). `boxed`: whether the
+    /// `Option` it gives boxes its `Some` (ADR 0051); `output`, what it gives.
+    pub(super) fn std_values(
+        &mut self,
+        known: Std,
+        call: Call<'_, 'tcx>,
+        values: Vec<Expr>,
+        boxed: bool,
+        output: Ty<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let Call {
+            def_id,
+            generic_args,
+            tys,
+            span,
+            ..
+        } = call;
+        let mut values = values.into_iter();
         // A counted `Rc` (ADR 0320): `Rc::new` makes its `{ value, .. }`, and
         // what it points at is its `value`.
-        if known == Std::Same && self.counted_same_of(fun).is_some() {
+        if known == Std::Same && self.counted_same_by(def_id, generic_args).is_some() {
             let (_, pointee) = self.recognition().rc_same(def_id, generic_args).expect("an `Rc`'s");
             self.counted_here(pointee, span)?;
             let value = values.next().expect("rustc checked the arguments");
@@ -1153,7 +1188,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // its counting, so a clone is the same object.
             Std::Same | Std::Format => arg(),
             Std::Leak => self.leaked(arg(), output),
-            Std::Pointee => self.through_refs(arg(), self.thir[args[0]].ty).0,
+            Std::Pointee => self.through_refs(arg(), tys[0]).0,
             Std::Last
             | Std::Cloned
             | Std::Fuse

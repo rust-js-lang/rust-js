@@ -41,7 +41,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let Call {
             generic_args,
-            args,
+            tys,
             span,
             ..
         } = call;
@@ -98,7 +98,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let value = arg();
                     out.push(StmtKind::Assign(place.clone(), value).at(self.js_span(span)));
                 }
-                let target = self.thir[args[0]].ty.peel_refs();
+                let target = tys[0].peel_refs();
                 let held = self.recognition().uninit_of(target).unwrap_or(target);
                 match self.is_boxable(held) {
                     true => Expr::handle(place),
