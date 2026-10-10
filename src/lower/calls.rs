@@ -897,10 +897,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let zero = Expr::bin(Op::Eq, n.clone(), num.literal(0));
             return Ok(Expr::cond(zero, Expr::undefined(), n));
         }
-        // A `for` loop's is `&mut it` (`lower_for`); a chain of one would take
-        // what's left of `it`, which an array's doesn't know.
+        // A `for` loop's is `&mut it` (`lower_for`); a chain's, a JS iterator
+        // of it, which each stage takes from as it's asked (ADR 0071).
         if known == Std::IterByRef {
-            return Err(self.unsupported(span, "`by_ref()` but as what a `for` loop iterates"));
+            let it = self.expr(args[0], out)?;
+            return Ok(self.js_iterator(it));
         }
         if known == Std::GenericSizeHint {
             let it = self.expr(args[0], out)?;

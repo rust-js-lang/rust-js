@@ -127,3 +127,28 @@ on:
   `as_str` and a `RangeInclusive`; `next_back_lazy` the refusal.
   Mutations take from the front, read past `end` in each reader, unbox,
   run the chain eagerly, and refuse each.
+- **A slice's or a `VecDeque`'s `iter_mut()` kept, and a chain on
+  `by_ref()`** (2026-10-10). A kept `iter_mut()` was refused; it's a `$iter`
+  of what `for` takes, `$iter($mutItems(v))` of numbers or text, whose
+  `next()` gives a handle a place may be, `*it.next().unwrap() += 1`. A
+  chain on `it.by_ref()` was refused but in a `for`; it's a JS iterator of
+  `it`, `Iterator.from(it).take(2)`, every stage of it lazy, so each takes
+  from `it` only what it's asked for and leaves the rest, as Rust's does.
+
+  ```rust
+  let first: Vec<_> = it.by_ref().take(2).collect();
+  let found = it.by_ref().find(|x| **x % 7 == 0);
+  ```
+
+  ```js
+  const first = Iterator.from(it).take(2).toArray();
+  const found = Iterator.from(it).find((x) => x % 7 === 0);
+  ```
+
+  The `iter_mut_kept` corpus case runs, against native Rust, numbers,
+  a slice's part, strings, structs and a deque's, stepped by `next`,
+  `next_back`, `by_ref().take` and `for`, and collected; `by_ref_chains`
+  `take`, `take_while`, `find`, `map` and `sum`, `any`, `skip` and
+  `next`, `position`, `filter` and `count`, each followed by what's left.
+  Mutations make the chain eager or an array, miss a reborrow or a second
+  stage, unhandle `next()`, and refuse each.

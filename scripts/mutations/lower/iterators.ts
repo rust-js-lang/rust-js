@@ -493,4 +493,28 @@ export const mutations: Mutation[] = [
     replace: "            vec![Expr::member(it, \"at\")],",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
+  {
+    name: "by-ref-eager",
+    breaks: "a chain on `by_ref()` takes all that's left",
+    file: "src/lower/iterators.rs",
+    find: "            || self.through_by_ref(e)\n",
+    replace: "\n",
+    tests: ["test/corpus.test.ts","-t","by_ref_chains"],
+  },
+  {
+    name: "by-ref-reborrow",
+    breaks: "a chain on `&mut *it.by_ref()` takes all that's left",
+    file: "src/lower/iterators.rs",
+    find: "            while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = self.thir[at].kind {\n                at = self.strip(arg);\n            }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","by_ref_chains"],
+  },
+  {
+    name: "by-ref-not-through-adapters",
+    breaks: "a chain of two stages on `by_ref()` takes all that's left",
+    file: "src/lower/iterators.rs",
+    find: "                (Some(known), Some(&inner)) if is_adapter(known) => at = self.strip(inner),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","by_ref_chains"],
+  },
 ];

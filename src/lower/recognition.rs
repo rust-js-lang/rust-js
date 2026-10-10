@@ -2824,6 +2824,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && (path.contains("::iter::")
                 || [
                     "std::slice::Iter",
+                    "std::slice::IterMut",
                     "std::vec::IntoIter",
                     "std::str::Bytes",
                     "std::str::SplitN",
@@ -2840,6 +2841,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::char::ToUppercase",
                     "std::char::ToLowercase",
                     "std::collections::vec_deque::Iter",
+                    "std::collections::vec_deque::IterMut",
                     "std::collections::vec_deque::IntoIter",
                     "std::collections::binary_heap::Iter",
                     "std::collections::binary_heap::IntoIter",

@@ -560,6 +560,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_lazy_iter(self.thir[e].ty)
             || self.chains.lazy.contains(&self.chain_key(e))
             || matches!(self.thir[self.chain_stage(e)].kind, ExprKind::VarRef { id } if self.chains.locals.contains(&id))
+            || self.through_by_ref(e)
+    }
+
+    /// Whether `e` is `it.by_ref()`, or a chain on it: each stage takes from
+    /// `it` only what it's asked for, as Rust's does, so `take(2)` leaves the
+    /// rest in `it` (ADR 0071).
+    fn through_by_ref(&self, e: ExprId) -> bool {
+        let mut at = self.strip(e);
+        loop {
+            // `&mut *it.by_ref()`, as `take` takes it.
+            while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = self.thir[at].kind {
+                at = self.strip(arg);
+            }
+            let ExprKind::Call { fun, ref args, .. } = self.thir[at].kind else {
+                return false;
+            };
+            match (self.std_fn(fun), args.first()) {
+                (Some(Std::IterByRef), _) => return true,
+                (Some(known), Some(&inner)) if is_adapter(known) => at = self.strip(inner),
+                _ => return false,
+            }
+        }
     }
 
     /// A chain kept in `var`, made by `init`: lazy if a stage does what can be

@@ -3,6 +3,7 @@
 //! items a std call holds (ADRs 0072, 0099).
 
 use super::bindings::{self};
+use super::combinators::StepOp;
 use super::fn_def;
 use super::std_types::cow::CowOp;
 use super::std_types::map::{MapOp, Part};
@@ -267,6 +268,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => self
                 .std_fn(fun)
                 .is_some_and(|known| self.handle_helper(known, args).is_some() || known.gives_its_cell()),
+            // A std iterator's `next()` of its `&mut`s: each a handle its
+            // `iter_mut()` made (ADR 0071).
+            None if matches!(self.std_fn(fun), Some(Std::Step(StepOp::Next | StepOp::NextBack))) => self
+                .option_of(self.thir[e].ty)
+                .is_some_and(|item| matches!(item.kind(), ty::Ref(_, _, Mutability::Mut))),
             None => args.first().is_some_and(|&a| self.is_handle(a)),
         }
     }

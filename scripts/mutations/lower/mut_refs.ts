@@ -181,4 +181,12 @@ export const mutations: Mutation[] = [
     replace: "        let mut place = place;\n",
     tests: ["test/corpus.test.ts","-t","str_mut"],
   },
+  {
+    name: "next-mut-not-handle",
+    breaks: "`next().unwrap()` of an `iter_mut()` isn't a place",
+    file: "src/lower/mut_refs.rs",
+    find: "            None if matches!(self.std_fn(fun), Some(Std::Step(StepOp::Next | StepOp::NextBack))) => self\n",
+    replace: "            None if false => self\n",
+    tests: ["test/corpus.test.ts","-t","iter_mut_kept"],
+  },
 ];

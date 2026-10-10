@@ -1300,4 +1300,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
+  {
+    name: "slice-iter-mut-unknown",
+    breaks: "a slice's `iter_mut()` kept is refused",
+    file: "src/lower/recognition.rs",
+    find: "                    \"std::slice::IterMut\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","iter_mut_kept"],
+  },
+  {
+    name: "deque-iter-mut-unknown",
+    breaks: "a `VecDeque`'s `iter_mut()` kept is refused",
+    file: "src/lower/recognition.rs",
+    find: "                    \"std::collections::vec_deque::IterMut\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","iter_mut_kept"],
+  },
 ];
