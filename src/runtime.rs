@@ -96,6 +96,7 @@ helpers! {
     RangeNext,
     RangeInclusiveNext,
     RangeNextBack,
+    RangeInclusiveNextBack,
     RangeFromNext,
     AsciiCase,
     Append,
@@ -607,6 +608,7 @@ impl Helper {
             Helper::Take => include_str!("runtime/take.js"),
             Helper::Exchange => include_str!("runtime/exchange.js"),
             Helper::RangeNextBack => include_str!("runtime/range_next_back.js"),
+            Helper::RangeInclusiveNextBack => include_str!("runtime/range_inclusive_next_back.js"),
             Helper::BigRange => include_str!("runtime/big_range.js"),
             Helper::Cmp => include_str!("runtime/cmp.js"),
             // `{:.2}` of an `f64`: its exact value, rounded to even on a tie, as

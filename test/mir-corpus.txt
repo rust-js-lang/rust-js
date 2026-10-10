@@ -23,6 +23,7 @@ block_modules.rs
 box_uninit.rs
 box_zeroed_struct.rs
 boxed_str.rs
+byte_ascii.rs
 byte_strings.rs
 cell_const.rs
 char_from_code.rs
@@ -125,6 +126,7 @@ integer_bits.rs
 integer_families.rs
 integers_128.rs
 iter_flatten.rs
+iterator_back_ends.rs
 iterator_clones.rs
 iterator_stepped_by_hand.rs
 kept_element_ref.rs
@@ -134,6 +136,8 @@ lazy_cell_reentrant.rs
 lazy_cells.rs
 lazy_effects.rs
 leak.rs
+lent_iterators.rs
+linked_lists.rs
 loop_values.rs
 map_collect_drops.rs
 map_entry_match.rs
@@ -143,6 +147,7 @@ match_index.rs
 matrix_chars.rs
 matrix_floats.rs
 matrix_integers.rs
+matrix_strings.rs
 moved_closure.rs
 mut_number_args.rs
 mut_number_handles.rs
@@ -157,6 +162,8 @@ mut_ref_to_ref.rs
 nested_element_writes.rs
 nested_generic_types.rs
 nested_type_chain.rs
+next_back_generic.rs
+next_back_lazy.rs
 number_methods.rs
 once_cell_reentrant.rs
 once_cells.rs
@@ -179,6 +186,7 @@ print.rs
 question_early_returns.rs
 radix_negative.rs
 radix_out_of_range.rs
+range_inclusive_next_back.rs
 range_searches.rs
 refcell_borrow_while_mut.rs
 refcell_clone_while_mut.rs
@@ -194,6 +202,7 @@ replacement_character.rs
 returned_references.rs
 rotate_past_end.rs
 scope_temporaries.rs
+size_hint.rs
 size_of.rs
 slice_bytes_text.rs
 slice_from_past_len.rs

@@ -61,6 +61,117 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(None);
         }
+        // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
+        // range or a `$iter` (ADR 0071); not a lazy or a generic one.
+        let recognition = self.recognition();
+        let (double_ended, exact) = (
+            recognition.double_ended_iterator() == Some(trait_id),
+            recognition.exact_size_iterator() == Some(trait_id),
+        );
+        if (double_ended && name == "next_back") || (exact && name == "len") {
+            if self.is_user_iterator(iter_ty) {
+                return Ok(None);
+            }
+            let it = values.into_iter().next().expect("the receiver");
+            let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
+            let array = self.array_source(iter_ty).is_some();
+            return Ok(Some(match (name, self.range_kind(iter_ty)) {
+                ("next_back", Some(RangeKind::Exclusive)) => {
+                    self.helper(Helper::RangeNextBack, "$rangeNextBack", vec![it])
+                }
+                ("next_back", Some(RangeKind::Inclusive)) => {
+                    self.helper(Helper::RangeInclusiveNextBack, "$rangeInclusiveNextBack", vec![it])
+                }
+                ("next_back", None) if array && boxed => self.helper(Helper::NextBackSome, "$nextBackSome", vec![it]),
+                ("next_back", None) if array => self.helper(Helper::NextBack, "$nextBack", vec![it]),
+                ("len", None) if array => Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at")),
+                _ => {
+                    return Err(self.unsupported(
+                        span,
+                        &format!("`{name}()` of a lazy or generic `{iter_ty}`, from its MIR"),
+                    ));
+                }
+            }));
+        }
+        // `rev()` and `peekable()`: of the crate's iterator, its own
+        // `next_back`; of a range, stepped from its end; of items made
+        // already, an array's, a `$iter` of them; not of a lazy one, whose
+        // closures would run in another order (ADR 0164).
+        if is_std_def(tcx, trait_id, StdItem::Iterator) && matches!(name, "rev" | "peekable") {
+            let receiver = values.into_iter().next().expect("the receiver");
+            if self.is_user_iterator(iter_ty) {
+                return match self.own_next_back(iter_ty)? {
+                    Some(double_ended) if name == "rev" => self
+                        .user_iterator(receiver, iter_ty, double_ended, "next_back", span)
+                        .map(Some),
+                    _ => Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"))),
+                };
+            }
+            let range = self.range_kind(iter_ty);
+            return Ok(Some(match (name, range) {
+                ("rev", Some(RangeKind::Exclusive)) => {
+                    self.runtime.insert(Helper::RangeNextBack);
+                    self.helper(
+                        Helper::Iterator,
+                        "$iterator",
+                        vec![receiver, Expr::var("$rangeNextBack")],
+                    )
+                }
+                ("rev", Some(RangeKind::Inclusive)) => {
+                    self.runtime.insert(Helper::RangeInclusiveNextBack);
+                    let next_back = Expr::var("$rangeInclusiveNextBack");
+                    self.helper(Helper::Iterator, "$iterator", vec![receiver, next_back])
+                }
+                (_, Some(_)) => {
+                    return Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR")));
+                }
+                _ => {
+                    let items = match self.array_source(iter_ty) {
+                        Some(_) => match self.std_iterator(receiver, iter_ty) {
+                            it if name == "peekable" => return Ok(Some(it)),
+                            it => self.helper(Helper::Rest, "$rest", vec![it]),
+                        },
+                        None => match from_iterator(receiver) {
+                            Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
+                            Err(_) => {
+                                return Err(
+                                    self.unsupported(span, &format!("`{name}` of a lazy iterator, from its MIR"))
+                                );
+                            }
+                        },
+                    };
+                    let items = match name {
+                        "rev" => Expr::call(Expr::member(items, "toReversed"), Vec::new()),
+                        _ => items,
+                    };
+                    self.stepped_items(items)
+                }
+            }));
+        }
+        // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
+        // finds it, as THIR's (ADR 0170).
+        if is_std_def(tcx, trait_id, StdItem::Iterator) && name == "size_hint" && !self.is_user_iterator(iter_ty) {
+            let mut it = values.into_iter().next().expect("the receiver");
+            // A `map`'s is its source's, as Rust's `Map` passes it on; its
+            // closure, unrun, is made for nothing.
+            let mut mapped = false;
+            while let js::ExprKind::Call(callee, args) = &it.kind
+                && let js::ExprKind::Member(source, method) = &callee.kind
+                && method == "map"
+                && args.iter().all(|f| !f.has_effects())
+            {
+                it = (**source).clone();
+                mapped = true;
+            }
+            let known = match mapped {
+                true => crate::lower::iterators::is_stepped_items(&it),
+                false => self.array_source(iter_ty).is_some() || matches!(iter_ty.kind(), ty::Param(_)),
+            };
+            if !known {
+                return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
+            }
+            return Ok(Some(self.helper(Helper::SizeHint, "$sizeHint", vec![it])));
+        }
         if !is_std_def(tcx, trait_id, StdItem::Iterator) || self.is_user_iterator(iter_ty) {
             return Ok(None);
         }
@@ -296,7 +407,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn helper(&mut self, helper: Helper, name: &str, args: Vec<Expr>) -> Expr {
+    pub(super) fn helper(&mut self, helper: Helper, name: &str, args: Vec<Expr>) -> Expr {
         self.runtime.insert(helper);
         Expr::call(Expr::var(name), args)
     }

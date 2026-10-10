@@ -395,7 +395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `next_back` is its own: `rev()` of it is a JS iterator of that,
     /// `$iterator(it, spanDoubleEndedIterator_next_back)`, stepped from the
     /// back as Rust's is (ADR 0164).
-    fn own_next_back(&self, ty: ty::Ty<'tcx>) -> R<Option<DefId>> {
+    pub(super) fn own_next_back(&self, ty: ty::Ty<'tcx>) -> R<Option<DefId>> {
         if !self.is_user_iterator(ty) {
             return Ok(None);
         }

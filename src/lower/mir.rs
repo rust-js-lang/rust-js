@@ -30,6 +30,7 @@ use rustc_middle::ty::{self, Ty};
 use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
+use super::combinators::StepOp;
 use super::recognition::{Std, StdItem};
 use super::representation::{const_js, variant_field};
 use super::std_types::map::MapOp;
@@ -2571,6 +2572,62 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.text_values(op, exprs, arg_tys, generic_args, span, out)?
+            }
+            // A `Peekable`'s or a slice iterator's own: of a `$iter`, which
+            // knows where it is (ADR 0071), as THIR's `step_call` of one.
+            Std::Step(op @ (StepOp::Peek | StepOp::NextIf | StepOp::NextIfEq | StepOp::AsSlice))
+                if arg_tys
+                    .first()
+                    .is_some_and(|t| self.array_source(t.peel_refs()).is_some() || self.is_peekable(t.peel_refs())) =>
+            {
+                let mut exprs = values
+                    .map(|v| self.value_expr(v, span))
+                    .collect::<R<Vec<_>>>()?
+                    .into_iter();
+                let it = exprs.next().expect("the iterator");
+                let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
+                match op {
+                    StepOp::Peek if boxed => self.helper(Helper::PeekSome, "$peekSome", vec![it]),
+                    StepOp::Peek => self.helper(Helper::Peek, "$peek", vec![it]),
+                    StepOp::NextIf => {
+                        let f = exprs.next().expect("a test");
+                        self.helper(Helper::NextIf, "$nextIf", vec![it, f])
+                    }
+                    StepOp::NextIfEq => {
+                        let item = arg_tys[1];
+                        if !self.eq_is_identity(item) {
+                            return Err(self.unsupported(span, &format!("`next_if_eq` of `{}`s", item.peel_refs())));
+                        }
+                        let x = exprs.next().expect("a value");
+                        let x = if x.reads_same() {
+                            x
+                        } else {
+                            self.spill("expected", x, out)
+                        };
+                        let same = Expr::arrow(
+                            vec!["item".into()],
+                            vec![StmtKind::Return(Some(Expr::bin(Op::Eq, Expr::var("item"), x))).at(js::Span::NONE)],
+                        );
+                        self.helper(Helper::NextIf, "$nextIf", vec![it, same])
+                    }
+                    _ => {
+                        let it = if it.reads_same() { it } else { self.spill("it", it, out) };
+                        Expr::call(
+                            Expr::member(Expr::member(it.clone(), "items"), "slice"),
+                            vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
+                        )
+                    }
+                }
+            }
+            // std's `size_hint()`, of an iterator of the crate's that keeps it:
+            // `(0, None)`, as THIR's `size_hint` (ADR 0170).
+            Std::SizeHint(false) => {
+                let it = self.value_expr(values.next().expect("the iterator"), span)?;
+                if it.has_effects() {
+                    self.flush(state, out)?;
+                    out.push(StmtKind::Expr(it).at(self.js_span(span)));
+                }
+                Expr::array(vec![Expr::int(0), Expr::undefined()])
             }
             // `x.to_int_unchecked()`: the cast `as` is, where it's in range.
             Std::Number(NumOp::ToIntUnchecked) => {

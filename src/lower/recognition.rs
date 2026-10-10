@@ -2342,6 +2342,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "DoubleEndedIterator")
     }
 
+    pub(super) fn exact_size_iterator(&self) -> Option<DefId> {
+        self.tcx
+            .all_traits_including_private()
+            .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "ExactSizeIterator")
+    }
+
     pub(super) fn is_user_iterator(&self, ty: ty::Ty<'tcx>) -> bool {
         let iterator = self.tcx.get_diagnostic_item(sym::Iterator).expect("std has `Iterator`");
         matches!(ty.peel_refs().kind(), ty::Adt(..)) && self.has_user_impl(iterator, ty.peel_refs())
