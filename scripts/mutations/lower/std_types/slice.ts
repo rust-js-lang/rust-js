@@ -340,4 +340,12 @@ export const mutations: Mutation[] = [
     replace: "                    _ => (Expr::int(0), None),",
     tests: ["test/corpus.test.ts","-t","extract_if"],
   },
+  {
+    name: "sort-kind-host-size",
+    breaks: "an unstable sort picks by a 64-bit host's sizes, not rust-js's 32-bit ones",
+    file: "src/lower/std_types/slice.rs",
+    find: "        let size = layout.size.bytes();\n",
+    replace: "        let size = layout.size.bytes() * 2;\n",
+    tests: ["test/corpus.test.ts","-t","sort_unstable_wasm32"],
+  },
 ];

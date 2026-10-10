@@ -129,3 +129,13 @@ What it expects is in a `//@` directive:
   its snapshot, and `bun run bless` writes them anew; a snapshot left of a
   case that doesn't run, or of none, fails too. The features since ADR
   0088 were tested here, and their JS had been nowhere to read.
+
+## Since
+
+- **`//@ native: wasm32`: native Rust is `wasm32-wasip1`'s** (2026-10-10),
+  whose `usize` is rust-js's (ADR 0090), for a case whose answer a 64-bit
+  host's sizes change, as an unstable sort's order of ties does (ADR 0342).
+  It's built for that target, which `rust-toolchain.toml` installs, and
+  run by Bun's WASI (`test/wasi-run.ts`), which writes its outcome where
+  `main` returns. wasm32-wasip1 aborts on a panic, so only a case that
+  runs to its end may say it.

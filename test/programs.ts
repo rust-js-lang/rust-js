@@ -65,7 +65,8 @@ const rustString = (s: string) => JSON.stringify(s);
 // what the program writes. The case is included where it is, so what it
 // reads beside it, an `include_str!`, is found as the JS's compile finds it;
 // the wrapper is where its text says, so a case is one kept binary.
-export function runNative(file: string, dir: string, edition = "2024"): Run | string {
+export function runNative(file: string, dir: string, edition = "2024", target: "host" | "wasm32" = "host"): Run | string {
+  if (target === "wasm32") return runWasm32(file, dir, edition);
   const source = `mod case {
     include!(${rustString(file)});
     pub fn entry() { main() }
@@ -99,6 +100,26 @@ fn main() {
   if ("error" in built) return built.error;
   const outcomeFile = join(dir, "native.json");
   return execute([built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout);
+}
+
+// For `wasm32-wasip1`, whose `usize` is rust-js's (ADR 0090): the case's
+// `main` as it is, run by Bun's WASI, which writes its outcome where it
+// returns. It aborts on a panic, so only a case that runs to its end is one.
+function runWasm32(file: string, dir: string, edition: string): Run | string {
+  const source = `mod case {
+    include!(${rustString(file)});
+    pub fn entry() { main() }
+}
+fn main() {
+    case::entry();
+}
+`;
+  const flags = [`--edition=${edition}`, "--target=wasm32-wasip1", "-Coverflow-checks=off", "-Awarnings"];
+  const built = nativeBinary(source, contentDirectory(source), flags, compileTimeout);
+  if ("error" in built) return built.error;
+  const outcomeFile = join(dir, "native.json");
+  const runner = join(root, "test", "wasi-run.ts");
+  return execute([process.execPath, runner, built.binary, outcomeFile], outcomeFile, built.built ? firstRunTimeout : timeout);
 }
 
 /** A compile that failed: rust-js's clear rejection, or a crash, however

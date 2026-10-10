@@ -73,3 +73,16 @@ const cell = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", tru
   ends where native Rust's does after as many comparisons. Mutations
   change each threshold, pivot, partition, network, merge and fallback.
 - `docs/std-coverage.txt`: `slice` 125 of 133.
+
+## Since
+
+- **Its sizes are a 32-bit target's, and tested as one's** (2026-10-10).
+  A `&str` is 8 bytes on rust-js's target and 16 on a 64-bit host's, so
+  std takes another small sort there, and ties end in another order:
+  `words.sort_unstable_by_key(|w| w.len())` of 33 words differs between a
+  Mac's native Rust and `wasm32-wasip1`'s. rust-js is the wasm32 target
+  (ADR 0090), and matches `wasm32-wasip1`'s. The corpus's
+  `sort_unstable_wasm32`, of `&str`s, `(usize, u32)`s, `String`s and
+  `[usize; 20]`s, runs against `wasm32-wasip1`'s native Rust
+  (`//@ native: wasm32`, ADR 0088), and a mutation that sizes items as a
+  64-bit host does is caught.

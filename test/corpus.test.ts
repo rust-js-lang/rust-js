@@ -7,6 +7,8 @@
 //   //@ compile-fail: <text>       rust-js rejects it, with this in its first error
 //   //@ ignore-rust-js: <reason>   rust-js gets it wrong for now; passing is an error
 //   //@ edition: <year>            compiled at this edition, 2024 if it says none; beside one of those
+//   //@ native: wasm32             native Rust is `wasm32-wasip1`'s, whose `usize` is rust-js's
+//                                  (ADR 0090), not the host's; of a case that runs to its end
 //
 // A case that runs, run-pass or run-fail, keeps the JS rust-js makes of it
 // beside it, `<case>.js`, as `test/snapshots/` keeps the examples' (ADR
@@ -37,12 +39,14 @@ type Expect =
   | { kind: "ignore-rust-js"; reason: string };
 
 /** What a case's directives say, or the problems with them. */
-function directives(source: string): (Expect & { edition: string }) | string {
+function directives(source: string): (Expect & { edition: string; native: "host" | "wasm32" }) | string {
   const found: Expect[] = [];
   let edition = "2024";
+  let native: "host" | "wasm32" = "host";
   for (const [, line] of source.matchAll(/^\/\/@(.*)$/gm)) {
     const [, name, value] = /^ ([a-z-]+)(?:: (.+))?$/.exec(line) ?? [];
     if (name === "edition" && value && ["2015", "2018", "2021", "2024"].includes(value)) edition = value;
+    else if (name === "native" && value === "wasm32") native = "wasm32";
     else if (name === "run-pass" && value === undefined) found.push({ kind: "run-pass" });
     else if (name === "run-fail" && value) found.push({ kind: "run-fail", message: value.replaceAll("\\n", "\n") });
     else if (name === "compile-fail" && value) found.push({ kind: "compile-fail", text: value });
@@ -50,7 +54,9 @@ function directives(source: string): (Expect & { edition: string }) | string {
     else return `unknown or malformed directive \`//@${line}\``;
   }
   if (found.length > 1) return "more than one directive";
-  return { ...(found[0] ?? { kind: "run-pass" }), edition };
+  const expect = found[0] ?? { kind: "run-pass" };
+  if (native === "wasm32" && expect.kind !== "run-pass") return "`native: wasm32` aborts on a panic: only of a case that runs to its end";
+  return { ...expect, edition, native };
 }
 
 
@@ -80,7 +86,7 @@ async function check(file: string): Promise<string[]> {
   const want = directives(readFileSync(file, "utf8"));
   if (typeof want === "string") return [want];
   const dir = fixture(`corpus-${basename(file, ".rs")}`);
-  const native = runNative(file, dir, want.edition);
+  const native = runNative(file, dir, want.edition, want.native);
   if (typeof native === "string") return [native];
 
   // The directive is checked against Rust itself, so it can't be wrong.
@@ -215,8 +221,11 @@ test("unknown and repeated directives are reported", () => {
   expect(directives("//@ run_pass\nfn main() {}")).toContain("unknown or malformed directive");
   expect(directives("//@run-pass\nfn main() {}")).toContain("unknown or malformed directive");
   expect(directives("//@ run-pass\n//@ run-fail: x\nfn main() {}")).toBe("more than one directive");
-  expect(directives("fn main() {}")).toEqual({ kind: "run-pass", edition: "2024" });
-  expect(directives("//@ edition: 2015\n//@ run-fail: x\nfn main() {}")).toEqual({ kind: "run-fail", message: "x", edition: "2015" });
+  expect(directives("fn main() {}")).toEqual({ kind: "run-pass", edition: "2024", native: "host" });
+  expect(directives("//@ native: wasm32\nfn main() {}")).toEqual({ kind: "run-pass", edition: "2024", native: "wasm32" });
+  expect(directives("//@ native: wasm32\n//@ run-fail: x\nfn main() {}")).toContain("aborts on a panic");
+  expect(directives("//@ native: wasm64\nfn main() {}")).toContain("unknown or malformed directive");
+  expect(directives("//@ edition: 2015\n//@ run-fail: x\nfn main() {}")).toEqual({ kind: "run-fail", message: "x", edition: "2015", native: "host" });
   expect(directives("//@ edition: 2016\nfn main() {}")).toContain("unknown or malformed directive");
 });
 

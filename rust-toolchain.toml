@@ -6,4 +6,6 @@ channel = "1.99.0"
 components = ["rustc-dev", "llvm-tools", "rust-src", "rustfmt", "clippy"]
 # The target rustc checks programs for (ADR 0090): its `usize` is 32 bits,
 # as rust-js's is.
-targets = ["wasm32-unknown-unknown"]
+# And the one a corpus case marked `//@ native: wasm32` runs on, so its
+# native Rust is 32-bit too.
+targets = ["wasm32-unknown-unknown", "wasm32-wasip1"]
