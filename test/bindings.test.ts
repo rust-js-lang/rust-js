@@ -801,6 +801,54 @@ pub fn spread(parts: &[&str]) -> String {
   expect(lib.spread(["x", "y"])).toBe(path.join("x", "y"));
 });
 
+// ADR 0272: `url`, its WHATWG classes webapi's, as Node's are the globals,
+// and its own: file URLs, domains, and a URL written without its parts.
+test("node's url module binds its own and the WHATWG classes", async () => {
+  const dir = fixture("node-url");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::url::{self, FileUrlToPathOptions, PathToFileUrlOptions, URLFormatOptions, URLSearchParams};
+use node::webapi;
+
+pub fn all() -> Vec<String> {
+    let file = url::path_to_file_url("/tmp/a b.txt");
+    let link = webapi::url::new("https://user:pw@example.com/p?q=1#top");
+    let params: &URLSearchParams = link.search_params();
+    vec![
+        file.href(),
+        url::file_url_to_path("file:///tmp/a%20b.txt"),
+        url::file_url_to_path(file),
+        url::file_url_to_path_with_options("file:///C:/x", FileUrlToPathOptions { windows: Some(true) }),
+        url::path_to_file_url_with_options("C:\\\\x y", PathToFileUrlOptions { windows: Some(true) }).href(),
+        url::domain_to_ascii("español.com"),
+        url::domain_to_unicode("xn--espaol-zwa.com"),
+        url::resolve("/one/two", "three"),
+        url::format(link),
+        url::format_with_options(link, URLFormatOptions { auth: Some(false), fragment: Some(false), ..Default::default() }),
+        params.get("q").unwrap_or_default(),
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('from "url";');
+  const lib = await import(join(dir, "lib.js"));
+  const url = await import("node:url");
+  const link = new URL("https://user:pw@example.com/p?q=1#top");
+  expect(lib.all()).toEqual([
+    url.pathToFileURL("/tmp/a b.txt").href,
+    "/tmp/a b.txt",
+    "/tmp/a b.txt",
+    url.fileURLToPath("file:///C:/x", { windows: true }),
+    url.pathToFileURL("C:\\x y", { windows: true }).href,
+    url.domainToASCII("español.com"),
+    url.domainToUnicode("xn--espaol-zwa.com"),
+    url.resolve("/one/two", "three"),
+    url.format(link),
+    url.format(link, { auth: false, fragment: false }),
+    "1",
+  ]);
+});
+
 // Node's http request and response, as a server's handler is given them,
 // and Next.js's Pages Router: what's read of one and written to the other.
 test("node's http request is read and its response written", async () => {

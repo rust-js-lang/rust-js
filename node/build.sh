@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Compile the node crate's metadata, which is all programs need (ADR 0272),
-# and the js crate's beside it, which it uses (ADR 0102), for the target
+# and the js and webapi crates' beside it, which it uses (ADR 0102), for the target
 # rust-js checks programs for (ADR 0090):
 #
 #   node/build.sh -o target/libnode.rmeta
@@ -17,7 +17,7 @@ shift 2
 mkdir -p "$(dirname "$out")"
 dir=$(cd "$(dirname "$out")" && pwd)
 cd "$(dirname "$0")"
-../builtins/build.sh -o "$dir/libjs.rmeta" "$@"
+../webapi/build.sh -o "$dir/libwebapi.rmeta" "$@"
 target=(--target=wasm32-unknown-unknown)
 for arg in "$@"; do
   case "$arg" in --target | --target=*) target=() ;; esac
@@ -29,4 +29,4 @@ compiler=${RUST_JS_COMPILER:-$PWD/../target/debug/rust-js}
 rust_js=("$compiler")
 case "$compiler" in *.js) rust_js=("${RUST_JS_JS_RUNTIME:-node}" "$compiler") ;; esac
 exec "${rust_js[@]}" --rustc --edition=2024 --crate-type=lib --crate-name=node --emit=metadata ${target[@]+"${target[@]}"} src/lib.rs \
-  --extern js="$dir/libjs.rmeta" -o "$dir/$(basename "$out")" "$@"
+  --extern webapi="$dir/libwebapi.rmeta" --extern js="$dir/libjs.rmeta" -o "$dir/$(basename "$out")" "$@"

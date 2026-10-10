@@ -48,3 +48,8 @@ A type or class item counted by its name alone made `http::Server` count
 `https#Server`, `net#Server` and `tls#Server` too. An item now counts for
 the module of its file, http.rs's for `http`; lib.rs's, the crate's own
 types such as `BufferEncoding`, for each module.
+
+## Amendment: a re-export binds
+
+A type the crate re-exports, `pub use webapi::{URL, ..}` in url.rs, binds
+that module's export: Node's `url.URL` is the global webapi binds.

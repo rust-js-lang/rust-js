@@ -22,6 +22,9 @@ pub mod fs;
 pub mod http;
 pub mod path;
 pub mod process;
+pub mod url;
+
+pub use webapi;
 
 /// [How text is bytes](https://nodejs.org/api/buffer.html#buffers-and-character-encodings),
 /// `@types/node`'s `BufferEncoding`: what a file's text is read as.

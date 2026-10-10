@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 26 of 1538 (1.7%)
+# exports: 43 of 1538 (2.8%)
 # assert 0 of 28
 - assert#Assert
 - assert#AssertionError
@@ -1255,28 +1255,28 @@
 - tty#isatty
 - tty#ReadStream
 - tty#WriteStream
-# url 0 of 24
-- url#domainToASCII
-- url#domainToUnicode
-- url#fileURLToPath
+# url 17 of 24
++ url#domainToASCII
++ url#domainToUnicode
++ url#fileURLToPath
 - url#fileURLToPathBuffer
-- type url#FileUrlToPathOptions
-- url#format
++ type url#FileUrlToPathOptions
++ url#format
 - url#parse
-- url#pathToFileURL
-- type url#PathToFileUrlOptions
-- url#resolve
++ url#pathToFileURL
++ type url#PathToFileUrlOptions
++ url#resolve
 - type url#Url
-- url#URL
-- type url#URLFormatOptions
++ url#URL
++ type url#URLFormatOptions
 - type url#UrlObject
-- url#URLPattern
-- type url#URLPatternComponentResult
-- type url#URLPatternInit
-- type url#URLPatternOptions
-- type url#URLPatternResult
-- url#URLSearchParams
-- type url#URLSearchParamsIterator
++ url#URLPattern
++ type url#URLPatternComponentResult
++ type url#URLPatternInit
++ type url#URLPatternOptions
++ type url#URLPatternResult
++ url#URLSearchParams
++ type url#URLSearchParamsIterator
 - url#urlToHttpOptions
 - type url#UrlWithParsedQuery
 - type url#UrlWithStringQuery

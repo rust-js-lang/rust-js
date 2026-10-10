@@ -147,7 +147,16 @@ function bindings(): { links: Set<string>; items: Set<string> } {
     .filter((f) => f.endsWith(".rs"))
     .sort();
   const sources = files.map((f) => readFileSync(join(src, f), "utf8")).join("\n");
-  const items = (f: string) => [...readFileSync(join(src, f), "utf8").matchAll(/pub (?:struct|enum|type|trait) (\w+)/g)].map((m) => m[1]);
+  // An item of its own, or one it re-exports, `pub use webapi::{URL, ..}`,
+  // as `url`'s `URL` is the global webapi binds.
+  const items = (f: string) => {
+    const text = readFileSync(join(src, f), "utf8");
+    return [
+      ...[...text.matchAll(/pub (?:struct|enum|type|trait) (\w+)/g)].map((m) => m[1]),
+      ...[...text.matchAll(/pub use [\w:]+::\{([^}]*)\}/g)].flatMap((m) => m[1].split(",").map((n) => n.trim()).filter(Boolean)),
+      ...[...text.matchAll(/pub use [\w:]+::(\w+);/g)].map((m) => m[1]),
+    ];
+  };
   return {
     links: new Set([
       ...[...sources.matchAll(/link_name = "(?:new )?([\w/]+)#(\w+)/g)].map((m) => `${m[1]}#${m[2]}`),
