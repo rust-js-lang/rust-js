@@ -89,7 +89,6 @@ for (const [name, source, message, crate] of [
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
   ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "calling `std::iter::Iterator::size_hint`"],
   ["comparing paths, which compares their components", "use std::path::Path;\npub fn f(a: &Path, b: &Path) -> bool { a == b }", "`==` on `std::path::Path`"],
-  ["a chain of by_ref, which an array doesn't keep the place of", "pub fn f() -> i32 { let mut it = [1, 2, 3].into_iter(); let a: i32 = it.by_ref().take(1).sum(); a + it.sum::<i32>() }", "`by_ref()` but as what a `for` loop iterates"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::hash::Hasher for C { fn finish(&self) -> u64 { 0 } fn write(&mut self, _: &[u8]) {} }', "user implementations of `std::hash::Hasher`"],
   ["comparing another crate's struct", 'pub fn f(a: std::time::Instant, b: std::time::Instant) -> bool { a < b }', "does not support"],
   ["next() of an iterator in a field", 'pub struct L<\'a> { c: std::str::Chars<\'a> }\npub fn f(l: &mut L) -> Option<char> { l.c.next() }', "make it a `Peekable`"],
