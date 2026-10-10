@@ -49,6 +49,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 return None;
             }
+            // A lock's `TryLockError`, of the guard a `Poisoned` would hold.
+            ty::Adt(_, args) if self.recognition().is_try_lock_error(ty) => {
+                return self.unsupported_in(args.type_at(0), seen);
+            }
             // A channel's end, the queue it shares (ADR 0142), of its items.
             ty::Adt(_, args) if self.recognition().channel_end(ty).is_some() => {
                 return self.unsupported_in(args.type_at(0), seen);

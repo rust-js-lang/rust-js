@@ -1340,4 +1340,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","^as_deref"],
   },
+  {
+    name: "try-lock-unknown",
+    breaks: "`try_lock()` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"try_lock\" if adt(\"Mutex\") => Std::TryBorrow {\n                mutable: true,\n                lock: true,\n            },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
+  },
+  {
+    name: "try-read-unknown",
+    breaks: "`try_read()` and `try_write()` are refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"try_read\" | \"try_write\" if adt(\"RwLock\") => Std::TryBorrow {\n                mutable: name.as_str() == \"try_write\",\n                lock: true,\n            },\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
+  },
 ];

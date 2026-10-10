@@ -126,9 +126,11 @@ pub(super) enum Std {
         mutable: bool,
         lock: bool,
     },
-    /// `try_borrow()`, `try_borrow_mut()`: `Ok` of a guard, or `Err` (ADR 0328).
+    /// `try_borrow()`, `try_borrow_mut()`: `Ok` of a guard, or `Err` (ADR 0328);
+    /// a lock's `try_lock()`, `try_read()` and `try_write()` (`lock`).
     TryBorrow {
         mutable: bool,
+        lock: bool,
     },
     /// What a guard guards: its cell's `value`, and a `&mut` to a number or
     /// text in it the cell, the `{ value }` box that is (ADR 0328).
@@ -1609,7 +1611,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 mutable: name.as_str() == "borrow_mut",
                 lock: false,
             },
+            "try_lock" if adt("Mutex") => Std::TryBorrow {
+                mutable: true,
+                lock: true,
+            },
+            "try_read" | "try_write" if adt("RwLock") => Std::TryBorrow {
+                mutable: name.as_str() == "try_write",
+                lock: true,
+            },
             "try_borrow" | "try_borrow_mut" if adt("RefCell") => Std::TryBorrow {
+                lock: false,
                 mutable: name.as_str() == "try_borrow_mut",
             },
             "load" | "into_inner" if adt("Atomic") => Std::AtomicLoad,
@@ -2702,6 +2713,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core
             && ["ParseIntError", "ParseFloatError", "ParseBoolError", "ParseCharError", "TryFromIntError", "BorrowError", "BorrowMutError"]
                 .contains(&self.tcx.item_name(adt.did()).as_str()))
+    }
+
+    /// A lock's `TryLockError`: `WouldBlock`, or `Poisoned` of a `PoisonError`.
+    pub(super) fn is_try_lock_error(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::sync::TryLockError")
     }
 
     /// A `Utf8Error`, `false`, or a `FromUtf8Error`, `true`: the objects the

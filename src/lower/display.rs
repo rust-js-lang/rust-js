@@ -882,6 +882,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_string_like(ty) || self.is_parse_error(ty) {
             return Ok(value);
         }
+        // A lock's `TryLockError`, as std shows it.
+        if self.recognition().is_try_lock_error(ty) {
+            let blocks = Expr::bin(Op::Eq, value, Expr::str("WouldBlock"));
+            return Ok(Expr::cond(
+                blocks,
+                Expr::str("try_lock failed because the operation would block"),
+                Expr::str("poisoned lock: another task failed inside"),
+            ));
+        }
         if self.is_json_error(ty) {
             self.runtime.insert(Helper::JsonError);
             return Ok(Expr::call(Expr::var("$displayJsonError"), vec![value]));
@@ -1118,6 +1127,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && adt.variants().is_empty()
         {
             return Ok(Expr::str(""));
+        }
+        // A lock's `TryLockError`, as std shows it: its variant's name, quoted.
+        if self.recognition().is_try_lock_error(ty) {
+            let blocks = Expr::bin(Op::Eq, value, Expr::str("WouldBlock"));
+            return Ok(Expr::cond(
+                blocks,
+                Expr::str("\"WouldBlock\""),
+                Expr::str("\"Poisoned(..)\""),
+            ));
         }
         // A channel's errors (ADR 0142), as std shows them: `TryRecvError` is
         // its variant's name already.

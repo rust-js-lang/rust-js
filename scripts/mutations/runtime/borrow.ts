@@ -98,4 +98,28 @@ export const mutations: Mutation[] = [
     replace: "    return f(boxed ? cell : cell.value);\n  } finally {\n  }",
     tests: ["test/corpus.test.ts", "-t", "refcell_unwind_releases"],
   },
+  {
+    name: "try-lock-never-blocks",
+    breaks: "`try_lock()` while the thread holds it is `Ok`",
+    file: "src/runtime/borrow.js",
+    find: "  if (mutable ? cell.borrows : cell.borrows < 0) return { TAG: \"Err\", _0: \"WouldBlock\" };\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
+  },
+  {
+    name: "try-read-blocks-reads",
+    breaks: "`try_read()` beside a read is `Err`",
+    file: "src/runtime/borrow.js",
+    find: "  if (mutable ? cell.borrows : cell.borrows < 0) return { TAG: \"Err\", _0: \"WouldBlock\" };",
+    replace: "  if (cell.borrows) return { TAG: \"Err\", _0: \"WouldBlock\" };",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
+  },
+  {
+    name: "try-lock-not-held",
+    breaks: "`try_lock()`'s guard isn't counted while it's held",
+    file: "src/runtime/borrow.js",
+    find: "mutable ? $lock(cell, true) : $lockRead(cell, true)",
+    replace: "mutable ? $lock(cell) : $lockRead(cell)",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
+  },
 ];

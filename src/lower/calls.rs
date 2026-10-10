@@ -690,6 +690,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::ResultOk
                     | Std::VecMacro
                     | Std::Unwrap
+                    | Std::UnwrapErr
                     | Std::UnwrapUnchecked
                     | Std::UnwrapOk
                     | Std::Method("pop")

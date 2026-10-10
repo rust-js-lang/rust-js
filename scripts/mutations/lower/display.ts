@@ -420,4 +420,20 @@ export const mutations: Mutation[] = [
     replace: "            return Ok(shown);",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
   },
+  {
+    name: "try-lock-error-display",
+    breaks: "a `TryLockError` shows as poisoned",
+    file: "src/lower/display.rs",
+    find: "                Expr::str(\"try_lock failed because the operation would block\"),",
+    replace: "                Expr::str(\"poisoned lock: another task failed inside\"),",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
+  },
+  {
+    name: "try-lock-error-debug-unquoted",
+    breaks: "a `TryLockError`'s `{:?}` isn't quoted",
+    file: "src/lower/display.rs",
+    find: "                Expr::str(\"\\\"WouldBlock\\\"\"),",
+    replace: "                Expr::str(\"WouldBlock\"),",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
+  },
 ];

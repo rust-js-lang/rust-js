@@ -338,8 +338,8 @@ export const mutations: Mutation[] = [
     name: "unwrap-unchecked-keeps-drops",
     breaks: "`unwrap_unchecked()` can't take a value with a destructor, so `Some(Guard(5)).unwrap_unchecked()` is refused",
     file: "src/lower/calls.rs",
-    find: "                    | Std::Unwrap\n                    | Std::UnwrapUnchecked\n",
-    replace: "                    | Std::Unwrap\n",
+    find: "                    | Std::UnwrapErr\n                    | Std::UnwrapUnchecked\n",
+    replace: "                    | Std::UnwrapErr\n",
     tests: ["test/lowering.test.ts", "-t", "unwrap_unchecked is the value"],
   },
   {
@@ -445,5 +445,13 @@ export const mutations: Mutation[] = [
     find: "            return Ok(self.js_iterator(it));\n",
     replace: "            return Ok(it);\n",
     tests: ["test/corpus.test.ts","-t","by_ref_chains"],
+  },
+  {
+    name: "unwrap-err-of-guard-refused",
+    breaks: "`unwrap_err()` of a `Result` of a guard is refused",
+    file: "src/lower/calls.rs",
+    find: "                    | Std::UnwrapErr\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","try_lock"],
   },
 ];

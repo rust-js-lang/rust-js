@@ -73,8 +73,7 @@ try {
 - **A lock locked while its thread holds it throws** `rust-js does not
   support locking a lock its thread holds, which deadlocks in Rust`: ADR
   0262's D, at run time. A read beside another read isn't one.
-- **Still refused**: `try_lock`, `try_read` and `try_write`, whose
-  `TryLockError` rust-js has no form for yet; `Ref::map` and a guard's other
+- **Still refused**: `Ref::map` and a guard's other
   own functions; and `{:?}` of a lock.
 
 ## Why
@@ -98,3 +97,19 @@ try {
   borrow, skip `std`'s impls' bounds, keep a thread-local plain under a
   closure that asks, copy a guarded number, and show a borrowed cell.
 - `docs/std-coverage.txt`: `RefCell` 11 of 13.
+
+## Since
+
+- **`try_lock`, `try_read` and `try_write`** (2026-10-10), which were
+  refused: `$tryLock(m, mutable)`, `Ok` of a guard held, or, while the
+  thread holds it so, `Err` of `TryLockError::WouldBlock`, `"WouldBlock"`
+  as an enum's unit variant is, where `lock()` would deadlock. On one
+  thread that's exact: only the thread itself can hold it. `{}` and `{:?}`
+  of the error are std's, `try_lock failed because the operation would
+  block` and `"WouldBlock"`, quoted. `unwrap_err()` takes a `Result` of
+  a guard, as `unwrap()` does. The `try_lock` corpus case runs, against
+  native Rust, a `Mutex`'s `try_lock` free and held, matched on its
+  error, an `RwLock`'s reads beside each other, a write beside them, a
+  read under a write, and the error shown. Mutations never block, block
+  a read beside a read, leave the guard uncounted, show it wrong, and
+  refuse each. `docs/std-coverage.txt`: `Mutex` 7 of 7, `RwLock` 9 of 9.

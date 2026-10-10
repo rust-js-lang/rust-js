@@ -451,23 +451,23 @@
 + RefCell::try_borrow
 + RefCell::try_borrow_mut
 - RefCell::try_borrow_unguarded
-# Mutex 6 of 7
+# Mutex 7 of 7
 + Mutex::clear_poison
 + Mutex::get_mut
 + Mutex::into_inner
 + Mutex::is_poisoned
 + Mutex::lock
 + Mutex::new
-- Mutex::try_lock
-# RwLock 7 of 9
++ Mutex::try_lock
+# RwLock 9 of 9
 + RwLock::clear_poison
 + RwLock::get_mut
 + RwLock::into_inner
 + RwLock::is_poisoned
 + RwLock::new
 + RwLock::read
-- RwLock::try_read
-- RwLock::try_write
++ RwLock::try_read
++ RwLock::try_write
 + RwLock::write
 # Cow 2 of 2
 + Cow::into_owned

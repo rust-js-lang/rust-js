@@ -100,6 +100,14 @@ function $lockRead(cell, hold) {
   return cell;
 }
 
+// `try_lock()`, `try_write()` (`mutable`) and `try_read()`: `Ok` of a guard
+// held, or, while the thread holds it so, `Err` of `TryLockError::WouldBlock`,
+// where `lock()` would deadlock.
+function $tryLock(cell, mutable) {
+  if (mutable ? cell.borrows : cell.borrows < 0) return { TAG: "Err", _0: "WouldBlock" };
+  return { TAG: "Ok", _0: mutable ? $lock(cell, true) : $lockRead(cell, true) };
+}
+
 function $deadlock() {
   throw new Error("rust-js does not support locking a lock its thread holds, which deadlocks in Rust");
 }

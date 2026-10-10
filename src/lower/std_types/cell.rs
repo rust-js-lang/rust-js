@@ -122,13 +122,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let guard = Expr::call(Expr::var(name), given);
                 if lock { Self::ok(guard) } else { guard }
             }
-            Std::TryBorrow { mutable } => {
+            Std::TryBorrow { mutable, lock } => {
                 let mut given = vec![arg()];
                 if mutable {
                     given.push(Expr::bool(true));
                 }
                 self.runtime.insert(Helper::Borrow);
-                Expr::call(Expr::var("$tryBorrow"), given)
+                Expr::call(Expr::var(if lock { "$tryLock" } else { "$tryBorrow" }), given)
             }
             Std::GuardValue { mutable } => {
                 let ty::Adt(_, guard) = generic_args.type_at(0).kind() else {
