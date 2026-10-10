@@ -3045,6 +3045,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
     }
 
+    /// A type that.s the value it holds in JS, whose field is it: a
+    /// `MaybeUninit` (ADR 0332), and what std makes one of, `ManuallyDrop`
+    /// and `MaybeDangling`.
+    pub(super) fn transparent(&self, ty: Ty<'tcx>) -> bool {
+        self.uninit_of(ty).is_some()
+            || self.is_lang_adt(ty, LangItem::ManuallyDrop)
+            || self.is_lang_adt(ty, LangItem::MaybeDangling)
+    }
+
     /// A `Pin<P>`'s `P`, the pointer it is in JS (ADR 0329).
     pub(super) fn pinned(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {

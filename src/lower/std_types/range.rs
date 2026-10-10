@@ -7,7 +7,6 @@ use crate::lower::display::{Pretty, join};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
-use rustc_middle::thir::ExprId;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -196,15 +195,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(self.applied(f, range))
     }
 
+    /// A range's function, of its arguments' values and types.
     pub(in crate::lower) fn range_call(
         &mut self,
         op: RangeOp,
-        args: &[ExprId],
+        values: Vec<Expr>,
+        tys: &[Ty<'tcx>],
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         if op == RangeOp::New {
-            let values = self.operands(args, out)?;
             let props = ["start", "end"]
                 .into_iter()
                 .zip(values)
@@ -212,17 +212,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect();
             return Ok(Expr::object(props));
         }
-        let range_ty = self.thir[args[0]].ty.peel_refs();
+        let range_ty = tys[0].peel_refs();
         let kind = self.range_kind(range_ty).expect("a range's method");
         let index = self.range_index(range_ty);
         if op == RangeOp::Contains {
-            let item_ty = self.thir[args[1]].ty.peel_refs();
+            let item_ty = tys[1].peel_refs();
             if index.is_none_or(|index| {
                 index.peel_refs() != item_ty || !(self.is_primitive_ord(index) || self.is_text_ord(index))
             }) {
                 return Err(self.unsupported(span, &format!("`contains` of a `{range_ty}`")));
             }
-            let [range, item]: [Expr; 2] = self.operands(args, out)?.try_into().ok().unwrap();
+            let [range, item]: [Expr; 2] = values.try_into().ok().unwrap();
             let parts = self.range_parts(range, kind, out);
             let item = if item.reads_same() {
                 item
@@ -259,7 +259,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if index.and_then(Num::of).is_none() {
                 return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
             }
-            let range = self.expr(args[0], out)?;
+            let range = values.into_iter().next().expect("the range");
             let (helper, name) = match (op, kind) {
                 (RangeOp::Next, RangeKind::From) => (Helper::RangeFromNext, "$rangeFromNext"),
                 (RangeOp::Next, _) => (Helper::RangeNext, "$rangeNext"),
@@ -268,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(helper);
             return Ok(Expr::call(Expr::var(name), vec![range]));
         }
-        let range = self.expr(args[0], out)?;
+        let range = values.into_iter().next().expect("the range");
         let parts = self.range_parts(range, kind, out);
         Ok(match (op, parts.as_slice()) {
             (RangeOp::Bound(name), [start, end]) => {

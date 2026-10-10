@@ -161,6 +161,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().is_lang_adt(ty, item)
     }
 
+    /// A type that.s the value it holds in JS: a `MaybeUninit`, a
+    /// `ManuallyDrop`, a `MaybeDangling`.
+    pub(super) fn transparent(&self, ty: Ty<'tcx>) -> bool {
+        self.recognition().transparent(ty)
+    }
+
     /// std types that aren't plain structs in JS: `String` is a JS string,
     /// `Box<T>` and `Rc<T>` are just `T`, `Cell<T>` and `RefCell<T>` are
     /// `{ value }`, a `RefCell`'s guards are what they guard, and `Vec<T>`

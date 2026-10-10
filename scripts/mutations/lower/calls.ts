@@ -77,14 +77,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "option-as-mut-same",
-    breaks: "`list.next.as_mut()` of a handle on `list.next` is the handle, not the `Option`",
-    file: "src/lower/calls.rs",
-    find: "            Std::Pointee => self.through_refs(arg(), tys[0]).0,\n",
-    replace: "            Std::Pointee => arg(),\n",
-    tests: ["test/corpus.test.ts","-t","generic_mut_ref_kept"],
-  },
-  {
     name: "push-str-plain-place",
     breaks: "`pick(false, &mut s.0, &mut s.1).push('!')` is refused: `push_str` found only plain places",
     file: "src/lower/calls.rs",

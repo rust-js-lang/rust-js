@@ -13,6 +13,7 @@
 //! The function's THIR is beside it, for its shape: names and spans.
 
 mod cfg;
+mod iter;
 
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -20,7 +21,7 @@ use rustc_index::IndexVec;
 use rustc_middle::mir::interpret::GlobalId;
 use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
-    Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp,
+    Place, PlaceElem, Rvalue, StatementKind, TerminatorKind, UnOp,
 };
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -32,10 +33,9 @@ use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
 
-/// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
+/// A body's MIR, as borrowck reads it (ADR 0364).
 pub struct Mir<'tcx> {
     pub(super) body: mir::Body<'tcx>,
-    pub(super) promoted: IndexVec<Promoted, mir::Body<'tcx>>,
 }
 
 /// Whether bodies are lowered from their MIR: `RUST_JS_MIR=1`, while the
@@ -58,6 +58,9 @@ enum Value<'tcx> {
     /// A shared reference to a place, which nothing changes while it's held
     /// (borrowck says so): the place, read where it's used.
     Place(Expr),
+    /// A `&mut` to a place JS can't share, a number's: the place, read and
+    /// written through where it's used, or by a closure that captured it.
+    Ref(Expr),
 }
 
 /// What's known of a body's locals.
@@ -79,7 +82,6 @@ struct Locals {
 /// A body's lowering state.
 struct State<'m, 'tcx> {
     body: &'m mir::Body<'tcx>,
-    promoted: &'m IndexVec<Promoted, mir::Body<'tcx>>,
     graph: cfg::Graph,
     locals: Locals,
     /// Temporaries made and not yet used, in the order they were made.
@@ -88,6 +90,8 @@ struct State<'m, 'tcx> {
     labels: Vec<BasicBlock>,
     /// The names of the locals borrowed, which a call may change.
     borrowed_names: std::collections::HashSet<String>,
+    /// Of a closure: what it captured, each its environment's field.
+    captures: Vec<Expr>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -97,25 +101,56 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.fns.get(&def_id).is_none() {
             return Err(self.unsupported(span, "this item from its MIR"));
         }
-        if !self.evidence_params(def_id).is_empty() {
-            return Err(self.unsupported(span, "a generic function from its MIR"));
-        }
+        // Its dictionaries, for its bounds, after its parameters (ADR 0049).
+        let evidence = self.evidence_params(def_id);
+        let (mut params, out) = self.mir_function(mir, None)?;
+        params.extend(evidence);
+        Ok(LoweredFn {
+            function: js::Function {
+                name: self.krate.fns[&def_id].name.clone(),
+                params,
+                body: out,
+                export: self.tcx.visibility(def_id).is_public()
+                    && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
+                        || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
+                is_async: false,
+                span: self.js_span(
+                    self.tcx
+                        .hir_span_with_body(self.tcx.local_def_id_to_hir_id(body.def_id)),
+                ),
+                name_span: self
+                    .tcx
+                    .def_ident_span(def_id)
+                    .map_or(js::Span::NONE, |s| self.js_span(s)),
+            },
+            runtime: std::mem::take(&mut self.runtime),
+            jsx: self.jsx,
+            dependencies: self.dependencies.take(),
+        })
+    }
+
+    /// A body's parameters and statements. A closure's, given what it
+    /// captured, reads them in place of its environment's fields.
+    fn mir_function(&mut self, mir: &Mir<'tcx>, captures: Option<Vec<Expr>>) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         let mut state = State {
             body: mir_body,
-            promoted: &mir.promoted,
             graph: cfg::Graph::of(mir_body),
             locals: self.mir_locals(mir_body),
             pending: Vec::new(),
             labels: Vec::new(),
             borrowed_names: Default::default(),
+            captures: captures.clone().unwrap_or_default(),
         };
         state.borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
             .map(|(local, _)| state.locals.names[local].clone())
             .collect();
+        // A closure's first argument is its environment, read through its fields.
+        let skip = usize::from(captures.is_some());
         let params: Vec<js::Pattern> = mir_body
             .args_iter()
+            .skip(skip)
             .map(|local| {
                 state.locals.declared[local] = true;
                 js::Pattern::Name(match state.locals.names[local].as_str() {
@@ -147,28 +182,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             out.pop();
         }
-        Ok(LoweredFn {
-            function: js::Function {
-                name: self.krate.fns[&def_id].name.clone(),
-                params,
-                body: out,
-                export: self.tcx.visibility(def_id).is_public()
-                    && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
-                        || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
-                is_async: false,
-                span: self.js_span(
-                    self.tcx
-                        .hir_span_with_body(self.tcx.local_def_id_to_hir_id(body.def_id)),
-                ),
-                name_span: self
-                    .tcx
-                    .def_ident_span(def_id)
-                    .map_or(js::Span::NONE, |s| self.js_span(s)),
-            },
-            runtime: std::mem::take(&mut self.runtime),
-            jsx: self.jsx,
-            dependencies: self.dependencies.take(),
-        })
+        Ok((params, out))
+    }
+
+    /// A closure made here, an arrow of its own MIR: what it captured, as
+    /// it's read where it's made, the places it borrows themselves, as JS's
+    /// closures read theirs, and a value it took a copy of where the
+    /// variable may change after.
+    fn mir_closure(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        def_id: rustc_span::def_id::DefId,
+        captured: Vec<Value<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let mut captures = Vec::new();
+        for value in captured {
+            captures.push(match value {
+                Value::Ref(place) | Value::Place(place) => place,
+                value => {
+                    let e = self.value_expr(value, span)?;
+                    let changes = matches!(&e.kind, js::ExprKind::Var(name)
+                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] > 1));
+                    if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
+                        e
+                    } else {
+                        self.flush(state, out)?;
+                        self.spill("captured", e, out)
+                    }
+                }
+            });
+        }
+        let Some(body) = def_id
+            .as_local()
+            .and_then(|local| self.krate.closures.get(&local))
+            .copied()
+        else {
+            return Err(self.unsupported(span, "this closure, from its MIR"));
+        };
+        let Some(mir) = &body.mir else {
+            return Err(self.unsupported(span, "this closure, without its MIR"));
+        };
+        let (params, stmts) = self.mir_function(mir, Some(captures))?;
+        Ok(Expr::arrow(params, stmts))
     }
 
     /// Each local's name, the user's where it has one, and how it's used.
@@ -439,7 +496,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TerminatorKind::Drop { place, target, .. } => {
                 let ty = place.ty(&state.body.local_decls, self.tcx).ty;
                 if self.drops(ty) != super::drops::Drops::Nothing {
-                    return Err(self.unsupported(span, "dropping a value with a destructor, from its MIR"));
+                    return Err(self.unsupported(span, &format!("dropping a `{ty}` with a destructor, from its MIR")));
                 }
                 out.extend(self.mir_branch(state, block, *target)?);
             }
@@ -627,6 +684,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ),
             Value::Discriminant(..) => return Err(self.unsupported(span, "an enum's discriminant read as a value")),
             Value::Place(e) => e,
+            Value::Ref(_) => return Err(self.unsupported(span, "a `&mut` of a number kept or given, from its MIR")),
         })
     }
 
@@ -704,12 +762,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "" => Expr::undefined(),
                 name => Expr::var(name),
             }
+        } else if matches!(
+            state.body.local_decls[place.local].ty.peel_refs().kind(),
+            ty::Closure(..)
+        ) && !state.captures.is_empty()
+        {
+            // A closure's environment, read only through its fields.
+            Expr::undefined()
         } else {
-            self.read_local(state, place.local, out)?
+            match self.read_local_value(state, place.local, out)? {
+                // Through a `&mut` to a place: the place.
+                Value::Ref(place) => place,
+                value => self.value_expr(value, span)?,
+            }
         };
         let mut ty = mir::PlaceTy::from_ty(state.body.local_decls[place.local].ty);
         for elem in place.projection {
-            value = self.project_mir(state, value, ty, elem, span, out)?;
+            value = match (ty.ty.peel_refs().kind(), elem) {
+                // Of a closure's environment, `(*_1).0`: what it captured.
+                (ty::Closure(..), PlaceElem::Field(field, _)) if !state.captures.is_empty() => {
+                    state.captures[field.as_usize()].clone()
+                }
+                _ => self.project_mir(state, value, ty, elem, span, out)?,
+            };
             ty = ty.projection_ty(self.tcx, elem);
         }
         Ok(value)
@@ -746,6 +821,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// enum holds it, and of what's the value it holds, itself.
     fn mir_field(&mut self, base: Expr, ty: mir::PlaceTy<'tcx>, field: FieldIdx, span: Span) -> R<Expr> {
         let i = field.as_usize();
+        if let ty::Closure(..) = ty.ty.kind() {
+            return Err(self.unsupported(span, "a closure's field read outside it, from its MIR"));
+        }
         if self.transparent(ty.ty) {
             return Ok(base);
         }
@@ -766,21 +844,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
             _ => Err(self.unsupported(span, "this field, from its MIR")),
         }
-    }
-
-    /// A `MaybeDangling`, std's wrapper of what a `ManuallyDrop` holds.
-    fn maybe_dangling(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _)
-            if self.tcx.item_name(adt.did()).as_str() == "MaybeDangling" && self.tcx.crate_name(adt.did().krate) == rustc_span::sym::core)
-    }
-
-    /// A type that's the value it holds in JS, whose field is it: a
-    /// `MaybeUninit` (ADR 0332), and what std makes one of, `ManuallyDrop`
-    /// and `MaybeDangling`.
-    fn transparent(&self, ty: Ty<'tcx>) -> bool {
-        self.recognition().uninit_of(ty).is_some()
-            || self.is_lang_adt(ty, LangItem::ManuallyDrop)
-            || self.maybe_dangling(ty)
     }
 
     /// Whether `place` is its local's value, through what's the value it
@@ -918,8 +981,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
                 let pointee = place.ty(decls, tcx).ty;
-                if matches!(kind, BorrowKind::Mut { .. }) && !place.is_indirect() && !self.is_object(pointee) {
-                    return Err(self.unsupported(span, &format!("a `&mut` of a `{pointee}`, from its MIR")));
+                if matches!(kind, BorrowKind::Mut { .. })
+                    && !place.is_indirect()
+                    && !self.is_object(pointee)
+                    && !matches!(pointee.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..))
+                {
+                    return Ok(Value::Ref(self.mir_place(state, *place, span, out)?));
                 }
                 if self.through_values(state.body, place, true) {
                     let value = self.read_local_value(state, place.local, out)?;
@@ -1021,6 +1088,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .collect::<R<Vec<_>>>()?;
                 Ok(Value::Expr(self.mir_adt(adt, *variant_index, ty, exprs, span)?))
             }
+            AggregateKind::Closure(def_id, _) => Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?)),
             _ => Err(self.unsupported(span, "this aggregate, from its MIR")),
         }
     }
@@ -1221,8 +1289,97 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let output = destination.ty(decls, self.tcx).ty;
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
         let values = self.take_operands(state, &operands, out)?;
-        let (def_id, generic_args) = self.callee(def_id, generic_args);
-        if let Some(known) = self.recognition().classify(def_id, generic_args) {
+        let tcx = self.tcx;
+        // `x.into()` is the `From::from(x)` it calls, the crate's own (ADR 0052).
+        let (def_id, generic_args) = self
+            .resolve_into(def_id, generic_args)
+            .unwrap_or((def_id, generic_args));
+        // Calling a closure, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`.
+        if let Some(fn_trait) = tcx.trait_of_assoc(def_id)
+            && tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
+        {
+            let mut values = values.into_iter();
+            let callee = self.value_expr(values.next().expect("the closure"), span)?;
+            let list = match values.next() {
+                Some(Value::List(items)) => items,
+                Some(Value::Expr(e)) if matches!(e.kind, js::ExprKind::Undefined) => Vec::new(),
+                _ => return Err(self.unsupported(span, "this closure call, from its MIR")),
+            };
+            let mut exprs = list
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            // Not a closure of the crate's: a `dyn Fn`, a generic one or a
+            // pointer, which may be JS's (ADR 0330).
+            if !matches!(arg_tys[0].peel_refs().kind(), ty::Closure(..)) {
+                super::calls::given_to_js(&mut exprs);
+            }
+            return Ok(Value::Expr(Expr::call(callee, exprs)));
+        }
+        // `a += b` of a number or a string, through its `&mut`: the place
+        // assigned, as the operator's is.
+        if let Some(trait_id) = tcx.trait_of_assoc(def_id)
+            && let Some(op) = super::recognition::assign_operator(tcx, trait_id)
+            && let [place, rhs] = &values[..]
+            && let Value::Ref(place) = place
+        {
+            let ty = arg_tys[0].peel_refs();
+            let rhs = self.value_expr(rhs.clone(), span)?;
+            let value = if self.is_lang_adt(ty, LangItem::String) && op == BinOp::Add {
+                Expr::bin(Op::Add, place.clone(), rhs)
+            } else if super::representation::Num::of(ty).is_some() {
+                self.binary(op, place.clone(), rhs, None, ty, span)?
+            } else {
+                return Err(self.unsupported(
+                    span,
+                    &format!("`{}` of a `{ty}`, from its MIR", tcx.def_path_str(def_id)),
+                ));
+            };
+            self.flush(state, out)?;
+            out.push(StmtKind::Assign(place.clone(), value).at(self.js_span(span)));
+            return Ok(Value::Expr(Expr::undefined()));
+        }
+        // A std iterator's method: a JS iterator's, lazy as Rust's.
+        if tcx.trait_of_assoc(def_id).is_some() {
+            let exprs = values
+                .clone()
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            if let Some(call) = self.mir_iter_call(def_id, &arg_tys, exprs, output, span)? {
+                return Ok(Value::Expr(call));
+            }
+        }
+        // A trait's method: its impl's, a dictionary's, or what rust-js
+        // writes itself, `==` of a struct say (ADRs 0049, 0052).
+        let known = self.recognition().classify(def_id, generic_args);
+        if !matches!(known, Some(Std::Any(_)))
+            && let Some(trait_id) = tcx.trait_of_assoc(def_id)
+            && (super::recognition::operational(tcx, self.krate.foreign, trait_id)
+                || self
+                    .resolve_instance(def_id, generic_args)?
+                    .is_some_and(|i| self.is_rust_fn(i.def_id())))
+        {
+            let exprs = values
+                .clone()
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
+                return Ok(Value::Expr(call));
+            }
+        }
+        // The crate's own function, given its dictionaries (ADR 0049).
+        if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
+            let mut exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            exprs.extend(self.evidence_args(def_id, generic_args, span)?);
+            let called = Expr::call(self.fn_ref(def_id), exprs);
+            return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));
+        }
+        if let Some(known) = known {
             return self.mir_std_call(
                 state,
                 (known, def_id),
@@ -1233,13 +1390,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span,
                 out,
             );
-        }
-        if self.krate.fns.contains_key(&def_id) && !bindings::is_binding(self.tcx, def_id) {
-            let exprs = values
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
-            return Ok(Value::Expr(Expr::call(self.fn_ref(def_id), exprs)));
         }
         Err(self.unsupported(
             span,
@@ -1342,6 +1492,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `vec![..]`: the array its box was written with.
             Std::VecMacro => self.value_expr(values.next().expect("the array"), span)?,
+            Std::Range(op) => {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.range_call(op, exprs, arg_tys, span, out)?
+            }
             Std::Number(op) => {
                 // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.
                 let ty = match (op, output.kind()) {
@@ -1360,7 +1514,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ if lowered_from_values(known) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?
+                let made = self.std_by_values(known, def_id, generic_args, arg_tys, exprs, output, span, out)?;
+                // An iterator is a JS iterator (ADR 0364), where a source of
+                // THIR's makes an array: its items, lazily.
+                if self.range_kind(output).is_none()
+                    && !self.is_user_iterator(output)
+                    && self.implements_iterator(output)
+                {
+                    self.js_iterator(made)
+                } else {
+                    made
+                }
             }
             _ => {
                 let name = self.tcx.def_path_str(def_id);
@@ -1387,6 +1551,7 @@ fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
         // A place shared, or shown, is read where it's used, as Rust reads
         // it; nothing changes it meanwhile.
         Value::Place(_) => true,
+        Value::Ref(_) => false,
     }
 }
 
@@ -1546,7 +1711,18 @@ fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>) {
             count_operand(locals, &operands.1);
         }
         Rvalue::Aggregate(_, operands) => operands.iter().for_each(|o| count_operand(locals, o)),
-        Rvalue::Ref(_, _, place) | Rvalue::RawPtr(_, place) => {
+        Rvalue::Ref(_, kind, place) => {
+            count_place(locals, place, false);
+            // The whole borrowed mutably may be written through the borrow: a
+            // `let`, which a closure that captured it writes.
+            if matches!(kind, BorrowKind::Mut { .. }) && place.projection.is_empty() {
+                locals.writes[place.local] += 1;
+            }
+            if !place.projection.is_empty() && !place.is_indirect() {
+                locals.borrowed[place.local] = true;
+            }
+        }
+        Rvalue::RawPtr(_, place) => {
             count_place(locals, place, false);
             // A part of its own borrowed keeps its local a variable; the
             // whole borrowed is the value itself, read once, and a reborrow,

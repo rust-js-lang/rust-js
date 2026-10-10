@@ -443,7 +443,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An iterator of the crate's as a JS one, stepped by its trait's
     /// `method`: `Iterator`'s `next`, or `DoubleEndedIterator`'s `next_back`.
-    fn user_iterator(&mut self, value: Expr, ty: ty::Ty<'tcx>, trait_id: DefId, method: &str, span: Span) -> R<Expr> {
+    pub(super) fn user_iterator(
+        &mut self,
+        value: Expr,
+        ty: ty::Ty<'tcx>,
+        trait_id: DefId,
+        method: &str,
+        span: Span,
+    ) -> R<Expr> {
         let next = trait_method(self.tcx, trait_id, method);
         let args = self.args_of(trait_id, ty.peel_refs());
         // A generic `next` boxes a `Some` that looks like `None` (ADR 0051).

@@ -24,6 +24,7 @@ path = "../src/main.rs"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+rustc_abi = { path = "rustc/compiler/rustc_abi" }
 rustc_arena = { path = "rustc/compiler/rustc_arena" }
 rustc_const_eval = { path = "rustc/compiler/rustc_const_eval" }
 rustc_data_structures = { path = "rustc/compiler/rustc_data_structures" }
@@ -32,6 +33,7 @@ rustc_expand = { path = "rustc/compiler/rustc_expand" }
 rustc_ast = { path = "rustc/compiler/rustc_ast" }
 rustc_hir = { path = "rustc/compiler/rustc_hir" }
 rustc_hir_analysis = { path = "rustc/compiler/rustc_hir_analysis" }
+rustc_index = { path = "rustc/compiler/rustc_index" }
 rustc_interface = { path = "rustc/compiler/rustc_interface" }
 rustc_lexer = { path = "rustc/compiler/rustc_lexer" }
 rustc_middle = { path = "rustc/compiler/rustc_middle" }

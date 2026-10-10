@@ -94,6 +94,7 @@ helpers! {
     BigRange,
     RangeFrom,
     RangeNext,
+    RangeInclusiveNext,
     RangeNextBack,
     RangeFromNext,
     AsciiCase,
@@ -525,6 +526,7 @@ impl Helper {
             Helper::RangeFrom => include_str!("runtime/range_from.js"),
             // A `Range`'s `next()` and `next_back()` move its bounds, as Rust's do.
             Helper::RangeNext => include_str!("runtime/range_next.js"),
+            Helper::RangeInclusiveNext => include_str!("runtime/range_inclusive_next.js"),
             // `a..`'s `next()`: past its type's end it counts on, as `$rangeFrom` does.
             Helper::RangeFromNext => include_str!("runtime/range_from_next.js"),
             // A range of `char`s, which skips the surrogates no `char` is, as Rust's does.
