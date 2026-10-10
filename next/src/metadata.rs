@@ -797,9 +797,55 @@ pub type ResolvingMetadata = Promise<&'static ResolvedMetadata>;
 pub struct ResolvedViewport(PhantomData<JsObject>);
 
 impl ResolvedViewport {
-    /// Any of its fields, by its name, as it's resolved.
-    #[cfg_attr(rust_js, rust_js::link_name = "get []")]
-    pub fn get(&self, name: &str) -> Option<&'static Unknown> {
+    #[cfg_attr(rust_js, rust_js::link_name = "get width")]
+    pub fn width(&self) -> Option<StringOrNumber<'static>> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get height")]
+    pub fn height(&self) -> Option<StringOrNumber<'static>> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get initialScale")]
+    pub fn initial_scale(&self) -> Option<f64> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get minimumScale")]
+    pub fn minimum_scale(&self) -> Option<f64> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get maximumScale")]
+    pub fn maximum_scale(&self) -> Option<f64> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get userScalable")]
+    pub fn user_scalable(&self) -> Option<bool> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get viewportFit")]
+    pub fn viewport_fit(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    #[cfg_attr(rust_js, rust_js::link_name = "get interactiveWidget")]
+    pub fn interactive_widget(&self) -> Option<String> {
+        unreachable!()
+    }
+
+    /// Its theme colors, each of its media query; `None` of `null`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get themeColor")]
+    pub fn theme_color(&self) -> Option<Vec<ThemeColorDescriptor<'static>>> {
+        unreachable!()
+    }
+
+    /// `"normal"`, `"light"`, `"dark"`, `"light dark"`, `"dark light"` or `"only light"`; `None` of `null`.
+    #[cfg_attr(rust_js, rust_js::link_name = "get colorScheme")]
+    pub fn color_scheme(&self) -> Option<String> {
         unreachable!()
     }
 }

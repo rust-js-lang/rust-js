@@ -96,3 +96,13 @@ The app's config, next.config.js, and a deployment adapter, the module its
 `adapterPath` names, stay JavaScript, the user's choice: `NextConfig`,
 `NextAdapter` and `AdapterOutput` are `~`, their members too, counted apart
 from what's bound and what's missing (ADR 0354).
+
+## Amendment: what isn't bound by design, and a `Deref` outside the crate
+
+What isn't bound by design is `x`, counted apart, each list with why:
+TypeScript's own (the `Infer…` type operators, `CacheLifeProfiles`), what
+Next.js declares only to throw, and its internals. A `Deref` to webapi's or
+node's type, `NextRequest`'s `Request`, has that type's members too.
+`ResolvedViewport`'s fields are getters, in place of `get []`. Today every
+export and member counted is bound; a type a function gives that no module
+exports, `AppRouterInstance`, still isn't counted.

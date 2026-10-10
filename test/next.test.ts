@@ -52,8 +52,11 @@ pub fn generateMetadata() -> next::Metadata<'static> {
     }
 }
 
-pub fn generateViewport() -> next::Viewport<'static> {
-    next::Viewport { theme_color: Some(next::metadata::ThemeColor::Str("#101010")), ..Default::default() }
+// Of its parent's, the root layout's, which sets no color scheme.
+pub async fn generateViewport(_: &'static js::Unknown, parent: next::ResolvingViewport) -> next::Viewport<'static> {
+    let resolved = parent.await;
+    let scheme = if resolved.color_scheme().is_none() && resolved.theme_color().is_none() { "light" } else { "dark" };
+    next::Viewport { theme_color: Some(next::metadata::ThemeColor::Str("#101010")), color_scheme: Some(scheme), ..Default::default() }
 }
 
 // A client component loaded by next/dynamic, at the module's top.
@@ -893,7 +896,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // Metadata and a viewport, a robots.txt and a sitemap.xml.
   for (const written of ["<title>About</title>", '<meta name="description" content="About, in Rust"/>', '<meta name="keywords" content="rust,next"/>',
     '<meta name="robots" content="noindex"/>', '<meta property="og:type" content="article"/>', '<meta property="og:image" content="https://example.com/og.png"/>',
-    '<meta property="article:published_time" content="2026-10-10"/>', '<meta name="theme-color" content="#101010"/>']) {
+    '<meta property="article:published_time" content="2026-10-10"/>', '<meta name="theme-color" content="#101010"/>', '<meta name="color-scheme" content="light"/>']) {
     expect(aboutHtml).toContain(written);
   }
   expect(readFileSync(join(dir, ".next/server/app/robots.txt.body"), "utf8")).toBe("User-Agent: *\nDisallow: /private/\n\nSitemap: https://example.com/sitemap.xml\n");

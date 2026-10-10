@@ -44,9 +44,40 @@ const MODULES: Record<string, string> = {
 // Each is `~`, and counted apart.
 const LEFT_TO_JS = new Set(["next#NextConfig", "next#NextAdapter", "next#AdapterOutput"]);
 
+// What isn't bound by design, each with why: `x`, counted apart too.
+const UNBOUND: Record<string, string> = Object.fromEntries(
+  Object.entries({
+    // Type operators, a type computed of a function's type, which Rust has
+    // no form of; and an empty interface an app augments with its names.
+    "TypeScript's own": ["next#InferGetServerSidePropsType", "next#InferGetStaticPropsType", "next/cache#CacheLifeProfiles"],
+    // Next.js declares them only to throw: what was removed, or a
+    // read-only object's mutators.
+    "throws": [
+      "next/server#NextRequest.page",
+      "next/server#NextRequest.ua",
+      "next/server#NextFetchEvent.request",
+      "next/server#NextFetchEvent.respondWith",
+      "next/navigation#ReadonlyURLSearchParams.append",
+      "next/navigation#ReadonlyURLSearchParams.delete",
+      "next/navigation#ReadonlyURLSearchParams.set",
+      "next/navigation#ReadonlyURLSearchParams.sort",
+    ],
+    // Its internals, public only to Next.js's own code: a class
+    // component's context, and the router's machinery.
+    "internal": [
+      "next/document#Head.contextType",
+      "next/document#NextScript.contextType",
+      "next/document#NextScript.getInlineScriptSource",
+      ...["changeState", "clc", "components", "fetchComponent", "getInitialProps", "getRouteInfo", "handleRouteInfoError",
+        "isFirstPopStateEvent", "isSsr", "onPopState", "onlyAHashChange", "pageLoader", "sbc", "scrollToHash", "sdc", "sub",
+        "urlIsNew"].map((m) => `next/router#Router.${m}`),
+    ],
+  }).flatMap(([why, names]) => names.map((name) => [name, why])),
+);
+
 type Kind = "value" | "type";
-export type Member = { name: string; bound: boolean };
-export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; left: boolean; members: Member[] }[] };
+export type Member = { name: string; bound: boolean; unbound?: boolean };
+export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; left: boolean; unbound?: boolean; members: Member[] }[] };
 
 // Each type's and class's own members, by its file and name, `path#Route`,
 // as two files may each have a `Route` of their own: an interface's, and
@@ -238,7 +269,8 @@ function bindings(): { links: Set<string>; items: Set<string> } {
 // one's, which is another's; the methods of its `impl`s, by their link names,
 // `get cookies` a `cookies`; a static of it, `next/server#NextResponse.json`;
 // and an enum's, its variants' payloads'.
-// A type alias's, `pub type ProxyConfig = MiddlewareConfig`, are its type's.
+// A type alias's, `pub type ProxyConfig = MiddlewareConfig`, are its type's,
+// and a `Deref`'s its target's, webapi's and node's too.
 function rustMembers(): Map<string, Set<string>> {
   const rust = (dir: string): string[] =>
     readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? rust(join(dir, f)) : f.endsWith(".rs") ? [join(dir, f)] : []));
@@ -307,6 +339,17 @@ function rustMembers(): Map<string, Set<string>> {
   for (const [owner] of flattened) if (!owner.startsWith("react::")) merged(owner, new Set());
   for (const [union, payload] of payloads) for (const member of members.get(payload) ?? []) add(union, member);
   for (const [alias, target] of aliases) for (const member of members.get(target) ?? []) add(alias, member);
+  // A `Deref` to a type of webapi's or node's, `NextRequest`'s `Request`, has
+  // that type's methods too, by their link names.
+  const outside = [join(import.meta.dir, "../webapi/src/lib.rs"), ...rust(join(import.meta.dir, "../node/src"))].map((f) => readFileSync(f, "utf8"));
+  for (const [alias, target] of aliases) {
+    if (members.has(target)) continue;
+    for (const text of outside) {
+      for (const m of text.matchAll(new RegExp(`\\nimpl ${target} \\{`, "g"))) {
+        for (const link of block(text, m.index! + m[0].length - 1).matchAll(/link_name = "(?:get |set )?([\w$]+)"/g)) add(alias, link[1]);
+      }
+    }
+  }
   return members;
 }
 
@@ -323,8 +366,11 @@ export async function measure(): Promise<Module[]> {
         kind,
         bound: links.has(`${name}#${e}`) || items.has(e),
         left: LEFT_TO_JS.has(`${name}#${e}`),
+        unbound: `${name}#${e}` in UNBOUND,
         // Of the type it is where it's declared, `ImageProps` of get-img-props'.
-        members: (shapes.get(origin ?? "") ?? []).sort().map((m) => ({ name: m, bound: owned.get(e)?.has(m) ?? false })),
+        members: (shapes.get(origin ?? "") ?? [])
+          .sort()
+          .map((m) => ({ name: m, bound: owned.get(e)?.has(m) ?? false, unbound: `${name}#${e}.${m}` in UNBOUND })),
       }));
     modules.push({ name, exports });
   }
@@ -335,18 +381,21 @@ export async function measure(): Promise<Module[]> {
  * and its members, each a line of its own after it. */
 export function render(modules: Module[]): string {
   // What's left to JavaScript is counted apart, its members with it.
-  const counted = (m: Module) => m.exports.filter((e) => !e.left);
+  const counted = (m: Module) => m.exports.filter((e) => !e.left && !e.unbound);
+  const countedMembers = (m: Module) => counted(m).flatMap((e) => e.members.filter((member) => !member.unbound));
   const all = modules.flatMap(counted);
-  const members = all.flatMap((e) => e.members);
+  const members = modules.flatMap(countedMembers);
   const left = modules.flatMap((m) => m.exports.filter((e) => e.left));
+  const unbound = modules.flatMap((m) => m.exports.flatMap((e) => [...(e.unbound ? [e] : []), ...e.members.filter((x) => x.unbound)]));
   const percent = (n: number, of: number) => `${n} of ${of} (${((100 * n) / of).toFixed(1)}%)`;
-  const mark = (e: { bound: boolean }, left: boolean) => (left ? "~" : e.bound ? "+" : "-");
+  const mark = (e: { bound: boolean; unbound?: boolean }, left: boolean) => (left ? "~" : e.unbound ? "x" : e.bound ? "+" : "-");
   return [
     `# The next crate against Next.js's public modules: bun test test/next-coverage.test.ts`,
     `# exports: ${percent(all.filter((e) => e.bound).length, all.length)}, and ${left.length} left to JS (~)`,
+    `# not bound by design (x): ${unbound.length}, TypeScript's own, declared only to throw, or internal`,
     `# members: ${percent(members.filter((e) => e.bound).length, members.length)}`,
     ...modules.flatMap((m) => {
-      const own = counted(m).flatMap((e) => e.members);
+      const own = countedMembers(m);
       return [
         `# ${m.name} ${counted(m).filter((e) => e.bound).length} of ${counted(m).length}, members ${own.filter((e) => e.bound).length} of ${own.length}`,
         ...m.exports.flatMap((e) => [

@@ -1,7 +1,8 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 2093 of 2096 (99.9%), and 3 left to JS (~)
-# members: 332 of 363 (91.5%)
-# next 38 of 40, members 114 of 116
+# exports: 2093 of 2093 (100.0%), and 3 left to JS (~)
+# not bound by design (x): 31, TypeScript's own, declared only to throw, or internal
+# members: 335 of 335 (100.0%)
+# next 38 of 38, members 116 of 116
 ~ type next#AdapterOutput
 ~ next#AdapterOutput.APP_PAGE
 ~ next#AdapterOutput.APP_ROUTE
@@ -51,8 +52,8 @@
 + next#GetStaticPropsResult.props
 + next#GetStaticPropsResult.redirect
 + next#GetStaticPropsResult.revalidate
-- type next#InferGetServerSidePropsType
-- type next#InferGetStaticPropsType
+x type next#InferGetServerSidePropsType
+x type next#InferGetStaticPropsType
 + type next#Instant
 + next#Instant.level
 + next#Instant.unstable_disableBuildValidation
@@ -216,8 +217,8 @@
 + next#Redirect.statusCode
 + type next#ResolvedMetadata
 + type next#ResolvedViewport
-- next#ResolvedViewport.colorScheme
-- next#ResolvedViewport.themeColor
++ next#ResolvedViewport.colorScheme
++ next#ResolvedViewport.themeColor
 + type next#ResolvingMetadata
 + type next#ResolvingViewport
 + type next#ResponseLimit
@@ -254,7 +255,7 @@
 + next/app#NextWebVitalsMetric.name
 + next/app#NextWebVitalsMetric.startTime
 + next/app#NextWebVitalsMetric.value
-# next/cache 15 of 16, members 11 of 11
+# next/cache 15 of 15, members 11 of 11
 + type next/cache#CacheEntry
 + next/cache#CacheEntry.expire
 + next/cache#CacheEntry.revalidate
@@ -269,7 +270,7 @@
 + next/cache#CacheHandler.set
 + next/cache#CacheHandler.updateTags
 + next/cache#cacheLife
-- type next/cache#CacheLifeProfiles
+x type next/cache#CacheLifeProfiles
 + next/cache#cacheTag
 + next/cache#io
 + next/cache#navigation
@@ -282,7 +283,7 @@
 + next/cache#unstable_cacheTag
 + next/cache#unstable_noStore
 + next/cache#updateTag
-# next/document 9 of 9, members 22 of 25
+# next/document 9 of 9, members 22 of 22
 + next/document#default
 + next/document#default.getInitialProps
 + type next/document#DocumentContext
@@ -307,12 +308,12 @@
 + next/document#DocumentProps.html
 + next/document#DocumentProps.styles
 + next/document#Head
-- next/document#Head.contextType
+x next/document#Head.contextType
 + next/document#Html
 + next/document#Main
 + next/document#NextScript
-- next/document#NextScript.contextType
-- next/document#NextScript.getInlineScriptSource
+x next/document#NextScript.contextType
+x next/document#NextScript.getInlineScriptSource
 + type next/document#OriginProps
 + next/document#OriginProps.children
 + next/document#OriginProps.crossOrigin
@@ -2402,15 +2403,15 @@
 + next/link#LinkProps.shallow
 + next/link#LinkProps.transitionTypes
 + next/link#useLinkStatus
-# next/navigation 17 of 17, members 0 of 4
+# next/navigation 17 of 17, members 0 of 0
 + next/navigation#forbidden
 + next/navigation#notFound
 + next/navigation#permanentRedirect
 + next/navigation#ReadonlyURLSearchParams
-- next/navigation#ReadonlyURLSearchParams.append
-- next/navigation#ReadonlyURLSearchParams.delete
-- next/navigation#ReadonlyURLSearchParams.set
-- next/navigation#ReadonlyURLSearchParams.sort
+x next/navigation#ReadonlyURLSearchParams.append
+x next/navigation#ReadonlyURLSearchParams.delete
+x next/navigation#ReadonlyURLSearchParams.set
+x next/navigation#ReadonlyURLSearchParams.sort
 + next/navigation#redirect
 + next/navigation#RedirectType
 + next/navigation#ServerInsertedHTMLContext
@@ -2429,7 +2430,7 @@
 # next/og 1 of 1, members 1 of 1
 + next/og#ImageResponse
 + next/og#ImageResponse.displayName
-# next/router 7 of 7, members 45 of 62
+# next/router 7 of 7, members 45 of 45
 + next/router#default
 + type next/router#NextRouter
 + next/router#NextRouter.asPath
@@ -2458,28 +2459,28 @@
 + next/router#Router.back
 + next/router#Router.basePath
 + next/router#Router.beforePopState
-- next/router#Router.changeState
-- next/router#Router.clc
-- next/router#Router.components
+x next/router#Router.changeState
+x next/router#Router.clc
+x next/router#Router.components
 + next/router#Router.defaultLocale
 + next/router#Router.domainLocales
 + next/router#Router.events
-- next/router#Router.fetchComponent
+x next/router#Router.fetchComponent
 + next/router#Router.forward
-- next/router#Router.getInitialProps
-- next/router#Router.getRouteInfo
-- next/router#Router.handleRouteInfoError
+x next/router#Router.getInitialProps
+x next/router#Router.getRouteInfo
+x next/router#Router.handleRouteInfoError
 + next/router#Router.isFallback
-- next/router#Router.isFirstPopStateEvent
+x next/router#Router.isFirstPopStateEvent
 + next/router#Router.isLocaleDomain
 + next/router#Router.isPreview
 + next/router#Router.isReady
-- next/router#Router.isSsr
+x next/router#Router.isSsr
 + next/router#Router.locale
 + next/router#Router.locales
-- next/router#Router.onPopState
-- next/router#Router.onlyAHashChange
-- next/router#Router.pageLoader
+x next/router#Router.onPopState
+x next/router#Router.onlyAHashChange
+x next/router#Router.pageLoader
 + next/router#Router.pathname
 + next/router#Router.prefetch
 + next/router#Router.push
@@ -2487,11 +2488,11 @@
 + next/router#Router.reload
 + next/router#Router.replace
 + next/router#Router.route
-- next/router#Router.sbc
-- next/router#Router.scrollToHash
-- next/router#Router.sdc
-- next/router#Router.sub
-- next/router#Router.urlIsNew
+x next/router#Router.sbc
+x next/router#Router.scrollToHash
+x next/router#Router.sdc
+x next/router#Router.sub
+x next/router#Router.urlIsNew
 + type next/router#RouterEvent
 + type next/router#SingletonRouter
 + next/router#SingletonRouter.ready
@@ -2519,7 +2520,7 @@
 + next/script#ScriptProps.onReady
 + next/script#ScriptProps.strategy
 + next/script#ScriptProps.stylesheets
-# next/server 14 of 14, members 19 of 24
+# next/server 14 of 14, members 20 of 20
 + next/server#after
 + next/server#connection
 + next/server#ImageResponse
@@ -2534,17 +2535,17 @@
 + next/server#MiddlewareConfig.regions
 + next/server#MiddlewareConfig.unstable_allowDynamic
 + next/server#NextFetchEvent
-- next/server#NextFetchEvent.request
-- next/server#NextFetchEvent.respondWith
+x next/server#NextFetchEvent.request
+x next/server#NextFetchEvent.respondWith
 + next/server#NextFetchEvent.sourcePage
 + type next/server#NextMiddleware
 + type next/server#NextProxy
 + next/server#NextRequest
 + next/server#NextRequest.cookies
 + next/server#NextRequest.nextUrl
-- next/server#NextRequest.page
-- next/server#NextRequest.ua
-- next/server#NextRequest.url
+x next/server#NextRequest.page
+x next/server#NextRequest.ua
++ next/server#NextRequest.url
 + next/server#NextResponse
 + next/server#NextResponse.cookies
 + next/server#NextResponse.json
