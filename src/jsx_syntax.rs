@@ -534,6 +534,13 @@ impl MutVisitor for Expand<'_> {
         {
             mac.args.tokens = arm(rust, span);
         }
+        // A `vec!`'s items are tokens, never visited as expressions: JSX
+        // among them as a `thread_local!`'s is (ADR 0259).
+        if let ExprKind::MacCall(mac) = &mut expr.kind
+            && mac.path.segments.last().is_some_and(|s| s.ident.as_str() == "vec")
+        {
+            mac.args.tokens = self.jsx_calls(&mac.args.tokens);
+        }
         mut_visit::walk_expr(self, expr);
     }
 

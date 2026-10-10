@@ -56,8 +56,8 @@ export const mutations: Mutation[] = [
     name: "thread-local-jsx-unexpanded",
     breaks: "a `thread_local!`'s `jsx!`, a module's constant element, is expanded by rustc as a plain rustc's placeholder, which rust-js can't call",
     file: "src/jsx_syntax.rs",
-    find: "            mac.args.tokens = self.jsx_calls(&mac.args.tokens);\n",
-    replace: "",
+    find: "            mac.args.tokens = self.jsx_calls(&mac.args.tokens);\n            return;\n",
+    replace: "            return;\n",
     tests: ["test/jsx.test.ts", "-t", "constant element is rendered"],
   },
   {
@@ -115,5 +115,13 @@ export const mutations: Mutation[] = [
     find: "        if configured_attrs(self.sess, &item.attrs).is_some()\n            && let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &mut item.kind",
     replace: "        if let ItemKind::Mod(_, _, ModKind::Loaded(items, _, _)) = &mut item.kind",
     tests: ["test/jsx.test.ts", "-t", "a disabled crate or module does not load"],
+  },
+  {
+    name: "vec-jsx-unread",
+    breaks: "JSX among a `vec!`'s items is left to rustc, an error",
+    file: "src/jsx_syntax.rs",
+    find: "            && mac.path.segments.last().is_some_and(|s| s.ident.as_str() == \"vec\")",
+    replace: "            && false",
+    tests: ["test/jsx.test.ts", "-t", "vec!'s items"],
   },
 ];

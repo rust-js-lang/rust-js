@@ -2230,6 +2230,23 @@ pub fn Labeled<C: ReactNode>(LabeledProps { children }: LabeledProps<C>) -> JSX:
   expect(renderToStaticMarkup(createElement(Labeled, { children: ["A ", createElement("code", null, "b")] }))).toBe('<h2 title="Link for this heading">A <code>b</code></h2>');
 });
 
+// JSX among a `vec!`'s items is JSX, as among an array's: `vec!`'s tokens
+// are a macro's, which rustc expands after JSX is read (ADR 0259).
+test("JSX among a vec!'s items is elements", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub fn List() -> JSX::Element {
+    let items = vec![jsx! { <li key="a">{"a"}</li> }, jsx! { <li key="b">{"b"}</li> }];
+    jsx! { <ul>{items}</ul> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('const items = [<li key="a">a</li>, <li key="b">b</li>];');
+  const { List } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(List())).toBe("<ul><li>a</li><li>b</li></ul>");
+});
+
 // A component looks inside its children as React's own API does, as
 // react.dev's MDX components do: `Children.toArray`, an element told apart by
 // `isValidElement`, its `type`, `props` and `key`, and `cloneElement`; and

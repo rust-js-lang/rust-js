@@ -49,3 +49,10 @@ const darkIcon = <svg ..>..</svg>;
 - **It's tested**: a JSX test renders a module's constant elements, one of
   them inside `Some`, twice; mutations leave each to rustc. The Next.js
   build test titles an image.
+
+## Since
+
+- **JSX among a `vec!`'s items is read as a `thread_local!`'s is**
+  (2026-10-10), `vec![jsx! { <li /> }, ..]`, whose tokens are a macro's
+  too: it was left to rustc, an error. A JSX test renders a list of
+  them; a mutation leaves them unread.
