@@ -112,15 +112,20 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
 }
 
 /// What follows a `return`, a `throw`, a `break` or a `continue` in the
-/// same list never runs.
+/// same list never runs, nor what follows an `if` each of whose branches
+/// ends so.
 fn unreachable_after(stmts: &mut Vec<Stmt>) {
-    if let Some(at) = stmts.iter().position(|s| {
-        matches!(
-            s.kind,
-            StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_)
-        )
-    }) {
+    if let Some(at) = stmts.iter().position(ends) {
         stmts.truncate(at + 1);
+    }
+}
+
+/// Whether running `stmt` never goes on to what follows it.
+fn ends(stmt: &Stmt) -> bool {
+    match &stmt.kind {
+        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_) => true,
+        StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
+        _ => false,
     }
 }
 

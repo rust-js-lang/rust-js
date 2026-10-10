@@ -40,6 +40,7 @@ use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 mod aggregates;
 mod analysis;
+mod binding_calls;
 mod bindings;
 mod bodies;
 mod body_queries;

@@ -2217,6 +2217,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(call));
             }
         }
+        // A binding: the JS function, method, property or operator it names
+        // (ADRs 0019, 0020), given its arguments as THIR gives them.
+        if bindings::is_binding(tcx, def_id) {
+            if rustc_hir::find_attr!(tcx, def_id, RustcEiiForeignItem) {
+                return Err(self.unsupported(span, "externally implementable items, `#[eii]`,"));
+            }
+            if let bindings::JsForm::Jsx(_)
+            | bindings::JsForm::Prop(_)
+            | bindings::JsForm::Object(_)
+            | bindings::JsForm::Import { .. } = bindings::js_form(tcx, def_id)
+            {
+                return Err(self.unsupported(span, "this JSX, from its MIR"));
+            }
+            let nullable = bindings::nullable_params(tcx, def_id);
+            let idents = tcx.fn_arg_idents(def_id);
+            let mut exprs = Vec::new();
+            for (i, (value, &ty)) in values.into_iter().zip(&arg_tys).enumerate() {
+                let value = self.value_expr(value, span)?;
+                exprs.push(match () {
+                    // `()` given to JS is what a tuple is, an array (ADR 0020).
+                    () if ty.is_unit() => Expr::array(Vec::new()),
+                    // A parameter it names `#[rust_js::nullable(..)]`: its
+                    // `None` is `null` (ADR 0275).
+                    () if idents
+                        .get(i)
+                        .copied()
+                        .flatten()
+                        .is_some_and(|ident| nullable.contains(&ident.name)) =>
+                    {
+                        match value.kind {
+                            js::ExprKind::Undefined => Expr::null(),
+                            _ if value.is_constant() => value,
+                            _ => Expr::bin(Op::Coalesce, value, Expr::null()),
+                        }
+                    }
+                    // A `&dyn Any` given to JS is its value (ADR 0331).
+                    () => self.any_given_to_js(value, ty),
+                });
+            }
+            let js_span = self.js_span(span);
+            return Ok(Value::Expr(self.binding_values(
+                (def_id, generic_args),
+                exprs,
+                js_span,
+                span,
+                out,
+            )?));
+        }
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
             let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
