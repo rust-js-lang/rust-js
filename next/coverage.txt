@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
 # exports: 146 of 2093 (7.0%)
-# members: 381 of 433 (88.0%)
-# next 38 of 42, members 178 of 199
+# members: 382 of 433 (88.2%)
+# next 38 of 42, members 179 of 199
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
 - next#AdapterOutput.APP_ROUTE
@@ -143,7 +143,7 @@
 + next#NextConfig.enablePrerenderSourceMaps
 + next#NextConfig.env
 + next#NextConfig.excludeDefaultMomentLocales
-- next#NextConfig.experimental
++ next#NextConfig.experimental
 + next#NextConfig.expireTime
 + next#NextConfig.exportPathMap
 + next#NextConfig.generateBuildId

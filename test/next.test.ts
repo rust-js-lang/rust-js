@@ -332,12 +332,14 @@ pub fn onRouterTransitionStart(url: &str, navigation_type: RouterTransitionType,
 `;
 
 // The app's config, a function of its phase, as Next.js's docs write one:
-// its build's ID, a header, a redirect, remote images, and no
-// `x-powered-by`.
+// its build's ID, a header, a redirect, remote images, no `x-powered-by`,
+// and an experiment.
 const nextConfig = `#![allow(non_snake_case)]
 
-use next::NextConfig;
-use next::config::{Header, HeaderEntry, ImageConfig, PermanentRedirect, Protocol, Redirect, RemotePattern, RemotePatternOrUrl};
+use next::config::{
+    ExperimentalConfig, Header, HeaderEntry, ImageConfig, PermanentRedirect, Protocol, Redirect, RemotePattern, RemotePatternOrUrl, ServerActions,
+};
+use next::{NextConfig, SizeLimit};
 
 pub fn nextConfig(_phase: &str) -> NextConfig<'static> {
     NextConfig {
@@ -372,6 +374,11 @@ pub fn nextConfig(_phase: &str) -> NextConfig<'static> {
                 pathname: None,
                 search: None,
             })]),
+            ..Default::default()
+        }),
+        experimental: Some(ExperimentalConfig {
+            scroll_restoration: Some(true),
+            server_actions: Some(ServerActions { body_size_limit: Some(SizeLimit::Str("2mb")), ..Default::default() }),
             ..Default::default()
         }),
         ..Default::default()
@@ -762,6 +769,8 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const dir = app("next-build");
   const { code, output } = await finished(command(dir, ["build"]));
   expect([code, output.includes("○ /about")]).toEqual([0, true]);
+  // The config's experiments, as Next.js lists them.
+  expect(output).toMatch(/Experiments[^\n]*\n(?:.*\n)*?.*✓ scrollRestoration/);
   // What Cargo writes isn't the app's, which Turbopack watches: node_modules'.
   expect([existsSync(join(dir, "target")), existsSync(join(dir, "node_modules/.cache/rust-js/target"))]).toEqual([false, true]);
   const statements = (file: string) => readFileSync(join(dir, file), "utf8").split("\n").filter((line) => line && !line.startsWith("//"));

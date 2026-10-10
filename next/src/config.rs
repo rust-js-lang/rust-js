@@ -13,7 +13,7 @@
 use js::{Dict, Json, Promise, RegExp, Unknown};
 use react::webapi::URL;
 
-use crate::QueryValue;
+use crate::{QueryValue, SizeLimit};
 
 /// The app's config, each `None` but what's given, as `NextConfig` types it.
 #[derive(Default)]
@@ -179,6 +179,7 @@ pub struct NextConfig<'a> {
     /// The bots streaming metadata waits for, by their user agents.
     #[cfg_attr(rust_js, rust_js::name = "htmlLimitedBots")]
     pub html_limited_bots: Option<&'a RegExp>,
+    pub experimental: Option<ExperimentalConfig<'a>>,
 }
 
 /// A path's page, of a static export, as `ExportPathMap` has it.
@@ -1001,4 +1002,680 @@ pub struct WatchOptions {
     /// How often files are polled, in milliseconds.
     #[cfg_attr(rust_js, rust_js::name = "pollIntervalMs")]
     pub poll_interval_ms: Option<f64>,
+}
+
+/// Next.js's experimental options, each `None` but what's given, as
+/// `ExperimentalConfig` types them: what may change, or go, in any release.
+#[derive(Default)]
+pub struct ExperimentalConfig<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "outputHashSalt")]
+    pub output_hash_salt: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "appNewScrollHandler")]
+    pub app_new_scroll_handler: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "coldCacheBadge")]
+    pub cold_cache_badge: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "useSkewCookie")]
+    pub use_skew_cookie: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "cacheHandlers")]
+    pub cache_handlers: Option<&'a Dict<Option<&'a str>>>,
+    #[cfg_attr(rust_js, rust_js::name = "multiZoneDraftMode")]
+    pub multi_zone_draft_mode: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "appNavFailHandling")]
+    pub app_nav_fail_handling: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "prerenderEarlyExit")]
+    pub prerender_early_exit: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "linkNoTouchStart")]
+    pub link_no_touch_start: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "caseSensitiveRoutes")]
+    pub case_sensitive_routes: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "clientParamParsingOrigins")]
+    pub client_param_parsing_origins: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "cachedNavigations")]
+    pub cached_navigations: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "dynamicOnHover")]
+    pub dynamic_on_hover: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "useOffline")]
+    pub use_offline: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "optimisticRouting")]
+    pub optimistic_routing: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "instrumentationClientRouterTransitionEvents")]
+    pub instrumentation_client_router_transition_events: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "varyParams")]
+    pub vary_params: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "prefetchInlining")]
+    pub prefetch_inlining: Option<PrefetchInlining>,
+    #[cfg_attr(rust_js, rust_js::name = "preloadEntriesOnStart")]
+    pub preload_entries_on_start: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "clientRouterFilter")]
+    pub client_router_filter: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "clientRouterFilterRedirects")]
+    pub client_router_filter_redirects: Option<bool>,
+    /// How long the client's router cache keeps a page, in seconds.
+    #[cfg_attr(rust_js, rust_js::name = "staleTimes")]
+    pub stale_times: Option<StaleTimes>,
+    #[cfg_attr(rust_js, rust_js::name = "cacheLife")]
+    pub cache_life: Option<&'a Dict<CacheLifeProfile>>,
+    #[cfg_attr(rust_js, rust_js::name = "clientRouterFilterAllowedRate")]
+    pub client_router_filter_allowed_rate: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "externalMiddlewareRewritesResolve")]
+    pub external_middleware_rewrites_resolve: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "externalProxyRewritesResolve")]
+    pub external_proxy_rewrites_resolve: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "exposeTestingApiInProductionBuild")]
+    pub expose_testing_api_in_production_build: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "requestInsights")]
+    pub request_insights: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "extensionAlias")]
+    pub extension_alias: Option<&'a Dict<Json<'a>>>,
+    #[cfg_attr(rust_js, rust_js::name = "allowedRevalidateHeaderKeys")]
+    pub allowed_revalidate_header_keys: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "fetchCacheKeyPrefix")]
+    pub fetch_cache_key_prefix: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "imgOptConcurrency")]
+    pub img_opt_concurrency: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "imgOptOperationCache")]
+    pub img_opt_operation_cache: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "imgOptTimeoutInSeconds")]
+    pub img_opt_timeout_in_seconds: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "imgOptMaxInputPixels")]
+    pub img_opt_max_input_pixels: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "imgOptSequentialRead")]
+    pub img_opt_sequential_read: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "optimisticClientCache")]
+    pub optimistic_client_cache: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "expireTime")]
+    pub expire_time: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "middlewarePrefetch")]
+    pub middleware_prefetch: Option<ProxyPrefetch>,
+    #[cfg_attr(rust_js, rust_js::name = "proxyPrefetch")]
+    pub proxy_prefetch: Option<ProxyPrefetch>,
+    #[cfg_attr(rust_js, rust_js::name = "manualClientBasePath")]
+    pub manual_client_base_path: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "cssChunking")]
+    pub css_chunking: Option<CssChunkingConfig>,
+    #[cfg_attr(rust_js, rust_js::name = "devMemoryThresholdRestart")]
+    pub dev_memory_threshold_restart: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "disablePostcssPresetEnv")]
+    pub disable_postcss_preset_env: Option<bool>,
+    pub cpus: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "memoryBasedWorkersCount")]
+    pub memory_based_workers_count: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "proxyTimeout")]
+    pub proxy_timeout: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "isrFlushToDisk")]
+    pub isr_flush_to_disk: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "workerThreads")]
+    pub worker_threads: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "optimizeCss")]
+    pub optimize_css: Option<OptimizeCss<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "nextScriptWorkers")]
+    pub next_script_workers: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "scrollRestoration")]
+    pub scroll_restoration: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "externalDir")]
+    pub external_dir: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "disableOptimizedLoading")]
+    pub disable_optimized_loading: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "gzipSize")]
+    pub gzip_size: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "craCompat")]
+    pub cra_compat: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "esmExternals")]
+    pub esm_externals: Option<EsmExternals>,
+    #[cfg_attr(rust_js, rust_js::name = "fullySpecified")]
+    pub fully_specified: Option<bool>,
+    /// webpack's `buildHttp`, which Next.js types as `any`.
+    #[cfg_attr(rust_js, rust_js::name = "urlImports")]
+    pub url_imports: Option<Json<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "swcTraceProfiling")]
+    pub swc_trace_profiling: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "forceSwcTransforms")]
+    pub force_swc_transforms: Option<bool>,
+    /// Each SWC plugin's module, and its options.
+    #[cfg_attr(rust_js, rust_js::name = "swcPlugins")]
+    pub swc_plugins: Option<&'a [(&'a str, &'a Dict<Json<'a>>)]>,
+    #[cfg_attr(rust_js, rust_js::name = "swcEnvOptions")]
+    pub swc_env_options: Option<SwcEnvOptions<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "largePageDataBytes")]
+    pub large_page_data_bytes: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "fallbackNodePolyfills")]
+    pub fallback_node_polyfills: Option<bool>,
+    pub sri: Option<Sri>,
+    #[cfg_attr(rust_js, rust_js::name = "webVitalsAttribution")]
+    pub web_vitals_attribution: Option<&'a [WebVital]>,
+    #[cfg_attr(rust_js, rust_js::name = "optimizePackageImports")]
+    pub optimize_package_imports: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "optimizeServerReact")]
+    pub optimize_server_react: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "strictRouteTypes")]
+    pub strict_route_types: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "useTypeScriptCli")]
+    pub use_type_script_cli: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "transitionIndicator")]
+    pub transition_indicator: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "gestureTransition")]
+    pub gesture_transition: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackMemoryEviction")]
+    pub turbopack_memory_eviction: Option<TurbopackMemoryEviction>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackPluginRuntimeStrategy")]
+    pub turbopack_plugin_runtime_strategy: Option<TurbopackPluginRuntimeStrategy>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackMinify")]
+    pub turbopack_minify: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackImportTypeBytes")]
+    pub turbopack_import_type_bytes: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackScopeHoisting")]
+    pub turbopack_scope_hoisting: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackSharedRuntime")]
+    pub turbopack_shared_runtime: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackChunking")]
+    pub turbopack_chunking: Option<TurbopackChunking<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackWorkerAssetPrefix")]
+    pub turbopack_worker_asset_prefix: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackClientSideNestedAsyncChunking")]
+    pub turbopack_client_side_nested_async_chunking: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackServerSideNestedAsyncChunking")]
+    pub turbopack_server_side_nested_async_chunking: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackFileSystemCacheForDev")]
+    pub turbopack_file_system_cache_for_dev: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackFileSystemCacheForBuild")]
+    pub turbopack_file_system_cache_for_build: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackSeedCacheFromWorktree")]
+    pub turbopack_seed_cache_from_worktree: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackSourceMaps")]
+    pub turbopack_source_maps: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackInputSourceMaps")]
+    pub turbopack_input_source_maps: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackModuleFragments")]
+    pub turbopack_module_fragments: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackRemoveUnusedImports")]
+    pub turbopack_remove_unused_imports: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackRemoveUnusedExports")]
+    pub turbopack_remove_unused_exports: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackInferModuleSideEffects")]
+    pub turbopack_infer_module_side_effects: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackCjsTreeShaking")]
+    pub turbopack_cjs_tree_shaking: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackUseBuiltinBabel")]
+    pub turbopack_use_builtin_babel: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackUseBuiltinSass")]
+    pub turbopack_use_builtin_sass: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackLocalPostcssConfig")]
+    pub turbopack_local_postcss_config: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackModuleIds")]
+    pub turbopack_module_ids: Option<TurbopackModuleIds>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackServerFastRefresh")]
+    pub turbopack_server_fast_refresh: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "mdxRs")]
+    pub mdx_rs: Option<MdxRs<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "typedRoutes")]
+    pub typed_routes: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "typedEnv")]
+    pub typed_env: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "parallelServerCompiles")]
+    pub parallel_server_compiles: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "parallelServerBuildTraces")]
+    pub parallel_server_build_traces: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "webpackBuildWorker")]
+    pub webpack_build_worker: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "webpackMemoryOptimizations")]
+    pub webpack_memory_optimizations: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "clientTraceMetadata")]
+    pub client_trace_metadata: Option<&'a [&'a str]>,
+    /// Partial Prerendering, of each route, or of those that opt in.
+    pub ppr: Option<ExperimentalPPRConfig>,
+    pub taint: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "blockingSSR")]
+    pub blocking_ssr: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "removeUncaughtErrorAndRejectionListeners")]
+    pub remove_uncaught_error_and_rejection_listeners: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "validateRSCRequestHeaders")]
+    pub validate_rsc_request_headers: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "serverActions")]
+    pub server_actions: Option<ServerActions<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "maxPostponedStateSize")]
+    pub max_postponed_state_size: Option<SizeLimit<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "serverMinification")]
+    pub server_minification: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "serverSourceMaps")]
+    pub server_source_maps: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "useWasmBinary")]
+    pub use_wasm_binary: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "useLightningcss")]
+    pub use_lightningcss: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "lightningCssFeatures")]
+    pub lightning_css_features: Option<LightningCssFeatures<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "testProxy")]
+    pub test_proxy: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "defaultTestRunner")]
+    pub default_test_runner: Option<SupportedTestRunners>,
+    #[cfg_attr(rust_js, rust_js::name = "allowDevelopmentBuild")]
+    pub allow_development_build: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "bundlePagesExternals")]
+    pub bundle_pages_externals: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "serverComponentsExternalPackages")]
+    pub server_components_external_packages: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "reactDebugChannel")]
+    pub react_debug_channel: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "cacheComponents")]
+    pub cache_components: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "instantInsights")]
+    pub instant_insights: Option<InstantInsights>,
+    #[cfg_attr(rust_js, rust_js::name = "devValidationWorker")]
+    pub dev_validation_worker: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "staticGenerationRetryCount")]
+    pub static_generation_retry_count: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "staticGenerationMaxConcurrency")]
+    pub static_generation_max_concurrency: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "staticGenerationMinPagesPerWorker")]
+    pub static_generation_min_pages_per_worker: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "serverComponentsHmrCache")]
+    pub server_components_hmr_cache: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "serverComponentsHmrCancellation")]
+    pub server_components_hmr_cancellation: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "inlineCss")]
+    pub inline_css: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "authInterrupts")]
+    pub auth_interrupts: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "useCacheTimeout")]
+    pub use_cache_timeout: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "useCache")]
+    pub use_cache: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "durableUseCacheEntries")]
+    pub durable_use_cache_entries: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "slowModuleDetection")]
+    pub slow_module_detection: Option<SlowModuleDetection>,
+    #[cfg_attr(rust_js, rust_js::name = "globalNotFound")]
+    pub global_not_found: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "turbopackRustReactCompiler")]
+    pub turbopack_rust_react_compiler: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "browserDebugInfoInTerminal")]
+    pub browser_debug_info_in_terminal: Option<BrowserDebugInfoInTerminal>,
+    #[cfg_attr(rust_js, rust_js::name = "middlewareClientMaxBodySize")]
+    pub middleware_client_max_body_size: Option<SizeLimit<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "proxyClientMaxBodySize")]
+    pub proxy_client_max_body_size: Option<SizeLimit<'a>>,
+    #[cfg_attr(rust_js, rust_js::name = "mcpServer")]
+    pub mcp_server: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "lockDistDir")]
+    pub lock_dist_dir: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "hideLogsAfterAbort")]
+    pub hide_logs_after_abort: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "runtimeServerDeploymentId")]
+    pub runtime_server_deployment_id: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "supportsImmutableAssets")]
+    pub supports_immutable_assets: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "deferredEntries")]
+    pub deferred_entries: Option<&'a [&'a str]>,
+    /// What runs before the deferred entries are built.
+    #[cfg_attr(rust_js, rust_js::name = "onBeforeDeferredEntries")]
+    pub on_before_deferred_entries: Option<Box<dyn Fn() -> Promise<()>>>,
+    #[cfg_attr(rust_js, rust_js::name = "reportSystemEnvInlining")]
+    pub report_system_env_inlining: Option<ReportLevel>,
+}
+
+/// `boolean | { maxSize, maxBundleSize }`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum PrefetchInlining {
+    Bool(bool),
+    Options(PrefetchInliningOptions),
+}
+
+#[derive(Default)]
+pub struct PrefetchInliningOptions {
+    #[cfg_attr(rust_js, rust_js::name = "maxSize")]
+    pub max_size: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "maxBundleSize")]
+    pub max_bundle_size: Option<f64>,
+}
+
+#[derive(Default)]
+pub struct StaleTimes {
+    pub dynamic: Option<f64>,
+    pub r#static: Option<f64>,
+}
+
+/// How a proxy's prefetch is: strict, or flexible.
+pub enum ProxyPrefetch {
+    #[cfg_attr(rust_js, rust_js::name = "strict")]
+    Strict,
+    #[cfg_attr(rust_js, rust_js::name = "flexible")]
+    Flexible,
+}
+
+/// How CSS is chunked, as `CssChunkingConfig` types it: on or off, by its
+/// mode's name, or of its options; each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum CssChunkingConfig {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "strict")]
+    Strict,
+    #[cfg_attr(rust_js, rust_js::name = "loose")]
+    Loose,
+    #[cfg_attr(rust_js, rust_js::name = "graph")]
+    Graph,
+    Typed(CssChunkingTyped),
+    GraphOptions(CssChunkingGraph),
+}
+
+/// `{ type: "strict" }` or `{ type: "loose" }`.
+pub struct CssChunkingTyped {
+    pub r#type: CssChunkingType,
+}
+
+pub enum CssChunkingType {
+    #[cfg_attr(rust_js, rust_js::name = "strict")]
+    Strict,
+    #[cfg_attr(rust_js, rust_js::name = "loose")]
+    Loose,
+}
+
+/// `{ type: "graph", requestCost, weightDistribution }`.
+pub struct CssChunkingGraph {
+    /// Always [`GraphType::Graph`].
+    pub r#type: GraphType,
+    #[cfg_attr(rust_js, rust_js::name = "requestCost")]
+    pub request_cost: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "weightDistribution")]
+    pub weight_distribution: Option<f64>,
+}
+
+pub enum GraphType {
+    #[cfg_attr(rust_js, rust_js::name = "graph")]
+    Graph,
+}
+
+/// `boolean | Record<string, unknown>`: on, or Critters' options; each the
+/// value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum OptimizeCss<'a> {
+    Bool(bool),
+    Options(&'a Dict<Json<'a>>),
+}
+
+/// `boolean | "loose"`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum EsmExternals {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "loose")]
+    Loose,
+}
+
+/// SWC's `env` options, its polyfills of core-js.
+#[derive(Default)]
+pub struct SwcEnvOptions<'a> {
+    pub mode: Option<SwcEnvMode>,
+    #[cfg_attr(rust_js, rust_js::name = "coreJs")]
+    pub core_js: Option<&'a str>,
+    pub skip: Option<&'a [&'a str]>,
+    pub include: Option<&'a [&'a str]>,
+    pub exclude: Option<&'a [&'a str]>,
+    #[cfg_attr(rust_js, rust_js::name = "shippedProposals")]
+    pub shipped_proposals: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "forceAllTransforms")]
+    pub force_all_transforms: Option<bool>,
+    pub debug: Option<bool>,
+    pub loose: Option<bool>,
+}
+
+pub enum SwcEnvMode {
+    #[cfg_attr(rust_js, rust_js::name = "usage")]
+    Usage,
+    #[cfg_attr(rust_js, rust_js::name = "entry")]
+    Entry,
+}
+
+/// Subresource integrity, of its hash.
+#[derive(Default)]
+pub struct Sri {
+    pub algorithm: Option<SubresourceIntegrityAlgorithm>,
+}
+
+pub enum SubresourceIntegrityAlgorithm {
+    #[cfg_attr(rust_js, rust_js::name = "sha256")]
+    Sha256,
+    #[cfg_attr(rust_js, rust_js::name = "sha384")]
+    Sha384,
+    #[cfg_attr(rust_js, rust_js::name = "sha512")]
+    Sha512,
+}
+
+/// A web vital, of `WEB_VITALS`.
+pub enum WebVital {
+    #[cfg_attr(rust_js, rust_js::name = "CLS")]
+    Cls,
+    #[cfg_attr(rust_js, rust_js::name = "FCP")]
+    Fcp,
+    #[cfg_attr(rust_js, rust_js::name = "FID")]
+    Fid,
+    #[cfg_attr(rust_js, rust_js::name = "INP")]
+    Inp,
+    #[cfg_attr(rust_js, rust_js::name = "LCP")]
+    Lcp,
+    #[cfg_attr(rust_js, rust_js::name = "TTFB")]
+    Ttfb,
+}
+
+/// `false | "full" | "auto"`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum TurbopackMemoryEviction {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "full")]
+    Full,
+    #[cfg_attr(rust_js, rust_js::name = "auto")]
+    Auto,
+}
+
+pub enum TurbopackPluginRuntimeStrategy {
+    #[cfg_attr(rust_js, rust_js::name = "workerThreads")]
+    WorkerThreads,
+    #[cfg_attr(rust_js, rust_js::name = "childProcesses")]
+    ChildProcesses,
+}
+
+/// How Turbopack chunks a production build.
+#[derive(Default)]
+pub struct TurbopackChunking<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "firstPageLoadPriority")]
+    pub first_page_load_priority: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "priorityRoutes")]
+    pub priority_routes: Option<&'a [&'a RegExp]>,
+    #[cfg_attr(rust_js, rust_js::name = "priorityBoost")]
+    pub priority_boost: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "requestCost")]
+    pub request_cost: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "minChunkSize")]
+    pub min_chunk_size: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "maxChunkCountPerGroup")]
+    pub max_chunk_count_per_group: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "maxMergeChunkSize")]
+    pub max_merge_chunk_size: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "generateComponentChunks")]
+    pub generate_component_chunks: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "minComponentChunkSize")]
+    pub min_component_chunk_size: Option<f64>,
+}
+
+pub enum TurbopackModuleIds {
+    #[cfg_attr(rust_js, rust_js::name = "named")]
+    Named,
+    #[cfg_attr(rust_js, rust_js::name = "deterministic")]
+    Deterministic,
+}
+
+/// MDX compiled by Rust's `mdxjs-rs`, on, or of its options: each the value
+/// itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum MdxRs<'a> {
+    Bool(bool),
+    Options(MdxRsOptions<'a>),
+}
+
+#[derive(Default)]
+pub struct MdxRsOptions<'a> {
+    pub development: Option<bool>,
+    pub jsx: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "jsxRuntime")]
+    pub jsx_runtime: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "jsxImportSource")]
+    pub jsx_import_source: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "providerImportSource")]
+    pub provider_import_source: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::name = "mdxType")]
+    pub mdx_type: Option<MdxType>,
+}
+
+pub enum MdxType {
+    #[cfg_attr(rust_js, rust_js::name = "gfm")]
+    Gfm,
+    #[cfg_attr(rust_js, rust_js::name = "commonmark")]
+    Commonmark,
+}
+
+/// `boolean | "incremental"`: each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ExperimentalPPRConfig {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "incremental")]
+    Incremental,
+}
+
+#[derive(Default)]
+pub struct ServerActions<'a> {
+    /// The largest a Server Action's request body may be: `"1mb"`.
+    #[cfg_attr(rust_js, rust_js::name = "bodySizeLimit")]
+    pub body_size_limit: Option<SizeLimit<'a>>,
+    /// The origins, besides the server's own, Server Actions are called
+    /// from.
+    #[cfg_attr(rust_js, rust_js::name = "allowedOrigins")]
+    pub allowed_origins: Option<&'a [&'a str]>,
+}
+
+/// The LightningCSS features compiled, or not, whatever the browsers.
+#[derive(Default)]
+pub struct LightningCssFeatures<'a> {
+    pub include: Option<&'a [LightningCssFeature]>,
+    pub exclude: Option<&'a [LightningCssFeature]>,
+}
+
+/// A LightningCSS feature, of `LIGHTNINGCSS_FEATURE_NAMES`.
+pub enum LightningCssFeature {
+    #[cfg_attr(rust_js, rust_js::name = "nesting")]
+    Nesting,
+    #[cfg_attr(rust_js, rust_js::name = "not-selector-list")]
+    NotSelectorList,
+    #[cfg_attr(rust_js, rust_js::name = "dir-selector")]
+    DirSelector,
+    #[cfg_attr(rust_js, rust_js::name = "lang-selector-list")]
+    LangSelectorList,
+    #[cfg_attr(rust_js, rust_js::name = "is-selector")]
+    IsSelector,
+    #[cfg_attr(rust_js, rust_js::name = "text-decoration-thickness-percent")]
+    TextDecorationThicknessPercent,
+    #[cfg_attr(rust_js, rust_js::name = "media-interval-syntax")]
+    MediaIntervalSyntax,
+    #[cfg_attr(rust_js, rust_js::name = "media-range-syntax")]
+    MediaRangeSyntax,
+    #[cfg_attr(rust_js, rust_js::name = "custom-media-queries")]
+    CustomMediaQueries,
+    #[cfg_attr(rust_js, rust_js::name = "clamp-function")]
+    ClampFunction,
+    #[cfg_attr(rust_js, rust_js::name = "color-function")]
+    ColorFunction,
+    #[cfg_attr(rust_js, rust_js::name = "oklab-colors")]
+    OklabColors,
+    #[cfg_attr(rust_js, rust_js::name = "lab-colors")]
+    LabColors,
+    #[cfg_attr(rust_js, rust_js::name = "p3-colors")]
+    P3Colors,
+    #[cfg_attr(rust_js, rust_js::name = "hex-alpha-colors")]
+    HexAlphaColors,
+    #[cfg_attr(rust_js, rust_js::name = "space-separated-color-notation")]
+    SpaceSeparatedColorNotation,
+    #[cfg_attr(rust_js, rust_js::name = "font-family-system-ui")]
+    FontFamilySystemUi,
+    #[cfg_attr(rust_js, rust_js::name = "double-position-gradients")]
+    DoublePositionGradients,
+    #[cfg_attr(rust_js, rust_js::name = "vendor-prefixes")]
+    VendorPrefixes,
+    #[cfg_attr(rust_js, rust_js::name = "logical-properties")]
+    LogicalProperties,
+    #[cfg_attr(rust_js, rust_js::name = "light-dark")]
+    LightDark,
+    #[cfg_attr(rust_js, rust_js::name = "selectors")]
+    Selectors,
+    #[cfg_attr(rust_js, rust_js::name = "media-queries")]
+    MediaQueries,
+    #[cfg_attr(rust_js, rust_js::name = "colors")]
+    Colors,
+}
+
+/// A test runner `next experimental-test` runs.
+pub enum SupportedTestRunners {
+    #[cfg_attr(rust_js, rust_js::name = "playwright")]
+    Playwright,
+}
+
+#[derive(Default)]
+pub struct InstantInsights {
+    #[cfg_attr(rust_js, rust_js::name = "validationLevel")]
+    pub validation_level: Option<ValidationLevel>,
+}
+
+pub enum ValidationLevel {
+    #[cfg_attr(rust_js, rust_js::name = "warning")]
+    Warning,
+    #[cfg_attr(rust_js, rust_js::name = "manual-warning")]
+    ManualWarning,
+    #[cfg_attr(rust_js, rust_js::name = "experimental-error")]
+    ExperimentalError,
+    #[cfg_attr(rust_js, rust_js::name = "experimental-manual-error")]
+    ExperimentalManualError,
+}
+
+/// The modules logged of a build that takes longer than this.
+pub struct SlowModuleDetection {
+    #[cfg_attr(rust_js, rust_js::name = "buildTimeThresholdMs")]
+    pub build_time_threshold_ms: f64,
+}
+
+/// The browser's debug info in the terminal: on, of its level, or of its
+/// options; each the value itself.
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum BrowserDebugInfoInTerminal {
+    Bool(bool),
+    #[cfg_attr(rust_js, rust_js::name = "error")]
+    Error,
+    #[cfg_attr(rust_js, rust_js::name = "warn")]
+    Warn,
+    #[cfg_attr(rust_js, rust_js::name = "verbose")]
+    Verbose,
+    Options(BrowserDebugInfoOptions),
+}
+
+#[derive(Default)]
+pub struct BrowserDebugInfoOptions {
+    pub level: Option<DebugLevel>,
+    #[cfg_attr(rust_js, rust_js::name = "depthLimit")]
+    pub depth_limit: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "edgeLimit")]
+    pub edge_limit: Option<f64>,
+    #[cfg_attr(rust_js, rust_js::name = "showSourceLocation")]
+    pub show_source_location: Option<bool>,
+}
+
+pub enum DebugLevel {
+    #[cfg_attr(rust_js, rust_js::name = "error")]
+    Error,
+    #[cfg_attr(rust_js, rust_js::name = "warn")]
+    Warn,
+    #[cfg_attr(rust_js, rust_js::name = "verbose")]
+    Verbose,
+}
+
+/// `"error" | "warn"`.
+pub enum ReportLevel {
+    #[cfg_attr(rust_js, rust_js::name = "error")]
+    Error,
+    #[cfg_attr(rust_js, rust_js::name = "warn")]
+    Warn,
 }

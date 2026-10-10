@@ -41,10 +41,11 @@ export default nextConfig;
   variant (ADR 0214); `false | {..}` is `Bool(bool)` beside the object.
 - **`Record<string, T>` is `&Dict<T>`**, and `any`, webpack's config and
   Sass's options, `&Unknown` given and `Json` taken.
-- **`experimental` isn't bound yet**: its absence is the coverage's `-`.
+- **`experimental` is `ExperimentalConfig`**, its 151 options, which may
+  change in any Next.js release.
 
 ## Consequences
 
-- next's members: 381 of 433, `NextConfig` 64 of 65.
+- next's members: 382 of 433, `NextConfig` 65 of 65.
 - `node:http`'s `createServer` and `next()` run a custom server of the
   config in the build test, as `node server.js`.
