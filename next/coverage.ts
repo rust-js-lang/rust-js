@@ -95,7 +95,8 @@ function shapesOf(declarations: any[]) {
   };
   for (const [name, d] of index) {
     if (shapes.has(name) || !["interface", "type", "class"].includes(d.kind)) continue;
-    const members = [...new Set(of(d, new Set()))];
+    // Not one named private, `_bfl`, as Next.js names its internals.
+    const members = [...new Set(of(d, new Set()))].filter((m) => !m.startsWith("_"));
     if (members.length) shapes.set(name, members);
   }
 }
@@ -104,7 +105,7 @@ function shapesOf(declarations: any[]) {
  * and static, not a private one nor its constructor. */
 function classText(text: string): { name: string; members: string[] } | undefined {
   const body = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-  const name = body.match(/^\s*(?:export )?(?:declare )?(?:abstract )?class (\w+)/)?.[1];
+  const name = body.match(/^\s*(?:export )?(?:default )?(?:declare )?(?:abstract )?class (\w+)/)?.[1];
   if (!name) return undefined;
   const members = [...body.matchAll(/^ {4}((?:(?:public|static|readonly|get|set|declare|abstract|override)\s+)*)([A-Za-z_$][\w$]*)\??\s*[(:<]/gm)]
     .filter((m) => !/private|protected/.test(m[1]) && m[2] !== "constructor")
@@ -272,7 +273,7 @@ function rustMembers(): Map<string, Set<string>> {
   };
   for (const [owner] of flattened) if (!owner.startsWith("react::")) merged(owner, new Set());
   for (const [union, payload] of payloads) for (const member of members.get(payload) ?? []) add(union, member);
-  for (const [alias, target] of aliases) if (!members.has(alias) && members.has(target)) members.set(alias, members.get(target)!);
+  for (const [alias, target] of aliases) for (const member of members.get(target) ?? []) add(alias, member);
   return members;
 }
 

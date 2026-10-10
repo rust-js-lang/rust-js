@@ -1,6 +1,6 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 126 of 2093 (6.0%)
-# members: 233 of 400 (58.3%)
+# exports: 128 of 2093 (6.1%)
+# members: 275 of 449 (61.2%)
 # next 30 of 42, members 101 of 199
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
@@ -2438,25 +2438,74 @@
 # next/og 1 of 1, members 0 of 1
 + next/og#ImageResponse
 - next/og#ImageResponse.displayName
-# next/router 5 of 7, members 3 of 13
+# next/router 7 of 7, members 45 of 62
 + next/router#default
 + type next/router#NextRouter
 + next/router#NextRouter.asPath
++ next/router#NextRouter.back
 + next/router#NextRouter.basePath
-- next/router#NextRouter.defaultLocale
-- next/router#NextRouter.domainLocales
-- next/router#NextRouter.isLocaleDomain
-- next/router#NextRouter.locale
-- next/router#NextRouter.locales
++ next/router#NextRouter.beforePopState
++ next/router#NextRouter.defaultLocale
++ next/router#NextRouter.domainLocales
++ next/router#NextRouter.events
++ next/router#NextRouter.forward
++ next/router#NextRouter.isFallback
++ next/router#NextRouter.isLocaleDomain
++ next/router#NextRouter.isPreview
++ next/router#NextRouter.isReady
++ next/router#NextRouter.locale
++ next/router#NextRouter.locales
 + next/router#NextRouter.pathname
-- next/router#NextRouter.query
-- next/router#NextRouter.route
-- next/router#Router
++ next/router#NextRouter.prefetch
++ next/router#NextRouter.push
++ next/router#NextRouter.query
++ next/router#NextRouter.reload
++ next/router#NextRouter.replace
++ next/router#NextRouter.route
++ next/router#Router
++ next/router#Router.asPath
++ next/router#Router.back
++ next/router#Router.basePath
++ next/router#Router.beforePopState
+- next/router#Router.changeState
+- next/router#Router.clc
+- next/router#Router.components
++ next/router#Router.defaultLocale
++ next/router#Router.domainLocales
++ next/router#Router.events
+- next/router#Router.fetchComponent
++ next/router#Router.forward
+- next/router#Router.getInitialProps
+- next/router#Router.getRouteInfo
+- next/router#Router.handleRouteInfoError
++ next/router#Router.isFallback
+- next/router#Router.isFirstPopStateEvent
++ next/router#Router.isLocaleDomain
++ next/router#Router.isPreview
++ next/router#Router.isReady
+- next/router#Router.isSsr
++ next/router#Router.locale
++ next/router#Router.locales
+- next/router#Router.onPopState
+- next/router#Router.onlyAHashChange
+- next/router#Router.pageLoader
++ next/router#Router.pathname
++ next/router#Router.prefetch
++ next/router#Router.push
++ next/router#Router.query
++ next/router#Router.reload
++ next/router#Router.replace
++ next/router#Router.route
+- next/router#Router.sbc
+- next/router#Router.scrollToHash
+- next/router#Router.sdc
+- next/router#Router.sub
+- next/router#Router.urlIsNew
 + type next/router#RouterEvent
-- type next/router#SingletonRouter
-- next/router#SingletonRouter.ready
-- next/router#SingletonRouter.readyCallbacks
-- next/router#SingletonRouter.router
++ type next/router#SingletonRouter
++ next/router#SingletonRouter.ready
++ next/router#SingletonRouter.readyCallbacks
++ next/router#SingletonRouter.router
 + next/router#useRouter
 + next/router#withRouter
 # next/script 5 of 5, members 14 of 14

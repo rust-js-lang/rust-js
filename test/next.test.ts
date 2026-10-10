@@ -582,7 +582,17 @@ pub fn Location() -> JSX::Element {
 
 // A handler of the router's events, given on and taken off by the same
 // function, as react.dev's usePendingRoute has them.
-const routeEvents = `// The singleton router, Next.js's default export of next/router.
+const routeEvents = `// The router's locale and readiness, a guard of going back, a page loaded
+// ahead, and the singleton's ready callback, as next/router has them.
+pub fn localized() -> (Option<&'static str>, bool) {
+    let router = next::router::use_router();
+    router.before_pop_state(|state| state.url() != "/stay");
+    let _ = router.prefetch_with_options("/codes/1", None, next::router::PrefetchOptions { priority: Some(true), ..Default::default() });
+    next::router::Router.ready(|| {});
+    (router.locale(), router.is_ready())
+}
+
+// The singleton router, Next.js's default export of next/router.
 pub fn go(url: &str) {
     next::router::Router.push(url);
 }
@@ -645,6 +655,9 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(readFileSync(join(dir, "pages/codes/[code].jsx"), "utf8")).toContain("return defaultHead().length;");
   const routePath = readFileSync(join(dir, "app/route_path.js"), "utf8");
   expect(routePath.includes("return useRouter().asPath;")).toBe(true);
+  for (const written of ['router.beforePopState((state) => state.url !== "/stay");', 'router.prefetch("/codes/1", undefined, { priority: true });', "Router.ready(() => {});", "return [router.locale, router.isReady];"]) {
+    expect(routePath).toContain(written);
+  }
   expect([routePath.includes('import Router, { useRouter } from "next/router";'), routePath.includes("Router.push(url);")]).toEqual([true, true]);
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('import Head from "next/head";');
   expect(readFileSync(join(dir, "app/linked.jsx"), "utf8")).toContain('<Image src="/next.svg" alt="Next.js logo" title="Next.js" width={90} height={18} />');

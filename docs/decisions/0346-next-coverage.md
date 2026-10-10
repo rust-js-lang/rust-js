@@ -63,7 +63,7 @@ listed too (2026-10-10), after it, `+ next/image#ImageProps.src`: an
 interface's and what it extends of its file's, an object type's, of an
 intersection's or a union's parts, `Omit`'s, `Pick`'s and `Partial`'s of
 one, and a class's properties, methods and statics, of its text, its
-private ones aside. One imported and exported again, `ImageProps` of
+private ones aside, and one named `_bfl`, as Next.js names an internal. One imported and exported again, `ImageProps` of
 image-external, is read where it's declared. What a type has of React's,
 an element's attributes, is React's, counted by its crate. Each is bound
 where the Rust item of its name has it: a field by its JS name, not a
