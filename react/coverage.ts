@@ -26,7 +26,39 @@ const ENTRIES: Record<string, string> = {
 };
 
 type Kind = "value" | "type";
-export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean }[] };
+export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; unbound?: boolean }[] };
+
+// What isn't bound by design, each list with why: `x`, counted apart.
+const UNBOUND: Record<string, string> = Object.fromEntries(
+  Object.entries({
+    // A class component and what types one: Rust's components are
+    // functions, the user's choice (2026-10-10). An error boundary is
+    // next/error's `catchError`, or a JS component's binding.
+    "class components": [
+      "Component", "PureComponent", "ComponentClass", "ClassicComponent", "ClassicComponentClass", "ClassicElement", "CElement",
+      "ComponentElement", "ComponentLifecycle", "NewLifecycle", "DeprecatedLifecycle", "StaticLifecycle", "ComponentState",
+      "GetDerivedStateFromError", "GetDerivedStateFromProps", "ReactInstance", "ClassType", "ClassAttributes", "LegacyRef",
+      "JSX.ElementClass", "JSX.ElementAttributesProperty", "JSX.IntrinsicClassAttributes",
+    ].map((name) => `react#${name}`),
+    // Types of types, which compute props, refs or elements of a component's
+    // type, or name what a function is: a Rust function and its props struct
+    // are each, and `jsx!` makes elements, `createElement`'s job too.
+    "TypeScript's own": [
+      "ComponentProps", "ComponentPropsWithoutRef", "ComponentPropsWithRef", "ComponentRef", "ElementRef", "ContextType",
+      "CustomComponentPropsWithRef", "PropsWithChildren", "PropsWithoutRef", "PropsWithRef", "JSXElementConstructor",
+      "JSX.ElementChildrenAttribute", "JSX.IntrinsicAttributes", "JSX.IntrinsicElements", "JSX.LibraryManagedAttributes",
+      "AnyActionArg", "DispatchWithoutAction", "ReducerWithoutAction", "ReducerState", "FC", "FunctionComponent", "ExoticComponent",
+      "ProviderExoticComponent", "FunctionComponentElement", "ReactComponentElement", "DOMElement", "DetailedReactHTMLElement",
+      "ReactHTMLElement", "ReactSVGElement", "DetailedHTMLProps", "HTMLProps", "SVGProps", "AllHTMLAttributes", "AriaAttributes",
+      "DOMAttributes", "Attributes", "RefAttributes", "HTMLElementType", "SVGElementType", "ReactPromise", "FulfilledReactPromise",
+      "PendingReactPromise", "RejectedReactPromise", "UntrackedReactPromise", "RendererUsable", "createElement",
+      // A string, its values suggestions, `(string & {})`; and their parts.
+      "AriaRole", "HTMLInputTypeAttribute", "HTMLAttributeAnchorTarget", "HTMLInputAutoCompleteAttribute", "AutoFill",
+      "AutoFillAddressKind", "AutoFillBase", "AutoFillContactField", "AutoFillContactKind", "AutoFillCredentialField",
+      "AutoFillField", "AutoFillNormalField", "AutoFillSection", "OptionalPostfixToken", "OptionalPrefixToken",
+    ].map((name) => `react#${name}`).concat(["react-dom#BrowserUsable"]),
+  }).flatMap(([why, names]) => names.map((name) => [name, why])),
+);
 
 const kinds: Record<string, Kind> = { interface: "type", type: "type", function: "value", const: "value" };
 
@@ -110,6 +142,7 @@ export async function measure(): Promise<Module[]> {
         name: e,
         kind,
         bound: kind === "value" ? links.has(`${name}#${e}`) : types.has(`${name}#${e}`) || items.has(e.split(".").pop()!),
+        unbound: `${name}#${e}` in UNBOUND,
       }));
     modules.push({ name, exports });
   }
@@ -118,14 +151,18 @@ export async function measure(): Promise<Module[]> {
 
 /** The baseline's text: each module's count, then each export, `+` bound. */
 export function render(modules: Module[]): string {
-  const all = modules.flatMap((m) => m.exports);
+  // What isn't bound by design is counted apart.
+  const counted = (m: Module) => m.exports.filter((e) => !e.unbound);
+  const all = modules.flatMap(counted);
   const bound = all.filter((e) => e.bound).length;
+  const unbound = modules.flatMap((m) => m.exports.filter((e) => e.unbound)).length;
   return [
     `# The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts`,
     `# exports: ${bound} of ${all.length} (${((100 * bound) / all.length).toFixed(1)}%)`,
+    `# not bound by design (x): ${unbound}, class components or TypeScript's own`,
     ...modules.flatMap((m) => [
-      `# ${m.name} ${m.exports.filter((e) => e.bound).length} of ${m.exports.length}`,
-      ...m.exports.map((e) => `${e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),
+      `# ${m.name} ${counted(m).filter((e) => e.bound).length} of ${counted(m).length}`,
+      ...m.exports.map((e) => `${e.unbound ? "x" : e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),
     ]),
     "",
   ].join("\n");

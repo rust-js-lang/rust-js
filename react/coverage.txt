@@ -1,31 +1,32 @@
 # The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts
-# exports: 196 of 332 (59.0%)
-# react 162 of 267
+# exports: 196 of 248 (79.0%)
+# not bound by design (x): 84, class components or TypeScript's own
+# react 162 of 184
 - type react#AbstractView
 + react#act
 + type react#ActionDispatch
 + react#Activity
 - type react#ActivityProps
 + react#addTransitionType
-- type react#AllHTMLAttributes
+x type react#AllHTMLAttributes
 + type react#AnchorHTMLAttributes
 + type react#AnimationEvent
 + type react#AnimationEventHandler
-- type react#AnyActionArg
+x type react#AnyActionArg
 + type react#AreaHTMLAttributes
-- type react#AriaAttributes
-- type react#AriaRole
-- type react#Attributes
+x type react#AriaAttributes
+x type react#AriaRole
+x type react#Attributes
 + type react#AudioHTMLAttributes
-- type react#AutoFill
-- type react#AutoFillAddressKind
-- type react#AutoFillBase
-- type react#AutoFillContactField
-- type react#AutoFillContactKind
-- type react#AutoFillCredentialField
-- type react#AutoFillField
-- type react#AutoFillNormalField
-- type react#AutoFillSection
+x type react#AutoFill
+x type react#AutoFillAddressKind
+x type react#AutoFillBase
+x type react#AutoFillContactField
+x type react#AutoFillContactKind
+x type react#AutoFillCredentialField
+x type react#AutoFillField
+x type react#AutoFillNormalField
+x type react#AutoFillSection
 + type react#BaseHTMLAttributes
 - type react#BaseSyntheticEvent
 + type react#BlockquoteHTMLAttributes
@@ -35,63 +36,63 @@
 - type react#CacheSignal
 + type react#CanvasHTMLAttributes
 + react#captureOwnerStack
-- type react#CElement
+x type react#CElement
 + type react#ChangeEvent
 + type react#ChangeEventHandler
 + react#Children
-- type react#ClassAttributes
-- type react#ClassicComponent
-- type react#ClassicComponentClass
-- type react#ClassicElement
-- type react#ClassType
+x type react#ClassAttributes
+x type react#ClassicComponent
+x type react#ClassicComponentClass
+x type react#ClassicElement
+x type react#ClassType
 + type react#ClipboardEvent
 + type react#ClipboardEventHandler
 + react#cloneElement
 + type react#ColgroupHTMLAttributes
 + type react#ColHTMLAttributes
-- react#Component
-- type react#ComponentClass
-- type react#ComponentElement
-- type react#ComponentLifecycle
-- type react#ComponentProps
-- type react#ComponentPropsWithoutRef
-- type react#ComponentPropsWithRef
-- type react#ComponentRef
-- type react#ComponentState
+x react#Component
+x type react#ComponentClass
+x type react#ComponentElement
+x type react#ComponentLifecycle
+x type react#ComponentProps
+x type react#ComponentPropsWithoutRef
+x type react#ComponentPropsWithRef
+x type react#ComponentRef
+x type react#ComponentState
 + type react#ComponentType
 + type react#CompositionEvent
 + type react#CompositionEventHandler
 + type react#Consumer
 + type react#ConsumerProps
 + type react#Context
-- type react#ContextType
+x type react#ContextType
 + react#createContext
-- react#createElement
+x react#createElement
 + react#createRef
 + type react#CSSProperties
-- type react#CustomComponentPropsWithRef
+x type react#CustomComponentPropsWithRef
 + type react#DataHTMLAttributes
 + type react#DelHTMLAttributes
 + type react#DependencyList
-- type react#DeprecatedLifecycle
-- type react#DetailedHTMLProps
-- type react#DetailedReactHTMLElement
+x type react#DeprecatedLifecycle
+x type react#DetailedHTMLProps
+x type react#DetailedReactHTMLElement
 + type react#DetailsHTMLAttributes
 + type react#DialogHTMLAttributes
 + type react#Dispatch
-- type react#DispatchWithoutAction
-- type react#DOMAttributes
-- type react#DOMElement
+x type react#DispatchWithoutAction
+x type react#DOMAttributes
+x type react#DOMElement
 + type react#DragEvent
 + type react#DragEventHandler
 + type react#EffectCallback
-- type react#ElementRef
+x type react#ElementRef
 + type react#ElementType
 + type react#EmbedHTMLAttributes
 + type react#ErrorInfo
 + type react#EventHandler
-- type react#ExoticComponent
-- type react#FC
+x type react#ExoticComponent
+x type react#FC
 + type react#FieldsetHTMLAttributes
 + type react#FocusEvent
 + type react#FocusEventHandler
@@ -105,19 +106,19 @@
 + react#Fragment
 - type react#FragmentInstance
 - type react#FragmentProps
-- type react#FulfilledReactPromise
-- type react#FunctionComponent
-- type react#FunctionComponentElement
-- type react#GetDerivedStateFromError
-- type react#GetDerivedStateFromProps
-- type react#HTMLAttributeAnchorTarget
+x type react#FulfilledReactPromise
+x type react#FunctionComponent
+x type react#FunctionComponentElement
+x type react#GetDerivedStateFromError
+x type react#GetDerivedStateFromProps
+x type react#HTMLAttributeAnchorTarget
 - type react#HTMLAttributeReferrerPolicy
 + type react#HTMLAttributes
-- type react#HTMLElementType
+x type react#HTMLElementType
 + type react#HtmlHTMLAttributes
-- type react#HTMLInputAutoCompleteAttribute
-- type react#HTMLInputTypeAttribute
-- type react#HTMLProps
+x type react#HTMLInputAutoCompleteAttribute
+x type react#HTMLInputTypeAttribute
+x type react#HTMLProps
 + type react#IframeHTMLAttributes
 + type react#ImgHTMLAttributes
 + type react#InputEvent
@@ -127,15 +128,15 @@
 + type react#InvalidEvent
 + react#isValidElement
 + type react#JSX.Element
-- type react#JSX.ElementAttributesProperty
-- type react#JSX.ElementChildrenAttribute
-- type react#JSX.ElementClass
+x type react#JSX.ElementAttributesProperty
+x type react#JSX.ElementChildrenAttribute
+x type react#JSX.ElementClass
 + type react#JSX.ElementType
-- type react#JSX.IntrinsicAttributes
-- type react#JSX.IntrinsicClassAttributes
-- type react#JSX.IntrinsicElements
-- type react#JSX.LibraryManagedAttributes
-- type react#JSXElementConstructor
+x type react#JSX.IntrinsicAttributes
+x type react#JSX.IntrinsicClassAttributes
+x type react#JSX.IntrinsicElements
+x type react#JSX.LibraryManagedAttributes
+x type react#JSXElementConstructor
 + type react#Key
 + type react#KeyboardEvent
 + type react#KeyboardEventHandler
@@ -143,7 +144,7 @@
 + type react#LabelHTMLAttributes
 + react#lazy
 + type react#LazyExoticComponent
-- type react#LegacyRef
+x type react#LegacyRef
 + type react#LiHTMLAttributes
 + type react#LinkHTMLAttributes
 + type react#MapHTMLAttributes
@@ -158,55 +159,55 @@
 + type react#MouseEventHandler
 - type react#MutableRefObject
 + type react#NamedExoticComponent
-- type react#NewLifecycle
+x type react#NewLifecycle
 + type react#ObjectHTMLAttributes
 + type react#OlHTMLAttributes
 + type react#OptgroupHTMLAttributes
-- type react#OptionalPostfixToken
-- type react#OptionalPrefixToken
+x type react#OptionalPostfixToken
+x type react#OptionalPrefixToken
 + type react#OptionHTMLAttributes
 + type react#OutputHTMLAttributes
 + type react#ParamHTMLAttributes
-- type react#PendingReactPromise
+x type react#PendingReactPromise
 + type react#PointerEvent
 + type react#PointerEventHandler
 + react#Profiler
 - type react#ProfilerOnRenderCallback
 - type react#ProfilerProps
 + type react#ProgressHTMLAttributes
-- type react#PropsWithChildren
-- type react#PropsWithoutRef
-- type react#PropsWithRef
+x type react#PropsWithChildren
+x type react#PropsWithoutRef
+x type react#PropsWithRef
 + type react#Provider
-- type react#ProviderExoticComponent
+x type react#ProviderExoticComponent
 + type react#ProviderProps
-- react#PureComponent
+x react#PureComponent
 + type react#QuoteHTMLAttributes
-- type react#ReactComponentElement
+x type react#ReactComponentElement
 + type react#ReactElement
 + type react#ReactEventHandler
-- type react#ReactHTMLElement
-- type react#ReactInstance
+x type react#ReactHTMLElement
+x type react#ReactInstance
 + type react#ReactNode
 + type react#ReactPortal
-- type react#ReactPromise
-- type react#ReactSVGElement
+x type react#ReactPromise
+x type react#ReactSVGElement
 + type react#Reducer
-- type react#ReducerState
-- type react#ReducerWithoutAction
+x type react#ReducerState
+x type react#ReducerWithoutAction
 + type react#Ref
-- type react#RefAttributes
+x type react#RefAttributes
 + type react#RefCallback
 + type react#RefObject
-- type react#RejectedReactPromise
-- type react#RendererUsable
+x type react#RejectedReactPromise
+x type react#RendererUsable
 + type react#ScriptHTMLAttributes
 + type react#SelectHTMLAttributes
 + type react#SetStateAction
 + type react#SlotHTMLAttributes
 + type react#SourceHTMLAttributes
 + react#startTransition
-- type react#StaticLifecycle
+x type react#StaticLifecycle
 + react#StrictMode
 + type react#StyleHTMLAttributes
 + type react#SubmitEvent
@@ -214,9 +215,9 @@
 + react#Suspense
 - type react#SuspenseProps
 + type react#SVGAttributes
-- type react#SVGElementType
+x type react#SVGElementType
 - type react#SVGLineElementAttributes
-- type react#SVGProps
+x type react#SVGProps
 - type react#SVGTextElementAttributes
 + type react#SyntheticEvent
 + type react#TableHTMLAttributes
@@ -237,7 +238,7 @@
 + type react#TransitionStartFunction
 + type react#UIEvent
 + type react#UIEventHandler
-- type react#UntrackedReactPromise
+x type react#UntrackedReactPromise
 + type react#Usable
 + react#use
 + react#useActionState
@@ -268,9 +269,9 @@
 - type react#WebViewHTMLAttributes
 + type react#WheelEvent
 + type react#WheelEventHandler
-# react-dom 15 of 27
+# react-dom 15 of 26
 + react-dom#browser
-- type react-dom#BrowserUsable
+x type react-dom#BrowserUsable
 + react-dom#createPortal
 + react-dom#flushSync
 + type react-dom#FormStatus

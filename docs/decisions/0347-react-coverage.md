@@ -53,3 +53,12 @@ count only grows.**
   attribute unions (`AriaRole`, `HTMLInputTypeAttribute`), what
   `HTMLAttributes` copies in (`AriaAttributes`, `DOMAttributes`), and
   react-dom's options (`PreloadOptions`, `RootOptions`).
+
+## Amendment: what isn't bound by design
+
+What isn't bound by design is `x`, counted apart, each list with why: the
+class-component API, as Rust's components are functions (the user's
+choice, 2026-10-10; an error boundary is next/error's `catchError` or a JS
+component's binding); and TypeScript's own, types of types that compute a
+component's props, refs or elements, a string whose values are only
+suggestions, and `createElement`, which `jsx!` is.
