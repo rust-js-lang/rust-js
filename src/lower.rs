@@ -1039,20 +1039,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 source,
                 ..
             } => self.expr(source, out),
-            ExprKind::ZstLiteral { .. }
-                if let Some((id, _)) = fn_def(ty)
-                    && let Some(why) = self.krate.foreign.unlisted(id) =>
-            {
-                Err(self.tcx.dcx().span_err(span, why))
-            }
-            // A constructor as a value, `.map(Some)`: an arrow making what its
-            // call makes (ADR 0125).
-            ExprKind::ZstLiteral { .. }
-                if let Some((def_id, args)) = fn_def(ty)
-                    && matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) =>
-            {
-                self.constructor_value(def_id, args, span)
-            }
             // `Self` of a `struct Marker;`, which holds nothing, like `()`.
             ExprKind::ZstLiteral { .. }
                 if let ty::Adt(adt, _) = ty.kind()
@@ -1061,87 +1047,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Expr::undefined())
             }
-            // A function as a value, `component(Card, props)`: its JS name, or
-            // a library's import of it (ADR 0100), given its dictionaries.
-            ExprKind::ZstLiteral { .. }
-                if let Some((def_id, args)) = fn_def(ty)
-                    && (self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args)) =>
-            {
-                if self.tcx.trait_of_assoc(def_id).is_some() {
-                    let count = self
-                        .tcx
-                        .fn_sig(def_id)
-                        .instantiate(self.tcx, args)
-                        .skip_normalization()
-                        .skip_binder()
-                        .inputs()
-                        .len();
-                    let params: Vec<String> = (0..count).map(|i| self.fresh(&format!("arg{i}"))).collect();
-                    let values = params.iter().map(|name| Expr::var(name)).collect();
-                    // A std trait's, `ToString::to_string` or `i32::max`: what
-                    // its call is.
-                    let Some(call) = self.trait_call(def_id, args, values, span, out)? else {
-                        return self.called_value(e, span);
-                    };
-                    // `(arg0) => shapeArea_area(arg0)` is `shapeArea_area`: a
-                    // function by name, not a dictionary's method, read off it.
-                    if let js::ExprKind::Call(callee, list) = &call.kind
-                        && matches!(callee.kind, js::ExprKind::Var(_))
-                        && list.len() == params.len()
-                        && list
-                            .iter()
-                            .zip(&params)
-                            .all(|(value, name)| matches!(&value.kind, js::ExprKind::Var(v) if v == name))
-                        && params.iter().all(|name| !callee.mentions_var(name))
-                    {
-                        return Ok((**callee).clone());
-                    }
-                    return Ok(Expr::arrow(
-                        params.into_iter().map(Into::into).collect(),
-                        vec![StmtKind::Return(Some(call)).at(js_span)],
-                    ));
-                }
-                let callee = self.fn_ref(def_id);
-                let evidence = self.evidence_args(def_id, args, span)?;
-                if evidence.is_empty() {
-                    Ok(callee)
-                } else {
-                    let count = self
-                        .tcx
-                        .fn_sig(def_id)
-                        .instantiate(self.tcx, args)
-                        .skip_normalization()
-                        .skip_binder()
-                        .inputs()
-                        .len();
-                    let params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
-                    let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
-                    Ok(Expr::arrow(
-                        params.into_iter().map(Into::into).collect(),
-                        vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js_span)],
-                    ))
+            // A function as a value (`fn_item_value`), or any other, `.map(str::len)`
+            // or `unwrap_or_else(Vec::new)`: the arrow that calls it.
+            ExprKind::ZstLiteral { .. } if let Some((def_id, args)) = fn_def(ty) => {
+                match self.fn_item_value(def_id, args, ty, span, out)? {
+                    Some(value) => Ok(value),
+                    None => self.called_value(e, span),
                 }
             }
-            // `.map(str::trim)`: `(s) => s.trim()`, as a closure would be.
-            ExprKind::ZstLiteral { .. }
-                if let Some(known) = self.std_fn(e)
-                    && let Some(f) = self.std_fn_value(known, ty, span)? =>
-            {
-                Ok(f)
-            }
-            ExprKind::ZstLiteral { .. } if let Some(Std::MaxOf(max)) = self.std_fn(e) => {
-                self.runtime.insert(if max { Helper::F64Max } else { Helper::F64Min });
-                Ok(Expr::var(if max { "$f64Max" } else { "$f64Min" }))
-            }
-            ExprKind::ZstLiteral { .. }
-                if let Some((def_id, args)) = fn_def(ty)
-                    && is_binding(self.tcx, def_id) =>
-            {
-                self.binding_value(def_id, args, span)
-            }
-            // Any other function, `.map(str::len)` or `unwrap_or_else(Vec::new)`:
-            // the arrow that calls it.
-            ExprKind::ZstLiteral { .. } if matches!(ty.kind(), ty::FnDef(..)) => self.called_value(e, span),
             ExprKind::Closure(ref closure) => self.closure(closure, out),
             ExprKind::Tuple { ref fields } if fields.is_empty() => Ok(Expr::undefined()),
             ExprKind::Tuple { ref fields } => Ok(Expr::array(self.operands(fields, out)?)),
@@ -1742,6 +1655,98 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => Err(self.unsupported(span, "this constant")),
         }
+    }
+
+    /// A function as a value: a constructor's, `.map(Some)`, an arrow making
+    /// what its call makes (ADR 0125); the crate's, `component(Card, props)`,
+    /// its JS name, or a library's import of it (ADR 0100), given its
+    /// dictionaries; a std one's, `.map(str::trim)`, `(s) => s.trim()`; a
+    /// binding's. `None` for any other, which an arrow calls.
+    fn fn_item_value(
+        &mut self,
+        def_id: DefId,
+        args: ty::GenericArgsRef<'tcx>,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Option<Expr>> {
+        let js_span = self.js_span(span);
+        if let Some(why) = self.krate.foreign.unlisted(def_id) {
+            return Err(self.tcx.dcx().span_err(span, why));
+        }
+        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {
+            return self.constructor_value(def_id, args, span).map(Some);
+        }
+        if self.is_rust_fn(def_id) || self.is_rust_trait_fn(def_id, args) {
+            if self.tcx.trait_of_assoc(def_id).is_some() {
+                let count = self
+                    .tcx
+                    .fn_sig(def_id)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()
+                    .len();
+                let params: Vec<String> = (0..count).map(|i| self.fresh(&format!("arg{i}"))).collect();
+                let values = params.iter().map(|name| Expr::var(name)).collect();
+                // A std trait's, `ToString::to_string` or `i32::max`: what
+                // its call is.
+                let Some(call) = self.trait_call(def_id, args, values, span, out)? else {
+                    return Ok(None);
+                };
+                // `(arg0) => shapeArea_area(arg0)` is `shapeArea_area`: a
+                // function by name, not a dictionary's method, read off it.
+                if let js::ExprKind::Call(callee, list) = &call.kind
+                    && matches!(callee.kind, js::ExprKind::Var(_))
+                    && list.len() == params.len()
+                    && list
+                        .iter()
+                        .zip(&params)
+                        .all(|(value, name)| matches!(&value.kind, js::ExprKind::Var(v) if v == name))
+                    && params.iter().all(|name| !callee.mentions_var(name))
+                {
+                    return Ok(Some((**callee).clone()));
+                }
+                return Ok(Some(Expr::arrow(
+                    params.into_iter().map(Into::into).collect(),
+                    vec![StmtKind::Return(Some(call)).at(js_span)],
+                )));
+            }
+            let callee = self.fn_ref(def_id);
+            let evidence = self.evidence_args(def_id, args, span)?;
+            return Ok(Some(if evidence.is_empty() {
+                callee
+            } else {
+                let count = self
+                    .tcx
+                    .fn_sig(def_id)
+                    .instantiate(self.tcx, args)
+                    .skip_normalization()
+                    .skip_binder()
+                    .inputs()
+                    .len();
+                let params: Vec<String> = (0..count).map(|i| format!("arg{i}")).collect();
+                let values = params.iter().map(|name| Expr::var(name)).chain(evidence).collect();
+                Expr::arrow(
+                    params.into_iter().map(Into::into).collect(),
+                    vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js_span)],
+                )
+            }));
+        }
+        let known = self.recognition().classify(def_id, args);
+        if let Some(known) = known
+            && let Some(f) = self.std_fn_value(known, ty, span)?
+        {
+            return Ok(Some(f));
+        }
+        if let Some(Std::MaxOf(max)) = known {
+            self.runtime.insert(if max { Helper::F64Max } else { Helper::F64Min });
+            return Ok(Some(Expr::var(if max { "$f64Max" } else { "$f64Min" })));
+        }
+        if is_binding(self.tcx, def_id) {
+            return self.binding_value(def_id, args, span).map(Some);
+        }
+        Ok(None)
     }
 
     /// `[item; count]`, the count a caller's `N` or a number (ADR 0107);

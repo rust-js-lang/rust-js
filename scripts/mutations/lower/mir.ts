@@ -210,4 +210,28 @@ export const mutations: Mutation[] = [
     replace: "                    list.remove(0)\n",
     tests: ["test/mir.test.ts","-t","mut_ref_loop_bounds"],
   },
+  {
+    name: "mir-fn-value-undefined",
+    breaks: "a function as a value from MIR is `undefined`, not the function",
+    file: "src/lower/mir.rs",
+    find: "                    Some(f) => Ok(Value::Expr(f)),\n",
+    replace: "                    Some(_) => Ok(Value::Expr(Expr::undefined())),\n",
+    tests: ["test/mir.test.ts", "-t", "fn_items_as_values"],
+  },
+  {
+    name: "mir-called-value-returns-nothing",
+    breaks: "the arrow that calls a std function as a value returns nothing",
+    file: "src/lower/mir.rs",
+    find: "        body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));\n        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))\n",
+    replace: "        let _ = value;\n        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))\n",
+    tests: ["test/mir.test.ts","-t","as_deref|str_circumfix|std_function_value_panic"],
+  },
+  {
+    name: "mir-fn-pointer-call-refused",
+    breaks: "a call through a function pointer from MIR is refused",
+    file: "src/lower/mir.rs",
+    find: "            return Ok(Value::Expr(Expr::call(callee, exprs)));\n        };\n",
+    replace: "            let _ = (callee, exprs);\n            return Err(self.unsupported(span, \"a call\"));\n        };\n",
+    tests: ["test/mir.test.ts","-t","static_fns"],
+  },
 ];

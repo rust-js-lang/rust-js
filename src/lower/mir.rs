@@ -1229,6 +1229,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let span = state.body.local_decls[place.local].source_info.span;
                 Ok(Value::Expr(self.mir_place(state, *place, span, out)?))
             }
+            // A function as a value, `.map(double)` or `f as fn()`: THIR's.
+            Operand::Constant(c) if let Some((def_id, args)) = fn_def(c.ty()) => {
+                match self.fn_item_value(def_id, args, c.ty(), c.span, out)? {
+                    Some(f) => Ok(Value::Expr(f)),
+                    None => Ok(Value::Expr(self.mir_called_value(state, (def_id, args), c.span)?)),
+                }
+            }
             // A pointer to a `static mut`, its `{ value }`'s place (ADR 0096).
             Operand::Constant(c)
                 if let Some(def_id) = self.const_static(c)
@@ -1470,10 +1477,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     PointerCoercion::Unsize | PointerCoercion::MutToConstPointer | PointerCoercion::ArrayToPointer => {
                         return self.mir_operand(state, operand, out);
                     }
+                    // A function, or a closure that captures nothing, as a `fn`:
+                    // a JS function already (ADR 0125).
                     PointerCoercion::ReifyFnPointer(_)
                     | PointerCoercion::UnsafeFnPointer
                     | PointerCoercion::ClosureFnPointer(_) => {
-                        return Err(self.unsupported(span, "a function made a pointer, from its MIR"));
+                        return self.mir_operand(state, operand, out);
                     }
                 }
             }
@@ -1751,12 +1760,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let decls = &state.body.local_decls;
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
-            return Err(self.unsupported(span, "calling a function value, from its MIR"));
+            // A function pointer, which may be JS's (ADR 0330): called with
+            // its arguments given to JS.
+            if !matches!(func.ty(decls, self.tcx).kind(), ty::FnPtr(..)) {
+                return Err(self.unsupported(span, "calling a function value, from its MIR"));
+            }
+            let mut operands: Vec<&Operand<'tcx>> = vec![func];
+            operands.extend(args.iter().map(|a| &a.node));
+            let values = self.take_operands(state, &operands, out)?;
+            let mut exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let callee = exprs.remove(0);
+            super::calls::given_to_js(&mut exprs);
+            return Ok(Value::Expr(Expr::call(callee, exprs)));
         };
         let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
         let output = destination.ty(decls, self.tcx).ty;
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
         let values = self.take_operands(state, &operands, out)?;
+        self.mir_call_values(state, (def_id, generic_args), (values, &arg_tys), output, span, out)
+    }
+
+    /// Any other function as a value, `.map(str::len)`: the arrow that calls
+    /// it, its call lowered as one from MIR is, of its parameters.
+    fn mir_called_value(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        span: Span,
+    ) -> R<Expr> {
+        let tcx = self.tcx;
+        let sig = tcx.fn_sig(def_id).instantiate(tcx, args).skip_normalization();
+        let sig = tcx.instantiate_bound_regions_with_erased(sig);
+        let inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
+        let params: Vec<String> = match inputs.len() {
+            1 => vec![self.fresh("value")],
+            n => (0..n)
+                .map(|i| self.fresh(["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg")))
+                .collect(),
+        };
+        let values = params.iter().map(|p| Value::Expr(Expr::var(p))).collect();
+        // What's made for the call is the arrow's, not what's around it.
+        let (pending, unwind) = (std::mem::take(&mut state.pending), state.unwind.take());
+        let mut body = Vec::new();
+        let called = self.mir_call_values(state, (def_id, args), (values, &inputs), sig.output(), span, &mut body);
+        let value = called.and_then(|value| self.value_expr(value, span));
+        let flushed = self.flush(state, &mut body);
+        (state.pending, state.unwind) = (pending, unwind);
+        let value = value?;
+        flushed?;
+        body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));
+        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))
+    }
+
+    /// A call of `def_id`, of its arguments' values, `arg_tys` their types.
+    fn mir_call_values(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        (def_id, generic_args): (rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>),
+        (values, arg_tys): (Vec<Value<'tcx>>, &[Ty<'tcx>]),
+        output: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let arg_tys = arg_tys.to_vec();
         let tcx = self.tcx;
         // An `Ok` `fmt::Result` is nothing in JS (ADR 0054): its `unwrap()` is
         // `()`, after what made it ran (ADR 0148), `is_ok()` `true`.

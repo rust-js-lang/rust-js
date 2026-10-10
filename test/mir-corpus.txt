@@ -1,4 +1,5 @@
 array_repeat.rs
+as_deref.rs
 assert_failure.rs
 assignment_order_compound.rs
 associated_consts.rs
@@ -46,9 +47,11 @@ evaluation_order.rs
 f32_parse.rs
 float_clamp_nan.rs
 float_normal.rs
+fn_items_as_values.rs
 folded_call_panic_drops.rs
 format_args_order.rs
 formatter_asked.rs
+generic_associated_types.rs
 generic_borrow.rs
 generic_fmt_traits.rs
 generic_impl_consts.rs
@@ -68,6 +71,7 @@ iter_flatten.rs
 iterator_stepped_by_hand.rs
 kept_element_ref.rs
 labeled_blocks.rs
+lazy_cell_reentrant.rs
 lazy_effects.rs
 leak.rs
 loop_values.rs
@@ -111,9 +115,12 @@ slice_split.rs
 slice_split_at_panic.rs
 slice_start_past_len.rs
 slice_to_array.rs
+static_fns.rs
 static_mut_shared.rs
 std_errors_boxed.rs
+std_function_value_panic.rs
 stepped_nested.rs
+str_circumfix.rs
 string_pushes.rs
 string_slice_boundary.rs
 string_slice_bounds.rs
