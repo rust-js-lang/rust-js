@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "untagged-kinds-alike",
     breaks: "an untagged enum's two string variants are accepted, which JS can't tell apart",
     file: "src/lower/untagged.rs",
-    find: "                if let Some((_, other)) = seen.iter().find(|(k, _)| *k == kind)\n",
-    replace: "                if let Some((_, other)) = seen.iter().find(|_| false)\n",
+    find: "                // tests them is refused here.\n                if let Some((_, other)) = seen.iter().find(|(k, _)| k.overlaps(&kind))\n",
+    replace: "                // tests them is refused here.\n                if let Some((_, other)) = seen.iter().find(|_| false)\n",
     tests: ["test/diagnostics.test.ts", "-t", "one kind, cloned"],
   },
   {
@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "made-untagged-alike-refused",
     breaks: "an untagged enum only made, whose two variants hold objects, `getStaticProps`'s, is refused",
     file: "src/lower/untagged.rs",
-    find: "                    && tested_by_impls(tcx, def_id.to_def_id(), &recognition)\n",
-    replace: "",
+    find: "k.overlaps(&kind))\n                    && tested_by_impls(tcx, def_id.to_def_id(), &recognition)\n",
+    replace: "k.overlaps(&kind))\n",
     tests: ["test/lowering.test.ts", "-t", "untagged enum only made"],
   },
   {
