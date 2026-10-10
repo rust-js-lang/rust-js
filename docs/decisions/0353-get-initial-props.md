@@ -34,7 +34,8 @@ MyDocument.getInitialProps = initial;
 - **`App.getInitialProps` and `Document.getInitialProps`**, Next.js's own,
   are `next::app::app::get_initial_props` and
   `next::document::document::get_initial_props`, a class's statics in a
-  module of its name, as webapi's are.
+  module of its name, as webapi's are, imported as `App` and `Document`
+  (ADR 0355).
 
 ## Why
 

@@ -160,11 +160,16 @@ js::export_default!(Later);
   // _app does.
   writeFileSync(join(dir, "pages/_app.rs"), `#![allow(non_snake_case)]
 
-use next::app::AppProps;
+use next::app::{AppContext, AppInitialProps, AppProps, app};
 use react::{JSX, jsx};
 
 pub fn MyApp(AppProps { component: Component, page_props: pageProps, .. }: AppProps) -> JSX::Element {
     jsx! { <main className="app"><Component {...pageProps} /></main> }
+}
+
+// Next.js's own app's initial props, as they were before a custom app's.
+pub async fn original(context: &'static AppContext) -> AppInitialProps {
+    app::orig_get_initial_props(context).await
 }
 
 js::export_default!(MyApp);
@@ -309,7 +314,7 @@ use js::Unknown;
 use next::{ErrorRequest, Instrumentation, RequestErrorContext};
 
 pub fn register() {
-    println!("instrumentation registered");
+    println!("instrumentation registered of {}", next::og::image_response::DISPLAY_NAME);
 }
 
 pub fn onRequestError(_: &'static Unknown, request: &'static ErrorRequest, context: &'static RequestErrorContext) {
@@ -822,7 +827,8 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(routeJs).toContain("const response = NextResponse.json({ hello, bot });");
   expect(readFileSync(join(dir, "app/og/route.jsx"), "utf8")).toContain("return new ImageResponse(image, { width: 600, height: 315 });");
   // Instrumentation, as Next.js reads it.
-  expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("export function register() {");
+  expect(readFileSync(join(dir, "instrumentation.js"), "utf8")).toContain("console.log(`instrumentation registered of ${ImageResponse.displayName}`);");
+  expect(readFileSync(join(dir, "pages/_app.jsx"), "utf8")).toContain("return await App.origGetInitialProps(context);");
   expect(readFileSync(join(dir, "instrumentation-client.js"), "utf8")).toContain('if (navigationType === "push" && event) {');
   const proxyJs = readFileSync(join(dir, "proxy.js"), "utf8");
   expect(proxyJs).toContain('export const config = { matcher: "/old" };');
@@ -890,6 +896,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect([documented.includes('<html lang="eo" dir="ltr">'), documented.includes('<body class="document">')]).toEqual([true, true]);
   // Its getInitialProps, set on it, and its scripts' nonce.
   expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain("MyDocument.getInitialProps = initial;");
+  expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain("const props = await Document.getInitialProps(ctx);");
   expect(documented).toContain('nonce="n0nce"');
   // The config, as Next.js read it.
   const configJs = readFileSync(join(dir, "next.config.js"), "utf8");

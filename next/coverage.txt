@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
 # exports: 146 of 2093 (7.0%)
-# members: 382 of 433 (88.2%)
-# next 38 of 42, members 179 of 199
+# members: 386 of 427 (90.4%)
+# next 38 of 42, members 179 of 191
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
 - next#AdapterOutput.APP_ROUTE
@@ -220,14 +220,6 @@
 + type next#ResolvingViewport
 + type next#ResponseLimit
 + type next#Route
-- next#Route.destination
-- next#Route.has
-- next#Route.headers
-- next#Route.missing
-- next#Route.priority
-- next#Route.source
-- next#Route.sourceRegex
-- next#Route.status
 + type next#RouterTransitionEvent
 + next#RouterTransitionEvent.id
 + next#RouterTransitionEvent.timestamp
@@ -243,7 +235,7 @@
 + type next#Viewport
 + next#Viewport.colorScheme
 + next#Viewport.themeColor
-# next/app 6 of 6, members 8 of 8
+# next/app 6 of 6, members 10 of 10
 + type next/app#AppContext
 + type next/app#AppInitialProps
 + next/app#AppInitialProps.pageProps
@@ -251,6 +243,8 @@
 + type next/app#AppType
 + next/app#AppType.getInitialProps
 + next/app#default
++ next/app#default.getInitialProps
++ next/app#default.origGetInitialProps
 + type next/app#NextWebVitalsMetric
 + next/app#NextWebVitalsMetric.attribution
 + next/app#NextWebVitalsMetric.id
@@ -270,8 +264,9 @@
 + next/cache#unstable_cacheTag
 + next/cache#unstable_noStore
 + next/cache#updateTag
-# next/document 9 of 9, members 21 of 24
+# next/document 9 of 9, members 22 of 25
 + next/document#default
++ next/document#default.getInitialProps
 + type next/document#DocumentContext
 + next/document#DocumentContext.AppTree
 + next/document#DocumentContext.asPath
@@ -2342,7 +2337,7 @@
 + next/image#StaticImageData.height
 + next/image#StaticImageData.src
 + next/image#StaticImageData.width
-# next/legacy/image 5 of 5, members 29 of 29
+# next/legacy/image 5 of 5, members 23 of 23
 + next/legacy/image#default
 + type next/legacy/image#ImageLoader
 + type next/legacy/image#ImageLoaderProps
@@ -2350,9 +2345,7 @@
 + next/legacy/image#ImageLoaderProps.src
 + next/legacy/image#ImageLoaderProps.width
 + type next/legacy/image#ImageProps
-+ next/legacy/image#ImageProps.alt
 + next/legacy/image#ImageProps.blurDataURL
-+ next/legacy/image#ImageProps.fill
 + next/legacy/image#ImageProps.height
 + next/legacy/image#ImageProps.layout
 + next/legacy/image#ImageProps.lazyBoundary
@@ -2362,9 +2355,7 @@
 + next/legacy/image#ImageProps.objectFit
 + next/legacy/image#ImageProps.objectPosition
 + next/legacy/image#ImageProps.onLoadingComplete
-+ next/legacy/image#ImageProps.overrideSrc
 + next/legacy/image#ImageProps.placeholder
-+ next/legacy/image#ImageProps.preload
 + next/legacy/image#ImageProps.priority
 + next/legacy/image#ImageProps.quality
 + next/legacy/image#ImageProps.src
@@ -2372,8 +2363,6 @@
 + next/legacy/image#ImageProps.width
 + type next/legacy/image#StaticImageData
 + next/legacy/image#StaticImageData.blurDataURL
-+ next/legacy/image#StaticImageData.blurHeight
-+ next/legacy/image#StaticImageData.blurWidth
 + next/legacy/image#StaticImageData.height
 + next/legacy/image#StaticImageData.src
 + next/legacy/image#StaticImageData.width
@@ -2419,9 +2408,9 @@
 + next/navigation#useServerInsertedHTML
 # next/offline 1 of 1, members 0 of 0
 + next/offline#useOffline
-# next/og 1 of 1, members 0 of 1
+# next/og 1 of 1, members 1 of 1
 + next/og#ImageResponse
-- next/og#ImageResponse.displayName
++ next/og#ImageResponse.displayName
 # next/router 7 of 7, members 45 of 62
 + next/router#default
 + type next/router#NextRouter
@@ -2512,11 +2501,10 @@
 + next/script#ScriptProps.onReady
 + next/script#ScriptProps.strategy
 + next/script#ScriptProps.stylesheets
-# next/server 14 of 14, members 13 of 19
+# next/server 14 of 14, members 19 of 24
 + next/server#after
 + next/server#connection
 + next/server#ImageResponse
-- next/server#ImageResponse.displayName
 + type next/server#ImageResponseOptions
 + next/server#ImageResponseOptions.debug
 + next/server#ImageResponseOptions.emoji
@@ -2524,6 +2512,9 @@
 + next/server#ImageResponseOptions.height
 + next/server#ImageResponseOptions.width
 + type next/server#MiddlewareConfig
++ next/server#MiddlewareConfig.matcher
++ next/server#MiddlewareConfig.regions
++ next/server#MiddlewareConfig.unstable_allowDynamic
 + next/server#NextFetchEvent
 - next/server#NextFetchEvent.request
 - next/server#NextFetchEvent.respondWith
@@ -2543,6 +2534,9 @@
 + next/server#NextResponse.redirect
 + next/server#NextResponse.rewrite
 + type next/server#ProxyConfig
++ next/server#ProxyConfig.matcher
++ next/server#ProxyConfig.regions
++ next/server#ProxyConfig.unstable_allowDynamic
 + next/server#URLPattern
 + next/server#userAgent
 + next/server#userAgentFromString

@@ -384,6 +384,33 @@ pub fn both() -> u32 {
   expect(lib.both()).toBe(3);
 });
 
+// A default import used only for its statics, a class's in a module named
+// for it, `mod greeter`, is named as the class, `Greeter.hello()`, as
+// Next.js's docs write `App.getInitialProps`.
+test("a default import of a class's statics is named as the class", async () => {
+  const dir = fixture("default-statics");
+  writeFileSync(join(dir, "greeter.js"), "export default class Greeter {\n  static hello() { return 1; }\n  static bye() { return 2; }\n}\n");
+  writeFileSync(join(dir, "lib.rs"), `mod greeter {
+    unsafe extern "Rust" {
+        #[link_name = "./greeter.js#default.hello"]
+        pub safe fn hello() -> u32;
+        #[link_name = "./greeter.js#default.bye"]
+        pub safe fn bye() -> u32;
+    }
+}
+
+pub fn both() -> u32 {
+    greeter::hello() + greeter::bye()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain('import Greeter from "./greeter.js";');
+  expect(js).toContain("Greeter.hello() + Greeter.bye()");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.both()).toBe(3);
+});
+
 // A module's `pub use` of another module's function is a JS re-export,
 // `export { helper } from "./inner.js"`, as react.dev's Challenges/index
 // re-exports `Challenges` (ADR 0240).

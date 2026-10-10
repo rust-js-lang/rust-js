@@ -137,10 +137,18 @@ pub(super) fn name_imports(
         .chain(namespaces)
         .map(|export_key| {
             let (from, export) = export_key;
+            // What holds the export itself, `next/app#default`, not one of its
+            // members, `next/app#default.getInitialProps`.
+            let itself = |id: &&DefId| {
+                js_path(tcx, **id)
+                    .as_deref()
+                    .and_then(js_import)
+                    .is_some_and(|(_, member)| member.is_empty())
+            };
             let held_by = match uses
                 .bound_to
                 .get(export_key)
-                .map(|held| held.iter().collect::<Vec<_>>())
+                .map(|held| held.iter().filter(itself).collect::<Vec<_>>())
                 .unwrap_or_default()
                 .as_slice()
             {
@@ -154,20 +162,33 @@ pub(super) fn name_imports(
                 _ => None,
             };
             // A namespace whose bindings a Rust module holds, `mod ContextMenu`,
-            // is that module's name (ADR 0256).
-            let holder = (export == "*")
-                .then(|| uses.bound_to.get(export_key))
-                .flatten()
-                .and_then(|held| {
-                    let mut modules = held
-                        .iter()
-                        .map(|id| id.as_local().map(|id| tcx.parent_module_from_def_id(id)));
-                    let first = modules.next()??;
-                    (!first.is_top_level_module() && modules.all(|module| module == Some(first)))
-                        .then(|| tcx.item_name(first.to_def_id()).to_string())
-                });
+            // is that module's name (ADR 0256); a default class whose statics
+            // one holds, `mod app`, is the class's, `App` (ADR 0355): a module of
+            // its crate's, or of a bindings crate's, `next::app::app`.
+            let module_of = |id: &DefId| {
+                let mut module = tcx.parent(*id);
+                while tcx.def_kind(module) != DefKind::Mod {
+                    module = tcx.parent(module);
+                }
+                module
+            };
+            let holder = uses.bound_to.get(export_key).and_then(|held| {
+                let mut modules = held.iter().map(module_of);
+                let first = modules.next()?;
+                (!first.is_crate_root() && modules.all(|module| module == first))
+                    .then(|| tcx.item_name(first).to_string())
+            });
+            let statics = uses
+                .bound_to
+                .get(export_key)
+                .is_some_and(|held| !held.iter().any(|id| itself(&id)));
             let base = match (export.as_str(), held_by, holder) {
                 ("default", Some(name), _) => name,
+                ("default", None, Some(module)) if statics => {
+                    let mut chars = camel_case(&module).chars().collect::<Vec<_>>();
+                    chars[0] = chars[0].to_ascii_uppercase();
+                    chars.into_iter().collect()
+                }
                 ("*", _, Some(module)) => module,
                 ("default" | "*", _, _) => module_binding(from),
                 _ => export.clone(),

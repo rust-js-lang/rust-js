@@ -36,6 +36,12 @@ pub mod image_response {
     pub fn new_with_options(element: JSX::Element, options: ImageResponseOptions<'_>) -> &'static ImageResponse {
         unreachable!()
     }
+
+    unsafe extern "Rust" {
+        /// `ImageResponse.displayName`: its name in React's tools.
+        #[link_name = "next/og#ImageResponse.displayName"]
+        pub safe static DISPLAY_NAME: &'static str;
+    }
 }
 
 /// How an [`ImageResponse`] is drawn, and its response's status and

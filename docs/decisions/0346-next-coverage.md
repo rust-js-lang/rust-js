@@ -73,3 +73,11 @@ its payloads'; a type alias's, its type's. A member Next.js declares only
 to throw, `NextRequest.page`, isn't bound, and stays `-`. A type a function
 gives but no module exports, `AppRouterInstance`, isn't counted yet.
 Today: 224 of 400.
+
+## Amendment: a type's members are its declaring file's
+
+Shapes were kept by name alone, so `next#Route`, `string & {}`, was given
+another file's `Route` members, and next/legacy/image's `ImageProps`
+next/image's. Each export now carries where it's declared, `path#name`,
+following re-exports and imports, a default import's too, and its
+members are that declaration's.

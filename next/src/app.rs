@@ -71,6 +71,13 @@ pub mod app {
     pub fn get_initial_props(context: &AppContext) -> Promise<AppInitialProps> {
         unreachable!()
     }
+
+    /// `App.origGetInitialProps(context)`: Next.js's own app's, as it was
+    /// before a custom app's replaced it.
+    #[cfg_attr(rust_js, rust_js::link_name = "next/app#default.origGetInitialProps")]
+    pub fn orig_get_initial_props(context: &AppContext) -> Promise<AppInitialProps> {
+        unreachable!()
+    }
 }
 
 /// A Web Vital Next.js measured, or one of its own, as `NextWebVitalsMetric`

@@ -43,14 +43,15 @@ type Kind = "value" | "type";
 export type Member = { name: string; bound: boolean };
 export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; members: Member[] }[] };
 
-// Each type's and class's own members, by its name: an interface's, and
+// Each type's and class's own members, by its file and name, `path#Route`,
+// as two files may each have a `Route` of their own: an interface's, and
 // what it extends of its file's; an object type's, of an intersection's or
 // a union's parts too, `Omit`'s, `Pick`'s and `Partial`'s of one; a class's
 // properties, methods and statics. What a type has of React's, an element's
 // attributes, is React's, counted by its crate.
 const shapes = new Map<string, string[]>();
 
-function shapesOf(declarations: any[]) {
+function shapesOf(path: string, declarations: any[]) {
   const index = new Map<string, any>();
   const indexed = (list: any[]) => {
     for (const d of list) {
@@ -94,10 +95,10 @@ function shapesOf(declarations: any[]) {
     }
   };
   for (const [name, d] of index) {
-    if (shapes.has(name) || !["interface", "type", "class"].includes(d.kind)) continue;
+    if (shapes.has(`${path}#${name}`) || !["interface", "type", "class"].includes(d.kind)) continue;
     // Not one named private, `_bfl`, as Next.js names its internals.
     const members = [...new Set(of(d, new Set()))].filter((m) => !m.startsWith("_"));
-    if (members.length) shapes.set(name, members);
+    if (members.length) shapes.set(`${path}#${name}`, members);
   }
 }
 
@@ -124,44 +125,67 @@ function file(from: string, specifier: string): string | undefined {
   return undefined;
 }
 
-const read = new Map<string, Map<string, Kind>>();
+// An export: a value or a type, and where it's declared, `path#name`, its
+// shape's key.
+type Entry = { kind: Kind; origin?: string };
 
-async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<Map<string, Kind>> {
+const read = new Map<string, Map<string, Entry>>();
+
+async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<Map<string, Entry>> {
   if (read.has(path)) return read.get(path)!;
   if (seen.has(path)) return new Map();
   seen.add(path);
-  const exported = new Map<string, Kind>();
-  const local = new Map<string, Kind>();
+  const exported = new Map<string, Entry>();
+  const local = new Map<string, Entry>();
+  const declare = (name: string, kind: Kind) => local.set(name, { kind, origin: `${path}#${name}` });
   // A session reads the files it's opened with: one each.
   const ts = await open([path]);
   const { declarations } = await ts.read(path);
   await ts.close();
-  shapesOf(declarations);
+  shapesOf(path, declarations);
+  // What the file imports, by its name here: the module it's of, and its
+  // name there, a default import's `default`, which the model leaves as text.
+  const imports = new Map<string, [string, string]>();
+  for (const d of declarations as any[]) {
+    if (d.kind === "import") for (const n of d.names) imports.set(n, [d.from, n]);
+    const m = d.kind === "other" && d.text.match(/^import (?:type )?(\w+)\b[^;]*? from ['"](.+)['"]/);
+    if (m) imports.set(m[1], [m[2], "default"]);
+  }
+  // A name of the file's own, or one it imports, as that module exports it.
+  const own = async (name: string): Promise<Entry | undefined> => {
+    if (local.has(name)) return local.get(name);
+    const [from, there] = imports.get(name) ?? [];
+    const target = from ? file(path, from) : undefined;
+    return target ? (await exportsOf(target, seen)).get(there!) : undefined;
+  };
   const kindOf = (d: { kind: string }): Kind => (["interface", "type"].includes(d.kind) ? "type" : "value");
   const reexport = async (specifier: string, names: [string, string][], typeOnly: boolean) => {
     const target = file(path, specifier);
-    const there = target ? await exportsOf(target, seen) : new Map<string, Kind>();
-    for (const [name, as] of names) exported.set(as, typeOnly ? "type" : (there.get(name) ?? "value"));
+    const there = target ? await exportsOf(target, seen) : new Map<string, Entry>();
+    for (const [name, as] of names) {
+      const entry = there.get(name);
+      exported.set(as, { kind: typeOnly ? "type" : (entry?.kind ?? "value"), origin: entry?.origin });
+    }
   };
   for (const d of declarations) {
     if ("name" in d && typeof d.name === "string" && ["interface", "type", "const", "function", "class", "enum"].includes(d.kind)) {
-      local.set(d.name, kindOf(d));
-      if ("exported" in d && d.exported) exported.set(d.name, kindOf(d));
+      declare(d.name, kindOf(d));
+      if ("exported" in d && d.exported) exported.set(d.name, local.get(d.name)!);
     }
     if (d.kind === "export-from") await reexport(d.from, d.names, false);
-    if (d.kind === "export-default") exported.set("default", local.get(d.name) ?? "value");
+    if (d.kind === "export-default") exported.set("default", (await own(d.name)) ?? { kind: "value" });
     if (d.kind === "other") {
       // The model leaves a class as text, after its doc comment.
       const text: string = d.text.replace(/^(\s*\/\*[\s\S]*?\*\/)*\s*/, "");
       let m: RegExpMatchArray | null;
       if ((m = text.match(/^export (?:declare )?(?:abstract )?(class|namespace|enum|const|function) (\w+)/))) {
-        local.set(m[2], "value");
-        exported.set(m[2], "value");
+        declare(m[2], "value");
+        exported.set(m[2], local.get(m[2])!);
       } else if ((m = text.match(/^(?:declare )?(?:abstract )?(?:class|namespace|enum|const|function) (\w+)/))) {
-        local.set(m[1], "value");
+        declare(m[1], "value");
       } else if ((m = text.match(/^export \* from ['"](.+)['"]/))) {
         const target = file(path, m[1]);
-        if (target) for (const [name, kind] of await exportsOf(target, seen)) if (name !== "default") exported.set(name, kind);
+        if (target) for (const [name, entry] of await exportsOf(target, seen)) if (name !== "default") exported.set(name, entry);
       } else if ((m = text.match(/^export (type )?\{([\s\S]*?)\} from ['"](.+)['"]/))) {
         const names = m[2].split(",").map((s) => s.trim()).filter(Boolean).map((s) => {
           const [name, as] = s.replace(/^type /, "").split(/\s+as\s+/);
@@ -172,24 +196,18 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
         // A name of the module's own, or one it imports, exported as it is.
         for (const s of m[2].split(",").map((s) => s.trim()).filter(Boolean)) {
           const [name, as] = s.replace(/^type /, "").split(/\s+as\s+/);
-          exported.set(as ?? name, m[1] || s.startsWith("type ") ? "type" : (local.get(name) ?? "value"));
+          const entry = await own(name.replace(/^type /, ""));
+          exported.set(as ?? name, { kind: m[1] || s.startsWith("type ") ? "type" : (entry?.kind ?? "value"), origin: entry?.origin });
         }
       } else if ((m = text.match(/^export default (\w+)/))) {
-        exported.set("default", local.get(m[1]) ?? "value");
+        exported.set("default", (await own(m[1])) ?? { kind: "value" });
       }
     }
-  }
-  // An export of a name it imports, `ImageProps` of image-external's, has
-  // its members where it's declared: that file's, read for them.
-  for (const d of declarations as any[]) {
-    if (d.kind !== "import" || !d.names.some((n: string) => exported.has(n) && !shapes.has(n))) continue;
-    const target = file(path, d.from);
-    if (target) await exportsOf(target, seen);
   }
   // `export default function dynamic` is the default, not a `dynamic`: the
   // model has it as any exported function.
   for (const m of readFileSync(path, "utf8").matchAll(/^export default (?:declare )?(?:async )?(?:function|class) (\w+)/gm)) {
-    exported.set("default", exported.get(m[1]) ?? "value");
+    exported.set("default", exported.get(m[1]) ?? { kind: "value", origin: `${path}#${m[1]}` });
     exported.delete(m[1]);
   }
   read.set(path, exported);
@@ -295,11 +313,12 @@ export async function measure(): Promise<Module[]> {
     const exports = [...(await exportsOf(join(next, path)))]
       .filter(([e]) => !e.startsWith("_"))
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([e, kind]) => ({
+      .map(([e, { kind, origin }]) => ({
         name: e,
         kind,
         bound: links.has(`${name}#${e}`) || items.has(e),
-        members: (shapes.get(e) ?? []).sort().map((m) => ({ name: m, bound: owned.get(e)?.has(m) ?? false })),
+        // Of the type it is where it's declared, `ImageProps` of get-img-props'.
+        members: (shapes.get(origin ?? "") ?? []).sort().map((m) => ({ name: m, bound: owned.get(e)?.has(m) ?? false })),
       }));
     modules.push({ name, exports });
   }
