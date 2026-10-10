@@ -1108,4 +1108,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_uninit"],
   },
+  {
+    name: "escape-ascii-not-text",
+    breaks: "`{}` of `escape_ascii()` is refused",
+    file: "src/lower/recognition.rs",
+    find: "            || std_path(tcx, adt.did()) == \"std::slice::EscapeAscii\"))",
+    replace: "            || false))",
+    tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
+  },
+  {
+    name: "utf8-chunks-not-array",
+    breaks: "`for chunk in bytes.utf8_chunks()` is an error",
+    file: "src/lower/recognition.rs",
+    find: "                    \"std::str::Utf8Chunks\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
+  },
+  {
+    name: "utf8-chunk-valid-unknown",
+    breaks: "a `Utf8Chunk`'s `valid()` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::str::Utf8Chunk::<'a>::valid\" => Some(TextOp::Utf8Part(\"valid\")),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
+  },
 ];

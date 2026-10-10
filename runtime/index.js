@@ -5531,6 +5531,34 @@ export function $debugUtf8Error(error, owned = false) {
   return `Utf8Error { valid_up_to: ${error.valid_up_to}, error_len: ${length} }`;
 }
 
+// A byte slice's `escape_ascii()` (ADR 0341): each byte as `u8::escape_ascii`
+// escapes it, `\t`, `\'` and `\x7f`, or itself where it's printable.
+export function $escapeAscii(bytes) {
+  const named = { 9: "\\t", 10: "\\n", 13: "\\r", 34: '\\"', 39: "\\'", 92: "\\\\" };
+  let text = "";
+  for (const byte of bytes) {
+    if (byte in named) text += named[byte];
+    else if (byte >= 0x20 && byte < 0x7f) text += String.fromCharCode(byte);
+    else text += `\\x${byte.toString(16).padStart(2, "0")}`;
+  }
+  return text;
+}
+
+// `bytes.utf8_chunks()`: each run of valid text and the bad bytes after it,
+// `{ valid, invalid }`, cut where Rust's `Utf8Chunks` cuts them: a sequence
+// the bytes end inside of is one bad run.
+export function $utf8Chunks(bytes) {
+  const chunks = [];
+  for (let at = 0; at < bytes.length; ) {
+    const bad = $utf8Check(bytes, at);
+    const end = bad ? bad[0] : bytes.length;
+    const stop = !bad ? end : bad[1] === undefined ? bytes.length : end + bad[1];
+    chunks.push({ valid: $utf8Decode(bytes.slice(at, end)), invalid: bytes.slice(end, stop) });
+    at = stop;
+  }
+  return chunks;
+}
+
 // `x.is_normal()`, or `is_subnormal()` (`subnormal`), of a float whose
 // smallest normal value is `min`: an `f64`'s, or an `f32`'s, exactly.
 export function $isNormal(x, min, subnormal = false) {

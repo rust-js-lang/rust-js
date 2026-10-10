@@ -664,7 +664,7 @@
 + str::trim_right_matches
 + str::trim_start
 + str::trim_start_matches
-# slice 120 of 133
+# slice 122 of 133
 - slice::align_to
 - slice::align_to_mut
 + slice::array_windows
@@ -703,7 +703,7 @@
 - slice::element_offset
 + slice::ends_with
 + slice::eq_ignore_ascii_case
-- slice::escape_ascii
++ slice::escape_ascii
 + slice::fill
 + slice::fill_with
 + slice::first
@@ -794,7 +794,7 @@
 + slice::trim_ascii
 + slice::trim_ascii_end
 + slice::trim_ascii_start
-- slice::utf8_chunks
++ slice::utf8_chunks
 + slice::windows
 + slice::write_clone_of_slice
 + slice::write_copy_of_slice

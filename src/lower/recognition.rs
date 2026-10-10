@@ -556,6 +556,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 Some(TextOp::FromUtf8Mut { unchecked: true })
             }
             "std::str::Utf8Error::valid_up_to" => Some(TextOp::Utf8Part("valid_up_to")),
+            // A `Utf8Chunk`'s parts, `{ valid, invalid }` (ADR 0341).
+            "std::str::Utf8Chunk::<'a>::valid" => Some(TextOp::Utf8Part("valid")),
+            "std::str::Utf8Chunk::<'a>::invalid" => Some(TextOp::Utf8Part("invalid")),
             "std::num::ParseIntError::kind" => Some(TextOp::ParseErrorKind),
             _ => None,
         };
@@ -1899,6 +1902,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 clone: name.as_str() == "write_clone_of_slice",
             }),
             "assume_init_drop" if owner.is_slice() => Std::Slice(SliceOp::UninitDrop),
+            // A byte slice's text: escaped, or its runs of UTF-8 (ADR 0341).
+            "escape_ascii" if owner.is_slice() => Std::Text(TextOp::EscapeAscii),
+            "utf8_chunks" if owner.is_slice() => Std::Text(TextOp::Utf8Chunks),
             "get_disjoint_mut" | "get_disjoint_unchecked_mut" if owner.is_slice() => {
                 Std::Slice(SliceOp::GetDisjointMut {
                     unchecked: name.as_str() == "get_disjoint_unchecked_mut",
@@ -2772,6 +2778,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::slice::ChunkBy",
                     "std::slice::ChunkByMut",
                     "std::slice::ArrayWindows",
+                    "std::str::Utf8Chunks",
                 ]
                 .contains(&path.as_str())
                 || self.is_str_split(ty))
@@ -3562,11 +3569,14 @@ pub(crate) fn is_decode_utf16_error(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
 }
 
 /// A `char`'s or a `str`'s `escape_default()`, `escape_debug()` or
-/// `escape_unicode()`, its text (ADR 0327).
+/// `escape_unicode()`, and a byte slice's `escape_ascii()`, its text (ADR
+/// 0327).
 pub(crate) fn is_text_escape(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
     matches!(ty.kind(), ty::Adt(adt, _) if tcx.crate_name(adt.did().krate) == sym::core
-        && matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
-        && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::")))
+        && (matches!(tcx.item_name(adt.did()).as_str(), "EscapeDefault" | "EscapeDebug" | "EscapeUnicode")
+            && matches!(std_path(tcx, adt.did()).as_str(), p if p.starts_with("std::char::") || p.starts_with("std::str::"))
+            // A byte slice's `escape_ascii()` (ADR 0341).
+            || std_path(tcx, adt.did()) == "std::slice::EscapeAscii"))
 }
 
 /// A `NonZero<T>` type (ADR 0177).

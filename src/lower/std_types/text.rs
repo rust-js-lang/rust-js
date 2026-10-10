@@ -111,6 +111,11 @@ pub(in crate::lower) enum TextOp {
     },
     /// `String::from_utf8_lossy(bytes)`: a `Cow`.
     Utf8Lossy,
+    /// A byte slice's `escape_ascii()`: its text (ADR 0341).
+    EscapeAscii,
+    /// A byte slice's `utf8_chunks()`: each run of valid text and the bad
+    /// bytes after it, `{ valid, invalid }`.
+    Utf8Chunks,
     /// A part of a `Utf8Error`, `FromUtf8Error` or `Cow<str>`, as the runtime
     /// makes it: `valid_up_to`, `error`, `bytes`, `_0`.
     Utf8Part(&'static str),
@@ -537,6 +542,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 call(self, Helper::Utf8, "$fromUtf8Mut", list)
             }
             TextOp::Utf8Lossy => call(self, Helper::Utf8, "$utf8Lossy", vec![arg()]),
+            TextOp::EscapeAscii => call(self, Helper::Utf8, "$escapeAscii", vec![arg()]),
+            TextOp::Utf8Chunks => call(self, Helper::Utf8, "$utf8Chunks", vec![arg()]),
             TextOp::Utf8Part(name) => Expr::member(arg(), name),
             TextOp::ParseErrorKind => call(self, Helper::DebugParseError, "$parseErrorKind", vec![arg()]),
             TextOp::SliceStartsWith { end } => {
