@@ -398,8 +398,8 @@ export const mutations: Mutation[] = [
     name: "mir-std-iterator-array",
     breaks: "`text.bytes()` is an array MIR steps as an iterator",
     file: "src/lower/mir.rs",
-    find: "                        && !is_js_iterator(&e) =>\n",
-    replace: "                        && false && !is_js_iterator(&e) =>\n",
+    find: "                    if self.implements_iterator(output)\n",
+    replace: "                    if false && self.implements_iterator(output)\n",
     tests: ["test/mir.test.ts","-t","integer_bits"],
   },
   {
@@ -478,8 +478,8 @@ export const mutations: Mutation[] = [
     name: "mir-escape-iterator-wrapped",
     breaks: "`escape_ascii()`'s text is made a JS iterator, and shown as one",
     file: "src/lower/mir.rs",
-    find: "                        && !super::recognition::is_text_escape(tcx, output)\n",
-    replace: "",
+    find: "                        && !super::recognition::is_text_escape(tcx, output) =>\n",
+    replace: "                        && (true || !super::recognition::is_text_escape(tcx, output)) =>\n",
     tests: ["test/mir.test.ts","-t","slice_bytes_text"],
   },
   {

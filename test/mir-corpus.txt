@@ -120,6 +120,7 @@ integer_bits.rs
 integer_families.rs
 integers_128.rs
 iter_flatten.rs
+iterator_clones.rs
 iterator_stepped_by_hand.rs
 kept_element_ref.rs
 kept_generic_iterators.rs

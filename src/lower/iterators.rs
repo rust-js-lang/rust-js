@@ -280,18 +280,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let it = self.expr(e, out)?;
+        self.stepped_left(it, ty, owns, span).map(Some)
+    }
+
+    /// What's left of `it`, a `$iter` of std's iterator over an array, of
+    /// type `ty`: `it.items.slice(it.at, it.end)`, copies of the items it
+    /// `owns` that need one (ADR 0181).
+    pub(super) fn stepped_left(&mut self, it: Expr, ty: ty::Ty<'tcx>, owns: bool, span: Span) -> R<Expr> {
         let left = Expr::call(
             Expr::member(Expr::member(it.clone(), "items"), "slice"),
             vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
         );
         let item = self.iterator_item(ty).expect("an iterator's item");
-        Ok(Some(match owns && self.needs_clone(item) {
+        Ok(match owns && self.needs_clone(item) {
             true => {
                 let clone = self.clone_fn("item", item, span)?;
                 Expr::call(Expr::member(left, "map"), vec![clone])
             }
             false => left,
-        }))
+        })
     }
 
     /// An iterator that's a JS iterator, not an array (ADR 0055): one of the
@@ -1458,4 +1465,9 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
     };
     (x.as_str(), i.as_str()) == ("x", "i")
         && matches!(&parts[..], [first, second] if var(first, "i") && var(second, "x"))
+}
+
+/// Whether `e` is `$iter(items)`, `stepped_items`'s.
+pub(super) fn is_stepped_items(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$iter"))
 }

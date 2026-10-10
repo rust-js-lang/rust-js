@@ -283,4 +283,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_any_generic"],
     snapshots: true,
   },
+  {
+    name: "mir-array-iterator-clone-shared",
+    breaks: "a clone of std's iterator over an array from MIR is the same `$iter`, stepped by both",
+    file: "src/lower/std_impls.rs",
+    find: "                    && super::mir::mir_mode() =>\n",
+    replace: "                    && false && super::mir::mir_mode() =>\n",
+    tests: ["test/mir.test.ts","-t","iterator_clones"],
+  },
 ];

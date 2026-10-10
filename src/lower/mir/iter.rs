@@ -52,7 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(None);
             }
             if iter_ty.is_array() || iter_ty.is_slice() || self.is_vec_like(iter_ty) {
-                return Ok(Some(self.js_iterator(value)));
+                return Ok(Some(self.std_iterator(value, output)));
             }
             return Ok(None);
         }
@@ -240,6 +240,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// A std iterator of type `ty` made of `value`, the array or the text
+    /// THIR's lowering makes of it, as MIR steps it: over an array, a
+    /// `$iter`, which knows where it is, so a clone of it does (ADR 0181);
+    /// another, the JS iterator of `value`.
+    pub(super) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
+        match self.array_source(ty) {
+            Some(_) => match from_iterator(value) {
+                Ok(items) | Err(items) if !is_js_iterator(&items) => self.stepped_items(items),
+                Ok(items) | Err(items) => items,
+            },
+            None if is_js_iterator(&value) => value,
+            None => self.js_iterator(value),
+        }
+    }
+
     /// Whether `ty` is an iterator: one whose `Item` is a type.
     pub(in crate::lower) fn implements_iterator(&self, ty: Ty<'tcx>) -> bool {
         self.iterator_item(ty)
@@ -279,5 +294,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn helper(&mut self, helper: Helper, name: &str, args: Vec<Expr>) -> Expr {
         self.runtime.insert(helper);
         Expr::call(Expr::var(name), args)
+    }
+}
+
+/// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
+/// `$iter`, or a collection's `values()`, `keys()` or `entries()`.
+fn is_js_iterator(e: &Expr) -> bool {
+    let js::ExprKind::Call(callee, _) = &e.kind else {
+        return false;
+    };
+    match &callee.kind {
+        js::ExprKind::Var(_) => crate::lower::iterators::is_stepped_items(e),
+        js::ExprKind::Member(object, name) => {
+            matches!(name.as_str(), "values" | "keys" | "entries")
+                || (name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator"))
+        }
+        _ => false,
+    }
+}
+
+/// What `Iterator.from(x)` makes a JS iterator of, `x`: `Ok` of it, or
+/// `Err` of `e` itself, of anything else.
+fn from_iterator(e: Expr) -> Result<Expr, Expr> {
+    match e.kind {
+        js::ExprKind::Call(callee, mut args)
+            if args.len() == 1
+                && matches!(&callee.kind, js::ExprKind::Member(object, name)
+                    if name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")) =>
+        {
+            Ok(args.pop().expect("one"))
+        }
+        kind => Err(Expr { kind, span: e.span }),
     }
 }

@@ -2136,10 +2136,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if self.implements_iterator(output)
                         && self.range_kind(output).is_none()
                         && !self.is_user_iterator(output)
-                        && !super::recognition::is_text_escape(tcx, output)
-                        && !is_js_iterator(&e) =>
+                        && !super::recognition::is_text_escape(tcx, output) =>
                 {
-                    Value::Expr(self.js_iterator(e))
+                    Value::Expr(self.std_iterator(e, output))
                 }
                 value => value,
             });
@@ -2945,21 +2944,6 @@ fn writes_capture(body: &mir::Body<'_>, i: usize) -> bool {
             _ => false,
         }) || matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if captured(destination))
     })
-}
-
-/// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, or a
-/// collection's `values()`, `keys()` or `entries()`.
-fn is_js_iterator(e: &Expr) -> bool {
-    let js::ExprKind::Call(callee, _) = &e.kind else {
-        return false;
-    };
-    match &callee.kind {
-        js::ExprKind::Member(object, name) => {
-            matches!(name.as_str(), "values" | "keys" | "entries")
-                || (name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator"))
-        }
-        _ => false,
-    }
 }
 
 /// The locals a terminator reads, as its operands.

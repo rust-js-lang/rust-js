@@ -396,6 +396,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // std's iterator over an array is the array (ADR 0061), which iterating
             // doesn't change: a clone of one that borrows its items is the array
             // itself, of one that owns them, a copy of each that needs one (ADR 0181).
+            // From its MIR, it's a `$iter` that knows where it is (ADR 0364): a
+            // `$iter` of what it has left.
+            ty::Adt(..)
+                if let Some(owns) = self.array_source(ty)
+                    && super::mir::mir_mode() =>
+            {
+                let left = self.stepped_left(place, ty, owns, span)?;
+                Ok(self.stepped_items(left))
+            }
             ty::Adt(_, args) if let Some(owns) = self.array_source(ty) => {
                 let item = args.types().next().expect("an iterator's item");
                 match owns && self.needs_clone(item) {
