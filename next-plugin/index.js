@@ -48,6 +48,8 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   }
 
   if (!(await compile()) && command !== "dev") return 1;
+  // Its Rust's JS alone, which an app's build may read before Next.js runs.
+  if (command === "compile") return 0;
 
   // What Cargo reads of the crate, its Rust and its manifests, and what
   // rust-js reads of its own, but not what Cargo writes.

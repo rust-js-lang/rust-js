@@ -280,6 +280,16 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect([failed.code, failed.output.includes("error"), failed.output.includes("Next.js 16")]).toEqual([1, true, false]);
 }, 300_000);
 
+// `rust-js-next compile` writes the app's JS and runs no Next.js, for what an
+// app's build reads of its Rust first, as react.dev's static files read its
+// llmsTxt.
+test("rust-js-next compile writes the app's JS alone", async () => {
+  buildCompiler();
+  const dir = app("next-compile");
+  const { code } = await finished(command(dir, ["compile"]));
+  expect([code, existsSync(join(dir, "app/page.jsx")), existsSync(join(dir, ".next"))]).toEqual([0, true, false]);
+});
+
 test("rust-js-next dev serves Rust routes, refreshes a save in place, and recovers from an error", async () => {
   buildCompiler();
   const dir = app("next-dev");
