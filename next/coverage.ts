@@ -40,7 +40,77 @@ const MODULES: Record<string, string> = {
 };
 
 type Kind = "value" | "type";
-export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean }[] };
+export type Member = { name: string; bound: boolean };
+export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean; members: Member[] }[] };
+
+// Each type's and class's own members, by its name: an interface's, and
+// what it extends of its file's; an object type's, of an intersection's or
+// a union's parts too, `Omit`'s, `Pick`'s and `Partial`'s of one; a class's
+// properties, methods and statics. What a type has of React's, an element's
+// attributes, is React's, counted by its crate.
+const shapes = new Map<string, string[]>();
+
+function shapesOf(declarations: any[]) {
+  const index = new Map<string, any>();
+  const indexed = (list: any[]) => {
+    for (const d of list) {
+      if (d.name && !index.has(d.name)) index.set(d.name, d);
+      const cls = d.kind === "other" ? classText(d.text) : undefined;
+      if (cls && !index.has(cls.name)) index.set(cls.name, { kind: "class", ...cls });
+      if (d.declarations) indexed(d.declarations);
+    }
+  };
+  indexed(declarations);
+  const named = (m: any) => (m.kind === "property" || m.kind === "method") && typeof m.name === "string";
+  const of = (d: any, seen: Set<any>): string[] => {
+    if (!d || seen.has(d)) return [];
+    seen.add(d);
+    if (d.kind === "interface") {
+      const inherited = (d.extends ?? []).flatMap((e: any) => (e.kind === "reference" ? of(index.get(e.name), seen) : []));
+      return [...d.members.filter(named).map((m: any) => m.name), ...inherited];
+    }
+    if (d.kind === "type") return typed(d.type, seen);
+    if (d.kind === "class") return d.members;
+    return [];
+  };
+  const typed = (t: any, seen: Set<any>): string[] => {
+    if (!t) return [];
+    switch (t.kind) {
+      case "object":
+        return t.members.filter(named).map((m: any) => m.name);
+      case "intersection":
+      case "union":
+        return t.types.flatMap((part: any) => typed(part, seen));
+      case "reference": {
+        const keys = (k: any): string[] => (k?.kind === "literal" ? [k.value] : k?.kind === "union" ? k.types.flatMap(keys) : []);
+        const [first, second] = t.args ?? [];
+        if (["Partial", "Required", "Readonly", "NonNullable"].includes(t.name)) return typed(first, seen);
+        if (t.name === "Omit") return typed(first, seen).filter((m) => !keys(second).includes(m));
+        if (t.name === "Pick") return typed(first, seen).filter((m) => keys(second).includes(m));
+        return of(index.get(t.name.split(".").pop()), seen);
+      }
+      default:
+        return [];
+    }
+  };
+  for (const [name, d] of index) {
+    if (shapes.has(name) || !["interface", "type", "class"].includes(d.kind)) continue;
+    const members = [...new Set(of(d, new Set()))];
+    if (members.length) shapes.set(name, members);
+  }
+}
+
+/** A class's name and members, of its text: each property, method, getter
+ * and static, not a private one nor its constructor. */
+function classText(text: string): { name: string; members: string[] } | undefined {
+  const body = text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  const name = body.match(/^\s*(?:export )?(?:declare )?(?:abstract )?class (\w+)/)?.[1];
+  if (!name) return undefined;
+  const members = [...body.matchAll(/^ {4}((?:(?:public|static|readonly|get|set|declare|abstract|override)\s+)*)([A-Za-z_$][\w$]*)\??\s*[(:<]/gm)]
+    .filter((m) => !/private|protected/.test(m[1]) && m[2] !== "constructor")
+    .map((m) => m[2]);
+  return { name, members: [...new Set(members)] };
+}
 
 function file(from: string, specifier: string): string | undefined {
   const base = specifier.startsWith("next/") ? join(next, specifier.slice("next/".length)) : resolve(dirname(from), specifier);
@@ -62,6 +132,7 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   const ts = await open([path]);
   const { declarations } = await ts.read(path);
   await ts.close();
+  shapesOf(declarations);
   const kindOf = (d: { kind: string }): Kind => (["interface", "type"].includes(d.kind) ? "type" : "value");
   const reexport = async (specifier: string, names: [string, string][], typeOnly: boolean) => {
     const target = file(path, specifier);
@@ -104,6 +175,13 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
       }
     }
   }
+  // An export of a name it imports, `ImageProps` of image-external's, has
+  // its members where it's declared: that file's, read for them.
+  for (const d of declarations as any[]) {
+    if (d.kind !== "import" || !d.names.some((n: string) => exported.has(n) && !shapes.has(n))) continue;
+    const target = file(path, d.from);
+    if (target) await exportsOf(target, seen);
+  }
   // `export default function dynamic` is the default, not a `dynamic`: the
   // model has it as any exported function.
   for (const m of readFileSync(path, "utf8").matchAll(/^export default (?:declare )?(?:async )?(?:function|class) (\w+)/gm)) {
@@ -129,30 +207,98 @@ function bindings(): { links: Set<string>; items: Set<string> } {
   };
 }
 
+// Each struct's members, by its name: its fields' JS names, not a flattened
+// one's, which is another's; the methods of its `impl`s, by their link names,
+// `get cookies` a `cookies`; a static of it, `next/server#NextResponse.json`;
+// and an enum's, its variants' payloads'.
+// A type alias's, `pub type ProxyConfig = MiddlewareConfig`, are its type's.
+function rustMembers(): Map<string, Set<string>> {
+  const rust = (dir: string): string[] =>
+    readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? rust(join(dir, f)) : f.endsWith(".rs") ? [join(dir, f)] : []));
+  const members = new Map<string, Set<string>>();
+  const add = (owner: string, member: string) => members.set(owner, (members.get(owner) ?? new Set()).add(member));
+  const aliases: [string, string][] = [];
+  const payloads: [string, string][] = [];
+  // The block a `{` at `at` opens.
+  const block = (text: string, at: number) => {
+    let depth = 0;
+    for (let i = at; i < text.length; i++) {
+      if (text[i] === "{") depth++;
+      else if (text[i] === "}" && --depth === 0) return text.slice(at + 1, i);
+    }
+    return "";
+  };
+  for (const file of rust(crate)) {
+    const text = readFileSync(file, "utf8");
+    for (const m of text.matchAll(/pub struct (\w+)[^;{(]*\{/g)) {
+      let name: string | undefined;
+      let flatten = false;
+      for (const line of block(text, m.index! + m[0].length - 1).split("\n")) {
+        name = line.match(/rust_js::name = "([^"]+)"/)?.[1] ?? name;
+        flatten ||= /rust_js::flatten/.test(line);
+        const field = line.match(/^\s*pub (?:r#)?(\w+):/);
+        if (field) {
+          if (!flatten) add(m[1], name ?? field[1]);
+          name = undefined;
+          flatten = false;
+        }
+      }
+    }
+    for (const m of text.matchAll(/\nimpl(?:<[^>]*>)? (\w+)(?:<[^>]*>)? \{/g)) {
+      for (const link of block(text, m.index! + m[0].length - 1).matchAll(/link_name = "(?:get |set )?([\w$]+)"/g)) add(m[1], link[1]);
+    }
+    for (const m of text.matchAll(/link_name = "(?:new )?next[^"#]*#(\w+)\.(\w+)"/g)) add(m[1], m[2]);
+    for (const m of text.matchAll(/pub type (\w+)(?:<[^>]*>)? = (?:[\w:]+::)?(\w+)/g)) aliases.push([m[1], m[2]]);
+    // An untagged enum's, a union of objects, are its payloads'.
+    for (const m of text.matchAll(/pub enum (\w+)[^{]*\{/g)) {
+      for (const payload of block(text, m.index! + m[0].length - 1).matchAll(/^\s*\w+\((\w+)/gm)) payloads.push([m[1], payload[1]]);
+    }
+    for (const m of text.matchAll(/pub use [\w:]*?(\w+) as (\w+);/g)) aliases.push([m[2], m[1]]);
+  }
+  for (const [union, payload] of payloads) for (const member of members.get(payload) ?? []) add(union, member);
+  for (const [alias, target] of aliases) if (!members.has(alias) && members.has(target)) members.set(alias, members.get(target)!);
+  return members;
+}
+
 export async function measure(): Promise<Module[]> {
   const { links, items } = bindings();
+  const owned = rustMembers();
   const modules: Module[] = [];
   for (const [name, path] of Object.entries(MODULES)) {
     const exports = [...(await exportsOf(join(next, path)))]
       .filter(([e]) => !e.startsWith("_"))
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([e, kind]) => ({ name: e, kind, bound: links.has(`${name}#${e}`) || items.has(e) }));
+      .map(([e, kind]) => ({
+        name: e,
+        kind,
+        bound: links.has(`${name}#${e}`) || items.has(e),
+        members: (shapes.get(e) ?? []).sort().map((m) => ({ name: m, bound: owned.get(e)?.has(m) ?? false })),
+      }));
     modules.push({ name, exports });
   }
   return modules;
 }
 
-/** The baseline's text: each module's count, then each export, `+` bound. */
+/** The baseline's text: each module's counts, then each export, `+` bound,
+ * and its members, each a line of its own after it. */
 export function render(modules: Module[]): string {
   const all = modules.flatMap((m) => m.exports);
-  const bound = all.filter((e) => e.bound).length;
+  const members = all.flatMap((e) => e.members);
+  const percent = (n: number, of: number) => `${n} of ${of} (${((100 * n) / of).toFixed(1)}%)`;
   return [
     `# The next crate against Next.js's public modules: bun test test/next-coverage.test.ts`,
-    `# exports: ${bound} of ${all.length} (${((100 * bound) / all.length).toFixed(1)}%)`,
-    ...modules.flatMap((m) => [
-      `# ${m.name} ${m.exports.filter((e) => e.bound).length} of ${m.exports.length}`,
-      ...m.exports.map((e) => `${e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),
-    ]),
+    `# exports: ${percent(all.filter((e) => e.bound).length, all.length)}`,
+    `# members: ${percent(members.filter((e) => e.bound).length, members.length)}`,
+    ...modules.flatMap((m) => {
+      const own = m.exports.flatMap((e) => e.members);
+      return [
+        `# ${m.name} ${m.exports.filter((e) => e.bound).length} of ${m.exports.length}, members ${own.filter((e) => e.bound).length} of ${own.length}`,
+        ...m.exports.flatMap((e) => [
+          `${e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`,
+          ...e.members.map((member) => `${member.bound ? "+" : "-"} ${m.name}#${e.name}.${member.name}`),
+        ]),
+      ];
+    }),
     "",
   ].join("\n");
 }

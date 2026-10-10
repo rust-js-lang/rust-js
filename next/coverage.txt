@@ -1,56 +1,264 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
 # exports: 126 of 2093 (6.0%)
-# next 30 of 42
+# members: 224 of 400 (56.0%)
+# next 30 of 42, members 101 of 199
 - type next#AdapterOutput
+- next#AdapterOutput.APP_PAGE
+- next#AdapterOutput.APP_ROUTE
+- next#AdapterOutput.MIDDLEWARE
+- next#AdapterOutput.PAGES
+- next#AdapterOutput.PAGES_API
+- next#AdapterOutput.PRERENDER
+- next#AdapterOutput.STATIC_FILE
 - next#default
 + type next#FileSizeSuffix
 + type next#GetServerSideProps
 + type next#GetServerSidePropsContext
++ next#GetServerSidePropsContext.defaultLocale
++ next#GetServerSidePropsContext.draftMode
++ next#GetServerSidePropsContext.locale
++ next#GetServerSidePropsContext.locales
++ next#GetServerSidePropsContext.params
++ next#GetServerSidePropsContext.preview
++ next#GetServerSidePropsContext.previewData
++ next#GetServerSidePropsContext.query
++ next#GetServerSidePropsContext.req
++ next#GetServerSidePropsContext.res
++ next#GetServerSidePropsContext.resolvedUrl
 + type next#GetServerSidePropsResult
++ next#GetServerSidePropsResult.notFound
++ next#GetServerSidePropsResult.props
++ next#GetServerSidePropsResult.redirect
 + type next#GetStaticPaths
 + type next#GetStaticPathsContext
++ next#GetStaticPathsContext.defaultLocale
++ next#GetStaticPathsContext.locales
 + type next#GetStaticPathsResult
++ next#GetStaticPathsResult.fallback
++ next#GetStaticPathsResult.paths
 + type next#GetStaticProps
 + type next#GetStaticPropsContext
++ next#GetStaticPropsContext.defaultLocale
++ next#GetStaticPropsContext.draftMode
++ next#GetStaticPropsContext.locale
++ next#GetStaticPropsContext.locales
++ next#GetStaticPropsContext.params
++ next#GetStaticPropsContext.preview
++ next#GetStaticPropsContext.previewData
++ next#GetStaticPropsContext.revalidateReason
 + type next#GetStaticPropsResult
++ next#GetStaticPropsResult.notFound
++ next#GetStaticPropsResult.props
++ next#GetStaticPropsResult.redirect
++ next#GetStaticPropsResult.revalidate
 - type next#InferGetServerSidePropsType
 - type next#InferGetStaticPropsType
 - type next#Instant
+- next#Instant.level
+- next#Instant.unstable_disableBuildValidation
+- next#Instant.unstable_disableDevValidation
+- next#Instant.unstable_disableValidation
+- next#Instant.unstable_from
+- next#Instant.unstable_samples
 - type next#Instrumentation
 + type next#Metadata
++ next#Metadata.abstract
++ next#Metadata.alternates
++ next#Metadata.appLinks
++ next#Metadata.appleWebApp
++ next#Metadata.applicationName
++ next#Metadata.archives
++ next#Metadata.assets
++ next#Metadata.authors
++ next#Metadata.bookmarks
++ next#Metadata.category
++ next#Metadata.classification
++ next#Metadata.colorScheme
++ next#Metadata.creator
++ next#Metadata.description
++ next#Metadata.facebook
++ next#Metadata.formatDetection
++ next#Metadata.generator
++ next#Metadata.icons
++ next#Metadata.itunes
++ next#Metadata.keywords
++ next#Metadata.manifest
++ next#Metadata.metadataBase
++ next#Metadata.openGraph
++ next#Metadata.other
++ next#Metadata.pagination
++ next#Metadata.pinterest
++ next#Metadata.publisher
++ next#Metadata.referrer
++ next#Metadata.robots
++ next#Metadata.themeColor
++ next#Metadata.title
++ next#Metadata.twitter
++ next#Metadata.verification
++ next#Metadata.viewport
 + type next#MetadataRoute
 - type next#NextAdapter
+- next#NextAdapter.modifyConfig
+- next#NextAdapter.name
+- next#NextAdapter.onBuildComplete
 + type next#NextApiHandler
 + type next#NextApiRequest
++ next#NextApiRequest.body
++ next#NextApiRequest.cookies
++ next#NextApiRequest.draftMode
++ next#NextApiRequest.env
++ next#NextApiRequest.preview
++ next#NextApiRequest.previewData
++ next#NextApiRequest.query
 + type next#NextApiResponse
++ next#NextApiResponse.clearPreviewData
++ next#NextApiResponse.json
++ next#NextApiResponse.redirect
++ next#NextApiResponse.revalidate
++ next#NextApiResponse.send
++ next#NextApiResponse.setDraftMode
++ next#NextApiResponse.setPreviewData
++ next#NextApiResponse.status
 + type next#NextComponentType
+- next#NextComponentType.getInitialProps
 - type next#NextConfig
+- next#NextConfig.adapterPath
+- next#NextConfig.agentRules
+- next#NextConfig.allowedDevOrigins
+- next#NextConfig.assetPrefix
+- next#NextConfig.basePath
+- next#NextConfig.bundlePagesRouterDependencies
+- next#NextConfig.cacheComponents
+- next#NextConfig.cacheHandler
+- next#NextConfig.cacheHandlers
+- next#NextConfig.cacheLife
+- next#NextConfig.cacheMaxMemorySize
+- next#NextConfig.cleanDistDir
+- next#NextConfig.compiler
+- next#NextConfig.compress
+- next#NextConfig.crossOrigin
+- next#NextConfig.deploymentId
+- next#NextConfig.devIndicators
+- next#NextConfig.distDir
+- next#NextConfig.enablePrerenderSourceMaps
+- next#NextConfig.env
+- next#NextConfig.excludeDefaultMomentLocales
+- next#NextConfig.experimental
+- next#NextConfig.expireTime
+- next#NextConfig.exportPathMap
+- next#NextConfig.generateBuildId
+- next#NextConfig.generateEtags
+- next#NextConfig.headers
+- next#NextConfig.htmlLimitedBots
+- next#NextConfig.httpAgentOptions
+- next#NextConfig.i18n
+- next#NextConfig.images
+- next#NextConfig.instrumentationClientInject
+- next#NextConfig.logging
+- next#NextConfig.modularizeImports
+- next#NextConfig.onDemandEntries
+- next#NextConfig.output
+- next#NextConfig.outputFileTracingExcludes
+- next#NextConfig.outputFileTracingIncludes
+- next#NextConfig.outputFileTracingRoot
+- next#NextConfig.outputHashSalt
+- next#NextConfig.pageExtensions
+- next#NextConfig.partialPrefetching
+- next#NextConfig.poweredByHeader
+- next#NextConfig.productionBrowserSourceMaps
+- next#NextConfig.reactCompiler
+- next#NextConfig.reactMaxHeadersLength
+- next#NextConfig.reactProductionProfiling
+- next#NextConfig.reactStrictMode
+- next#NextConfig.redirects
+- next#NextConfig.rewrites
+- next#NextConfig.sassOptions
+- next#NextConfig.serverExternalPackages
+- next#NextConfig.skipMiddlewareUrlNormalize
+- next#NextConfig.skipProxyUrlNormalize
+- next#NextConfig.skipTrailingSlashRedirect
+- next#NextConfig.staticPageGenerationTimeout
+- next#NextConfig.supportsImmutableAssets
+- next#NextConfig.trailingSlash
+- next#NextConfig.transpilePackages
+- next#NextConfig.turbopack
+- next#NextConfig.typedRoutes
+- next#NextConfig.typescript
+- next#NextConfig.useFileSystemPublicRoutes
+- next#NextConfig.watchOptions
+- next#NextConfig.webpack
 + type next#NextPage
 + type next#NextPageContext
++ next#NextPageContext.AppTree
++ next#NextPageContext.asPath
++ next#NextPageContext.defaultLocale
++ next#NextPageContext.err
++ next#NextPageContext.locale
++ next#NextPageContext.locales
++ next#NextPageContext.pathname
++ next#NextPageContext.query
++ next#NextPageContext.req
++ next#NextPageContext.res
 + type next#PageConfig
++ next#PageConfig.api
++ next#PageConfig.env
++ next#PageConfig.maxDuration
++ next#PageConfig.runtime
++ next#PageConfig.unstable_JsPreload
++ next#PageConfig.unstable_runtimeJS
 + type next#PreviewData
 + type next#Redirect
++ next#Redirect.basePath
++ next#Redirect.destination
++ next#Redirect.permanent
++ next#Redirect.statusCode
 + type next#ResolvedMetadata
 + type next#ResolvedViewport
+- next#ResolvedViewport.colorScheme
+- next#ResolvedViewport.themeColor
 + type next#ResolvingMetadata
 + type next#ResolvingViewport
 + type next#ResponseLimit
 + type next#Route
+- next#Route.destination
+- next#Route.has
+- next#Route.headers
+- next#Route.missing
+- next#Route.priority
+- next#Route.source
+- next#Route.sourceRegex
+- next#Route.status
 - type next#RouterTransitionEvent
+- next#RouterTransitionEvent.id
+- next#RouterTransitionEvent.timestamp
 - type next#RouterTransitionPrefetchIntent
 - type next#RouterTransitionStartEvent
+- next#RouterTransitionStartEvent.fromRoutes
+- next#RouterTransitionStartEvent.id
+- next#RouterTransitionStartEvent.prefetchIntent
+- next#RouterTransitionStartEvent.timestamp
 - type next#RouterTransitionType
 + type next#ServerRuntime
 + type next#SizeLimit
 + type next#Viewport
-# next/app 1 of 6
++ next#Viewport.colorScheme
++ next#Viewport.themeColor
+# next/app 1 of 6, members 0 of 8
 - type next/app#AppContext
 - type next/app#AppInitialProps
+- next/app#AppInitialProps.pageProps
 + type next/app#AppProps
 - type next/app#AppType
+- next/app#AppType.getInitialProps
 - next/app#default
 - type next/app#NextWebVitalsMetric
-# next/cache 11 of 11
+- next/app#NextWebVitalsMetric.attribution
+- next/app#NextWebVitalsMetric.id
+- next/app#NextWebVitalsMetric.label
+- next/app#NextWebVitalsMetric.name
+- next/app#NextWebVitalsMetric.startTime
+- next/app#NextWebVitalsMetric.value
+# next/cache 11 of 11, members 0 of 0
 + next/cache#cacheLife
 + next/cache#cacheTag
 + next/cache#io
@@ -62,34 +270,100 @@
 + next/cache#unstable_cacheTag
 + next/cache#unstable_noStore
 + next/cache#updateTag
-# next/document 4 of 9
+# next/document 4 of 9, members 0 of 40
 - next/document#default
 - type next/document#DocumentContext
+- next/document#DocumentContext.AppTree
+- next/document#DocumentContext.asPath
+- next/document#DocumentContext.defaultGetInitialProps
+- next/document#DocumentContext.defaultLocale
+- next/document#DocumentContext.err
+- next/document#DocumentContext.locale
+- next/document#DocumentContext.locales
+- next/document#DocumentContext.pathname
+- next/document#DocumentContext.query
+- next/document#DocumentContext.renderPage
+- next/document#DocumentContext.req
+- next/document#DocumentContext.res
 - type next/document#DocumentInitialProps
+- next/document#DocumentInitialProps.head
+- next/document#DocumentInitialProps.html
+- next/document#DocumentInitialProps.styles
 - type next/document#DocumentProps
+- next/document#DocumentProps.head
+- next/document#DocumentProps.html
+- next/document#DocumentProps.styles
 + next/document#Head
+- next/document#Head.context
+- next/document#Head.contextType
+- next/document#Head.getBeforeInteractiveInlineScripts
+- next/document#Head.getCssLinks
+- next/document#Head.getDynamicChunks
+- next/document#Head.getPolyfillScripts
+- next/document#Head.getPreNextScripts
+- next/document#Head.getPreloadDynamicChunks
+- next/document#Head.getPreloadMainLinks
+- next/document#Head.getScripts
+- next/document#Head.render
 + next/document#Html
 + next/document#Main
 + next/document#NextScript
+- next/document#NextScript.context
+- next/document#NextScript.contextType
+- next/document#NextScript.getDynamicChunks
+- next/document#NextScript.getInlineScriptSource
+- next/document#NextScript.getPolyfillScripts
+- next/document#NextScript.getPreNextScripts
+- next/document#NextScript.getScripts
+- next/document#NextScript.render
 - type next/document#OriginProps
-# next/dynamic 11 of 11
+- next/document#OriginProps.children
+- next/document#OriginProps.crossOrigin
+- next/document#OriginProps.nonce
+# next/dynamic 11 of 11, members 19 of 19
 + next/dynamic#default
 + type next/dynamic#DynamicOptions
++ next/dynamic#DynamicOptions.loadableGenerated
++ next/dynamic#DynamicOptions.loader
++ next/dynamic#DynamicOptions.loading
++ next/dynamic#DynamicOptions.modules
++ next/dynamic#DynamicOptions.ssr
++ next/dynamic#DynamicOptions.webpack
 + type next/dynamic#DynamicOptionsLoadingProps
++ next/dynamic#DynamicOptionsLoadingProps.error
++ next/dynamic#DynamicOptionsLoadingProps.isLoading
++ next/dynamic#DynamicOptionsLoadingProps.pastDelay
++ next/dynamic#DynamicOptionsLoadingProps.retry
++ next/dynamic#DynamicOptionsLoadingProps.timedOut
 + type next/dynamic#LoadableComponent
 + type next/dynamic#LoadableFn
 + type next/dynamic#LoadableGeneratedOptions
++ next/dynamic#LoadableGeneratedOptions.modules
++ next/dynamic#LoadableGeneratedOptions.webpack
 + type next/dynamic#LoadableOptions
++ next/dynamic#LoadableOptions.loadableGenerated
++ next/dynamic#LoadableOptions.loader
++ next/dynamic#LoadableOptions.loading
++ next/dynamic#LoadableOptions.modules
++ next/dynamic#LoadableOptions.ssr
++ next/dynamic#LoadableOptions.webpack
 + type next/dynamic#Loader
 + type next/dynamic#LoaderComponent
 + type next/dynamic#LoaderMap
 + next/dynamic#noSSR
-# next/error 4 of 4
+# next/error 4 of 4, members 7 of 7
 + next/error#catchError
 + next/error#default
 + type next/error#ErrorInfo
++ next/error#ErrorInfo.error
++ next/error#ErrorInfo.reset
++ next/error#ErrorInfo.retry
 + type next/error#ErrorProps
-# next/font/google 0 of 1942
++ next/error#ErrorProps.hostname
++ next/error#ErrorProps.statusCode
++ next/error#ErrorProps.title
++ next/error#ErrorProps.withDarkMode
+# next/font/google 0 of 1942, members 0 of 0
 - next/font/google#ABeeZee
 - next/font/google#Abel
 - next/font/google#Abhaya_Libre
@@ -2032,40 +2306,120 @@
 - next/font/google#Zhi_Mang_Xing
 - next/font/google#Zilla_Slab
 - next/font/google#Zilla_Slab_Highlight
-# next/font/local 0 of 1
+# next/font/local 0 of 1, members 0 of 0
 - next/font/local#default
-# next/form 2 of 2
+# next/form 2 of 2, members 4 of 4
 + next/form#default
 + type next/form#FormProps
-# next/head 2 of 2
++ next/form#FormProps.action
++ next/form#FormProps.prefetch
++ next/form#FormProps.replace
++ next/form#FormProps.scroll
+# next/head 2 of 2, members 0 of 0
 + next/head#default
 + next/head#defaultHead
-# next/headers 3 of 3
+# next/headers 3 of 3, members 0 of 0
 + next/headers#cookies
 + next/headers#draftMode
 + next/headers#headers
-# next/image 6 of 6
+# next/image 6 of 6, members 29 of 29
 + next/image#default
 + next/image#getImageProps
 + type next/image#ImageLoader
 + type next/image#ImageLoaderProps
++ next/image#ImageLoaderProps.quality
++ next/image#ImageLoaderProps.src
++ next/image#ImageLoaderProps.width
 + type next/image#ImageProps
++ next/image#ImageProps.alt
++ next/image#ImageProps.blurDataURL
++ next/image#ImageProps.fill
++ next/image#ImageProps.height
++ next/image#ImageProps.layout
++ next/image#ImageProps.lazyBoundary
++ next/image#ImageProps.lazyRoot
++ next/image#ImageProps.loader
++ next/image#ImageProps.loading
++ next/image#ImageProps.objectFit
++ next/image#ImageProps.objectPosition
++ next/image#ImageProps.onLoadingComplete
++ next/image#ImageProps.overrideSrc
++ next/image#ImageProps.placeholder
++ next/image#ImageProps.preload
++ next/image#ImageProps.priority
++ next/image#ImageProps.quality
++ next/image#ImageProps.src
++ next/image#ImageProps.unoptimized
++ next/image#ImageProps.width
 + type next/image#StaticImageData
-# next/legacy/image 5 of 5
++ next/image#StaticImageData.blurDataURL
++ next/image#StaticImageData.blurHeight
++ next/image#StaticImageData.blurWidth
++ next/image#StaticImageData.height
++ next/image#StaticImageData.src
++ next/image#StaticImageData.width
+# next/legacy/image 5 of 5, members 29 of 29
 + next/legacy/image#default
 + type next/legacy/image#ImageLoader
 + type next/legacy/image#ImageLoaderProps
++ next/legacy/image#ImageLoaderProps.quality
++ next/legacy/image#ImageLoaderProps.src
++ next/legacy/image#ImageLoaderProps.width
 + type next/legacy/image#ImageProps
++ next/legacy/image#ImageProps.alt
++ next/legacy/image#ImageProps.blurDataURL
++ next/legacy/image#ImageProps.fill
++ next/legacy/image#ImageProps.height
++ next/legacy/image#ImageProps.layout
++ next/legacy/image#ImageProps.lazyBoundary
++ next/legacy/image#ImageProps.lazyRoot
++ next/legacy/image#ImageProps.loader
++ next/legacy/image#ImageProps.loading
++ next/legacy/image#ImageProps.objectFit
++ next/legacy/image#ImageProps.objectPosition
++ next/legacy/image#ImageProps.onLoadingComplete
++ next/legacy/image#ImageProps.overrideSrc
++ next/legacy/image#ImageProps.placeholder
++ next/legacy/image#ImageProps.preload
++ next/legacy/image#ImageProps.priority
++ next/legacy/image#ImageProps.quality
++ next/legacy/image#ImageProps.src
++ next/legacy/image#ImageProps.unoptimized
++ next/legacy/image#ImageProps.width
 + type next/legacy/image#StaticImageData
-# next/link 3 of 3
++ next/legacy/image#StaticImageData.blurDataURL
++ next/legacy/image#StaticImageData.blurHeight
++ next/legacy/image#StaticImageData.blurWidth
++ next/legacy/image#StaticImageData.height
++ next/legacy/image#StaticImageData.src
++ next/legacy/image#StaticImageData.width
+# next/link 3 of 3, members 5 of 14
 + next/link#default
 + type next/link#LinkProps
+- next/link#LinkProps.as
++ next/link#LinkProps.href
+- next/link#LinkProps.legacyBehavior
+- next/link#LinkProps.locale
+- next/link#LinkProps.onClick
+- next/link#LinkProps.onMouseEnter
+- next/link#LinkProps.onNavigate
+- next/link#LinkProps.onTouchStart
++ next/link#LinkProps.passHref
++ next/link#LinkProps.prefetch
++ next/link#LinkProps.replace
++ next/link#LinkProps.scroll
+- next/link#LinkProps.shallow
+- next/link#LinkProps.transitionTypes
 + next/link#useLinkStatus
-# next/navigation 17 of 17
+# next/navigation 17 of 17, members 0 of 4
 + next/navigation#forbidden
 + next/navigation#notFound
 + next/navigation#permanentRedirect
 + next/navigation#ReadonlyURLSearchParams
+- next/navigation#ReadonlyURLSearchParams.append
+- next/navigation#ReadonlyURLSearchParams.delete
+- next/navigation#ReadonlyURLSearchParams.set
+- next/navigation#ReadonlyURLSearchParams.sort
 + next/navigation#redirect
 + next/navigation#RedirectType
 + next/navigation#ServerInsertedHTMLContext
@@ -2079,38 +2433,85 @@
 + next/navigation#useSelectedLayoutSegment
 + next/navigation#useSelectedLayoutSegments
 + next/navigation#useServerInsertedHTML
-# next/offline 1 of 1
+# next/offline 1 of 1, members 0 of 0
 + next/offline#useOffline
-# next/og 1 of 1
+# next/og 1 of 1, members 0 of 1
 + next/og#ImageResponse
-# next/router 5 of 7
+- next/og#ImageResponse.displayName
+# next/router 5 of 7, members 3 of 13
 + next/router#default
 + type next/router#NextRouter
++ next/router#NextRouter.asPath
++ next/router#NextRouter.basePath
+- next/router#NextRouter.defaultLocale
+- next/router#NextRouter.domainLocales
+- next/router#NextRouter.isLocaleDomain
+- next/router#NextRouter.locale
+- next/router#NextRouter.locales
++ next/router#NextRouter.pathname
+- next/router#NextRouter.query
+- next/router#NextRouter.route
 - next/router#Router
 + type next/router#RouterEvent
 - type next/router#SingletonRouter
+- next/router#SingletonRouter.ready
+- next/router#SingletonRouter.readyCallbacks
+- next/router#SingletonRouter.router
 + next/router#useRouter
 + next/router#withRouter
-# next/script 5 of 5
+# next/script 5 of 5, members 14 of 14
 + next/script#default
 + next/script#handleClientScriptLoad
 + next/script#initScriptLoader
 + type next/script#Props
++ next/script#Props.children
++ next/script#Props.id
++ next/script#Props.onError
++ next/script#Props.onLoad
++ next/script#Props.onReady
++ next/script#Props.strategy
++ next/script#Props.stylesheets
 + type next/script#ScriptProps
-# next/server 14 of 14
++ next/script#ScriptProps.children
++ next/script#ScriptProps.id
++ next/script#ScriptProps.onError
++ next/script#ScriptProps.onLoad
++ next/script#ScriptProps.onReady
++ next/script#ScriptProps.strategy
++ next/script#ScriptProps.stylesheets
+# next/server 14 of 14, members 13 of 19
 + next/server#after
 + next/server#connection
 + next/server#ImageResponse
+- next/server#ImageResponse.displayName
 + type next/server#ImageResponseOptions
++ next/server#ImageResponseOptions.debug
++ next/server#ImageResponseOptions.emoji
++ next/server#ImageResponseOptions.fonts
++ next/server#ImageResponseOptions.height
++ next/server#ImageResponseOptions.width
 + type next/server#MiddlewareConfig
 + next/server#NextFetchEvent
+- next/server#NextFetchEvent.request
+- next/server#NextFetchEvent.respondWith
++ next/server#NextFetchEvent.sourcePage
 + type next/server#NextMiddleware
 + type next/server#NextProxy
 + next/server#NextRequest
++ next/server#NextRequest.cookies
++ next/server#NextRequest.nextUrl
+- next/server#NextRequest.page
+- next/server#NextRequest.ua
+- next/server#NextRequest.url
 + next/server#NextResponse
++ next/server#NextResponse.cookies
++ next/server#NextResponse.json
++ next/server#NextResponse.next
++ next/server#NextResponse.redirect
++ next/server#NextResponse.rewrite
 + type next/server#ProxyConfig
 + next/server#URLPattern
 + next/server#userAgent
 + next/server#userAgentFromString
-# next/web-vitals 1 of 1
+# next/web-vitals 1 of 1, members 0 of 0
 + next/web-vitals#useReportWebVitals

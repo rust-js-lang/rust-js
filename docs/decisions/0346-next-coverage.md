@@ -54,3 +54,22 @@ only grows.**
 - Today: `next` 4 of 37, `next/navigation` 5 of 16, `next/document` 4 of
   6, `next/router` 4 of 5, `next/server` 0 of 14, `next/cache` 0 of 10,
   `next/dynamic` 0 of 12, `next/script` 0 of 5, `next/headers` 0 of 3.
+
+## Amendment: members
+
+An export bound by its name may bind few of its members, as `ImageProps`
+once had a handful of its fields. Each type's and class's own members are
+listed too (2026-10-10), after it, `+ next/image#ImageProps.src`: an
+interface's and what it extends of its file's, an object type's, of an
+intersection's or a union's parts, `Omit`'s, `Pick`'s and `Partial`'s of
+one, and a class's properties, methods and statics, of its text, its
+private ones aside. One imported and exported again, `ImageProps` of
+image-external, is read where it's declared. What a type has of React's,
+an element's attributes, is React's, counted by its crate. Each is bound
+where the Rust item of its name has it: a field by its JS name, not a
+flattened one's; a method of its `impl`s by its link name, `get cookies`
+a `cookies`; a static, `next/server#NextResponse.json`; an untagged enum's,
+its payloads'; a type alias's, its type's. A member Next.js declares only
+to throw, `NextRequest.page`, isn't bound, and stays `-`. A type a function
+gives but no module exports, `AppRouterInstance`, isn't counted yet.
+Today: 224 of 400.
