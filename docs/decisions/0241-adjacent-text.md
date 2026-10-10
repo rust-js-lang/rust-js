@@ -47,3 +47,13 @@ jsx! { <p>{"Challenge"}{" "}{order}{" of"}{" "}{total}</p> }
 - **It's tested**: a JSX test renders adjacent strings to HTML, with
   React's marks between text nodes; a mutation writes every string as
   text.
+
+## Amendment: the later in braces, where a person writes it so
+
+Of two strings side by side, the later is in braces where it has a space
+at an edge and isn't blank, and the earlier has none: react.dev's 404
+page writes `If this is a mistake{', '}`, which was
+`{"If this is a mistake"}, `. A blank one, `{" "}`, stays text, the
+earlier in braces, as a formatter makes a later `{" "}` a space of the
+text before it. A JSX test renders both; mutations always brace the
+earlier, and brace a blank later.

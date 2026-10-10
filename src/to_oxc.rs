@@ -80,15 +80,26 @@ pub fn emit(
     };
     let b = &cx.b;
 
-    let body = ArenaVec::from_iter_in(
-        module.items.iter().flat_map(|item| match item {
-            js::Item::Namespace(n) => vec![cx.namespace(n)],
-            js::Item::Const(c) => vec![cx.constant(c)],
-            js::Item::Statements(stmts) => cx.stmts(stmts).into_iter().collect(),
-            js::Item::Function(f) => vec![cx.function(f)],
-        }),
-        b,
-    );
+    let mut body = ArenaVec::new_in(b);
+    let mut items = module.items.as_slice();
+    while let [item, rest @ ..] = items {
+        // Constants side by side that each read a property of one object
+        // are its destructuring, as JS writes it: `const { Intro, p: P } =
+        // MDXComponents;`.
+        let read = read_together(items);
+        if read.len() > 1 {
+            body.push(cx.destructured(&read));
+            items = &items[read.len()..];
+            continue;
+        }
+        match item {
+            js::Item::Namespace(n) => body.push(cx.namespace(n)),
+            js::Item::Const(c) => body.push(cx.constant(c)),
+            js::Item::Statements(stmts) => body.extend(cx.stmts(stmts)),
+            js::Item::Function(f) => body.push(cx.function(f)),
+        }
+        items = rest;
+    }
     let program = Program::new(
         Span::new(0, rust_source.len() as u32),
         SourceType::mjs(),
@@ -529,6 +540,21 @@ impl<'a> Cx<'a> {
         } else {
             decl.into()
         }
+    }
+
+    /// `const { Intro, p: P } = MDXComponents;` of constants each reading a
+    /// property of the object, `read_together`'s.
+    fn destructured(&self, read: &[(&js::Const, &js::Expr, &str)]) -> Statement<'a> {
+        let b = &self.b;
+        let sp = span(read[0].0.span);
+        let fields = read
+            .iter()
+            .map(|(constant, _, property)| (property.to_string(), constant.name.clone(), None))
+            .collect();
+        let id = self.pattern(&js::Pattern::Object(fields, None));
+        let declarator = VariableDeclarator::new(sp, id, None, Some(self.expr(read[0].1)), false, b);
+        let declarators = ArenaVec::from_iter_in([declarator], b);
+        Declaration::new_variable_declaration(sp, VariableDeclarationKind::Const, declarators, false, b).into()
     }
 
     fn constant(&self, c: &js::Const) -> Statement<'a> {
@@ -1104,6 +1130,23 @@ impl<'a> Cx<'a> {
             let writable = matches!(&jsx.children[i].kind, ExprKind::Str(s) if jsx_text_safe(s) && !s.is_empty());
             text[i] = writable && !text.get(i + 1).is_some_and(|&next| next);
         }
+        // Of two, the later in braces where it has a space at an edge and
+        // the earlier none, as a person writes `If this is a mistake{", "}`:
+        // never a blank one, which a formatter makes a space of the text.
+        let plain = |s: &str| jsx_text_safe(s) && !s.is_empty() && s.trim() == s;
+        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;
+        for i in 0..jsx.children.len().saturating_sub(1) {
+            if let (ExprKind::Str(earlier), ExprKind::Str(later)) = (&jsx.children[i].kind, &jsx.children[i + 1].kind)
+                && !text[i]
+                && text[i + 1]
+                && plain(earlier)
+                && spaced(later)
+                && (i == 0 || !text[i - 1])
+            {
+                text[i] = true;
+                text[i + 1] = false;
+            }
+        }
         self.nested(lines, || {
             for (child, &text) in jsx.children.iter().zip(&text) {
                 if lines {
@@ -1541,6 +1584,38 @@ fn restore_sources<'a>(
         );
     }
     out.into_sourcemap()
+}
+
+/// The constants at the start of `items`, none exported nor set, that each
+/// read a property of one variable, `const P = MDXComponents.p;`: each,
+/// the variable, and the property.
+fn read_together(items: &[js::Item]) -> Vec<(&js::Const, &js::Expr, &str)> {
+    fn read(item: &js::Item) -> Option<(&js::Const, &js::Expr, &str)> {
+        match item {
+            js::Item::Const(constant) if !constant.export && !constant.mutable => match &constant.value.kind {
+                ExprKind::Member(object, property)
+                    if matches!(object.kind, ExprKind::Var(_)) && js_identifier(property) =>
+                {
+                    Some((constant, &**object, property.as_str()))
+                }
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+    let mut together: Vec<(&js::Const, &js::Expr, &str)> = Vec::new();
+    for item in items {
+        match read(item) {
+            Some(one) if together.first().is_none_or(|first| same_var(first.1, one.1)) => together.push(one),
+            _ => break,
+        }
+    }
+    together
+}
+
+/// Whether `a` and `b` are one variable.
+fn same_var(a: &js::Expr, b: &js::Expr) -> bool {
+    matches!((&a.kind, &b.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b)
 }
 
 /// Is `name` a JS name, which a key may be as it is?

@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "component-props-literal",
     breaks: "a component's props are a struct literal, where a flattened struct's names aren't its fields",
     file: "src/jsx_syntax/parser.rs",
-    find: "    let companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name));",
-    replace: "    let companion = props.rsplit(\"::\").next().is_some_and(|_| false);",
+    find: "    let companion = props.rsplit(\"::\").next().is_some_and(|name| built.contains(name))\n",
+    replace: "    let companion = props.rsplit(\"::\").next().is_some_and(|_| false)\n",
     tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
   },
   {
@@ -297,5 +297,53 @@ export const mutations: Mutation[] = [
     find: "        } else if field_name == \"children\" && last.as_ref().is_some_and(|last| params.contains(last)) {",
     replace: "        } else if false && last.as_ref().is_some_and(|last| params.contains(last)) {",
     tests: ["test/jsx.test.ts", "-t", "children of a type parameter"],
+  },
+  {
+    "name": "const-component-unnamed",
+    "breaks": "a constant of a component's function type isn't a component JSX can name",
+    "file": "src/jsx_syntax/parser.rs",
+    "find": "        ItemKind::Const(c) => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
+    "replace": "        ItemKind::Const(c) if false => {\n            let TyKind::FnPtr(f) = &c.ty.kind else { return None };",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
+  },
+  {
+    "name": "const-component-props-literal",
+    "breaks": "a constant's component, of props in another module, builds them as a struct literal, without their companion's defaults",
+    "file": "src/jsx_syntax/parser.rs",
+    "find": "        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty());",
+    "replace": ";",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
+  },
+  {
+    "name": "any-node-children-moved",
+    "breaks": "children declared any node, `&'a dyn ReactNode`, are given as they are, not by reference",
+    "file": "src/jsx_syntax/parser.rs",
+    "find": "        let empty = if field_name == \"children\" && any_node(&field.ty) {",
+    "replace": "        let empty = if false && field_name == \"children\" && any_node(&field.ty) {",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
+  },
+  {
+    "name": "optional-any-node-children-moved",
+    "breaks": "children declared an `Option` of any node are given as they are, not `Some` by reference",
+    "file": "src/jsx_syntax/parser.rs",
+    "find": "        } else if field_name == \"children\" && optional_any_node {",
+    "replace": "        } else if false && optional_any_node {",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
   },
 ];

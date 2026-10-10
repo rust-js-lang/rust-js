@@ -206,8 +206,8 @@ export const mutations: Mutation[] = [
     name: "load-statements-unprinted",
     breaks: "what a module runs when it's loaded is left out of its JS",
     file: "src/to_oxc.rs",
-    find: "            js::Item::Statements(stmts) => cx.stmts(stmts).into_iter().collect(),\n",
-    replace: "            js::Item::Statements(_) => Vec::new(),\n",
+    find: "            js::Item::Statements(stmts) => body.extend(cx.stmts(stmts)),\n",
+    replace: "            js::Item::Statements(_) => {}\n",
     tests: ["test/modules.test.ts", "-t", "js::on_load!"],
   },
   {
@@ -348,5 +348,53 @@ export const mutations: Mutation[] = [
     find: "        // `counts[name]`, `files[\"/a\"]`: a key that reads the same.\n        (ExprKind::Index(a, i), ExprKind::Index(b, j)) => {\n            same_place(a, b)\n                && (same_place(i, j) || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j))\n        }\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","property read of what may be None"],
+  },
+  {
+    "name": "adjacent-text-earlier-always",
+    "breaks": "of two strings side by side, the earlier is always in braces, `{\"If this is a mistake\"}, `",
+    "file": "src/to_oxc.rs",
+    "find": "                && spaced(later)",
+    "replace": "                && spaced(later)\n                && false",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "adjacent text children stay apart"
+    ]
+  },
+  {
+    "name": "adjacent-text-blank-braced",
+    "breaks": "a blank string after text is put in braces, which a formatter makes a space of the text, one text node of two",
+    "file": "src/to_oxc.rs",
+    "find": "        let spaced = |s: &str| !s.trim().is_empty() && s.trim() != s;",
+    "replace": "        let spaced = |s: &str| s.trim() != s;",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "adjacent text children stay apart"
+    ]
+  },
+  {
+    "name": "constants-not-destructured",
+    "breaks": "constants each reading a property of one object stay apart, not its destructuring",
+    "file": "src/to_oxc.rs",
+    "find": "        if read.len() > 1 {",
+    "replace": "        if read.len() > 1000 {",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
+  },
+  {
+    "name": "constants-of-two-objects-destructured",
+    "breaks": "constants reading properties of two objects are destructured from the first",
+    "file": "src/to_oxc.rs",
+    "find": "            Some(one) if together.first().is_none_or(|first| same_var(first.1, one.1)) => together.push(one),",
+    "replace": "            Some(one) => together.push(one),",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
   },
 ];

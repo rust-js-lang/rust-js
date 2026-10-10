@@ -2930,6 +2930,76 @@ pub fn Tree() -> JSX::Element {
   expect(renderToStaticMarkup(createElement(Tree))).toBe("<ul><li>leaf</li></ul>");
 });
 
+// Props whose children are declared `&'a dyn ReactNode`, any node, as
+// TypeScript's `children: ReactNode`, or `Option` of one, as its
+// `children?: ReactNode`, take JSX's children by reference, so
+// one function, and a table's pointer to it, takes children of any type;
+// a constant of a component's function type is a component JSX names, its
+// props built by their companion where the component is, as react.dev's
+// 404 page takes `{Intro, p: P}` from MDXComponents.
+test("children declared any node are taken by reference, and a constant names a component", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub mod missing;
+pub struct CardProps<'a> {
+    pub title: Option<&'a str>,
+    pub children: &'a dyn ReactNode,
+}
+pub fn Card(CardProps { title, children }: CardProps) -> JSX::Element {
+    jsx! { <section title={title}>{children}</section> }
+}
+pub struct NoteProps<'a> {
+    pub children: Option<&'a dyn ReactNode>,
+}
+pub fn Note(NoteProps { children }: NoteProps) -> JSX::Element {
+    jsx! { <aside>{children}</aside> }
+}
+pub struct Table {
+    pub card: for<'a> fn(CardProps<'a>) -> JSX::Element,
+    pub note: for<'a> fn(NoteProps<'a>) -> JSX::Element,
+}
+pub const TABLE: Table = Table { card: Card, note: Note };
+pub const SPARE: Table = Table { card: Card, note: Note };
+const Picked: for<'a> fn(CardProps<'a>) -> JSX::Element = TABLE.card;
+pub fn Page(name: &str) -> JSX::Element {
+    jsx! {
+        <Picked title={Some("t")}>
+            <Card>{"Hello, "}{name}</Card>
+            <Card><b>{"bold"}</b></Card>
+            <Card />
+            <Note>{"a"}{name}</Note>
+            <Note />
+            <Note><b />{if name.len() > 1 { Some(jsx! { <i /> }) } else { None }}</Note>
+        </Picked>
+    }
+}
+`, {
+    "missing.rs": `use react::{JSX, jsx};
+use super::{CardProps, NoteProps, SPARE, TABLE};
+const Shown: for<'a> fn(CardProps<'a>) -> JSX::Element = TABLE.card;
+const Aside: for<'a> fn(NoteProps<'a>) -> JSX::Element = TABLE.note;
+const Spare: for<'a> fn(NoteProps<'a>) -> JSX::Element = SPARE.note;
+pub fn Missing() -> JSX::Element {
+    jsx! { <Shown title={None}><Aside>{"gone"}{"!"}</Aside><Spare /></Shown> }
+}
+`,
+  });
+  run(args);
+  const missing = readFileSync(join(dir, "missing.jsx"), "utf8");
+  // Two read of one object side by side are its destructuring, as JS writes it.
+  expect(missing).toContain("const { card: Shown, note: Aside } = TABLE;\nconst Spare = SPARE.note;");
+  const { Missing } = await import(join(dir, "missing.jsx"));
+  expect(renderToStaticMarkup(Missing())).toBe("<section><aside>gone!</aside><aside></aside></section>");
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const Picked = TABLE.card;");
+  expect(jsx).toContain('<Picked title="t">');
+  expect(jsx).toContain("<Card>Hello, {name}</Card>");
+  expect(jsx).toContain("<Note>a{name}</Note>\n      <Note />");
+  expect(jsx).toContain("{$byteLen(name) > 1 && <i />}");
+  const { Page } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Page("Ada"))).toBe('<section title="t"><section>Hello, Ada</section><section><b>bold</b></section><section></section><aside>aAda</aside><aside></aside><aside><b></b><i></i></aside></section>');
+});
+
 // A constant's thread-local component is the module's variable, which every
 // use shares, as react.dev's MDXComponents table holds `pre: CodeBlock`, a
 // memo.
@@ -3316,7 +3386,9 @@ pub fn Empty() -> JSX::Element { jsx! { <hr /> } }
 
 // Adjacent text children are each a text node, as react.dev's Challenge
 // has them, `{order} of{' '}{total}`: the first in braces, so JSX doesn't
-// read the two as one text, which React would render as one node.
+// read the two as one text, which React would render as one node. Where the
+// later has a space at an edge and isn't blank, and the earlier has none, the
+// later is, as react.dev's 404 page writes `If this is a mistake{', '}`.
 test("adjacent text children stay apart", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -3324,14 +3396,21 @@ use react::{JSX, jsx};
 pub fn Count(order: u32, total: u32) -> JSX::Element {
     jsx! { <p>{"Challenge"}{" "}{order}{" of"}{" "}{total}</p> }
 }
+
+pub fn Mistake(link: JSX::Element) -> JSX::Element {
+    jsx! { <p>{"If this is a mistake"}{", "}{link}{", "}{"and we will fix it"}</p> }
+}
 `;
   const { dir, args } = compile(source);
   run(args);
   const code = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(code).toContain('{"Challenge"} {order}');
   expect(code).toContain('{" of"} {total}');
+  expect(code).toContain('If this is a mistake{", "}');
+  expect(code).toContain('{", "}and we will fix it');
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToString(result.Count(1, 4))).toBe("<p>Challenge<!-- --> <!-- -->1<!-- --> of<!-- --> <!-- -->4</p>");
+  expect(renderToString(result.Mistake(createElement("a")))).toBe("<p>If this is a mistake<!-- -->, <a></a>, <!-- -->and we will fix it</p>");
 });
 
 // A node of any type is `Box<dyn ReactNode>`, as @types/react's `ReactNode`

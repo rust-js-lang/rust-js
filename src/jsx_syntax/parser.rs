@@ -696,6 +696,22 @@ fn signature(sess: &Session, item: &ast::Item) -> Option<(Ident, String, String,
             };
             (f.ident, f.ident.to_string(), props, None)
         }
+        // A constant of a component's function type, a table's entry taken
+        // out, `const P: for<'a> fn(PProps<'a>) -> JSX::Element = T.p;`.
+        ItemKind::Const(c) => {
+            let TyKind::FnPtr(f) = &c.ty.kind else { return None };
+            let FnRetTy::Ty(ret) = &f.decl.output else {
+                return None;
+            };
+            if !renders(ret, true) || f.decl.inputs.len() > 1 {
+                return None;
+            }
+            let props = match f.decl.inputs.first() {
+                Some(param) => props_path(&param.ty)?,
+                None => String::new(),
+            };
+            (c.ident, c.ident.to_string(), props, None)
+        }
         ItemKind::Static(s) => {
             let TyKind::Path(_, path) = &s.ty.kind else { return None };
             let segment = path.segments.last()?;
@@ -752,7 +768,10 @@ pub(super) fn props_names(sess: &Session, item: &ast::Item) -> Vec<String> {
 /// one, `built` (ADR 0213), else they're a struct literal.
 pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String>) -> Option<Box<ast::Item>> {
     let (ident, target, props, handle) = signature(sess, item)?;
-    let companion = props.rsplit("::").next().is_some_and(|name| built.contains(name));
+    // A constant's props are another component's, wherever it is, whose
+    // companion is beside them, imported with them.
+    let companion = props.rsplit("::").next().is_some_and(|name| built.contains(name))
+        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty());
     let pattern = if props.is_empty() {
         ""
     } else {
@@ -946,7 +965,28 @@ pub(super) fn props_companion(
             _ => None,
         };
         let defaulted = tool(&attrs, "default");
-        let empty = if defaulted || matches!(last.as_deref(), Some("Option" | "Rest")) {
+        // Children of any node, `&'a dyn ReactNode`, as TypeScript's
+        // `children: ReactNode`, or an `Option` of it, `children?`: what's
+        // given, by reference.
+        let any_node = |ty: &ast::Ty| {
+            matches!(&ty.kind, TyKind::Ref(_, referent)
+                if matches!(&referent.ty.kind, TyKind::TraitObject(bounds, _)
+                    if bounds.iter().any(|bound| matches!(bound, ast::GenericBound::Trait(t)
+                        if t.trait_ref.path.segments.last().is_some_and(|s| s.ident.as_str() == "ReactNode")))))
+        };
+        let optional_any_node = match &field.ty.kind {
+            TyKind::Path(_, path) => path.segments.last().is_some_and(|segment| {
+                segment.ident.as_str() == "Option"
+                    && matches!(segment.args.as_deref(), Some(ast::GenericArgs::AngleBracketed(args))
+                        if matches!(args.args.first(), Some(ast::AngleBracketedArg::Arg(ast::GenericArg::Type(ty))) if any_node(ty)))
+            }),
+            _ => false,
+        };
+        let empty = if field_name == "children" && any_node(&field.ty) {
+            "borrowed"
+        } else if field_name == "children" && optional_any_node {
+            "borrowed_option"
+        } else if defaulted || matches!(last.as_deref(), Some("Option" | "Rest")) {
             "omitted"
         } else if field_name == "children" && last.as_ref().is_some_and(|last| params.contains(last)) {
             // Of a type parameter: React's empty node, none.
@@ -1037,6 +1077,12 @@ pub(super) fn props_companion(
                 values.concat()
             )),
         }
+        arms.push("(@slot borrowed $name:literal [$v:expr]) => { &$v }".to_string());
+        arms.push("(@slot borrowed $name:literal []) => { &() }".to_string());
+        arms.push(
+            "(@slot borrowed_option $name:literal [$v:expr]) => { ::core::option::Option::Some(&$v) }".to_string(),
+        );
+        arms.push("(@slot borrowed_option $name:literal []) => { ::react::__omitted() }".to_string());
         arms.push("(@slot $empty:ident $name:literal [$v:expr]) => { $v }".to_string());
         arms.push(
             "(@slot required $name:literal []) => { ::core::compile_error!(concat!(\"missing prop `\", $name, \"` of `NAME`\")) }"

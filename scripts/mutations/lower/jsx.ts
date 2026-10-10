@@ -414,8 +414,8 @@ export const mutations: Mutation[] = [
     name: "component-child-shown-ternary",
     breaks: "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
     file: "src/lower/jsx.rs",
-    find: "                        Some(&child) => self.shown_if(child, value),",
-    replace: "                        Some(_) => value,",
+    find: "                            self.shown_if(child, value)\n",
+    replace: "                            value\n",
     tests: ["test/jsx.test.ts", "-t", "component's child shown if a test holds"],
   },
   {
@@ -480,6 +480,30 @@ export const mutations: Mutation[] = [
       "test/jsx.test.ts",
       "-t",
       "flattened struct of nothing given"
+    ]
+  },
+  {
+    "name": "referred-children-unspread",
+    "breaks": "children given by reference are one array child, `{[a, b]}`, not each a child",
+    "file": "src/lower/jsx.rs",
+    "find": "                            let child = self.referred_children(child);",
+    "replace": "                            let child = self.strip(child);",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
+  },
+  {
+    "name": "referred-children-reborrow-kept",
+    "breaks": "children given by a reborrow are read as the reference, so a test among them isn't `&&`",
+    "file": "src/lower/jsx.rs",
+    "find": "            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.referred_children(arg),",
+    "replace": "            ExprKind::Borrow { arg, .. } => self.referred_children(arg),",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
     ]
   },
 ];

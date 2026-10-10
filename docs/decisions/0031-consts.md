@@ -100,3 +100,12 @@ export function moved(dx) {
   by value, which may be changed, is copied still. (Amended: in a library,
   whose consumers might change an array, every use was a copy, `XS.slice()`,
   as react.dev's DownloadButton found.)
+
+## Amendment: constants of one object's properties are its destructuring
+
+Constants side by side, none exported nor set, that each read a property
+of one variable are one destructuring of it, as react.dev's 404 page
+writes `const {Intro, MaxWidth, p: P, a: A} = MDXComponents;`, which
+was four `const`s. One alone stays `const P = T.p;`. A JSX test reads
+two of one table and one of another; mutations keep them apart, and
+destructure both tables' from the first.

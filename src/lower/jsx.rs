@@ -334,11 +334,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let Shape::Object(types) = self.shape(ty) else {
                         unreachable!("a struct's fields")
                     };
-                    let child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
+                    let mut child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
                     // Shown only if a test holds, `test && <el />`, as an
-                    // element's child is (ADR 0235).
+                    // element's child is (ADR 0235). Given by reference, to
+                    // children of any node, `&(a, b)`, what's referred to.
                     let value = match given.get(&name) {
-                        Some(&child) => self.shown_if(child, value),
+                        Some(&child) => {
+                            let child = self.referred_children(child);
+                            child_ty = self.thir[child].ty;
+                            self.shown_if(child, value)
+                        }
                         None => value,
                     };
                     children = self.spread_children(value, child_ty, out);
@@ -385,6 +390,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut attrs: Vec<Option<Prop>> = attrs.into_iter().map(|(_, prop)| Some(prop)).collect();
         let attrs = sorted.into_iter().filter_map(|i| attrs[i].take()).collect();
         Ok((attrs, children))
+    }
+
+    /// The children a props struct's `&'a dyn ReactNode` is given, by
+    /// reference and made any node, or its `Option` of one: what's referred
+    /// to, `(a, b)` of `&(a, b)`, its children each a child, as JSX's are.
+    fn referred_children(&self, e: ExprId) -> ExprId {
+        let e = self.strip(e);
+        match self.thir[e].kind {
+            ExprKind::PointerCoercion { source, .. } => self.referred_children(source),
+            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.referred_children(arg),
+            // `Some(&(a, b))`, of optional children.
+            ExprKind::Adt(ref some) if self.option_of(self.thir[e].ty).is_some() && some.fields.len() == 1 => {
+                self.referred_children(some.fields[0].expr)
+            }
+            _ => e,
+        }
     }
 
     /// `prop`'s value read into a `const` first where it isn't read alike
