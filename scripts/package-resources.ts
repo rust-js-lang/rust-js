@@ -14,11 +14,13 @@ try {
   // An app's build needs the pin and its target, not this repository's
   // `rustc-dev` and tools, which rustup would install too: it installs what a
   // directory's `rust-toolchain.toml` lists before it runs `rustc` there,
-  // as `react/build.sh` does (ADR 0105).
-  const { channel, targets } = (Bun.TOML.parse(readFileSync(join(root, "rust-toolchain.toml"), "utf8")) as {
-    toolchain: { channel: string; targets: string[] };
+  // as `react/build.sh` does (ADR 0105). Of its targets, only the one
+  // rustc checks programs for, `TARGET` in src/main.rs: `wasm32-wasip1` is
+  // the corpus's, for native runs (ADR 0088).
+  const { channel } = (Bun.TOML.parse(readFileSync(join(root, "rust-toolchain.toml"), "utf8")) as {
+    toolchain: { channel: string };
   }).toolchain;
-  const toolchain = `# What an app's rust-js build runs (ADR 0105).\n[toolchain]\nchannel = ${JSON.stringify(channel)}\ntargets = ${JSON.stringify(targets)}\n`;
+  const toolchain = `# What an app's rust-js build runs (ADR 0105).\n[toolchain]\nchannel = ${JSON.stringify(channel)}\ntargets = ["wasm32-unknown-unknown"]\n`;
   const files = resourceInputs(Object.keys(bindingInputs));
   for (const file of files) {
     const target = join(staging, file);
