@@ -126,7 +126,12 @@ pub fn lower_crate<'tcx>(
             ),
         };
         let Some(value) = value else {
-            let ty = tcx.type_of(def_id).instantiate_identity().skip_normalization();
+            let initializer = initializers.iter().find(|body| body.def_id == def_id);
+            // A `const { .. }` block's type is its value's.
+            let ty = match (tcx.def_kind(def_id), initializer) {
+                (DefKind::AnonConst, Some(body)) => body.thir[body.expr].ty,
+                _ => tcx.type_of(def_id).instantiate_identity().skip_normalization(),
+            };
             // A value rustc's can't say, a function's, a `dyn`'s or one too
             // large for a value tree, is its initializer's, where one JS value
             // can be every use's, and it reads no static, whose value may not
@@ -141,7 +146,7 @@ pub fn lower_crate<'tcx>(
                     .any(|item| super::recognition::is_std_def(tcx, adt.did(), item)));
             if !mutable
                 && (super::copies::shareable(tcx, ty) || once)
-                && let Some(body) = initializers.iter().find(|body| body.def_id == def_id)
+                && let Some(body) = initializer
                 && !super::body_queries::reads_statics(tcx, &body.thir, tcx.parent_module_from_def_id(def_id))
             {
                 initialized.push(body);
@@ -401,7 +406,9 @@ pub fn lower_crate<'tcx>(
                     name: info.name.clone(),
                     value,
                     mutable: plain == Some(true),
-                    export: tcx.visibility(key).is_public() || called_from_elsewhere.contains(&key.to_def_id()),
+                    // A `const { .. }` block has no visibility: it's its function's alone.
+                    export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())
+                        || called_from_elsewhere.contains(&key.to_def_id()),
                     span: sources.span(span),
                 });
                 pass.runtime.entry(module).or_default().extend(lowered.runtime);

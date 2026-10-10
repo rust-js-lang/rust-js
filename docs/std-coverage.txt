@@ -664,7 +664,7 @@
 + str::trim_right_matches
 + str::trim_start
 + str::trim_start_matches
-# slice 115 of 133
+# slice 120 of 133
 - slice::align_to
 - slice::align_to_mut
 + slice::array_windows
@@ -682,9 +682,9 @@
 - slice::as_ptr_range
 + slice::as_rchunks
 + slice::as_rchunks_mut
-- slice::assume_init_drop
-- slice::assume_init_mut
-- slice::assume_init_ref
++ slice::assume_init_drop
++ slice::assume_init_mut
++ slice::assume_init_ref
 + slice::binary_search
 + slice::binary_search_by
 + slice::binary_search_by_key
@@ -796,8 +796,8 @@
 + slice::trim_ascii_start
 - slice::utf8_chunks
 + slice::windows
-- slice::write_clone_of_slice
-- slice::write_copy_of_slice
++ slice::write_clone_of_slice
++ slice::write_copy_of_slice
 # array 5 of 5
 + array::as_mut_slice
 + array::as_slice

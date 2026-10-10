@@ -1565,6 +1565,18 @@ export function $copyFromSlice(v, src) {
 
 // `clone_from_slice(src)`: each item a clone, or `cloneFrom(v, i, item)`'s,
 // its type's own `clone_from` (ADR 0324).
+// `write_clone_of_slice(src)` of `MaybeUninit`s: a clone of each, and the
+// slots, panicking as its `assert_eq!` does.
+export function $writeCloneOfSlice(v, src, clone) {
+  if (v.length !== src.length) {
+    throw new Error(
+      `assertion \`left == right\` failed: destination and source slices have different lengths\n  left: ${v.length}\n right: ${src.length}`,
+    );
+  }
+  for (let i = 0; i < v.length; i++) v[i] = clone ? clone(src[i]) : src[i];
+  return v;
+}
+
 export function $cloneFromSlice(v, src, clone, cloneFrom) {
   if (v.length !== src.length) throw new Error("destination and source slices have different lengths");
   for (let i = 0; i < v.length; i++) {

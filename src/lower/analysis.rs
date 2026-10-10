@@ -99,6 +99,48 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
         .collect()
 }
 
+/// The `const { .. }` blocks of functions that aren't generic, whose
+/// initializers are kept in case they're lowered as code.
+fn inline_consts(tcx: TyCtxt<'_>) -> impl Iterator<Item = LocalDefId> {
+    tcx.hir_body_owners().filter(move |&d| {
+        tcx.def_kind(d) == DefKind::AnonConst
+            && tcx.anon_const_kind(d) == ty::AnonConstKind::NonTypeSystemInline
+            && !tcx
+                .generics_of(tcx.typeck_root_def_id_local(d))
+                .requires_monomorphization(tcx)
+    })
+}
+
+/// A `const { .. }` block whose value rustc's can't say as JS's,
+/// `MaybeUninit::uninit()` or `String::new()`: lowered as code, a constant
+/// of its module, as a named one is (ADR 0127). Its value is the one where
+/// it's used, of that use's types.
+fn coded_inline_consts<'tcx>(tcx: TyCtxt<'tcx>, bodies: &[&Body<'tcx>]) -> Vec<LocalDefId> {
+    let inline: HashSet<LocalDefId> = inline_consts(tcx).collect();
+    let mut coded = Vec::new();
+    for body in bodies {
+        for expr in body.thir.exprs.iter() {
+            if let ExprKind::ConstBlock { did, args } = expr.kind
+                && let Some(local) = did.as_local()
+                && inline.contains(&local)
+                && !coded.contains(&local)
+                && super::eval_const(
+                    tcx,
+                    ty::TypingEnv::post_analysis(tcx, body.def_id),
+                    did,
+                    args,
+                    expr.span,
+                )
+                .and_then(|value| super::const_js(tcx, value))
+                .is_none()
+            {
+                coded.push(local);
+            }
+        }
+    }
+    coded
+}
+
 /// The initializers of the crate's statics and constants, copied as its
 /// functions' are, before MIR building steals them: one whose value rustc's
 /// can't say is lowered as code instead (ADR 0096).
@@ -106,6 +148,7 @@ pub fn collect_initializers(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
     tcx.hir_crate_items(())
         .definitions()
         .filter(|&def_id| matches!(tcx.def_kind(def_id), DefKind::Const { .. } | DefKind::Static { .. }))
+        .chain(inline_consts(tcx))
         .filter(|&def_id| !tcx.is_foreign_item(def_id) && tcx.hir_maybe_body_owned_by(def_id).is_some())
         .filter_map(|def_id| {
             let (thir, expr) = tcx.thir_body(def_id).ok()?;
@@ -285,6 +328,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             DefKind::Static { .. } => !tcx.is_foreign_item(d) && in_thread_local(tcx, d).is_none(),
             _ => false,
         })
+        .chain(coded_inline_consts(tcx, all_bodies))
         .collect();
 
     // Each thread-local's `init` function: lowered like any function, its

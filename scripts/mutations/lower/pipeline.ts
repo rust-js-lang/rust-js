@@ -242,4 +242,20 @@ export const mutations: Mutation[] = [
     replace: "                if [super::recognition::StdItem::OnceCell]\n",
     tests: ["test/corpus.test.ts", "-t", "lazy_cells"],
   },
+  {
+    name: "anon-const-type-of",
+    breaks: "a `const { .. }` block's type is its placeholder, not its value's",
+    file: "src/lower/pipeline.rs",
+    find: "                (DefKind::AnonConst, Some(body)) => body.thir[body.expr].ty,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
+  {
+    name: "anon-const-visibility",
+    breaks: "a `const { .. }` block's visibility is asked, which it has none of",
+    file: "src/lower/pipeline.rs",
+    find: "                    export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())",
+    replace: "                    export: (tcx.visibility(key).is_public())",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
 ];

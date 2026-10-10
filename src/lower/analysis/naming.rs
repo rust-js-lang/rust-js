@@ -237,6 +237,12 @@ pub(super) fn item_js_name(tcx: TyCtxt<'_>, def_id: DefId, trait_impls: &[DefId]
     if trait_impls.contains(&def_id) {
         return traits::impl_name(tcx, def_id);
     }
+    // A `const { .. }` block, which has no name: its function's, `mainConst`
+    // (ADR 0127).
+    if tcx.def_kind(def_id) == DefKind::AnonConst {
+        let function = tcx.typeck_root_def_id(def_id);
+        return format!("{}Const", crate::lower::lower_first(tcx.item_name(function).as_str()));
+    }
     if tcx.def_kind(def_id) == DefKind::AssocFn && tcx.inherent_impl_of_assoc(def_id).is_none() {
         let parent = tcx.parent(def_id);
         let prefix = if trait_impls.contains(&parent) {

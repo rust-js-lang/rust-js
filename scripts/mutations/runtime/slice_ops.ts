@@ -186,4 +186,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_split_off"],
   },
+  {
+    name: "write-clone-message",
+    breaks: "`write_clone_of_slice` of another length panics without its `assert_eq!`'s sides",
+    file: "src/runtime/slice_ops.js",
+    find: "failed: destination and source slices have different lengths\\n  left: ${v.length}\\n right: ${src.length}`,",
+    replace: "failed: destination and source slices have different lengths`,",
+    tests: ["test/corpus.test.ts","-t","slice_uninit_lengths"],
+  },
 ];

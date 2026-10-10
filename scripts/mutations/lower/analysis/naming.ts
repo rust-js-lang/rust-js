@@ -140,4 +140,12 @@ export const mutations: Mutation[] = [
     replace: "                    .any(|&user| false && user != def_id && user != parent(def_id) && !local.contains(&user))\n",
     tests: ["test/lowering.test.ts","-t","local function there"],
   },
+  {
+    name: "anon-const-unnamed",
+    breaks: "a `const { .. }` block, which has no name, is named by its item's",
+    file: "src/lower/analysis/naming.rs",
+    find: "    if tcx.def_kind(def_id) == DefKind::AnonConst {",
+    replace: "    if false {",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
 ];

@@ -1100,4 +1100,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","slice_disjoint"],
   },
+  {
+    name: "assume-init-slice-unknown",
+    breaks: "a slice's `assume_init_ref` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"assume_init_ref\" | \"assume_init_mut\" if owner.is_slice() => Std::Same,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
 ];

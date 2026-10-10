@@ -106,6 +106,14 @@ pub(in crate::lower) enum SliceOp {
     GetDisjointMut {
         unchecked: bool,
     },
+    /// `write_copy_of_slice(src)` of `MaybeUninit`s, or
+    /// `write_clone_of_slice` (`clone`): each item written, and the slice
+    /// (ADR 0332).
+    UninitWrite {
+        clone: bool,
+    },
+    /// `assume_init_drop()` of `MaybeUninit`s: each item dropped.
+    UninitDrop,
     SortByCachedKey,
     /// A byte slice's `to_ascii_uppercase()` or `to_ascii_lowercase()`, and
     /// `make_ascii_*` in place.
@@ -225,6 +233,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let split = self.spill("split", split, out);
                 target.write(Expr::index(split.clone(), Expr::int(0)), self.js_span(span), out);
                 Expr::index(split, Expr::int(1))
+            }
+            // `$copyFromSlice(slots, src)`, then `slots`; a clone of each from
+            // `$writeCloneOfSlice`, whose `assert_eq!` says why it panics.
+            SliceOp::UninitWrite { clone } => {
+                let mut values = self.operands(args, out)?.into_iter();
+                let (slots, source) = (values.next().expect("the slots"), values.next().expect("the source"));
+                let slots = if slots.reads_same() {
+                    slots
+                } else {
+                    self.spill("slots", slots, out)
+                };
+                self.runtime.insert(Helper::SliceOps);
+                if clone {
+                    let clone = self.clone_arg(generic_args.type_at(0), span)?;
+                    return Ok(Expr::call(Expr::var("$writeCloneOfSlice"), vec![slots, source, clone]));
+                }
+                let copy = Expr::call(Expr::var("$copyFromSlice"), vec![slots.clone(), source]);
+                out.push(StmtKind::Expr(copy).at(self.js_span(span)));
+                slots
+            }
+            SliceOp::UninitDrop => {
+                let slots = self.operands(args, out)?.remove(0);
+                let ty = ty::Ty::new_slice(self.tcx, generic_args.type_at(0));
+                self.drop_value(slots, ty, span, out)?;
+                Expr::undefined()
             }
             SliceOp::View { checked } => {
                 let items = self.operands(&args[..1], out)?.remove(0);
@@ -354,7 +387,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             true => self.view_call("$splitChunkMut", list),
                         }
                     }
-                    SliceOp::View { .. } | SliceOp::SplitOff { .. } => unreachable!("lowered above"),
+                    SliceOp::View { .. }
+                    | SliceOp::SplitOff { .. }
+                    | SliceOp::UninitWrite { .. }
+                    | SliceOp::UninitDrop => unreachable!("lowered above"),
                     // Each index's item, a handle on a number or text, or each
                     // range's view, `$getDisjointMut(v, [0, 5], true)`.
                     SliceOp::GetDisjointMut { unchecked } => {

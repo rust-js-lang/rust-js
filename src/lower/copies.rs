@@ -351,6 +351,13 @@ pub(super) fn shareable<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
             ty::Array(item, _) | ty::Slice(item) => walk(tcx, *item, seen),
             ty::Tuple(items) => items.iter().all(|item| walk(tcx, item, seen)),
             ty::Adt(adt, args) if tcx.is_lang_item(adt.did(), LangItem::Option) => walk(tcx, args.type_at(0), seen),
+            // A `MaybeUninit` is what it holds or `undefined` (ADR 0332), and a
+            // `String` its JS string. Not a `Vec`, changed in place and copied
+            // by nothing that reads it.
+            ty::Adt(adt, args) if super::recognition::is_std_def(tcx, adt.did(), StdItem::MaybeUninit) => {
+                walk(tcx, args.type_at(0), seen)
+            }
+            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,
             // A JS value that's `Copy`, react's `ElementType`, nothing changes
             // through (ADR 0234).
             ty::Adt(adt, args) if super::representation::marks_js_object(tcx, *adt, args) => {

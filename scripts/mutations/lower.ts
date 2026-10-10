@@ -94,8 +94,8 @@ export const mutations: Mutation[] = [
     name: "array-repeat-shared",
     breaks: "`[x; N]` of what's changed is one object, `N` times",
     file: "src/lower.rs",
-    find: "                let copied = if self.is_copy(item_ty) {\n                    self.contains_mutated(item_ty)",
-    replace: "                let copied = if self.is_copy(item_ty) {\n                    false",
+    find: "                let copied = if self.is_copy(item_ty) || constant {\n                    self.contains_mutated(item_ty)",
+    replace: "                let copied = if self.is_copy(item_ty) || constant {\n                    false",
     tests: ["test/corpus.test.ts", "-t", "array_repeat"],
   },
   {
@@ -206,8 +206,8 @@ export const mutations: Mutation[] = [
     name: "const-block-unknown",
     breaks: "`const { square(7) + 1 }`, an inline constant, is refused",
     file: "src/lower.rs",
-    find: "            ExprKind::ConstBlock { did, args } => eval_const(",
-    replace: "            ExprKind::ConstBlock { did, args } if false => eval_const(",
+    find: "            ExprKind::ConstBlock { did, args } => match eval_const(",
+    replace: "            ExprKind::ConstBlock { did, args } if false => match eval_const(",
     tests: ["test/corpus.test.ts","-t","const_blocks_and_let_guards"],
   },
   {
@@ -457,5 +457,21 @@ export const mutations: Mutation[] = [
     find: "                write(None, out);\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","local function there"],
+  },
+  {
+    name: "const-block-uncoded",
+    breaks: "a `const { .. }` block of no JS value is refused",
+    file: "src/lower.rs",
+    find: "                None => self.named_const(did, args, ty, span),",
+    replace: "                None => Err(self.unsupported(span, \"this `const` block\")),",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
+  {
+    name: "repeat-const-not-copy",
+    breaks: "`[const { .. }; N]` of a value that isn't `Copy` is refused",
+    file: "src/lower.rs",
+    find: "                let copied = if self.is_copy(item_ty) || constant {",
+    replace: "                let copied = if self.is_copy(item_ty) {",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
   },
 ];

@@ -74,4 +74,21 @@ export const mutations: Mutation[] = [
     replace: "        let defaulted = || false;\n",
     tests: ["test/modules.test.ts", "-t", "default of another module"],
   },
+  {
+    name: "coded-inline-consts-none",
+    breaks: "a `const { .. }` block of no JS value is refused",
+    file: "src/lower/analysis.rs",
+    find: "        .chain(coded_inline_consts(tcx, all_bodies))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
+  {
+    name: "coded-inline-consts-every",
+    breaks: "every `const { .. }` block is a module constant, one rustc's value says too",
+    file: "src/lower/analysis.rs",
+    find: "                .and_then(|value| super::const_js(tcx, value))\n                .is_none()\n            {\n                coded.push(local);",
+    replace: "                .and_then(|value| super::const_js(tcx, value))\n                .is_none_or(|_| true)\n            {\n                coded.push(local);",
+    tests: ["test/corpus.test.ts","-t","const_blocks_and_let_guards"],
+    snapshots: true,
+  },
 ];

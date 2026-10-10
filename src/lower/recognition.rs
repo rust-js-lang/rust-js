@@ -1893,6 +1893,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     mutable: base != name.as_str(),
                 })
             }
+            // A slice of `MaybeUninit`s is the array of what they hold (ADR 0332).
+            "assume_init_ref" | "assume_init_mut" if owner.is_slice() => Std::Same,
+            "write_copy_of_slice" | "write_clone_of_slice" if owner.is_slice() => Std::Slice(SliceOp::UninitWrite {
+                clone: name.as_str() == "write_clone_of_slice",
+            }),
+            "assume_init_drop" if owner.is_slice() => Std::Slice(SliceOp::UninitDrop),
             "get_disjoint_mut" | "get_disjoint_unchecked_mut" if owner.is_slice() => {
                 Std::Slice(SliceOp::GetDisjointMut {
                     unchecked: name.as_str() == "get_disjoint_unchecked_mut",

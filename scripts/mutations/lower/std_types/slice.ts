@@ -268,4 +268,28 @@ export const mutations: Mutation[] = [
     replace: "                            true => result,",
     tests: ["test/corpus.test.ts","-t","slice_disjoint"],
   },
+  {
+    name: "uninit-write-copy-skipped",
+    breaks: "`write_copy_of_slice` writes nothing",
+    file: "src/lower/std_types/slice.rs",
+    find: "                out.push(StmtKind::Expr(copy).at(self.js_span(span)));\n                slots\n",
+    replace: "                slots\n",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
+  {
+    name: "uninit-write-clone-copies",
+    breaks: "`write_clone_of_slice` copies, not clones",
+    file: "src/lower/std_types/slice.rs",
+    find: "                if clone {\n                    let clone = self.clone_arg(",
+    replace: "                if false {\n                    let clone = self.clone_arg(",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
+  {
+    name: "uninit-drop-skipped",
+    breaks: "`assume_init_drop` drops nothing",
+    file: "src/lower/std_types/slice.rs",
+    find: "                self.drop_value(slots, ty, span, out)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
 ];

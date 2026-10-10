@@ -1004,8 +1004,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self.expr(value, out)?;
                 // A `Copy` value's copies are copies of its bits, which a
                 // value that nothing changes needs none of; one that isn't
-                // `Copy` is a constant's, made again for each.
-                let copied = if self.is_copy(item_ty) {
+                // `Copy` is a constant's, made again for each, as each use of
+                // a constant is.
+                let constant = matches!(
+                    self.thir[self.strip(value)].kind,
+                    ExprKind::NamedConst { .. } | ExprKind::ConstBlock { .. }
+                );
+                let copied = if self.is_copy(item_ty) || constant {
                     self.contains_mutated(item_ty)
                 } else if self.needs_clone(item_ty) {
                     return Err(self.unsupported(span, "`[x; N]` of a value that isn't `Copy`"));
@@ -1254,9 +1259,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::NamedConst { def_id, args, .. } => self.named_const(def_id, args, ty, span),
             // `const { square(7) + 1 }`: its value, as rustc computes it, as a
             // named constant's is (ADR 0127).
-            ExprKind::ConstBlock { did, args } => eval_const(self.tcx, self.typing_env, did, args, span)
+            ExprKind::ConstBlock { did, args } => match eval_const(self.tcx, self.typing_env, did, args, span)
                 .and_then(|value| const_js(self.tcx, value))
-                .ok_or_else(|| self.unsupported(span, "this `const` block")),
+            {
+                Some(value) => Ok(value),
+                None => self.named_const(did, args, ty, span),
+            },
             ExprKind::ConstParam { param, .. } => self.const_arg(ty::Const::new_param(self.tcx, param), span),
             ExprKind::Match { .. } if let Some(awaited) = self.body_query().as_await(e) => {
                 Ok(Expr::await_(self.expr(awaited, out)?))

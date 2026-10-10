@@ -123,4 +123,20 @@ export const mutations: Mutation[] = [
     replace: "(Some(_), Some(_)) => true,",
     tests: ["test/lowering.test.ts", "-t", "copies are made for the mutated instantiations of a generic type only"],
   },
+  {
+    name: "maybe-uninit-unshareable",
+    breaks: "a constant `MaybeUninit` is refused",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, args) if super::recognition::is_std_def(tcx, adt.did(), StdItem::MaybeUninit) => {",
+    replace: "            ty::Adt(adt, args) if false => {",
+    tests: ["test/corpus.test.ts","-t","slice_uninit"],
+  },
+  {
+    name: "string-unshareable",
+    breaks: "a constant `String` of no value tree is refused",
+    file: "src/lower/copies.rs",
+    find: "            ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::String) => true,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","const_block_values"],
+  },
 ];

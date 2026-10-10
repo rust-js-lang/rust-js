@@ -38,3 +38,10 @@ is; and an `if let` guard is a let chain the arm's body goes inside:**
   inside the arm's test for each `let`.
 - **It's exact**: rustc computes the constant, and each `let` of a guard runs
   only where the pattern and the guard's parts before it held, as Rust's do.
+
+## Since
+
+- **A `const` block of no JS value is a constant of its module** (ADR
+  0340), lowered as code as a named one is: `const { MaybeUninit::uninit() }`
+  and `const { String::new() }`. One in generic code, or of a `Vec`, stays
+  refused.
