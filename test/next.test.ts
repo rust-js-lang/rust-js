@@ -774,6 +774,9 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   const dir = app("next-build");
   const { code, output } = await finished(command(dir, ["build"]));
   expect([code, output.includes("○ /about")]).toEqual([0, true]);
+  // Its JS modules, next.config.js among them, are ES modules to Node too,
+  // of the package's `"type": "module"`: not guessed at.
+  expect(output).not.toContain("MODULE_TYPELESS_PACKAGE_JSON");
   // The config's experiments, as Next.js lists them.
   expect(output).toMatch(/Experiments[^\n]*\n(?:.*\n)*?.*✓ scrollRestoration/);
   // What Cargo writes isn't the app's, which Turbopack watches: node_modules'.
@@ -914,6 +917,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
       await Bun.sleep(100);
     }
     const at = `http://localhost:${served.match(/ready on (\d+)/)![1]}`;
+    expect(served).not.toContain("MODULE_TYPELESS_PACKAGE_JSON");
     expect(await (await fetch(`${at}/custom`)).text()).toBe("custom server");
     const about = await fetch(`${at}/about`);
     expect(await about.text()).toContain("About, in Rust");

@@ -49,3 +49,11 @@ export default nextConfig;
 - next's members: 382 of 433, `NextConfig` 65 of 65.
 - `node:http`'s `createServer` and `next()` run a custom server of the
   config in the build test, as `node server.js`.
+
+## Amendment: the app's package is `"type": "module"`
+
+rust-js writes ES modules. Next.js bundles a route's, but Node itself
+loads `next.config.js` and a custom server's `server.js`: in a package
+without `"type"`, Node 22 reparses each as a module with a warning, and
+Node before 20.19 fails. The Next.js example, and so the template
+`create` makes of it, is `"type": "module"`.
