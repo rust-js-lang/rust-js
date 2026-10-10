@@ -21,6 +21,7 @@
 
 pub mod app;
 mod data_fetching;
+pub mod document;
 pub mod head;
 pub mod image;
 pub mod legacy;

@@ -69,7 +69,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod counter;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   // The Pages Router's route, as react.dev's pages read it: compiled, not
@@ -95,6 +95,37 @@ pub fn MyApp(AppProps { component: Component, page_props: pageProps, .. }: AppPr
 }
 
 js::export_default!(MyApp);
+`);
+  // The Pages Router's document, its `<html>` and `<body>`, as react.dev's
+  // _document has them.
+  writeFileSync(join(dir, "pages/_document.rs"), `#![allow(non_snake_case)]
+
+use next::document::{Head, Html, Main, NextScript};
+use react::attributes::{HTMLAttributes, HtmlHTMLAttributes};
+use react::{JSX, jsx};
+
+pub fn MyDocument() -> JSX::Element {
+    jsx! {
+        <Html
+            props={HtmlHTMLAttributes {
+                html: HTMLAttributes {
+                    lang: Some("eo"),
+                    dir: Some("ltr"),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }}
+            {..Default::default()}>
+            <Head />
+            <body className="document">
+                <Main />
+                <NextScript />
+            </body>
+        </Html>
+    }
+}
+
+js::export_default!(MyDocument);
 `);
   return dir;
 }
@@ -270,6 +301,10 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect([built("0"), built("1"), built("2")]).toEqual([false, true, true]);
   expect(readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8")).toContain('<main class="app"><p>Code <!-- -->1</p></main>');
   expect(readFileSync(join(dir, "pages/_app.jsx"), "utf8")).toContain("export function MyApp({ Component, pageProps }) {");
+  // Each page in the document's `<html>` and `<body>`.
+  expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain('<Html lang="eo" dir="ltr">');
+  const documented = readFileSync(join(dir, ".next/server/pages/codes/1.html"), "utf8");
+  expect([documented.includes('<html lang="eo" dir="ltr">'), documented.includes('<body class="document">')]).toEqual([true, true]);
   // Its props as written, an anchor's first, which the props it names
   // replace (ADR 0203, 0208).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');
