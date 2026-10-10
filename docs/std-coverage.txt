@@ -47,7 +47,7 @@
 - Vec::try_reserve
 - Vec::try_reserve_exact
 + Vec::with_capacity
-# VecDeque 45 of 55
+# VecDeque 48 of 55
 + VecDeque::append
 - VecDeque::as_mut_slices
 - VecDeque::as_slices
@@ -65,7 +65,7 @@
 + VecDeque::get
 + VecDeque::get_mut
 + VecDeque::insert
-- VecDeque::insert_mut
++ VecDeque::insert_mut
 + VecDeque::is_empty
 + VecDeque::iter
 + VecDeque::iter_mut
@@ -78,9 +78,9 @@
 + VecDeque::pop_front
 + VecDeque::pop_front_if
 + VecDeque::push_back
-- VecDeque::push_back_mut
++ VecDeque::push_back_mut
 + VecDeque::push_front
-- VecDeque::push_front_mut
++ VecDeque::push_front_mut
 + VecDeque::range
 - VecDeque::range_mut
 + VecDeque::remove
@@ -103,7 +103,7 @@
 - VecDeque::try_reserve
 - VecDeque::try_reserve_exact
 + VecDeque::with_capacity
-# LinkedList 17 of 20
+# LinkedList 19 of 20
 + LinkedList::append
 + LinkedList::back
 + LinkedList::back_mut
@@ -120,9 +120,9 @@
 + LinkedList::pop_back
 + LinkedList::pop_front
 + LinkedList::push_back
-- LinkedList::push_back_mut
++ LinkedList::push_back_mut
 + LinkedList::push_front
-- LinkedList::push_front_mut
++ LinkedList::push_front_mut
 + LinkedList::split_off
 # HashMap 25 of 33
 - HashMap::capacity

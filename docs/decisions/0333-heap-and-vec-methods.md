@@ -49,3 +49,13 @@ so `{:?}`, `into_vec()` and `as_slice()` show what Rust's do. Its `append`,
   top, copy the top, leave a drained heap full, drop a guard as nothing,
   and give `push_mut`'s number, or `insert_mut`'s last item.
 - `docs/std-coverage.txt`: `BinaryHeap` 20 of 23, `Vec` 36 of 48.
+
+## Since
+
+- **A deque's and a list's `push_back_mut`, `push_front_mut`, and a
+  `VecDeque`'s `insert_mut`** (2026-10-10) are `Vec`'s, `$pushMut`,
+  `$pushFrontMut` and `$dequeInsert`: a `&mut` to what they put in, a
+  handle on a number or text. A `VecDeque`'s `insert` past its end panics
+  with its own `index out of bounds`, where it said `Vec`'s message. The
+  corpus's `deque_push_mut` and `deque_insert_past_len` run against native
+  Rust.

@@ -165,6 +165,13 @@ pub(in crate::lower) enum SliceOp {
     PushMut {
         at: bool,
     },
+    /// A deque's `push_front_mut(x)`.
+    PushFrontMut,
+    /// A `VecDeque`'s `insert(i, x)`, or `insert_mut` (`mutable`): checked
+    /// with its own message, `index out of bounds`.
+    DequeInsert {
+        mutable: bool,
+    },
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -693,6 +700,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             given.push(Expr::bool(true));
                         }
                         helper(self, if at { "$insertMut" } else { "$pushMut" }, given)
+                    }
+                    SliceOp::PushFrontMut => {
+                        let mut given = vec![arg(), arg()];
+                        if self.is_boxable(item()) {
+                            given.push(Expr::bool(true));
+                        }
+                        helper(self, "$pushFrontMut", given)
+                    }
+                    SliceOp::DequeInsert { mutable } => {
+                        let mut given = vec![arg(), arg(), arg()];
+                        if mutable && self.is_boxable(item()) {
+                            given.push(Expr::bool(true));
+                        }
+                        helper(self, "$dequeInsert", given)
                     }
                     SliceOp::DequeSwapRemove { front } => {
                         helper(self, "$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)])

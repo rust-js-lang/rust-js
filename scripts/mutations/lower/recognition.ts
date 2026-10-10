@@ -1148,4 +1148,28 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
   },
+  {
+    name: "deque-insert-as-vec",
+    breaks: "`VecDeque::insert` is `Vec`'s",
+    file: "src/lower/recognition.rs",
+    find: "            \"insert\" | \"insert_mut\" if adt(\"VecDeque\") => Some(Std::Slice(SliceOp::DequeInsert {",
+    replace: "            \"insert_mut\" if adt(\"VecDeque\") => Some(Std::Slice(SliceOp::DequeInsert {",
+    tests: ["test/corpus.test.ts","-t","deque_insert_past_len"],
+  },
+  {
+    name: "push-front-mut-unknown",
+    breaks: "`push_front_mut` is an error",
+    file: "src/lower/recognition.rs",
+    find: "            \"push_front_mut\" if deque => Some(Std::Slice(SliceOp::PushFrontMut)),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","deque_push_mut"],
+  },
+  {
+    name: "deque-insert-mut-not-cell",
+    breaks: "`insert_mut`'s handle isn't the call's own cell",
+    file: "src/lower/recognition.rs",
+    find: "                        | SliceOp::DequeInsert { mutable: true }\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","deque_push_mut"],
+  },
 ];

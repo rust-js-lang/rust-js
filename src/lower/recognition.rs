@@ -447,6 +447,8 @@ impl Std {
                 | Std::Heap(HeapOp::PeekTop { mutable: true })
                 | Std::Slice(
                     SliceOp::PushMut { .. }
+                        | SliceOp::PushFrontMut
+                        | SliceOp::DequeInsert { mutable: true }
                         | SliceOp::SplitEndMut { .. }
                         | SliceOp::SplitOff { mutable: true, .. }
                         | SliceOp::GetDisjointMut { .. }
@@ -1317,6 +1319,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "peek_mut" if heap => Some(Std::Heap(HeapOp::PeekMut)),
             "as_slice" if heap => Some(Std::Same),
             "remove" if deque => Some(Std::DequeRemove),
+            // A `VecDeque`'s `insert`, checked with its own message, and the
+            // `_mut` ones' `&mut` to what they put in (ADR 0333).
+            "insert" | "insert_mut" if adt("VecDeque") => Some(Std::Slice(SliceOp::DequeInsert {
+                mutable: name.as_str() == "insert_mut",
+            })),
+            "push_back_mut" if deque => Some(Std::Slice(SliceOp::PushMut { at: false })),
+            "push_front_mut" if deque => Some(Std::Slice(SliceOp::PushFrontMut)),
             "push_back" if deque => Some(Std::Push),
             "pop_back" if deque => Some(Std::Method("pop")),
             "push_front" if deque => Some(Std::Method("unshift")),

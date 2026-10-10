@@ -110,8 +110,8 @@ export const mutations: Mutation[] = [
     name: "insert-mut-at-end",
     breaks: "`insert_mut(i, x)`'s `&mut` is to the last item",
     file: "src/runtime/slice_ops.js",
-    find: "  return handle ? $mutAt(v, i) : x;",
-    replace: "  return handle ? $mutAt(v, v.length - 1) : x;",
+    find: "  $insertAt(v, i, x);\n  return handle ? $mutAt(v, i) : x;",
+    replace: "  $insertAt(v, i, x);\n  return handle ? $mutAt(v, v.length - 1) : x;",
     tests: ["test/corpus.test.ts", "-t", "vec_push_mut"],
   },
   {
@@ -193,5 +193,21 @@ export const mutations: Mutation[] = [
     find: "failed: destination and source slices have different lengths\\n  left: ${v.length}\\n right: ${src.length}`,",
     replace: "failed: destination and source slices have different lengths`,",
     tests: ["test/corpus.test.ts","-t","slice_uninit_lengths"],
+  },
+  {
+    name: "deque-insert-vec-message",
+    breaks: "`VecDeque::insert` past the end says `Vec`'s message",
+    file: "src/runtime/slice_ops.js",
+    find: "  if (i > v.length) throw new Error(\"index out of bounds\");\n  v.splice(i, 0, x);",
+    replace: "  if (i > v.length) throw new Error(`insertion index (is ${i}) should be <= len (is ${v.length})`);\n  v.splice(i, 0, x);",
+    tests: ["test/corpus.test.ts","-t","deque_insert_past_len"],
+  },
+  {
+    name: "push-front-mut-last",
+    breaks: "`push_front_mut` gives a `&mut` to the last item",
+    file: "src/runtime/slice_ops.js",
+    find: "  v.unshift(x);\n  return handle ? $mutAt(v, 0) : x;",
+    replace: "  v.unshift(x);\n  return handle ? $mutAt(v, -1) : x;",
+    tests: ["test/corpus.test.ts","-t","deque_push_mut"],
   },
 ];

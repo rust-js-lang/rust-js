@@ -1843,6 +1843,20 @@ export function $pushMut(v, x, handle) {
   return handle ? $mutAt(v, v.length - 1) : x;
 }
 
+// A deque's `push_front_mut(x)`: `x` put first, and a `&mut` to it.
+export function $pushFrontMut(v, x, handle) {
+  v.unshift(x);
+  return handle ? $mutAt(v, 0) : x;
+}
+
+// A `VecDeque`'s `insert(i, x)` and `insert_mut`: checked as its
+// `assert!` checks, and a `&mut` to what it put in.
+export function $dequeInsert(v, i, x, handle) {
+  if (i > v.length) throw new Error("index out of bounds");
+  v.splice(i, 0, x);
+  return handle ? $mutAt(v, i) : x;
+}
+
 export function $insertMut(v, i, x, handle) {
   $insertAt(v, i, x);
   return handle ? $mutAt(v, i) : x;

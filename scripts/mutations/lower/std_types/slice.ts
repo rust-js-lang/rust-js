@@ -232,8 +232,8 @@ export const mutations: Mutation[] = [
     name: "split-off-end-no-handle",
     breaks: "`split_off_first_mut()`'s number isn't a handle",
     file: "src/lower/std_types/slice.rs",
-    find: "                        if mutable && self.is_boxable(item()) {",
-    replace: "                        if false {",
+    find: "                        list.push(Expr::bool(last));\n                        if mutable && self.is_boxable(item()) {",
+    replace: "                        list.push(Expr::bool(last));\n                        if false {",
     tests: ["test/corpus.test.ts","-t","slice_split_off"],
   },
   {
@@ -323,5 +323,13 @@ export const mutations: Mutation[] = [
     find: "        if select && self.is_boxable(item) {",
     replace: "        if false {",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
+  },
+  {
+    name: "deque-insert-mut-no-handle",
+    breaks: "`insert_mut`'s number is the number, not a handle on it",
+    file: "src/lower/std_types/slice.rs",
+    find: "                        if mutable && self.is_boxable(item()) {\n                            given.push(Expr::bool(true));\n                        }\n                        helper(self, \"$dequeInsert\"",
+    replace: "                        if false {\n                            given.push(Expr::bool(true));\n                        }\n                        helper(self, \"$dequeInsert\"",
+    tests: ["test/corpus.test.ts","-t","deque_push_mut"],
   },
 ];
