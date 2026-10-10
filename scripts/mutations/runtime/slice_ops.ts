@@ -162,4 +162,12 @@ export const mutations: Mutation[] = [
     replace: "  return rest;",
     tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
   },
+  {
+    name: "as-rchunks-from-start",
+    breaks: "`as_rchunks`'s chunks start at the start",
+    file: "src/runtime/slice_ops.js",
+    find: "  const start = back ? rest : 0;\n  const chunks = Array.from(",
+    replace: "  const start = 0;\n  const chunks = Array.from(",
+    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+  },
 ];

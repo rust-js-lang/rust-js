@@ -1060,4 +1060,12 @@ export const mutations: Mutation[] = [
     replace: "            \"strip_prefix\" | \"strip_suffix\" if owner.is_slice() => Std::Slice(SliceOp::Strip {",
     tests: ["test/corpus.test.ts","-t","slice_prefix_eq"],
   },
+  {
+    name: "array-windows-not-array",
+    breaks: "`for w in v.array_windows()` is an error",
+    file: "src/lower/recognition.rs",
+    find: "                    \"std::slice::ArrayWindows\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","slice_arrays"],
+  },
 ];

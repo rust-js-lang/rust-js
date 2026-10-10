@@ -1874,6 +1874,26 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 })
             }
             "split_at_unchecked" if owner.is_slice() => Std::Text(TextOp::SliceSplitAt { checked: false }),
+            // A slice as arrays of `N`, and arrays as one slice (ADR 0337).
+            "as_array" | "as_mut_array" if owner.is_slice() => Std::Slice(SliceOp::AsArray),
+            "array_windows" if owner.is_slice() => Std::Slice(SliceOp::ArrayWindows),
+            "as_chunks"
+            | "as_rchunks"
+            | "as_chunks_mut"
+            | "as_rchunks_mut"
+            | "as_chunks_unchecked"
+            | "as_chunks_unchecked_mut"
+                if owner.is_slice() =>
+            {
+                Std::Slice(SliceOp::AsChunks {
+                    back: name.as_str().starts_with("as_r"),
+                    mutable: name.as_str().ends_with("_mut"),
+                    unchecked: name.as_str().contains("unchecked"),
+                })
+            }
+            "as_flattened" | "as_flattened_mut" if owner.is_slice() => Std::Slice(SliceOp::Flattened {
+                mutable: name.as_str().ends_with("_mut"),
+            }),
             "split_first_mut" | "split_last_mut" if owner.is_slice() => Std::Slice(SliceOp::SplitEndMut {
                 last: name.as_str() == "split_last_mut",
             }),
@@ -2721,6 +2741,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::slice::SplitInclusiveMut",
                     "std::slice::ChunkBy",
                     "std::slice::ChunkByMut",
+                    "std::slice::ArrayWindows",
                 ]
                 .contains(&path.as_str())
                 || self.is_str_split(ty))

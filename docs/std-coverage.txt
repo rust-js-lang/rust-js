@@ -664,24 +664,24 @@
 + str::trim_right_matches
 + str::trim_start
 + str::trim_start_matches
-# slice 96 of 133
+# slice 107 of 133
 - slice::align_to
 - slice::align_to_mut
-- slice::array_windows
-- slice::as_array
-- slice::as_chunks
-- slice::as_chunks_mut
-- slice::as_chunks_unchecked
-- slice::as_chunks_unchecked_mut
-- slice::as_flattened
-- slice::as_flattened_mut
-- slice::as_mut_array
++ slice::array_windows
++ slice::as_array
++ slice::as_chunks
++ slice::as_chunks_mut
++ slice::as_chunks_unchecked
++ slice::as_chunks_unchecked_mut
++ slice::as_flattened
++ slice::as_flattened_mut
++ slice::as_mut_array
 - slice::as_mut_ptr
 - slice::as_mut_ptr_range
 - slice::as_ptr
 - slice::as_ptr_range
-- slice::as_rchunks
-- slice::as_rchunks_mut
++ slice::as_rchunks
++ slice::as_rchunks_mut
 - slice::assume_init_drop
 - slice::assume_init_mut
 - slice::assume_init_ref

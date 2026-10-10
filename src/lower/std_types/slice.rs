@@ -76,6 +76,22 @@ pub(in crate::lower) enum SliceOp {
     SplitEndMut {
         last: bool,
     },
+    /// `as_array::<N>()` and `as_mut_array::<N>()`: itself, if it's `N`
+    /// long (ADR 0337).
+    AsArray,
+    /// `array_windows::<N>()`: `windows(N)`'s.
+    ArrayWindows,
+    /// `as_chunks::<N>()`, or `as_rchunks` (`back`): its whole chunks and
+    /// what's left; `as_chunks_unchecked` (`unchecked`) the chunks alone.
+    AsChunks {
+        back: bool,
+        mutable: bool,
+        unchecked: bool,
+    },
+    /// `as_flattened()` of arrays: their items, in order.
+    Flattened {
+        mutable: bool,
+    },
     SortByCachedKey,
     /// A byte slice's `to_ascii_uppercase()` or `to_ascii_lowercase()`, and
     /// `make_ascii_*` in place.
@@ -291,6 +307,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                     }
                     SliceOp::View { .. } => unreachable!("lowered above"),
+                    SliceOp::AsArray => {
+                        let n = self.chunk_length(generic_args, span)?;
+                        let items = arg();
+                        let items = if items.reads_same() {
+                            items
+                        } else {
+                            self.spill("items", items, out)
+                        };
+                        let length = Expr::member(items.clone(), "length");
+                        Expr::cond(
+                            Expr::bin(Op::Eq, length, Expr::int(n as i128)),
+                            items,
+                            Expr::undefined(),
+                        )
+                    }
+                    SliceOp::ArrayWindows => {
+                        let n = self.chunk_length(generic_args, span)?;
+                        self.runtime.insert(Helper::Windows);
+                        Expr::call(Expr::var("$windows"), vec![arg(), Expr::int(n as i128)])
+                    }
+                    SliceOp::AsChunks {
+                        back,
+                        mutable,
+                        unchecked,
+                    } => {
+                        let n = self.chunk_length(generic_args, span)?;
+                        let mut list = vec![arg(), Expr::int(n as i128)];
+                        if back {
+                            list.push(Expr::bool(true));
+                        }
+                        let pair = match mutable {
+                            false => helper(self, "$asChunks", list),
+                            true => self.view_call("$asChunksMut", list),
+                        };
+                        match unchecked {
+                            true => Expr::index(pair, Expr::int(0)),
+                            false => pair,
+                        }
+                    }
+                    SliceOp::Flattened { mutable: false } => Expr::call(Expr::member(arg(), "flat"), Vec::new()),
+                    SliceOp::Flattened { mutable: true } => {
+                        let n = self.chunk_length(generic_args, span)?;
+                        self.view_call("$flatView", vec![arg(), Expr::int(n as i128)])
+                    }
                     // Of one stepped through a `&mut`, which is `$iter`'s, of its
                     // `items` (ADR 0071).
                     SliceOp::Remainder if self.is_stepping(args[0]) => {

@@ -133,6 +133,16 @@ function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = false, cut 
   return parts;
 }
 
+// `as_chunks::<N>()`: its whole chunks of `n`, copies, and what's left after
+// them; `as_rchunks` (`back`): what's left before them first.
+function $asChunks(v, n, back = false) {
+  $chunkSize(n);
+  const rest = v.length % n;
+  const start = back ? rest : 0;
+  const chunks = Array.from({ length: (v.length - rest) / n }, (_, i) => v.slice(start + i * n, start + i * n + n));
+  return back ? [v.slice(0, rest), chunks] : [chunks, v.slice(v.length - rest)];
+}
+
 // `chunk_by(p)`: the runs of items `p` holds of each two in a row of.
 function $chunkBy(v, p, cut = $copyOf) {
   const runs = [];

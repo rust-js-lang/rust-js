@@ -1677,6 +1677,16 @@ export function $sliceSplitBy(v, p, n = Infinity, inclusive = false, back = fals
   return parts;
 }
 
+// `as_chunks::<N>()`: its whole chunks of `n`, copies, and what's left after
+// them; `as_rchunks` (`back`): what's left before them first.
+export function $asChunks(v, n, back = false) {
+  $chunkSize(n);
+  const rest = v.length % n;
+  const start = back ? rest : 0;
+  const chunks = Array.from({ length: (v.length - rest) / n }, (_, i) => v.slice(start + i * n, start + i * n + n));
+  return back ? [v.slice(0, rest), chunks] : [chunks, v.slice(v.length - rest)];
+}
+
 // `chunk_by(p)`: the runs of items `p` holds of each two in a row of.
 export function $chunkBy(v, p, cut = $copyOf) {
   const runs = [];
@@ -2386,7 +2396,18 @@ export function $strSplitAtMut(cell, at, checked) {
 // longer or shorter, so it stays over the same items.
 export function $view(items, start, end = items.length) {
   if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
-  const length = end - start;
+  return $proxy(
+    end - start,
+    (i) => items[start + i],
+    (i, item) => {
+      items[start + i] = item;
+    },
+  );
+}
+
+// An array of `length` items to JS's own methods, each read by `read(i)`
+// and written by `write(i, item)`.
+export function $proxy(length, read, write) {
   const at = (key) => {
     if (typeof key !== "string") return -1;
     const i = Number(key);
@@ -2396,14 +2417,14 @@ export function $view(items, start, end = items.length) {
     get(target, key) {
       if (key === "length") return length;
       const i = at(key);
-      return i < 0 ? Reflect.get(target, key) : items[start + i];
+      return i < 0 ? Reflect.get(target, key) : read(i);
     },
     set(target, key, value) {
       // `$assign`'s, of an array as long (ADR 0147).
       if (key === "length") return value === length;
       const i = at(key);
       if (i < 0) return false;
-      items[start + i] = value;
+      write(i, value);
       return true;
     },
     has(target, key) {
@@ -2418,7 +2439,7 @@ export function $view(items, start, end = items.length) {
     getOwnPropertyDescriptor(target, key) {
       if (key === "length") return { value: length, writable: true, enumerable: false, configurable: false };
       const i = at(key);
-      return i < 0 ? undefined : { value: items[start + i], writable: true, enumerable: true, configurable: true };
+      return i < 0 ? undefined : { value: read(i), writable: true, enumerable: true, configurable: true };
     },
   });
 }
@@ -2470,6 +2491,55 @@ export function $chunkByMut(v, p) {
 
 export function $splitChunkMut(v, n, last) {
   return $splitChunk(v, n, last, $view);
+}
+
+// `as_chunks_mut::<N>()`: a view of its whole chunks of `n`, each a view,
+// written whole as `chunks[i] = [..]` writes one, and a view of what's left
+// after them; `as_rchunks_mut` (`back`): what's left before them first.
+// A chunk read before its place is written keeps what it held, as Rust's
+// copy of a `[T; N]` does: JS's own `reverse` and `sort`, and `$swap`,
+// hold one while they write its place.
+export function $asChunksMut(v, n, back = false) {
+  $chunkSize(n);
+  const rest = v.length % n;
+  const start = back ? rest : 0;
+  const read = [];
+  const chunks = $proxy(
+    (v.length - rest) / n,
+    (i) => {
+      const at = start + i * n;
+      let kept;
+      (read[i] ??= []).push(() => {
+        kept = v.slice(at, at + n);
+      });
+      return $proxy(
+        n,
+        (j) => (kept ? kept[j] : v[at + j]),
+        (j, item) => {
+          if (kept) kept[j] = item;
+          else v[at + j] = item;
+        },
+      );
+    },
+    (i, chunk) => {
+      const items = Array.from(chunk);
+      for (const keep of read[i] ?? []) keep();
+      read[i] = [];
+      for (let j = 0; j < n; j++) v[start + i * n + j] = items[j];
+    },
+  );
+  return back ? [$view(v, 0, rest), chunks] : [chunks, $view(v, v.length - rest)];
+}
+
+// `as_flattened_mut()` of arrays of `n`: a view of their items, in order.
+export function $flatView(v, n) {
+  return $proxy(
+    v.length * n,
+    (i) => v[Math.floor(i / n)][i % n],
+    (i, item) => {
+      v[Math.floor(i / n)][i % n] = item;
+    },
+  );
 }
 
 // std's `slice_index_fail`: why `start..end` isn't a range of a slice of
