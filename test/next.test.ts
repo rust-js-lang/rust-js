@@ -103,7 +103,7 @@ function app(name: string): string {
   writeFileSync(cargo, readFileSync(cargo, "utf8").replaceAll('path = "../../', `path = "${root}/`) + "\n[package.metadata.rust-js]\ndeclarations = true\n");
   const page = join(dir, "app/page.rs");
   writeFileSync(page, readFileSync(page, "utf8")
-    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
+    .replace("use next::image::Image;", "mod about {\n    pub mod page;\n}\nmod request {\n    pub mod page;\n}\nmod actions;\nmod cached;\nmod api {\n    pub mod hello {\n        pub mod route;\n    }\n}\nmod og {\n    pub mod route;\n}\n#[path = \"../proxy.rs\"]\nmod proxy;\n#[path = \"../instrumentation.rs\"]\nmod instrumentation;\n#[path = \"../instrumentation-client.rs\"]\nmod instrumentation_client;\n#[path = \"../server.rs\"]\nmod server;\nmod counter;\nmod robots;\nmod sitemap;\nmod later;\nmod linked;\nmod route_path;\n#[path = \"../pages/codes/[code].rs\"]\nmod code;\n#[path = \"../pages/agent.rs\"]\nmod agent;\n#[path = \"../pages/api/greet.rs\"]\nmod api_greet;\n#[path = \"../pages/_app.rs\"]\nmod app;\n#[path = \"../pages/_document.rs\"]\nmod document;\n\nuse next::image::Image;")
     .replace('{" file."}\n                    </h1>', '{" file."}\n                    </h1>\n                    <counter::Counter />'));
   writeFileSync(join(dir, "app/counter.rs"), counter("Count "));
   writeFileSync(join(dir, "app/robots.rs"), robots);
@@ -138,6 +138,8 @@ js::export_default!(Later);
   // Instrumentation, the server's and the client's.
   writeFileSync(join(dir, "instrumentation.rs"), instrumentation);
   writeFileSync(join(dir, "instrumentation-client.rs"), instrumentationClient);
+  // A custom server, Next.js's handed each request but its own.
+  writeFileSync(join(dir, "server.rs"), customServer(3700 + Math.floor(Math.random() * 300)));
   // An image drawn from JSX, next/og's.
   mkdirSync(join(dir, "app/og"));
   writeFileSync(join(dir, "app/og/route.rs"), og);
@@ -325,6 +327,30 @@ pub fn onRouterTransitionStart(url: &str, navigation_type: RouterTransitionType,
     }
 }
 `;
+
+// A custom server, as Next.js's docs write one: Next.js prepared, then
+// each request but `/custom` handed to it.
+function customServer(port: number): string {
+  return `use next::{NextServerOptions, next};
+use node::http;
+
+js::on_load! {
+    js::spawn(Box::new(async {
+        let app = next(NextServerOptions { dev: Some(false), dir: Some("."), ..Default::default() });
+        let handle = app.get_request_handler();
+        app.prepare().await;
+        http::create_server(move |req, res| {
+            if req.url().as_deref() == Some("/custom") {
+                res.end_with("custom server");
+            } else {
+                let _ = handle(req, res);
+            }
+        })
+        .listen_with(${port}.0, || println!("custom server ready on ${port}"));
+    }));
+}
+`;
+}
 
 const proxy = `use next::server::{Matcher, MiddlewareConfig, NextMiddlewareResult, NextRequest, next_response};
 use react::webapi::{Response, url};
@@ -803,6 +829,23 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // Its getInitialProps, set on it, and its scripts' nonce.
   expect(readFileSync(join(dir, "pages/_document.jsx"), "utf8")).toContain("MyDocument.getInitialProps = initial;");
   expect(documented).toContain('nonce="n0nce"');
+  // The custom server, run as Next.js's docs run one: `node server.js`.
+  expect(readFileSync(join(dir, "server.js"), "utf8")).toContain('import next from "next";');
+  const custom = spawn("node", ["server.js"], { cwd: dir, env: { ...process.env, NODE_ENV: "production", NEXT_TELEMETRY_DISABLED: "1" } });
+  try {
+    let served = "";
+    custom.stdout.on("data", (data) => (served += data));
+    custom.stderr.on("data", (data) => (served += data));
+    while (!served.includes("custom server ready on ")) {
+      expect(custom.exitCode).toBe(null);
+      await Bun.sleep(100);
+    }
+    const at = `http://localhost:${served.match(/ready on (\d+)/)![1]}`;
+    expect(await (await fetch(`${at}/custom`)).text()).toBe("custom server");
+    expect(await (await fetch(`${at}/about`)).text()).toContain("About, in Rust");
+  } finally {
+    custom.kill();
+  }
   // Its props as written, an anchor's first, which the props it names
   // replace (ADR 0203, 0208).
   expect(readFileSync(join(dir, "app/about/page.jsx"), "utf8")).toContain('<Link href="/" {...anchor} className={classes} aria-label="Home page">');

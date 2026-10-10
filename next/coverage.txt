@@ -1,7 +1,7 @@
 # The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
-# exports: 144 of 2093 (6.9%)
+# exports: 145 of 2093 (6.9%)
 # members: 317 of 433 (73.2%)
-# next 36 of 42, members 114 of 199
+# next 37 of 42, members 114 of 199
 - type next#AdapterOutput
 - next#AdapterOutput.APP_PAGE
 - next#AdapterOutput.APP_ROUTE
@@ -10,7 +10,7 @@
 - next#AdapterOutput.PAGES_API
 - next#AdapterOutput.PRERENDER
 - next#AdapterOutput.STATIC_FILE
-- next#default
++ next#default
 + type next#FileSizeSuffix
 + type next#GetServerSideProps
 + type next#GetServerSidePropsContext

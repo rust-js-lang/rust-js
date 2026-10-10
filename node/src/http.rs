@@ -1,11 +1,48 @@
-//! [`http`](https://nodejs.org/api/http.html)'s request and response, as a
-//! server's handler, or Next.js's Pages Router, is given them: what's read
-//! of a request and written to a response. Their streams' events aren't
-//! bound yet.
+//! [`http`](https://nodejs.org/api/http.html)'s server, and its request and
+//! response, as a server's handler, or Next.js's Pages Router, is given
+//! them: what's read of a request and written to a response. Their streams'
+//! events aren't bound yet.
 
 use core::marker::PhantomData;
 
 use js::{Dict, JsObject};
+
+/// [`http.createServer(requestListener)`](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener):
+/// a server that hands each request, and its response, to `request_listener`.
+#[cfg_attr(rust_js, rust_js::link_name = "http#createServer")]
+pub fn create_server(request_listener: impl Fn(&IncomingMessage, &ServerResponse) + 'static) -> &'static Server {
+    unreachable!()
+}
+
+/// [`http.Server`](https://nodejs.org/api/http.html#class-httpserver): a
+/// server of [`create_server`]'s, to listen on a port.
+pub struct Server(PhantomData<JsObject>);
+
+impl Server {
+    /// Listen on `port`, `server.listen(port)`.
+    #[cfg_attr(rust_js, rust_js::link_name = "listen")]
+    pub fn listen(&self, port: f64) -> &Self {
+        unreachable!()
+    }
+
+    /// Listen on `port`, `listening_listener` called once it does.
+    #[cfg_attr(rust_js, rust_js::link_name = "listen")]
+    pub fn listen_with(&self, port: f64, listening_listener: impl Fn() + 'static) -> &Self {
+        unreachable!()
+    }
+
+    /// Whether it's listening.
+    #[cfg_attr(rust_js, rust_js::link_name = "get listening")]
+    pub fn listening(&self) -> bool {
+        unreachable!()
+    }
+
+    /// Stop listening, its connections ended as they finish.
+    #[cfg_attr(rust_js, rust_js::link_name = "close")]
+    pub fn close(&self) -> &Self {
+        unreachable!()
+    }
+}
 
 /// [`http.IncomingMessage`](https://nodejs.org/api/http.html#class-httpincomingmessage):
 /// a request a server is given.

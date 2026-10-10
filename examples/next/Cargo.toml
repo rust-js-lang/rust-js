@@ -14,6 +14,7 @@ path = "app/page.rs"
 [dependencies]
 js = { package = "rust-js-builtins", path = "../../builtins" }
 next = { package = "rust-js-next", path = "../../next" }
+node = { package = "rust-js-node", path = "../../node" }
 react = { package = "rust-js-react", path = "../../react" }
 
 # rust-js compiles with `--cfg=rust_js` (ADR 0113): a `cfg` Cargo checks for,

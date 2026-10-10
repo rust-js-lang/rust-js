@@ -41,3 +41,10 @@ the crate binds it and `-` where it doesn't, and the count only grows.**
 - Today: 5 of 1538, `fs` 1 of 171, `http` 3 of 30, `process` 1 of 77.
 - A global outside a module, `Buffer`'s, `setTimeout`'s, is counted where
   a module exports it, `buffer`'s, `timers`'.
+
+## Amendment: an item is its file's module's
+
+A type or class item counted by its name alone made `http::Server` count
+`https#Server`, `net#Server` and `tls#Server` too. An item now counts for
+the module of its file, http.rs's for `http`; lib.rs's, the crate's own
+types such as `BufferEncoding`, for each module.

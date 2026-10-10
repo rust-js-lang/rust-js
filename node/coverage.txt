@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 5 of 1538 (0.3%)
+# exports: 7 of 1538 (0.5%)
 # assert 0 of 28
 - assert#Assert
 - assert#AssertionError
@@ -695,13 +695,13 @@
 - type fs/promises#WatchOptionsWithBufferEncoding
 - type fs/promises#WatchOptionsWithStringEncoding
 - fs/promises#writeFile
-# http 3 of 30
+# http 5 of 30
 - http#Agent
 - type http#AgentOptions
 - http#ClientRequest
 - type http#ClientRequestArgs
 - http#CloseEvent
-- http#createServer
++ http#createServer
 - http#get
 - http#globalAgent
 - type http#IncomingHttpHeaders
@@ -717,7 +717,7 @@
 - http#request
 - type http#RequestListener
 - type http#RequestOptions
-- http#Server
++ http#Server
 - type http#ServerOptions
 + http#ServerResponse
 - http#setGlobalProxyFromEnv

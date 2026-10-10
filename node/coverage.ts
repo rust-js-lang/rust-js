@@ -2,7 +2,8 @@
 // module @types/node declares, `declare module "fs"`, and `process`'s and
 // `console`'s members, as `import process from "process"` is the global,
 // `+` where the crate binds it, a value by its `link_name`, `fs#readFileSync` or
-// `process.cwd`, a type or a class by an item of its name; `-` where it
+// `process.cwd`, a type or a class by an item of its name in the module's
+// file, http.rs's of `http`, or in lib.rs, the crate's own; `-` where it
 // doesn't. Each `node:fs` is its `fs`.
 // See docs/decisions/0351-node-coverage.md.
 
@@ -138,19 +139,21 @@ async function declared(): Promise<Map<string, Map<string, Kind>>> {
 }
 
 // What the crate binds: each value's `link_name`, `fs#readFileSync` of a
-// module's and `process.cwd` of the global's, and each item's name.
+// module's and `process.cwd` of the global's, and each item's name, by
+// the module of its file: `http#Server` of http.rs's, lib.rs's of each.
 function bindings(): { links: Set<string>; items: Set<string> } {
-  const sources = readdirSync(src, { recursive: true })
+  const files = readdirSync(src, { recursive: true })
     .map(String)
     .filter((f) => f.endsWith(".rs"))
-    .map((f) => readFileSync(join(src, f), "utf8"))
-    .join("\n");
+    .sort();
+  const sources = files.map((f) => readFileSync(join(src, f), "utf8")).join("\n");
+  const items = (f: string) => [...readFileSync(join(src, f), "utf8").matchAll(/pub (?:struct|enum|type|trait) (\w+)/g)].map((m) => m[1]);
   return {
     links: new Set([
       ...[...sources.matchAll(/link_name = "(?:new )?([\w/]+)#(\w+)/g)].map((m) => `${m[1]}#${m[2]}`),
       ...[...sources.matchAll(/link_name = "process\.(\w+)"/g)].map((m) => `process#${m[1]}`),
     ]),
-    items: new Set([...sources.matchAll(/pub (?:struct|enum|type|trait) (\w+)/g)].map((m) => m[1])),
+    items: new Set(files.flatMap((f) => (f === "lib.rs" ? items(f).map((i) => `*#${i}`) : items(f).map((i) => `${f.slice(0, -3)}#${i}`)))),
   };
 }
 
@@ -162,7 +165,7 @@ export async function measure(): Promise<Module[]> {
       name,
       exports: [...exported]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([e, kind]) => ({ name: e, kind, bound: links.has(`${name}#${e}`) || items.has(e) })),
+        .map(([e, kind]) => ({ name: e, kind, bound: links.has(`${name}#${e}`) || items.has(`${name}#${e}`) || items.has(`*#${e}`) })),
     }));
 }
 
