@@ -41,7 +41,7 @@ export default Home;
 
 A module is a Server Component unless it says `js::directive!("use client");`,
 as one with state or events must. The crate binds Next.js's modules as their
-`.d.ts` types them, and [docs/next-coverage.txt](../docs/next-coverage.txt)
+`.d.ts` types them, and [coverage.txt](https://github.com/rust-js-lang/rust-js/blob/main/next/coverage.txt)
 lists each export and whether it's bound yet: a component's optional props
 are `None` unless they're given, the rest from `{..Default::default()}`.
 

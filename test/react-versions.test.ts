@@ -12,7 +12,8 @@ import { join } from "node:path";
 import { build } from "vite";
 import react from "@vitejs/plugin-react";
 import rustJs from "../vite-plugin/index.js";
-import { cfgFlags, latest, releases } from "../react/cfg.js";
+import { latest, releases } from "../react/cfg.js";
+import { bindings } from "../react/coverage";
 import versions from "../react/versions.json" with { type: "json" };
 import { buildCompiler, compiler, fixture, root, run, target } from "./support";
 
@@ -41,41 +42,8 @@ function exported(entry: string, name: string, release: string): boolean {
   return !!e && atMost(e.since, release) && !(e.removed && atMost(e.removed, release));
 }
 
-// What the crate imports from React's packages, built for `release`:
-// `module#name` from each binding's `link_name`, and each type's `test`,
-// `isValidElement` of `ReactElement` (ADR 0214).
-function bindings(release: string): Set<string> {
-  const out = join(target, "react-docs", release);
-  mkdirSync(out, { recursive: true });
-  run(["webapi/build.sh", "-o", join(out, "libwebapi.rmeta")]);
-  run([
-    "rustdoc", "-Zunstable-options", "--document-hidden-items", "--output-format=json", "--edition=2024", "--crate-name=react",
-    // rustdoc's JSON is a nightly's, as the tests have it: so is registering the
-    // tool that rust-js knows itself, for the crate's attributes (ADR 0112).
-    "-Zcrate-attr=feature(register_tool)", "-Zcrate-attr=register_tool(rust_js)",
-    // Its attributes are `cfg_attr(rust_js, ..)`, as rust-js reads them (ADR 0113).
-    "--cfg=rust_js", "--check-cfg=cfg(rust_js)",
-    // As rust-js checks it, for its target (ADR 0090).
-    "--target=wasm32-unknown-unknown",
-    "react/src/lib.rs", "--extern", `webapi=${join(out, "libwebapi.rmeta")}`, "--extern", `js=${join(out, "libjs.rmeta")}`, "-L", out, ...cfgFlags(release).flags, "-o", out,
-  ]);
-  const docs = JSON.parse(readFileSync(join(out, "react.json"), "utf8"));
-  const found = new Set<string>();
-  for (const item of Object.values(docs.index) as { attrs?: { other?: string }[] }[]) {
-    for (const attr of item.attrs ?? []) {
-      const name = attr.other?.match(/rust_js::(?:link_name|test) = "(.*)"\]$/)?.[1] ?? attr.other?.match(/LinkName \{name: "(.*)"\}/)?.[1];
-      // An import, as a call, a constructor or a component: `react#useState`,
-      // `new x#Y`, `<react#Suspense>`.
-      const path = name?.replace(/^new /, "").replace(/^<(.*)>$/, "$1");
-      if (!path?.includes("#")) continue;
-      const [module, rest] = [path.slice(0, path.lastIndexOf("#")), path.slice(path.lastIndexOf("#") + 1)];
-      found.add(`${module}#${rest.split(".")[0]}`);
-    }
-  }
-  return found;
-}
-
-const bound = Object.fromEntries(releases.map((r) => [r, bindings(r)]));
+// What the crate imports from React's packages, built for each release.
+const bound = Object.fromEntries(releases.map((r) => [r, bindings(r).links]));
 
 test("every binding is in each React release the crate has it for", () => {
   const missing: string[] = [];

@@ -1,22 +1,21 @@
 // How much of Next.js's public API the next crate binds: each export of
 // each public module, from Next.js's own .d.ts, `+` where the crate binds
 // it, a value by its `link_name`, a type by an item of its name in the
-// crate; `-` where it doesn't. `bun scripts/next-coverage.ts [out]`
-// writes docs/next-coverage.txt, or `out`.
+// crate; `-` where it doesn't.
+// See docs/decisions/0346-next-coverage.md.
 
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
 import { open } from "@rust-js/typescript";
 
-const root = join(import.meta.dir, "..");
-const next = join(root, "examples/next/node_modules/next");
-const crate = join(root, "next/src");
+const next = join(import.meta.dir, "../examples/next/node_modules/next");
+const crate = join(import.meta.dir, "src");
 
 // The modules an app imports, as Next.js documents them, each its file. The
 // rest are build tooling (babel, jest), Next.js internals (client,
 // constants, types), or typed only once an app is built (root-params).
-const modules: Record<string, string> = {
+const MODULES: Record<string, string> = {
   next: "index.d.ts",
   "next/app": "app.d.ts",
   "next/cache": "cache.d.ts",
@@ -41,6 +40,7 @@ const modules: Record<string, string> = {
 };
 
 type Kind = "value" | "type";
+export type Module = { name: string; exports: { name: string; kind: Kind; bound: boolean }[] };
 
 function file(from: string, specifier: string): string | undefined {
   const base = specifier.startsWith("next/") ? join(next, specifier.slice("next/".length)) : resolve(dirname(from), specifier);
@@ -105,24 +105,41 @@ async function exportsOf(path: string, seen: Set<string> = new Set()): Promise<M
   return exported;
 }
 
-// What the crate binds: each value's `link_name`, and each item's name, by
-// its Rust module's file.
-const rust = (dir: string): string[] =>
-  readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? rust(join(dir, f)) : f.endsWith(".rs") ? [join(dir, f)] : []));
-const sources = rust(crate).map((f) => readFileSync(f, "utf8")).join("\n");
-const links = new Set([...sources.matchAll(/link_name = "(next[^"#]*)#([^"]+)"/g)].map((m) => `${m[1]}#${m[2]}`));
-const items = new Set([...sources.matchAll(/pub (?:struct|enum|type|trait) (\w+)/g)].map((m) => m[1]));
-
-let out = "";
-for (const [name, path] of Object.entries(modules)) {
-  const exported = await exportsOf(join(next, path));
-  const lines = [...exported]
-    .filter(([e]) => !e.startsWith("_"))
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([e, kind]) => {
-      const bound = kind === "value" ? links.has(`${name}#${e}`) : items.has(e);
-      return `${bound ? "+" : "-"} ${kind === "type" ? "type " : ""}${name}#${e}`;
-    });
-  out += `# ${name} ${lines.filter((l) => l.startsWith("+")).length} of ${lines.length}\n${lines.join("\n")}\n`;
+// What the crate binds: each value's `link_name`, and each item's name.
+function bindings(): { links: Set<string>; items: Set<string> } {
+  const rust = (dir: string): string[] =>
+    readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? rust(join(dir, f)) : f.endsWith(".rs") ? [join(dir, f)] : []));
+  const sources = rust(crate).map((f) => readFileSync(f, "utf8")).join("\n");
+  return {
+    links: new Set([...sources.matchAll(/link_name = "(next[^"#]*)#([^"]+)"/g)].map((m) => `${m[1]}#${m[2]}`)),
+    items: new Set([...sources.matchAll(/pub (?:struct|enum|type|trait) (\w+)/g)].map((m) => m[1])),
+  };
 }
-writeFileSync(process.argv[2] ?? join(root, "docs/next-coverage.txt"), out);
+
+export async function measure(): Promise<Module[]> {
+  const { links, items } = bindings();
+  const modules: Module[] = [];
+  for (const [name, path] of Object.entries(MODULES)) {
+    const exports = [...(await exportsOf(join(next, path)))]
+      .filter(([e]) => !e.startsWith("_"))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([e, kind]) => ({ name: e, kind, bound: kind === "value" ? links.has(`${name}#${e}`) : items.has(e) }));
+    modules.push({ name, exports });
+  }
+  return modules;
+}
+
+/** The baseline's text: each module's count, then each export, `+` bound. */
+export function render(modules: Module[]): string {
+  const all = modules.flatMap((m) => m.exports);
+  const bound = all.filter((e) => e.bound).length;
+  return [
+    `# The next crate against Next.js's public modules: bun test test/next-coverage.test.ts`,
+    `# exports: ${bound} of ${all.length} (${((100 * bound) / all.length).toFixed(1)}%)`,
+    ...modules.flatMap((m) => [
+      `# ${m.name} ${m.exports.filter((e) => e.bound).length} of ${m.exports.length}`,
+      ...m.exports.map((e) => `${e.bound ? "+" : "-"} ${e.kind === "type" ? "type " : ""}${m.name}#${e.name}`),
+    ]),
+    "",
+  ].join("\n");
+}

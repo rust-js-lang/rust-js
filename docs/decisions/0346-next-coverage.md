@@ -21,7 +21,7 @@ Next.js's own `.d.ts`.
 as Next.js types it, and how many is measured against Next.js itself and
 only grows.**
 
-- **The measure**: `bun scripts/next-coverage.ts` reads each module an app
+- **The measure**: `next/coverage.ts` reads each module an app
   imports (`next`, `next/app` to `next/web-vitals`, `next/font/google`,
   `next/font/local`, `next/offline`) from the installed Next.js's `.d.ts`,
   following its re-exports, and lists each export, `+ next/link#default`
@@ -30,7 +30,7 @@ only grows.**
 - **Left out**: build tooling (`next/babel`, `next/jest`), Next.js's
   internals (`next/client`, `next/constants`, `next/types`), and
   `next/root-params`, typed only once an app is built.
-- **The ratchet**: `docs/next-coverage.txt` is that list, which
+- **The ratchet**: `next/coverage.txt` is that list, which
   `test/next-coverage.test.ts` holds: an export bound before and unbound
   now fails, and one newly bound is blessed in (`BLESS=1`).
 - **Each binding is tested** in a real `next build` in `test/next.test.ts`.

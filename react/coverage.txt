@@ -1,0 +1,339 @@
+# The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts
+# exports: 196 of 332 (59.0%)
+# react 162 of 267
+- type react#AbstractView
++ react#act
++ type react#ActionDispatch
++ react#Activity
+- type react#ActivityProps
++ react#addTransitionType
+- type react#AllHTMLAttributes
++ type react#AnchorHTMLAttributes
++ type react#AnimationEvent
++ type react#AnimationEventHandler
+- type react#AnyActionArg
++ type react#AreaHTMLAttributes
+- type react#AriaAttributes
+- type react#AriaRole
+- type react#Attributes
++ type react#AudioHTMLAttributes
+- type react#AutoFill
+- type react#AutoFillAddressKind
+- type react#AutoFillBase
+- type react#AutoFillContactField
+- type react#AutoFillContactKind
+- type react#AutoFillCredentialField
+- type react#AutoFillField
+- type react#AutoFillNormalField
+- type react#AutoFillSection
++ type react#BaseHTMLAttributes
+- type react#BaseSyntheticEvent
++ type react#BlockquoteHTMLAttributes
++ type react#ButtonHTMLAttributes
++ react#cache
++ react#cacheSignal
+- type react#CacheSignal
++ type react#CanvasHTMLAttributes
++ react#captureOwnerStack
+- type react#CElement
++ type react#ChangeEvent
++ type react#ChangeEventHandler
++ react#Children
+- type react#ClassAttributes
+- type react#ClassicComponent
+- type react#ClassicComponentClass
+- type react#ClassicElement
+- type react#ClassType
++ type react#ClipboardEvent
++ type react#ClipboardEventHandler
++ react#cloneElement
++ type react#ColgroupHTMLAttributes
++ type react#ColHTMLAttributes
+- react#Component
+- type react#ComponentClass
+- type react#ComponentElement
+- type react#ComponentLifecycle
+- type react#ComponentProps
+- type react#ComponentPropsWithoutRef
+- type react#ComponentPropsWithRef
+- type react#ComponentRef
+- type react#ComponentState
++ type react#ComponentType
++ type react#CompositionEvent
++ type react#CompositionEventHandler
++ type react#Consumer
++ type react#ConsumerProps
++ type react#Context
+- type react#ContextType
++ react#createContext
+- react#createElement
++ react#createRef
++ type react#CSSProperties
+- type react#CustomComponentPropsWithRef
++ type react#DataHTMLAttributes
++ type react#DelHTMLAttributes
++ type react#DependencyList
+- type react#DeprecatedLifecycle
+- type react#DetailedHTMLProps
+- type react#DetailedReactHTMLElement
++ type react#DetailsHTMLAttributes
++ type react#DialogHTMLAttributes
++ type react#Dispatch
+- type react#DispatchWithoutAction
+- type react#DOMAttributes
+- type react#DOMElement
++ type react#DragEvent
++ type react#DragEventHandler
++ type react#EffectCallback
+- type react#ElementRef
++ type react#ElementType
++ type react#EmbedHTMLAttributes
++ type react#ErrorInfo
++ type react#EventHandler
+- type react#ExoticComponent
+- type react#FC
++ type react#FieldsetHTMLAttributes
++ type react#FocusEvent
++ type react#FocusEventHandler
++ type react#FormEvent
++ type react#FormEventHandler
++ type react#FormHTMLAttributes
+- type react#ForwardedRef
++ react#forwardRef
++ type react#ForwardRefExoticComponent
+- type react#ForwardRefRenderFunction
++ react#Fragment
+- type react#FragmentInstance
+- type react#FragmentProps
+- type react#FulfilledReactPromise
+- type react#FunctionComponent
+- type react#FunctionComponentElement
+- type react#GetDerivedStateFromError
+- type react#GetDerivedStateFromProps
+- type react#HTMLAttributeAnchorTarget
+- type react#HTMLAttributeReferrerPolicy
++ type react#HTMLAttributes
+- type react#HTMLElementType
++ type react#HtmlHTMLAttributes
+- type react#HTMLInputAutoCompleteAttribute
+- type react#HTMLInputTypeAttribute
+- type react#HTMLProps
++ type react#IframeHTMLAttributes
++ type react#ImgHTMLAttributes
++ type react#InputEvent
++ type react#InputEventHandler
++ type react#InputHTMLAttributes
++ type react#InsHTMLAttributes
++ type react#InvalidEvent
++ react#isValidElement
++ type react#JSX.Element
+- type react#JSX.ElementAttributesProperty
+- type react#JSX.ElementChildrenAttribute
+- type react#JSX.ElementClass
++ type react#JSX.ElementType
+- type react#JSX.IntrinsicAttributes
+- type react#JSX.IntrinsicClassAttributes
+- type react#JSX.IntrinsicElements
+- type react#JSX.LibraryManagedAttributes
+- type react#JSXElementConstructor
++ type react#Key
++ type react#KeyboardEvent
++ type react#KeyboardEventHandler
++ type react#KeygenHTMLAttributes
++ type react#LabelHTMLAttributes
++ react#lazy
++ type react#LazyExoticComponent
+- type react#LegacyRef
++ type react#LiHTMLAttributes
++ type react#LinkHTMLAttributes
++ type react#MapHTMLAttributes
++ type react#MediaHTMLAttributes
++ react#memo
++ type react#MemoExoticComponent
++ type react#MenuHTMLAttributes
++ type react#MetaHTMLAttributes
++ type react#MeterHTMLAttributes
+- type react#ModifierKey
++ type react#MouseEvent
++ type react#MouseEventHandler
+- type react#MutableRefObject
++ type react#NamedExoticComponent
+- type react#NewLifecycle
++ type react#ObjectHTMLAttributes
++ type react#OlHTMLAttributes
++ type react#OptgroupHTMLAttributes
+- type react#OptionalPostfixToken
+- type react#OptionalPrefixToken
++ type react#OptionHTMLAttributes
++ type react#OutputHTMLAttributes
++ type react#ParamHTMLAttributes
+- type react#PendingReactPromise
++ type react#PointerEvent
++ type react#PointerEventHandler
++ react#Profiler
+- type react#ProfilerOnRenderCallback
+- type react#ProfilerProps
++ type react#ProgressHTMLAttributes
+- type react#PropsWithChildren
+- type react#PropsWithoutRef
+- type react#PropsWithRef
++ type react#Provider
+- type react#ProviderExoticComponent
++ type react#ProviderProps
+- react#PureComponent
++ type react#QuoteHTMLAttributes
+- type react#ReactComponentElement
++ type react#ReactElement
++ type react#ReactEventHandler
+- type react#ReactHTMLElement
+- type react#ReactInstance
++ type react#ReactNode
++ type react#ReactPortal
+- type react#ReactPromise
+- type react#ReactSVGElement
++ type react#Reducer
+- type react#ReducerState
+- type react#ReducerWithoutAction
++ type react#Ref
+- type react#RefAttributes
++ type react#RefCallback
++ type react#RefObject
+- type react#RejectedReactPromise
+- type react#RendererUsable
++ type react#ScriptHTMLAttributes
++ type react#SelectHTMLAttributes
++ type react#SetStateAction
++ type react#SlotHTMLAttributes
++ type react#SourceHTMLAttributes
++ react#startTransition
+- type react#StaticLifecycle
++ react#StrictMode
++ type react#StyleHTMLAttributes
++ type react#SubmitEvent
++ type react#SubmitEventHandler
++ react#Suspense
+- type react#SuspenseProps
++ type react#SVGAttributes
+- type react#SVGElementType
+- type react#SVGLineElementAttributes
+- type react#SVGProps
+- type react#SVGTextElementAttributes
++ type react#SyntheticEvent
++ type react#TableHTMLAttributes
++ type react#TdHTMLAttributes
++ type react#TextareaHTMLAttributes
++ type react#ThHTMLAttributes
++ type react#TimeHTMLAttributes
++ type react#ToggleEvent
++ type react#ToggleEventHandler
+- type react#Touch
++ type react#TouchEvent
++ type react#TouchEventHandler
+- type react#TouchList
++ type react#TrackHTMLAttributes
++ type react#TransitionEvent
++ type react#TransitionEventHandler
++ type react#TransitionFunction
++ type react#TransitionStartFunction
++ type react#UIEvent
++ type react#UIEventHandler
+- type react#UntrackedReactPromise
++ type react#Usable
++ react#use
++ react#useActionState
++ react#useCallback
++ react#useContext
++ react#useDebugValue
++ react#useDeferredValue
++ react#useEffect
++ react#useEffectEvent
++ react#useId
++ react#useImperativeHandle
++ react#useInsertionEffect
++ react#useLayoutEffect
++ react#useMemo
++ react#useOptimistic
++ react#useReducer
++ react#useRef
++ react#useState
++ react#useSyncExternalStore
++ react#useTransition
++ react#version
++ type react#VideoHTMLAttributes
++ react#ViewTransition
+- type react#ViewTransitionClass
+- type react#ViewTransitionClassPerType
++ type react#ViewTransitionInstance
+- type react#ViewTransitionProps
+- type react#WebViewHTMLAttributes
++ type react#WheelEvent
++ type react#WheelEventHandler
+# react-dom 15 of 27
++ react-dom#browser
+- type react-dom#BrowserUsable
++ react-dom#createPortal
++ react-dom#flushSync
++ type react-dom#FormStatus
+- type react-dom#FormStatusNotPending
+- type react-dom#FormStatusPending
++ react-dom#preconnect
+- type react-dom#PreconnectOptions
++ react-dom#prefetchDNS
++ react-dom#preinit
+- type react-dom#PreinitAs
++ react-dom#preinitModule
+- type react-dom#PreinitModuleAs
+- type react-dom#PreinitModuleOptions
++ type react-dom#PreinitOptions
++ react-dom#preload
+- type react-dom#PreloadAs
++ react-dom#preloadModule
+- type react-dom#PreloadModuleAs
+- type react-dom#PreloadModuleOptions
++ type react-dom#PreloadOptions
++ react-dom#requestFormReset
+- react-dom#unstable_batchedUpdates
+- react-dom#useFormState
++ react-dom#useFormStatus
++ react-dom#version
+# react-dom/client 5 of 8
+- type react-dom/client#Container
++ react-dom/client#createRoot
++ type react-dom/client#ErrorInfo
++ react-dom/client#hydrateRoot
+- type react-dom/client#HydrationOptions
+- type react-dom/client#ReactFormState
++ type react-dom/client#Root
++ type react-dom/client#RootOptions
+# react-dom/server 8 of 17
+- type react-dom/server#BootstrapScriptDescriptor
+- type react-dom/server#HeadersDescriptor
+- type react-dom/server#NonceOption
++ type react-dom/server#PipeableStream
++ type react-dom/server#ReactDOMServerReadableStream
+- type react-dom/server#ReactImportMap
++ react-dom/server#renderToPipeableStream
+- type react-dom/server#RenderToPipeableStreamOptions
++ react-dom/server#renderToReadableStream
+- type react-dom/server#RenderToReadableStreamOptions
++ react-dom/server#renderToStaticMarkup
++ react-dom/server#renderToString
++ react-dom/server#resume
++ react-dom/server#resumeToPipeableStream
+- type react-dom/server#ResumeToPipeableStreamOptions
+- type react-dom/server#ServerOptions
+- react-dom/server#version
+# react-dom/static 6 of 13
+- type react-dom/static#BootstrapScriptDescriptor
+- type react-dom/static#NonceOption
++ type react-dom/static#PostponedState
++ react-dom/static#prerender
+- type react-dom/static#PrerenderOptions
++ type react-dom/static#PrerenderResult
++ react-dom/static#prerenderToNodeStream
+- type react-dom/static#PrerenderToNodeStreamResult
+- type react-dom/static#ReactImportMap
++ react-dom/static#resumeAndPrerender
++ react-dom/static#resumeAndPrerenderToNodeStream
+- type react-dom/static#ResumeOptions
+- react-dom/static#version

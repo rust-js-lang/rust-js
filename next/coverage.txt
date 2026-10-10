@@ -1,3 +1,5 @@
+# The next crate against Next.js's public modules: bun test test/next-coverage.test.ts
+# exports: 29 of 2075 (1.4%)
 # next 4 of 37
 - type next#AdapterOutput
 - next#default
