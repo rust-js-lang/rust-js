@@ -26,4 +26,12 @@ export const mutations: Mutation[] = [
     replace: "        self.mir_within(state, block, &merges)\n    }\n\n    /// Where `block` goes, inside a labeled block for each of `merges`, each\n    /// followed by its own code (Ramsey's `nodeWithin`). Its statements come\n    /// before, as none of them branches: what they bind is seen where its\n    /// branches meet.\n    fn mir_within(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock, merges: &[BasicBlock]) -> R<Vec<Stmt>> {\n        let Some((&merge, inner)) = merges.split_first() else {\n            let mut out = self.mir_statements(state, block)?;\n            out.extend(self.mir_terminator(state, block)?);\n            return Ok(out);\n",
     tests: ["test/mir.test.ts","-t","bindings_before_branch"],
   },
+  {
+    name: "mir-folded-call-uncaught",
+    breaks: "a call written where it's used, which may panic as something's there to drop, isn't in a `try`",
+    file: "src/lower/mir.rs",
+    find: "            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out)?;\n",
+    replace: "            self.unwinding_to(state, None, made, &mut out)?;\n",
+    tests: ["test/mir.test.ts","-t","drop|refcell_"],
+  },
 ];

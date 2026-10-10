@@ -37,6 +37,7 @@ rustc_index = { path = "rustc/compiler/rustc_index" }
 rustc_interface = { path = "rustc/compiler/rustc_interface" }
 rustc_lexer = { path = "rustc/compiler/rustc_lexer" }
 rustc_middle = { path = "rustc/compiler/rustc_middle" }
+rustc_mir_dataflow = { path = "rustc/compiler/rustc_mir_dataflow" }
 rustc_parse = { path = "rustc/compiler/rustc_parse" }
 rustc_session = { path = "rustc/compiler/rustc_session" }
 rustc_span = { path = "rustc/compiler/rustc_span" }

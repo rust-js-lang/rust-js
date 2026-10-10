@@ -13,6 +13,7 @@
 //! The function's THIR is beside it, for its shape: names and spans.
 
 mod cfg;
+mod drops;
 mod iter;
 
 use rustc_abi::{FieldIdx, VariantIdx};
@@ -24,6 +25,7 @@ use rustc_middle::mir::{
     Place, PlaceElem, Rvalue, StatementKind, TerminatorKind, UnOp,
 };
 use rustc_middle::ty::{self, Ty};
+use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
 use super::recognition::Std;
@@ -92,6 +94,13 @@ struct State<'m, 'tcx> {
     borrowed_names: std::collections::HashSet<String>,
     /// Of a closure: what it captured, each its environment's field.
     captures: Vec<Expr>,
+    /// What each `Drop` drops (`drops.rs`), and the flag of each path whose
+    /// drop a flag says.
+    drops: Option<drops::Elaboration<'tcx>>,
+    flags: IndexVec<MovePathIndex, Option<String>>,
+    /// The cleanup the temporaries made and not yet used unwind to, if one
+    /// that drops something: the statement that runs them is its `try`.
+    unwind: Option<BasicBlock>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -133,14 +142,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// captured, reads them in place of its environment's fields.
     fn mir_function(&mut self, mir: &Mir<'tcx>, captures: Option<Vec<Expr>>) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
+        let drops = self.mir_elaboration(mir_body);
+        let mut locals = self.mir_locals(mir_body);
+        // A drop reads what it drops more than once, so it's a variable.
+        for local in drops.iter().flat_map(|drops| drops.read(mir_body)) {
+            locals.reads[local] += 2;
+        }
         let mut state = State {
             body: mir_body,
             graph: cfg::Graph::of(mir_body),
-            locals: self.mir_locals(mir_body),
+            locals,
             pending: Vec::new(),
             labels: Vec::new(),
             borrowed_names: Default::default(),
             captures: captures.clone().unwrap_or_default(),
+            flags: IndexVec::new(),
+            drops,
+            unwind: None,
         };
         state.borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
@@ -160,11 +178,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let mut out = Vec::new();
+        // Each flag that says whether a value is there to drop, and the
+        // values: a drop may be where their `const` isn't seen.
+        let mut flagged = vec![false; mir_body.local_decls.len()];
+        if let Some(drops) = &state.drops {
+            state.flags = IndexVec::from_elem(None, &drops.move_data.move_paths);
+            for (path, &is) in drops.flagged.iter_enumerated() {
+                if !is {
+                    continue;
+                }
+                let place = drops.move_data.move_paths[path].place;
+                flagged[place.local.as_usize()] = true;
+                let mut name = match state.locals.names[place.local].as_str() {
+                    "" => format!("_{}", place.local.as_usize()),
+                    name => name.to_string(),
+                };
+                for elem in place.projection {
+                    if let PlaceElem::Field(field, _) = elem {
+                        name = format!("{name}${}", field.as_usize());
+                    }
+                }
+                let flag = self.fresh(&format!("{name}$live"));
+                out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(drops.initial[path]))).at(js::Span::NONE));
+                state.flags[path] = Some(flag);
+            }
+        }
         // Locals assigned more than once are `let`s, declared first.
         for local in mir_body.local_decls.indices() {
             if mir_body.local_kind(local) != LocalKind::Arg
                 && !state.locals.names[local].is_empty()
-                && state.locals.writes[local] > 1
+                && (state.locals.writes[local] > 1 || flagged[local.as_usize()])
             {
                 out.push(StmtKind::Let(state.locals.names[local].clone(), None).at(js::Span::NONE));
                 state.locals.declared[local] = true;
@@ -294,12 +337,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
                 TerminatorKind::Return => locals.reads[mir::RETURN_PLACE] += 1,
-                // A drop of what has nothing to drop does nothing (ADR 0098).
-                TerminatorKind::Drop { place, .. }
-                    if self.drops(place.ty(&body.local_decls, self.tcx).ty) != super::drops::Drops::Nothing =>
-                {
-                    count_place(&mut locals, place, false)
-                }
+                // What a drop reads, its elaboration counts (`mir_function`).
                 _ => {}
             }
         }
@@ -393,12 +431,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_statements(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let data = &state.body.basic_blocks[block];
         let mut out = Vec::new();
-        for statement in &data.statements {
+        for (index, statement) in data.statements.iter().enumerate() {
             let span = statement.source_info.span;
+            // A statement that runs a call made before, which may panic
+            // as something's there to drop, is that call's `try`.
+            let unwind = state.unwind.take();
+            let acting = self.acting(state);
+            let mut made = Vec::new();
+            let at = mir::Location {
+                block,
+                statement_index: index,
+            };
+            self.flag_sets(state, at, &mut made)?;
             match &statement.kind {
                 StatementKind::Assign(assign) => {
                     let (place, rvalue) = &**assign;
-                    self.mir_assign(state, place, rvalue, span, &mut out)?;
+                    self.mir_assign(state, place, rvalue, span, &mut made)?;
                 }
                 StatementKind::SetDiscriminant { .. } => {
                     return Err(self.unsupported(span, "an enum made by parts, from its MIR"));
@@ -417,6 +465,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "an intrinsic, from its MIR"));
                 }
             }
+            let ran = acting.iter().any(|l| !state.pending.iter().any(|(p, _)| p == l));
+            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out)?;
+            state.unwind = unwind.filter(|_| !self.acting(state).is_empty());
         }
         Ok(out)
     }
@@ -425,6 +476,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_terminator(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
         let mut out = Vec::new();
         let terminator = state.body.basic_blocks[block].terminator();
+        // What's made that may panic runs before a branch, in its own `try`.
+        if state.unwind.is_some() && !matches!(terminator.kind, TerminatorKind::Call { .. }) {
+            self.flush(state, &mut out)?;
+        }
+        self.flag_sets(state, state.body.terminator_loc(block), &mut out)?;
         let span = terminator.source_info.span;
         match &terminator.kind {
             TerminatorKind::Goto { target } => out.extend(self.mir_branch(state, block, *target)?),
@@ -484,7 +540,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 expected,
                 msg,
                 target,
-                ..
+                unwind,
             } => {
                 let cond = self.mir_expr(state, cond, &mut out)?;
                 let message = self.assert_message(state, msg, span, &mut out)?;
@@ -494,20 +550,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => cond,
                 };
                 let js_span = self.js_span(span);
-                out.push(
-                    StmtKind::If(
-                        failed,
-                        vec![StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span)],
-                        None,
-                    )
-                    .at(js_span),
-                );
+                // The panic drops what's there as it unwinds, then is thrown.
+                let mut panic = self.mir_unwind(state, *unwind, span)?;
+                panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
+                out.push(StmtKind::If(failed, panic, None).at(js_span));
                 out.extend(self.mir_branch(state, block, *target)?);
             }
-            TerminatorKind::Drop { place, target, .. } => {
-                let ty = place.ty(&state.body.local_decls, self.tcx).ty;
-                if self.drops(ty) != super::drops::Drops::Nothing {
-                    return Err(self.unsupported(span, &format!("dropping a `{ty}` with a destructor, from its MIR")));
+            TerminatorKind::Drop {
+                place, target, unwind, ..
+            } => {
+                // What's dropped runs after what's made before it.
+                let mut dropped = Vec::new();
+                self.mir_drop(state, block, *place, false, span, &mut dropped)?;
+                if !dropped.is_empty() {
+                    self.flush(state, &mut out)?;
+                    let cleanup = self.mir_unwind(state, *unwind, span)?;
+                    match cleanup.is_empty() {
+                        true => out.extend(dropped),
+                        false => self.unwinding(dropped, cleanup, self.js_span(span), &mut out),
+                    }
                 }
                 out.extend(self.mir_branch(state, block, *target)?);
             }
@@ -517,21 +578,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 destination,
                 target,
                 fn_span,
+                unwind,
                 ..
             } => {
-                let value = self.mir_call(state, func, args, *destination, *fn_span, &mut out)?;
+                // A call that may panic as something's there to drop runs in
+                // a `try` whose `catch` drops it: the statement that runs it,
+                // as it may be written where it's used. What's made before
+                // that unwinds elsewhere runs first.
+                let unwind = self.cleans_up(state, *unwind);
+                if state.unwind != unwind && !self.acting(state).is_empty() {
+                    self.flush(state, &mut out)?;
+                }
+                state.unwind = None;
+                let mut called = Vec::new();
+                let value = self.mir_call(state, func, args, *destination, *fn_span, &mut called)?;
                 match target {
                     Some(target) => {
-                        self.mir_store(state, *destination, value, span, &mut out)?;
+                        self.mir_store(state, *destination, value, span, &mut called)?;
+                        self.unwinding_to(state, unwind, called, &mut out)?;
+                        state.unwind = unwind.filter(|_| !self.acting(state).is_empty());
                         out.extend(self.mir_branch(state, block, *target)?);
                     }
                     // A call that never returns, a panic's: what it does is all.
                     None => {
                         let value = self.value_expr(value, span)?;
-                        self.flush(state, &mut out)?;
+                        self.flush(state, &mut called)?;
                         if !matches!(value.kind, js::ExprKind::Undefined) {
-                            out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                            called.push(StmtKind::Expr(value).at(self.js_span(span)));
                         }
+                        self.unwinding_to(state, unwind, called, &mut out)?;
                     }
                 }
             }
@@ -552,13 +627,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Each temporary made and not yet used, made here, as `const`s: what
     /// runs next must not run before them, nor change what they read.
     fn flush(&mut self, state: &mut State<'_, 'tcx>, out: &mut Vec<Stmt>) -> R<()> {
+        let unwind = state.unwind.take();
+        let mut made = Vec::new();
         for (local, value) in std::mem::take(&mut state.pending) {
             let expr = self.value_expr(value, Span::default())?;
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
-            out.push(StmtKind::Const(name, expr).at(js::Span::NONE));
+            made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
+        }
+        self.unwinding_to(state, unwind, made, out)
+    }
+
+    /// `made`, run so that a panic in it drops what `unwind`, its cleanup,
+    /// drops (`drops.rs`).
+    fn unwinding_to(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        unwind: Option<BasicBlock>,
+        made: Vec<Stmt>,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        match unwind {
+            Some(cleanup) if !made.is_empty() => {
+                let cleanup = self.mir_unwind(state, mir::UnwindAction::Cleanup(cleanup), Span::default())?;
+                self.unwinding(made, cleanup, js::Span::NONE, out);
+            }
+            _ => out.extend(made),
         }
         Ok(())
+    }
+
+    /// The temporaries made and not yet used that do something.
+    fn acting(&self, state: &State<'_, 'tcx>) -> Vec<Local> {
+        let acting = state.pending.iter().filter(|(_, value)| !movable(state, value));
+        acting.map(|(local, _)| *local).collect()
     }
 
     /// A local's value: its temporary's, taken where it's used, or its
