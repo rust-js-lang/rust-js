@@ -3597,3 +3597,30 @@ pub fn nested(n: u32) -> Option<u32> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.shown(3), lib.shown(0), lib.nested(2), lib.nested(1), lib.nested(0)]).toEqual(["3", "", 2, undefined, undefined]);
 });
+
+// A flattened field is a struct's (ADR 0204): an enum variant's was nested,
+// `{ type: "article", base: { .. } }`, where JS holds it flat. It's refused,
+// at the field.
+test("a flattened field of an enum's variant is refused", () => {
+  const dir = fixture("flattened-variant");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Default)]
+pub struct Base<'a> {
+    pub title: Option<&'a str>,
+}
+
+#[cfg_attr(rust_js, rust_js::tag = "type")]
+pub enum OpenGraph<'a> {
+    #[cfg_attr(rust_js, rust_js::name = "article")]
+    Article {
+        #[cfg_attr(rust_js, rust_js::flatten)]
+        base: Base<'a>,
+    },
+}
+
+pub fn og() -> OpenGraph<'static> {
+    OpenGraph::Article { base: Base { title: Some("Hi") } }
+}
+`);
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { cwd: root, stderr: "pipe" });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support flattening an enum variant's field yet")]);
+});

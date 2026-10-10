@@ -113,3 +113,10 @@ struct of more than one rest was refused whole. A JSX test makes one of
 a struct and one of a struct and a `Dict`, and refuses the read and the
 taking apart; mutations take a struct of one rest as one of two, allow
 each refused one, and refuse a `Dict`.
+
+An enum variant's flattened field (2026-10-10) is refused, at the field:
+`#[rust_js::flatten]` there was read nowhere, so a tagged variant of a
+shared struct was made nested, `{ type: "article", base: { title } }`,
+where JS holds it flat, as Next.js's `OpenGraph` is. Making one flat, and
+matching it, is a variant's own work, not done yet. A lowering test
+refuses one; a mutation allows it.

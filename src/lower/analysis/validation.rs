@@ -216,6 +216,18 @@ pub(super) fn reject_flatten_misuse<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body
     // keys mixed.
     let mut mixed = HashSet::new();
     for id in tcx.hir_crate_items(()).definitions() {
+        // An enum's variant's, which nothing makes flat: it'd be nested.
+        if tcx.def_kind(id) == DefKind::Enum {
+            let variants = tcx.adt_def(id).variants();
+            for field in variants
+                .iter()
+                .flat_map(|v| v.fields.iter())
+                .filter(|f| bindings::is_flatten(tcx, f))
+            {
+                refuse(tcx.def_span(field.did), "flattening an enum variant's field".into());
+            }
+            continue;
+        }
         if tcx.def_kind(id) != DefKind::Struct {
             continue;
         }

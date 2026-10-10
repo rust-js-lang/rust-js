@@ -3,6 +3,14 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
+    name: "flattened-variant-field-allowed",
+    breaks: "an enum variant's flattened field is made nested, without an error",
+    file: "src/lower/analysis/validation.rs",
+    find: "        if tcx.def_kind(id) == DefKind::Enum {",
+    replace: "        if false && tcx.def_kind(id) == DefKind::Enum {",
+    tests: ["test/lowering.test.ts", "-t", "flattened field of an enum"],
+  },
+  {
     name: "flattened-base-refused",
     breaks: "a flattened field read whole as an update's base, `..props.html`, is refused, where it's the object its parent is",
     file: "src/lower/analysis/validation.rs",
