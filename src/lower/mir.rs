@@ -485,6 +485,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        // Where each loop is written, and whether as a `while`.
+        let loops: Vec<(js::Span, bool)> = (self.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::Loop { .. } => {
+                    let written = e.span.source_callsite();
+                    let whiles = (self.thir.exprs.iter()).any(|w| {
+                        w.span.is_desugaring(rustc_span::DesugaringKind::WhileLoop)
+                            && w.span.source_callsite() == written
+                    });
+                    Some((self.js_span(written), whiles))
+                }
+                _ => None,
+            })
+            .collect();
         let captured = std::mem::replace(&mut self.locals.captured, outer_captured);
         // A name each of whose locals is a `bool`.
         let mut booleans = std::collections::HashSet::new();
@@ -518,6 +532,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 falsy: &falsy,
                 tested: &tested,
                 conditions: &conditions,
+                loops: &loops,
                 returns: &state.returns,
                 captured: &captured,
                 booleans: &booleans,
@@ -954,13 +969,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut body = self.mir_statements(state, block)?;
             body.extend(self.mir_within(state, block, &merges)?);
             state.labels.pop();
+            // Where it starts, what the program wrote: a `while`'s test.
+            let data = &state.body.basic_blocks[block];
+            let start = (data.statements.iter())
+                .find(|s| {
+                    !matches!(
+                        s.kind,
+                        StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop
+                    )
+                })
+                .map_or(data.terminator().source_info.span, |s| s.source_info.span);
             return Ok(vec![
                 StmtKind::While {
                     label: Some(label(block)),
                     cond: Expr::bool(true),
                     body,
                 }
-                .at(js::Span::NONE),
+                .at(self.js_span(start.source_callsite())),
             ]);
         }
         let mut out = self.mir_statements(state, block)?;

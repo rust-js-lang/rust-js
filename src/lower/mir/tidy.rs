@@ -20,6 +20,8 @@ pub(super) struct Hints<'h> {
     pub(super) tested: &'h HashSet<String>,
     /// Where the program writes each `if`'s condition, and each `return`.
     pub(super) conditions: &'h [js::Span],
+    /// Where each loop is written, and whether as a `while`.
+    pub(super) loops: &'h [(js::Span, bool)],
     pub(super) returns: &'h [js::Span],
     /// The `const`s MIR's lowering made of what an element it made ahead
     /// of a branch reads (`capture_jsx`): as its temporaries, read where
@@ -36,6 +38,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         falsy,
         tested,
         conditions,
+        loops: written,
         returns,
         captured,
         booleans,
@@ -71,6 +74,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     // The innermost first: what a loop ends with may be another, recovered.
     bottom_up(body, &mut |stmts| loops(stmts, &mentions));
+    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
@@ -306,6 +310,136 @@ fn unarrayed(e: Expr) -> Expr {
         }
         kind => Expr { kind, span: e.span },
     }
+}
+
+/// `while (true) { if (t) { exit } rest }`, `exit` leaving, and nothing in
+/// `rest` leaving the loop: `while (!t) { rest } exit`, as the program
+/// wrote it; of an `exit` that ends with the loop's `break`, without it.
+fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool)]) {
+    // The loop the program wrote that starts where it does, innermost, a
+    // `while`: not a `loop` it wrote, which stays `while (true)`.
+    let written_while = |span: js::Span| {
+        (loops.iter())
+            .filter(|(l, _)| !span.is_none() && l.lo <= span.lo && span.hi <= l.hi)
+            .min_by_key(|(l, _)| l.hi - l.lo)
+            .is_some_and(|&(_, w)| w)
+    };
+    let mut i = 0;
+    while i < stmts.len() {
+        if !written_while(stmts[i].span) {
+            i += 1;
+            continue;
+        }
+        if let StmtKind::While { label, cond, body } = &stmts[i].kind
+            && matches!(cond.kind, ExprKind::Bool(true))
+            && let [first, rest @ ..] = body.as_slice()
+            && let StmtKind::If(_, exit, None) = &first.kind
+            && let Some(last) = exit.last()
+            && let broken = matches!(&last.kind, StmtKind::Break(l) if l.is_none() || *l == *label)
+            && (broken || matches!(last.kind, StmtKind::Return(_) | StmtKind::Throw(_)))
+            && !breaks(&exit[..exit.len() - usize::from(broken)], label.as_deref())
+            // A `break` in it would run the exit, which it skips.
+            && (exit.len() == usize::from(broken) || !breaks(rest, label.as_deref()))
+        {
+            let span = stmts[i].span;
+            let StmtKind::While { label, body, .. } = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))
+            else {
+                unreachable!("matched")
+            };
+            let mut body = body.into_iter();
+            let Some(Stmt {
+                kind: StmtKind::If(test, exit, None),
+                ..
+            }) = body.next()
+            else {
+                unreachable!("matched")
+            };
+            let mut exit = exit;
+            if matches!(exit.last().map(|s| &s.kind), Some(StmtKind::Break(_))) {
+                exit.pop();
+            }
+            stmts[i] = StmtKind::While {
+                label,
+                cond: not(test),
+                body: body.collect(),
+            }
+            .at(span);
+            let n = exit.len();
+            stmts.splice(i + 1..i + 1, exit);
+            i += n;
+        } else if let StmtKind::While { label, cond, body } = &stmts[i].kind
+            && matches!(cond.kind, ExprKind::Bool(true))
+            && let [first, exit @ ..] = body.as_slice()
+            && let StmtKind::If(_, looped, None) = &first.kind
+            && exit
+                .last()
+                .is_some_and(|s| matches!(s.kind, StmtKind::Return(_) | StmtKind::Throw(_)))
+            && !breaks(looped, label.as_deref())
+            && !breaks(exit, label.as_deref())
+            && !goes_on(exit, label.as_deref())
+        {
+            // `while (true) { if (c) { a } exit }`, `a` going on only by
+            // `continue`: `while (c) { a; break; } exit`, a path out of `a`
+            // the loop's end.
+            let span = stmts[i].span;
+            let StmtKind::While { label, body, .. } = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))
+            else {
+                unreachable!("matched")
+            };
+            let mut body = body.into_iter();
+            let Some(Stmt {
+                kind: StmtKind::If(test, mut looped, None),
+                ..
+            }) = body.next()
+            else {
+                unreachable!("matched")
+            };
+            if !looped.last().is_some_and(ends) {
+                looped.push(StmtKind::Break(None).at(span));
+            }
+            stmts[i] = StmtKind::While {
+                label,
+                cond: test,
+                body: looped,
+            }
+            .at(span);
+            let exit: Vec<Stmt> = body.collect();
+            let n = exit.len();
+            stmts.splice(i + 1..i + 1, exit);
+            i += n;
+        }
+        i += 1;
+    }
+}
+
+/// Whether a `continue` in `stmts` goes on with the loop they're in, labeled
+/// `label`: one of no label not inside a loop of their own, or of its label.
+fn goes_on(stmts: &[Stmt], label: Option<&str>) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Continue(None) => true,
+        StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
+        StmtKind::If(_, a, b) => goes_on(a, label) || b.as_deref().is_some_and(|b| goes_on(b, label)),
+        StmtKind::Labeled(_, body) => goes_on(body, label),
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            label.is_some_and(|l| names_continue(body, l))
+        }
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => goes_on(a, label) || goes_on(b, label),
+        _ => false,
+    })
+}
+
+/// Whether a `continue` in `stmts`, however deep, names `label`.
+fn names_continue(stmts: &[Stmt], label: &str) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Continue(Some(l)) => l == label,
+        StmtKind::If(_, a, b) => names_continue(a, label) || b.as_deref().is_some_and(|b| names_continue(b, label)),
+        StmtKind::While { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::Labeled(_, body) => names_continue(body, label),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_continue(a, label) || names_continue(b, label),
+        _ => false,
+    })
 }
 
 /// A loop's body that ends `if (c) { a; continue l; } break;`, `l` the loop

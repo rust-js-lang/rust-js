@@ -6112,3 +6112,70 @@ pub fn lent() -> u32 {
     expect([lib.counter((g: () => void) => { g(); g(); }), lib.local((g: () => void) => g()), lib.lent()]).toEqual([2, false, 2]);
   }
 });
+
+test("a `while` loop from MIR tests where it's written, as THIR's", async () => {
+  const dir = fixture("mir-while-tests");
+  writeFileSync(join(dir, "lib.rs"), `pub fn trimmed(mut messages: Vec<u32>, max: usize) -> Vec<u32> {
+    while messages.len() > max {
+        messages.remove(0);
+    }
+    messages
+}
+pub fn counted(mut n: u32) -> u32 {
+    let mut steps = 0;
+    while n > 1 {
+        n /= 2;
+        steps += 1;
+    }
+    steps
+}
+pub fn stopped(mut n: u32) -> u32 {
+    while n > 1 {
+        if n == 7 {
+            return 70;
+        }
+        if n == 9 {
+            break;
+        }
+        n /= 2;
+    }
+    n + 100
+}
+pub fn looped(mut n: u32) -> u32 {
+    loop {
+        if n <= 1 {
+            return 1;
+        }
+        if n == 9 {
+            break;
+        }
+        n /= 2;
+    }
+    n + 100
+}
+pub fn halved(mut n: u32, out: &mut Vec<u32>) {
+    while n > 1 {
+        n /= 2;
+        if n == 7 {
+            break;
+        }
+        out.push(n);
+    }
+    out.push(0);
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  while (messages.length > max) {\n    $removeAt(messages, 0);\n  }\n  return messages;\n");
+    expect(js).toContain("  while (n > 1) {\n    n = (n / 2) >>> 0;\n    steps = (steps + 1) >>> 0;\n  }\n  return steps;\n");
+    expect(js).toContain("  while (n > 1) {\n");
+    // A `loop` the program wrote stays one.
+    expect(js).toContain("export function looped(n) {\n  while (true) {\n    if (n <= 1) {\n      return 1;\n    }\n");
+    expect(js).toContain("  while (n > 1) {\n    if (n === 7) {\n      return 70;\n    }\n    if (n === 9) {\n      break;\n    }\n    n = (n / 2) >>> 0;\n  }\n  return (n + 100) >>> 0;\n");
+    const lib = await import(join(dir, out));
+    const pushed: number[] = [];
+    lib.halved(30, pushed);
+    expect([lib.trimmed([1, 2, 3], 1), lib.counted(9), pushed, lib.stopped(15), lib.stopped(9), lib.stopped(40), lib.looped(18), lib.looped(4)]).toEqual([[3], 3, [15, 0], 70, 109, 101, 109, 1]);
+  }
+});
