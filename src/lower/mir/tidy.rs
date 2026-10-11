@@ -128,6 +128,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
+    // A cell only its `value` is read and set of, by name: its variable.
+    plain_cells(body);
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
@@ -1911,6 +1913,110 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
         }
         i += 1;
     }
+}
+
+/// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose
+/// `value` alone is read and set, by those names: `let n = x`, `n` where
+/// each reads its `value`, as THIR keeps a cell only its function uses
+/// (ADR 0287). Nothing else has it, so nothing else sees it change.
+fn plain_cells(body: &mut Vec<Stmt>) {
+    let mut cells: Vec<String> = Vec::new();
+    let mut clones: HashMap<String, String> = HashMap::new();
+    js::statement_lists(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            match &stmt.kind {
+                StmtKind::Const(name, value)
+                    if matches!(&value.kind, ExprKind::Object(props)
+                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == "value")) =>
+                {
+                    cells.push(name.clone());
+                }
+                StmtKind::Const(name, value) if let ExprKind::Var(of) = &value.kind => {
+                    clones.insert(name.clone(), of.clone());
+                }
+                _ => {}
+            }
+        }
+    });
+    // Each clone, to its cell.
+    let cell_of = |name: &str| {
+        let mut name = name;
+        for _ in 0..clones.len() + 1 {
+            if cells.iter().any(|c| c == name) {
+                return Some(name.to_string());
+            }
+            name = clones.get(name)?;
+        }
+        None
+    };
+    let named: HashMap<String, String> = (cells.iter().chain(clones.keys()))
+        .filter_map(|n| cell_of(n).map(|c| (n.clone(), c)))
+        .collect();
+    if named.is_empty() {
+        return;
+    }
+    // Each read of the names, and each read of a `value` of one, or one a
+    // clone is made of: the same, or one is read otherwise.
+    let mut reads: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |v| {
+        if let Some(cell) = named.get(v) {
+            *reads.entry(cell.clone()).or_default() += 1;
+        }
+    });
+    let mut kept: HashMap<String, usize> = HashMap::new();
+    let mut each = body.clone();
+    js::each_expr_mut(&mut each, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == "value"
+            && let ExprKind::Var(v) = &of.kind
+            && let Some(cell) = named.get(v)
+        {
+            *kept.entry(cell.clone()).or_default() += 1;
+        }
+    });
+    js::statement_lists(&mut each, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, value) = &stmt.kind
+                && let ExprKind::Var(of) = &value.kind
+                && named.contains_key(name)
+                && let Some(cell) = named.get(of)
+            {
+                *kept.entry(cell.clone()).or_default() += 1;
+            }
+        }
+    });
+    let plain: HashSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();
+    if plain.is_empty() {
+        return;
+    }
+    let of_plain = |v: &str| named.get(v).filter(|c| plain.contains(c)).cloned();
+    js::statement_lists(body, &mut |stmts| {
+        stmts.retain(|stmt| {
+            !matches!(&stmt.kind, StmtKind::Const(name, value)
+            if matches!(value.kind, ExprKind::Var(_)) && !plain.contains(name) && of_plain(name).is_some())
+        });
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Const(name, value) = &mut stmt.kind
+                && plain.contains(name)
+                && let ExprKind::Object(props) = &mut value.kind
+                && let Some(js::Prop::Field(_, init)) = props.pop()
+            {
+                stmt.kind = StmtKind::Let(name.clone(), Some(init));
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == "value"
+            && let ExprKind::Var(v) = &of.kind
+            && let Some(cell) = of_plain(v)
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::var(&cell)
+            };
+        }
+    });
 }
 
 /// `if (c) { s; result = a; } else { result = b; } return result;`, the

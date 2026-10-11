@@ -650,4 +650,20 @@ export const mutations: Mutation[] = [
     replace: "            iterable: iterated(source.clone()),\n",
     tests: ["test/lowering.test.ts","-t","arguments read out of order"],
   },
+  {
+    name: "mir-tidy-plain-cells-boxed",
+    breaks: "a cell only its function reads and sets stays `{ value }`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    plain_cells(body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","only its function reads and sets"],
+  },
+  {
+    name: "mir-tidy-plain-cell-escapes",
+    breaks: "a cell given whole, `bump(c)`, is a variable too, and what it's given reads `undefined`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    let plain: HashSet<&String> = (cells.iter()).filter(|c| reads.get(*c) == kept.get(*c)).collect();\n",
+    replace: "    let plain: HashSet<&String> = cells.iter().collect();\n",
+    tests: ["test/lowering.test.ts","-t","only its function reads and sets"],
+  },
 ];

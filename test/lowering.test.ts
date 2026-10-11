@@ -6064,3 +6064,51 @@ test("a `format!`'s arguments read out of order, and a string's `chars()` iterat
     expect(lib.lines("ab\ncd\n")).toEqual(["0:ab", "1:cd"]);
   }
 });
+
+test("a cell from MIR only its function reads and sets is its variable, as THIR's", async () => {
+  const dir = fixture("mir-plain-cells");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+pub fn counter(f: &dyn Fn(&dyn Fn())) -> u32 {
+    let n = Rc::new(Cell::new(0));
+    let m = n.clone();
+    f(&move || m.set(m.get() + 1));
+    n.get()
+}
+pub fn local(f: &dyn Fn(&dyn Fn())) -> bool {
+    let active = Cell::new(true);
+    f(&|| active.set(false));
+    active.get()
+}
+fn bump(c: &Cell<u32>) {
+    c.set(c.get() + 1);
+}
+pub fn lent() -> u32 {
+    let c = Cell::new(1);
+    bump(&c);
+    c.get()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function counter(f) {
+  let n = 0;
+  f(() => {
+    n = (n + 1) >>> 0;
+  });
+  return n;
+}`);
+    expect(js).toContain(`export function local(f) {
+  let active = true;
+  f(() => {
+    active = false;
+  });
+  return active;
+}`);
+    // One given whole is a cell.
+    expect(js).toContain("  const c = { value: 1 };\n  bump(c);\n");
+    const lib = await import(join(dir, out));
+    expect([lib.counter((g: () => void) => { g(); g(); }), lib.local((g: () => void) => g()), lib.lent()]).toEqual([2, false, 2]);
+  }
+});
