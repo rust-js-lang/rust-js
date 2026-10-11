@@ -298,6 +298,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty: Ty<'tcx>,
         variant_index: VariantIdx,
         fields: Vec<Expr>,
+        nulled: &[bool],
         span: Span,
     ) -> R<Expr> {
         let ty::Adt(adt_def, args) = *ty.kind() else {
@@ -345,13 +346,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(bindings::unit_name(self.tcx, adt_def.did()).map_or_else(Expr::undefined, Expr::str));
         }
         let mut fields = fields;
-        // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275).
-        for (field, value) in variant.fields.iter().zip(&mut fields) {
+        // A `#[rust_js::nullable]` field's `None` is `null` (ADR 0275);
+        // what's `nulled`, `null` or a value already, is as it is.
+        for (i, (field, value)) in variant.fields.iter().zip(&mut fields).enumerate() {
             if bindings::is_nullable(self.tcx, field) {
                 let made = std::mem::replace(value, Expr::undefined());
                 *value = match made.kind {
                     js::ExprKind::Undefined => Expr::null(),
-                    _ if made.is_constant() => made,
+                    _ if made.is_constant() || nulled.get(i) == Some(&true) => made,
                     _ => Expr::bin(js::Op::Coalesce, made, Expr::null()),
                 };
             }

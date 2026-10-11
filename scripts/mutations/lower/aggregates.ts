@@ -275,4 +275,16 @@ export const mutations: Mutation[] = [
     replace: "                \"Ok\" if false => Ok(Expr::undefined()),\n                _ if self.is_fmt_result(ty) => {\n",
     tests: ["test/mir.test.ts","-t","write_to_string"],
   },
+  {
+    "name": "nulled-field-coalesced",
+    "breaks": "what MIR says is `null` or a value already is `?? null` given to a `#[rust_js::nullable]` field",
+    "file": "src/lower/aggregates.rs",
+    "find": " || nulled.get(i) == Some(&true) => made,\n",
+    "replace": " => made,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field's None is null"
+    ]
+  },
 ];

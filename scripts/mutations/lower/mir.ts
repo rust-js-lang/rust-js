@@ -1290,4 +1290,40 @@ export const mutations: Mutation[] = [
     replace: "                    && let Some(def_id) = referred_closure(&state.promoted[promoted]).filter(|_| false) =>\n",
     tests: ["test/lowering.test.ts","-t","thread-local only its module"],
   },
+  {
+    "name": "mir-nullable-field-coalesced",
+    "breaks": "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
+    "file": "src/lower/mir.rs",
+    "find": "                    bindings::is_nullable(self.tcx, &variant.fields[*field])\n",
+    "replace": "                    false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field's None is null"
+    ]
+  },
+  {
+    "name": "mir-nullable-moved-through-unseen",
+    "breaks": "a field's value moved through a temporary, as MIR moves it, is `?? null` again",
+    "file": "src/lower/mir.rs",
+    "find": "            Some(Rvalue::Use(operand, _)) => self.nulled(state, operand),\n",
+    "replace": "            Some(Rvalue::Use(..)) => false,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field's None is null"
+    ]
+  },
+  {
+    "name": "mir-nullable-some-coalesced",
+    "breaks": "a `Some(..)` given to a `#[rust_js::nullable]` field is `?? null` too",
+    "file": "src/lower/mir.rs",
+    "find": "                fields.len() == 1\n",
+    "replace": "                fields.len() == 0\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field's None is null"
+    ]
+  },
 ];

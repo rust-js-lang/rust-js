@@ -2693,18 +2693,20 @@ pub fn moved(p: Props) -> Props {
     Props { code: p.code, message: Some(p.title.unwrap_or_default()), title: None }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('return { code: null, message: "m" };');
-  expect(js).toContain("return { code: code ?? null, message: null };");
-  expect(js).toContain("return { code, message };");
-  // A conditional of `Some` or `None` is one of the value or `null`.
-  expect(js).toContain("return { code: code || null, message: null };");
-  expect(js).toContain('return { code: p.code, message: p.title ?? "" };');
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null }, { code: "1", message: null }]);
-  expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
-  expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return { code: null, message: "m" };');
+    expect(js).toContain("return { code: code ?? null, message: null };");
+    expect(js).toContain("return { code, message };");
+    // A conditional of `Some` or `None` is one of the value or `null`.
+    expect(js).toContain("return { code: code || null, message: null };");
+    expect(js).toContain('return { code: p.code, message: p.title ?? "" };');
+    const lib = await import(join(dir, out));
+    expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null }, { code: "1", message: null }]);
+    expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
+    expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
+  }
 });
 
 // ADR 0277: `let n = n;`, a variable shadowed by its own value, is `n`

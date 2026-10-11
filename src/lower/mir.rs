@@ -2432,7 +2432,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(promoted) = uv.promoted
             && let Some((made, variant)) = referred_variant(tcx, &state.promoted[promoted])
         {
-            return self.adt_value(made, variant, Vec::new(), c.span);
+            return self.adt_value(made, variant, Vec::new(), &[], c.span);
         }
         // A promoted reference to a call of nothing, `&size_of::<T>()` of
         // generic code: the call, a std function's of nothing it's given, or
@@ -2821,7 +2821,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .into_iter()
                     .map(|v| self.value_expr(v, span))
                     .collect::<R<Vec<_>>>()?;
-                Ok(Value::Expr(self.adt_value(ty, *variant_index, exprs, span)?))
+                let nulled: Vec<bool> = operands.iter().map(|o| self.nulled(state, o)).collect();
+                Ok(Value::Expr(self.adt_value(ty, *variant_index, exprs, &nulled, span)?))
             }
             AggregateKind::Closure(def_id, _) => Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?)),
             // An `async` body, what it holds as a closure's environment.
@@ -2833,6 +2834,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?))
             }
             _ => Err(self.unsupported(span, "this aggregate, from its MIR")),
+        }
+    }
+
+    /// Whether `operand`, an `Option`, is `null` or a value already, as a
+    /// `#[rust_js::nullable]` field is (ADR 0275): such a field, moved
+    /// where it's read, or bound to a variable, or a `Some(..)`, as THIR's
+    /// `nullable` says.
+    fn nulled(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
+        let Some(place) = operand.place() else {
+            return false;
+        };
+        if let Some((PlaceElem::Field(field, _), parent)) = place.projection.split_last() {
+            let parent = mir::PlaceRef {
+                local: place.local,
+                projection: parent,
+            };
+            let mir::PlaceTy { ty, variant_index } = parent.ty(state.body, self.tcx);
+            return match ty.kind() {
+                ty::Adt(adt, _) if !adt.is_enum() || variant_index.is_some() => {
+                    let variant = adt.variant(variant_index.unwrap_or(VariantIdx::ZERO));
+                    bindings::is_nullable(self.tcx, &variant.fields[*field])
+                }
+                _ => false,
+            };
+        }
+        if !place.projection.is_empty() {
+            return false;
+        }
+        if state.locals.writes[place.local] != 1 {
+            return false;
+        }
+        // What it's assigned, once: another such, or `Some(..)`.
+        let assigned = (state.body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+            mir::StatementKind::Assign(assign) if assign.0 == place.local.into() => Some(&assign.1),
+            _ => None,
+        });
+        match assigned {
+            Some(Rvalue::Use(operand, _)) => self.nulled(state, operand),
+            Some(Rvalue::Aggregate(kind, fields)) => {
+                fields.len() == 1
+                    && matches!(**kind, AggregateKind::Adt(did, variant, ..)
+                    if variant.as_u32() == 1 && self.tcx.is_lang_item(did, LangItem::Option))
+            }
+            _ => false,
         }
     }
 
