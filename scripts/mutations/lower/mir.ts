@@ -1734,4 +1734,16 @@ export const mutations: Mutation[] = [
       "taking a variable assigns the variable"
     ]
   },
+  {
+    "name": "mir-call-write-before-pending",
+    "breaks": "what a call writes, a setter's `n.textContent = \"x\"`, runs before a value made ahead of it that reads it, `<p>{n.textContent}</p>` reads the new one",
+    "file": "src/lower/mir.rs",
+    "find": "if called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
+    "replace": "if false && called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

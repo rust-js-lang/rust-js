@@ -1597,6 +1597,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 state.discarding = false;
                 let value = value?;
+                // What the call writes, a setter's `n.textContent = "x"` or a
+                // cell's `count = 5`, after what was made before it, which
+                // may read what it writes.
+                if called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {
+                    let mut before = Vec::new();
+                    self.flush(state, &mut before)?;
+                    before.append(&mut called);
+                    called = before;
+                }
                 match target {
                     Some(target) => {
                         self.mir_store(state, *destination, value, span, &mut called)?;

@@ -27,6 +27,7 @@ JSX invalid event reports the original source and preserves existing output
 JSX invalid prop type reports the original source and preserves existing output
 JSX invalid spread reports the original source and preserves existing output
 JSX keeps a comparison of what reads the same in place
+JSX keeps a field of what never changes in place
 JSX keeps children that read what never changes, and a filtered child, in place
 JSX leaves out children of a type parameter
 JSX loads nested modules using Rust's directory and cfg rules
