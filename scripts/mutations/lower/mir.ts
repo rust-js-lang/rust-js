@@ -1710,4 +1710,16 @@ export const mutations: Mutation[] = [
       "a whole float's cast is the float from MIR too"
     ]
   },
+  {
+    "name": "mir-take-variable-as-object",
+    "breaks": "`mem::take(&mut current)` of a variable is `$take(current, [])` from MIR, not `const old = current; current = [];`",
+    "file": "src/lower/mir.rs",
+    "find": "Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),",
+    "replace": "Value::Expr(e) | Value::Place(e) if false && i < borrowed && variables && own(&e) => Value::Ref(e),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "taking a variable assigns the variable"
+    ]
+  },
 ];

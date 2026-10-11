@@ -3675,6 +3675,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.thir_call(def_id, fn_span).map(|(_, args)| args)
     }
 
+    /// Whether THIR's call of `def_id` at `span`, MIR's there, gives a
+    /// `&mut` to a variable as its `i`th argument, `&mut current`, which a
+    /// closure may have captured: a place JS assigns.
+    fn borrows_variable(&self, def_id: rustc_span::def_id::DefId, span: Span, i: usize) -> bool {
+        self.thir_call_args(def_id, span)
+            .and_then(|args| self.mut_borrowed(*args.get(i)?))
+            .is_some_and(|place| {
+                matches!(
+                    self.thir[self.strip(place)].kind,
+                    thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. }
+                )
+            })
+    }
+
     /// Whether THIR's cast at `span`, MIR's there, is of a float it knows
     /// whole and in the target's range: the value as it is, as THIR writes
     /// it (`whole_casts`).
@@ -4098,7 +4112,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_swap_or_replace(
         &mut self,
         state: &mut State<'_, 'tcx>,
-        known: Std,
+        (known, def_id): (Std, rustc_span::def_id::DefId),
         values: Vec<Value<'tcx>>,
         arg_tys: &[Ty<'tcx>],
         span: Span,
@@ -4106,9 +4120,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let pointee = arg_tys[0].peel_refs();
         let js_span = self.js_span(span);
-        let mut values = values.into_iter();
-        let first = values.next().expect("a `&mut`");
+        let values = values.into_iter();
         self.flush(state, out)?;
+        // Of a `&mut` to a variable, `&mut current`, an object's too: the
+        // variable, given its new value, as THIR's; a swap's, of two. One
+        // of this body's own, which holds the value itself: a closure's
+        // capture may be a name for a `&mut` to it, which assigning would
+        // only rebind.
+        let borrowed = if known == Std::Swap { 2 } else { 1 };
+        let variables = (0..borrowed).all(|i| self.borrows_variable(def_id, span, i));
+        let own = |e: &Expr| {
+            matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
+                .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref()))
+        };
+        let mut values = values.enumerate().map(|(i, value)| match value {
+            Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),
+            value => value,
+        });
+        let first = values.next().expect("a `&mut`");
         let Value::Ref(a) = first else {
             // Of an object: changed in place.
             if !matches!(known, Std::Swap | Std::Replace | Std::MemTake) || !self.is_object(pointee) {
@@ -4555,7 +4584,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Swap | Std::Replace | Std::MemTake | Std::OptionTake | Std::OptionReplace => {
                 let values: Vec<Value<'tcx>> = values.collect();
-                return self.mir_swap_or_replace(state, known, values, arg_tys, span, out);
+                return self.mir_swap_or_replace(state, (known, def_id), values, arg_tys, span, out);
             }
             // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items, THIR's (ADR 0335).
             Std::Slice(SliceOp::View { checked }) => {

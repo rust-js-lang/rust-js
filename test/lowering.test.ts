@@ -8235,3 +8235,54 @@ pub fn column(line: &str, substr: &str) -> u32 {
     expect(lib.column("abcd", "cd")).toBe(4);
   }
 });
+
+// From MIR as from THIR: `mem::take(&mut current)` of a variable takes it
+// and gives it a new value, `const old = current; current = [];`, not
+// `$take(current, [])` of the object; `mem::swap` of two, each given the
+// other's. A closure's capture MIR may name apart stays `$take`, which
+// changes the object every name for it sees.
+test("taking a variable assigns the variable", async () => {
+  const dir = fixture("take-variable");
+  writeFileSync(join(dir, "lib.rs"), `pub fn direct(items: &[u32]) -> Vec<Vec<u32>> {
+    let mut all = Vec::new();
+    let mut current = Vec::new();
+    for &item in items {
+        if item == 0 {
+            all.push(std::mem::take(&mut current));
+        } else {
+            current.push(item);
+        }
+    }
+    all
+}
+pub fn captured(items: &[u32]) -> Vec<Vec<u32>> {
+    let mut all = Vec::new();
+    let mut current = Vec::new();
+    items.iter().for_each(|&item| {
+        if item == 0 {
+            all.push(std::mem::take(&mut current));
+        } else {
+            current.push(item);
+        }
+    });
+    all
+}
+pub fn swapped(mut a: Vec<u32>, mut b: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
+    std::mem::swap(&mut a, &mut b);
+    (a, b)
+}
+pub fn half(mut a: Vec<u32>, b: &mut Vec<u32>) -> Vec<u32> {
+    std::mem::swap(&mut a, b);
+    a
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const t = a;\n  a = b;\n  b = t;");
+    expect(js).toContain("$exchange(a, b);");
+    expect(js).toContain("      const old = current;\n      current = [];\n      all.push(old);");
+    const lib = await import(join(dir, out));
+    expect([lib.direct([1, 2, 0, 3, 0]), lib.captured([1, 0, 0])]).toEqual([[[1, 2], [3]], [[1], []]]);
+  }
+});
