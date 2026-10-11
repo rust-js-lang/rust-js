@@ -20,6 +20,8 @@ JSX empty attribute expression reports the original source and preserves existin
 JSX gives a chain of flattened structs as props, a name the props have their own
 JSX gives a component its named props and the rest from a base
 JSX gives a component its props as written, and children that change the base first
+JSX gives a props field the literal default it says, of its type
+JSX gives a props field's default where the props are taken apart
 JSX handler props are @types/react's EventHandler aliases
 JSX hooks take @types/react's Reducer, EffectCallback and TransitionFunction
 JSX intrinsic generic reports the original source and preserves existing output

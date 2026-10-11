@@ -216,6 +216,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.fns.get(&def_id).is_none() {
             return Err(self.unsupported(span, "this item from its MIR"));
         }
+        // A component's props with a default taken apart, as THIR's are.
+        for param in &self.thir.params {
+            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;
+        }
         // Its dictionaries, for its bounds, after its parameters (ADR 0049).
         let evidence = self.evidence_params(def_id);
         let (mut params, mut out) = self.mir_function(mir, None)?;

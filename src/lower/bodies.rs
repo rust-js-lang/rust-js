@@ -230,21 +230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 param.pat.as_deref()
             };
-            // A props field's default is where JS takes them apart (ADR 0212):
-            // a component's props taken whole would have none, but where
-            // they're passed on as given or read of a field with none.
-            if super::bindings::is_component(self.tcx, self.body_owner)
-                && let ty::Adt(adt, _) = param.ty.kind()
-                && adt.is_struct()
-                && (adt.non_enum_variant().fields.iter()).any(|f| super::bindings::field_default(self.tcx, f).is_some())
-                && !peeled.is_some_and(|p| matches!(p.kind, PatKind::Leaf { .. }))
-                && !peeled.is_some_and(|p| self.passed_on_whole(p, *adt))
-            {
-                return Err(self.unsupported(
-                    span,
-                    "props with a default taken whole: they're taken apart where they're given, `fn f(Props { size, .. }: Props)`",
-                ));
-            }
+            self.check_props_taken_apart(param.ty, peeled, span)?;
             // `Props { initial, label }: Props` is `{ initial, label }`, as a
             // React component takes its props.
             // One with a destructor is owned by the function, less what its
@@ -782,6 +768,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Whether props of `adt` bound whole, `props`, are only passed on as
     /// given, `<Inner {..props} />`, whose component applies its defaults,
     /// or read of a field with no default (ADR 0212).
+    /// A props field's default is where JS takes them apart (ADR 0212): a
+    /// component's props of type `ty` taken whole, `pat` their pattern, would
+    /// have none, but where they're passed on as given or read of a field
+    /// with none.
+    pub(super) fn check_props_taken_apart(&self, ty: ty::Ty<'tcx>, pat: Option<&Pat<'tcx>>, span: Span) -> R<()> {
+        if super::bindings::is_component(self.tcx, self.body_owner)
+            && let ty::Adt(adt, _) = ty.kind()
+            && adt.is_struct()
+            && (adt.non_enum_variant().fields.iter()).any(|f| super::bindings::field_default(self.tcx, f).is_some())
+            && !pat.is_some_and(|p| matches!(p.kind, PatKind::Leaf { .. }))
+            && !pat.is_some_and(|p| self.passed_on_whole(p, *adt))
+        {
+            return Err(self.unsupported(
+                span,
+                "props with a default taken whole: they're taken apart where they're given, `fn f(Props { size, .. }: Props)`",
+            ));
+        }
+        Ok(())
+    }
+
     fn passed_on_whole(&self, pat: &Pat<'tcx>, adt: ty::AdtDef<'tcx>) -> bool {
         let PatKind::Binding { var, .. } = pat.kind else {
             return false;

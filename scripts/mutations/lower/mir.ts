@@ -1746,4 +1746,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-props-default-taken-whole",
+    "breaks": "a component's props with a default taken whole from MIR are read without it, `props.target` undefined, not refused as THIR refuses",
+    "file": "src/lower/mir.rs",
+    "find": "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];
