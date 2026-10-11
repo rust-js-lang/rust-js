@@ -148,6 +148,7 @@ lazy_effects.rs
 leak.rs
 lent_iterators.rs
 linked_lists.rs
+locks.rs
 loop_values.rs
 map_collect_drops.rs
 map_drops.rs
