@@ -7026,3 +7026,26 @@ pub fn hidden(tokens: &[String]) -> bool {
     expect([pushed, lib.found(["a", "b.js"]), lib.found(["a"]), lib.hidden(["hidden"]), lib.hidden(["x"])]).toEqual([[1], "b.js", undefined, true, false]);
   }
 });
+
+// `count()` of an array's items, a `split`'s, from MIR as from THIR: its
+// `length`, not a `reduce` counting each, as react.dev's CustomPreset counts
+// a file's lines.
+test("a count of an array's items from MIR is its length", async () => {
+  const dir = fixture("count-length");
+  writeFileSync(join(dir, "lib.rs"), `pub fn lines(code: &str) -> usize {
+    code.split('\\n').count()
+}
+pub fn long(words: &[String]) -> usize {
+    words.iter().filter(|w| w.len() > 2).count()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  return code.split("\\n").length;\n');
+    expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
+    expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.lines("a\nb\nc"), lib.long(["a", "abc", "abcd"])]).toEqual([3, 2]);
+  }
+});

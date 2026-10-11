@@ -697,4 +697,16 @@ export const mutations: Mutation[] = [
       "negated matches, string methods"
     ]
   },
+  {
+    "name": "count-reduced",
+    "breaks": "`count()` of an array's items from MIR is `reduce((n) => n + 1, 0)`, not `length`",
+    "file": "src/lower/iterators.rs",
+    "find": "init.as_int() == Some(0) && counts(f) =>",
+    "replace": "init.as_int() == Some(0) && false =>",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a count of an array's items from MIR"
+    ]
+  },
 ];

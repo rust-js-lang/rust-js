@@ -1546,6 +1546,10 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             ("forEach", [f]) => {
                 eager_items(chain, true, Some(f)).map(|(items, _)| array_method(items, "forEach", f.clone()))
             }
+            // `count()`'s, `reduce((n) => n + 1, 0)`: the array's `length`.
+            ("reduce", [f, init]) if init.as_int() == Some(0) && counts(f) => {
+                eager_items(chain, true, None).map(|(items, _)| Expr::member(items, "length"))
+            }
             ("reduce", [f, init]) => eager_items(chain, true, Some(f))
                 .map(|(items, _)| Expr::call(Expr::member(items, "reduce"), vec![f.clone(), init.clone()])),
             // Whether any item is a literal, which `===` and `includes` agree
@@ -1722,6 +1726,19 @@ fn nth_of(e: &Expr) -> Option<(&Expr, &Expr)> {
 fn array_method(items: Expr, name: &str, f: Expr) -> Expr {
     let (items, f) = indexed_callback(&items, name, f).unwrap_or_else(|f| (items, f));
     Expr::call(Expr::member(items, name), vec![f])
+}
+
+/// Whether `f` is `count()`'s, `(n) => n + 1`.
+fn counts(f: &Expr) -> bool {
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return false;
+    };
+    let [js::Pattern::Name(n)] = params.as_slice() else {
+        return false;
+    };
+    matches!(body.as_slice(), [Stmt { kind: StmtKind::Return(Some(e)), .. }]
+        if matches!(&e.kind, js::ExprKind::Binary(Op::Add, a, one)
+            if matches!(&a.kind, js::ExprKind::Var(v) if v == n) && one.as_int() == Some(1)))
 }
 
 /// Whether calling `f` may do what can be seen, or throw: anything but an
