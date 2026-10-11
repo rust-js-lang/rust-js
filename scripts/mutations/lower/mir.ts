@@ -1058,4 +1058,12 @@ export const mutations: Mutation[] = [
     replace: "        let one = false && place.projection.is_empty()\n",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
+  {
+    name: "mir-closure-parent-thir",
+    breaks: "a closure's body is lowered with its parent's THIR, so its `if let` chain's tests stay nested",
+    file: "src/lower/mir.rs",
+    find: "        let outer = std::mem::replace(&mut self.thir, &body.thir);\n",
+    replace: "        let outer = self.thir;\n",
+    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+  },
 ];

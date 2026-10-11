@@ -1317,6 +1317,21 @@ pub fn nested(a: Option<u32>, b: bool) -> u32 {
     }
     n
 }
+// A closure's, by its own THIR.
+pub fn joined(routes: &[Route]) -> Vec<String> {
+    routes
+        .iter()
+        .map(|r| {
+            if let Some(t) = &r.title
+                && let Some(p) = &r.path
+            {
+                format!("{t}{p}")
+            } else {
+                String::new()
+            }
+        })
+        .collect()
+}
 pub struct Item { pub kind: &'static str, pub valid: bool }
 fn valid(i: &Item) -> Option<&Item> {
     if i.valid { Some(i) } else { None }
@@ -1412,6 +1427,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
     expect(js).toContain("    if (node.seen && node.count != null && node.count > 1) {\n");
     expect(js).not.toContain("let iter");
     expect(js).not.toMatch(/bb\d+:/);
+    expect(js).toMatch(/r\.title != null && r\.path != null/);
     expect(js).toContain("    if (node.title != null && $byteLen(node.title) > 1) {\n      out.push(node.title);\n");
     const lib = await import(join(dir, out));
     const routes = [
@@ -1422,6 +1438,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
     expect([lib.pages(routes), lib.sections(routes), lib.nested(3, true), lib.nested(3, false)]).toEqual([["a:1", "b=y"], ["a/c", "y"], 3, 0]);
     const nodes = () => [{ count: 3, items: [1, 2], seen: true }, { count: undefined, items: [5], seen: false }];
     expect([lib.counts(nodes()), lib.totals(nodes()), lib.chained(nodes())]).toEqual([4, 8, 10]);
+    expect(lib.joined(routes)).toEqual(["ax", "by", ""]);
     expect(lib.titled([{ title: "ab", seen: false }, { title: "a", seen: false }])).toEqual(["ab"]);
     expect(lib.kept([{ kind: "pre", valid: true }, { kind: "pre", valid: false }, { kind: "p", valid: true }])).toBe(2);
   }

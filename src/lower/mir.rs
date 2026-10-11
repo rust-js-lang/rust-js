@@ -317,10 +317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),
-            payloads: match captures {
-                None => self.mir_payloads(mir_body),
-                Some(_) => Default::default(),
-            },
+            payloads: self.mir_payloads(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
         };
         // A closure's first argument is its environment, read through its fields.
@@ -456,15 +453,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let falsy = std::mem::replace(&mut self.locals.falsy, outer_falsy);
         // Where each `if`'s condition is written, of the body THIR has:
         // tests in one are `&&`'s.
-        let conditions: Vec<js::Span> = match captures {
-            None => (self.thir.exprs.iter())
-                .filter_map(|e| match e.kind {
-                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.thir[cond].span)),
-                    _ => None,
-                })
-                .collect(),
-            Some(_) => Vec::new(),
-        };
+        let conditions: Vec<js::Span> = (self.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If { cond, .. } => Some(self.js_span(self.thir[cond].span)),
+                _ => None,
+            })
+            .collect();
         tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE], &falsy, &conditions);
         tidy::destructured_params(&mut params, &mut out);
         Ok((params, out))
@@ -634,7 +628,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             });
         }
+        // Its own THIR's shape hints, where its body is written.
+        let outer = std::mem::replace(&mut self.thir, &body.thir);
         let lowered = self.mir_function(mir, Some(captures));
+        self.thir = outer;
         for name in shared {
             self.locals.alike.remove(&name);
         }
