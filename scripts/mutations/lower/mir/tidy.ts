@@ -378,4 +378,20 @@ export const mutations: Mutation[] = [
     replace: "        ExprKind::Cond(_, _, read) if false => match &read.kind {\n",
     tests: ["test/lowering.test.ts","-t","props field's default is read"],
   },
+  {
+    name: "mir-tidy-named-temporaries-off",
+    breaks: "`const _4 = e; if (_4 != null) { const found = _4; … }` stays, not `const found = e;`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    named_temporaries(body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","if-let's binding from MIR keeps"],
+  },
+  {
+    name: "mir-tidy-named-temporary-kept-binding",
+    breaks: "the `const found = _4;` a temporary's renaming took stays, `const found = found;`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    stmts.retain(|s| {\n        !matches!(&s.kind, StmtKind::Const(n, value)\n            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))\n    });\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","if-let's binding from MIR keeps"],
+  },
 ];

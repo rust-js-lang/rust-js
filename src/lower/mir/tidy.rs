@@ -80,6 +80,7 @@ pub(super) fn tidy(
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing));
+    named_temporaries(body);
     eager_chains(body);
     tail_returns(body, returns);
     // A `let` declared first that nothing's left to assign or read.
@@ -832,6 +833,112 @@ pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stm
         let Some(pattern) = pattern_of(&read) else { continue };
         body.drain(..count);
         *param = pattern;
+    }
+}
+
+/// `const _3 = e; … if (_3) { const current = _3; … }`: a temporary that a
+/// variable the program names takes, in a block inside where it's read,
+/// `if let Some(current) = r.current()`'s, where nothing else is named so:
+/// `const current = e;`, read by that name, as THIR binds it.
+fn named_temporaries(body: &mut Vec<Stmt>) {
+    // How often each name is declared, and read, in the whole body.
+    let mut declared: HashMap<String, usize> = HashMap::new();
+    js::statement_lists(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            let names = match &stmt.kind {
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) => vec![name.as_str()],
+                StmtKind::Destructure { pattern, .. } => pattern.names(),
+                _ => Vec::new(),
+            };
+            for name in names {
+                *declared.entry(name.to_string()).or_default() += 1;
+            }
+        }
+    });
+    let mut reads: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |name| *reads.entry(name.to_string()).or_default() += 1);
+    js::statement_lists(body, &mut |stmts| {
+        // What it takes goes from after it: the list shortens.
+        let mut next = 0;
+        while next < stmts.len() {
+            let i = next;
+            next += 1;
+            let StmtKind::Const(a, _) = &stmts[i].kind else {
+                continue;
+            };
+            if !is_temporary(a) {
+                continue;
+            }
+            let a = a.clone();
+            let mut found = Vec::new();
+            taking(&stmts[i + 1..], &a, &mut found);
+            let [(b, after)] = found.as_slice() else { continue };
+            if declared.get(b) != Some(&1) || reads.get(b).copied().unwrap_or(0) != *after {
+                continue;
+            }
+            let b = b.clone();
+            dropping(stmts, &a, &b);
+            let StmtKind::Const(name, _) = &mut stmts[i].kind else {
+                unreachable!("matched")
+            };
+            *name = b.clone();
+            js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+                if let ExprKind::Var(v) = &mut e.kind
+                    && *v == a
+                {
+                    *v = b.clone();
+                }
+            });
+        }
+    });
+}
+
+/// Each `const b = a;` of a name the program gives in the blocks of
+/// `stmts`, not in their closures, and how often `b` is read after it.
+fn taking(stmts: &[Stmt], a: &str, found: &mut Vec<(String, usize)>) {
+    for (j, stmt) in stmts.iter().enumerate() {
+        match &stmt.kind {
+            StmtKind::Const(b, value) if !is_temporary(b) && matches!(&value.kind, ExprKind::Var(v) if v == a) => {
+                found.push((b.clone(), js::mentions_in(&stmts[j + 1..], b)));
+            }
+            StmtKind::If(_, then, otherwise) => {
+                taking(then, a, found);
+                if let Some(otherwise) = otherwise {
+                    taking(otherwise, a, found);
+                }
+            }
+            StmtKind::While { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => taking(body, a, found),
+            StmtKind::Try(x, y) | StmtKind::TryCatch(x, _, y) => {
+                taking(x, a, found);
+                taking(y, a, found);
+            }
+            _ => {}
+        }
+    }
+}
+
+/// `stmts` without `taking`'s `const b = a;`, theirs or their blocks'.
+fn dropping(stmts: &mut Vec<Stmt>, a: &str, b: &str) {
+    stmts.retain(|s| {
+        !matches!(&s.kind, StmtKind::Const(n, value)
+            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))
+    });
+    for stmt in stmts.iter_mut() {
+        let lists: Vec<&mut Vec<Stmt>> = match &mut stmt.kind {
+            StmtKind::If(_, then, otherwise) => std::iter::once(then).chain(otherwise.as_mut()).collect(),
+            StmtKind::While { body, .. }
+            | StmtKind::ForOf { body, .. }
+            | StmtKind::For { body, .. }
+            | StmtKind::Labeled(_, body) => vec![body],
+            StmtKind::Try(x, y) | StmtKind::TryCatch(x, _, y) => vec![x, y],
+            _ => Vec::new(),
+        };
+        for list in lists {
+            dropping(list, a, b);
+        }
     }
 }
 

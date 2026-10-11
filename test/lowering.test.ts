@@ -1657,6 +1657,44 @@ pub fn describe(props: &CodeProps) -> String {
   }
 });
 
+// What \`if let Some(x) = e\` binds, from MIR (ADR 0364), is named as the
+// program names it: the temporary MIR holds \`e\` in takes \`x\`'s name, and
+// \`x\` of a temporary keeps it.
+test("an if-let's binding from MIR keeps the name the program gives it", async () => {
+  const dir = fixture("mir-named-bindings");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+pub struct Ref { pub current: Cell<Option<u32>> }
+pub fn scrolled(selected: bool, r: &Ref, out: &mut Vec<u32>) {
+    if selected && let Some(current) = r.current.get() {
+        if current > 2 {
+            out.push(current);
+        }
+    }
+}
+fn find(items: &[u32], k: u32) -> Option<u32> {
+    items.iter().copied().find(|x| *x > k)
+}
+pub fn first_over(items: &[u32], k: u32, out: &mut Vec<u32>) {
+    if let Some(found) = find(items, k) {
+        out.push(found);
+        out.push(found + 1);
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const found = find(items, k);\n  if (found != null) {\n    out.push(found);\n");
+    expect(js).toContain("    const current = r.current;\n");
+    expect(js).not.toMatch(/\b_\d+\b/);
+    const lib = await import(join(dir, out));
+    const [a, b]: unknown[][] = [[], []];
+    lib.scrolled(true, { current: 3 }, a);
+    lib.first_over([1, 5], 2, b);
+    expect([a, b]).toEqual([[3], [5, 6]]);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

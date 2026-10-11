@@ -1536,8 +1536,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A temporary made once of what reads the same anywhere, however
         // often it's read, or what a variant's pattern binds to it: written
         // where it is.
+        // A payload's of a temporary keeps its name, which the temporary
+        // takes (tidy's `aliases`).
+        let of_temporary = matches!(&expr.kind, js::ExprKind::Var(name)
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l]));
         if place.projection.is_empty()
-            && (!state.locals.user[local] || state.payloads.contains(&local))
+            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local]
             && !state.named.contains(&local)

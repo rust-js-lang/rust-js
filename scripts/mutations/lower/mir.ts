@@ -1038,7 +1038,7 @@ export const mutations: Mutation[] = [
     name: "mir-payload-as-const",
     breaks: "`Some(title)`'s `title`, of a place that reads the same, is a `const title = …`, not the place",
     file: "src/lower/mir.rs",
-    find: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
+    find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     replace: "            && !state.locals.user[local]\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
@@ -1113,5 +1113,13 @@ export const mutations: Mutation[] = [
     find: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
     replace: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n            && false\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
     tests: ["test/lowering.test.ts","-t","only spawns an async block"],
+  },
+  {
+    name: "mir-payload-of-temporary-in-place",
+    breaks: "`Some(current)` of a temporary is read as the temporary, `_5`, losing its name",
+    file: "src/lower/mir.rs",
+    find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n",
+    replace: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n",
+    tests: ["test/lowering.test.ts","-t","if-let's binding from MIR keeps"],
   },
 ];
