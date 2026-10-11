@@ -1483,6 +1483,79 @@ pub fn zero(a: u64, b: u64) -> bool {
   }
 });
 
+// A function that returns nothing, from MIR (ADR 0364), returns where the
+// program wrote \`return\` alone: what falls off its end needs none, and an
+// \`if\` MIR made a guard of is the \`if\` the program wrote.
+test("a function returning nothing returns where the program wrote it", async () => {
+  const dir = fixture("mir-unit-returns");
+  writeFileSync(join(dir, "lib.rs"), `pub fn explicit(x: bool, v: &mut Vec<u32>) {
+    if x {
+        return;
+    }
+    v.push(1);
+}
+pub fn nested(a: Option<u32>, b: bool, out: &mut Vec<u32>) {
+    if let Some(x) = a {
+        if b {
+            out.push(x);
+        }
+    }
+}
+pub fn guarded(flag: bool, cur: Option<&str>, out: &mut Vec<String>) {
+    if flag && let Some(c) = cur {
+        if c.len() > 2 {
+            out.push(c.to_string());
+        }
+    }
+}
+pub fn one(n: u32, v: &mut Vec<u32>) {
+    match n {
+        1 => v.push(1),
+        _ => {}
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function explicit(x, v) {
+  if (x) {
+    return;
+  }
+  v.push(1);
+}
+
+export function nested(a, b, out) {
+  if (a != null) {
+    if (b) {
+      out.push(a);
+    }
+  }
+}
+
+export function guarded(flag, cur, out) {
+  if (flag && cur != null) {
+    if ($byteLen(cur) > 2) {
+      out.push(cur);
+    }
+  }
+}
+
+export function one(n, v) {
+  if (n === 1) {
+    v.push(1);
+  }
+}
+`);
+    const lib = await import(join(dir, out));
+    const [v, w, x]: unknown[][] = [[], [], []];
+    lib.explicit(false, v);
+    lib.nested(3, true, w);
+    lib.guarded(true, "abc", x);
+    expect([v, w, x]).toEqual([[1], [3], ["abc"]]);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

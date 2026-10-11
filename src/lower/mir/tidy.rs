@@ -12,8 +12,15 @@ use crate::lower::iterators::{eager_chains, iterated};
 
 /// `body`, tidied: `result` is the name of the function's return place,
 /// `falsy` the temporaries a function that skips what's falsy is given,
-/// `conditions` where the program writes each `if`'s condition.
-pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>, conditions: &[js::Span]) {
+/// `conditions` where the program writes each `if`'s condition, and
+/// `returns` each `return`.
+pub(super) fn tidy(
+    body: &mut Vec<Stmt>,
+    result: &str,
+    falsy: &HashSet<String>,
+    conditions: &[js::Span],
+    returns: &[js::Span],
+) {
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {
@@ -74,6 +81,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>, 
     alias_variables(body, &changing);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing));
     eager_chains(body);
+    tail_returns(body, returns);
     // A `let` declared first that nothing's left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
@@ -274,6 +282,53 @@ fn and_tests(stmts: &mut [Stmt], conditions: &[js::Span]) {
         let first = std::mem::replace(test, Expr::undefined());
         *test = both(first, second);
         then.extend(body);
+    }
+}
+
+/// Where a function ends, a `return;` the program didn't write, `written`
+/// where those it did are: nothing, as it falls off the end there; and
+/// `if (c) { return; } rest`, `if (!c) { rest }`, as the program wrote it.
+fn tail_returns(stmts: &mut Vec<Stmt>, written: &[js::Span]) {
+    let unwritten = |s: &Stmt| {
+        matches!(s.kind, StmtKind::Return(None))
+            && !written
+                .iter()
+                .any(|w| w.lo <= s.span.lo && s.span.hi <= w.hi && !s.span.is_none())
+    };
+    while stmts.last().is_some_and(unwritten) {
+        stmts.pop();
+    }
+    if let Some(at) = (stmts.iter())
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))))
+    {
+        let rest = stmts.split_off(at + 1);
+        let Some(Stmt {
+            kind: StmtKind::If(test, _, None),
+            span,
+        }) = stmts.pop()
+        else {
+            unreachable!("found")
+        };
+        if !rest.is_empty() {
+            stmts.push(StmtKind::If(not(test), rest, None).at(span));
+        }
+    }
+    match stmts.last_mut().map(|s| &mut s.kind) {
+        Some(StmtKind::If(test, then, otherwise)) => {
+            tail_returns(then, written);
+            if let Some(branch) = otherwise {
+                tail_returns(branch, written);
+            }
+            // A branch it emptied: the other one's, of its test negated.
+            if then.is_empty()
+                && let Some(branch) = otherwise.take()
+            {
+                *test = not(std::mem::replace(test, Expr::undefined()));
+                *then = branch;
+            }
+        }
+        Some(StmtKind::Labeled(_, body)) => tail_returns(body, written),
+        _ => {}
     }
 }
 

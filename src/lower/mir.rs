@@ -175,6 +175,8 @@ struct State<'m, 'tcx> {
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
+    /// Where each `return` the program wrote is, of the body THIR has.
+    returns: Vec<js::Span>,
     /// Each shared reference to a place written where it's read, and each
     /// tuple of them: the place, read as one, which a closure captures as it
     /// is, or the tuple's list of them.
@@ -317,6 +319,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),
+            returns: (self.thir.exprs.iter())
+                .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
+                .map(|e| self.js_span(e.span))
+                .collect(),
             payloads: self.mir_payloads(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
         };
@@ -459,7 +465,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
-        tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE], &falsy, &conditions);
+        tidy::tidy(
+            &mut out,
+            &state.locals.names[mir::RETURN_PLACE],
+            &falsy,
+            &conditions,
+            &state.returns,
+        );
         tidy::destructured_params(&mut params, &mut out);
         Ok((params, out))
     }
@@ -864,9 +876,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(out);
         }
         // To the block that returns, and does nothing else: the `return`,
-        // where a person writes it.
+        // where a person writes it; at a `return` the program wrote, where
+        // what jumps there is, if it's one.
         if is_return(state.body, to) {
-            return self.mir_terminator(state, to);
+            let mut out = self.mir_terminator(state, to)?;
+            let data = &state.body.basic_blocks[from];
+            let spans = (data.statements.iter().map(|s| s.source_info.span))
+                .chain([data.terminator().source_info.span])
+                .map(|span| self.js_span(span));
+            let written = spans
+                .filter_map(|s| (state.returns.iter()).find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi))
+                .next()
+                .copied();
+            if let Some(written) = written
+                && let Some(stmt) = out.last_mut().filter(|s| matches!(s.kind, StmtKind::Return(_)))
+            {
+                stmt.span = written;
+            }
+            return Ok(out);
         }
         if state.graph.merges.contains(&to) {
             let mut out = Vec::new();

@@ -1066,4 +1066,12 @@ export const mutations: Mutation[] = [
     replace: "        let outer = self.thir;\n",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
+  {
+    name: "mir-return-unwritten",
+    breaks: "a `return` the program wrote is taken for the end the function falls off, and goes",
+    file: "src/lower/mir.rs",
+    find: "                stmt.span = written;\n",
+    replace: "                let _ = (stmt, written);\n",
+    tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
+  },
 ];

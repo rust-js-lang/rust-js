@@ -346,4 +346,28 @@ export const mutations: Mutation[] = [
     replace: "        break;\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    name: "mir-tidy-tail-returns-off",
+    breaks: "a function's `return;` that falls off its end stays, and its guards",
+    file: "src/lower/mir/tidy.rs",
+    find: "    tail_returns(body, returns);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
+  },
+  {
+    name: "mir-tidy-tail-guard-kept",
+    breaks: "`if (!c) { return; } rest` MIR made of `if c { rest }` stays a guard",
+    file: "src/lower/mir/tidy.rs",
+    find: "if matches!(then.as_slice(), [r] if unwritten(r))",
+    replace: "if matches!(then.as_slice(), [r] if false && unwritten(r))",
+    tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
+  },
+  {
+    name: "mir-tidy-emptied-branch-kept",
+    breaks: "a branch whose `return;` went stays, empty: `if (!b) {} else { … }`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            if then.is_empty()\n                && let Some(branch) = otherwise.take()\n",
+    replace: "            if false\n                && let Some(branch) = otherwise.take()\n",
+    tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
+  },
 ];

@@ -42,8 +42,7 @@ const inParts = (name: string, file: string) =>
     { RUST_JS_CASES: `${i + 1}/${parts}` },
   ]);
 const jobs: [string, string[], Record<string, string>][] = [
-  // The compiler just built: a build of its own, as others run it, races them.
-  ["fmt", ["bun", "run", "fmt:check"], { RUST_JS_COMPILER: join(root, "target", "debug", "rust-js") }],
+  ["fmt", ["bun", "run", "fmt:check"], {}],
   ["typecheck", ["bun", "run", "typecheck"], {}],
   ["clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], {}],
   ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/mutations.test.ts"], {}],
@@ -62,11 +61,19 @@ const jobs: [string, string[], Record<string, string>][] = [
   ...extra.map((file): [string, string[], Record<string, string>] => [file, ["bun", "test", file], {}]),
 ];
 
+// Each job is given the compiler just built: one that builds its own, as
+// each test file and fmt does, links it again, and races the others.
+const compiler = join(root, "target", "debug", "rust-js");
 const started = Date.now();
 const results = await Promise.all(
   jobs.map(async ([name, cmd, env]) => {
     const start = Date.now();
-    const p = Bun.spawn(cmd, { cwd: root, env: { ...process.env, ...env }, stdout: "pipe", stderr: "pipe" });
+    const p = Bun.spawn(cmd, {
+      cwd: root,
+      env: { ...process.env, RUST_JS_COMPILER: compiler, ...env },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     const timeout = setTimeout(() => p.kill(), 290_000);
     const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
     const code = await p.exited;
