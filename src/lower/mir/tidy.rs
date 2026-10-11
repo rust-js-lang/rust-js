@@ -62,10 +62,14 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // read by nothing else.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
-    js::statement_lists(body, &mut |stmts| loops(stmts, &mentions));
+    // The innermost first: what a loop ends with may be another, recovered.
+    bottom_up(body, &mut |stmts| loops(stmts, &mentions));
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
+    // A `let` declared first, its one write now beside it, what a loop
+    // held: a `const` there.
+    declarations(body);
     js::statement_lists(body, &mut |stmts| continued(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));

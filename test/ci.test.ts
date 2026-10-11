@@ -112,9 +112,10 @@ test("a diff's changed lines are where the file is changed now", () => {
   expect(changedLines(diff)).toEqual([{ file: "src/a.rs", lines: [[4, 5], [11, 11], [21, 22]] }]);
 });
 
-// A check's mutations on as many machines as keeps each near forty.
-test("a check's mutations are split to about forty a machine", () => {
-  expect([0, 40, 41, 80, 81, 160, 161, 400].map(mutationShards)).toEqual(["1", "1", "2", "2", "4", "4", "8", "8"]);
+// A check's mutations on as many machines as keeps each near twenty, about
+// as long as the suite takes on its two: MIR's run suites of seconds each.
+test("a check's mutations are split to about twenty a machine", () => {
+  expect([0, 20, 21, 40, 41, 80, 81, 400].map(mutationShards)).toEqual(["1", "1", "2", "2", "4", "4", "8", "8"]);
 });
 
 const run = (headBranch: string, databaseId: number, status: string, conclusion: string, headSha = `sha${databaseId}`) =>

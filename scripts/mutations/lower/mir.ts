@@ -110,7 +110,7 @@ export const mutations: Mutation[] = [
     name: "mir-map-call-refused",
     breaks: "a map's method from MIR is refused, as if THIR alone lowered it",
     file: "src/lower/mir.rs",
-    find: "                self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?\n",
+    find: "                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?\n",
     replace: "                return Err(self.unsupported(span, \"a map's method\"));\n",
     tests: ["test/mir.test.ts","-t","map_index_missing"],
   },
@@ -1129,5 +1129,13 @@ export const mutations: Mutation[] = [
     find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
     replace: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
     tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+  },
+  {
+    name: "mir-map-call-not-discarded",
+    breaks: "a map's `insert` nothing reads is `$insert(m, k, v)`, not `m.set(k, v)`",
+    file: "src/lower/mir.rs",
+    find: "                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?\n",
+    replace: "                self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?\n",
+    tests: ["test/lowering.test.ts","-t","loops one after another from MIR"],
   },
 ];

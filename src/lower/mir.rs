@@ -175,6 +175,9 @@ struct State<'m, 'tcx> {
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
+    /// Whether what the call being lowered gives back is read by nothing,
+    /// `map.insert(k, v);`'s, as THIR's `Call::discarded` says.
+    discarding: bool,
     /// Where each `return` the program wrote is, of the body THIR has.
     returns: Vec<js::Span>,
     /// Each shared reference to a place written where it's read, and each
@@ -320,6 +323,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),
+            discarding: false,
             returns: (self.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
                 .map(|e| self.js_span(e.span))
@@ -1109,10 +1113,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 state.unwind = None;
                 let mut called = Vec::new();
+                let local = destination.local;
+                state.discarding = destination.projection.is_empty()
+                    && (state.locals.names[local].is_empty()
+                        || (!state.locals.user[local]
+                            && state.locals.reads[local] == 0
+                            && !state.locals.borrowed[local]));
                 let value = match state.awaits.contains(&block) {
-                    true => self.mir_await(state, args, *fn_span, &mut called)?,
-                    false => self.mir_call(state, func, args, *destination, *fn_span, &mut called)?,
+                    true => self.mir_await(state, args, *fn_span, &mut called),
+                    false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
                 };
+                state.discarding = false;
+                let value = value?;
                 match target {
                     Some(target) => {
                         self.mir_store(state, *destination, value, span, &mut called)?;
@@ -3747,7 +3759,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ) =>
             {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?
+                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?
             }
             // An iterator's combinator: THIR's, of a JS iterator, lazy as Rust's;
             // one a `&mut` lends, stepped through what can't close it.

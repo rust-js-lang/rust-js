@@ -1760,6 +1760,51 @@ pub fn first_id(items: &[Title]) -> u32 {
   }
 });
 
+// Loops one after another from MIR (ADR 0364), the second in what the
+// first leaves to, each item named as the program names it: each a
+// \`for…of\`, the innermost first; a map's \`insert\` nothing reads, \`set\`;
+// and a \`let\` the loops held, a \`const\`.
+test("loops one after another from MIR are for…of loops", async () => {
+  const dir = fixture("mir-loops-in-turn");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
+pub struct D { pub line: u32, pub class_name: &'static str }
+pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
+    let mut highlighted = HashMap::new();
+    for decorator in lines {
+        highlighted.insert(decorator.line, decorator.class_name);
+    }
+    let mut starts = HashMap::new();
+    for decorator in inline {
+        if starts.contains_key(&decorator.line) {
+            panic!("already at {}", decorator.line);
+        }
+        starts.insert(decorator.line, decorator.class_name);
+    }
+    (highlighted.len() + starts.len()) as u32
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function decorate(lines, inline) {
+  const highlighted = new Map();
+  for (const decorator of lines) {
+    highlighted.set(decorator.line, decorator.class_name);
+  }
+  const starts = new Map();
+  for (const decorator of inline) {
+    if (starts.has(decorator.line)) {
+      throw new Error(\`already at \${decorator.line}\`);
+    }
+    starts.set(decorator.line, decorator.class_name);
+  }
+  return (highlighted.size + starts.size) >>> 0;
+}`);
+    const lib = await import(join(dir, out));
+    expect(lib.decorate([{ line: 1, class_name: "a" }], [{ line: 2, class_name: "b" }])).toBe(2);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

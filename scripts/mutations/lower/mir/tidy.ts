@@ -434,4 +434,20 @@ export const mutations: Mutation[] = [
     replace: "        let returned_var = |name: &str| name == result;\n",
     tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
   },
+  {
+    name: "mir-tidy-loops-outer-first",
+    breaks: "a loop is recovered before the one it ends with, whose `return` it can't see yet",
+    file: "src/lower/mir/tidy.rs",
+    find: "    bottom_up(body, &mut |stmts| loops(stmts, &mentions));\n",
+    replace: "    js::statement_lists(body, &mut |stmts| loops(stmts, &mentions));\n",
+    tests: ["test/lowering.test.ts","-t","loops one after another from MIR"],
+  },
+  {
+    name: "mir-tidy-declarations-after-loops-off",
+    breaks: "a `let` declared first whose one write a recovered loop brought beside it stays `let starts; starts = …`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    // A `let` declared first, its one write now beside it, what a loop\n    // held: a `const` there.\n    declarations(body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","loops one after another from MIR"],
+  },
 ];
