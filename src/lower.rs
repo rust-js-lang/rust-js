@@ -228,6 +228,9 @@ struct Locals {
     /// passes on what it's given to Rust's function is written: an array
     /// method's, the function itself (ADR 0279).
     forwarding: Vec<js::Span>,
+    /// And where each is written of one call whose JS gives `undefined`
+    /// anyway, a handler's: `() => f()` (ADR 0040).
+    concise: Vec<js::Span>,
     /// Of a body lowered from its MIR, each field path it reads,
     /// `element.editable`, and whether it's a `bool` each time.
     paths: HashMap<String, bool>,

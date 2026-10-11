@@ -1478,8 +1478,8 @@ export const mutations: Mutation[] = [
     "name": "mir-closure-forwarding-unmarked",
     "breaks": "a closure from MIR that passes on what it's given to Rust's function stays `(x) => double(x)`, not `double`",
     "file": "src/lower/mir.rs",
-    "find": "        if self.closure_calls_rust(body, false) {\n",
-    "replace": "        if false {\n",
+    "find": "        let forwarding = self.closure_calls_rust(body, false);\n",
+    "replace": "        let forwarding = false;\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -1613,5 +1613,13 @@ export const mutations: Mutation[] = [
     "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.paths.entry(path).or_insert(bool) &= bool;\n        }\n        let unread",
     "replace": "        }\n        let unread",
     "tests": ["test/lowering.test.ts", "-t", "or chain of a getter's bool"]
+  },
+  {
+    "name": "mir-closure-concise-unmarked",
+    "breaks": "a closure of one call that gives nothing isn't marked, so a held handler keeps its block",
+    "file": "src/lower/mir.rs",
+    "find": "        let concise = self.closure_calls_for_nothing(body);\n",
+    "replace": "        let concise = false;\n",
+    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
   },
 ];

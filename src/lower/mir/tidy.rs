@@ -45,6 +45,9 @@ pub(super) struct Hints<'h> {
     /// Where each closure that passes on what it's given to Rust's function
     /// is written (ADR 0279).
     pub(super) forwarding: &'h [js::Span],
+    /// Where each closure of one call whose JS gives `undefined` is written:
+    /// a component's handler of one, `() => f()`, as THIR's (ADR 0040).
+    pub(super) concise: &'h [js::Span],
 }
 
 /// `body`, tidied, by what `hints` say of it.
@@ -65,6 +68,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         booleans,
         plain,
         forwarding,
+        concise,
     } = *hints;
     // A guard of a handle made for it alone: the place it's a handle on.
     unguarded(body);
@@ -223,6 +227,20 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
                         span: child.span,
                         kind: ExprKind::Binary(Op::And, test.clone(), shown.clone()),
                     };
+                }
+            }
+        }
+    });
+    // A handler of one call a component's given, `() => { f(); }`, held then
+    // read in place: `() => f()`, as THIR gives one where it's made.
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Jsx(jsx) = &mut e.kind {
+            for prop in &mut jsx.props {
+                if let js::Prop::Field(name, value) = prop
+                    && js::is_handler_name(name)
+                    && concise.contains(&value.span)
+                {
+                    js::returning_its_call(value);
                 }
             }
         }

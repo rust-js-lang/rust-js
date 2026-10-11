@@ -1434,4 +1434,12 @@ export const mutations: Mutation[] = [
     "replace": "",
     "tests": ["test/lowering.test.ts", "-t", "or chain of a getter's bool"]
   },
+  {
+    "name": "mir-tidy-concise-handlers-kept",
+    "breaks": "a held handler of one call from MIR keeps its block, `() => { f(); }`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    && concise.contains(&value.span)\n",
+    "replace": "                    && false\n",
+    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+  },
 ];

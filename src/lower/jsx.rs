@@ -554,7 +554,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Closure(ref closure) => closure,
             _ => return false,
         };
-        let body = self.krate.closures[&closure.closure_id];
+        self.closure_calls_for_nothing(self.krate.closures[&closure.closure_id])
+    }
+
+    /// `calls_for_nothing`, of a closure's body.
+    pub(super) fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> bool {
         let thir = &body.thir;
         let mut call = super::body_queries::strip(thir, body.expr);
         if let ExprKind::Block { block } = thir[call].kind {

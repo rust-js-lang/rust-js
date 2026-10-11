@@ -5437,3 +5437,41 @@ pub fn SidebarLink(
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.SidebarLink, { href: "https://x", selected: true, title: "T", level: 0, version: "major", isPending: false }))).toContain('<a href="https://x" class="p-2 pe-2');
 });
+
+// ADR 0040: a component's handler of one call whose JS gives `undefined`,
+// held by MIR ahead of a borrow's call, is `() => f()` where it's read in
+// place, as THIR writes it, as react.dev's ExpandableExample toggles.
+test("a held handler of one call is a concise arrow", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::webapi::MouseEvent;
+use react::{JSX, ReactNode, jsx, use_state};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub struct ButtonProps<'a, C: ReactNode> {
+    pub children: C,
+    #[cfg_attr(rust_js, rust_js::name = "onClick")]
+    pub on_click: Option<Box<dyn Fn(&MouseEvent)>>,
+    pub class_name: Option<&'a str>,
+}
+pub fn Button<C: ReactNode>(ButtonProps { children, on_click, class_name }: ButtonProps<C>) -> JSX::Element {
+    let _ = on_click;
+    jsx! { <button className={class_name.unwrap_or_default()}>{children}</button> }
+}
+pub fn Example(deep: bool) -> JSX::Element {
+    let (expanded, set_expanded) = use_state(false);
+    jsx! {
+        <Button
+            className={Some(cn(&[deep.then_some("deep"), (!deep).then_some("plain")]).as_str())}
+            onClick={Some(Box::new(move |_| set_expanded.update(|current| !current)))}>
+            <span>{if *expanded { "Hide" } else { "Show" }}</span>
+        </Button>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("onClick={() => setExpanded((current) => !current)}");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(() => lib.Example(true)))).toBe('<button class="deep"><span>Show</span></button>');
+});
