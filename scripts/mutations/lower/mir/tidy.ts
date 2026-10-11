@@ -1186,4 +1186,28 @@ export const mutations: Mutation[] = [
       "checked element set is one statement"
     ]
   },
+  {
+    "name": "mir-tidy-or-chain-negated",
+    "breaks": "an `||` chain from MIR is `!(!a && b !== c) || d`, its test negated whole",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        flipped if is_boolean(&flipped, booleans) => flipped,\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "or chain from MIR is written as one"
+    ]
+  },
+  {
+    "name": "mir-tidy-bool-field-unknown",
+    "breaks": "a `bool` field from MIR isn't known as one, `!!(element.editable || ..)`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "or chain from MIR is written as one"
+    ]
+  },
 ];

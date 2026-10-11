@@ -635,6 +635,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         booleans.retain(|name| !others.contains(name));
+        // And each field path that's a `bool` each time it's read.
+        booleans.extend(
+            (self.locals.paths.iter())
+                .filter(|&(_, &b)| b)
+                .map(|(path, _)| path.clone()),
+        );
         tidy::tidy(
             &mut out,
             &tidy::Hints {
@@ -2124,6 +2130,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A place, for a read or a write.
     fn mir_place(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        place: Place<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let e = self.place_expr(state, place, span, out)?;
+        // A field's path, `element.editable`: whether it's a `bool`, which
+        // tidy writes an `||` of as one.
+        if let Some(path) = tidy::field_path(&e) {
+            let bool = place.ty(state.body, self.tcx).ty.is_bool();
+            *self.locals.paths.entry(path).or_insert(bool) &= bool;
+        }
+        Ok(e)
+    }
+
+    fn place_expr(
         &mut self,
         state: &mut State<'_, 'tcx>,
         place: Place<'tcx>,

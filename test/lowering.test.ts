@@ -7435,3 +7435,41 @@ pub fn copied(a: &Props) -> Props {
     expect(lib.retitled({ title: "a", level: 1, extra: 2 })).toEqual({ title: "x", level: 1, extra: 2 });
   }
 });
+
+// An `||` chain, from MIR as from THIR, `a || b || c`, not `!(!a && !b) ||
+// c`: a `bool` field, `element.editable`, is one, as react.dev's Search,
+// Preview and useTocHighlight test theirs.
+test("an or chain from MIR is written as one", async () => {
+  const dir = fixture("or-chain");
+  writeFileSync(join(dir, "lib.rs"), `pub struct El {
+    pub editable: bool,
+    pub tag: String,
+}
+pub fn editing(element: &El) -> bool {
+    let tag_name = &element.tag;
+    element.editable || tag_name == "INPUT" || tag_name == "SELECT" || tag_name == "TEXTAREA"
+}
+pub fn hidden(error: Option<u32>, height: Option<f64>, ready: bool) -> bool {
+    let hide = error.is_some() || height.is_none_or(|h| h == 0.0) || !ready;
+    hide
+}
+pub fn heading(names: Vec<String>) -> Vec<String> {
+    names.into_iter().filter(|n| n.as_str() == "H1" || n.as_str() == "H2" || n.as_str() == "H3").collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return element.editable || tagName === "INPUT" || tagName === "SELECT" || tagName === "TEXTAREA";');
+    expect(js).toContain("const hide = error != null || height == null || height === 0 || !ready;");
+    expect(js).toContain('names.filter((n) => n === "H1" || n === "H2" || n === "H3")');
+    const lib = await import(join(dir, out));
+    expect([
+      lib.editing({ editable: false, tag: "SELECT" }),
+      lib.editing({ editable: false, tag: "B" }),
+      lib.hidden(undefined, 3, true),
+      lib.hidden(undefined, 0, true),
+      lib.heading(["H2", "P"]),
+    ]).toEqual([true, false, false, true, ["H2"]]);
+  }
+});
