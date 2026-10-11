@@ -108,6 +108,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     let changing = changing(body);
+    js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
     alias_variables(body, &changing);
     js::statement_lists(body, &mut destructured);
     // What an array made for its parts left, `const _5 = 6;`, too.
@@ -1820,6 +1821,61 @@ fn tail_jumps(stmts: &mut [Stmt]) {
                 ..
             } => drop_tail(body, &StmtKind::Continue(Some(label.clone()))),
             _ => {}
+        }
+    }
+}
+
+/// `const h = x ? x : undefined; if (h == null) { exit }`, a `let … else`
+/// of what `filter` keeps: `if (!x) { exit }`, as THIR tests it, `h` and
+/// what binds it then `x`, which it is.
+fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
+    for i in 1..stmts.len() {
+        let [made, checked] = &stmts[i - 1..=i] else {
+            unreachable!("two")
+        };
+        let StmtKind::Const(h, value) = &made.kind else {
+            continue;
+        };
+        let ExprKind::Cond(test, yes, no) = &value.kind else {
+            continue;
+        };
+        let test = test.tested();
+        if let ExprKind::Var(x) = &test.kind
+            && !changing.contains(x)
+            && matches!(&yes.kind, ExprKind::Var(y) if y == x)
+            && matches!(no.kind, ExprKind::Undefined)
+            && let StmtKind::If(guard, then, None) = &checked.kind
+            && let ExprKind::Binary(Op::LooseEq, tested, null) = &guard.kind
+            && matches!(&tested.kind, ExprKind::Var(t) if t == h)
+            && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+            && then.last().is_some_and(ends)
+        {
+            // `h`, and a binding of it nothing changes, read as `x`: unread,
+            // they go.
+            let (h, x) = (h.clone(), x.clone());
+            let mut read: Vec<String> = vec![h];
+            stmts.remove(i - 1);
+            for stmt in &stmts[i - 1..] {
+                if let StmtKind::Const(name, value) = &stmt.kind
+                    && matches!(&value.kind, ExprKind::Var(of) if read.contains(of))
+                    && !changing.contains(name)
+                {
+                    read.push(name.clone());
+                }
+            }
+            let StmtKind::If(guard, ..) = &mut stmts[i - 1].kind else {
+                unreachable!("the guard, where the `const` was")
+            };
+            *guard = Expr::unary(UnaryOp::Not, Expr::var(&x));
+            js::each_expr_mut(&mut stmts[i - 1..], &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(v) if read.contains(v)) {
+                    *e = Expr {
+                        span: e.span,
+                        ..Expr::var(&x)
+                    };
+                }
+            });
+            return;
         }
     }
 }

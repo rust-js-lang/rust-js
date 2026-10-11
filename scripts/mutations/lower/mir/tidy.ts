@@ -538,4 +538,20 @@ export const mutations: Mutation[] = [
     replace: "            (false, false) => stmts.push(StmtKind::If(test, then, None).at(span)),\n",
     tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
   },
+  {
+    name: "mir-tidy-filtered-guard-kept",
+    breaks: "a let-else of what `filter` keeps tests `const h = x ? x : undefined` for `null`, not `!x`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            && then.last().is_some_and(ends)\n        {\n            // `h`, and a binding of it nothing changes, read as `x`: unread,\n            // they go.\n",
+    replace: "            && then.last().is_some_and(ends)\n            && false\n        {\n            // `h`, and a binding of it nothing changes, read as `x`.\n",
+    tests: ["test/lowering.test.ts","-t","what .filter. keeps"],
+  },
+  {
+    name: "mir-tidy-filtered-binding-named",
+    breaks: "the binding of what `filter` keeps keeps its own name, `const h = href;`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    read.push(name.clone());\n                }\n            }\n            let StmtKind::If(guard, ..)",
+    replace: "                    let _ = name;\n                }\n            }\n            let StmtKind::If(guard, ..)",
+    tests: ["test/lowering.test.ts","-t","what .filter. keeps"],
+  },
 ];

@@ -5773,3 +5773,29 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
     expect(pushed).toEqual([2, 3, 2]);
   }
 });
+
+test("a let-else of what `filter` keeps from MIR tests the value, as THIR does", async () => {
+  const dir = fixture("mir-filtered-let-else");
+  writeFileSync(join(dir, "lib.rs"), `pub fn filtered(href: Option<&str>) -> String {
+    let Some(h) = href.filter(|h| !h.is_empty()) else {
+        return "none".to_string();
+    };
+    if h.starts_with("x") { "a".to_string() } else { h.to_string() }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function filtered(href) {
+  if (!href) {
+    return "none";
+  }
+  if (href.startsWith("x")) {
+    return "a";
+  }
+  return href;
+}`);
+    const lib = await import(join(dir, out));
+    expect([lib.filtered(undefined), lib.filtered(""), lib.filtered("xy"), lib.filtered("q")]).toEqual(["none", "none", "a", "q"]);
+  }
+});
