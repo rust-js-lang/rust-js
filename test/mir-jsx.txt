@@ -49,10 +49,12 @@ a module's constant element is rendered where it's read
 a module's named component is loaded as a module's default
 a props field's default may be a const
 a static component given a prop a branch makes is its static
+a style and a tag made before a prop's branch stay what they are
 a thread_local component takes props borrowing the caller's
 adjacent text children stay apart
 an attribute is read before a child that assigns what it read
 an element's key may be an Option
+children kept from Children.forEach, each given a createRef
 children stay in place before a flattened struct of nothing given
 components of an element's props are an ElementType, rendered as a tag
 direct element builder UFCS is rejected without replacing output

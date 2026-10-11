@@ -4249,3 +4249,36 @@ pub fn App(big: bool) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect([true, false].map((big) => renderToStaticMarkup(lib.App(big)))).toEqual(["<b>10</b>", "<b>1</b>"]);
 });
+
+// ADR 0364: from MIR as from THIR, what's made before a prop a branch makes
+// stays what it is: a style being given its fields, and a tag a closure
+// reads of a local it shares.
+test("a style and a tag made before a prop's branch stay what they are", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{CSSProperties, JSX, jsx};
+pub struct HProps {
+    pub id: Option<&'static str>,
+    pub class_name: Option<&'static str>,
+}
+pub fn H2(HProps { id, class_name }: HProps) -> JSX::Element {
+    jsx! { <h2 id={id} className={class_name}>{"H"}</h2> }
+}
+pub fn H4(HProps { id, class_name }: HProps) -> JSX::Element {
+    jsx! { <h4 id={id} className={class_name}>{"H"}</h4> }
+}
+pub fn App(small: bool) -> JSX::Element {
+    let Heading: fn(HProps) -> JSX::Element = if small { H4 } else { H2 };
+    jsx! {
+        <div style={CSSProperties::new().opacity(if small { 1 } else { 0 }).transition("t")}>
+            {small.then(|| jsx! { <Heading id={Some("t")} className={Some(if small { "a" } else { "b" })} /> })}
+        </div>
+    }
+}
+`);
+  run(args);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([true, false].map((small) => renderToStaticMarkup(lib.App(small)))).toEqual([
+    '<div style="opacity:1;transition:t"><h4 id="t" class="a">H</h4></div>',
+    '<div style="opacity:0;transition:t"></div>',
+  ]);
+});

@@ -80,6 +80,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// An object being made, which a field may still be given, a style's
+    /// `CSSProperties::new().opacity(..)`: what it's made of read now, as an
+    /// element's is (`capture_jsx`), the object made where it's used.
+    pub(super) fn capture_object(&mut self, value: &mut Expr, out: &mut Vec<Stmt>) -> bool {
+        let js::ExprKind::Object(props) = &mut value.kind else {
+            return false;
+        };
+        if props.iter().any(|p| matches!(p, Prop::Getter(..))) {
+            return false;
+        }
+        for prop in props {
+            match prop {
+                Prop::Field(name, value) => self.capture_jsx_input(&camel_case(&js_ident(name)), value, out),
+                Prop::Getter(..) => unreachable!("none"),
+                Prop::Spread(value) => {
+                    // A spread reads its properties now.
+                    let old = std::mem::replace(value, Expr::undefined());
+                    *value = self.spill("props", Expr::object(vec![Prop::Spread(old)]), out);
+                }
+            }
+        }
+        true
+    }
+
     /// Whether `value` reads the same wherever it's read: a constant, a
     /// function, an import, or a variable nothing writes again, a `const`
     /// of `out`'s, a field of a plain Rust value of one, and a comparison or a

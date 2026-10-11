@@ -145,6 +145,9 @@ struct State<'m, 'tcx> {
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
     in_place: std::collections::HashMap<Local, Expr>,
+    /// Each local read by its name already, a subject a branch tests: made
+    /// as a variable, never written where it's read.
+    named: std::collections::HashSet<Local>,
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
@@ -225,6 +228,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             boxes: Default::default(),
             branches: Default::default(),
             in_place: Default::default(),
+            named: Default::default(),
             parts: Default::default(),
         };
         // A closure's first argument is its environment, read through its fields.
@@ -434,7 +438,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "this closure, without its MIR"));
         };
         let mut captures = Vec::new();
+        // What it shares a reference to nothing changes while it runs
+        // (borrowck says so): there, it reads alike.
+        let mut shared = Vec::new();
         for (i, value) in captured.into_iter().enumerate() {
+            if let Value::Place(place) = &value
+                && let js::ExprKind::Var(name) = &place.kind
+                && self.locals.alike.insert(name.clone())
+            {
+                shared.push(name.clone());
+            }
             captures.push(match value {
                 Value::Ref(place) | Value::Place(place) => (place, true),
                 // One it took and changes is its own: a `let` of it, made here.
@@ -462,7 +475,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             });
         }
-        let (params, stmts) = self.mir_function(mir, Some(captures))?;
+        let lowered = self.mir_function(mir, Some(captures));
+        for name in shared {
+            self.locals.alike.remove(&name);
+        }
+        let (params, stmts) = lowered?;
         Ok(Expr::arrow(params, stmts))
     }
 
@@ -922,20 +939,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut made = Vec::new();
         for (local, value) in std::mem::take(&mut state.pending) {
             let mut expr = self.value_expr(value, Span::default())?;
-            // A constant, or what the module names, a function or a static,
-            // reads the same anywhere: written where it's read.
+            // A constant, what the module names, a function or a static, or a
+            // variable nothing changes, reads the same anywhere: written where
+            // it's read.
             let module = match &expr.kind {
-                js::ExprKind::Var(name) => self.module_names.contains(name),
+                js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),
                 js::ExprKind::Symbol(_) => true,
                 _ => false,
             };
-            if expr.is_constant() || module {
+            let named = state.named.contains(&local);
+            if (expr.is_constant() || module) && !named {
                 state.in_place.insert(local, expr);
                 continue;
             }
-            // An element, what it's made of read here, made where it's used.
+            // An element, or an object, what it's made of read here, made
+            // where it's used.
             let before = made.len();
-            if self.capture_jsx(&mut expr, &mut made) {
+            if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {
                 for stmt in &made[before..] {
                     if let StmtKind::Const(name, _) = &stmt.kind {
                         self.locals.alike.insert(name.clone());
@@ -1403,9 +1423,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut placed = false;
         let mut value = if place.projection.is_empty() {
-            match state.locals.names[place.local].as_str() {
-                "" => Expr::undefined(),
-                name => Expr::var(name),
+            match (
+                state.in_place.get(&place.local),
+                state.locals.names[place.local].as_str(),
+            ) {
+                (Some(value), _) => value.clone(),
+                (None, "") => Expr::undefined(),
+                (None, name) => {
+                    state.named.insert(place.local);
+                    Expr::var(name)
+                }
             }
         } else if matches!(
             state.body.local_decls[place.local].ty.peel_refs().kind(),
