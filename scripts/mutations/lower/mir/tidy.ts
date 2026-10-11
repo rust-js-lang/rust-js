@@ -666,4 +666,12 @@ export const mutations: Mutation[] = [
     replace: "    let plain: HashSet<&String> = cells.iter().collect();\n",
     tests: ["test/lowering.test.ts","-t","only its function reads and sets"],
   },
+  {
+    name: "mir-tidy-inlined-not-past",
+    breaks: "a temporary is read in place only by the statement right after it, `const _34 = formatted; const args$1 = args;` kept",
+    file: "src/lower/mir/tidy.rs",
+    find: "            at == 0\n                || !value.has_effects()\n",
+    replace: "            at == 0\n                || false && !value.has_effects()\n",
+    tests: ["test/bindings.test.ts","-t","replaced in place from MIR"],
+  },
 ];

@@ -1625,13 +1625,25 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet
             continue;
         };
         let temporary = is_temporary(name) || captured.contains(name);
-        if !temporary || js::mentions_in(rest, name) != 1 || js::mentions_in(&rest[..1], name) != 1 {
+        // The statement that reads it, past `const`s that do nothing, where
+        // what it does nothing either.
+        let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name) > 0);
+        let past = |at: usize| {
+            at == 0
+                || !value.has_effects()
+                    && (rest[..at].iter()).all(|s| matches!(&s.kind, StmtKind::Const(_, v) if !v.has_effects()))
+        };
+        let Some(at) = at.filter(|&at| past(at)) else {
+            i += 1;
+            continue;
+        };
+        if !temporary || js::mentions_in(rest, name) != 1 || js::mentions_in(&rest[at..=at], name) != 1 {
             i += 1;
             continue;
         }
         let mut stable = !value.has_effects();
         value.visit_vars(&mut |v| stable &= !changing.contains(v));
-        let read = match &mut rest[0].kind {
+        let read = match &mut rest[at].kind {
             StmtKind::Const(_, e)
             | StmtKind::Let(_, Some(e))
             | StmtKind::Expr(e)

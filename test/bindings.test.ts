@@ -1941,3 +1941,72 @@ pub fn year(year: f64) -> String {
   expect(named(Symbol("s"))).toBe(" Symbol(s)");
   expect([key(undefined, 0), key(null, 1), key({}, 2), key("a", 3)]).toEqual(["undefined-0", "null-1", "[object Object]-2", "a-3"]);
 });
+
+// react.dev's Console's `formatStr`, from MIR too (ADR 0364): the string a
+// replace is of read where it's replaced, past what its callback captures.
+test("a value replaced in place from MIR is read where it's replaced, as THIR's", async () => {
+  const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("mir-format-str");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use std::collections::VecDeque;
+use js::{Unknown, number, reg_exp};
+pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'static Unknown>> {
+    let maybeMessage = inputArgs.first().copied().flatten();
+    if js::type_of(maybeMessage) != "string" {
+        return inputArgs;
+    }
+    // If the first argument is a string, check for substitutions.
+    let mut args: VecDeque<Option<&'static Unknown>> = inputArgs.iter().skip(1).copied().collect();
+    let mut formatted: String = js::string(maybeMessage);
+    if !args.is_empty() {
+        let REGEXP = reg_exp::new("(%?)(%([jds]))", "g");
+
+        formatted = reg_exp::replace(
+            &formatted,
+            REGEXP,
+            |r#match: &str, escaped: Option<&str>, ptn: Option<&str>, flag: Option<&str>| {
+                let mut arg = args.pop_front().flatten();
+                match flag {
+                    Some("s") => {
+                        arg = Some(js::unknown_of(js::concat_text(arg)));
+                    }
+                    Some("d") | Some("i") => {
+                        arg = Some(js::unknown_of(number::to_string(js::parse_int(arg, 10))));
+                    }
+                    Some("f") => {
+                        arg = Some(js::unknown_of(number::to_string(js::parse_float(arg))));
+                    }
+                    _ => {}
+                }
+                if escaped.is_none_or(str::is_empty) {
+                    return arg;
+                }
+                args.push_front(arg);
+                Some(js::unknown_of(r#match.to_string()))
+            },
+        );
+    }
+
+    // Arguments that remain after formatting.
+    if !args.is_empty() {
+        for i in 0..args.len() {
+            formatted += &format!(" {}", js::string(args[i]));
+        }
+    }
+
+    // Update escaped %% values.
+    vec![Some(js::unknown_of(reg_exp::replace(
+        &formatted,
+        reg_exp::new("%{2,2}", "g"),
+        "%",
+    )))]
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withJs], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    formatted = formatted.replace(REGEXP, (match, escaped, ptn, flag) => {\n");
+    const lib = await import(join(dir, out));
+    expect(lib.formatStr(["a %s b %d", "x", "4.2", "y"])).toEqual(["a x b 4 y"]);
+  }
+});
