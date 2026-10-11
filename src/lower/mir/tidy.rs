@@ -1639,10 +1639,18 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet
         };
         // What's read before it: what does nothing, where it does nothing
         // either; else only constants and variables nothing changes, which
-        // what it does can't change.
+        // what it does can't change. Of what an element made ahead of a
+        // branch reads, what does nothing and reads no such variable: the
+        // element's tree is the order the program makes them in.
         let acts = value.has_effects();
+        let element = captured.contains(name);
         let passes = |e: &Expr| match acts {
             false => !e.has_effects(),
+            true if element => {
+                let mut unchanged = !e.has_effects();
+                e.visit_vars(&mut |v| unchanged &= !changing.contains(v));
+                unchanged
+            }
             true => e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),
         };
         if !stable && leads(read, name, &passes) != Some(true) {

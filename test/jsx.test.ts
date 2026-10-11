@@ -347,6 +347,51 @@ pub fn Page(home: bool, blog: bool, content: &str) -> JSX::Element {
   expect(renderToStaticMarkup(result.Page(true, false, "c"))).toBe('<div class="page on"><b>h</b><p class="text">c</p></div>');
 });
 
+// What an element reads that MIR makes ahead of it, \`&base(..)\`'s borrowed
+// value, read where it's written past what does nothing before it there, a
+// namespace's tag too: the tree is the order the program makes them in,
+// from MIR too (ADR 0364).
+test("what an element reads past elements before it is read where it's written", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub mod Menu {
+    use react::{JSX, ReactNode};
+    pub struct PartProps<C> {
+        pub children: C,
+    }
+    #[rust_js::link_name = "./menu.js#*.Root"]
+    pub fn Root<C: ReactNode>(props: PartProps<C>) -> JSX::Element {
+        unreachable!()
+    }
+}
+fn base(p: &str) -> String {
+    format!("/b{p}")
+}
+pub struct LinkProps<'a> {
+    pub href: &'a str,
+}
+pub fn Link(LinkProps { href }: LinkProps) -> JSX::Element {
+    jsx! { <a href={href}>{"l"}</a> }
+}
+pub fn Nav() -> JSX::Element {
+    jsx! {
+        <Menu::Root>
+            <Link href={&base("/x")} />
+            <Link href={&base("/y")} />
+        </Menu::Root>
+    }
+}
+`;
+  const { dir, args } = compile(source, {
+    "menu.js": "export function Root({ children }) { return children; }\n",
+  });
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain('      <Link href={base("/x")} />\n');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Nav())).toBe('<a href="/b/x">l</a><a href="/b/y">l</a>');
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;

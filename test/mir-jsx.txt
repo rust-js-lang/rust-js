@@ -85,3 +85,4 @@ a list of children a chain collects is an array's map
 an if given as a child is a conditional child
 a namespace import's component is a tag where it's written
 what an element reads, made before a branch in its tree, is read where it's written
+what an element reads past elements before it is read where it's written

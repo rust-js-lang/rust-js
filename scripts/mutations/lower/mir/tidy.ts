@@ -634,4 +634,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },
+  {
+    name: "mir-tidy-element-read-held",
+    breaks: "what an element made ahead of a branch reads stays a `const` where elements before it come first, `className$1`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            true if element => {\n",
+    replace: "            true if false && element => {\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];
