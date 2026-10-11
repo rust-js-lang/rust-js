@@ -6823,3 +6823,57 @@ pub fn files(code: String, other: String) -> &'static js::Dict<String> {
     expect(lib.files("a", "b")).toEqual({ "/index.js": "A", "/other.js": "b" });
   }
 });
+
+// ADR 0233: a `match` whose arms each give the field of their variant's
+// name of one table is the table read by what's matched, from MIR as from
+// THIR, as react.dev's ExpandableCallout picks its variant: `MAP[kind]`.
+test("a match reading a table from MIR is the table read by its key", async () => {
+  const dir = fixture("match-table");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum Kind {
+    #[cfg_attr(rust_js, rust_js::name = "note")]
+    Note,
+    #[cfg_attr(rust_js, rust_js::name = "pitfall")]
+    Pitfall,
+    #[cfg_attr(rust_js, rust_js::name = "wip")]
+    Wip,
+}
+pub struct Map {
+    pub note: &'static str,
+    pub pitfall: &'static str,
+    pub wip: &'static str,
+}
+static MAP: Map = Map { note: "n", pitfall: "p", wip: "w" };
+pub fn label(kind: Kind) -> String {
+    let variant = match kind {
+        Kind::Note => &MAP.note,
+        Kind::Pitfall => &MAP.pitfall,
+        Kind::Wip => &MAP.wip,
+    };
+    format!("{variant}!")
+}
+pub fn name(kind: Kind) -> &'static str {
+    match kind {
+        Kind::Note => "note",
+        Kind::Pitfall => "pitfall",
+        Kind::Wip => "wip",
+    }
+}
+pub fn mixed(kind: Kind) -> &'static str {
+    match kind {
+        Kind::Note => MAP.note,
+        Kind::Pitfall => MAP.pitfall,
+        Kind::Wip => "wip",
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const variant = MAP[kind];\n");
+    expect(js).toContain("export function name(kind) {\n  return kind;\n}");
+    const lib = await import(join(dir, out));
+    expect(["note", "pitfall", "wip"].map((k) => lib.label(k))).toEqual(["n!", "p!", "w!"]);
+    expect(["note", "pitfall", "wip"].map((k) => [lib.name(k), lib.mixed(k)])).toEqual([["note", "n"], ["pitfall", "p"], ["wip", "wip"]]);
+  }
+});

@@ -488,6 +488,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A closure's own, which it named, apart from its body's.
         let falsy = std::mem::replace(&mut self.locals.falsy, outer_falsy);
         let tested = std::mem::replace(&mut self.locals.tested, outer_tested);
+        // Where each `match` is written whose arms are each a variant of its
+        // own, with no field, guard or binding: one that may read a table by
+        // what's matched (ADR 0233), as tidy's `table_reads` tells.
+        let tables: Vec<js::Span> = (self.thir.exprs.iter())
+            .filter_map(|e| {
+                let thir::ExprKind::Match { scrutinee, ref arms, .. } = e.kind else {
+                    return None;
+                };
+                let ty::Adt(adt, _) = self.thir[scrutinee].ty.peel_refs().kind() else {
+                    return None;
+                };
+                let each = (arms.iter()).all(|&arm| {
+                    let arm = &self.thir[arm];
+                    arm.guard.is_none()
+                        && matches!(&arm.pattern.kind, thir::PatKind::Variant { subpatterns, .. } if subpatterns.is_empty())
+                });
+                (adt.is_enum() && arms.len() >= 2 && each)
+                    .then(|| self.js_span(e.span))
+            })
+            .collect();
         // Where each `if`'s condition is written, of the body THIR has:
         // tests in one are `&&`'s; and a `match` and the guard of an arm of
         // it, whose pattern's test and the guard are.
@@ -622,6 +642,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 loops: &loops,
                 continues: &continues,
                 callbacks: &callbacks,
+                tables: &tables,
                 payloads: &(state.payloads.iter())
                     .map(|&l| state.locals.names[l].clone())
                     .collect(),

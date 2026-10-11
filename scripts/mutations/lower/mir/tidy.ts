@@ -882,4 +882,52 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "table-reads-off",
+    "breaks": "a `match` reading a table is MIR's tests of each variant, not `MAP[kind]`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a match reading a table from MIR"
+    ]
+  },
+  {
+    "name": "table-reads-returns-kept",
+    "breaks": "a `match` of returns, each its variant's own name, stays a return for each, not `return kind;`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                stmts.splice(i..=i + returned, [StmtKind::Return(Some(read)).at(span)]);\n",
+    "replace": "                let _ = (read, span);\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a match reading a table from MIR"
+    ]
+  },
+  {
+    "name": "table-read-own-names-off",
+    "breaks": "a `match` giving each variant's own name isn't what's matched",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        None if names == arms.len() => Some((**key).clone()),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a match reading a table from MIR"
+    ]
+  },
+  {
+    "name": "table-read-mixed-arms",
+    "breaks": "a `match` of a table's fields and a literal reads the table for the literal's variant too",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        Some(table) if fields.len() == arms.len() =>",
+    "replace": "        Some(table) =>",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a match reading a table from MIR"
+    ]
+  },
 ];

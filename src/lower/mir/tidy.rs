@@ -27,6 +27,8 @@ pub(super) struct Hints<'h> {
     pub(super) continues: &'h [js::Span],
     /// The closures a `let` names that a hook's function alone is (ADR 0297).
     pub(super) callbacks: &'h HashSet<String>,
+    /// Where each `match` that reads a table by its key is (ADR 0233).
+    pub(super) tables: &'h [js::Span],
     /// What a pattern binds in an enum's variant, `Some(code)`, by name.
     pub(super) payloads: &'h HashSet<String>,
     pub(super) returns: &'h [js::Span],
@@ -49,6 +51,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         continues,
         payloads,
         callbacks,
+        tables,
         returns,
         captured,
         booleans,
@@ -144,6 +147,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let changed = self::changing(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
+    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
@@ -657,6 +661,160 @@ fn writes_return(stmts: &[Stmt], returns: &[js::Span]) -> bool {
 /// `returns`, where those are.
 fn written(returns: &[js::Span], span: js::Span) -> bool {
     !span.is_none() && returns.iter().any(|w| w.lo <= span.lo && span.hi <= w.hi)
+}
+
+/// A `match` reading a table by its key (ADR 0233), as MIR tests each
+/// variant: `if (k === "a") { v = M.a; } else { v = k === "b" ? M.b : M.c; }`,
+/// `v = M[k]`; of each arm its own name, `"a"`, `v = k`. And of returns,
+/// `if (k === "a") { return M.a; } .. return M.c;`, `return M[k];`.
+fn table_reads(stmts: &mut Vec<Stmt>, tables: &[js::Span]) {
+    let within = |s: js::Span| !s.is_none() && tables.iter().any(|t| t.lo <= s.lo && s.hi <= t.hi);
+    let mut i = 0;
+    while i < stmts.len() {
+        let returned = (stmts[i..].iter())
+            .take_while(|s| {
+                within(s.span)
+                    && matches!(&s.kind, StmtKind::If(_, then, None)
+                        if matches!(then.as_slice(), [Stmt { kind: StmtKind::Return(Some(_)), .. }]))
+            })
+            .count();
+        if returned > 0
+            && let Some(Stmt {
+                kind: StmtKind::Return(Some(last)),
+                ..
+            }) = stmts.get(i + returned)
+        {
+            let mut arms: Vec<(Option<Expr>, Expr)> = (stmts[i..i + returned].iter())
+                .map(|s| match &s.kind {
+                    StmtKind::If(test, then, None) => match then.as_slice() {
+                        [
+                            Stmt {
+                                kind: StmtKind::Return(Some(value)),
+                                ..
+                            },
+                        ] => (Some(test.clone()), value.clone()),
+                        _ => unreachable!("taken"),
+                    },
+                    _ => unreachable!("taken"),
+                })
+                .collect();
+            value_arms(last, &mut arms);
+            if let Some(read) = table_read(&arms) {
+                let span = stmts[i].span;
+                stmts.splice(i..=i + returned, [StmtKind::Return(Some(read)).at(span)]);
+            }
+        }
+        i += 1;
+    }
+    for stmt in stmts.iter_mut() {
+        if !within(stmt.span) {
+            continue;
+        }
+        let mut arms = Vec::new();
+        let target = match &stmt.kind {
+            StmtKind::If(..) => assigned_arms(stmt, &mut arms),
+            StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) => {
+                value_arms(e, &mut arms);
+                None
+            }
+            StmtKind::Assign(target, e) => {
+                value_arms(e, &mut arms);
+                Some(target.clone())
+            }
+            _ => continue,
+        };
+        let Some(read) = table_read(&arms) else { continue };
+        match (&mut stmt.kind, target) {
+            (StmtKind::If(..), Some(target)) => stmt.kind = StmtKind::Assign(target, read),
+            (
+                StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) | StmtKind::Assign(_, e),
+                _,
+            ) => *e = read,
+            _ => {}
+        }
+    }
+}
+
+/// The arms of `if (k === "a") { v = .. } else ..`, each its test and value,
+/// and what each assigns, the same.
+fn assigned_arms(stmt: &Stmt, arms: &mut Vec<(Option<Expr>, Expr)>) -> Option<Expr> {
+    match &stmt.kind {
+        StmtKind::If(test, then, Some(otherwise)) => {
+            let [
+                Stmt {
+                    kind: StmtKind::Assign(target, value),
+                    ..
+                },
+            ] = then.as_slice()
+            else {
+                return None;
+            };
+            arms.push((Some(test.clone()), value.clone()));
+            let [rest] = otherwise.as_slice() else { return None };
+            let rest = assigned_arms(rest, arms)?;
+            same(&rest, target).then_some(rest)
+        }
+        StmtKind::Assign(target, value) => {
+            value_arms(value, arms);
+            Some(target.clone())
+        }
+        _ => None,
+    }
+}
+
+/// The arms of `k === "a" ? M.a : ..`, each its test and value.
+fn value_arms(e: &Expr, arms: &mut Vec<(Option<Expr>, Expr)>) {
+    match &e.kind {
+        ExprKind::Cond(test, value, rest) => {
+            arms.push((Some((**test).clone()), (**value).clone()));
+            value_arms(rest, arms);
+        }
+        _ => arms.push((None, e.clone())),
+    }
+}
+
+/// `M[k]`, of arms each `k === "a"` giving `M.a`, the last whichever's
+/// left; or `k` itself, of each giving its own name.
+fn table_read(arms: &[(Option<Expr>, Expr)]) -> Option<Expr> {
+    let [first, .., (None, _)] = arms else { return None };
+    let (Some(first), _) = first else { return None };
+    let ExprKind::Binary(Op::Eq, key, _) = &first.kind else {
+        return None;
+    };
+    let mut table: Option<&Expr> = None;
+    let mut fields = Vec::new();
+    let mut names = 0;
+    for (test, value) in arms {
+        let name = match test {
+            Some(test) => {
+                let ExprKind::Binary(Op::Eq, k, name) = &test.kind else {
+                    return None;
+                };
+                let ExprKind::Str(name) = &name.kind else { return None };
+                if !same(k, key) {
+                    return None;
+                }
+                Some(name.as_str())
+            }
+            None => None,
+        };
+        match &value.kind {
+            ExprKind::Member(of, field) if name.is_none_or(|n| n == field) && !fields.contains(&field.as_str()) => {
+                if table.is_some_and(|t| !same(t, of)) {
+                    return None;
+                }
+                table = Some(of);
+                fields.push(field.as_str());
+            }
+            ExprKind::Str(s) if name.is_none_or(|n| n == s) => names += 1,
+            _ => return None,
+        }
+    }
+    match table {
+        None if names == arms.len() => Some((**key).clone()),
+        Some(table) if fields.len() == arms.len() => Some(Expr::index(table.clone(), (**key).clone())),
+        _ => None,
+    }
 }
 
 /// `l: { if (a) { break l; } if (b) { break l; } rest } t`, of `let … else`
