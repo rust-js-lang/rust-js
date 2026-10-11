@@ -6286,3 +6286,33 @@ test("a match guard's binding from MIR is what it binds, as THIR's", async () =>
     expect(js).toContain('export function titled(errorCode) {\n  if (errorCode) {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
   }
 });
+
+test("a closure from MIR captures a variable itself where nothing changes it after, as THIR's", async () => {
+  const dir = fixture("mir-captured-after");
+  writeFileSync(join(dir, "lib.rs"), `pub fn last(n: u32, hover: &dyn Fn(&dyn Fn() -> u32)) {
+    let mut index = 0;
+    for _ in 0..n {
+        index += 1;
+    }
+    hover(&move || index);
+}
+pub fn each(n: u32) -> Vec<u32> {
+    let mut made: Vec<Box<dyn Fn() -> u32>> = Vec::new();
+    let mut index = 0;
+    while index < n {
+        made.push(Box::new(move || index));
+        index += 1;
+    }
+    made.iter().map(|f| f()).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  hover(() => index);\n");
+    const lib = await import(join(dir, out));
+    let seen = 0;
+    lib.last(3, (f: () => number) => { seen = f(); });
+    expect([seen, lib.each(3)]).toEqual([3, [0, 1, 2]]);
+  }
+});

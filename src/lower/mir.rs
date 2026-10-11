@@ -188,6 +188,8 @@ struct State<'m, 'tcx> {
     /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`, as THIR checks
     /// them (`deferred_check`).
     deferred: std::collections::HashMap<Local, bool>,
+    /// The block whose statements are being lowered.
+    at: BasicBlock,
     /// Each variable a pattern binds in an enum's variant, `Some(title)`:
     /// what it's bound to, where that reads the same anywhere, is it, as THIR
     /// reads it.
@@ -332,6 +334,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             parts: Default::default(),
             places: Default::default(),
             deferred: Default::default(),
+            at: BasicBlock::from_usize(0),
             discarding: false,
             returns: (self.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
@@ -795,8 +798,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 value => {
                     let e = self.value_expr(value, span)?;
+                    // Written again where it's made, or after: a copy, as it was.
                     let changes = matches!(&e.kind, js::ExprKind::Var(name)
-                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] > 1));
+                        if state.locals.names.iter_enumerated().any(|(l, n)| n == name
+                            && state.locals.writes[l] > 1
+                            && written_from(state.body, state.at, l)));
                     let e = if e.is_constant() || (matches!(e.kind, js::ExprKind::Var(_)) && !changes) {
                         e
                     } else {
@@ -1137,6 +1143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A block's statements.
     fn mir_statements(&mut self, state: &mut State<'_, 'tcx>, block: BasicBlock) -> R<Vec<Stmt>> {
+        state.at = block;
         let data = &state.body.basic_blocks[block];
         let mut out = Vec::new();
         for (index, statement) in data.statements.iter().enumerate() {
@@ -4482,6 +4489,26 @@ fn deferred_check<'tcx>(
         _ if written.projection.last() == Some(&PlaceElem::Index(local)) => Some((local, true)),
         _ => None,
     }
+}
+
+/// Whether `local` is assigned in `from`, or a block it goes on to.
+fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
+    let mut seen = std::collections::HashSet::new();
+    let mut next = vec![from];
+    while let Some(block) = next.pop() {
+        if !seen.insert(block) {
+            continue;
+        }
+        let data = &body.basic_blocks[block];
+        let writes = (data.statements.iter())
+            .any(|s| matches!(&s.kind, StatementKind::Assign(a) if a.0.as_local() == Some(local)))
+            || matches!(&data.terminator().kind, TerminatorKind::Call { destination, .. } if destination.as_local() == Some(local));
+        if writes {
+            return true;
+        }
+        next.extend(data.terminator().successors());
+    }
+    false
 }
 
 /// Where the program wrote what `block` does first: a macro's, where it

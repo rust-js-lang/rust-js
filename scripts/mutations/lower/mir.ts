@@ -1258,4 +1258,20 @@ export const mutations: Mutation[] = [
     replace: "        if false && !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
     tests: ["test/lowering.test.ts","-t","arguments read out of order"],
   },
+  {
+    name: "mir-capture-copied-always",
+    breaks: "a closure copies a variable written only before it, `const captured = index`",
+    file: "src/lower/mir.rs",
+    find: "                            && written_from(state.body, state.at, l)));\n",
+    replace: "                            ));\n",
+    tests: ["test/lowering.test.ts","-t","captures a variable itself where nothing"],
+  },
+  {
+    name: "mir-capture-copied-never",
+    breaks: "a closure made in a loop that changes what it captures reads the variable, every closure the last value",
+    file: "src/lower/mir.rs",
+    find: "        next.extend(data.terminator().successors());\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","captures a variable itself where nothing"],
+  },
 ];
