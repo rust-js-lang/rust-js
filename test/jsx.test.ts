@@ -5095,3 +5095,49 @@ pub fn Hint(HintProps { hint }: HintProps) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Hint, { hint: "h" }))).toBe("<div>h</div>");
 });
+
+// ADR 0364: children MIR holds as a tuple, `const children = [" ", ..]`,
+// read item by item, `{children[0]}{children[1]}`, are those items where
+// they're read, of what does nothing: a `then` closure whose element they're
+// in is that element, `!recipes && <Button>..`, as react.dev's Challenge
+// shows its solution button.
+test("children held as a tuple are read as their items", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub struct IconProps<'a> {
+    pub class_name: Option<&'a str>,
+}
+pub fn Icon(IconProps { class_name }: IconProps) -> JSX::Element {
+    jsx! { <i className={class_name.unwrap_or_default()} /> }
+}
+pub struct ButtonProps<'a, C: ReactNode> {
+    pub children: C,
+    pub on_click: Option<Box<dyn Fn()>>,
+    pub active: Option<bool>,
+    pub class_name: Option<&'a str>,
+}
+pub fn Button<C: ReactNode>(ButtonProps { children, on_click, active, class_name }: ButtonProps<C>) -> JSX::Element {
+    let _ = on_click;
+    jsx! { <button className={class_name.unwrap_or_default()} disabled={active.unwrap_or_default()}>{children}</button> }
+}
+pub fn Buttons(recipes: bool, shown: bool, toggle: &'static dyn Fn()) -> JSX::Element {
+    let toggle_solution = move || toggle();
+    jsx! {
+        <div>
+            {(!recipes).then(|| jsx! {
+                <Button className={Some("me-2")} on_click={Some(Box::new(toggle_solution))} active={Some(shown)}>
+                    <Icon class_name={Some("me-1.5")} />{" "}
+                    {if shown { "Hide solution" } else { "Show solution" }}
+                </Button>
+            })}
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toContain("children[");
+  expect(jsx).not.toContain("const value");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Buttons(false, true, () => {}))).toBe('<div><button class="me-2" disabled=""><i class="me-1.5"></i> Hide solution</button></div>');
+});

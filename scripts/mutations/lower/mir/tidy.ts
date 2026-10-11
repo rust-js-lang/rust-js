@@ -1366,4 +1366,28 @@ export const mutations: Mutation[] = [
       "match arm that does nothing"
     ]
   },
+  {
+    "name": "mir-tidy-tuple-reads-kept",
+    "breaks": "children MIR holds as a tuple stay `const children = [..]`, read `children[0]`, and its `then` closure a `const value`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| tuple_reads(stmts, &changing, captured));\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-tidy-tuple-set-through",
+    "breaks": "a tuple MIR sets an item of, `t[0] = x`, is read as its items, which crashes printing what's assigned",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "if sets_through(&stmts[i + 1..], &t) || indexed == 0",
+    "replace": "if indexed == 0",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "mut_ref_temporary"
+    ]
+  },
 ];

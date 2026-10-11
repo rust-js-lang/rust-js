@@ -104,3 +104,4 @@ a prop held for a borrow is read where it's written, past a sibling element
 an element made where a test holds is read where it's written
 an element made where an object's truth holds is read where it's written
 a child shown where a state's bool holds is an and
+children held as a tuple are read as their items

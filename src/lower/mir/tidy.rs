@@ -158,6 +158,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // of branches that leaves.
     // A pattern's copy of a variable, `const error = raw;`: the variable.
     js::statement_lists(body, &mut |stmts| copied_bindings(stmts));
+    // A tuple read item by item, `children[0]`: its items.
+    let changing = self::changing(body);
+    js::statement_lists(body, &mut |stmts| tuple_reads(stmts, &changing, captured));
     let changed = self::changing(body);
     // What an element MIR made only where a test holds reads, as one value,
     // read in place below, where the test holds.
@@ -2387,6 +2390,25 @@ fn rebinds(stmts: &[Stmt], name: &str) -> bool {
     found
 }
 
+/// Whether `stmts` set something of `name`'s, `name[0] = ..`, a closure's
+/// in them too.
+fn sets_through(stmts: &[Stmt], name: &str) -> bool {
+    let mut set = false;
+    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
+        for stmt in list.iter() {
+            if let StmtKind::Assign(target, _) = &stmt.kind {
+                target.visit_vars(&mut |v| set |= v == name);
+            }
+        }
+    });
+    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
+        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
+            set |= sets_through(body, name);
+        }
+    });
+    set
+}
+
 /// Whether a closure in `stmts` reads `name`.
 fn in_closure(stmts: &[Stmt], name: &str) -> bool {
     let mut found = false;
@@ -2409,6 +2431,53 @@ fn empty_branches(stmts: &mut Vec<Stmt>) {
         }
     }
     stmts.retain(|s| !matches!(&s.kind, StmtKind::If(test, then, None) if then.is_empty() && !test.has_effects()));
+}
+
+/// `const children = [" ", c ? a : b];`, a tuple MIR holds, read only item
+/// by item, `children[0]`: each item where it's read, of items that do
+/// nothing and read what nothing changes, which read the same anywhere.
+fn tuple_reads(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet<String>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let found = match &stmts[i].kind {
+            StmtKind::Const(t, value)
+                if (is_temporary(t) || captured.contains(t))
+                    && let ExprKind::Array(items) = &value.kind
+                    && items.iter().all(|item| {
+                        let mut inert = !item.has_effects();
+                        item.visit_vars(&mut |v| inert &= !changing.contains(v));
+                        inert
+                    }) =>
+            {
+                Some((t.clone(), items.clone()))
+            }
+            _ => None,
+        };
+        let Some((t, items)) = found else {
+            i += 1;
+            continue;
+        };
+        let item = |e: &Expr| match &e.kind {
+            ExprKind::Index(of, k) if matches!(&of.kind, ExprKind::Var(v) if *v == t) => k
+                .as_int()
+                .and_then(|k| usize::try_from(k).ok())
+                .filter(|&k| k < items.len()),
+            _ => None,
+        };
+        let mut indexed = 0;
+        js::each_expr_mut(&mut stmts[i + 1..], &mut |e| indexed += usize::from(item(e).is_some()));
+        // Read only, not set through, `children[0] = ..`.
+        if sets_through(&stmts[i + 1..], &t) || indexed == 0 || indexed != js::mentions_in(&stmts[i + 1..], &t) {
+            i += 1;
+            continue;
+        }
+        js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+            if let Some(k) = item(e) {
+                *e = items[k].clone();
+            }
+        });
+        stmts.remove(i);
+    }
 }
 
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.
