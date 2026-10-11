@@ -1855,6 +1855,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `read`, `place`'s value, of a props field with a default, what JS
+    /// takes apart with it (ADR 0212): the default where it's `undefined`,
+    /// `o.k === undefined ? d : o.k`, which a pattern of it writes `{ k = d }`.
+    fn with_default(&mut self, state: &State<'_, 'tcx>, place: Place<'tcx>, read: Expr, span: Span) -> Expr {
+        let Some((base, PlaceElem::Field(field, _))) = place.as_ref().last_projection() else {
+            return read;
+        };
+        let base_ty = Place::ty_from(base.local, base.projection, &state.body.local_decls, self.tcx);
+        if base_ty.variant_index.is_some() || !matches!(base_ty.ty.kind(), ty::Adt(adt, _) if adt.is_struct()) {
+            return read;
+        }
+        match self.prop_default(base_ty.ty, field.as_usize(), span) {
+            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::undefined()), default, read),
+            None => read,
+        }
+    }
+
     /// Whether `place` is its local's value, through what's the value it
     /// holds: a box's, or a `MaybeUninit`'s; and, of a read, a reference's.
     fn whole(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>) -> bool {
@@ -1985,7 +2002,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Operand::Copy(place) | Operand::Move(place) => {
                 let span = state.body.local_decls[place.local].source_info.span;
-                Ok(Value::Expr(self.mir_place(state, *place, span, out)?))
+                let read = self.mir_place(state, *place, span, out)?;
+                Ok(Value::Expr(self.with_default(state, *place, read, span)))
             }
             // A function given by reference, `&hello`, a promoted constant:
             // the function, as a reference is what it refers to (ADR 0023).
@@ -2269,8 +2287,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     });
                 }
                 let place_expr = self.mir_place(state, *place, span, out)?;
-                if matches!(kind, BorrowKind::Shared) && place_expr.reads_same() {
-                    return Ok(Value::Place(place_expr));
+                if matches!(kind, BorrowKind::Shared) {
+                    let read = self.with_default(state, *place, place_expr.clone(), span);
+                    if !matches!(read.kind, js::ExprKind::Cond(..)) && place_expr.reads_same() {
+                        return Ok(Value::Place(place_expr));
+                    }
+                    return Ok(Value::Expr(read));
                 }
                 place_expr
             }

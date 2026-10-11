@@ -1098,4 +1098,12 @@ export const mutations: Mutation[] = [
     replace: "(!exits(&then) || otherwise.len() < then.len())",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },
+  {
+    name: "mir-prop-default-unread",
+    breaks: "a props field with a default, left out, reads `undefined` from MIR",
+    file: "src/lower/mir.rs",
+    find: "            Some(default) => Expr::cond(Expr::bin(js::Op::Eq, read.clone(), Expr::undefined()), default, read),\n",
+    replace: "            Some(_) => read,\n",
+    tests: ["test/lowering.test.ts","-t","props field's default is read"],
+  },
 ];

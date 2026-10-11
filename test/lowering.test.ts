@@ -1631,6 +1631,32 @@ pub fn pick(c: bool, n: u32) -> u32 {
   }
 });
 
+// ADR 0212: a props field's default, \`#[rust_js::default]\`, is where JS
+// takes the props apart, \`{ class_name: className = "language-js" }\`, from
+// MIR (ADR 0364) as from THIR: a field left out reads its default.
+test("a props field's default is read where the props are taken apart", async () => {
+  const dir = fixture("mir-prop-defaults");
+  writeFileSync(join(dir, "lib.rs"), `pub struct CodeProps<'a> {
+    #[rust_js::default = "language-js"]
+    pub class_name: &'a str,
+    #[rust_js::default = ""]
+    pub children: &'a str,
+    pub meta: Option<&'a str>,
+}
+pub fn describe(props: &CodeProps) -> String {
+    let CodeProps { class_name, children: code, meta } = props;
+    format!("{class_name}:{}:{}", code.len(), meta.unwrap_or("-"))
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  const { class_name: className = "language-js", children: code = "", meta } = props;\n');
+    const lib = await import(join(dir, out));
+    expect([lib.describe({}), lib.describe({ class_name: "css", children: "ab", meta: "m" })]).toEqual(["language-js:0:-", "css:2:m"]);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

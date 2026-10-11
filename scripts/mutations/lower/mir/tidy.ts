@@ -190,8 +190,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-destructured-variable-kept",
     breaks: "`const a = t[0]; const b = t[1];` of a variable stays, not `const [a, b] = t;`",
     file: "src/lower/mir/tidy.rs",
-    find: "                (v.clone(), i)\n",
-    replace: "                (v.clone(), i + stmts.len())\n",
+    find: "                (v.to_string(), i)\n",
+    replace: "                (v.to_string(), i + stmts.len())\n",
     tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
   },
   {
@@ -369,5 +369,13 @@ export const mutations: Mutation[] = [
     find: "        && !written(returns, last.span)\n        && !writes_return(std::slice::from_ref(last_if), returns)\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "mir-tidy-default-part-unstarted",
+    breaks: "parts read with a default don't start a pattern, `const className = p.k === undefined ? d : p.k;` stays",
+    file: "src/lower/mir/tidy.rs",
+    find: "        ExprKind::Cond(_, _, read) => match &read.kind {\n",
+    replace: "        ExprKind::Cond(_, _, read) if false => match &read.kind {\n",
+    tests: ["test/lowering.test.ts","-t","props field's default is read"],
   },
 ];

@@ -659,11 +659,10 @@ fn destructured(stmts: &mut Vec<Stmt>) {
         let (name, first) = match &stmts[i].kind {
             StmtKind::Const(name, _) if is_temporary(name) => (name.clone(), i + 1),
             StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))
-                if let ExprKind::Index(of, _) | ExprKind::Member(of, _) = &value.kind
-                    && let ExprKind::Var(v) = &of.kind
+                if let Some(v) = part_of(value)
                     && !is_temporary(v) =>
             {
-                (v.clone(), i)
+                (v.to_string(), i)
             }
             _ => {
                 i += 1;
@@ -694,7 +693,7 @@ fn destructured(stmts: &mut Vec<Stmt>) {
         {
             let span = stmts[i].span;
             let each: Vec<Stmt> = (parts.iter())
-                .map(|(part, bound, mutable)| {
+                .map(|(part, bound, mutable, _)| {
                     let item = items[*part.as_ref().expect("indexed")].clone();
                     match mutable {
                         true => StmtKind::Let(bound.clone(), Some(item)),
@@ -706,7 +705,7 @@ fn destructured(stmts: &mut Vec<Stmt>) {
             stmts.splice(i..first + count, each);
             continue;
         }
-        let mutable = parts.iter().any(|&(_, _, m)| m);
+        let mutable = parts.iter().any(|(_, _, m, _)| *m);
         let pattern = pattern.expect("checked");
         let value = match made {
             true => {
@@ -732,7 +731,8 @@ fn destructured(stmts: &mut Vec<Stmt>) {
 
 /// A part of a value read into a variable: its index or key, the variable,
 /// and whether it's a `let`.
-type Part = (Result<usize, String>, String, bool);
+/// And a key's default, `{ size = "md" }`'s.
+type Part = (Result<usize, String>, String, bool, Option<Expr>);
 
 /// The parts of `name` the first of `stmts` read, each a `const` or a
 /// `let` of one, `const a = name[0];` or `const b = name.b;`.
@@ -747,21 +747,51 @@ fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
         if bound == name {
             break;
         }
-        let part = match &value.kind {
+        let key = |e: &Expr| match &e.kind {
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == name) => Some(key.clone()),
+            _ => None,
+        };
+        let (part, default) = match &value.kind {
             ExprKind::Index(of, index)
                 if matches!(&of.kind, ExprKind::Var(v) if v == name)
                     && let ExprKind::Num(k) = index.kind
                     && k >= 0.0
                     && k.fract() == 0.0 =>
             {
-                Ok(k as usize)
+                (Ok(k as usize), None)
             }
-            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == name) => Err(key.clone()),
+            ExprKind::Member(..) if let Some(key) = key(value) => (Err(key), None),
+            // A field with a default, `o.k === undefined ? d : o.k`.
+            ExprKind::Cond(test, default, read)
+                if let ExprKind::Binary(Op::Eq, tested, undefined) = &test.kind
+                    && matches!(undefined.kind, ExprKind::Undefined)
+                    && let Some(k) = key(read)
+                    && key(tested).is_some_and(|t| t == k) =>
+            {
+                (Err(k), Some((**default).clone()))
+            }
             _ => break,
         };
-        parts.push((part, bound.clone(), mutable));
+        parts.push((part, bound.clone(), mutable, default));
     }
     parts
+}
+
+/// The variable `value` reads a part of, as `parts` reads one: `o[0]`,
+/// `o.k`, or `o.k === undefined ? d : o.k`.
+fn part_of(value: &Expr) -> Option<&str> {
+    let of = match &value.kind {
+        ExprKind::Index(of, _) | ExprKind::Member(of, _) => of,
+        ExprKind::Cond(_, _, read) => match &read.kind {
+            ExprKind::Member(of, _) => of,
+            _ => return None,
+        },
+        _ => return None,
+    };
+    match &of.kind {
+        ExprKind::Var(v) => Some(v),
+        _ => None,
+    }
 }
 
 /// What takes `parts` apart, `[a, , c]` of indices, `{ a, b: c }` of keys:
@@ -773,13 +803,13 @@ fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
     if parts.iter().all(|(p, ..)| p.is_ok()) {
         let last = parts.iter().filter_map(|(p, ..)| p.as_ref().ok()).max().copied()?;
         let mut items = vec![None; last + 1];
-        for (part, bound, _) in parts {
+        for (part, bound, ..) in parts {
             items[*part.as_ref().ok()?] = Some(bound.clone());
         }
         return Some(js::Pattern::Array(items));
     }
     let keyed: Option<Vec<_>> = (parts.iter())
-        .map(|(part, bound, _)| Some((part.clone().err()?, bound.clone(), None)))
+        .map(|(part, bound, _, default)| Some((part.clone().err()?, bound.clone(), default.clone())))
         .collect();
     Some(js::Pattern::Object(keyed?, None))
 }

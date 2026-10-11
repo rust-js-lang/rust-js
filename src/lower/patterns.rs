@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Field `i`'s default, of `ty`, a props struct, where JS takes it
     /// apart, `{ size = "md" }` (ADR 0212): its type's `Default`, which is
     /// a literal, or the literal its `#[rust_js::default]` says, of its type.
-    fn prop_default(&mut self, ty: Ty<'tcx>, i: usize, span: Span) -> Option<Expr> {
+    pub(super) fn prop_default(&mut self, ty: Ty<'tcx>, i: usize, span: Span) -> Option<Expr> {
         let ty::Adt(adt, args) = ty.kind() else { return None };
         let field = adt.non_enum_variant().fields.iter().nth(i)?;
         let field_ty = field.ty(self.tcx, args).skip_normalization();
