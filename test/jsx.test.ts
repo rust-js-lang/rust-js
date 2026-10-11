@@ -5734,3 +5734,44 @@ thread_local! {
   const props = { snips: [{ code: "a" }, { code: "b" }], active: [1] };
   expect(renderToStaticMarkup(createElement(lib.Client, props))).toBe("<p>1</p>");
 });
+
+// ADR 0364: what MIR holds for a prop or a child, made before a later
+// one's statements, is named as THIR names it, after the prop, `const href
+// = made("h")`, or a child's `children`, not `value`.
+test("a value held for a prop is named after it", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+fn made(s: &'static str) -> &'static str {
+    s
+}
+pub fn Looped() -> JSX::Element {
+    jsx! {
+        <a
+            href={made("h")}
+            title={{
+                let mut n = 0;
+                while n < 2 {
+                    n += 1;
+                }
+                if n == 2 { "two" } else { "other" }
+            }}>
+            {made("L")}
+            {{
+                let mut m = 0;
+                while m < 2 {
+                    m += 1;
+                }
+                m
+            }}
+        </a>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('const href = made("h");');
+  // MIR's child too, where THIR's is a `tmp`.
+  if (process.env.RUST_JS_MIR === "1") expect(jsx).toContain('const children = made("L");');
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Looped())).toBe('<a href="h" title="two">L2</a>');
+});

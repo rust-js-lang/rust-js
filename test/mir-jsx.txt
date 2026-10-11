@@ -143,3 +143,4 @@ react.dev's SidebarLink writes its classes in place
 what an element reads past elements before it is read where it's written
 what an element reads, made before a branch in its tree, is read where it's written
 what elements read before branches, each a call, is read where it's written
+a value held for a prop is named after it

@@ -2948,14 +2948,38 @@ fn unwrapped_values(stmts: &mut [Stmt]) {
 pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
     let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     names_in(body, &mut taken);
+    // What an element is given each as, `href={_5}` or a child, `{_6}`: the
+    // prop's name, `href`, or `children`, as THIR names one it holds.
+    let mut given: HashMap<String, String> = HashMap::new();
+    js::each_expr_mut(&mut body.clone(), &mut |e| {
+        if let ExprKind::Jsx(jsx) = &e.kind {
+            for prop in &jsx.props {
+                if let js::Prop::Field(key, value) = prop
+                    && let ExprKind::Var(v) = &value.kind
+                    && is_temporary(v)
+                    && key.chars().all(|c| c.is_ascii_alphanumeric())
+                {
+                    given.entry(v.clone()).or_insert_with(|| key.clone());
+                }
+            }
+            for child in &jsx.children {
+                if let ExprKind::Var(v) = &child.kind
+                    && is_temporary(v)
+                {
+                    given.entry(v.clone()).or_insert_with(|| "children".to_string());
+                }
+            }
+        }
+    });
     let mut renames = Vec::new();
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, value) if is_temporary(name) => {
-                    let base = match &value.kind {
-                        ExprKind::Member(_, field) => field.clone(),
-                        _ => "value".to_string(),
+                    let base = match (given.get(name), &value.kind) {
+                        (Some(prop), _) => prop.clone(),
+                        (None, ExprKind::Member(_, field)) => field.clone(),
+                        (None, _) => "value".to_string(),
                     };
                     renames.push((name.clone(), base));
                 }

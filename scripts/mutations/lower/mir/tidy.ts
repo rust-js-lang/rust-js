@@ -1602,4 +1602,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "held-prop-named-value",
+    "breaks": "what MIR holds for a prop is named `value`, not after the prop, `const href = made(\"h\")`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                        (Some(prop), _) => prop.clone(),\n",
+    "replace": "                        (Some(_), _) => \"value\".to_string(),\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];
