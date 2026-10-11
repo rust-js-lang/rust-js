@@ -5681,3 +5681,53 @@ pub fn Nav() -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Nav))).toBe('<div class="narrow"><button class="menu"><i></i></button><svg class="logo"></svg></div>');
 });
+
+// ADR 0364: a variable the program names, `activeCode`, stays named where
+// MIR holds the prop it's moved into ahead of a child spreading props,
+// `const code = activeCode`: the prop reads the variable, as react.dev's
+// Sandpack gives its fallback the active code.
+test("a named variable moved into a held prop keeps its name", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, MemoExoticComponent, Suspense, jsx, memo};
+pub struct Snip {
+    pub code: String,
+}
+pub struct GlimmerProps {
+    pub code: String,
+}
+fn Glimmer(GlimmerProps { code }: GlimmerProps) -> JSX::Element {
+    jsx! { <pre>{code.as_str()}</pre> }
+}
+pub struct ClientProps {
+    pub snips: &'static [Snip],
+    pub active: &'static [usize],
+}
+fn Root(props: ClientProps) -> JSX::Element {
+    jsx! { <p>{props.active.len()}</p> }
+}
+thread_local! {
+    pub static Client: MemoExoticComponent<ClientProps> = memo({
+        fn ClientWrapper(props: ClientProps) -> JSX::Element {
+            let activeCode;
+            if props.active.is_empty() {
+                activeCode = props.snips.get(0).unwrap().code.clone();
+            } else {
+                activeCode = props.snips.get(props.active[0]).unwrap().code.clone();
+            }
+            jsx! {
+                <Suspense fallback={jsx! { <Glimmer code={activeCode} /> }}>
+                    <Root {..props} />
+                </Suspense>
+            }
+        }
+        ClientWrapper
+    });
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<Glimmer code={activeCode} />");
+  const lib = await import(join(dir, "lib.jsx"));
+  const props = { snips: [{ code: "a" }, { code: "b" }], active: [1] };
+  expect(renderToStaticMarkup(createElement(lib.Client, props))).toBe("<p>1</p>");
+});

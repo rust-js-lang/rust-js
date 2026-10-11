@@ -1546,4 +1546,16 @@ export const mutations: Mutation[] = [
       "a value written with && is returned as one"
     ]
   },
+  {
+    "name": "alias-takes-prop-name",
+    "breaks": "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                if !is_temporary(a) && captured.contains(&b) {",
+    "replace": "                if false {",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

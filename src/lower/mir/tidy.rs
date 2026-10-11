@@ -101,7 +101,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     }
     js::statement_lists(body, &mut guarded);
     declarations(body);
-    aliases(body);
+    aliases(body, captured);
     // Of `const`s now, the iterator's too; and what a loop made so ends with,
     // a `continue` and its label, goes.
     // An iterator a loop inside another makes, a `let` assigned each time,
@@ -3419,7 +3419,7 @@ fn spread_spreads(e: &mut Expr) {
 /// `const a = e; .. const b = a;`, where nothing else reads `a`, is `const
 /// b = e;` where `a` was: `b` is read nowhere before, which JS's `const`
 /// says of its block.
-fn aliases(body: &mut Vec<Stmt>) {
+fn aliases(body: &mut Vec<Stmt>, captured: &HashSet<String>) {
     js::statement_lists(body, &mut |stmts| {
         let mut i = 0;
         while i < stmts.len() {
@@ -3437,7 +3437,22 @@ fn aliases(body: &mut Vec<Stmt>) {
                 let StmtKind::Const(b, _) = stmts.remove(j).kind else {
                     unreachable!("matched")
                 };
-                if let StmtKind::Const(a, _) = &mut stmts[i].kind {
+                let StmtKind::Const(a, _) = &mut stmts[i].kind else {
+                    unreachable!("matched")
+                };
+                // A variable the program names, of one MIR's lowering made
+                // for a prop, `const code = activeCode`: the variable, read
+                // where the prop was.
+                if !is_temporary(a) && captured.contains(&b) {
+                    let a = a.clone();
+                    js::each_expr_mut(&mut stmts[j..], &mut |e| {
+                        if let ExprKind::Var(v) = &mut e.kind
+                            && *v == b
+                        {
+                            v.clone_from(&a);
+                        }
+                    });
+                } else {
                     *a = b;
                 }
             }

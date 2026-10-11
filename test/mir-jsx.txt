@@ -114,3 +114,4 @@ classes held ahead of a branch past a static's fields are read in place
 an element a let-else binds is read as the child it binds
 a test of a let held ahead of calls is read in place
 a chosen element child is read past by later held classes
+a named variable moved into a held prop keeps its name
