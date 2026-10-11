@@ -54,6 +54,7 @@
     "ci:bless": "bun scripts/ci.ts bless",
     "bench:lowering": "cargo build --locked && bun bench/lowering.ts",
     "typecheck": "tsc --noEmit",
+    "check:fast": "bun scripts/checkFast.ts",
     "architecture": "bun scripts/architecture-report.ts",
     "matrix": "bun scripts/matrix.ts",
     "runtime": "cargo build && ./target/debug/rust-js --runtime-module > runtime/index.js"

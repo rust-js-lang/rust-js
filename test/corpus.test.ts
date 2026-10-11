@@ -29,7 +29,7 @@ import { build } from "vite";
 import { excerpt } from "./child";
 import { expected, same, type Outcome } from "./oracle";
 import { agree, compileJs, node, runJs, runNative, runtimes, show, type Run } from "./programs";
-import { buildCompiler, compiler, fixture, root } from "./support";
+import { buildCompiler, caseShard, compiler, firstPart, fixture, root } from "./support";
 
 const corpus = join(root, "test/corpus");
 
@@ -192,13 +192,13 @@ beforeAll(() => {
 
 const cases = readdirSync(corpus).filter((f) => f.endsWith(".rs")).sort();
 
-test("the corpus has cases", () => {
+firstPart("the corpus has cases", () => {
   expect(cases.length).toBeGreaterThan(0);
 });
 
 // A snapshot is a case's that runs: one left of a case removed, or of one
 // that's compile-fail or ignore-rust-js now, would be JS nothing checks.
-test("every snapshot in the corpus is the JS of a case that runs", () => {
+firstPart("every snapshot in the corpus is the JS of a case that runs", () => {
   const snapshots = readdirSync(corpus).filter((f) => f.endsWith(".js")).sort();
   const running = cases.filter((name) => {
     const want = directives(readFileSync(join(corpus, name), "utf8"));
@@ -207,7 +207,7 @@ test("every snapshot in the corpus is the JS of a case that runs", () => {
   expect(snapshots).toEqual(running.map((name) => name.replace(/\.rs$/, ".js")));
 });
 
-for (const name of cases) {
+for (const name of caseShard(cases)) {
   test(name, async () => {
     expect(await check(join(corpus, name))).toEqual([]);
   }, 120_000);
@@ -220,18 +220,18 @@ function control(name: string, source: string): Promise<string[]> {
   return check(file);
 }
 
-test("a directive native Rust disagrees with is reported", async () => {
+firstPart("a directive native Rust disagrees with is reported", async () => {
   const problems = await control("wrong-message", '//@ run-fail: attempt to divide by zero\nfn main() { panic!("another message") }\n');
   expect(problems).toEqual([expect.stringContaining("native Rust ended")]);
   expect(await control("unexpected-panic", "fn main() { let v: Vec<i32> = vec![]; v[0]; }\n")).toEqual([expect.stringContaining("native Rust ended")]);
 }, 120_000);
 
-test("an ignored case that passes is reported, so the list only shrinks", async () => {
+firstPart("an ignored case that passes is reported, so the list only shrinks", async () => {
   const problems = await control("passes", '//@ ignore-rust-js: a reason\nfn main() { println!("fine"); }\n');
   expect(problems).toEqual(["it passes now: remove `ignore-rust-js: a reason`"]);
 }, 120_000);
 
-test("a compile-fail case rust-js compiles, or rejects for another reason, is reported", async () => {
+firstPart("a compile-fail case rust-js compiles, or rejects for another reason, is reported", async () => {
   expect(await control("compiles", "//@ compile-fail: does not support\nfn main() {}\n")).toEqual([
     "rust-js compiled it, but `compile-fail` says it can't",
   ]);
@@ -240,7 +240,7 @@ test("a compile-fail case rust-js compiles, or rejects for another reason, is re
   ]);
 }, 120_000);
 
-test("unknown and repeated directives are reported", () => {
+firstPart("unknown and repeated directives are reported", () => {
   expect(directives("//@ run-passes\nfn main() {}")).toContain("unknown or malformed directive");
   expect(directives("//@ run-fail\nfn main() {}")).toContain("unknown or malformed directive");
   expect(directives("//@ run_pass\nfn main() {}")).toContain("unknown or malformed directive");
@@ -257,7 +257,7 @@ test("unknown and repeated directives are reported", () => {
 // Where JS has no `process`, as in a browser, `print!` writes each line to
 // `console.log` as it ends, and what's left when the task ends (ADR 0087). A
 // whole line, `println!`'s, is written at once, before what's left.
-test("print! without a process writes whole lines, and loses none", () => {
+firstPart("print! without a process writes whole lines, and loses none", () => {
   const dir = fixture("corpus-print");
   const file = join(dir, "print.rs");
   writeFileSync(file, 'fn main() { print!("a"); print!("b\\nc"); print!("d"); eprint!("x\\n"); print!("\\n"); print!("left"); }\n');
@@ -287,7 +287,7 @@ test("print! without a process writes whole lines, and loses none", () => {
 
 // A crate root may enable the features rust-js enables for itself, and
 // choose its edition: rustc takes each only once.
-test("a crate's own features and edition are its own", () => {
+firstPart("a crate's own features and edition are its own", () => {
   const dir = fixture("corpus-root");
   const file = join(dir, "root.rs");
   writeFileSync(
@@ -309,7 +309,7 @@ test("a crate's own features and edition are its own", () => {
 // `usize` is 32 bits in constants, `size_of` and `cfg`, as in its arithmetic,
 // and `cfg(rust_js)` says it's rust-js (ADR 0090). Native Rust, on a 64-bit
 // machine, can't be the oracle here.
-test("rustc checks programs for rust-js's 32-bit usize", () => {
+firstPart("rustc checks programs for rust-js's 32-bit usize", () => {
   const dir = fixture("corpus-target");
   const file = join(dir, "width.rs");
   writeFileSync(
@@ -334,7 +334,7 @@ test("rustc checks programs for rust-js's 32-bit usize", () => {
 // anywhere, comments and strings aren't attributes. Found in review. rust-js
 // enables none of its own for a crate (ADR 0110), and one a crate enables
 // needs `RUSTC_BOOTSTRAP`, as the tests have it.
-test("a crate's own features are read from its syntax, not its text", () => {
+firstPart("a crate's own features are read from its syntax, not its text", () => {
   const compiles = (name: string, source: string) => {
     const dir = fixture(`corpus-features-${name}`);
     const file = join(dir, "root.rs");
@@ -354,7 +354,7 @@ test("a crate's own features are read from its syntax, not its text", () => {
 // What a crate root enables through a `cfg_attr` is enabled only when its
 // `cfg` holds, as rustc configures it, and a crate may register `rust_js`
 // itself, which rust-js has as a tool anyway (ADR 0110). An unfinished attribute is rustc's syntax error. Found in review.
-test("a crate's own features and tools are as rustc configures them", () => {
+firstPart("a crate's own features and tools are as rustc configures them", () => {
   const compile = (name: string, source: string) => {
     const dir = fixture(`corpus-configured-${name}`);
     const file = join(dir, "root.rs");
@@ -374,7 +374,7 @@ test("a crate's own features and tools are as rustc configures them", () => {
 // A `cfg` rustc doesn't expect, `FALSE` for `false`, is rustc's warning to
 // give, once. rust-js's own early look at a crate root's `cfg`s raised it for
 // no node, and rustc panicked. Found by rustc's `cfg-macros-notfoo`.
-test("an unexpected cfg is rustc's warning, not a panic", () => {
+firstPart("an unexpected cfg is rustc's warning, not a panic", () => {
   const dir = fixture("corpus-unexpected-cfg");
   const file = join(dir, "root.rs");
   writeFileSync(file, '#[cfg(FALSE)]\nmod shape {}\n#[cfg(not(FALSE))]\nmod shape {\n    pub fn name() -> &\'static str {\n        "shown"\n    }\n}\npub fn f() -> &\'static str {\n    shape::name()\n}\n');

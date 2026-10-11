@@ -11,13 +11,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { agree, compileJs, node, runJs, runNative, show } from "./programs";
-import { buildCompiler, fixture, root } from "./support";
+import { buildCompiler, caseShard, firstPart, fixture, root } from "./support";
 
 const listed = readFileSync(join(root, "test/mir-corpus.txt"), "utf8").split("\n").filter(Boolean);
 
 beforeAll(() => buildCompiler());
 
-for (const name of listed) {
+for (const name of caseShard(listed)) {
   test(`${name}, from its MIR`, () => {
     const file = join(root, "test/corpus", name);
     const dir = fixture(`mir-${name.replace(/\.rs$/, "")}`);
@@ -50,7 +50,7 @@ for (const name of listed) {
 
 // And the JSX tests `mir-jsx.txt` lists, which pass from MIR: each runs, and
 // passes. `bun scripts/mirJsx.ts` says which others pass now.
-test("the JSX tests mir-jsx.txt lists, from their MIR", () => {
+firstPart("the JSX tests mir-jsx.txt lists, from their MIR", () => {
   const listed = readFileSync(join(root, "test/mir-jsx.txt"), "utf8").split("\n").filter(Boolean);
   const run = Bun.spawnSync(["bun", "test", "test/jsx.test.ts"], {
     cwd: root,

@@ -67,6 +67,7 @@ more, as each sets itself up again.
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 8 machines |
+| `bun run check:fast`: lint, the MIR corpus, THIR's suites a change touches, its new mutations, at once | yes, before each commit | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
 | `bun run test`, the whole suite | | **test** job, or shards | |
@@ -140,8 +141,20 @@ On the M3 Max, with the scan off:
 | One mutation | 2-5 s |
 | Eight mutations, four at a time | 11 s |
 | The react.dev port, built | 30 s |
+| `bun run check:fast`, of a change to MIR's lowering | 33 s |
+| `bun run check:fast --all`, THIR's corpus, JSX and lowering tests too | 37 s |
 
 What keeps them there:
+
+- **`check:fast` runs its checks at once**, each a process of its own, and
+  the two corpora in parts, a third of the cases each (`RUST_JS_CASES=i/n`,
+  test/support.ts): one after another they took four minutes. THIR's corpus
+  and JSX and lowering tests run where the change touches what THIR reads,
+  any of `src/` but MIR's own lowering, or the runtime; the mutations, those
+  the change adds or changes; CI runs the rest.
+- **`bun scripts/mirDiff.ts <file.rs>`** compiles a program from THIR and
+  from MIR and shows how their JS differs, for MIR's lowering to make it
+  none (ADR 0364).
 
 - **The react, webapi and js crates' metadata** is built only when their
   sources, build scripts or the toolchain change: a stamp beside it,
@@ -190,6 +203,7 @@ git commit -m "chore(rust-js): bless"; git push
 
 ```bash
 #   on main: failing test, fix, focused tests, new mutations, ADR
+bun run check:fast                       # the change's checks, at once
 git commit -m "feat(rust-js): …"
 git push                                 # or later, if GitHub won't take it now
 bun run ci:check                         # main's check, on GitHub

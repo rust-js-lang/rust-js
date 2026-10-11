@@ -1,4 +1,4 @@
-import { expect } from "bun:test";
+import { expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -354,3 +354,14 @@ export function expectSnapshot(
     expect(text, `${path}: ${hint}`).toBe(readFileSync(join(snapshot, path), "utf8"));
   }
 }
+
+/** `RUST_JS_CASES=i/n`: the cases of the `i`th of `n` parts, each case in
+ * one, for `check:fast`'s processes, which run a file's parts at once; all of
+ * them where it isn't set. */
+export function caseShard<T>(cases: T[]): T[] {
+  const [i, n] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
+  return cases.filter((_, k) => k % n === i - 1);
+}
+
+/** What isn't a case runs in the first part alone. */
+export const firstPart = (process.env.RUST_JS_CASES ?? "1/1").startsWith("1/") ? test : test.skip;
