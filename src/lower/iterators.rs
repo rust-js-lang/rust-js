@@ -1396,9 +1396,15 @@ fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Expr, Expr), E
         return Err(f);
     };
     let [index, item] = &parts[..] else { return Err(f) };
-    // The item's name, `_` where only the index is read: no Rust variable is.
-    let mut params = vec![js::Pattern::Name(item.clone().unwrap_or_else(|| "_".into()))];
-    params.extend(index.clone().map(js::Pattern::Name));
+    let index = match index {
+        Some(js::Pattern::Name(index)) => Some(index.clone()),
+        Some(_) => return Err(f),
+        None => None,
+    };
+    // The item, taken apart as it was, `({ name }, i)`; `_` where only the
+    // index is read: no Rust variable is.
+    let mut params = vec![item.clone().unwrap_or_else(|| "_".into())];
+    params.extend(index.map(js::Pattern::Name));
     Ok((
         (**source).clone(),
         Expr {

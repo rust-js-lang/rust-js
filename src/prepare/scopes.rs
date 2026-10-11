@@ -155,15 +155,15 @@ impl Walk {
     fn pattern(&mut self, pattern: &Pattern) {
         match pattern {
             Pattern::Name(name) => self.declare(name),
-            Pattern::Array(items) => items.iter().flatten().for_each(|name| self.declare(name)),
+            Pattern::Array(items) => items.iter().flatten().for_each(|item| self.pattern(item)),
             Pattern::Object(fields, rest) => {
                 // A default is read where the field is missing, before the
                 // names after it are made.
-                for (_, name, default) in fields {
+                for (_, field, default) in fields {
                     if let Some(default) = default {
                         self.expr(default);
                     }
-                    self.declare(name);
+                    self.pattern(field);
                 }
                 rest.iter().for_each(|name| self.declare(name));
             }
@@ -213,14 +213,7 @@ impl Walk {
     /// What a hoisted pattern declares; its defaults are read as the
     /// statement runs.
     fn pattern_names(&mut self, pattern: &Pattern) {
-        match pattern {
-            Pattern::Name(name) => self.declare(name),
-            Pattern::Array(items) => items.iter().flatten().for_each(|name| self.declare(name)),
-            Pattern::Object(fields, rest) => {
-                fields.iter().for_each(|(_, name, _)| self.declare(name));
-                rest.iter().for_each(|name| self.declare(name));
-            }
-        }
+        pattern.names().into_iter().for_each(|name| self.declare(name));
     }
 
     fn stmt(&mut self, stmt: &Stmt) {
@@ -228,9 +221,7 @@ impl Walk {
             StmtKind::Const(_, value) | StmtKind::Expr(value) | StmtKind::Throw(value) => self.expr(value),
             StmtKind::Let(_, value) | StmtKind::Return(value) => value.iter().for_each(|v| self.expr(v)),
             StmtKind::Destructure { pattern, value, .. } => {
-                if let Pattern::Object(fields, _) = pattern {
-                    fields.iter().flat_map(|(_, _, d)| d).for_each(|d| self.expr(d));
-                }
+                pattern.defaults().into_iter().for_each(|d| self.expr(d));
                 self.expr(value);
             }
             StmtKind::Assign(target, value) => {

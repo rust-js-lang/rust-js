@@ -154,8 +154,8 @@ export const mutations: Mutation[] = [
     name: "apply-pattern-called",
     breaks: "a closure taking a pair apart, `|&(_, age)| age`, is called where it's inlined, `(([, age]) => age)(item)`, not `item[1]`",
     file: "src/lower/calls.rs",
-    find: "                js::Pattern::Array(items) => Some(",
-    replace: "                js::Pattern::Array(items) if false => Some(",
+    find: "                js::Pattern::Array(items) => (items.iter().enumerate())",
+    replace: "                js::Pattern::Array(items) if false => (items.iter().enumerate())",
     tests: ["test/lowering.test.ts", "-t", "taken apart through a reference"],
   },
   {

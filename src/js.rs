@@ -504,25 +504,64 @@ pub struct Function {
 #[derive(Clone)]
 pub enum Pattern {
     Name(String),
-    /// `None` skips an element: `[, b]`.
-    Array(Vec<Option<String>>),
-    /// Each field, the variable it goes in, and its default where it's
-    /// missing, `{ size = "md" }` (ADR 0212), a literal; and the variable the
-    /// rest go in, `...rest` (ADR 0195).
-    Object(Vec<(String, String, Option<Expr>)>, Option<String>),
+    /// `None` skips an element: `[, b]`. An element may be taken apart in
+    /// turn, `[i, { name }]`.
+    Array(Vec<Option<Pattern>>),
+    /// Each field, what it goes in, a variable or a pattern of its own, and
+    /// its default where it's missing, `{ size = "md" }` (ADR 0212), a
+    /// literal; and the variable the rest go in, `...rest` (ADR 0195).
+    Object(Vec<(String, Pattern, Option<Expr>)>, Option<String>),
 }
 
 impl Pattern {
+    /// An array of variables, `[count, setCount]`; `None` skips one.
+    pub fn names_array(names: impl IntoIterator<Item = Option<String>>) -> Pattern {
+        Pattern::Array(names.into_iter().map(|name| name.map(Pattern::Name)).collect())
+    }
+
     /// The variables it binds.
     pub fn names(&self) -> Vec<&str> {
         match self {
             Pattern::Name(name) => vec![name.as_str()],
-            Pattern::Array(items) => items.iter().flatten().map(String::as_str).collect(),
+            Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::names).collect(),
             Pattern::Object(fields, rest) => fields
                 .iter()
-                .map(|(_, name, _)| name.as_str())
+                .flat_map(|(_, p, _)| p.names())
                 .chain(rest.as_deref())
                 .collect(),
+        }
+    }
+
+    /// The variables it binds, to rename.
+    pub fn names_mut(&mut self) -> Vec<&mut String> {
+        match self {
+            Pattern::Name(name) => vec![name],
+            Pattern::Array(items) => items.iter_mut().flatten().flat_map(Pattern::names_mut).collect(),
+            Pattern::Object(fields, rest) => fields
+                .iter_mut()
+                .flat_map(|(_, p, _)| p.names_mut())
+                .chain(rest.as_mut())
+                .collect(),
+        }
+    }
+
+    /// Its defaults, `"md"` of `{ size = "md" }`, in order.
+    pub fn defaults(&self) -> Vec<&Expr> {
+        match self {
+            Pattern::Name(_) => Vec::new(),
+            Pattern::Array(items) => items.iter().flatten().flat_map(Pattern::defaults).collect(),
+            Pattern::Object(fields, _) => fields
+                .iter()
+                .flat_map(|(_, p, default)| default.iter().chain(p.defaults()))
+                .collect(),
+        }
+    }
+
+    /// The variable it is, if it's one.
+    pub fn name(&self) -> Option<&str> {
+        match self {
+            Pattern::Name(name) => Some(name),
+            _ => None,
         }
     }
 }

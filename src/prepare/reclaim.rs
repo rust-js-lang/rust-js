@@ -273,12 +273,5 @@ fn declared_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut String)) {
 }
 
 fn pattern_mut(pattern: &mut js::Pattern, f: &mut dyn FnMut(&mut String)) {
-    match pattern {
-        js::Pattern::Name(name) => f(name),
-        js::Pattern::Array(items) => items.iter_mut().flatten().for_each(f),
-        js::Pattern::Object(fields, rest) => {
-            fields.iter_mut().for_each(|(_, name, _)| f(name));
-            rest.iter_mut().for_each(f);
-        }
-    }
+    pattern.names_mut().into_iter().for_each(f);
 }

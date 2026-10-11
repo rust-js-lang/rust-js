@@ -1522,4 +1522,16 @@ export const mutations: Mutation[] = [
       "a let-else's binding of a variable is the variable"
     ]
   },
+  {
+    "name": "nested-pattern-flat-only",
+    "breaks": "a closure's pattern of a pattern stays `(_2) => { const name = _2[1].name; .. }`, not `([n, { name }]) => ..`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        _ if group.iter().all(|(rest, ..)| !rest.is_empty()) => Some((nested_pattern(group)?, None)),",
+    "replace": "        _ if false => Some((nested_pattern(group)?, None)),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a closure's nested patterns are nested JS patterns"
+    ]
+  },
 ];

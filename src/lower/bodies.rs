@@ -761,11 +761,11 @@ fn taken_apart_where_given(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
                 }
                 items[i] = Some(var.clone());
             }
-            js::Pattern::Array(items)
+            js::Pattern::names_array(items)
         } else if reads.iter().all(|(at, _)| at.is_err()) {
             let fields = reads
                 .iter()
-                .map(|(at, var)| (at.clone().expect_err("a field"), var.clone(), None));
+                .map(|(at, var)| (at.clone().expect_err("a field"), js::Pattern::Name(var.clone()), None));
             js::Pattern::Object(fields.collect(), None)
         } else {
             continue;

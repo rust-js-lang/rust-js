@@ -549,7 +549,7 @@ impl<'a> Cx<'a> {
         let sp = span(read[0].0.span);
         let fields = read
             .iter()
-            .map(|(constant, _, property)| (property.to_string(), constant.name.clone(), None))
+            .map(|(constant, _, property)| (property.to_string(), js::Pattern::Name(constant.name.clone()), None))
             .collect();
         let id = self.pattern(&js::Pattern::Object(fields, None));
         let declarator = VariableDeclarator::new(sp, id, None, Some(self.expr(read[0].1)), false, b);
@@ -796,7 +796,7 @@ impl<'a> Cx<'a> {
         match pattern {
             js::Pattern::Name(n) => name(n),
             js::Pattern::Array(items) => {
-                let items = items.iter().map(|item| item.as_deref().map(name));
+                let items = items.iter().map(|item| item.as_ref().map(|item| self.pattern(item)));
                 BindingPattern::new_array_pattern(SPAN, ArenaVec::from_iter_in(items, b), None, b)
             }
             js::Pattern::Object(fields, rest) => {
@@ -809,11 +809,13 @@ impl<'a> Cx<'a> {
                     };
                     // `{ size = "md" }`, where it's missing (ADR 0212).
                     let value = match default {
-                        Some(default) => BindingPattern::new_assignment_pattern(SPAN, name(var), self.expr(default), b),
-                        None => name(var),
+                        Some(default) => {
+                            BindingPattern::new_assignment_pattern(SPAN, self.pattern(var), self.expr(default), b)
+                        }
+                        None => self.pattern(var),
                     };
                     // `{ x }` for `{ x: x }`.
-                    BindingProperty::new(SPAN, key, value, field == var, false, b)
+                    BindingProperty::new(SPAN, key, value, var.name() == Some(field.as_str()), false, b)
                 });
                 let rest = rest
                     .as_deref()

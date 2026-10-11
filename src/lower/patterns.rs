@@ -122,7 +122,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             while items.last().is_some_and(Option::is_none) {
                 items.pop();
             }
-            return Some((js::Pattern::Array(items), mutable));
+            return Some((js::Pattern::names_array(items), mutable));
         }
         let pattern = match self.shape(pat.ty) {
             Shape::Array(_) if !flattened.is_empty() => return None,
@@ -135,7 +135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 while items.last().is_some_and(Option::is_none) {
                     items.pop();
                 }
-                js::Pattern::Array(items)
+                js::Pattern::names_array(items)
             }
             Shape::Object(fields) => {
                 let mut named = Vec::new();
@@ -174,7 +174,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         true => rest = Some(bound),
                         false => {
                             let default = self.prop_default(pat.ty, i, pat.span);
-                            named.push((fields[i].0.clone(), bound, default))
+                            named.push((fields[i].0.clone(), js::Pattern::Name(bound), default))
                         }
                     }
                 }
@@ -198,7 +198,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && !named.iter().any(|(k, _, _)| k == key)
                         {
                             let unused = self.fresh(&format!("_{}", camel_case(&js_ident(key))));
-                            named.push((key.clone(), unused, None));
+                            named.push((key.clone(), js::Pattern::Name(unused), None));
                         }
                     }
                 }

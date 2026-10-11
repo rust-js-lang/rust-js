@@ -113,15 +113,8 @@ fn function_names(function: &mut Function, visitor: &mut Visitor<'_>) {
 }
 
 fn pattern(p: &mut Pattern, visitor: &mut Visitor<'_>) {
-    match p {
-        Pattern::Name(n) => visitor.name(n),
-        Pattern::Array(parts) => parts.iter_mut().flatten().for_each(|n| visitor.name(n)),
-        Pattern::Object(parts, rest) => parts
-            .iter_mut()
-            .map(|(_, n, _)| n)
-            .chain(rest)
-            .for_each(|n| visitor.name(n)),
-    }
+    // A default, `{ size = "md" }`, is a literal: it names nothing.
+    p.names_mut().into_iter().for_each(|n| visitor.name(n));
 }
 
 fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {

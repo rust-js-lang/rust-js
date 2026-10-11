@@ -458,7 +458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.push(
                         StmtKind::ForOf {
                             label: None,
-                            pattern: js::Pattern::Array(vec![None, Some(name)]),
+                            pattern: js::Pattern::names_array([None, Some(name)]),
                             mutable: false,
                             iterable: entries,
                             body,

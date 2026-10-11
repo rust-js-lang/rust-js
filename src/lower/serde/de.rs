@@ -422,7 +422,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let as_read = !named && adt.is_struct() && items.len() == params.len() && defaults.is_none();
         let build = (!as_read).then(|| {
             let value = self.construct(adt, variant, args, items);
-            let mut patterns = vec![Pattern::Array(params.into_iter().map(Some).collect())];
+            let mut patterns = vec![Pattern::names_array(params.into_iter().map(Some))];
             patterns.extend(defaults.iter().map(|d| Pattern::from(d.as_str())));
             Expr::arrow(patterns, vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
         });

@@ -251,13 +251,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(js::Pattern::Name(p)) => (p == name).then(|| option.clone()),
                         Some(js::Pattern::Array(items)) => items
                             .iter()
-                            .position(|item| item.as_deref() == Some(name))
+                            .position(|item| item.as_ref().and_then(js::Pattern::name) == Some(name))
                             .map(|i| Expr::index(option.clone(), Expr::int(i as i128))),
                         // The rest, `...rest`, is no field's.
                         Some(js::Pattern::Object(_, Some(rest))) if rest == name => None,
                         Some(js::Pattern::Object(fields, _)) => fields
                             .iter()
-                            .find(|(_, var, _)| var == name)
+                            .find(|(_, var, _)| var.name() == Some(name))
                             .map(|(field, _, _)| Expr::member(option.clone(), field.clone())),
                     };
                     body.substitute(&with)

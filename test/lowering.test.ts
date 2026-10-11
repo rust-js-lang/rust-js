@@ -8124,3 +8124,36 @@ pub fn grouped(items: &[u32]) -> Vec<Section> {
     expect(lib.grouped([1, 0, 2, 3, 0, 4])).toEqual([{ pages: [2, 3] }, { pages: [4] }]);
   }
 });
+
+// A closure's pattern of a pattern, `|(index, Challenge { name, .. })|`, is
+// one JS pattern of another, `([n, { name }]) => ..`, and of an enumerated
+// item, the item's pattern and its index, `({ name, id, order }, index) =>
+// ..`, as react.dev's Challenges' Navigation lists its buttons.
+test("a closure's nested patterns are nested JS patterns", async () => {
+  const dir = fixture("nested-patterns");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Challenge {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub order: u32,
+}
+pub fn labels(challenges: &[Challenge]) -> Vec<String> {
+    challenges
+        .iter()
+        .enumerate()
+        .map(|(index, Challenge { name, id, order })| format!("{index}:{id}:{order}. {name}"))
+        .collect()
+}
+pub fn named(challenges: &[(u32, Challenge)]) -> Vec<String> {
+    challenges.iter().map(|(n, Challenge { name, .. })| format!("{n} {name}")).collect()
+}
+`);
+  for (const [out, env] of [["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("challenges.map(({ name, id, order }, index) => `${index}:${id}:${order}. ${name}`)");
+    expect(js).toContain("challenges.map(([n, { name }]) => `${n} ${name}`)");
+    const lib = await import(join(dir, out));
+    expect(lib.labels([{ id: "a", name: "A", order: 1 }])).toEqual(["0:a:1. A"]);
+    expect(lib.named([[7, { id: "a", name: "A", order: 1 }]])).toEqual(["7 A"]);
+  }
+});

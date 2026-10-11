@@ -88,7 +88,7 @@ fn imported(stmts: &mut [Stmt]) {
             continue;
         }
         stmt.kind = StmtKind::Destructure {
-            pattern: js::Pattern::Object(vec![(export.clone(), name.clone(), None)], None),
+            pattern: js::Pattern::Object(vec![(export.clone(), js::Pattern::Name(name.clone()), None)], None),
             value: Expr {
                 kind: ExprKind::Await(import.clone()),
                 span: value.span,

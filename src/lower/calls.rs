@@ -903,23 +903,20 @@ fn inlined(params: &[js::Pattern], args: &[Expr], value: &Expr) -> Option<Expr> 
             .zip(args)
             .map(|(p, arg)| match p {
                 js::Pattern::Name(name) => Some(vec![(name.as_str(), arg.clone())]),
-                js::Pattern::Array(items) => Some(
-                    (items.iter().enumerate())
-                        .filter_map(|(i, name)| {
-                            Some((name.as_deref()?, Expr::index(arg.clone(), Expr::int(i as i128))))
-                        })
-                        .collect(),
-                ),
-                js::Pattern::Object(fields, None) if fields.iter().all(|(_, _, default)| default.is_none()) => Some(
-                    (fields.iter())
-                        .map(|(key, name, _)| {
-                            (
-                                name.as_str(),
-                                super::binding_calls::keyed(arg.clone(), Expr::str(key.clone())),
-                            )
-                        })
-                        .collect(),
-                ),
+                // Of variables alone: a part taken apart in turn isn't one.
+                js::Pattern::Array(items) => (items.iter().enumerate())
+                    .filter_map(|(i, item)| Some((i, item.as_ref()?)))
+                    .map(|(i, item)| Some((item.name()?, Expr::index(arg.clone(), Expr::int(i as i128)))))
+                    .collect(),
+                js::Pattern::Object(fields, None) if fields.iter().all(|(_, _, default)| default.is_none()) => (fields
+                    .iter())
+                .map(|(key, field, _)| {
+                    Some((
+                        field.name()?,
+                        super::binding_calls::keyed(arg.clone(), Expr::str(key.clone())),
+                    ))
+                })
+                .collect(),
                 _ => None,
             })
             .collect::<Option<Vec<_>>>()

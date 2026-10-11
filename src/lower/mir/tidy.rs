@@ -1171,11 +1171,11 @@ fn binding(body: &[Stmt], item: &str) -> Option<(js::Pattern, bool, usize)> {
             for (part, bound, _) in &parts {
                 items[part.clone().ok().flatten()?] = Some(bound.clone());
             }
-            Some((js::Pattern::Array(items), mutable, parts.len()))
+            Some((js::Pattern::names_array(items), mutable, parts.len()))
         }
         _ if !parts.is_empty() && parts.iter().all(|(p, ..)| p.is_err()) => {
             let fields = (parts.iter())
-                .map(|(p, bound, _)| (p.clone().expect_err("keyed"), bound.clone(), None))
+                .map(|(p, bound, _)| (p.clone().expect_err("keyed"), js::Pattern::Name(bound.clone()), None))
                 .collect();
             Some((js::Pattern::Object(fields, None), mutable, parts.len()))
         }
@@ -1511,10 +1511,10 @@ fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
         for (part, bound, ..) in parts {
             items[*part.as_ref().ok()?] = Some(bound.clone());
         }
-        return Some(js::Pattern::Array(items));
+        return Some(js::Pattern::names_array(items));
     }
     let keyed: Option<Vec<_>> = (parts.iter())
-        .map(|(part, bound, _, default)| Some((part.clone().err()?, bound.clone(), default.clone())))
+        .map(|(part, bound, _, default)| Some((part.clone().err()?, js::Pattern::Name(bound.clone()), default.clone())))
         .collect();
     Some(js::Pattern::Object(keyed?, None))
 }
@@ -1567,15 +1567,123 @@ pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stm
             body.remove(0);
             continue;
         }
-        let read = parts(body, &name);
+        let read = nested_parts(body, &name);
         let count = read.len();
         if js::mentions_in(&body[count..], &name) > 0 {
             continue;
         }
-        let Some(pattern) = pattern_of(&read) else { continue };
+        let read: Vec<_> = (read.iter())
+            .map(|(path, bound, default)| (path.as_slice(), bound.as_str(), default.as_ref()))
+            .collect();
+        let Some(pattern) = nested_pattern(&read) else { continue };
         body.drain(..count);
         *param = pattern;
     }
+}
+
+/// A step into a value, `[1]` or `.name`.
+#[derive(PartialEq)]
+enum Step {
+    At(usize),
+    Key(String),
+}
+
+/// The steps from `name` to what `e` reads, `[At(1), Key("name")]` of
+/// `_2[1].name`.
+fn path(e: &Expr, name: &str) -> Option<Vec<Step>> {
+    let (of, step) = match &e.kind {
+        ExprKind::Var(v) if v == name => return Some(Vec::new()),
+        ExprKind::Index(of, index)
+            if let ExprKind::Num(k) = index.kind
+                && k >= 0.0
+                && k.fract() == 0.0 =>
+        {
+            (of, Step::At(k as usize))
+        }
+        ExprKind::Member(of, key) => (of, Step::Key(key.clone())),
+        _ => return None,
+    };
+    let mut steps = path(of, name)?;
+    steps.push(step);
+    Some(steps)
+}
+
+/// The parts of `name` the first of `stmts` read, as `parts` finds them,
+/// however deep, `const name = _2[1].name;`, each a path, its variable,
+/// and a field's default.
+fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, String, Option<Expr>)> {
+    let mut parts = Vec::new();
+    for stmt in stmts {
+        let (StmtKind::Const(bound, value) | StmtKind::Let(bound, Some(value))) = &stmt.kind else {
+            break;
+        };
+        if bound == name {
+            break;
+        }
+        let (steps, default) = match &value.kind {
+            // A field with a default, `o.k === undefined ? d : o.k`.
+            ExprKind::Cond(test, default, read)
+                if let ExprKind::Binary(Op::Eq, tested, undefined) = &test.kind
+                    && matches!(undefined.kind, ExprKind::Undefined)
+                    && let Some(steps) = path(read, name)
+                    && matches!(steps.last(), Some(Step::Key(_)))
+                    && path(tested, name).as_ref() == Some(&steps) =>
+            {
+                (steps, Some((**default).clone()))
+            }
+            _ => match path(value, name) {
+                Some(steps) if !steps.is_empty() => (steps, None),
+                _ => break,
+            },
+        };
+        parts.push((steps, bound.clone(), default));
+    }
+    parts
+}
+
+/// The pattern of `parts`, each a path, its variable and its default: of
+/// the first steps all indices, an array, all keys, an object, each part
+/// a variable or, where the paths go on, a pattern in turn, `[i, { name
+/// }]`.
+fn nested_pattern(parts: &[(&[Step], &str, Option<&Expr>)]) -> Option<js::Pattern> {
+    type Group<'p> = Vec<(&'p [Step], &'p str, Option<&'p Expr>)>;
+    let mut groups: Vec<(&Step, Group)> = Vec::new();
+    for &(steps, bound, default) in parts {
+        let (first, rest) = steps.split_first()?;
+        match groups.iter_mut().find(|(step, _)| *step == first) {
+            Some((_, group)) => group.push((rest, bound, default)),
+            None => groups.push((first, vec![(rest, bound, default)])),
+        }
+    }
+    let part = |group: &Group| match group.as_slice() {
+        [([], bound, default)] => Some((js::Pattern::Name(bound.to_string()), default.cloned())),
+        _ if group.iter().all(|(rest, ..)| !rest.is_empty()) => Some((nested_pattern(group)?, None)),
+        _ => None,
+    };
+    if groups.iter().all(|(step, _)| matches!(step, Step::At(_))) {
+        let last = (groups.iter()).filter_map(|(step, _)| match step {
+            Step::At(k) => Some(*k),
+            Step::Key(_) => None,
+        });
+        let mut items = vec![None; last.max()? + 1];
+        for (step, group) in &groups {
+            let (Step::At(k), (pattern, None)) = (step, part(group)?) else {
+                return None;
+            };
+            items[*k] = Some(pattern);
+        }
+        return Some(js::Pattern::Array(items));
+    }
+    let fields = (groups.iter())
+        .map(|(step, group)| match step {
+            Step::Key(key) => {
+                let (pattern, default) = part(group)?;
+                Some((key.clone(), pattern, default))
+            }
+            Step::At(_) => None,
+        })
+        .collect::<Option<_>>()?;
+    Some(js::Pattern::Object(fields, None))
 }
 
 /// `const _3 = e; … if (_3) { const current = _3; … }`: a temporary that a
