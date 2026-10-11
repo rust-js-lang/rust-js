@@ -7407,3 +7407,31 @@ pub fn moved(hit: Hit) -> Hit {
     expect([lib.cleaned([{ url: "a#x", level: 1 }]), lib.moved({ url: "b#x", level: 2 })]).toEqual([[{ url: "a", level: 1 }], { url: "b", level: 2 }]);
   }
 });
+
+// ADR 0250: a struct update that reads one field of its base, `Props {
+// title, ..props }`, spreads it from MIR as from THIR, which says it's an
+// update, not `{ title, level: props.level }`, which drops what JS's object
+// held besides: react.dev's SandpackWithHTMLOutput gives on its props. One
+// that names each field, `level: a.level`, isn't.
+test("a struct update reading one field of its base spreads it from MIR", async () => {
+  const dir = fixture("update-one-read");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Props {
+    pub title: String,
+    pub level: u32,
+}
+pub fn retitled(props: Props) -> Props {
+    Props { title: "x".to_string(), ..props }
+}
+pub fn copied(a: &Props) -> Props {
+    Props { title: "y".to_string(), level: a.level }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return { ...props, title: "x" };');
+    expect(js).toContain('return { title: "y", level: a.level };');
+    const lib = await import(join(dir, out));
+    expect(lib.retitled({ title: "a", level: 1, extra: 2 })).toEqual({ title: "x", level: 1, extra: 2 });
+  }
+});

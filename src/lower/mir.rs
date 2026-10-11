@@ -2921,12 +2921,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `P { x, ..base }`: its other fields each read of `base`, where it
         // is, of the same type, which nothing changes meanwhile, nor needs
         // copying, `{ ...base, x }`, as THIR writes it (ADR 0250).
-        // Or one MIR reads none of, every field given (`unread_base`).
+        // Or one THIR says is, of a field or none (`written_base`).
         if let AggregateKind::Adt(did, VariantIdx::ZERO, args, None, None) = *kind
             && self.tcx.adt_def(did).is_struct()
             && let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(did), args)
             && let Some(spread) =
-                (self.struct_update(state, ty, operands)).or_else(|| self.unread_base(state, ty, operands, span))
+                (self.struct_update(state, ty, operands)).or_else(|| self.written_base(state, ty, operands, span))
         {
             let Shape::Object(names) = self.shape(ty) else {
                 unreachable!("a struct of named fields")
@@ -3451,11 +3451,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)
     }
 
-    /// The base of a struct update MIR reads none of, every field given,
-    /// `Hit { url, ..*item }`: THIR's at `span`, which THIR spreads whole,
-    /// `..*item` of a shared reference or `..hit` of a variable (ADR 0250),
-    /// its place the variable's, by its debug info.
-    fn unread_base(
+    /// The base of a struct update, THIR's at `span`, which THIR spreads
+    /// whole, `..*item` of a shared reference or `..hit` of a variable (ADR
+    /// 0250): its place, the variable's by its debug info. MIR reads a field
+    /// of it at most, `Props { title, ..props }`, or none, every field given,
+    /// `Hit { url, ..*item }`, which MIR alone can't tell from `level: a.level`.
+    fn written_base(
         &self,
         state: &State<'_, 'tcx>,
         ty: Ty<'tcx>,
@@ -3491,17 +3492,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             mir::VarDebugInfoContents::Place(place) if info.source_info.span == binding => Some(place),
             _ => None,
         })?;
-        // None of its fields read: each one given.
-        if operands
-            .iter()
-            .any(|o| o.place().is_some_and(|p| p.local == place.local))
-        {
-            return None;
-        }
-        Some(match deref {
+        let base = match deref {
             true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
             false => place,
-        })
+        };
+        // Each field read of it, the spread's, its own, as THIR's: one that
+        // needs no copy of its own.
+        let Shape::Object(fields) = self.shape(ty) else {
+            return None;
+        };
+        for (i, operand) in operands.iter_enumerated() {
+            let Some(read) = operand.place().filter(|p| p.local == base.local) else {
+                continue;
+            };
+            let field = matches!(read.projection.split_last(), Some((PlaceElem::Field(f, _), rest))
+                if *f == i && rest == base.projection.as_slice());
+            let t = fields[i.as_usize()].1;
+            if !field || self.contains_mutated(t) && self.is_copy(t) {
+                return None;
+            }
+        }
+        Some(base)
     }
 
     /// A JSX binding's arguments, each with what THIR has of it, where THIR

@@ -1546,12 +1546,24 @@ export const mutations: Mutation[] = [
     "name": "mir-unread-base-dropped",
     "breaks": "a struct update giving every field from MIR drops its base, `{ url }`, losing what JS's object held besides",
     "file": "src/lower/mir.rs",
-    "find": ".or_else(|| self.unread_base(state, ty, operands, span))",
+    "find": ".or_else(|| self.written_base(state, ty, operands, span))",
     "replace": ".or(None)",
     "tests": [
       "test/lowering.test.ts",
       "-t",
       "giving every field spreads its base"
+    ]
+  },
+  {
+    "name": "mir-written-base-unread-only",
+    "breaks": "a struct update reading one field of its base from MIR is each field, `{ title, level: props.level }`, dropping what JS's object held besides",
+    "file": "src/lower/mir.rs",
+    "find": "            if !field || self.contains_mutated(t) && self.is_copy(t) {\n",
+    "replace": "            if true {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "reading one field of its base"
     ]
   },
 ];
