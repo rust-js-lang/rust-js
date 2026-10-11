@@ -22,6 +22,12 @@ pub async fn sum(a: u32, b: u32) -> u32 {
     double(a).await + double(b).await
 }
 
+/// What an `.await` gives, given back.
+pub async fn twice(n: u32) -> u32 {
+    let d = double(n).await;
+    double(d).await
+}
+
 /// A parameter that changes, and one taken apart.
 pub async fn countdown(mut n: u32) -> u32 {
     let mut steps = 0;

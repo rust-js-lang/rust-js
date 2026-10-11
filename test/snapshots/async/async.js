@@ -11,6 +11,11 @@ export async function sum(a, b) {
   return ((await double(a)) + (await double(b))) >>> 0;
 }
 
+export async function twice(n) {
+  const d = await double(n);
+  return await double(d);
+}
+
 export async function countdown(n) {
   let steps = 0;
   while (n > 0) {

@@ -120,10 +120,11 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
         if built.is_stolen() || promoted.is_stolen() {
             continue;
         }
-        body.mir = Some(super::mir::Mir {
-            body: built.borrow().clone(),
-            promoted: promoted.borrow().clone(),
-        });
+        body.mir = Some(super::mir::Mir::new(
+            tcx,
+            built.borrow().clone(),
+            promoted.borrow().clone(),
+        ));
     }
 }
 

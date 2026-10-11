@@ -12,6 +12,7 @@
 //!
 //! The function's THIR is beside it, for its shape: names and spans.
 
+mod awaits;
 mod cfg;
 mod drops;
 mod iter;
@@ -48,6 +49,24 @@ use crate::runtime::Helper;
 pub struct Mir<'tcx> {
     pub(super) body: mir::Body<'tcx>,
     pub(super) promoted: IndexVec<Promoted, mir::Body<'tcx>>,
+    /// Of a coroutine's, an `async` body's: the blocks whose call is an
+    /// `.await` (`awaits.rs`).
+    pub(super) awaits: std::collections::HashSet<BasicBlock>,
+}
+
+impl<'tcx> Mir<'tcx> {
+    /// `body`, its `.await`s each one call.
+    pub(super) fn new(
+        tcx: ty::TyCtxt<'tcx>,
+        mut body: mir::Body<'tcx>,
+        promoted: IndexVec<Promoted, mir::Body<'tcx>>,
+    ) -> Mir<'tcx> {
+        let awaits = match body.coroutine.is_some() {
+            true => awaits::awaits(tcx, &mut body),
+            false => Default::default(),
+        };
+        Mir { body, promoted, awaits }
+    }
 }
 
 /// Whether bodies are lowered from their MIR: `RUST_JS_MIR=1`, while the
@@ -106,6 +125,8 @@ struct Locals {
 /// A body's lowering state.
 struct State<'m, 'tcx> {
     body: &'m mir::Body<'tcx>,
+    /// The blocks whose call is an `.await` (`awaits.rs`).
+    awaits: &'m std::collections::HashSet<BasicBlock>,
     promoted: &'m IndexVec<Promoted, mir::Body<'tcx>>,
     graph: cfg::Graph,
     locals: Locals,
@@ -165,8 +186,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Its dictionaries, for its bounds, after its parameters (ADR 0049).
         let evidence = self.evidence_params(def_id);
-        let (mut params, out) = self.mir_function(mir, None)?;
+        let (mut params, mut out) = self.mir_function(mir, None)?;
         params.extend(evidence);
+        // An `async fn`'s body is its coroutine's, an async arrow called
+        // at once: the async function's own (ADR 0029).
+        let is_async = self.tcx.asyncness(def_id).is_async();
+        if is_async {
+            let Some(body) = called_async_body(&mut out) else {
+                return Err(self.unsupported(span, "this `async fn`, from its MIR"));
+            };
+            out = body;
+        }
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
         Ok(LoweredFn {
@@ -177,7 +207,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 export: self.tcx.visibility(def_id).is_public()
                     && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
-                is_async: false,
+                is_async,
                 span: self.js_span(
                     self.tcx
                         .hir_span_with_body(self.tcx.local_def_id_to_hir_id(body.def_id)),
@@ -214,6 +244,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let mut state = State {
             body: mir_body,
+            awaits: &mir.awaits,
             promoted: &mir.promoted,
             graph: cfg::Graph::of(mir_body),
             locals,
@@ -236,7 +267,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             parts: Default::default(),
         };
         // A closure's first argument is its environment, read through its fields.
-        let skip = usize::from(captures.is_some());
+        // A coroutine's are that and what it's resumed with, which an async
+        // function has neither of.
+        let skip = match (captures.is_some(), mir_body.coroutine.is_some()) {
+            (_, true) => mir_body.arg_count,
+            (true, false) => 1,
+            (false, false) => 0,
+        };
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
@@ -483,7 +520,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for name in shared {
             self.locals.alike.remove(&name);
         }
-        let (params, stmts) = lowered?;
+        let (params, mut stmts) = lowered?;
+        // An `async` body runs as soon as it's made: an async arrow, called
+        // at once (ADR 0029).
+        if self.tcx.coroutine_is_async(def_id) {
+            return Ok(Expr::call(Expr::async_arrow(params, stmts), Vec::new()));
+        }
+        // An `async` closure's body is the one it makes: its async arrow's.
+        if matches!(self.tcx.type_of(def_id).skip_binder().kind(), ty::CoroutineClosure(..))
+            && let Some(body) = called_async_body(&mut stmts)
+        {
+            return Ok(Expr::async_arrow(params, body));
+        }
         Ok(Expr::arrow(params, stmts))
     }
 
@@ -506,11 +554,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let continued = self.continued(body);
         for info in &body.var_debug_info {
             // A variable a std macro makes, `format_args!`'s `args`, isn't
-            // one the program names.
+            // one the program names, nor `.await`'s `result`.
             if let mir::VarDebugInfoContents::Place(place) = info.value
                 && place.projection.is_empty()
                 && user[place.local].is_none()
                 && !info.source_info.span.in_external_macro(sm)
+                && !info.source_info.span.is_desugaring(rustc_span::DesugaringKind::Await)
                 && !continued.contains(&place.local)
             {
                 user[place.local] = Some(super::camel_case(info.name.as_str()));
@@ -888,7 +937,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 state.unwind = None;
                 let mut called = Vec::new();
-                let value = self.mir_call(state, func, args, *destination, *fn_span, &mut called)?;
+                let value = match state.awaits.contains(&block) {
+                    true => self.mir_await(state, args, *fn_span, &mut called)?,
+                    false => self.mir_call(state, func, args, *destination, *fn_span, &mut called)?,
+                };
                 match target {
                     Some(target) => {
                         self.mir_store(state, *destination, value, span, &mut called)?;
@@ -1440,7 +1492,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         } else if matches!(
             state.body.local_decls[place.local].ty.peel_refs().kind(),
-            ty::Closure(..)
+            ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..)
         ) && !state.captures.is_empty()
         {
             // A closure's environment, read only through its fields.
@@ -1472,7 +1524,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             placed = false;
             value = match (ty.ty.peel_refs().kind(), elem) {
                 // Of a closure's environment, `(*_1).0`: what it captured.
-                (ty::Closure(..), PlaceElem::Field(field, _)) if !state.captures.is_empty() => {
+                (ty::Closure(..) | ty::Coroutine(..) | ty::CoroutineClosure(..), PlaceElem::Field(field, _))
+                    if !state.captures.is_empty() =>
+                {
                     let (capture, is_place) = state.captures[field.as_usize()].clone();
                     placed = is_place;
                     capture
@@ -2117,6 +2171,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(Value::Expr(self.adt_value(ty, *variant_index, exprs, span)?))
             }
             AggregateKind::Closure(def_id, _) => Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?)),
+            // An `async` body, what it holds as a closure's environment.
+            AggregateKind::Coroutine(def_id, _) if self.tcx.coroutine_is_async(*def_id) => {
+                Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?))
+            }
+            // An `async` closure, which makes its body each call.
+            AggregateKind::CoroutineClosure(def_id, _) => {
+                Ok(Value::Expr(self.mir_closure(state, *def_id, values, span, out)?))
+            }
             _ => Err(self.unsupported(span, "this aggregate, from its MIR")),
         }
     }
@@ -2414,6 +2476,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         calls.next().is_none().then_some(call)
     }
 
+    /// `.await` of what's given, `into_future(x)`'s (`awaits.rs`).
+    fn mir_await(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        args: &[rustc_span::Spanned<Operand<'tcx>>],
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Value<'tcx>> {
+        let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
+        let awaited = self.take_operands(state, &operands, out)?.remove(0);
+        Ok(Value::Expr(Expr::await_(self.value_expr(awaited, span)?)))
+    }
+
     /// Any other function as a value, `.map(str::len)`: the arrow that calls
     /// it, its call lowered as one from MIR is, of its parameters.
     fn mir_called_value(
@@ -2536,9 +2611,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (def_id, generic_args) = self
             .resolve_into(def_id, generic_args)
             .unwrap_or((def_id, generic_args));
-        // Calling a closure, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`.
+        // Calling a closure, `Fn::call(&f, (a, b))`: in JS, `f(a, b)`, and an
+        // `async` one's, `AsyncFn::async_call`, which gives its promise.
         if let Some(fn_trait) = tcx.trait_of_assoc(def_id)
-            && tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
+            && (tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
+                || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())
         {
             let mut values = values.into_iter();
             let callee = match values.next().expect("the closure") {
@@ -2556,7 +2633,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .collect::<R<Vec<_>>>()?;
             // Not a closure of the crate's: a `dyn Fn`, a generic one or a
             // pointer, which may be JS's (ADR 0330).
-            if !matches!(arg_tys[0].peel_refs().kind(), ty::Closure(..)) {
+            if !matches!(
+                arg_tys[0].peel_refs().kind(),
+                ty::Closure(..) | ty::CoroutineClosure(..)
+            ) {
                 super::calls::given_to_js(&mut exprs);
             }
             return Ok(Value::Expr(Expr::call(callee, exprs)));
@@ -3435,6 +3515,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }))
     }
+}
+
+/// The body of the async arrow `stmts` only call and return, `return (async
+/// () => { .. })()`, an `async` body made: the async function's own.
+fn called_async_body(stmts: &mut [Stmt]) -> Option<Vec<Stmt>> {
+    let [
+        Stmt {
+            kind: StmtKind::Return(Some(called)),
+            ..
+        },
+    ] = stmts
+    else {
+        return None;
+    };
+    let js::ExprKind::Call(callee, args) = &mut called.kind else {
+        return None;
+    };
+    let js::ExprKind::AsyncArrow(params, body) = &mut callee.kind else {
+        return None;
+    };
+    (args.is_empty() && params.is_empty()).then(|| std::mem::take(body))
 }
 
 /// Whether a value moves freely among those made around it: it does
