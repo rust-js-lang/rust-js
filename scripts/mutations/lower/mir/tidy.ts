@@ -983,18 +983,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "string-method-not-boolean",
-    "breaks": "`s.includes(t)` isn't known a boolean, so `||` of it is `!!s.includes(t) || ..`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "\"includes\" | \"startsWith\" | \"endsWith\"",
-    "replace": "\"startsWith\" | \"endsWith\"",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "negated matches, string methods"
-    ]
-  },
-  {
     "name": "target-root-not-inlined",
     "breaks": "`const _25 = ref.current; _25[k] = v` stays, not `ref.current[k] = v` (and no `??=` of it)",
     "file": "src/lower/mir/tidy.rs",

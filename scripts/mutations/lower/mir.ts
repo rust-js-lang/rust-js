@@ -1032,7 +1032,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     replace: "            && !state.locals.user[local]\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
     name: "mir-payload-of-for-loop",

@@ -5555,3 +5555,52 @@ pub fn Callout<C: ReactNode>(CalloutProps { children, wip }: CalloutProps<C>) ->
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Callout, { wip: false }, "x"))).toBe('<div class="callout bg-green"><h3 class="title text-green"><i class="icon text-green">i</i>Note</h3><div>x</div></div>');
 });
+
+// ADR 0364: a variant's binding of a place nothing changes, `element` of
+// `let Child::Element(element) = child else { .. }`, is that place, `child`,
+// read where it's used, as react.dev's Challenges parses its children.
+test("an element a let-else binds is read as the child it binds", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use js::Unknown;
+use react::children::{self, Child};
+use react::{JSX, ReactNode, jsx};
+unsafe extern "Rust" {
+    #[link_name = "get mdxName"]
+    safe fn mdx_name(this: &Unknown) -> Option<&'static str>;
+}
+pub fn Kinds<C: ReactNode>(children: C) -> JSX::Element {
+    let mut hints = 0;
+    let mut solutions = Vec::new();
+    let mut content = Vec::new();
+    children::for_each(&children, |child| {
+        let Child::Element(element) = child else {
+            content.push(child);
+            return;
+        };
+        match mdx_name(element.r#type()) {
+            Some("Solution") => {
+                solutions.push(std::mem::take(&mut content));
+            }
+            Some("Hint") => {
+                hints += 1;
+            }
+            Some("h4") => {
+                hints += 2;
+            }
+            _ => {
+                content.push(child);
+            }
+        }
+    });
+    jsx! { <p data-hints={hints} data-solutions={solutions.len()}>{content}</p> }
+}
+`);
+  args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("if (!isValidElement(child)) {\n      content.push(child);\n      return;\n    }");
+  const lib = await import(join(dir, "lib.jsx"));
+  const Hint = Object.assign(() => null, { mdxName: "Hint" });
+  const element = createElement(Hint, { key: "h" });
+  expect(renderToStaticMarkup(lib.Kinds(["a", element, "b"]))).toBe('<p data-hints="1" data-solutions="0">ab</p>');
+});

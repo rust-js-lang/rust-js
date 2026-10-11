@@ -2926,9 +2926,6 @@ fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
             ..,
         ) => true,
         ExprKind::Binary(Op::And | Op::Or, a, b) => is_boolean(a, booleans) && is_boolean(b, booleans),
-        // What JS's methods of the kind give, `s.includes(t)`, `Array.isArray(x)`.
-        ExprKind::Call(callee, _) => matches!(&callee.kind, ExprKind::Member(_, m)
-            if matches!(m.as_str(), "includes" | "startsWith" | "endsWith" | "some" | "every" | "has" | "isArray")),
         _ => false,
     }
 }
