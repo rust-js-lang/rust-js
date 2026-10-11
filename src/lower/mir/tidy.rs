@@ -10,8 +10,9 @@ use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 use super::negate;
 use crate::lower::iterators::{eager_chains, iterated};
 
-/// `body`, tidied: `result` is the name of the function's return place.
-pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
+/// `body`, tidied: `result` is the name of the function's return place,
+/// `falsy` the temporaries a function that skips what's falsy is given.
+pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>) {
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {
@@ -39,6 +40,21 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
+    // What's given where `false` is skipped as `undefined` is, `test &&
+    // value`, as THIR gives it there: one read there alone, which nothing
+    // else tells from `undefined`.
+    let falsy: HashSet<&String> = falsy.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Const(name, value) = &mut stmt.kind
+                && falsy.contains(name)
+                && let ExprKind::Cond(test, then, none) = &value.kind
+                && matches!(none.kind, ExprKind::Undefined)
+            {
+                *value = Expr::bin(Op::And, test.tested(), (**then).clone());
+            }
+        }
+    });
     let changing = changing(body);
     alias_variables(body, &changing);
     js::statement_lists(body, &mut destructured);
@@ -389,7 +405,12 @@ fn destructured(stmts: &mut Vec<Stmt>) {
             }
         };
         let made = first > i;
-        let parts = parts(&stmts[first..], &name);
+        let mut parts = parts(&stmts[first..], &name);
+        // Of a variable, only the parts the program names: a temporary's is
+        // better read where it's used.
+        if !made && let Some(at) = parts.iter().position(|(_, bound, _)| is_temporary(bound)) {
+            parts.truncate(at);
+        }
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
         let enough = count >= if made { 1 } else { 2 };
@@ -814,6 +835,7 @@ fn conditional(test: Expr, yes: Expr, no: Expr) -> Expr {
         (ExprKind::Bool(true), _) => Expr::bin(Op::Or, test, no),
         (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),
         (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),
+        (_, ExprKind::Bool(false)) => both(test, yes),
         _ => Expr::cond(test, yes, no),
     }
 }
@@ -902,7 +924,7 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
 }
 
 /// A temporary MIR made, `const _5 = e;`, read once, by the statement
-/// after it: `e` where it's read, where nothing that runs before it there
+/// after it, or after those that are moved there too: `e` where it's read, where nothing that runs before it there
 /// does anything, or anywhere outside a closure if `e` does nothing and
 /// reads nothing that changes.
 fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
@@ -962,6 +984,8 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
         };
         *read = replaced;
         stmts.remove(i);
+        // The one before it may now be read by the statement after it too.
+        i = i.saturating_sub(1);
     }
 }
 

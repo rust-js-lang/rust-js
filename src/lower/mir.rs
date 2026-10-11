@@ -273,6 +273,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         captures: Option<Vec<(Expr, bool)>>,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
+        let outer_falsy = std::mem::take(&mut self.locals.falsy);
         let drops = self.mir_elaboration(mir_body);
         let patterns = match captures {
             None => self.mir_param_patterns(mir_body),
@@ -438,7 +439,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ) {
             out.pop();
         }
-        tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE]);
+        // A closure's own, which it named, apart from its body's.
+        let falsy = std::mem::replace(&mut self.locals.falsy, outer_falsy);
+        tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE], &falsy);
         tidy::destructured_params(&mut params, &mut out);
         Ok((params, out))
     }

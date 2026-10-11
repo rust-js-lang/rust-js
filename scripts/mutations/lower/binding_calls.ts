@@ -154,4 +154,12 @@ export const mutations: Mutation[] = [
     replace: "            let export = if false && default {\n",
     tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
   },
+  {
+    name: "binding-falsy-temporary-unsaid",
+    breaks: "a temporary a function that skips what's falsy is given, from MIR, stays `test ? value : undefined`",
+    file: "src/lower/binding_calls.rs",
+    find: "                    self.locals.falsy.insert(name.clone());\n",
+    replace: "",
+    tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+  },
 ];

@@ -1575,6 +1575,7 @@ pub fn asked() -> bool {
 // ADR 0221: a binding that skips what's falsy, `#[rust_js::skips_falsy]`, as
 // classnames does, is given an argument shown only if a test holds as `test
 // && value`, as react.dev writes `cn('a', isExpanded && 'sp-layout-expanded')`.
+// From MIR too (ADR 0364), where a test that branches makes it a temporary.
 test("a binding that skips what's falsy is given test && value", async () => {
   const dir = fixture("skips-falsy");
   writeFileSync(join(dir, "cn.js"), 'export default (...classes) => classes.filter(Boolean).join(" ");\n');
@@ -1597,14 +1598,24 @@ pub struct Failure(pub u32);
 pub fn flagged(error: Option<&Failure>, ready: bool) -> String {
     cn(&[Some("a"), (error.is_some() || ready).then_some("b")])
 }
+pub fn numbered(n: Option<u32>) -> String {
+    cn(&[matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two"), Some("c")])
+}
+pub fn kept(n: Option<u32>) -> String {
+    plain(&[matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two")])
+}
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
-  expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
-  expect(js).toContain('return cn("a", (error || ready) && "b");');
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true), lib.flagged([1], false), lib.flagged(undefined, false)]).toEqual(["a wide", "a tall", "a", "a wide", "a b", "a"]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
+    expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
+    expect(js).toContain('return cn("a", (error || ready) && "b");');
+    expect(js).toContain('return cn(n === 1 && "one", n === 2 && "two", "c");');
+    expect(js).toContain('return cn(n === 1 ? "one" : undefined, n === 2 ? "two" : undefined);');
+    const lib = await import(join(dir, out));
+    expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true), lib.flagged([1], false), lib.flagged(undefined, false), lib.numbered(2), lib.kept(1)]).toEqual(["a wide", "a tall", "a", "a wide", "a b", "a", "two c", "one"]);
+  }
 });
 
 // ADR 0301: a binding that can't throw, `#[rust_js::cannot_throw]`, as reading

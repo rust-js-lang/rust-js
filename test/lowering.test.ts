@@ -1140,6 +1140,12 @@ pub fn fields(p: P) -> u32 {
     let P { a, b } = p;
     a + b
 }
+pub struct Q { pub dir: Option<u32>, pub name: Option<String> }
+fn join(a: Option<&str>, b: Option<&str>) -> String { format!("{a:?}{b:?}") }
+pub fn label(q: &Q) -> String {
+    let dir = q.dir;
+    join(q.name.as_deref(), matches!(dir, Some(1)).then_some("one"))
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
@@ -1147,6 +1153,8 @@ pub fn fields(p: P) -> u32 {
     expect(js).toContain("  const [a, b] = pair(n);\n");
     expect(js).toContain("  const [a, b] = t;\n");
     expect(js).toContain("  const { a, b } = p;\n");
+    // A part read where it's used isn't one a pattern names.
+    expect(js).toContain("  const dir = q.dir;\n  return join(q.name, ");
     const lib = await import(join(dir, out));
     expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 })]).toEqual([6, 8, 3]);
   }

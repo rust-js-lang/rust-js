@@ -213,6 +213,10 @@ struct Locals {
     /// either: what THIR's variables say (`reads_alike`, `plain_value`).
     alike: HashSet<String>,
     plain: HashSet<String>,
+    /// Of a body lowered from its MIR, the temporaries a function that skips
+    /// what's falsy is given, whose `test ? value : undefined` is given as
+    /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
+    falsy: HashSet<String>,
 }
 
 /// A variable bound by a pattern, and the place in the subject it matched.
