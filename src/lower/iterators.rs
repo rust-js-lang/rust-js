@@ -1543,6 +1543,36 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
     });
 }
 
+/// A chain MIR makes lazily for the next statement's array alone to
+/// spread, `const newLogs = $iter(xs).filter(f).map(g); const all =
+/// [...a, ...newLogs];`, of stages that do nothing else: the array THIR's
+/// makes, `xs.filter(f).map(g)`, which spreads alike.
+pub(super) fn eager_spreads(stmts: &mut [Stmt]) {
+    for i in 0..stmts.len().saturating_sub(1) {
+        let (head, rest) = stmts.split_at_mut(i + 1);
+        let StmtKind::Const(name, value) = &mut head[i].kind else {
+            continue;
+        };
+        let spread = |e: &Expr| {
+            matches!(&e.kind, js::ExprKind::Array(items)
+                if items.iter().any(|item| matches!(&item.kind, js::ExprKind::Spread(of)
+                    if matches!(&of.kind, js::ExprKind::Var(v) if v == name))))
+        };
+        let next = match &rest[0].kind {
+            StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) => spread(e),
+            _ => false,
+        };
+        if !next || js::mentions_in(rest, name) != 1 {
+            continue;
+        }
+        if let Some((items, stages)) = eager_items(value, false, None)
+            && stages > 0
+        {
+            *value = items;
+        }
+    }
+}
+
 /// A chain MIR makes as Rust runs it (ADR 0364), item by item, `$iter(xs)
 /// .map(f).filter(g)`: the array THIR's makes of `xs`, `xs.map(f).filter(g)`
 /// (ADR 0055), and how many stages it has, where the order its closures run
@@ -1669,12 +1699,27 @@ fn array_method(items: Expr, name: &str, f: Expr) -> Expr {
 /// Whether calling `f` may do what can be seen, or throw: anything but an
 /// arrow whose statements only make and give back what does nothing.
 fn does(f: &Expr) -> bool {
+    // `Math`'s functions, `Math.imul(x, 2)` of a `u32`'s `*`, do nothing
+    // but give their value; not `Math.random()`, which steps its state.
+    fn acts(e: &Expr) -> bool {
+        let mut e = e.clone();
+        e.each_mut(&mut |part| {
+            if let js::ExprKind::Call(callee, args) = &part.kind
+                && let js::ExprKind::Member(math, name) = &callee.kind
+                && matches!(&math.kind, js::ExprKind::Var(v) if v == "Math")
+                && name != "random"
+            {
+                *part = Expr::array(args.clone());
+            }
+        });
+        e.has_effects()
+    }
     fn body_does(stmts: &[Stmt]) -> bool {
         stmts.iter().any(|stmt| match &stmt.kind {
             StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) | StmtKind::Expr(e) => {
-                e.has_effects()
+                acts(e)
             }
-            StmtKind::Destructure { value, .. } => value.has_effects(),
+            StmtKind::Destructure { value, .. } => acts(value),
             StmtKind::Let(_, None) | StmtKind::Return(None) => false,
             StmtKind::If(test, then, otherwise) => {
                 test.has_effects() || body_does(then) || otherwise.as_deref().is_some_and(body_does)

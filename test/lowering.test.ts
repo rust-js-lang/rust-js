@@ -6737,3 +6737,34 @@ pub fn update(f: &dyn Fn(&dyn Fn(&VecDeque<u32>) -> VecDeque<u32>)) {
     expect([got, prev]).toEqual([[3, 4, 5], [1, 2, 3, 4, 5]]);
   }
 });
+
+// A chain MIR makes lazily for one spread alone, of stages that do nothing
+// else, is the array THIR's makes, which spreads alike, as react.dev's
+// Console takes its new logs: `more.filter(..).map(..)`, not `$iter(more)`.
+test("a lazy chain from MIR spread once is an array", async () => {
+  const dir = fixture("chain-spread-once");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "Math.random"]
+    safe fn random() -> f64;
+}
+pub fn joined(prev: &[u32], more: &[u32]) -> Vec<u32> {
+    let new_logs = more.iter().filter(|&&x| x > 1).map(|&x| x * 2);
+    let messages: Vec<u32> = prev.iter().cloned().chain(new_logs).collect();
+    messages
+}
+pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
+    let rolled = more.iter().map(|&x| x + random());
+    let all: Vec<f64> = prev.iter().cloned().chain(rolled).collect();
+    all.len()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => Math.imul(x, 2) >>> 0);\n");
+    // Not of `Math.random()`, which does something.
+    if (out === "mir.js") expect(js).toContain("  const rolled = $iter(more).map((x) => x + Math.random());\n");
+    const lib = await import(join(dir, out));
+    expect([lib.joined([1], [1, 2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], 2]);
+  }
+});

@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
 use super::negate;
-use crate::lower::iterators::{eager_chains, iterated};
+use crate::lower::iterators::{eager_chains, eager_spreads, iterated};
 
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
@@ -134,6 +134,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));
     named_temporaries(body);
     eager_chains(body);
+    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
     returned_in_branches(body, result);
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);

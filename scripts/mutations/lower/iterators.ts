@@ -601,4 +601,40 @@ export const mutations: Mutation[] = [
       "a position of an array's own iterator"
     ]
   },
+  {
+    "name": "spread-chain-lazy",
+    "breaks": "a chain MIR makes for one spread stays `$iter(more).filter(..)`, not THIR's array",
+    "file": "src/lower/iterators.rs",
+    "find": "            *value = items;\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a lazy chain from MIR spread once"
+    ]
+  },
+  {
+    "name": "math-call-does",
+    "breaks": "a stage of `Math.imul(x, 2)` does something, so its chain stays lazy",
+    "file": "src/lower/iterators.rs",
+    "find": "                *part = Expr::array(args.clone());\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a lazy chain from MIR spread once"
+    ]
+  },
+  {
+    "name": "math-random-pure",
+    "breaks": "a stage of `Math.random()` does nothing, so it runs where its chain is made",
+    "file": "src/lower/iterators.rs",
+    "find": "                && name != \"random\"\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a lazy chain from MIR spread once"
+    ]
+  },
 ];
