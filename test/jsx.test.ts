@@ -4171,3 +4171,54 @@ pub fn App() -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.App())).toBe('<div title="one" lang="en"><b>x</b>five</div>');
 });
+
+// ADR 0364: from MIR as from THIR, a component's flattened props given in
+// part are the attributes given, not what `jsx!`'s `..Default::default()`
+// and its omitted props leave out, and the component takes them apart as
+// its pattern does, the rest its `...props`.
+test("flattened props given in part are the attributes given", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+#[derive(Default)]
+pub struct Html {
+    pub id: Option<&'static str>,
+    #[cfg_attr(rust_js, rust_js::name = "className")]
+    pub class_name: Option<&'static str>,
+}
+#[derive(Default)]
+pub struct Anchor {
+    pub href: Option<&'static str>,
+    pub target: Option<&'static str>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub html: Html,
+}
+pub struct LinkProps<C> {
+    pub href: &'static str,
+    pub children: C,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: Anchor,
+}
+pub fn Link<C: ReactNode>(LinkProps { href, children, props }: LinkProps<C>) -> JSX::Element {
+    jsx! { <a href={href} {...props}>{children}</a> }
+}
+pub fn App() -> JSX::Element {
+    jsx! { <Link href="/b" className={Some("c")}>{"B"}</Link> }
+}
+// What does something is made in Rust's order, the struct's own \`href\`
+// after the flattened \`target\`, which it's written after.
+fn note(text: &'static str) -> &'static str {
+    println!("{text}");
+    text
+}
+pub fn Noted() -> JSX::Element {
+    jsx! { <Link target={Some(note("_blank"))} href={note("/n")}>{"N"}</Link> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function Link({ href, children, ...props }) {");
+  expect(jsx).toContain('<Link href="/b" className="c">');
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.App())).toBe('<a href="/b" class="c">B</a>');
+  expect(renderToStaticMarkup(lib.Noted())).toBe('<a href="/n" target="_blank">N</a>');
+});

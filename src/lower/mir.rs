@@ -78,6 +78,10 @@ enum Value<'tcx> {
     Branch(Expr, Ty<'tcx>),
 }
 
+/// A parameter taken apart: its index, THIR's pattern, and the local MIR
+/// binds each name the pattern binds to.
+type ParamPattern = (usize, js::Pattern, Vec<(Local, String)>);
+
 /// What's known of a body's locals.
 struct Locals {
     /// Each one's JS name, empty for one of `()`, which holds nothing.
@@ -137,10 +141,13 @@ struct State<'m, 'tcx> {
     boxes: std::collections::HashSet<String>,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
     branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
-    /// Elements made, each written where it's used, inside another or given
-    /// its props, as JSX writes it: what each is made of was read where it
-    /// was made (ADR 0040).
-    elements: std::collections::HashMap<Local, Expr>,
+    /// Values made, each written where it's read: a constant, which reads
+    /// the same anywhere, and an element, inside another or given its props,
+    /// as JSX writes it, what it's made of read where it was made (ADR 0040).
+    in_place: std::collections::HashMap<Local, Expr>,
+    /// Each local a parameter's pattern binds, and the parameter it's moved
+    /// out of, which the pattern takes apart already.
+    parts: std::collections::HashMap<Local, Local>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -189,7 +196,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         let drops = self.mir_elaboration(mir_body);
-        let mut locals = self.mir_locals(mir_body);
+        let patterns = match captures {
+            None => self.mir_param_patterns(mir_body),
+            Some(_) => Vec::new(),
+        };
+        let named: Vec<(Local, String)> = patterns.iter().flat_map(|(_, _, named)| named.clone()).collect();
+        let mut locals = self.mir_locals(mir_body, &named);
         // A drop reads what it drops more than once, so it's a variable.
         for local in drops.iter().flat_map(|drops| drops.read(mir_body)) {
             locals.reads[local] += 2;
@@ -212,8 +224,54 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             copy_backs: Vec::new(),
             boxes: Default::default(),
             branches: Default::default(),
-            elements: Default::default(),
+            in_place: Default::default(),
+            parts: Default::default(),
         };
+        // A closure's first argument is its environment, read through its fields.
+        let skip = usize::from(captures.is_some());
+        let mut params: Vec<js::Pattern> = mir_body
+            .args_iter()
+            .skip(skip)
+            .map(|local| {
+                state.locals.declared[local] = true;
+                let name = match state.locals.names[local].as_str() {
+                    "" => self.fresh("_"),
+                    name => name.to_string(),
+                };
+                // A `&mut` to a value JS can't change in place: the box its
+                // caller gives, its place the box's `value` (ADR 0074).
+                let boxed = match captures {
+                    // A closure's, by what it points at.
+                    Some(_) => matches!(mir_body.local_decls[local].ty.kind(),
+                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee)),
+                    None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
+                };
+                if boxed {
+                    state.boxes.insert(name.clone());
+                }
+                js::Pattern::Name(name)
+            })
+            .collect();
+        // Where each part a pattern binds is a local MIR moves out of the
+        // parameter, once, and that's all it reads of it: the pattern.
+        for (i, pattern, named) in patterns {
+            let arg = Local::from_usize(i + 1);
+            let moved_out = named.iter().all(|&(local, _)| {
+                mir_body.basic_blocks.iter().flat_map(|data| &data.statements).any(|statement| {
+                    matches!(&statement.kind, StatementKind::Assign(assign)
+                        if assign.0 == Place::from(local)
+                            && matches!(&assign.1, Rvalue::Use(Operand::Move(p) | Operand::Copy(p), _) if p.local == arg))
+                })
+            });
+            if !moved_out || state.locals.reads[arg] != named.len() {
+                continue;
+            }
+            for (local, _) in named {
+                state.locals.declared[local] = true;
+                state.parts.insert(local, arg);
+            }
+            params[i] = pattern;
+        }
         state.borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
             .map(|(local, _)| state.locals.names[local].clone())
@@ -241,31 +299,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.locals.plain.insert(name.clone());
             }
         }
-        // A closure's first argument is its environment, read through its fields.
-        let skip = usize::from(captures.is_some());
-        let params: Vec<js::Pattern> = mir_body
-            .args_iter()
-            .skip(skip)
-            .map(|local| {
-                state.locals.declared[local] = true;
-                let name = match state.locals.names[local].as_str() {
-                    "" => self.fresh("_"),
-                    name => name.to_string(),
-                };
-                // A `&mut` to a value JS can't change in place: the box its
-                // caller gives, its place the box's `value` (ADR 0074).
-                let boxed = match captures {
-                    // A closure's, by what it points at.
-                    Some(_) => matches!(mir_body.local_decls[local].ty.kind(),
-                        ty::Ref(_, pointee, ty::Mutability::Mut) if self.is_cell_pointee(*pointee)),
-                    None => self.param_is_box(mir_body.source.def_id(), local.as_usize() - 1),
-                };
-                if boxed {
-                    state.boxes.insert(name.clone());
-                }
-                js::Pattern::Name(name)
-            })
-            .collect();
         let mut out = Vec::new();
         // Each flag that says whether a value is there to drop, and the
         // values: a drop may be where their `const` isn't seen.
@@ -295,6 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Locals assigned more than once are `let`s, declared first.
         for local in mir_body.local_decls.indices() {
             if mir_body.local_kind(local) != LocalKind::Arg
+                && !state.locals.declared[local]
                 && !state.locals.names[local].is_empty()
                 && (state.locals.writes[local] > 1 || flagged[local.as_usize()])
             {
@@ -316,6 +350,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE]);
         Ok((params, out))
+    }
+
+    /// Parameters taken apart where they're given, as THIR takes them: a
+    /// props struct's, its fields' defaults and its rest among them (ADRs
+    /// 0195, 0212). Each its index, THIR's pattern, which names what it
+    /// binds, and the local MIR binds each to, by value.
+    fn mir_param_patterns(&mut self, body: &mir::Body<'tcx>) -> Vec<ParamPattern> {
+        let mut patterns = Vec::new();
+        for (i, param) in self.thir.params.iter().enumerate() {
+            let Some(pat) = param.pat.as_deref() else { continue };
+            if !matches!(pat.kind, thir::PatKind::Leaf { .. }) || self.has_drops(pat.ty) {
+                continue;
+            }
+            // Each binding, and the local MIR binds it to, by its span.
+            let mut bound = Vec::new();
+            let mut by_value = true;
+            pat.walk_always(|p| match p.kind {
+                thir::PatKind::Binding {
+                    var,
+                    mode: rustc_hir::BindingMode(rustc_hir::ByRef::No, _),
+                    subpattern: None,
+                    ..
+                } => bound.push((var, p.span)),
+                thir::PatKind::Binding { .. } => by_value = false,
+                _ => {}
+            });
+            let locals: Option<Vec<Local>> = (bound.iter())
+                .map(|&(_, span)| {
+                    body.var_debug_info.iter().find_map(|info| match info.value {
+                        mir::VarDebugInfoContents::Place(place)
+                            if place.projection.is_empty() && info.source_info.span == span =>
+                        {
+                            Some(place.local)
+                        }
+                        _ => None,
+                    })
+                })
+                .collect();
+            let Some(locals) = locals.filter(|_| by_value) else {
+                continue;
+            };
+            let Some((pattern, _)) = self.js_pattern(pat) else {
+                continue;
+            };
+            let named: Option<Vec<(Local, String)>> = (bound.iter().zip(locals))
+                .map(
+                    |(&(var, _), local)| match self.locals.vars.get(&var).map(|v| &v.place.kind) {
+                        Some(js::ExprKind::Var(name)) => Some((local, name.clone())),
+                        _ => None,
+                    },
+                )
+                .collect();
+            if let Some(named) = named {
+                patterns.push((i, pattern, named));
+            }
+        }
+        patterns
     }
 
     /// A closure made here, an arrow of its own MIR: what it captured, as
@@ -374,7 +465,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Each local's name, the user's where it has one, and how it's used.
-    fn mir_locals(&mut self, body: &mir::Body<'tcx>) -> Locals {
+    fn mir_locals(&mut self, body: &mir::Body<'tcx>, named: &[(Local, String)]) -> Locals {
         let n = body.local_decls.len();
         let mut locals = Locals {
             names: IndexVec::from_elem_n(String::new(), n),
@@ -473,6 +564,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         for local in body.local_decls.indices() {
             if body.local_decls[local].ty.is_unit() || body.local_decls[local].ty.is_never() {
+                continue;
+            }
+            // Bound by a parameter's pattern, as THIR names it.
+            if let Some((_, name)) = named.iter().find(|(l, _)| *l == local) {
+                locals.names[local] = name.clone();
                 continue;
             }
             let base = match (&user[local], body.local_kind(local)) {
@@ -824,6 +920,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut made = Vec::new();
         for (local, value) in std::mem::take(&mut state.pending) {
             let mut expr = self.value_expr(value, Span::default())?;
+            if expr.is_constant() {
+                state.in_place.insert(local, expr);
+                continue;
+            }
             // An element, what it's made of read here, made where it's used.
             let before = made.len();
             if self.capture_jsx(&mut expr, &mut made) {
@@ -833,7 +933,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         state.own_names.insert(name.clone());
                     }
                 }
-                state.elements.insert(local, expr);
+                state.in_place.insert(local, expr);
                 continue;
             }
             let name = state.locals.names[local].clone();
@@ -876,8 +976,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let at = state.pending.iter().position(|(l, _)| *l == local).expect("admitted");
             return Ok(state.pending.remove(at).1);
         }
-        if let Some(element) = state.elements.get(&local) {
-            return Ok(Value::Expr(element.clone()));
+        if let Some(value) = state.in_place.get(&local) {
+            return Ok(Value::Expr(value.clone()));
         }
         if let Some(place) = state.refs.get(&local) {
             return Ok(Value::Ref(place.clone()));
@@ -1035,6 +1135,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        // A part of a parameter its pattern binds, bound there already.
+        if let Some(&arg) = state.parts.get(&place.local)
+            && place.projection.is_empty()
+            && matches!(rvalue, Rvalue::Use(Operand::Move(p) | Operand::Copy(p), _) if p.local == arg)
+        {
+            return Ok(());
+        }
         let value = self.mir_rvalue(state, rvalue, span, out)?;
         self.mir_store(state, *place, value, span, out)
     }
@@ -1080,6 +1187,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && same_place(state, target)
         {
             state.refs.insert(local, target.clone());
+            return Ok(());
+        }
+        // An object of constants read only by its fields, `Html::default()`'s:
+        // read where each is.
+        if place.projection.is_empty()
+            && !state.locals.user[local]
+            && state.locals.writes[local] == 1
+            && !state.locals.borrowed[local]
+            && state.locals.reads[local] == state.locals.fields[local].len()
+            && let Value::Expr(made) = &value
+            && matches!(made.kind, js::ExprKind::Object(_))
+            && made.is_made_of_constants()
+        {
+            state.in_place.insert(local, made.clone());
             return Ok(());
         }
         // One read by its fields, each once, a `format_args!`'s tuple: a list
