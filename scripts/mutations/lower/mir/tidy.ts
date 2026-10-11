@@ -602,4 +602,20 @@ export const mutations: Mutation[] = [
     replace: "            let _ = bound;\n",
     tests: ["test/lowering.test.ts","-t","names its .&x. parameter"],
   },
+  {
+    name: "mir-tidy-lets-first",
+    breaks: "each `let` stays declared first, not where it's first named",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut sunk_lets);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","declared where it.s first named"],
+  },
+  {
+    name: "mir-tidy-let-not-into-branch",
+    breaks: "a `let` one branch alone names is declared before the `if`, not in the branch",
+    file: "src/lower/mir/tidy.rs",
+    find: "            if let Some(branch) = branch {\n",
+    replace: "            if let Some(branch) = branch.filter(|_| false) {\n",
+    tests: ["test/lowering.test.ts","-t","declared where it.s first named"],
+  },
 ];

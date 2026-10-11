@@ -117,6 +117,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     named_temporaries(body);
     eager_chains(body);
     tail_returns(body, returns);
+    // Each `let` where it's first named, a `const` where it's written once.
+    js::statement_lists(body, &mut sunk_lets);
+    declarations(body);
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
@@ -1735,6 +1738,51 @@ fn aliases(body: &mut Vec<Stmt>) {
             i += 1;
         }
     });
+}
+
+/// A `let x;` MIR declares first, where it's first named, as THIR declares
+/// it: before the first statement that names it, and in the one branch of
+/// an `if` that does. Not into a loop, each turn of which starts it again.
+fn sunk_lets(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::Let(name, None) = &stmts[i].kind else {
+            i += 1;
+            continue;
+        };
+        let name = name.clone();
+        let names = |stmt: &Stmt| js::mentions_in(std::slice::from_ref(stmt), &name) > 0;
+        let Some(first) = (i + 1..stmts.len()).find(|&j| names(&stmts[j])) else {
+            i += 1;
+            continue;
+        };
+        let alone = !stmts[first + 1..].iter().any(names);
+        let declared = stmts.remove(i);
+        let first = first - 1;
+        if alone
+            && let StmtKind::If(test, then, otherwise) = &mut stmts[first].kind
+            && !test.mentions_var(&name)
+        {
+            let branch = match (js::mentions_in(then, &name) > 0, otherwise) {
+                (true, Some(otherwise)) if js::mentions_in(otherwise, &name) > 0 => None,
+                (true, _) => Some(then),
+                (false, Some(otherwise)) => Some(otherwise),
+                (false, None) => None,
+            };
+            if let Some(branch) = branch {
+                branch.insert(0, declared);
+                continue;
+            }
+        }
+        // Only `let`s between, where it is; otherwise, what followed it is
+        // next.
+        if stmts[i..first].iter().all(|s| matches!(s.kind, StmtKind::Let(_, None))) {
+            stmts.insert(i, declared);
+            i += 1;
+        } else {
+            stmts.insert(first, declared);
+        }
+    }
 }
 
 /// `let x; .. x = e;` is `.. let x = e;`, where nothing between names `x`,

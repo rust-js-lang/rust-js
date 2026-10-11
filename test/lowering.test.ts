@@ -5848,3 +5848,40 @@ test("a closure from MIR names its `&x` parameter and knows the `bool`s it captu
     expect([lib.flags(false, [1, 3]), lib.flags(true, [1])]).toEqual([[false, true], [true]]);
   }
 });
+
+test("a `let` from MIR is declared where it's first named, as THIR declares it", async () => {
+  const dir = fixture("mir-sunk-lets");
+  writeFileSync(join(dir, "lib.rs"), `pub fn label(path: Option<&str>, crumbs: &[&str], force: bool) -> String {
+    let selected = path == Some("x");
+    let item;
+    if path.is_none() {
+        item = "none".to_string();
+    } else if crumbs.len() > 1 {
+        let is_crumb = crumbs.len() > 2 && crumbs[0] == "y";
+        let is_expanded = force || is_crumb || selected;
+        item = format!("{is_expanded}");
+    } else {
+        item = "leaf".to_string();
+    }
+    item
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function label(path, crumbs, force) {
+  const selected = path === "x";
+  let item;
+  if (path == null) {
+    item = "none";
+  } else if (crumbs.length > 1) {
+    const isCrumb = crumbs.length > 2 && crumbs[0] === "y";
+    const isExpanded = force || isCrumb || selected;
+    item = String(isExpanded);
+  } else {
+    item = "leaf";
+  }
+  return item;
+}`);
+  }
+});
