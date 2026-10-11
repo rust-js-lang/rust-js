@@ -4970,3 +4970,47 @@ pub fn One(section: Option<&'static str>) -> JSX::Element {
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Tags(["a", "b"]))).toBe("<div><b>a</b><b>b</b></div>");
 });
+
+// ADR 0364: a prop MIR holds in a temporary is read where it's written past
+// a sibling element before it, `<Search isOpen={show} />`, which reads
+// only what no call changes, as react.dev's TopNav gives its logo classes.
+test("a prop held for a borrow is read where it's written, past a sibling element", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct SearchProps {
+    pub is_open: bool,
+}
+pub fn Search(SearchProps { is_open }: SearchProps) -> JSX::Element {
+    jsx! { <i>{is_open.then_some("open")}</i> }
+}
+pub struct SeoProps<'a> {
+    pub image: &'a str,
+}
+pub fn Seo(SeoProps { image }: SeoProps) -> JSX::Element {
+    jsx! { <span>{image}</span> }
+}
+pub fn Page(home: bool, show: bool, path: String) -> JSX::Element {
+    jsx! {
+        <div>
+            <Search is_open={show} />
+            <Seo
+                image={
+                    if home {
+                        format!("/og-{}.png", path)
+                    } else {
+                        format!("/og/{}.png", path.replace('/', "-"))
+                    }
+                    .as_str()
+                }
+            />
+            {home.then(|| jsx! { <b>{"rss"}</b> })}
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toContain("const _");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page(false, true, "a/b"))).toBe("<div><i>open</i><span>/og/a-b.png</span></div>");
+});

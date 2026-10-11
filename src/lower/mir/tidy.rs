@@ -2154,6 +2154,32 @@ fn chained_checks(stmts: &mut [Stmt]) {
     }
 }
 
+/// Whether making `e` reads only what no call changes: an element, array or
+/// object of constants, of variables nothing sets again, of imports and of
+/// arrows, which capture what they read, and of such elements.
+fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
+    let props = |props: &[js::Prop]| {
+        props.iter().all(|p| {
+            let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Spread(v)) = p;
+            !matches!(p, js::Prop::Spread(_)) && inert_element(v, changing)
+        })
+    };
+    match &e.kind {
+        ExprKind::Var(v) => !changing.contains(v),
+        ExprKind::Symbol(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
+        ExprKind::Array(items) => items.iter().all(|i| inert_element(i, changing)),
+        ExprKind::Object(fields) => props(fields),
+        ExprKind::Jsx(jsx) => {
+            let tag = match &jsx.tag {
+                js::JsxTag::Component(tag) => inert_element(tag, changing),
+                _ => true,
+            };
+            tag && props(&jsx.props) && jsx.children.iter().all(|c| inert_element(c, changing))
+        }
+        _ => e.is_made_of_constants(),
+    }
+}
+
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.
 fn or_all(a: Expr, b: Expr) -> Expr {
     match b.kind {
@@ -2401,6 +2427,8 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<St
                     || matches!(&e.kind, ExprKind::Member(of, _)
                         if matches!(&of.kind, ExprKind::Var(v)
                             if !changing.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String")))
+                    // An element of what no call changes, `<Search isOpen={show} />`.
+                    || matches!(e.kind, ExprKind::Jsx(_)) && inert_element(e, changing)
             }
         };
         // The statement that reads it, past `const`s of what it may be read

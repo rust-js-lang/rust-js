@@ -1270,4 +1270,16 @@ export const mutations: Mutation[] = [
       "arm before a panic stays an else if"
     ]
   },
+  {
+    "name": "mir-tidy-sibling-element-blocks",
+    "breaks": "a prop MIR holds for a borrow stays a `const _16`, read past a sibling element, `<Search isOpen={show} />`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    || matches!(e.kind, ExprKind::Jsx(_)) && inert_element(e, changing)\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];
