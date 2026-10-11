@@ -870,4 +870,16 @@ export const mutations: Mutation[] = [
       "read in place by a builtin's function"
     ]
   },
+  {
+    "name": "shown-child-conditional",
+    "breaks": "a child shown where a test holds is `shown ? hint : undefined`, not `shown && hint`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    && is_boolean(test, booleans)\n                {\n                    *child = Expr {",
+    "replace": "                    && false\n                {\n                    *child = Expr {",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

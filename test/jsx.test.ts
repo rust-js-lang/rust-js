@@ -4617,3 +4617,20 @@ pub fn App(step: u32, open: bool) -> JSX::Element {
     '<div data-step="3">b</div>',
   ]);
 });
+
+// ADR 0235: a child shown only where a test holds, `if shown { hint } else
+// { None }`, is `shown && hint`, from MIR as from THIR, as react.dev's
+// Challenge shows its hint.
+test("a child shown where a test holds is test && child", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub fn App(hint: Option<&'static str>, shown: bool) -> JSX::Element {
+    jsx! { <div>{if shown { hint } else { None }}</div> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<div>{shown && hint}</div>");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(lib.App("h", true)), renderToStaticMarkup(lib.App("h", false)), renderToStaticMarkup(lib.App(undefined, true))]).toEqual(["<div>h</div>", "<div></div>", "<div></div>"]);
+});

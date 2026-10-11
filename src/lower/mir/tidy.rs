@@ -157,6 +157,24 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
+    // A child shown only where a test holds, `c ? <b /> : undefined`: `c &&
+    // <b />`, as JSX writes it (ADR 0235), of a boolean test, whose `false`
+    // renders nothing as `undefined` does.
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Jsx(jsx) = &mut e.kind {
+            for child in jsx.children.iter_mut() {
+                if let ExprKind::Cond(test, shown, none) = &child.kind
+                    && matches!(none.kind, ExprKind::Undefined)
+                    && is_boolean(test, booleans)
+                {
+                    *child = Expr {
+                        span: child.span,
+                        kind: ExprKind::Binary(Op::And, test.clone(), shown.clone()),
+                    };
+                }
+            }
+        }
+    });
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
