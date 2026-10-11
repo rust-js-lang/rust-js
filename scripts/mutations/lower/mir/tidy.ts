@@ -1510,4 +1510,16 @@ export const mutations: Mutation[] = [
       "continues a loop's ifs end with are kept"
     ]
   },
+  {
+    "name": "let-else-copy-kept",
+    "breaks": "a `let`-`else`'s binding of a variable stays a copy, `const current$1 = current`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            && then.last().is_some_and(ends)\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
+    "replace": "            && then.last().is_some_and(ends)\n            && false\n            && let StmtKind::Const(b, value) = &stmts[i + 1].kind",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let-else's binding of a variable is the variable"
+    ]
+  },
 ];

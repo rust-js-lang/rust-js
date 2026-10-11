@@ -8084,3 +8084,43 @@ test("continues a loop's ifs end with are kept", async () => {
     expect(lib.split("a {b c} d e")).toEqual(["a", "d"]);
   }
 });
+
+// From MIR as from THIR: what a `let`-`else` binds of a variable, `let
+// Some(current) = &mut current else { continue; }`, is that variable, read
+// as it is, not a copy, `const current$1 = current`, as react.dev's
+// llmsTxt adds pages to its current section.
+test("a let-else's binding of a variable is the variable", async () => {
+  const dir = fixture("let-else-copy");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Section {
+    pub pages: Vec<u32>,
+}
+pub fn grouped(items: &[u32]) -> Vec<Section> {
+    let mut sections = Vec::new();
+    let mut current: Option<Section> = None;
+    for &item in items {
+        if item == 0 {
+            if let Some(section) = current {
+                sections.push(section);
+            }
+            current = Some(Section { pages: Vec::new() });
+            continue;
+        }
+        let Some(current) = &mut current else {
+            continue;
+        };
+        current.pages.push(item);
+    }
+    if let Some(section) = current {
+        sections.push(section);
+    }
+    sections
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    current.pages.push(item);");
+    const lib = await import(join(dir, out));
+    expect(lib.grouped([1, 0, 2, 3, 0, 4])).toEqual([{ pages: [2, 3] }, { pages: [4] }]);
+  }
+});

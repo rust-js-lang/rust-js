@@ -2427,8 +2427,8 @@ fn same_test(a: &Expr, b: &Expr) -> bool {
 /// `if let Some(error) = raw`, which MIR copies where `raw` is borrowed:
 /// `raw` where `error` is read, as THIR binds it, where the block sets
 /// neither again, declares neither, nor reads `error` in a closure, which
-/// may run after.
-fn copied_bindings(stmts: &mut [Stmt]) {
+/// may run after; a `let`-`else`'s too, after the test that leaves.
+fn copied_bindings(stmts: &mut Vec<Stmt>) {
     for stmt in stmts.iter_mut() {
         let StmtKind::If(test, then, _) = &mut stmt.kind else {
             continue;
@@ -2478,6 +2478,32 @@ fn copied_bindings(stmts: &mut [Stmt]) {
                 *v = a.clone();
             }
         });
+    }
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let StmtKind::If(test, then, None) = &stmts[i].kind
+            && then.last().is_some_and(ends)
+            && let StmtKind::Const(b, value) = &stmts[i + 1].kind
+            && let ExprKind::Var(a) = &value.kind
+            && absent(test, a)
+            && !is_temporary(a)
+            && !is_temporary(b)
+            && a != b
+        {
+            let (a, b) = (a.clone(), b.clone());
+            let rest = &stmts[i + 2..];
+            if !rebinds(rest, &a) && !rebinds(rest, &b) && !in_closure(rest, &b) {
+                stmts.remove(i + 1);
+                js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+                    if let ExprKind::Var(v) = &mut e.kind
+                        && *v == b
+                    {
+                        *v = a.clone();
+                    }
+                });
+            }
+        }
+        i += 1;
     }
 }
 
