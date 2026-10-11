@@ -122,6 +122,13 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
     declarations(body);
+    // What those `const`s now read once, where it's read, and the values
+    // of branches that leaves.
+    let changed = self::changing(body);
+    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
+    declarations(body);
+    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind

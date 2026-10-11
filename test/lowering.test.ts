@@ -5932,3 +5932,25 @@ pub fn field(n: u32) -> u32 {
     expect(js).toContain("  const getProps = use_collapse(n).get_props;\n");
   }
 });
+
+test("an `if … else if` given as a value from MIR is the conditional THIR writes, where it's read", async () => {
+  const dir = fixture("mir-else-if-value");
+  writeFileSync(join(dir, "lib.rs"), `pub fn link(href: &str) -> String {
+    format!(
+        "[{}]",
+        if href.starts_with("https://") {
+            "ext"
+        } else if href.starts_with('#') {
+            "hash"
+        } else {
+            href
+        }
+    )
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  return `[${href.startsWith("https://") ? "ext" : href.startsWith("#") ? "hash" : href}]`;\n');
+  }
+});

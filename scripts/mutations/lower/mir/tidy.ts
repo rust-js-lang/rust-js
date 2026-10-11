@@ -642,4 +642,12 @@ export const mutations: Mutation[] = [
     replace: "            true if false && element => {\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    name: "mir-tidy-late-consts-kept",
+    breaks: "a `const` declarations makes last stays, `const _27 = e; _24 = _27;`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    let changed = self::changing(body);\n    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));\n",
+    replace: "    let changed = self::changing(body);\n",
+    tests: ["test/lowering.test.ts","-t","else if. given as a value"],
+  },
 ];
