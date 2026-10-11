@@ -321,7 +321,9 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
         a: sub("E"),
         whenA: sub(ty),
         bind,
-        guard: guarded ? expr(r, "bool", withB, depth - 1) : undefined,
+        // A guard writes nothing: what the match reads is borrowed through
+        // it, which borrowck keeps unchanged.
+        guard: guarded ? expr(r, "bool", withB.map((v) => ({ ...v, mutable: false })), depth - 1) : undefined,
         whenB: expr(r, ty, withB, depth - 1),
         otherB: guarded ? sub(ty) : undefined,
         x,
