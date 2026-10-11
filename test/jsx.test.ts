@@ -5604,3 +5604,80 @@ pub fn Kinds<C: ReactNode>(children: C) -> JSX::Element {
   const element = createElement(Hint, { key: "h" });
   expect(renderToStaticMarkup(lib.Kinds(["a", element, "b"]))).toBe('<p data-hints="1" data-solutions="0">ab</p>');
 });
+
+// ADR 0364: what MIR holds ahead of the children before it, `showToc &&
+// toc.length !== 0`, is read where it's written, past their calls: what
+// does nothing, of a `let` no closure sets, which no call changes, as
+// react.dev's Page shows its Toc.
+test("a test of a let held ahead of calls is read in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct TocItem {
+    pub text: JSX::Element,
+}
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub fn Page(toc: &'static [TocItem], home: bool) -> JSX::Element {
+    let mut show_toc = true;
+    if home {
+        show_toc = false;
+    }
+    jsx! {
+        <div className={cn(&[home.then_some("home")])}>
+            <p className={cn(&[Some("p")])} />
+            {(show_toc && !toc.is_empty()).then(|| jsx! { <span>{toc.len()}</span> })}
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("{showToc && toc.length !== 0 && <span>");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page([{ text: null }], false))).toBe('<div class=""><p class="p"></p><span>1</span></div>');
+});
+
+// ADR 0364: a child chosen of elements, `open ? <IconClose /> : <IconHamburger
+// />`, makes nothing a call changes, so classes MIR holds for a later
+// child, `cn(..)` of a flattened prop, are read past it where they're
+// written, as react.dev's TopNav its menu button's icon and its logo's.
+test("a chosen element child is read past by later held classes", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::SVGAttributes;
+use react::{JSX, jsx, use_state};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+#[derive(Default)]
+pub struct LogoProps<'a> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: SVGAttributes<'a>,
+}
+pub fn Logo(LogoProps { props }: LogoProps) -> JSX::Element {
+    jsx! { <svg {..props} /> }
+}
+pub fn IconClose() -> JSX::Element {
+    jsx! { <b /> }
+}
+pub fn IconHamburger() -> JSX::Element {
+    jsx! { <i /> }
+}
+pub fn Nav() -> JSX::Element {
+    let (&open, set_open) = use_state(false);
+    jsx! {
+        <div className={cn(&[Some(if open { "wide" } else { "narrow" })])}>
+            <button onClick={move |_| set_open.set(!open)} className={cn(&[Some("menu"), open.then_some("open")])}>
+                {if open { jsx! { <IconClose /> } } else { jsx! { <IconHamburger /> } }}
+            </button>
+            <Logo className={Some(cn(&[Some("logo")]).as_str())} />
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toMatch(/const (className|value|_\d+) =/);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.Nav))).toBe('<div class="narrow"><button class="menu"><i></i></button><svg class="logo"></svg></div>');
+});

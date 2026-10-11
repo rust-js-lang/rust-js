@@ -1438,4 +1438,28 @@ export const mutations: Mutation[] = [
     "replace": "",
     "tests": ["test/lowering.test.ts", "-t", "call giving a bool is one in a test"]
   },
+  {
+    "name": "mir-pure-value-held-past-calls",
+    "breaks": "what does nothing, of a `let` no closure sets, `showToc && toc.length !== 0`, is held ahead of the calls before its read",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "unchanged_by_calls || !e.has_effects()",
+    "replace": "!e.has_effects()",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "inert-element-chosen-not",
+    "breaks": "a child chosen of elements, `open ? <b /> : <i />`, stops classes held for a later child being read in place",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

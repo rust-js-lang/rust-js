@@ -2272,6 +2272,8 @@ fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
         ExprKind::Symbol(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
         ExprKind::Array(items) => items.iter().all(|i| inert_element(i, changing)),
         ExprKind::Object(fields) => props(fields),
+        // A choice of them, `open ? <IconClose /> : <IconHamburger />`.
+        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),
         ExprKind::Jsx(jsx) => {
             let tag = match &jsx.tag {
                 js::JsxTag::Component(tag) => inert_element(tag, changing),
@@ -2994,10 +2996,13 @@ fn inlined(
         // what it does can't change. Of what an element made ahead of a
         // branch reads, what does nothing and reads no such variable: the
         // element's tree is the order the program makes them in.
+        // What does nothing and reads what no call changes, a `let` no
+        // closure sets, passes what does something too.
         let acts = value.has_effects();
         let element = captured.contains(name);
+        let unchanged_by_calls = !acts && read_past_calls(value, set, plain);
         let passes = |e: &Expr| match acts {
-            false => !e.has_effects(),
+            false => unchanged_by_calls || !e.has_effects(),
             true if element => {
                 let mut unchanged = !e.has_effects();
                 e.visit_vars(&mut |v| unchanged &= !set.contains(v));

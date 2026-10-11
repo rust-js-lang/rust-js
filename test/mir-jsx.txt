@@ -112,3 +112,5 @@ a held handler of one call is a concise arrow
 a variant's test function is a bool in a test
 classes held ahead of a branch past a static's fields are read in place
 an element a let-else binds is read as the child it binds
+a test of a let held ahead of calls is read in place
+a chosen element child is read past by later held classes
