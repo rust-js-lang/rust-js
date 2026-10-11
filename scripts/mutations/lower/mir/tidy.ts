@@ -714,4 +714,12 @@ export const mutations: Mutation[] = [
     replace: "                    if negated(test) && then.len() > 1 =>\n",
     tests: ["test/lowering.test.ts","-t","continue.s from MIR are where"],
   },
+  {
+    name: "mir-tidy-set-and-true-kept",
+    breaks: "a test that `x` is set and true stays `x != null && x`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    && same(x, &t)\n",
+    replace: "                    && same(x, &t)\n                    && false\n",
+    tests: ["test/lowering.test.ts","-t","is set and true reads"],
+  },
 ];

@@ -137,6 +137,19 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
+    // What's only tested, `x != null && x`: `x`.
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::If(test, ..) | StmtKind::While { cond: test, .. } = &mut stmt.kind {
+                truthful(test);
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Cond(test, ..) = &mut e.kind {
+            truthful(test);
+        }
+    });
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
@@ -2169,6 +2182,47 @@ fn plain_cells(body: &mut Vec<Stmt>) {
             };
         }
     });
+}
+
+/// `test`, read for its truth alone, without what it says twice: `x !=
+/// null && x`, set and true, is `x`, of its `&&`s, `||`s and `!`s.
+fn truthful(test: &mut Expr) {
+    match &mut test.kind {
+        ExprKind::Binary(Op::Or, a, b) => {
+            truthful(a);
+            truthful(b);
+        }
+        ExprKind::Unary(UnaryOp::Not, a) => truthful(a),
+        ExprKind::Binary(Op::And, ..) => {
+            let mut tests = Vec::new();
+            fn spread(e: Expr, tests: &mut Vec<Expr>) {
+                match e.kind {
+                    ExprKind::Binary(Op::And, a, b) => {
+                        spread(*a, tests);
+                        spread(*b, tests);
+                    }
+                    kind => tests.push(Expr { kind, span: e.span }),
+                }
+            }
+            spread(std::mem::replace(test, Expr::undefined()), &mut tests);
+            let mut kept: Vec<Expr> = Vec::new();
+            for mut t in tests {
+                if let Some(last) = kept.last()
+                    && let ExprKind::Binary(Op::LooseNe, x, null) = &last.kind
+                    && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+                    && same(x, &t)
+                {
+                    kept.pop();
+                }
+                truthful(&mut t);
+                kept.push(t);
+            }
+            *test = (kept.into_iter().rev())
+                .reduce(|b, a| Expr::bin(Op::And, a, b))
+                .expect("one");
+        }
+        _ => {}
+    }
 }
 
 /// `if (c) { s; result = a; } else { result = b; } return result;`, the

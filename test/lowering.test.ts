@@ -6238,3 +6238,35 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }`);
   }
 });
+
+test("a test from MIR that `x` is set and true reads `x`, as THIR's", async () => {
+  const dir = fixture("mir-set-and-true");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Message {
+    Start { first_load: Option<bool> },
+    Refresh,
+}
+pub fn starts(message: &Message, out: &mut Vec<u32>) {
+    if matches!(message, Message::Start { first_load: Some(true) }) || matches!(message, Message::Refresh) {
+        out.push(1);
+    }
+}
+pub fn titled(error_code: Option<&str>) -> String {
+    match error_code {
+        Some(code) if !code.is_empty() => format!("#{code}"),
+        _ => "none".to_string(),
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).not.toContain("!= null &&");
+    const lib = await import(join(dir, out));
+    const pushed: number[] = [];
+    lib.starts({ TAG: "Start", first_load: true }, pushed);
+    lib.starts({ TAG: "Start", first_load: false }, pushed);
+    lib.starts({ TAG: "Start" }, pushed);
+    lib.starts("Refresh", pushed);
+    expect([pushed, lib.titled("e"), lib.titled(""), lib.titled(undefined)]).toEqual([[1, 1], "#e", "none", "none"]);
+  }
+});
