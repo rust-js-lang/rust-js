@@ -16,6 +16,8 @@ pub(super) struct Hints<'h> {
     pub(super) result: &'h str,
     /// The temporaries a function that skips what's falsy is given.
     pub(super) falsy: &'h HashSet<String>,
+    /// And the temporaries such a `test && value` tests.
+    pub(super) tested: &'h HashSet<String>,
     /// Where the program writes each `if`'s condition, and each `return`.
     pub(super) conditions: &'h [js::Span],
     pub(super) returns: &'h [js::Span],
@@ -23,6 +25,8 @@ pub(super) struct Hints<'h> {
     /// of a branch reads (`capture_jsx`): as its temporaries, read where
     /// they're used where nothing between tells.
     pub(super) captured: &'h HashSet<String>,
+    /// The variables of Rust's `bool`: JS's `true` and `false` alone.
+    pub(super) booleans: &'h HashSet<String>,
 }
 
 /// `body`, tidied, by what `hints` say of it.
@@ -30,9 +34,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let Hints {
         result,
         falsy,
+        tested,
         conditions,
         returns,
         captured,
+        booleans,
     } = *hints;
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
@@ -42,10 +48,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             unreachable_after(stmts);
         });
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-        bottom_up(body, &mut |stmts| branch_values(stmts, returns));
+        bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
         js::statement_lists(body, &mut unlabeled);
     }
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns));
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
@@ -75,12 +81,15 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
     // A chain of tests a loop ended, its body now ending where the chain's does.
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns));
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     js::statement_lists(body, &mut unlabeled);
     // What's given where `false` is skipped as `undefined` is, `test &&
     // value`, as THIR gives it there: one read there alone, which nothing
     // else tells from `undefined`.
     let falsy: HashSet<&String> = falsy.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
+    // A test of one read there alone is read for its truth: `!!a || b`'s,
+    // `a || b`.
+    let tested: HashSet<&String> = tested.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
@@ -89,6 +98,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
                 && matches!(none.kind, ExprKind::Undefined)
             {
                 *value = Expr::bin(Op::And, test.tested(), (**then).clone());
+            }
+            if let StmtKind::Const(name, value) = &mut stmt.kind
+                && tested.contains(name)
+            {
+                *value = value.tested();
             }
         }
     });
@@ -1055,7 +1069,7 @@ fn bottom_up(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
 /// { s }` is `if (!c) { s }`; `if (c) { x = a; } else { x = b; }` is `x =
 /// c ? a : b;`, of two branches; and `l: { if (a) { if (b) { x = t; break l; } } x = f; }`,
 /// `matches!`'s, is `x = a && b ? t : f;`.
-fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
+fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet<String>) {
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
@@ -1073,9 +1087,10 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
                     // A temporary's, an `if` the program wrote as a value, is one.
                     && ((small(yes) && small(no)) || is_temporary(x)) =>
             {
-                StmtKind::Assign(Expr::var(x), conditional(test, yes.clone(), no.clone()))
+                StmtKind::Assign(Expr::var(x), conditional(test, yes.clone(), no.clone(), booleans))
             }
-            // `if (c) { return a; } else { return b; }`: `return c ? a : b;`.
+            // `if (c) { return true; } else { return b; }`: `return c || b;`;
+            // of values not `true` or `false`, the `if` THIR writes.
             StmtKind::If(test, ref then, Some(ref otherwise))
                 if let [
                     Stmt {
@@ -1093,9 +1108,10 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
                     && small(no)
                     // Not where the program wrote `return`, an early one.
                     && !written(returns, then[0].span)
-                    && !written(returns, otherwise[0].span) =>
+                    && !written(returns, otherwise[0].span)
+                    && boolean_branch(yes, no) =>
             {
-                StmtKind::Return(Some(conditional(test, yes.clone(), no.clone())))
+                StmtKind::Return(Some(conditional(test, yes.clone(), no.clone(), booleans)))
             }
             // `if (c) { return a; } else { return b; }`, `b` the `return` the
             // program wrote and `a` where it goes on: that one first, as
@@ -1121,7 +1137,7 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
             StmtKind::Labeled(label, body) => match chain(&body, &label) {
                 Some((tests, x, yes, no)) => {
                     let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
-                    StmtKind::Assign(Expr::var(&x), conditional(test, yes, no))
+                    StmtKind::Assign(Expr::var(&x), conditional(test, yes, no, booleans))
                 }
                 None => StmtKind::Labeled(label, body),
             },
@@ -1137,12 +1153,13 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         && let Some((tests, yes)) = returned_chain(std::slice::from_ref(last_if))
         && small(&yes)
         && small(no)
+        && boolean_branch(&yes, no)
         // Not where the program wrote `return`, an early one.
         && !written(returns, last.span)
         && !writes_return(std::slice::from_ref(last_if), returns)
     {
         let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
-        let value = conditional(test, yes, no.clone());
+        let value = conditional(test, yes, no.clone(), booleans);
         let span = last_if.span;
         stmts.truncate(stmts.len() - 2);
         stmts.push(StmtKind::Return(Some(value)).at(span));
@@ -1199,6 +1216,12 @@ fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     let mut all = bound.to_vec();
     all.extend(body);
     Some((tests, all))
+}
+
+/// Whether of `c ? yes : no` one is `true` or `false`: `c || no` or `c &&
+/// yes`, not `?:`.
+fn boolean_branch(yes: &Expr, no: &Expr) -> bool {
+    matches!(yes.kind, ExprKind::Bool(_)) || matches!(no.kind, ExprKind::Bool(_))
 }
 
 /// Of `if (a) { if (b) { return t; } }`: its tests, `[a, b]`, and `t`.
@@ -1347,7 +1370,9 @@ fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
 /// `!(a && b)` of `bool`s `!a || !b`.
 fn not(e: Expr) -> Expr {
     match e.kind {
-        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) if is_boolean(&a) && is_boolean(&b) => {
+        ExprKind::Binary(op @ (Op::And | Op::Or), a, b)
+            if is_boolean(&a, &HashSet::new()) && is_boolean(&b, &HashSet::new()) =>
+        {
             let flipped = if op == Op::And { Op::Or } else { Op::And };
             Expr::bin(flipped, not(*a), not(*b))
         }
@@ -1383,9 +1408,9 @@ fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr)>
     }
 }
 
-/// `test ? yes : no`, of a `bool` test `test && yes` where `no` is
-/// `false`, and `test || no` where `yes` is `true`.
-fn conditional(mut test: Expr, yes: Expr, no: Expr) -> Expr {
+/// `test ? yes : no`: `test && yes` where `no` is `false`, and `test || no`
+/// where `yes` is `true`, the test `!!test` where it's not a `bool`.
+fn conditional(mut test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
     // A test is read for its truth alone: `!!c`'s is `c`'s.
     while let ExprKind::Unary(UnaryOp::Not, inner) = &test.kind
         && let ExprKind::Unary(UnaryOp::Not, c) = &inner.kind
@@ -1401,16 +1426,19 @@ fn conditional(mut test: Expr, yes: Expr, no: Expr) -> Expr {
         }
         kind => (Expr { kind, span: test.span }, yes, no),
     };
-    if !is_boolean(&test) {
-        return Expr::cond(test, yes, no);
-    }
+    // Where the test itself is the value, of what's not a `bool`, `!!c`, as
+    // THIR writes it.
+    let truth = |test: Expr| match is_boolean(&test, booleans) {
+        true => test,
+        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),
+    };
     match (&yes.kind, &no.kind) {
-        (ExprKind::Bool(true), ExprKind::Bool(false)) => test,
+        (ExprKind::Bool(true), ExprKind::Bool(false)) => truth(test),
         (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),
-        (ExprKind::Bool(true), _) => Expr::bin(Op::Or, test, no),
+        (ExprKind::Bool(true), _) => Expr::bin(Op::Or, truth(test), no),
         (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),
         (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),
-        (_, ExprKind::Bool(false)) => both(test, yes),
+        (_, ExprKind::Bool(false)) => both(truth(test), yes),
         _ => Expr::cond(test, yes, no),
     }
 }
@@ -1471,16 +1499,17 @@ fn same(a: &Expr, b: &Expr) -> bool {
     }
 }
 
-/// Whether `e` is a `bool` whatever it reads: a comparison, a `!`, or
-/// `&&` and `||` of them.
-fn is_boolean(e: &Expr) -> bool {
+/// Whether `e` is a `bool` whatever it reads: a comparison, a `!`, one of
+/// `booleans`, or `&&` and `||` of them.
+fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
     match &e.kind {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
+        ExprKind::Var(name) => booleans.contains(name),
         ExprKind::Binary(
             Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf | Op::In,
             ..,
         ) => true,
-        ExprKind::Binary(Op::And | Op::Or, a, b) => is_boolean(a) && is_boolean(b),
+        ExprKind::Binary(Op::And | Op::Or, a, b) => is_boolean(a, booleans) && is_boolean(b, booleans),
         _ => false,
     }
 }
@@ -1750,7 +1779,7 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
 
 /// What follows a `return`, a `throw`, a `break` or a `continue` in the
 /// same list never runs, nor what follows an `if` each of whose branches
-/// ends so.
+/// ends so, nor a `while (true)` no `break` leaves.
 fn unreachable_after(stmts: &mut Vec<Stmt>) {
     if let Some(at) = stmts.iter().position(ends) {
         stmts.truncate(at + 1);
@@ -1762,6 +1791,9 @@ fn ends(stmt: &Stmt) -> bool {
     match &stmt.kind {
         StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_) => true,
         StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
+        StmtKind::While { label, cond, body } => {
+            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
+        }
         _ => false,
     }
 }

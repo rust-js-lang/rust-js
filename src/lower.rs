@@ -217,6 +217,9 @@ struct Locals {
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
     falsy: HashSet<String>,
+    /// And the temporaries such a `test && value` tests: read for their
+    /// truth alone.
+    tested: HashSet<String>,
     /// Of a body lowered from its MIR, the `const`s it made of what an
     /// element made ahead of a branch reads, which tidy reads in place
     /// where it can.

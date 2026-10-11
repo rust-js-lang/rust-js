@@ -1751,9 +1751,9 @@ pub fn first_id(items: &[Title]) -> u32 {
     expect(js).toContain("  const first = items[0];\n");
     if (out === "mir.js") {
       expect(js).toContain('  const first = parts[0];\n  if (first == null || typeof first !== "object") {\n    return 0;\n  }\n');
-      // A \`vec!\` a branch gives back, its box made, then filled: the array.
-      expect(js).toContain('  return titled ? [{ TAG: "Element", _0: { kind: "h4", id: 3 } }] : [{ TAG: "Text", _0: "t" }];\n');
     }
+    // A \`vec!\` a branch gives back, its box made, then filled: the array.
+    expect(js).toContain('  if (titled) {\n    return [{ TAG: "Element", _0: { kind: "h4", id: 3 } }];\n  }\n  return [{ TAG: "Text", _0: "t" }];\n');
     const lib = await import(join(dir, out));
     expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.first_id([{ kind: "p", id: 4 }]), lib.first_id([]), lib.element_id([{ kind: "p", id: 5 }]), lib.element_id(["t"])]).toEqual([8, 8, 0, 10, 0]);
     expect(() => lib.heading(lib.sample(false), "k", "")).toThrow("k is missing a title");
@@ -5506,4 +5506,157 @@ pub fn auto(m: Mode) -> bool {
 `);
   const failed = Bun.spawnSync([compiler, join(dir, "text.rs"), "-o", join(dir, "text.js")], { cwd: root, stderr: "pipe" });
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("`Auto` and `Text` hold values of one kind")]);
+});
+
+test("a closure's last `_` parameters are left out, from MIR as from THIR", async () => {
+  const dir = fixture("mir-closure-wild-params");
+  writeFileSync(join(dir, "lib.rs"), `pub fn ignored(n: u32) -> u32 {
+    let f = |_: u32| n + 1;
+    let g = |a: u32, _: &str| a * 2;
+    f(1) + g(2, "x")
+}
+pub struct Loud(pub u32);
+impl Drop for Loud {
+    fn drop(&mut self) {}
+}
+pub fn dropped(n: u32) -> u32 {
+    let h = |_: Loud| n + 1;
+    h(Loud(3))
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`const f = () => (n + 1) >>> 0;`);
+    expect(js).toContain(`const g = (a) => Math.imul(a, 2) >>> 0;`);
+    // What it's given and drops, it's given.
+    expect(js).toMatch(/const h = \(_\d*\) =>/);
+  }
+});
+
+test("a value returned after a loop, the function returning early before it, is returned once", async () => {
+  const dir = fixture("mir-returned-after-loop");
+  writeFileSync(join(dir, "lib.rs"), `pub fn parse(search: &str) -> Vec<String> {
+    if search.is_empty() {
+        return Vec::new();
+    }
+    let mut args = Vec::new();
+    let queries: Vec<&str> = search.split('&').collect();
+    for i in 0..queries.len() {
+        let query = queries[i];
+        if query.starts_with("a") {
+            args.push(query.to_string());
+        }
+    }
+    args
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function parse(search) {
+  if (!search) {
+    return [];
+  }
+  const args = [];
+  const queries = search.split("&");
+  for (let i = 0; i < queries.length; i++) {
+    const query = queries[i];
+    if (query.startsWith("a")) {
+      args.push(query);
+    }
+  }
+  return args;
+}`);
+  }
+});
+
+test("a function's value of two branches is returned from each, from MIR as from THIR", async () => {
+  const dir = fixture("mir-returned-branches");
+  writeFileSync(join(dir, "lib.rs"), `pub fn two(s: &str) -> u32 {
+    match s {
+        "a" => 1,
+        _ => 2,
+    }
+}
+pub fn cond(s: &str) -> u32 {
+    if s == "a" { 1 } else { 2 }
+}
+pub fn bools(b: bool) -> u32 {
+    match b {
+        true => 1,
+        false => 2,
+    }
+}
+pub fn opt(o: Option<u32>) -> u32 {
+    match o {
+        Some(x) => x,
+        None => 0,
+    }
+}
+pub fn any(a: bool, b: bool) -> bool {
+    a || b
+}
+pub fn shown(o: Option<u32>) -> String {
+    match o {
+        Some(_) => format!("#{}", 1),
+        None => String::new(),
+    }
+}
+pub struct F { pub n: u32 }
+pub fn either(o: Option<&F>, r: bool) -> bool {
+    o.is_some() || r
+}
+pub fn colors(message: &str) -> &'static str {
+    match message {
+        "warn" => "yellow",
+        "error" => "red",
+        _ => "gray",
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function two(s) {
+  if (s === "a") {
+    return 1;
+  }
+  return 2;
+}`);
+    expect(js).toContain(`export function cond(s) {
+  if (s === "a") {
+    return 1;
+  }
+  return 2;
+}`);
+    expect(js).toContain(`export function bools(b) {
+  if (b) {
+    return 1;
+  }
+  return 2;
+}`);
+    expect(js).toContain(`export function opt(o) {
+  if (o != null) {
+    return o;
+  }
+  return 0;
+}`);
+    expect(js).toContain(`export function colors(message) {
+  if (message === "warn") {
+    return "yellow";
+  }
+  if (message === "error") {
+    return "red";
+  }
+  return "gray";
+}`);
+    expect(js).toContain("  return a || b;\n");
+    // An arm a macro begins is in its place too.
+    expect(js).toContain("export function shown(o) {\n  if (o != null) {\n");
+    // A `bool` of what's not one, `!!o`, as THIR has it.
+    expect(js).toContain("  return !!o || r;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.either({ n: 1 }, false), lib.either(undefined, false)]).toEqual([true, false]);
+  }
 });

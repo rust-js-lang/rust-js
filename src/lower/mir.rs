@@ -287,6 +287,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         let outer_falsy = std::mem::take(&mut self.locals.falsy);
+        let outer_tested = std::mem::take(&mut self.locals.tested);
         let outer_captured = std::mem::take(&mut self.locals.captured);
         let drops = self.mir_elaboration(mir_body);
         let patterns = match captures {
@@ -462,6 +463,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A closure's own, which it named, apart from its body's.
         let falsy = std::mem::replace(&mut self.locals.falsy, outer_falsy);
+        let tested = std::mem::replace(&mut self.locals.tested, outer_tested);
         // Where each `if`'s condition is written, of the body THIR has:
         // tests in one are `&&`'s.
         let conditions: Vec<js::Span> = (self.thir.exprs.iter())
@@ -471,14 +473,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect();
         let captured = std::mem::replace(&mut self.locals.captured, outer_captured);
+        // A name each of whose locals is a `bool`.
+        let mut booleans = std::collections::HashSet::new();
+        let mut others = std::collections::HashSet::new();
+        for (local, name) in state.locals.names.iter_enumerated().filter(|(_, n)| !n.is_empty()) {
+            match mir_body.local_decls[local].ty.is_bool() {
+                true => booleans.insert(name.clone()),
+                false => others.insert(name.clone()),
+            };
+        }
+        booleans.retain(|name| !others.contains(name));
         tidy::tidy(
             &mut out,
             &tidy::Hints {
                 result: &state.locals.names[mir::RETURN_PLACE],
                 falsy: &falsy,
+                tested: &tested,
                 conditions: &conditions,
                 returns: &state.returns,
                 captured: &captured,
+                booleans: &booleans,
             },
         );
         tidy::destructured_params(&mut params, &mut out);
@@ -659,7 +673,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for name in shared {
             self.locals.alike.remove(&name);
         }
-        let (params, mut stmts) = lowered?;
+        let (mut params, mut stmts) = lowered?;
+        // JS ignores extra arguments, so `|_| ..` is `() => ..`, as THIR's,
+        // unless the closure drops what it's given.
+        let given = &body.thir.params.raw[1.min(body.thir.params.len())..];
+        if given.len() == params.len() {
+            while let Some(last) = given.get(params.len().wrapping_sub(1))
+                && last
+                    .pat
+                    .as_deref()
+                    .is_some_and(|p| matches!(p.kind, thir::PatKind::Wild))
+                && !self.has_drops(last.ty)
+            {
+                params.pop();
+            }
+        }
         // An `async` body runs as soon as it's made: an async arrow, called
         // at once (ADR 0029).
         if self.tcx.coroutine_is_async(def_id) {
@@ -1039,7 +1067,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     out.extend(self.mir_branch(state, block, target)?);
                     return Ok(out);
                 }
-                let otherwise = Some(targets.otherwise()).filter(|&b| reached(b));
+                let mut otherwise = Some(targets.otherwise()).filter(|&b| reached(b));
+                // Each case tested, an enum's `match`'s: its arms in the order
+                // the program wrote them, not its variants'.
+                if otherwise.is_none()
+                    && let Some(at) = (cases.iter())
+                        .map(|&(_, b)| written_at(state.body, b))
+                        .collect::<Option<Vec<_>>>()
+                {
+                    let mut ordered: Vec<_> = at.into_iter().zip(std::mem::take(&mut cases)).collect();
+                    ordered.sort_by_key(|&(at, _)| at);
+                    cases = ordered.into_iter().map(|(_, case)| case).collect();
+                }
+                // `if c { a } else { b }`, MIR's test of `false`, `!c`, first:
+                // the program's, `c`, its branch `a` first.
+                if ty.is_bool()
+                    && targets.iter().all(|(value, _)| value == 0)
+                    && let [(test, target)] = cases.as_mut_slice()
+                    && let Some(yes) = otherwise
+                {
+                    *test = negate(std::mem::replace(test, Expr::undefined()));
+                    otherwise = Some(std::mem::replace(target, yes));
+                }
                 let mut chain_panics = otherwise.is_some_and(|b| panics(state.body, b));
                 let mut chain: Option<Vec<Stmt>> = match otherwise {
                     Some(b) => Some(self.mir_branch(state, block, b)?),
@@ -4158,6 +4207,25 @@ fn label(block: BasicBlock) -> String {
 }
 
 /// Whether `block` does nothing but say it's never reached.
+/// Where the program wrote what `block` does first: a macro's, where it
+/// called it.
+fn written_at(body: &mir::Body<'_>, block: BasicBlock) -> Option<rustc_span::BytePos> {
+    let data = &body.basic_blocks[block];
+    let first = (data.statements.iter())
+        .find(|s| {
+            !matches!(
+                s.kind,
+                StatementKind::FakeRead(_)
+                    | StatementKind::StorageLive(_)
+                    | StatementKind::StorageDead(_)
+                    | StatementKind::Nop
+            )
+        })
+        .map_or(data.terminator().source_info.span, |s| s.source_info.span)
+        .source_callsite();
+    (!first.is_dummy()).then(|| first.lo())
+}
+
 fn is_unreachable(body: &mir::Body<'_>, block: BasicBlock) -> bool {
     let data = &body.basic_blocks[block];
     matches!(data.terminator().kind, TerminatorKind::Unreachable)
@@ -4330,7 +4398,8 @@ fn negate(test: Expr) -> Expr {
 
 /// `if (test) { then } else { otherwise }`, written with the branch that
 /// returns or throws first and the other after it, as a person writes an
-/// early exit: the same, as that branch never goes on. Of the branches,
+/// early exit: the same, as that branch never goes on. Of two that do, the
+/// program's first. Of the branches,
 /// `panics` says which panic: one that does is first, as a person writes a
 /// check.
 fn early_exit(
@@ -4350,27 +4419,18 @@ fn early_exit(
         Some(otherwise) if panics == [false, true] => {
             early_exit(negate(test), otherwise, Some(then), [true, false], span)
         }
-        Some(otherwise) if panics == [true, false] || exits(&then) && !exits(&otherwise) => {
+        Some(otherwise) if panics == [true, false] || exits(&then) => {
             let mut out = vec![StmtKind::If(test, then, None).at(span)];
             out.extend(otherwise);
             out
         }
-        Some(otherwise) if exits(&otherwise) && (!exits(&then) || weight(&otherwise) < weight(&then)) => {
+        Some(otherwise) if exits(&otherwise) => {
             let mut out = vec![StmtKind::If(negate(test), otherwise, None).at(span)];
             out.extend(then);
             out
         }
         otherwise => vec![StmtKind::If(test, then, otherwise).at(span)],
     }
-}
-
-/// How much `stmts` hold, about: their statements and their expressions'
-/// parts, so the smaller of two branches that both leave is written first.
-fn weight(stmts: &[Stmt]) -> usize {
-    let mut stmts = stmts.to_vec();
-    let mut parts = stmts.len();
-    js::each_expr_mut(&mut stmts, &mut |_| parts += 1);
-    parts
 }
 
 /// Whether `block` goes on to a call that never returns, a panic's, through
