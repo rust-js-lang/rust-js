@@ -262,8 +262,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-continue-guard-kept",
     breaks: "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
     file: "src/lower/mir/tidy.rs",
-    find: "                Some(StmtKind::If(test, then, None)) if negated(test) && then.len() > 1 => {\n",
-    replace: "                Some(StmtKind::If(test, then, None)) if false && negated(test) && then.len() > 1 => {\n",
+    find: "                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect(\"matched\").span)) =>\n",
+    replace: "                    if false =>\n",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
   {
@@ -705,5 +705,13 @@ export const mutations: Mutation[] = [
     find: "        if !written_while(stmts[i].span) {\n",
     replace: "        if false && !written_while(stmts[i].span) {\n",
     tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
+  },
+  {
+    name: "mir-tidy-written-continue-nested",
+    breaks: "a `continue` the program wrote before one statement is the rest nested, `if (!c) { … }`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect(\"matched\").span)) =>\n",
+    replace: "                    if negated(test) && then.len() > 1 =>\n",
+    tests: ["test/lowering.test.ts","-t","continue.s from MIR are where"],
   },
 ];

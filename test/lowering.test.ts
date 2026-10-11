@@ -6200,3 +6200,41 @@ pub fn capped(prev: &VecDeque<u32>, more: Vec<u32>) -> VecDeque<u32> {
     expect(lib.capped([1, 2], [3])).toEqual([2, 3]);
   }
 });
+
+test("a loop's `continue`s from MIR are where the program wrote them", async () => {
+  const dir = fixture("mir-written-continues");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Route { pub path: Option<String>, pub header: bool, pub title: Option<String> }
+pub fn pages(routes: &[Route], out: &mut Vec<String>) {
+    for route in routes {
+        if route.header {
+            continue;
+        }
+        if let Some(p) = &route.path && p.starts_with("http") {
+            continue;
+        }
+        if let Some(t) = &route.title {
+            out.push(t.clone());
+        } else if let Some(p) = &route.path {
+            out.push(p.clone());
+        }
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`  for (const route of routes) {
+    if (route.header) {
+      continue;
+    }
+    if (route.path != null && route.path.startsWith("http")) {
+      continue;
+    }
+    if (route.title != null) {
+      out.push(route.title);
+    } else if (route.path != null) {
+      out.push(route.path);
+    }
+  }`);
+  }
+});

@@ -485,6 +485,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        // Where each `if` the program wrote of a `continue` alone tests.
+        let continues: Vec<js::Span> = (self.thir.exprs.iter())
+            .filter_map(|e| match e.kind {
+                thir::ExprKind::If { cond, then, .. } => {
+                    let mut then = then;
+                    while let thir::ExprKind::Scope { value: inner, .. }
+                    | thir::ExprKind::NeverToAny { source: inner } = self.thir[then].kind
+                    {
+                        then = inner;
+                    }
+                    let thir::ExprKind::Block { block } = self.thir[then].kind else {
+                        return None;
+                    };
+                    let block = &self.thir[block];
+                    let only = match (block.stmts.as_ref(), block.expr) {
+                        ([], Some(e)) => Some(e),
+                        ([s], None) => match self.thir[*s].kind {
+                            thir::StmtKind::Expr { expr, .. } => Some(expr),
+                            _ => None,
+                        },
+                        _ => None,
+                    }?;
+                    let mut only = only;
+                    while let thir::ExprKind::Scope { value: inner, .. }
+                    | thir::ExprKind::NeverToAny { source: inner } = self.thir[only].kind
+                    {
+                        only = inner;
+                    }
+                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. })
+                        .then(|| self.js_span(self.thir[cond].span))
+                }
+                _ => None,
+            })
+            .collect();
         // Where each loop is written, and whether as a `while`.
         let loops: Vec<(js::Span, bool)> = (self.thir.exprs.iter())
             .filter_map(|e| match e.kind {
@@ -533,6 +567,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 tested: &tested,
                 conditions: &conditions,
                 loops: &loops,
+                continues: &continues,
                 returns: &state.returns,
                 captured: &captured,
                 booleans: &booleans,

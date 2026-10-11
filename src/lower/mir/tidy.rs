@@ -22,6 +22,8 @@ pub(super) struct Hints<'h> {
     pub(super) conditions: &'h [js::Span],
     /// Where each loop is written, and whether as a `while`.
     pub(super) loops: &'h [(js::Span, bool)],
+    /// Where each `if` the program wrote of a `continue` alone tests.
+    pub(super) continues: &'h [js::Span],
     pub(super) returns: &'h [js::Span],
     /// The `const`s MIR's lowering made of what an element it made ahead
     /// of a branch reads (`capture_jsx`): as its temporaries, read where
@@ -39,6 +41,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         tested,
         conditions,
         loops: written,
+        continues,
         returns,
         captured,
         booleans,
@@ -81,7 +84,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A `let` declared first, its one write now beside it, what a loop
     // held: a `const` there.
     declarations(body);
-    js::statement_lists(body, &mut |stmts| continued(stmts));
+    js::statement_lists(body, &mut |stmts| continued(stmts, continues));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
@@ -623,7 +626,7 @@ fn guarded(stmts: &mut Vec<Stmt>) {
 /// the loop's `continue`: the block's statements in its place. And one that
 /// ends `if (!c) { a; b }`, as MIR has a `continue` the program wrote,
 /// `if (c) { continue; } a; b`.
-fn continued(stmts: &mut [Stmt]) {
+fn continued(stmts: &mut [Stmt], guards: &[js::Span]) {
     for stmt in stmts.iter_mut() {
         let (looped, body) = match &mut stmt.kind {
             StmtKind::While { label, body, .. }
@@ -649,7 +652,10 @@ fn continued(stmts: &mut [Stmt]) {
                     continues(&mut inner, &block, looped.as_deref(), true);
                     body.extend(inner);
                 }
-                Some(StmtKind::If(test, then, None)) if negated(test) && then.len() > 1 => {
+                // Of one statement, where the program wrote the `continue`.
+                Some(StmtKind::If(test, then, None))
+                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect("matched").span)) =>
+                {
                     let Some(Stmt {
                         kind: StmtKind::If(test, then, None),
                         span,
