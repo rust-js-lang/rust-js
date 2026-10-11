@@ -13,6 +13,7 @@ import { mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import { changedSince } from "./mutations";
+import { timed, timings } from "./timing";
 
 const root = join(import.meta.dir, "..");
 const workflow = "check.yml";
@@ -25,6 +26,7 @@ export type Run = {
   createdAt: string;
   displayTitle: string;
   headSha?: string;
+  updatedAt?: string;
 };
 
 /** Each branch's latest run, the newest first. */
@@ -49,7 +51,23 @@ function gh(args: string[]): string {
 }
 
 function runs(of = workflow, limit = 100): Run[] {
-  return JSON.parse(gh(["run", "list", `--workflow=${of}`, `--limit=${limit}`, "--json=headBranch,databaseId,status,conclusion,createdAt,displayTitle,headSha"]));
+  return JSON.parse(gh(["run", "list", `--workflow=${of}`, `--limit=${limit}`, "--json=headBranch,databaseId,status,conclusion,createdAt,displayTitle,headSha,updatedAt"]));
+}
+
+/** How long each finished green check of `main` took, kept with the
+ * loop's own steps, once each (scripts/timing.ts): a check that grows
+ * slower is seen as the loop's are. */
+function timeChecks(all: Run[]) {
+  const kept = new Set(timings().flatMap((t) => (t.step === "CI check of main" && t.detail ? [t.detail] : [])));
+  const green = all
+    .filter((run) => run.headBranch === "main" && run.conclusion === "success" && run.updatedAt)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  for (const run of green) {
+    const id = `run ${run.databaseId}`;
+    if (kept.has(id)) continue;
+    const seconds = (Date.parse(run.updatedAt!) - Date.parse(run.createdAt)) / 1000;
+    console.log(timed("CI check of main", seconds, id));
+  }
 }
 
 function status() {
@@ -59,7 +77,9 @@ function status() {
   try {
     nightly = runs("nightly.yml", 1).map((run) => ({ ...run, headBranch: "nightly" }));
   } catch {}
-  for (const run of [...nightly, ...latestRuns(runs())]) {
+  const all = runs();
+  timeChecks(all);
+  for (const run of [...nightly, ...latestRuns(all)]) {
     const result = run.status === "completed" ? run.conclusion : run.status;
     let failed = "";
     if (run.conclusion === "failure") {

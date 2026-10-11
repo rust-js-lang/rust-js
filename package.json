@@ -56,6 +56,7 @@
     "typecheck": "tsc --noEmit",
     "check:fast": "bun scripts/checkFast.ts",
     "port": "bun scripts/port.ts",
+    "timings": "bun scripts/timing.ts",
     "architecture": "bun scripts/architecture-report.ts",
     "matrix": "bun scripts/matrix.ts",
     "runtime": "cargo build && ./target/debug/rust-js --runtime-module > runtime/index.js"

@@ -11,6 +11,7 @@
 import { readFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
+import { timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 const args = process.argv.slice(2);
@@ -31,8 +32,11 @@ const diff = Bun.spawnSync(["git", "diff", "HEAD", "--", "scripts/mutations"], {
 const untracked = changed.filter((file) => file.startsWith("scripts/mutations/") && !diff.includes(file));
 const added = [...diff.matchAll(/^\+\s*"?name"?: "([^"]+)"/gm), ...untracked.flatMap((file) => [...readFileSync(join(root, file), "utf8").matchAll(/"?name"?: "([^"]+)"/g)])].map((m) => m[1]);
 
+// Each step's time is kept, and said against its usual (scripts/timing.ts).
+const building = Date.now();
 const build = Bun.spawnSync(["cargo", "build", "--quiet"], { cwd: root, stdout: "inherit", stderr: "inherit" });
 if (build.exitCode !== 0) process.exit(1);
+console.log(timed("cargo build", (Date.now() - building) / 1000));
 
 // Each part of a file of cases, a process of its own (test/support.ts).
 const parts = Math.max(2, Math.floor(availableParallelism() / 4));
@@ -69,7 +73,6 @@ const jobs: [string, string[], Record<string, string>][] = [
 // Each job is given the compiler just built: one that builds its own, as
 // each test file and fmt does, links it again, and races the others.
 const compiler = join(root, "target", "debug", "rust-js");
-const started = Date.now();
 const results = await Promise.all(
   jobs.map(async ([name, cmd, env]) => {
     const start = Date.now();
@@ -83,12 +86,19 @@ const results = await Promise.all(
     const [out, err] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
     const code = await p.exited;
     clearTimeout(timeout);
-    const seconds = ((Date.now() - start) / 1000).toFixed(0);
-    console.log(`${code === 0 ? "ok  " : "FAIL"} ${name} (${seconds}s)`);
+    const seconds = (Date.now() - start) / 1000;
+    console.log(
+      code === 0 ? `ok   ${timed(`check:fast ${name}`, seconds)}` : `FAIL ${name} (${seconds.toFixed(0)}s)`,
+    );
     return { name, code, log: out + err };
   }),
 );
 const failed = results.filter((r) => r.code !== 0);
 for (const { name, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
-console.log(`\n${failed.length === 0 ? "all passed" : `${failed.length} failed`} in ${((Date.now() - started) / 1000).toFixed(0)}s${shared ? "" : " (MIR only: THIR's corpus, JSX, snapshots and diagnostics skipped)"}`);
+// From its start, its build too.
+const total = performance.now() / 1000;
+const scope = shared ? "check:fast" : "check:fast, MIR only";
+console.log(
+  `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}${shared ? "" : " (THIR's corpus, JSX, snapshots and diagnostics skipped)"}`,
+);
 process.exit(failed.length === 0 ? 0 : 1);

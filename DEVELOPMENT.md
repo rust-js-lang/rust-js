@@ -145,6 +145,22 @@ On the M3 Max, with the scan off:
 | `bun run port measure`, MIR's compile of react.dev against THIR's JS | 7 s |
 | `bun run port compare`, its build and 823 pages | 3–4 min |
 
+Each of them is timed as it runs, and kept, in `target/timings.jsonl`
+(`scripts/timing.ts`): `check:fast`, its build and each of its jobs,
+`port measure` and `compare`, a mutation, each, and, read by `bun run
+ci:status`, each green check of `main`. A step says its time against its
+usual, the middle of its last ten runs, and warns where it's a quarter and
+five seconds slower:
+
+```
+ok   check:fast bindings 26 s (usual 25 s)
+ok   check:fast MIR corpus 1/3 52 s (usual 30 s)  ⚠ slower than usual: why?
+```
+
+`bun run timings` shows every step, its last time, its usual and its
+slowest; `bun run timings <step>` its runs, by commit. A warning is the
+next thing to look at: what made it slower, before the loop is built on it.
+
 What keeps them there:
 
 - **`check:fast` runs its checks at once**, each a process of its own, and
@@ -292,6 +308,8 @@ cost nothing. Started by hand too: `gh workflow run nightly.yml`.
   push's `plan`.
 - `scripts/port.ts`: `bun run port measure` and `compare`, of the
   react.dev port beside this checkout.
+- `scripts/timing.ts`: each step's time kept, said against its usual, and
+  `bun run timings`.
 - `test/ci.test.ts`: the shards, the changed mutations, each branch's
   latest run.
 
