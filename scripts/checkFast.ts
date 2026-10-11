@@ -11,7 +11,7 @@
 import { readFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
-import { timed } from "./timing";
+import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 const args = process.argv.slice(2);
@@ -96,7 +96,7 @@ const results = await Promise.all(
 const failed = results.filter((r) => r.code !== 0);
 for (const { name, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
 // From its start, its build too.
-const total = performance.now() / 1000;
+const total = elapsed();
 const scope = shared ? "check:fast" : "check:fast, MIR only";
 console.log(
   `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}${shared ? "" : " (THIR's corpus, JSX, snapshots and diagnostics skipped)"}`,

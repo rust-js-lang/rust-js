@@ -321,6 +321,32 @@ pub fn Nav() -> JSX::Element {
   expect(renderToStaticMarkup(result.Nav())).toBe("/b/x/b/y");
 });
 
+// What an element reads, made before a branch in its tree, \`a || b\`'s, is
+// read where it's written, from MIR too (ADR 0364): its call runs first
+// there as it ran first before.
+test("what an element reads, made before a branch in its tree, is read where it's written", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+fn cn(a: &str, b: bool) -> String {
+    format!("{a}{}", if b { " on" } else { "" })
+}
+pub fn Page(home: bool, blog: bool, content: &str) -> JSX::Element {
+    jsx! {
+        <div className={cn("page", home)}>
+            {(home || blog).then(|| jsx! { <b>{"h"}</b> })}
+            <p className={cn("text", blog)}>{content}</p>
+        </div>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain('<div className={cn("page", home)}>');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Page(true, false, "c"))).toBe('<div class="page on"><b>h</b><p class="text">c</p></div>');
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;

@@ -284,6 +284,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
         let outer_falsy = std::mem::take(&mut self.locals.falsy);
+        let outer_captured = std::mem::take(&mut self.locals.captured);
         let drops = self.mir_elaboration(mir_body);
         let patterns = match captures {
             None => self.mir_param_patterns(mir_body),
@@ -465,12 +466,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        let captured = std::mem::replace(&mut self.locals.captured, outer_captured);
         tidy::tidy(
             &mut out,
-            &state.locals.names[mir::RETURN_PLACE],
-            &falsy,
-            &conditions,
-            &state.returns,
+            &tidy::Hints {
+                result: &state.locals.names[mir::RETURN_PLACE],
+                falsy: &falsy,
+                conditions: &conditions,
+                returns: &state.returns,
+                captured: &captured,
+            },
         );
         tidy::destructured_params(&mut params, &mut out);
         Ok((params, out))
@@ -1173,6 +1178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {
                 for stmt in &made[before..] {
                     if let StmtKind::Const(name, _) = &stmt.kind {
+                        self.locals.captured.insert(name.clone());
                         self.locals.alike.insert(name.clone());
                         state.own_names.insert(name.clone());
                     }

@@ -21,7 +21,7 @@ import { dirname, join } from "node:path";
 
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { shard, shardArg } from "./shard";
-import { timed } from "./timing";
+import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 
@@ -453,7 +453,7 @@ async function main() {
   // Here, each one's time, its build and its tests, as many as run; CI's
   // are its own.
   if (!process.env.GITHUB_ACTIONS && rows.length > 0) {
-    console.log(timed("mutation, each", performance.now() / 1000 / rows.length, `${rows.length} run`));
+    console.log(timed("mutation, each", elapsed() / rows.length, `${rows.length} run`));
   }
   if (missed.length > 0) process.exitCode = 1;
 }

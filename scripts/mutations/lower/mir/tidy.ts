@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-temporaries-kept",
     breaks: "a temporary read once stays a `const _5`, not written where it's read",
     file: "src/lower/mir/tidy.rs",
-    find: "    js::statement_lists(body, &mut |stmts| inlined(stmts, &changing));\n",
+    find: "    js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));\n",
     replace: "",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
@@ -393,5 +393,13 @@ export const mutations: Mutation[] = [
     find: "    stmts.retain(|s| {\n        !matches!(&s.kind, StmtKind::Const(n, value)\n            if n == b && matches!(&value.kind, ExprKind::Var(v) if v == a))\n    });\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","if-let's binding from MIR keeps"],
+  },
+  {
+    name: "mir-tidy-captured-kept",
+    breaks: "what an element made before a branch reads stays a `const className = cn(…)`, not read where it's written",
+    file: "src/lower/mir/tidy.rs",
+    find: "        let temporary = is_temporary(name) || captured.contains(name);\n",
+    replace: "        let temporary = is_temporary(name);\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
   },
 ];

@@ -10,7 +10,7 @@
 // compile keeps the JS before, which would read as no difference.
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { timed } from "./timing";
+import { elapsed, timed } from "./timing";
 
 const root = join(import.meta.dir, "..");
 const port = resolve(process.env.RUST_JS_PORT ?? join(root, "..", "rust-js-react.dev"));
@@ -65,7 +65,7 @@ if (command === "measure") {
     console.log(`  ${line}`);
   }
   if (!flags.includes("--keep")) restore();
-  console.log(timed("port measure", performance.now() / 1000));
+  console.log(timed("port measure", elapsed()));
 } else if (command === "compare") {
   restore();
   const build = run(["bun", "run", "build"], { RUST_JS_MIR: "1" });
@@ -73,12 +73,12 @@ if (command === "measure") {
     restore();
     throw new Error(`MIR's build of the port failed:\n${build.out.slice(-4000)}`);
   }
-  const built = performance.now() / 1000;
+  const built = elapsed();
   const compared = run(["bun", "scripts/snapshotPages.ts", "compare", reference], {}, 200_000);
   restore();
   console.log(compared.out.trim().split("\n").slice(-12).join("\n"));
   console.log(timed("port build", built));
-  console.log(timed("port compare, pages", performance.now() / 1000 - built));
+  console.log(timed("port compare, pages", elapsed() - built));
   if (compared.code !== 0 || !/\b0 of \d+ pages differ/.test(compared.out)) process.exit(1);
 } else {
   console.error("usage: bun run port measure [--keep] | compare");

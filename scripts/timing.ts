@@ -12,6 +12,15 @@ import { join } from "node:path";
 const root = join(import.meta.dir, "..");
 const file = join(root, "target", "timings.jsonl");
 
+/** When the script that reads this began, about: it's read as it starts. */
+const started = Date.now();
+
+/** Seconds since then, by the clock: what the script and all it waited on
+ * took. */
+export function elapsed(): number {
+  return (Date.now() - started) / 1000;
+}
+
 export type Timing = { step: string; seconds: number; at: string; commit: string; detail?: string };
 
 /** Each run recorded, the oldest first. */
@@ -80,7 +89,7 @@ if (import.meta.main) {
     }
   } else {
     const steps = [...new Set(all.map((t) => t.step))].sort();
-    console.log(`${"step".padEnd(34)}${"runs".padStart(5)}${"last".padStart(12)}${"usual".padStart(12)}${"slowest".padStart(12)}`);
+    console.log(`${"step".padEnd(42)}${"runs".padStart(5)}${"last".padStart(12)}${"usual".padStart(12)}${"slowest".padStart(12)}`);
     for (const name of steps) {
       const runs = all.filter((t) => t.step === name);
       const last = runs.at(-1)!.seconds;
@@ -89,7 +98,7 @@ if (import.meta.main) {
       const flag = before.length >= 3 && slower(last, usual) ? "  ⚠" : "";
       const slowest = Math.max(...runs.slice(-20).map((t) => t.seconds));
       console.log(
-        `${name.padEnd(34)}${String(runs.length).padStart(5)}${shown(last).padStart(12)}${shown(usual).padStart(12)}${shown(slowest).padStart(12)}${flag}`,
+        `${name.padEnd(42)}${String(runs.length).padStart(5)}${shown(last).padStart(12)}${shown(usual).padStart(12)}${shown(slowest).padStart(12)}${flag}`,
       );
     }
     if (steps.length === 0) console.log("no timings yet: they're kept as the loop's commands run");

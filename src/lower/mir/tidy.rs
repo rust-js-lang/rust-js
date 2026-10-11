@@ -10,17 +10,30 @@ use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 use super::negate;
 use crate::lower::iterators::{eager_chains, iterated};
 
-/// `body`, tidied: `result` is the name of the function's return place,
-/// `falsy` the temporaries a function that skips what's falsy is given,
-/// `conditions` where the program writes each `if`'s condition, and
-/// `returns` each `return`.
-pub(super) fn tidy(
-    body: &mut Vec<Stmt>,
-    result: &str,
-    falsy: &HashSet<String>,
-    conditions: &[js::Span],
-    returns: &[js::Span],
-) {
+/// What MIR's lowering, and THIR, say of a body for tidying it.
+pub(super) struct Hints<'h> {
+    /// The name of the function's return place.
+    pub(super) result: &'h str,
+    /// The temporaries a function that skips what's falsy is given.
+    pub(super) falsy: &'h HashSet<String>,
+    /// Where the program writes each `if`'s condition, and each `return`.
+    pub(super) conditions: &'h [js::Span],
+    pub(super) returns: &'h [js::Span],
+    /// The `const`s MIR's lowering made of what an element it made ahead
+    /// of a branch reads (`capture_jsx`): as its temporaries, read where
+    /// they're used where nothing between tells.
+    pub(super) captured: &'h HashSet<String>,
+}
+
+/// `body`, tidied, by what `hints` say of it.
+pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
+    let Hints {
+        result,
+        falsy,
+        conditions,
+        returns,
+        captured,
+    } = *hints;
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {
@@ -79,7 +92,7 @@ pub(super) fn tidy(
     js::statement_lists(body, &mut destructured);
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changing));
+    js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));
     named_temporaries(body);
     eager_chains(body);
     tail_returns(body, returns);
@@ -1354,7 +1367,7 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
 /// after it, or after those that are moved there too: `e` where it's read, where nothing that runs before it there
 /// does anything, or anywhere outside a closure if `e` does nothing and
 /// reads nothing that changes.
-fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
+fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let (head, rest) = stmts.split_at_mut(i + 1);
@@ -1362,7 +1375,7 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
             i += 1;
             continue;
         };
-        let temporary = is_temporary(name);
+        let temporary = is_temporary(name) || captured.contains(name);
         if !temporary || js::mentions_in(rest, name) != 1 || js::mentions_in(&rest[..1], name) != 1 {
             i += 1;
             continue;

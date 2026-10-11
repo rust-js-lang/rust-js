@@ -217,6 +217,10 @@ struct Locals {
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
     falsy: HashSet<String>,
+    /// Of a body lowered from its MIR, the `const`s it made of what an
+    /// element made ahead of a branch reads, which tidy reads in place
+    /// where it can.
+    captured: HashSet<String>,
 }
 
 /// A variable bound by a pattern, and the place in the subject it matched.
