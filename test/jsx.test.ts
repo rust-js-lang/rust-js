@@ -5504,3 +5504,54 @@ pub fn Diagram<C: ReactNode>(DiagramProps { children }: DiagramProps<C>) -> JSX:
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Diagram, null, createElement("img"), "text", createElement("b")))).toBe("<section><img/></section>");
 });
+
+// ADR 0364: classes MIR holds ahead of a child's branch, `cn(.., variant.textColor)`,
+// are read where they're written past what does nothing, a static's
+// fields picked by a test, as react.dev's ExpandableCallout gives its
+// variant's colors.
+test("classes held ahead of a branch past a static's fields are read in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+unsafe extern "Rust" {
+    #[link_name = "./cn.js#default"]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::skips_falsy)]
+    safe fn cn(classes: &[Option<&str>]) -> String;
+}
+pub struct Variant {
+    pub title: &'static str,
+    pub icon: Option<&'static str>,
+    pub container_classes: &'static str,
+    pub text_color: &'static str,
+}
+pub struct VariantMap {
+    pub note: Variant,
+    pub wip: Variant,
+}
+static variantMap: VariantMap = VariantMap {
+    note: Variant { title: "Note", icon: Some("i"), container_classes: "bg-green", text_color: "text-green" },
+    wip: Variant { title: "WIP", icon: None, container_classes: "bg-yellow", text_color: "text-yellow" },
+};
+pub struct CalloutProps<C: ReactNode> {
+    pub children: C,
+    pub wip: bool,
+}
+pub fn Callout<C: ReactNode>(CalloutProps { children, wip }: CalloutProps<C>) -> JSX::Element {
+    let variant = if wip { &variantMap.wip } else { &variantMap.note };
+    jsx! {
+        <div className={cn(&[Some("callout"), Some(variant.container_classes)])}>
+            <h3 className={cn(&[Some("title"), Some(variant.text_color)])}>
+                {variant.icon.map(|icon| jsx! { <i className={cn(&[Some("icon"), Some(variant.text_color)])}>{icon}</i> })}
+                {variant.title}
+            </h3>
+            <div>{children}</div>
+        </div>
+    }
+}
+`, { "cn.js": "export default (...classes) => classes.filter(Boolean).join(\" \");\n" });
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toContain("const className");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.Callout, { wip: false }, "x"))).toBe('<div class="callout bg-green"><h3 class="title text-green"><i class="icon text-green">i</i>Note</h3><div>x</div></div>');
+});
