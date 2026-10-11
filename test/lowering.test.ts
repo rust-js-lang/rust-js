@@ -7622,3 +7622,30 @@ test("a typeof test after a null check is the typeof test from MIR", async () =>
   const lib = await import(join(dir, "mir.js"));
   expect([lib.text(true, "a"), lib.text(true, undefined), lib.text(true, 3), lib.text(false, "a")]).toEqual(["a", "none", "none", "none"]);
 });
+
+// An `||` chain whose part is an `Option`'s `is_some()`, of an object:
+// `!!error || ..`, a `bool` part by part, from MIR as from THIR, not
+// `!(!error && ..)`; and one only tested, `error || ..`, as react.dev's
+// Preview hides its content.
+test("an or chain of a value's truth from MIR is a bool part by part", async () => {
+  const dir = fixture("or-chain-truth");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Err {
+    pub title: String,
+}
+pub fn hidden(error: Option<&Err>, height: Option<f64>, ready: bool) -> bool {
+    error.is_some() || height.is_none_or(|h| h == 0.0) || !ready
+}
+pub fn kept(error: Option<&Err>, height: Option<f64>, ready: bool) -> String {
+    let hide = error.is_some() || height.is_none_or(|h| h == 0.0) || !ready;
+    if hide { "a".to_string() } else { "b".to_string() }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return !!error || height == null || height === 0 || !ready;");
+    expect(js).toContain("const hide = error || height == null || height === 0 || !ready;");
+    const lib = await import(join(dir, out));
+    expect([lib.hidden({ title: "t" }, 3, true), lib.hidden(undefined, 3, true), lib.kept({ title: "t" }, 3, true), lib.kept(undefined, 3, true)]).toEqual([true, false, "a", "b"]);
+  }
+});

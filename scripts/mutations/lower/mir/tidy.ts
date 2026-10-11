@@ -1103,18 +1103,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "or-branches-of-booleans-reversed",
-    "breaks": "a test's truth MIR makes of `!a && b` is `!(a || !b)`, its booleans reordered",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "                    values && matches!(",
-    "replace": "                    matches!(",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an if of an or from MIR keeps its branches"
-    ]
-  },
-  {
     "name": "plain-field-blocks-inline",
     "breaks": "a prop MIR holds for a borrow stays a `const _14`, read past `meta.tag` of a plain value",
     "file": "src/lower/mir/tidy.rs",
@@ -1190,12 +1178,12 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-or-chain-negated",
     "breaks": "an `||` chain from MIR is `!(!a && b !== c) || d`, its test negated whole",
     "file": "src/lower/mir/tidy.rs",
-    "find": "        flipped if is_boolean(&flipped, booleans) => flipped,\n",
+    "find": "        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
       "-t",
-      "or chain from MIR is written as one"
+      "an or chain"
     ]
   },
   {

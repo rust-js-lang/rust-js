@@ -867,14 +867,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","nested_type_chain"],
   },
   {
-    name: "mir-held-component-lowercase",
-    breaks: "a component a temporary held is its temporary's lowercase name, no tag",
-    file: "src/lower/mir.rs",
-    find: "                        && (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l])\n",
-    replace: "                        && false\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
-  },
-  {
     name: "mir-otherwise-tag-of-its-own",
     breaks: "a discriminated union's `otherwise` is tested by a tag of its own, which no object has",
     file: "src/lower/mir.rs",

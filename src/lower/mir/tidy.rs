@@ -1701,8 +1701,6 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
             {
                 // The value the program wrote first, first: `a || b ? x : y` of
                 // `if a || b { x } else { y }` MIR tests `!a && !b` of.
-                // Of two values, not of a test's truth, `a && b`'s.
-                let values = !matches!(yes.kind, ExprKind::Bool(_)) && !matches!(no.kind, ExprKind::Bool(_));
                 // A chain's next test in the `else` whichever comes first, as one
                 // is written: `a === "x" ? y : a === "z" ? .. : ..`, a match's arms.
                 let no_first = match (
@@ -1711,9 +1709,7 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
                 ) {
                     (true, false) => true,
                     (false, true) => false,
-                    _ => {
-                        values && matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t)
-                    }
+                    _ => matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t),
                 };
                 let value = match no_first {
                     true => conditional(not(test.clone()), no.clone(), yes.clone(), booleans),
@@ -2117,6 +2113,20 @@ fn typeof_tests(e: &mut Expr) {
     };
 }
 
+/// `!e` of a chain of tests, part by part, `!!a || b !== c` of `!a && b ===
+/// c`: a `bool`, as `!e` is, each `!x` of what's not one `!!x`.
+fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
+    match e.kind {
+        ExprKind::Binary(op @ (Op::And | Op::Or), left, right) => {
+            let flipped = if op == Op::And { Op::Or } else { Op::And };
+            Expr::bin(flipped, negated_bools(*left, booleans), negated_bools(*right, booleans))
+        }
+        ExprKind::Unary(UnaryOp::Not, x) if is_boolean(&x, booleans) => *x,
+        ExprKind::Unary(UnaryOp::Not, x) => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, *x)),
+        kind => negate(Expr { kind, span: e.span }),
+    }
+}
+
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.
 fn or_all(a: Expr, b: Expr) -> Expr {
     match b.kind {
@@ -2174,9 +2184,10 @@ fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> E
         true => test,
         false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),
     };
-    // A chain's negation, `a || b` of `!a && !b`, where it's a `bool` still.
-    let negate = |test: Expr| match not(test.clone()) {
-        flipped if is_boolean(&flipped, booleans) => flipped,
+    // A chain's negation, `a || b` of `!a && !b`, each part a `bool` still,
+    // `!!a` of a value's `!a`.
+    let negate = |test: Expr| match test.kind {
+        ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),
         _ => negate(test),
     };
     match (&yes.kind, &no.kind) {
