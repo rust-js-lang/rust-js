@@ -1258,4 +1258,16 @@ export const mutations: Mutation[] = [
       "typeof test after a null check"
     ]
   },
+  {
+    "name": "mir-tidy-chained-checks-kept",
+    "breaks": "an else-if chain's arm before a panic from MIR is a check in its else, `if (className !== \"language-css\") throw ..`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| chained_checks(stmts));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arm before a panic stays an else if"
+    ]
+  },
 ];

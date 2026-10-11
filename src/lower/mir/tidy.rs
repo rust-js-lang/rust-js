@@ -178,6 +178,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
     // What a block ends after, its tests read in place now: its `else`.
     js::statement_lists(body, &mut |stmts| tail_elses(stmts));
+    // A check MIR wrote first in a chain's last `else`: the chain's arm.
+    js::statement_lists(body, &mut |stmts| chained_checks(stmts));
     js::statement_lists(body, &mut unlabeled);
     // `x != null && typeof x === "string"`: the `typeof` test, which says it.
     js::each_expr_mut(body, &mut typeof_tests);
@@ -2124,6 +2126,31 @@ fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
         ExprKind::Unary(UnaryOp::Not, x) if is_boolean(&x, booleans) => *x,
         ExprKind::Unary(UnaryOp::Not, x) => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, *x)),
         kind => negate(Expr { kind, span: e.span }),
+    }
+}
+
+/// `else { if (t) { throw e; } s }`, a check MIR wrote first in an `else if`
+/// chain's last `else`: `else if (!t) { s } else { throw e; }`, the chain as
+/// written.
+fn chained_checks(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        let StmtKind::If(_, _, Some(otherwise)) = &mut stmt.kind else {
+            continue;
+        };
+        let [check, _, ..] = otherwise.as_slice() else {
+            continue;
+        };
+        if !matches!(&check.kind, StmtKind::If(_, then, None)
+            if matches!(then.as_slice(), [Stmt { kind: StmtKind::Throw(_), .. }]))
+        {
+            continue;
+        }
+        let rest = otherwise.split_off(1);
+        let check = otherwise.remove(0);
+        let StmtKind::If(test, throw, None) = check.kind else {
+            unreachable!("matched")
+        };
+        *otherwise = vec![StmtKind::If(not(test), rest, Some(throw)).at(check.span)];
     }
 }
 

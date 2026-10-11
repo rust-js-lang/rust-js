@@ -7649,3 +7649,32 @@ pub fn kept(error: Option<&Err>, height: Option<f64>, ready: bool) -> String {
     expect([lib.hidden({ title: "t" }, 3, true), lib.hidden(undefined, 3, true), lib.kept({ title: "t" }, 3, true), lib.kept(undefined, 3, true)]).toEqual([true, false, "a", "b"]);
   }
 });
+
+// An `else if` chain's last arm before a panic is an `else if`, from MIR as
+// from THIR, not a check in the `else`, `if (x !== "language-css") throw`,
+// as react.dev's createFileMap picks a code block's file.
+test("an else-if chain's arm before a panic stays an else if", async () => {
+  const dir = fixture("else-if-panic");
+  writeFileSync(join(dir, "lib.rs"), `pub fn path(meta: Option<&str>, class_name: &str) -> String {
+    let file_path;
+    if let Some(meta) = meta {
+        file_path = format!("/{meta}");
+    } else if class_name == "language-js" {
+        file_path = "/App.js".to_string();
+    } else if class_name == "language-css" {
+        file_path = "/styles.css".to_string();
+    } else {
+        panic!("Code block is missing a filename: {class_name}");
+    }
+    file_path
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  } else if (className === "language-css") {\n    filePath = "/styles.css";\n  } else {\n    throw');
+    const lib = await import(join(dir, out));
+    expect([lib.path(undefined, "language-css"), lib.path("a.js", "x")]).toEqual(["/styles.css", "/a.js"]);
+    expect(() => lib.path(undefined, "x")).toThrow("missing a filename");
+  }
+});
