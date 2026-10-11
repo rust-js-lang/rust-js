@@ -41,7 +41,7 @@ use super::std_types::number::NumOp;
 use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
 use super::std_types::text::{StringEdit, TextOp};
-use super::{Body, FnCx, LoweredFn, R, bindings, fn_def};
+use super::{Body, FnCx, LoweredFn, R, Shape, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
 
@@ -2213,6 +2213,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
+        // `P { x, ..base }`: its other fields each read of `base`, where it
+        // is, of the same type, which nothing changes meanwhile, nor needs
+        // copying, `{ ...base, x }`, as THIR writes it (ADR 0250).
+        if let AggregateKind::Adt(did, VariantIdx::ZERO, args, None, None) = *kind
+            && self.tcx.adt_def(did).is_struct()
+            && let Some(spread) =
+                self.struct_update(state, Ty::new_adt(self.tcx, self.tcx.adt_def(did), args), operands)
+        {
+            let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(did), args);
+            let Shape::Object(names) = self.shape(ty) else {
+                unreachable!("a struct of named fields")
+            };
+            let base = self.mir_place(state, spread, span, out)?;
+            let of_base = |i: usize, operand: &Operand<'tcx>| {
+                operand.place().is_some_and(|p| {
+                    p.local == spread.local
+                        && p.projection.split_last().is_some_and(|(last, rest)| {
+                            matches!(last, PlaceElem::Field(f, _) if f.as_usize() == i)
+                                && rest == spread.projection.as_slice()
+                        })
+                })
+            };
+            let given: Vec<&Operand<'tcx>> = (operands.iter().enumerate())
+                .filter(|&(i, o)| !of_base(i, o))
+                .map(|(_, o)| o)
+                .collect();
+            let values = self.take_operands(state, &given, out)?;
+            let mut props = vec![Prop::Spread(base)];
+            let mut values = values.into_iter();
+            for (i, operand) in operands.iter().enumerate() {
+                if of_base(i, operand) {
+                    continue;
+                }
+                let value = self.value_expr(values.next().expect("given"), span)?;
+                props.push(Prop::Field(names[i].0.clone(), self.holding(value, names[i].1)));
+            }
+            return Ok(Value::Expr(Expr::object(props)));
+        }
         let operands: Vec<&Operand<'tcx>> = operands.iter().collect();
         let values = self.take_operands(state, &operands, out)?;
         match kind {
@@ -2568,6 +2606,65 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => false,
                 }
         })
+    }
+
+    /// The base of a struct update, `P { x, ..base }`, of type `ty`: where
+    /// each of the fields not given is read, at its own index, a place of
+    /// `ty` read through a shared reference or a variable nothing changes,
+    /// whose fields need no copy of their own (ADR 0250).
+    fn struct_update(
+        &self,
+        state: &State<'_, 'tcx>,
+        ty: Ty<'tcx>,
+        operands: &IndexVec<FieldIdx, Operand<'tcx>>,
+    ) -> Option<Place<'tcx>> {
+        let Shape::Object(fields) = self.shape(ty) else {
+            return None;
+        };
+        let decls = &state.body.local_decls;
+        let mut base: Option<Place<'tcx>> = None;
+        let mut read = 0;
+        for (i, operand) in operands.iter_enumerated() {
+            let Some(place) = operand.place() else { continue };
+            let Some((PlaceElem::Field(field, _), rest)) = place.projection.split_last() else {
+                continue;
+            };
+            let parent = Place {
+                local: place.local,
+                projection: self.tcx.mk_place_elems(rest),
+            };
+            if *field != i || parent.ty(decls, self.tcx).ty != ty {
+                continue;
+            }
+            if base.is_some_and(|b| b != parent) {
+                return None;
+            }
+            base = Some(parent);
+            read += 1;
+            let t = fields[i.as_usize()].1;
+            if self.contains_mutated(t) && self.is_copy(t) {
+                return None;
+            }
+        }
+        let base = base?;
+        // Unchanged, and its fields: read through a shared reference, or of
+        // a variable assigned once and never borrowed.
+        let (deref, fields) = match base.projection.as_slice() {
+            [PlaceElem::Deref, fields @ ..] => (true, fields),
+            fields => (false, fields),
+        };
+        let unchanged = fields.iter().all(|elem| matches!(elem, PlaceElem::Field(..)))
+            && match deref {
+                true => matches!(decls[base.local].ty.kind(), ty::Ref(_, _, ty::Mutability::Not)),
+                // A variable's, not a temporary's, `..Default::default()`'s,
+                // whose fields are each its default.
+                false => {
+                    (state.locals.user[base.local] || state.body.local_kind(base.local) == LocalKind::Arg)
+                        && state.locals.writes[base.local] <= 1
+                        && !state.locals.borrowed[base.local]
+                }
+            };
+        (unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)
     }
 
     /// A JSX binding's arguments, each with what THIR has of it, where THIR

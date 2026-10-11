@@ -1008,6 +1008,37 @@ pub mod other {
   }
 });
 
+// ADR 0250: a struct update of a base nothing changes is that base spread,
+// `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
+// doesn't hold stays out, where a field read of it each would be there.
+test("a struct update of a base nothing changes is the base spread", async () => {
+  const dir = fixture("struct-update-spread");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub struct Attrs<'a> {
+    pub title: Option<&'a str>,
+    pub rel: Option<&'a str>,
+    pub id: Option<&'a str>,
+}
+pub struct Link<'a> {
+    pub attrs: Attrs<'a>,
+}
+pub fn retitled<'a>(attrs: Attrs<'a>, title: &'a str) -> Attrs<'a> {
+    Attrs { title: Some(title), ..attrs }
+}
+pub fn reread<'a>(link: &Link<'a>, title: &'a str) -> Attrs<'a> {
+    Attrs { title: Some(title), ..link.attrs }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return { ...attrs, title };");
+    const lib = await import(join(dir, out));
+    expect(Object.keys(lib.retitled({ id: "a" }, "t"))).toEqual(["id", "title"]);
+    expect(lib.reread({ attrs: { rel: "r" } }, "t")).toEqual({ rel: "r", title: "t" });
+  }
+});
+
 // ADR 0308: a function written in a body is declared there, from MIR as
 // from THIR (ADR 0364), where what uses it reads it.
 test("a function written in a body is declared in it", async () => {

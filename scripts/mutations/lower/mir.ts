@@ -994,4 +994,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","a function written in a body is declared"],
   },
+  {
+    name: "mir-struct-update-field-by-field",
+    breaks: "a struct update is each field read of its base, `{ title, rel: attrs.rel, id: attrs.id }`, so what the base doesn't hold is given `undefined`",
+    file: "src/lower/mir.rs",
+    find: "        (unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)\n",
+    replace: "        (false && unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)\n",
+    tests: ["test/lowering.test.ts","-t","a struct update of a base nothing changes"],
+  },
 ];

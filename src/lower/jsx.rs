@@ -92,7 +92,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         for prop in props {
             match prop {
-                Prop::Field(name, value) => self.capture_jsx_input(&camel_case(&js_ident(name)), value, out),
+                // An object in it, a flattened struct's JSX takes apart, an
+                // object still, what it's made of read now too.
+                Prop::Field(name, value) => {
+                    if !self.reads_alike(value, out)
+                        && !self.capture_jsx(value, out)
+                        && !self.capture_object(value, out)
+                    {
+                        let old = std::mem::replace(value, Expr::undefined());
+                        *value = self.spill(&camel_case(&js_ident(name)), old, out);
+                    }
+                }
                 Prop::Getter(..) => unreachable!("none"),
                 Prop::Spread(value) => {
                     // A spread reads its properties now.
@@ -124,8 +134,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `p.size`: a field can't change while its value doesn't, where the
             // value is plain Rust data. A JS object's getter, `n.textContent`,
             // can, and so can what's reached through a `Cell` or a `&mut`.
+            // So can't a props pattern's rest's, a JS object of what it was
+            // given (ADR 0195).
             js::ExprKind::Member(object, _) => {
-                matches!(&object.kind, js::ExprKind::Var(name) if self.plain_value(name))
+                matches!(&object.kind, js::ExprKind::Var(name)
+                    if self.plain_value(name) || self.locals.rests.contains_key(name))
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
