@@ -1537,7 +1537,7 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
 /// early, and no stage may.
 fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr, usize)> {
     let mut stages = Vec::new();
-    let mut at = chain;
+    let mut at = unlent(chain);
     while let js::ExprKind::Call(callee, args) = &at.kind
         && let js::ExprKind::Member(source, name) = &callee.kind
         && matches!(name.as_str(), "map" | "filter" | "take" | "drop")
@@ -1555,14 +1555,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     {
         return None;
     }
-    // One that's lent, `$lent($iter(xs))`, made for this call alone, no
-    // one else steps.
-    if let js::ExprKind::Call(lent, of) = &at.kind
-        && matches!(&lent.kind, js::ExprKind::Var(v) if v == "$lent")
-        && let [of] = &of[..]
-    {
-        at = of;
-    }
+    let at = unlent(at);
     let js::ExprKind::Call(_, args) = &at.kind else {
         return None;
     };
@@ -1584,6 +1577,17 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         name => array_method(items, name, f.clone()),
     });
     Some((items, count))
+}
+
+/// What `$lent(e)` lends, `e`, made for this call alone, which no one else
+/// steps; or `e` itself.
+fn unlent(e: &Expr) -> &Expr {
+    match &e.kind {
+        js::ExprKind::Call(lent, of) if matches!(&lent.kind, js::ExprKind::Var(v) if v == "$lent") && of.len() == 1 => {
+            &of[0]
+        }
+        _ => e,
+    }
 }
 
 /// Of `chain.drop(n).take(1).toArray()`, `nth(n)`'s first: `chain` and `n`.

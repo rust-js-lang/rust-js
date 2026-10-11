@@ -577,8 +577,8 @@ export const mutations: Mutation[] = [
     name: "iter-eager-lent-root-kept",
     breaks: "a chain on `$lent($iter(xs))` just made stays a JS iterator's",
     file: "src/lower/iterators.rs",
-    find: "        at = of;\n",
-    replace: "        let _ = of;\n",
+    find: "            &of[0]\n",
+    replace: "            e\n",
     tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
   },
 ];
