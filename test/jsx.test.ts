@@ -278,6 +278,49 @@ pub fn Credit(author: &'static str, author_link: &'static str) -> JSX::Element {
   expect(renderToStaticMarkup(result.Credit("R", ""))).toBe("<cite>Illustrated by R</cite>");
 });
 
+// A namespace import's component, \`Menu.Item\`, is its tag where it's
+// written, from MIR too (ADR 0364): JS never lets another module change an
+// import, so what's made before it can't change what it reads.
+test("a namespace import's component is a tag where it's written", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub mod Menu {
+    use react::{JSX, ReactNode};
+    pub struct PartProps<C> {
+        pub children: C,
+    }
+    #[rust_js::link_name = "./menu.js#*.Root"]
+    pub fn Root<C: ReactNode>(props: PartProps<C>) -> JSX::Element {
+        unreachable!()
+    }
+    #[rust_js::link_name = "./menu.js#*.Item"]
+    pub fn Item<C: ReactNode>(props: PartProps<C>) -> JSX::Element {
+        unreachable!()
+    }
+}
+fn base(p: &str) -> String {
+    format!("/b{p}")
+}
+pub fn Nav() -> JSX::Element {
+    jsx! {
+        <Menu::Root>
+            <Menu::Item>{base("/x")}</Menu::Item>
+            <Menu::Item>{base("/y")}</Menu::Item>
+        </Menu::Root>
+    }
+}
+`;
+  const { dir, args } = compile(source, {
+    "menu.js": "export function Root({ children }) { return children; }\nexport function Item({ children }) { return children; }\n",
+  });
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain("<Menu.Item>");
+  expect(output).not.toContain("Component");
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Nav())).toBe("/b/x/b/y");
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;

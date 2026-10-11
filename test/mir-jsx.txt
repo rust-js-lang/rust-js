@@ -83,3 +83,4 @@ flattened props given in part are the attributes given
 props of an Fn type parameter are destructured
 a list of children a chain collects is an array's map
 an if given as a child is a conditional child
+a namespace import's component is a tag where it's written

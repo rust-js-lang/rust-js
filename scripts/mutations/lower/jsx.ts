@@ -514,4 +514,12 @@ export const mutations: Mutation[] = [
     replace: "                false\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    name: "jsx-namespace-member-unstable",
+    breaks: "a namespace import's component read ahead of what's made before it is held in a `Component`",
+    file: "src/lower/jsx.rs",
+    find: "                        || self.krate.imports[&self.module].values().any(|alias| alias == name))\n",
+    replace: "                        || false)\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];
