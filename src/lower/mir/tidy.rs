@@ -117,8 +117,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     named_temporaries(body);
     eager_chains(body);
     returned_in_branches(body, result);
-    // Of what's now beside it, the temporaries between read in place.
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     tail_returns(body, returns);
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
@@ -343,7 +341,7 @@ fn and_tests(stmts: &mut [Stmt], conditions: &[js::Span]) {
             unreachable!("matched")
         };
         let first = std::mem::replace(test, Expr::undefined());
-        *test = both(first, second);
+        *test = Expr::bin(Op::And, first, second);
         then.extend(body);
     }
 }
@@ -377,17 +375,10 @@ fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         }
     }
     match stmts.last_mut().map(|s| &mut s.kind) {
-        Some(StmtKind::If(test, then, otherwise)) => {
+        Some(StmtKind::If(_, then, otherwise)) => {
             tail_returns(then, returns);
             if let Some(branch) = otherwise {
                 tail_returns(branch, returns);
-            }
-            // A branch it emptied: the other one's, of its test negated.
-            if then.is_empty()
-                && let Some(branch) = otherwise.take()
-            {
-                *test = not(std::mem::replace(test, Expr::undefined()));
-                *then = branch;
             }
         }
         Some(StmtKind::Labeled(_, body)) => tail_returns(body, returns),
@@ -1135,7 +1126,10 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
             // `if (a && b) { s } else { t }` of tests not all negated.
             StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
                 let negated = tests.iter().all(|t| matches!(t.kind, ExprKind::Unary(UnaryOp::Not, _)));
-                let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
+                let test = (tests.into_iter())
+                    .rev()
+                    .reduce(|b, a| Expr::bin(Op::And, a, b))
+                    .expect("one");
                 match (then.is_empty(), negated) {
                     (true, _) => StmtKind::If(test, otherwise, None),
                     (false, true) => StmtKind::If(not(test), then, Some(otherwise)),
@@ -1144,7 +1138,10 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {
                 Some((tests, x, yes, no)) => {
-                    let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
+                    let test = (tests.into_iter())
+                        .rev()
+                        .reduce(|b, a| Expr::bin(Op::And, a, b))
+                        .expect("one");
                     StmtKind::Assign(Expr::var(&x), conditional(test, yes, no, booleans))
                 }
                 None => StmtKind::Labeled(label, body),
@@ -1182,7 +1179,10 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
         && !written(returns, last.span)
         && !writes_return(std::slice::from_ref(last_if), returns)
     {
-        let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
+        let test = (tests.into_iter())
+            .rev()
+            .reduce(|b, a| Expr::bin(Op::And, a, b))
+            .expect("one");
         let value = conditional(test, yes, no.clone(), booleans);
         let span = last_if.span;
         stmts.truncate(stmts.len() - 2);
@@ -1198,7 +1198,10 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
     {
         // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
         // return f; } t`, as THIR guards it.
-        let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
+        let test = (tests.into_iter())
+            .rev()
+            .reduce(|b, a| Expr::bin(Op::And, a, b))
+            .expect("one");
         let (span, guard) = (last_if.span, stmts.pop().expect("the return"));
         stmts.pop();
         stmts.push(StmtKind::If(not(test), vec![guard], None).at(span));
@@ -1451,13 +1454,7 @@ fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr)>
 
 /// `test ? yes : no`: `test && yes` where `no` is `false`, and `test || no`
 /// where `yes` is `true`, the test `!!test` where it's not a `bool`.
-fn conditional(mut test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
-    // A test is read for its truth alone: `!!c`'s is `c`'s.
-    while let ExprKind::Unary(UnaryOp::Not, inner) = &test.kind
-        && let ExprKind::Unary(UnaryOp::Not, c) = &inner.kind
-    {
-        test = (**c).clone();
-    }
+fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
     // Where the test itself is the value, of what's not a `bool`, `!!c`, as
     // THIR writes it.
     let truth = |test: Expr| match is_boolean(&test, booleans) {
@@ -1470,37 +1467,9 @@ fn conditional(mut test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) 
         (ExprKind::Bool(true), _) => Expr::bin(Op::Or, truth(test), no),
         (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),
         (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),
-        (_, ExprKind::Bool(false)) => both(truth(test), yes),
+        (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),
         _ => Expr::cond(test, yes, no),
     }
-}
-
-/// `a && b`, but `b` where it says `a`: `x === "lit"` that `x != null`, or
-/// that `typeof x === "string"`.
-fn both(a: Expr, b: Expr) -> Expr {
-    // The tests `b` says, of its `&&`'s first.
-    let first = match &b.kind {
-        ExprKind::Binary(Op::And, first, _) => first,
-        _ => &b,
-    };
-    // `a && b` of `a` an `&&` itself: each of its tests `b` says goes.
-    let mut tests: Vec<Expr> = Vec::new();
-    let mut flat = |e: Expr| tests.push(e);
-    fn spread(e: Expr, push: &mut dyn FnMut(Expr)) {
-        match e.kind {
-            ExprKind::Binary(Op::And, a, b) => {
-                spread(*a, push);
-                spread(*b, push);
-            }
-            _ => push(e),
-        }
-    }
-    spread(a, &mut flat);
-    tests.retain(|t| !implies(first, t));
-    tests
-        .into_iter()
-        .rev()
-        .fold(b, |rest, test| Expr::bin(Op::And, test, rest))
 }
 
 /// Whether `test` holds where `by` does: `x != null` where `x === "lit"`,
@@ -2163,7 +2132,10 @@ fn ending(stmts: &mut Vec<Stmt>, label: &str) {
         && tests
             .iter()
             .all(|t| matches!(t.kind, ExprKind::Unary(UnaryOp::Not, _) | ExprKind::Binary(Op::Ne, ..)));
-    let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
+    let test = (tests.into_iter())
+        .rev()
+        .reduce(|b, a| Expr::bin(Op::And, a, b))
+        .expect("one");
     stmts.push(match (rest.is_empty(), negated) {
         (true, _) => StmtKind::If(test, then, None).at(span),
         (false, true) => StmtKind::If(not(test), rest, Some(then)).at(span),

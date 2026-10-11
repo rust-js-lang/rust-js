@@ -1598,6 +1598,38 @@ pub struct Failure(pub u32);
 pub fn flagged(error: Option<&Failure>, ready: bool) -> String {
     cn(&[Some("a"), (error.is_some() || ready).then_some("b")])
 }
+#[derive(Clone, Copy)]
+pub enum Dir {
+    #[rust_js::name = "start"]
+    Start,
+    #[rust_js::name = "end"]
+    End,
+    #[rust_js::name = "right"]
+    Right,
+    #[rust_js::name = "left"]
+    Left,
+    #[rust_js::name = "up"]
+    Up,
+    #[rust_js::name = "down"]
+    Down,
+}
+pub struct ChevronProps {
+    pub class_name: Option<&'static str>,
+    pub d: Option<Dir>,
+}
+pub fn chevron(props: ChevronProps) -> String {
+    let d = props.d;
+    let classes = cn(&[
+        matches!(d, Some(Dir::Down)).then_some("r0"),
+        matches!(d, Some(Dir::Left)).then_some("r90"),
+        matches!(d, Some(Dir::Up)).then_some("r180"),
+        matches!(d, Some(Dir::Right)).then_some("r-90"),
+        matches!(d, Some(Dir::Start)).then_some("s"),
+        matches!(d, Some(Dir::End)).then_some("e"),
+        props.class_name,
+    ]);
+    classes
+}
 pub fn numbered(n: Option<u32>) -> String {
     cn(&[matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two"), Some("c")])
 }
@@ -1611,6 +1643,7 @@ pub fn kept(n: Option<u32>) -> String {
     expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
     expect(js).toContain('return cn("a", expanded ? "wide" : undefined);');
     expect(js).toContain('return cn("a", (error || ready) && "b");');
+    expect(js).toContain('  const classes = cn(\n    d === "down" && "r0",\n    d === "left" && "r90",\n    d === "up" && "r180",\n    d === "right" && "r-90",\n    d === "start" && "s",\n    d === "end" && "e",\n    props.class_name,\n  );\n');
     expect(js).toContain('return cn(n === 1 && "one", n === 2 && "two", "c");');
     expect(js).toContain('return cn(n === 1 ? "one" : undefined, n === 2 ? "two" : undefined);');
     const lib = await import(join(dir, out));
