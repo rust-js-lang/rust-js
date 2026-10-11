@@ -29,6 +29,8 @@ pub(super) struct Hints<'h> {
     pub(super) callbacks: &'h HashSet<String>,
     /// Where each `match` that reads a table by its key is (ADR 0233).
     pub(super) tables: &'h [js::Span],
+    /// What a `let`'s struct pattern binds, by name.
+    pub(super) patterns: &'h HashSet<String>,
     /// What a pattern binds in an enum's variant, `Some(code)`, by name.
     pub(super) payloads: &'h HashSet<String>,
     pub(super) returns: &'h [js::Span],
@@ -52,6 +54,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         payloads,
         callbacks,
         tables,
+        patterns,
         returns,
         captured,
         booleans,
@@ -128,7 +131,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let changing = changing(body);
     js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
     alias_variables(body, &changing);
-    js::statement_lists(body, &mut destructured);
+    js::statement_lists(body, &mut |stmts| destructured(stmts, patterns));
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
     // A pattern's binding of a variable, after those: of a temporary that
@@ -1253,8 +1256,9 @@ fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
 /// `const _5 = e; const a = _5[0]; const b = _5[1];`, the temporary read
 /// nowhere else, is `const [a, b] = e;`; and of its properties, `const { a,
 /// b: c } = e;`; `let` if one of them is. Of a variable the program names,
-/// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`.
-fn destructured(stmts: &mut Vec<Stmt>) {
+/// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`;
+/// one too of a `let`'s pattern, `patterns`, `const { message } = error;`.
+fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
     let mut i = 0;
     while i < stmts.len() {
         // What the parts are read of, and where they start: a temporary this
@@ -1277,7 +1281,8 @@ fn destructured(stmts: &mut Vec<Stmt>) {
         let parts = parts(&stmts[first..], &name);
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
-        let enough = count >= if made { 1 } else { 2 };
+        let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));
+        let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
         if !enough || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
             i += 1;
@@ -1447,6 +1452,23 @@ pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stm
             body.remove(0);
         }
         if !unnamed(&name) {
+            continue;
+        }
+        // Taken apart already, `const { params } = __arg0;`: that pattern.
+        if let Some(Stmt {
+            kind:
+                StmtKind::Destructure {
+                    pattern,
+                    value,
+                    mutable: false,
+                },
+            ..
+        }) = body.first()
+            && matches!(&value.kind, ExprKind::Var(v) if *v == name)
+            && js::mentions_in(&body[1..], &name) == 0
+        {
+            *param = pattern.clone();
+            body.remove(0);
             continue;
         }
         let read = parts(body, &name);

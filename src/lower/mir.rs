@@ -646,6 +646,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continues: &continues,
                 callbacks: &callbacks,
                 tables: &tables,
+                patterns: &(self.let_pattern_bindings(mir_body).into_iter())
+                    .map(|l| state.locals.names[l].clone())
+                    .collect(),
                 payloads: &(state.payloads.iter())
                     .map(|&l| state.locals.names[l].clone())
                     .collect(),
@@ -743,12 +746,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
-    /// The temporaries a `let`'s struct or tuple pattern takes apart: what
-    /// its bindings, of its fields, are read from.
-    fn mir_patterned(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+    /// The locals a `let`'s struct pattern binds its fields to, through a
+    /// reference too, `let S { a } = use_context(..)`'s.
+    fn let_pattern_bindings(&self, body: &mir::Body<'tcx>) -> Vec<Local> {
         let mut spans = Vec::new();
         for stmt in self.thir.stmts.iter() {
-            // Through a reference too, `let S { a } = use_context(..)`'s.
             let thir::StmtKind::Let { pattern, .. } = &stmt.kind else {
                 continue;
             };
@@ -764,7 +766,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        let bound: Vec<Local> = (body.var_debug_info.iter())
+        (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place)
                     if place.projection.is_empty() && spans.contains(&info.source_info.span) =>
@@ -773,7 +775,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => None,
             })
-            .collect();
+            .collect()
+    }
+
+    /// The temporaries a `let`'s struct or tuple pattern takes apart: what
+    /// its bindings, of its fields, are read from.
+    fn mir_patterned(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+        let bound = self.let_pattern_bindings(body);
         let mut patterned = std::collections::HashSet::new();
         for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
             // Bound by value or, through a reference, by one: `&(*_2).0`.

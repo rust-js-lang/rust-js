@@ -158,7 +158,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-destructured-kept",
     breaks: "`const _5 = e; const a = _5[0]; const b = _5[1];` stays, not `const [a, b] = e;`",
     file: "src/lower/mir/tidy.rs",
-    find: "        let enough = count >= if made { 1 } else { 2 };\n",
+    find: "        let enough = count >= if made || bound { 1 } else { 2 };\n",
     replace: "        let enough = !made && false;\n",
     tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
   },
@@ -1012,6 +1012,30 @@ export const mutations: Mutation[] = [
       "test/mir.test.ts",
       "-t",
       "JSX tests"
+    ]
+  },
+  {
+    "name": "one-field-pattern-kept-apart",
+    "breaks": "a `let` pattern of one field of a named variable is `const message = error.message;`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "let enough = count >= if made || bound { 1 } else { 2 };",
+    "replace": "let enough = count >= if made { 1 } else { 2 };",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let pattern of a named variable takes it apart"
+    ]
+  },
+  {
+    "name": "destructured-param-kept",
+    "breaks": "an `async fn`'s parameter taken apart in its body stays `(__arg0) { const { params } = __arg0;`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            *param = pattern.clone();\n            body.remove(0);\n            continue;\n",
+    "replace": "            let _ = pattern;\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an async fn's parameter pattern from MIR"
     ]
   },
 ];

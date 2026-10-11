@@ -7049,3 +7049,32 @@ pub fn long(words: &[String]) -> usize {
     expect([lib.lines("a\nb\nc"), lib.long(["a", "abc", "abcd"])]).toEqual([3, 2]);
   }
 });
+
+// A `let` pattern of a variable the program names takes it apart, one
+// field too, from MIR as from THIR: `const { message } = error;`, as
+// react.dev's ErrorMessage reads its error.
+test("a let pattern of a named variable takes it apart, one field too", async () => {
+  const dir = fixture("let-pattern-one");
+  writeFileSync(join(dir, "lib.rs"), `pub struct E {
+    pub message: String,
+    pub title: Option<String>,
+}
+pub fn one(error: &E) -> String {
+    let E { message, .. } = error;
+    message.clone()
+}
+pub fn written(error: &E) -> String {
+    let message = &error.message;
+    message.clone()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("export function one(error) {\n  const { message } = error;\n");
+    // One the program wrote as a field's, as it is.
+    expect(js).toContain("export function written(error) {\n  const message = error.message;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.one({ message: "m" }), lib.written({ message: "w" })]).toEqual(["m", "w"]);
+  }
+});
