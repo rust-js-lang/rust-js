@@ -229,6 +229,27 @@ pub fn App() -> JSX::Element {
 // prop written before them: JSX reads its props, then its children, as Rust
 // does. A `Link` whose props flatten an anchor's is such a child, as
 // react.dev's `Breadcrumbs` has it.
+// A list of children a chain collects: an array's `map`, from MIR too (ADR
+// 0364), each item given its index as THIR's is.
+test("a list of children a chain collects is an array's map", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub fn List(items: Vec<&'static str>) -> JSX::Element {
+    jsx! {
+        <ul>
+            {items.iter().enumerate().map(|(i, item)| jsx! { <li key={i}>{*item}</li> }).collect::<Vec<_>>()}
+        </ul>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain("{items.map((item, i) => (\n");
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.List(["a", "b"]))).toBe("<ul><li>a</li><li>b</li></ul>");
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;

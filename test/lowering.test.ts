@@ -1187,6 +1187,74 @@ pub fn small(n: u32) -> u32 {
   }
 });
 
+// An iterator chain of an array MIR (ADR 0364) makes as Rust runs it, item
+// by item, is THIR's array methods (ADR 0055) where the order its closures
+// run in can't be told apart, a closure's pattern taken apart where it's
+// given; where two of them do something, it stays a JS iterator's.
+test("iterator chains from MIR are array methods where order can't be told", async () => {
+  const dir = fixture("mir-chains");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+pub struct Crumb { pub title: String, pub hide: bool }
+pub fn titles(items: &[Crumb]) -> Vec<String> {
+    items.iter().enumerate().map(|(i, c)| format!("{i}:{}", c.title)).collect()
+}
+pub fn shown(items: &[Crumb]) -> Vec<&Crumb> {
+    items.iter().filter(|c| !c.hide).collect()
+}
+pub fn total(items: &[u32]) -> u32 {
+    items.iter().fold(0, |a, b| a + b)
+}
+pub fn any_big(items: &[u32]) -> bool {
+    items.iter().any(|x| *x > 9)
+}
+pub fn order(items: &[u32]) -> Vec<String> {
+    let log = RefCell::new(Vec::new());
+    let _ = items
+        .iter()
+        .map(|x| {
+            log.borrow_mut().push(format!("a{x}"));
+            x
+        })
+        .filter(|x| {
+            log.borrow_mut().push(format!("b{x}"));
+            true
+        })
+        .count();
+    log.into_inner()
+}
+pub fn stops(items: &[u32]) -> Vec<String> {
+    let log = RefCell::new(Vec::new());
+    let _ = items
+        .iter()
+        .map(|x| {
+            log.borrow_mut().push(format!("a{x}"));
+            x
+        })
+        .any(|x| *x > 1);
+    log.into_inner()
+}
+pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
+    let kept: Vec<u32> = items.iter().copied().collect();
+    items.push(9);
+    (kept, items)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  return items.map((c, i) => `${i}:${c.title}`);\n");
+    expect(js).toContain("  return items.filter((c) => !c.hide);\n");
+    expect(js).toContain("  return items.reduce((a, b) => (a + b) >>> 0, 0);\n");
+    expect(js).toContain("  return items.some((x) => x > 9);\n");
+    const lib = await import(join(dir, out));
+    const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
+    expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
+    expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
+    expect(lib.stops([1, 2, 3])).toEqual(["a1", "a2"]);
+    expect(lib.copied([1])).toEqual([[1], [1, 9]]);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

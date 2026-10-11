@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
 use super::negate;
-use crate::lower::iterators::iterated;
+use crate::lower::iterators::{eager_chains, iterated};
 
 /// `body`, tidied: `result` is the name of the function's return place.
 pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
@@ -45,6 +45,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing));
+    eager_chains(body);
 }
 
 /// A `for` loop as MIR has it, `const iter = $iter(xs); while (true) {
@@ -388,37 +389,12 @@ fn destructured(stmts: &mut Vec<Stmt>) {
             }
         };
         let made = first > i;
-        // Each part read: its index or key, the variable, and whether it's a
-        // `let`.
-        let mut parts: Vec<(Result<usize, String>, String, bool)> = Vec::new();
-        for stmt in &stmts[first..] {
-            let (bound, value, mutable) = match &stmt.kind {
-                StmtKind::Const(bound, value) => (bound, value, false),
-                StmtKind::Let(bound, Some(value)) => (bound, value, true),
-                _ => break,
-            };
-            if *bound == name {
-                break;
-            }
-            let part = match &value.kind {
-                ExprKind::Index(of, index)
-                    if matches!(&of.kind, ExprKind::Var(v) if *v == name)
-                        && let ExprKind::Num(k) = index.kind
-                        && k >= 0.0
-                        && k.fract() == 0.0 =>
-                {
-                    Ok(k as usize)
-                }
-                ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if *v == name) => Err(key.clone()),
-                _ => break,
-            };
-            parts.push((part, bound.clone(), mutable));
-        }
+        let parts = parts(&stmts[first..], &name);
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
-        let keyed = parts.iter().all(|(p, ..)| p.is_err());
         let enough = count >= if made { 1 } else { 2 };
-        if !enough || !(indexed || keyed) || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
+        let pattern = pattern_of(&parts);
+        if !enough || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
             i += 1;
             continue;
         }
@@ -449,26 +425,7 @@ fn destructured(stmts: &mut Vec<Stmt>) {
             continue;
         }
         let mutable = parts.iter().any(|&(_, _, m)| m);
-        let pattern = match indexed {
-            true => {
-                let last = parts
-                    .iter()
-                    .map(|(p, ..)| *p.as_ref().expect("indexed"))
-                    .max()
-                    .expect("one");
-                let mut items = vec![None; last + 1];
-                for (part, bound, _) in &parts {
-                    items[*part.as_ref().expect("indexed")] = Some(bound.clone());
-                }
-                js::Pattern::Array(items)
-            }
-            false => js::Pattern::Object(
-                (parts.iter())
-                    .map(|(part, bound, _)| (part.clone().expect_err("keyed"), bound.clone(), None))
-                    .collect(),
-                None,
-            ),
-        };
+        let pattern = pattern.expect("checked");
         let value = match made {
             true => {
                 stmts.drain(first..first + count);
@@ -488,6 +445,81 @@ fn destructured(stmts: &mut Vec<Stmt>) {
             mutable,
         };
         i += 1;
+    }
+}
+
+/// A part of a value read into a variable: its index or key, the variable,
+/// and whether it's a `let`.
+type Part = (Result<usize, String>, String, bool);
+
+/// The parts of `name` the first of `stmts` read, each a `const` or a
+/// `let` of one, `const a = name[0];` or `const b = name.b;`.
+fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
+    let mut parts = Vec::new();
+    for stmt in stmts {
+        let (bound, value, mutable) = match &stmt.kind {
+            StmtKind::Const(bound, value) => (bound, value, false),
+            StmtKind::Let(bound, Some(value)) => (bound, value, true),
+            _ => break,
+        };
+        if bound == name {
+            break;
+        }
+        let part = match &value.kind {
+            ExprKind::Index(of, index)
+                if matches!(&of.kind, ExprKind::Var(v) if v == name)
+                    && let ExprKind::Num(k) = index.kind
+                    && k >= 0.0
+                    && k.fract() == 0.0 =>
+            {
+                Ok(k as usize)
+            }
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == name) => Err(key.clone()),
+            _ => break,
+        };
+        parts.push((part, bound.clone(), mutable));
+    }
+    parts
+}
+
+/// What takes `parts` apart, `[a, , c]` of indices, `{ a, b: c }` of keys:
+/// none of none, or of both.
+fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
+    if parts.is_empty() {
+        return None;
+    }
+    if parts.iter().all(|(p, ..)| p.is_ok()) {
+        let last = parts.iter().filter_map(|(p, ..)| p.as_ref().ok()).max().copied()?;
+        let mut items = vec![None; last + 1];
+        for (part, bound, _) in parts {
+            items[*part.as_ref().ok()?] = Some(bound.clone());
+        }
+        return Some(js::Pattern::Array(items));
+    }
+    let keyed: Option<Vec<_>> = (parts.iter())
+        .map(|(part, bound, _)| Some((part.clone().err()?, bound.clone(), None)))
+        .collect();
+    Some(js::Pattern::Object(keyed?, None))
+}
+
+/// A parameter MIR names, `_2`, whose parts the body reads where it starts
+/// and reads nowhere else, `(_2) => { const i = _2[0]; const c = _2[1]; … }`:
+/// taken apart where it's given, `([i, c]) => …`, as THIR writes a pattern.
+pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
+    for param in params.iter_mut() {
+        let js::Pattern::Name(name) = param else { continue };
+        if !is_temporary(name) {
+            continue;
+        }
+        let name = name.clone();
+        let read = parts(body, &name);
+        let count = read.len();
+        if js::mentions_in(&body[count..], &name) > 0 {
+            continue;
+        }
+        let Some(pattern) = pattern_of(&read) else { continue };
+        body.drain(..count);
+        *param = pattern;
     }
 }
 

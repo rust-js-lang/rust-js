@@ -198,4 +198,12 @@ export const mutations: Mutation[] = [
     replace: "            if true {\n                given_to_js(&mut values);",
     tests: ["test/runtime-package.test.ts", "-t", "undefined given to JS"],
   },
+  {
+    name: "count-chain-unmarked",
+    breaks: "`count()` of a chain two of whose stages do something runs them as arrays, out of Rust's order",
+    file: "src/lower/calls.rs",
+    find: "            self.mark_lazy_chain(it, false);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+  },
 ];

@@ -202,4 +202,20 @@ export const mutations: Mutation[] = [
     replace: "            let _ = each;\n            i += 1;\n            continue;\n",
     tests: ["test/lowering.test.ts","-t","what reads the same anywhere"],
   },
+  {
+    name: "mir-tidy-eager-chains-off",
+    breaks: "`$iter(xs).map(f).toArray()` stays, not `xs.map(f)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    eager_chains(body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+  },
+  {
+    name: "mir-tidy-params-not-destructured",
+    breaks: "`(_2) => { const i = _2[0]; const c = _2[1]; … }` stays, not `([i, c]) => …`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        body.drain(..count);\n        *param = pattern;\n",
+    replace: "        let _ = pattern;\n",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+  },
 ];

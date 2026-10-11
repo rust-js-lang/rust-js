@@ -242,11 +242,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let found = self.unary_callback(arg());
                 self.helper(Helper::Position, "$position", vec![it, found])
             }
+            // THIR's pairing, `(x, i) => [i, x]`, in place of which a
+            // callback that takes the pair apart is given each item and its
+            // index, of an array (`eager_chains`).
             "enumerate" => {
-                let (x, i) = (self.fresh("item"), self.fresh("i"));
-                let pair = Expr::array(vec![Expr::var(&i), Expr::var(&x)]);
+                let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
                 let f = Expr::arrow(
-                    vec![x.into(), i.into()],
+                    vec!["x".into(), "i".into()],
                     vec![StmtKind::Return(Some(pair)).at(js::Span::NONE)],
                 );
                 method("map", it, vec![f])

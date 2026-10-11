@@ -668,6 +668,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             return self.expr(inner[1], out);
         }
+        // `count()` ends a chain, which says which of its stages run lazily
+        // (ADR 0139) before they're lowered, as a consumer `iterator_call` takes does.
+        if known == Std::Len
+            && let Some(&it) = args.first()
+            && self.implements_iterator(self.reveal(self.thir[it].ty))
+        {
+            self.mark_lazy_chain(it, false);
+        }
         if known.takes_iterator() || matches!(known, Std::Sort | Std::SortByKey) {
             return self.iterator_call(known, args, generic_args, boxed, span, out);
         }

@@ -1467,6 +1467,119 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
         && matches!(&parts[..], [first, second] if var(first, "i") && var(second, "x"))
 }
 
+/// Each chain in `stmts` that MIR made as Rust runs it (ADR 0364), item by
+/// item, `$iter(xs).map(f).toArray()`, written as THIR's of an array,
+/// `xs.map(f)` (ADR 0055), where the order its closures run in can't be
+/// told from Rust's by what takes it. One that's lent, `$lent(…).some(f)`,
+/// made for this call alone, no one else steps.
+pub(super) fn eager_chains(stmts: &mut [Stmt]) {
+    js::each_expr_mut(stmts, &mut |e| {
+        let js::ExprKind::Call(callee, args) = &e.kind else {
+            return;
+        };
+        let js::ExprKind::Member(chain, name) = &callee.kind else {
+            return;
+        };
+        let chain = match &chain.kind {
+            js::ExprKind::Call(lent, of)
+                if matches!(&lent.kind, js::ExprKind::Var(v) if v == "$lent") && of.len() == 1 =>
+            {
+                &of[0]
+            }
+            _ => chain,
+        };
+        let eager = match (name.as_str(), &args[..]) {
+            ("toArray", []) => match eager_items(chain, true, None) {
+                // A new array: a stage's is one already; the source, copied.
+                Some((items, 0)) => Some(Expr::call(Expr::member(items, "slice"), vec![])),
+                Some((items, _)) => Some(items),
+                None => None,
+            },
+            ("forEach", [f]) => {
+                eager_items(chain, true, Some(f)).map(|(items, _)| array_method(items, "forEach", f.clone()))
+            }
+            ("reduce", [f, init]) => eager_items(chain, true, Some(f))
+                .map(|(items, _)| Expr::call(Expr::member(items, "reduce"), vec![f.clone(), init.clone()])),
+            ("some" | "every", [f]) => {
+                eager_items(chain, false, None).map(|(items, _)| array_method(items, name, f.clone()))
+            }
+            ("find", [f]) => eager_items(chain, false, None)
+                .map(|(items, _)| Expr::call(Expr::member(items, "find"), vec![f.clone()])),
+            _ => None,
+        };
+        if let Some(eager) = eager {
+            *e = Expr { span: e.span, ..eager };
+        }
+    });
+}
+
+/// A chain MIR makes as Rust runs it (ADR 0364), item by item, `$iter(xs)
+/// .map(f).filter(g)`: the array THIR's makes of `xs`, `xs.map(f).filter(g)`
+/// (ADR 0055), and how many stages it has, where the order its closures run
+/// in can't be told from Rust's. `whole`: what takes it runs over every
+/// item, as `collect` does, and one closure may do something, `taker`, its
+/// callback, which runs as each item comes, among them; else it may stop
+/// early, and no stage may.
+fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr, usize)> {
+    let mut stages = Vec::new();
+    let mut at = chain;
+    while let js::ExprKind::Call(callee, args) = &at.kind
+        && let js::ExprKind::Member(source, name) = &callee.kind
+        && matches!(name.as_str(), "map" | "filter")
+        && let [f] = &args[..]
+    {
+        stages.push((name.as_str(), f));
+        at = source;
+    }
+    let js::ExprKind::Call(_, args) = &at.kind else {
+        return None;
+    };
+    let ([source], true) = (&args[..], is_stepped_items(at)) else {
+        return None;
+    };
+    let doing = stages.iter().filter(|(_, f)| does(f)).count();
+    let quiet = match whole {
+        true => doing + usize::from(taker.is_some_and(does)) <= 1,
+        false => doing == 0,
+    };
+    if !quiet {
+        return None;
+    }
+    let count = stages.len();
+    let items =
+        (stages.into_iter().rev()).fold(source.clone(), |items, (name, f)| array_method(items, name, f.clone()));
+    Some((items, count))
+}
+
+/// `items.name(f)`, of an array, `f` taking each enumerated pair apart
+/// given each item and its index, as `indexed_callback` has it.
+fn array_method(items: Expr, name: &str, f: Expr) -> Expr {
+    let (items, f) = indexed_callback(&items, name, f).unwrap_or_else(|f| (items, f));
+    Expr::call(Expr::member(items, name), vec![f])
+}
+
+/// Whether calling `f` may do what can be seen, or throw: anything but an
+/// arrow whose statements only make and give back what does nothing.
+fn does(f: &Expr) -> bool {
+    fn body_does(stmts: &[Stmt]) -> bool {
+        stmts.iter().any(|stmt| match &stmt.kind {
+            StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) | StmtKind::Expr(e) => {
+                e.has_effects()
+            }
+            StmtKind::Destructure { value, .. } => value.has_effects(),
+            StmtKind::Let(_, None) | StmtKind::Return(None) => false,
+            StmtKind::If(test, then, otherwise) => {
+                test.has_effects() || body_does(then) || otherwise.as_deref().is_some_and(body_does)
+            }
+            _ => true,
+        })
+    }
+    match &f.kind {
+        js::ExprKind::Arrow(_, body) => body_does(body),
+        _ => true,
+    }
+}
+
 /// Whether `e` is `$iter(items)`, `stepped_items`'s.
 pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$iter"))

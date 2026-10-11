@@ -439,6 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.pop();
         }
         tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE]);
+        tidy::destructured_params(&mut params, &mut out);
         Ok((params, out))
     }
 
