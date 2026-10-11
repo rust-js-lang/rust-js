@@ -489,11 +489,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let falsy = std::mem::replace(&mut self.locals.falsy, outer_falsy);
         let tested = std::mem::replace(&mut self.locals.tested, outer_tested);
         // Where each `if`'s condition is written, of the body THIR has:
-        // tests in one are `&&`'s.
-        let conditions: Vec<js::Span> = (self.thir.exprs.iter())
-            .filter_map(|e| match e.kind {
-                thir::ExprKind::If { cond, .. } => Some(self.js_span(self.thir[cond].span)),
-                _ => None,
+        // tests in one are `&&`'s; and a `match` and the guard of an arm of
+        // it, whose pattern's test and the guard are.
+        let conditions: Vec<(js::Span, js::Span)> = (self.thir.exprs.iter())
+            .flat_map(|e| match e.kind {
+                thir::ExprKind::If { cond, .. } => {
+                    let cond = self.js_span(self.thir[cond].span);
+                    vec![(cond, cond)]
+                }
+                // From `match` to its scrutinee's end, where MIR tests it.
+                thir::ExprKind::Match {
+                    scrutinee, ref arms, ..
+                } => (arms.iter())
+                    .filter_map(|&arm| {
+                        let guard = self.thir[arm].guard?;
+                        let tested = js::Span {
+                            lo: self.js_span(e.span).lo,
+                            hi: self.js_span(self.thir[scrutinee].span).hi,
+                        };
+                        Some((tested, self.js_span(self.thir[guard].span)))
+                    })
+                    .collect(),
+                _ => Vec::new(),
             })
             .collect();
         // Where each `if` the program wrote of a `continue` alone tests.

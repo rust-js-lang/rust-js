@@ -1386,4 +1386,16 @@ export const mutations: Mutation[] = [
       "a string written across lines keeps its lines"
     ]
   },
+  {
+    "name": "mir-guard-conditions-unknown",
+    "breaks": "a guarded arm's pattern test and its guard stay nested `if`s",
+    "file": "src/lower/mir.rs",
+    "find": "                        let guard = self.thir[arm].guard?;\n",
+    "replace": "                        let guard = self.thir[arm].guard.filter(|_| false)?;\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a match arm's guard from MIR is one test"
+    ]
+  },
 ];

@@ -222,7 +222,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-and-tests-any-condition",
     breaks: "`if`s the program nests are merged into one `&&`",
     file: "src/lower/mir/tidy.rs",
-    find: "        let one = conditions.iter().any(|c| within(c, span) && within(c, inner.span));\n",
+    find: "        let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));\n",
     replace: "        let one = true;\n",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },

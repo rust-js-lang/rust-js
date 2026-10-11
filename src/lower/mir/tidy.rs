@@ -18,8 +18,9 @@ pub(super) struct Hints<'h> {
     pub(super) falsy: &'h HashSet<String>,
     /// And the temporaries such a `test && value` tests.
     pub(super) tested: &'h HashSet<String>,
-    /// Where the program writes each `if`'s condition, and each `return`.
-    pub(super) conditions: &'h [js::Span],
+    /// Where the program writes each `if`'s condition, twice, and each
+    /// `match` of a guarded arm and its guard.
+    pub(super) conditions: &'h [(js::Span, js::Span)],
     /// Where each loop is written, and whether as a `while`.
     pub(super) loops: &'h [(js::Span, bool)],
     /// Where each `if` the program wrote of a `continue` alone tests.
@@ -499,7 +500,7 @@ fn early_breaks(stmts: &mut [Stmt]) {
 /// `a && b`'s: `if (a && b) { s }`. What's bound between them, a read that
 /// does nothing, comes first in `s`, and `b` reads its value, as
 /// `if let`s chained with `&&` read.
-fn and_tests(stmts: &mut [Stmt], conditions: &[js::Span]) {
+fn and_tests(stmts: &mut [Stmt], conditions: &[(js::Span, js::Span)]) {
     let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
@@ -510,7 +511,7 @@ fn and_tests(stmts: &mut [Stmt], conditions: &[js::Span]) {
         let StmtKind::If(second, _, None) = &inner.kind else {
             continue;
         };
-        let one = conditions.iter().any(|c| within(c, span) && within(c, inner.span));
+        let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));
         let pure = bound
             .iter()
             .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_same()));

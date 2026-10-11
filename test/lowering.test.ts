@@ -6627,3 +6627,30 @@ pub async fn props(Ctx { params, .. }: Ctx) -> String {
     expect([await lib.props({ params: "a" }), await lib.props({})]).toEqual(["a", ""]);
   }
 });
+
+// A match arm's guard, `Some(path) if !skip`, is one test with its pattern,
+// as react.dev's Breadcrumbs keeps a crumb: `c.path != null && !(..)`.
+test("a match arm's guard from MIR is one test with its pattern", async () => {
+  const dir = fixture("guarded-arm-test");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Crumb {
+    pub path: Option<String>,
+    pub skip: Option<bool>,
+    pub title: String,
+}
+pub fn crumbs(cs: &[Crumb]) -> Vec<Option<String>> {
+    cs.iter()
+        .map(|c| match &c.path {
+            Some(path) if !c.skip.unwrap_or_default() => Some(format!("{path}{}", c.title)),
+            _ => None,
+        })
+        .collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    if (c.path != null && !(c.skip ?? false)) {\n      return c.path + c.title;\n    }\n");
+    const lib = await import(join(dir, out));
+    expect(lib.crumbs([{ path: "/a", title: "A" }, { path: "/b", skip: true, title: "B" }, { title: "C" }])).toEqual(["/aA", undefined, undefined]);
+  }
+});
