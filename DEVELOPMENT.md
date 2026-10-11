@@ -143,7 +143,7 @@ On the M3 Max, with the scan off:
 | `bun run check:fast`, of a change to MIR's lowering | 40 s |
 | `bun run check:fast --all`, THIR's corpus, JSX, snapshots and diagnostics too | 40 s |
 | `bun run port measure`, MIR's compile of react.dev against THIR's JS | 7 s |
-| `bun run port compare`, its build and 823 pages | 3–4 min |
+| `bun run port compare`, its build and 823 pages | 7–15 s |
 
 Each of them is timed as it runs, and kept, in `target/timings.jsonl`
 (`scripts/timing.ts`): `check:fast`, its build and each of its jobs,
