@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-past-changed-reads",
     breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            true => {\n                e.is_made_of_constants()\n",
-    replace: "            true => {\n                !e.has_effects() ||\n                e.is_made_of_constants()\n",
+    find: "                }\n                e.is_made_of_constants()\n",
+    replace: "                }\n                !e.has_effects() ||\n                e.is_made_of_constants()\n",
     tests: ["test/mir.test.ts","-t","assignment_order"],
   },
   {
@@ -574,7 +574,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-late-consts-kept",
     breaks: "a `const` declarations makes last stays, `const _27 = e; _24 = _27;`",
     file: "src/lower/mir/tidy.rs",
-    find: "    let changed = self::changing(body);\n    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));\n",
+    find: "    let changed = self::changing(body);\n    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));\n",
     replace: "    let changed = self::changing(body);\n",
     tests: ["test/lowering.test.ts","-t","else if. given as a value"],
   },
@@ -774,8 +774,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-constant-objects-block",
     breaks: "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            true => {\n                e.is_made_of_constants()\n",
-    replace: "            true => {\n                e.is_constant()\n",
+    find: "                }\n                e.is_made_of_constants()\n",
+    replace: "                }\n                e.is_constant()\n",
     tests: ["test/lowering.test.ts","-t","past an object of constants"],
   },
   {
@@ -1112,6 +1112,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "an if of an or from MIR keeps its branches"
+    ]
+  },
+  {
+    "name": "plain-field-blocks-inline",
+    "breaks": "a prop MIR holds for a borrow stays a `const _14`, read past `meta.tag` of a plain value",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                        && matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !changing.contains(v))\n",
+    "replace": "                        && false\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
     ]
   },
 ];

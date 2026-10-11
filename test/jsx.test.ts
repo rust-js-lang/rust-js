@@ -4706,3 +4706,48 @@ pub fn Image(props: ImageProps) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Image, { alt: "a", src: "/s.png" }))).toContain('<img alt="a" class="pic" src="/s.png"/>');
 });
+
+// ADR 0364: a prop MIR holds in a temporary, a `String` borrowed for it,
+// `image={if .. { format!(..) } else { .. }.as_str()}`, is read where it's
+// written, past a field of a plain value read before it, `meta.tag`, which
+// no call changes, as react.dev's Page gives Seo its image.
+test("a prop held for a borrow is read where it's written, past a plain value's field", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct SeoProps<'a> {
+    pub title: &'a str,
+    pub tag: Option<&'a str>,
+    pub image: &'a str,
+}
+pub fn Seo(SeoProps { title, tag, image }: SeoProps) -> JSX::Element {
+    jsx! { <span title={title} lang={tag.unwrap_or_default()}>{image}</span> }
+}
+pub struct Meta {
+    pub tag: Option<&'static str>,
+}
+pub fn Page(home: bool, meta: &Meta, title: &'static str, path: String) -> JSX::Element {
+    jsx! {
+        <div>
+            <Seo
+                title={title}
+                tag={meta.tag}
+                image={
+                    if home || title.is_empty() {
+                        format!("/og-{}.png", path)
+                    } else {
+                        format!("/og/{}.png", path.replace('/', "-"))
+                    }
+                    .as_str()
+                }
+            />
+            {home.then(|| jsx! { <b>{"rss"}</b> })}
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toContain("const _");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page(false, { tag: "t" }, "T", "a/b"))).toBe('<div><span title="T" lang="t">/og/a-b.png</span></div>');
+});

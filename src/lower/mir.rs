@@ -655,6 +655,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 returns: &state.returns,
                 captured: &captured,
                 booleans: &booleans,
+                plain: &self.locals.plain.clone(),
             },
         );
         tidy::destructured_params(&mut params, &mut out);

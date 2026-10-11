@@ -40,6 +40,8 @@ pub(super) struct Hints<'h> {
     pub(super) captured: &'h HashSet<String>,
     /// The variables of Rust's `bool`: JS's `true` and `false` alone.
     pub(super) booleans: &'h HashSet<String>,
+    /// The variables of plain values, which nothing changes (`Locals::plain`).
+    pub(super) plain: &'h HashSet<String>,
 }
 
 /// `body`, tidied, by what `hints` say of it.
@@ -58,6 +60,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         returns,
         captured,
         booleans,
+        plain,
     } = *hints;
     // A guard of a handle made for it alone: the place it's a handle on.
     unguarded(body);
@@ -148,11 +151,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // What those `const`s now read once, where it's read, and the values
     // of branches that leaves.
     let changed = self::changing(body);
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
+    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
+    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
     // $iter(xs);`: the array's, as THIR's.
     eager_chains(body);
@@ -2131,7 +2134,7 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
 /// after it, or after those that are moved there too: `e` where it's read, where nothing that runs before it there
 /// does anything, or anywhere outside a closure if `e` does nothing and
 /// reads nothing that changes.
-fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet<String>) {
+fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<String>, captured: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let (head, rest) = stmts.split_at_mut(i + 1);
@@ -2208,8 +2211,16 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet
             }
             // A builtin's function too, `Object.fromEntries`, which nothing changes.
             true => {
+                // A field of a plain value too, `meta.tag`, which no call can
+                // change, as MIR's lowering reads it where it's read.
+                let mut root = e;
+                while let ExprKind::Member(of, _) = &root.kind {
+                    root = of;
+                }
                 e.is_made_of_constants()
                     || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v))
+                    || matches!(e.kind, ExprKind::Member(..))
+                        && matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !changing.contains(v))
                     || matches!(&e.kind, ExprKind::Member(of, _)
                         if matches!(&of.kind, ExprKind::Var(v)
                             if !changing.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String")))
