@@ -1936,11 +1936,16 @@ test("a for over Object.keys steps through its array", async () => {
     }
     n
 }
+pub fn first(o: &js::Unknown) -> Option<String> {
+    let mut keys = js::object::keys(o).into_iter();
+    keys.next()
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.listed({ a: 1, b: 2 }), lib.listed({})]).toEqual([2, 0]);
+    expect([lib.first({ a: 1, b: 2 }), lib.first({})]).toEqual(["a", undefined]);
   }
 });
 
