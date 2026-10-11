@@ -47,6 +47,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             returned(stmts, result);
             unreachable_after(stmts);
         });
+        js::statement_lists(body, &mut |stmts| branch_ends(stmts));
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
         bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
         js::statement_lists(body, &mut unlabeled);
@@ -324,25 +325,30 @@ fn and_tests(stmts: &mut [Stmt], conditions: &[js::Span]) {
 
 /// Where a function ends, a `return;` the program didn't write, `written`
 /// where those it did are: nothing, as it falls off the end there; and
-/// `if (c) { return; } rest`, `if (!c) { rest }`, as the program wrote it.
+/// `if (c) { s; return; } rest`, `if (c) { s } else { rest }`, as the
+/// program wrote it, `if (!c) { rest }` of no `s`.
 fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     let unwritten = |s: &Stmt| matches!(s.kind, StmtKind::Return(None)) && !written(returns, s.span);
     while stmts.last().is_some_and(unwritten) {
         stmts.pop();
     }
     if let Some(at) = (stmts.iter())
-        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if matches!(then.as_slice(), [r] if unwritten(r))))
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))
     {
         let rest = stmts.split_off(at + 1);
         let Some(Stmt {
-            kind: StmtKind::If(test, _, None),
+            kind: StmtKind::If(test, mut then, None),
             span,
         }) = stmts.pop()
         else {
             unreachable!("found")
         };
-        if !rest.is_empty() {
-            stmts.push(StmtKind::If(not(test), rest, None).at(span));
+        then.pop();
+        match (then.is_empty(), rest.is_empty()) {
+            (true, true) => {}
+            (true, false) => stmts.push(StmtKind::If(not(test), rest, None).at(span)),
+            (false, true) => stmts.push(StmtKind::If(test, then, None).at(span)),
+            (false, false) => stmts.push(StmtKind::If(test, then, Some(rest)).at(span)),
         }
     }
     match stmts.last_mut().map(|s| &mut s.kind) {
@@ -1089,39 +1095,6 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
             {
                 StmtKind::Assign(Expr::var(x), conditional(test, yes.clone(), no.clone(), booleans))
             }
-            // `if (c) { return true; } else { return b; }`: `return c || b;`;
-            // of values not `true` or `false`, the `if` THIR writes.
-            StmtKind::If(test, ref then, Some(ref otherwise))
-                if let [
-                    Stmt {
-                        kind: StmtKind::Return(Some(yes)),
-                        ..
-                    },
-                ] = then.as_slice()
-                    && let [
-                        Stmt {
-                            kind: StmtKind::Return(Some(no)),
-                            ..
-                        },
-                    ] = otherwise.as_slice()
-                    && small(yes)
-                    && small(no)
-                    // Not where the program wrote `return`, an early one.
-                    && !written(returns, then[0].span)
-                    && !written(returns, otherwise[0].span)
-                    && boolean_branch(yes, no) =>
-            {
-                StmtKind::Return(Some(conditional(test, yes.clone(), no.clone(), booleans)))
-            }
-            // `if (c) { return a; } else { return b; }`, `b` the `return` the
-            // program wrote and `a` where it goes on: that one first, as
-            // written, `if (!c) { return b; } return a;`.
-            StmtKind::If(test, then, Some(otherwise))
-                if matches!(then.as_slice(), [s] if matches!(s.kind, StmtKind::Return(_)) && !written(returns, s.span))
-                    && matches!(otherwise.as_slice(), [s] if matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span)) =>
-            {
-                StmtKind::If(not(test), otherwise, Some(then))
-            }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
             // b) { t } else { s }`, where nothing else breaks to `l`; and
             // `if (a && b) { s } else { t }` of tests not all negated.
@@ -1146,6 +1119,22 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
         stmt.span = span;
     }
     stmts.retain(|stmt| !matches!(&stmt.kind, StmtKind::Expr(e) if matches!(e.kind, ExprKind::Undefined)));
+    // `if (x != null) { if (x === "a") { s } else if (x === "b") { t } }`:
+    // the chains alone, which say it.
+    let mut i = 0;
+    while i < stmts.len() {
+        match &stmts[i].kind {
+            StmtKind::If(test, then, None) if !then.is_empty() && then.iter().all(|s| guarded_chain(s, test)) => {
+                let StmtKind::If(_, then, _) = stmts.remove(i).kind else {
+                    unreachable!("matched")
+                };
+                let n = then.len();
+                stmts.splice(i..i, then);
+                i += n;
+            }
+            _ => i += 1,
+        }
+    }
     // `if (a) { if (b) { return t; } } return f;`, last: `return a && b ? t : f;`.
     if let [.., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(no)) = &last.kind
@@ -1417,15 +1406,6 @@ fn conditional(mut test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) 
     {
         test = (**c).clone();
     }
-    // `!c ? a : b` is `c ? b : a`.
-    let (test, yes, no) = match test.kind {
-        ExprKind::Unary(UnaryOp::Not, inner)
-            if !matches!(yes.kind, ExprKind::Bool(_)) && !matches!(no.kind, ExprKind::Bool(_)) =>
-        {
-            (*inner, no, yes)
-        }
-        kind => (Expr { kind, span: test.span }, yes, no),
-    };
     // Where the test itself is the value, of what's not a `bool`, `!!c`, as
     // THIR writes it.
     let truth = |test: Expr| match is_boolean(&test, booleans) {
@@ -1451,7 +1431,32 @@ fn both(a: Expr, b: Expr) -> Expr {
         ExprKind::Binary(Op::And, first, _) => first,
         _ => &b,
     };
-    let says = |test: &Expr| match (&test.kind, &first.kind) {
+    // `a && b` of `a` an `&&` itself: each of its tests `b` says goes.
+    let mut tests: Vec<Expr> = Vec::new();
+    let mut flat = |e: Expr| tests.push(e);
+    fn spread(e: Expr, push: &mut dyn FnMut(Expr)) {
+        match e.kind {
+            ExprKind::Binary(Op::And, a, b) => {
+                spread(*a, push);
+                spread(*b, push);
+            }
+            _ => push(e),
+        }
+    }
+    spread(a, &mut flat);
+    tests.retain(|t| !implies(first, t));
+    tests
+        .into_iter()
+        .rev()
+        .fold(b, |rest, test| Expr::bin(Op::And, test, rest))
+}
+
+/// Whether `test` holds where `by` does: `x != null` where `x === "lit"`,
+/// `typeof x === "string"` there too, and where each side of `a || b` says
+/// it.
+fn implies(by: &Expr, test: &Expr) -> bool {
+    match (&test.kind, &by.kind) {
+        (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),
         (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, y, literal))
             if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
         {
@@ -1469,25 +1474,19 @@ fn both(a: Expr, b: Expr) -> Expr {
                 }
         }
         _ => false,
-    };
-    // `a && b` of `a` an `&&` itself: each of its tests `b` says goes.
-    let mut tests: Vec<Expr> = Vec::new();
-    let mut flat = |e: Expr| tests.push(e);
-    fn spread(e: Expr, push: &mut dyn FnMut(Expr)) {
-        match e.kind {
-            ExprKind::Binary(Op::And, a, b) => {
-                spread(*a, push);
-                spread(*b, push);
-            }
-            _ => push(e),
-        }
     }
-    spread(a, &mut flat);
-    tests.retain(|t| !says(t));
-    tests
-        .into_iter()
-        .rev()
-        .fold(b, |rest, test| Expr::bin(Op::And, test, rest))
+}
+
+/// Whether each test of the `else if` chain `stmt` says `guard`, and it has
+/// no last `else`: where `guard` fails, it does nothing.
+fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
+    match &stmt.kind {
+        StmtKind::If(test, _, otherwise) => {
+            implies(test, guard)
+                && (otherwise.as_deref()).is_none_or(|rest| matches!(rest, [next] if guarded_chain(next, guard)))
+        }
+        _ => false,
+    }
 }
 
 /// Whether `a` and `b` are the same variable, or the same property of one.
@@ -1822,6 +1821,106 @@ fn tail_jumps(stmts: &mut [Stmt]) {
             } => drop_tail(body, &StmtKind::Continue(Some(label.clone()))),
             _ => {}
         }
+    }
+}
+
+/// A labeled block's `if (c) { s; break l; } t`, `s` leaving for where
+/// `t` goes on to, its end: `if (c) { s } else { t }`, a `match`'s arms
+/// as a person writes them, the `break`s then ending the branches; and a
+/// block that ends it, one with it. Of `if (!a) { if (!b) { s; break l; }
+/// } t`, an or-pattern's, `if (a || b) { t } else { s }`.
+fn branch_ends(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        if let StmtKind::Labeled(label, body) = &mut stmt.kind {
+            ending(body, label);
+        }
+    }
+}
+
+/// `stmts`, which end where block `label` does, as `branch_ends` has them.
+fn ending(stmts: &mut Vec<Stmt>, label: &str) {
+    if let Some(Stmt {
+        kind: StmtKind::Labeled(inner, body),
+        ..
+    }) = stmts.last_mut()
+    {
+        let (inner, mut body) = (inner.clone(), std::mem::take(body));
+        js::statement_lists(&mut body, &mut |stmts| {
+            for stmt in stmts {
+                if matches!(&stmt.kind, StmtKind::Break(Some(l)) if *l == inner) {
+                    stmt.kind = StmtKind::Break(Some(label.to_string()));
+                }
+            }
+        });
+        stmts.pop();
+        stmts.extend(body);
+    }
+    // Not a `let … else`'s, `if (c) { s; break l; } throw e;`: a guard.
+    let exits = matches!(
+        stmts.last().map(|s| &s.kind),
+        Some(StmtKind::Return(_) | StmtKind::Throw(_))
+    );
+    let Some(at) = (stmts.iter())
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if leaves(&ands(then).1, label)))
+        .filter(|_| !exits)
+    else {
+        if let Some(StmtKind::If(_, then, otherwise)) = stmts.last_mut().map(|s| &mut s.kind) {
+            ending(then, label);
+            if let Some(otherwise) = otherwise {
+                ending(otherwise, label);
+            }
+        }
+        return;
+    };
+    let rest = stmts.split_off(at + 1);
+    let Some(Stmt {
+        kind: StmtKind::If(test, then, None),
+        span,
+    }) = stmts.pop()
+    else {
+        unreachable!("found")
+    };
+    let (tests, mut then) = ands(&then);
+    let mut rest = rest;
+    ending(&mut then, label);
+    ending(&mut rest, label);
+    let tests: Vec<Expr> = std::iter::once(test).chain(tests).collect();
+    let negated = tests.len() > 1
+        && tests
+            .iter()
+            .all(|t| matches!(t.kind, ExprKind::Unary(UnaryOp::Not, _) | ExprKind::Binary(Op::Ne, ..)));
+    let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
+    stmts.push(match (rest.is_empty(), negated) {
+        (true, _) => StmtKind::If(test, then, None).at(span),
+        (false, true) => StmtKind::If(not(test), rest, Some(then)).at(span),
+        (false, false) => StmtKind::If(test, then, Some(rest)).at(span),
+    });
+}
+
+/// Of `if (b) { if (c) { s } }`, the body of an `if`: its tests, `[b, c]`,
+/// and `s`; of others, none and themselves.
+fn ands(stmts: &[Stmt]) -> (Vec<Expr>, Vec<Stmt>) {
+    match stmts {
+        [
+            Stmt {
+                kind: StmtKind::If(test, inner, None),
+                ..
+            },
+        ] => {
+            let (mut tests, body) = ands(inner);
+            tests.insert(0, test.clone());
+            (tests, body)
+        }
+        _ => (Vec::new(), stmts.to_vec()),
+    }
+}
+
+/// Whether `stmts` always end with a `break label`.
+fn leaves(stmts: &[Stmt], label: &str) -> bool {
+    match stmts.last().map(|s| &s.kind) {
+        Some(StmtKind::Break(Some(l))) => l == label,
+        Some(StmtKind::If(_, then, Some(otherwise))) => leaves(then, label) && leaves(otherwise, label),
+        _ => false,
     }
 }
 

@@ -5594,6 +5594,12 @@ pub fn opt(o: Option<u32>) -> u32 {
         None => 0,
     }
 }
+pub fn early(g: bool, x: u32) -> bool {
+    if !g {
+        return false;
+    }
+    x > 1
+}
 pub fn any(a: bool, b: bool) -> bool {
     a || b
 }
@@ -5652,6 +5658,8 @@ pub fn colors(message: &str) -> &'static str {
   return "gray";
 }`);
     expect(js).toContain("  return a || b;\n");
+    // A `return` the program wrote stays where it wrote it.
+    expect(js).toContain("export function early(g, x) {\n  if (!g) {\n    return false;\n  }\n  return x > 1;\n}");
     // An arm a macro begins is in its place too.
     expect(js).toContain("export function shown(o) {\n  if (o != null) {\n");
     // A `bool` of what's not one, `!!o`, as THIR has it.
@@ -5692,5 +5700,76 @@ pub fn either(active: bool) -> u32 {
   }
   return 2;
 }`);
+  }
+});
+
+test("a `match` of an `Option`'s strings from MIR is the `else if` chain THIR writes", async () => {
+  const dir = fixture("mir-option-string-match");
+  writeFileSync(join(dir, "lib.rs"), `pub fn flagged(flag: Option<&str>, mut arg: String) -> String {
+    match flag {
+        Some("s") => arg += "",
+        Some("d") | Some("i") => arg = arg.trim().to_string(),
+        Some("f") => arg = arg.to_uppercase(),
+        _ => {}
+    }
+    arg
+}
+pub fn named(flag: Option<&str>, v: &mut Vec<u32>) {
+    match flag {
+        Some("s") => v.push(1),
+        Some("d") => v.push(2),
+        _ => v.push(3),
+    }
+}
+pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
+    if flag.is_some() {
+        if flag == Some("s") {
+            v.push(1);
+        } else {
+            v.push(2);
+        }
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function flagged(flag, arg) {
+  if (flag === "s") {
+    arg += "";
+  } else if (flag === "d" || flag === "i") {
+    arg = $trim(arg);
+  } else if (flag === "f") {
+    arg = arg.toUpperCase();
+  }
+  return arg;
+}`);
+    expect(js).toContain(`export function named(flag, v) {
+  if (flag === "s") {
+    v.push(1);
+  } else if (flag === "d") {
+    v.push(2);
+  } else {
+    v.push(3);
+  }
+}`);
+    expect(js).toContain(`export function nested(flag, v) {
+  if (flag != null) {
+    if (flag === "s") {
+      v.push(1);
+    } else {
+      v.push(2);
+    }
+  }
+}`);
+    const lib = await import(join(dir, out));
+    expect([lib.flagged("d", " x "), lib.flagged("f", "x"), lib.flagged(undefined, "y"), lib.flagged("q", "z")]).toEqual(["x", "X", "y", "z"]);
+    // A guard its chain's last `else` doesn't say stays.
+    const pushed: number[] = [];
+    lib.nested(undefined, pushed);
+    lib.nested("q", pushed);
+    lib.named(undefined, pushed);
+    lib.named("d", pushed);
+    expect(pushed).toEqual([2, 3, 2]);
   }
 });

@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            let mut out = vec![StmtKind::If(negate(test), otherwise, None).at(span)];\n",
     replace: "            let mut out = vec![StmtKind::If(test, otherwise, None).at(span)];\n",
-    tests: ["test/mir.test.ts","-t","question_early_returns"],
+    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
   },
   {
     name: "mir-push-str-lost",
