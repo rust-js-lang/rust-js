@@ -330,4 +330,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
+  {
+    name: "mir-tidy-temporary-ternary-kept",
+    breaks: "an `if` the program wrote as a value, of an element, stays a `let` assigned in branches, not a conditional child",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    && ((small(yes) && small(no)) || is_temporary(x)) =>\n",
+    replace: "                    && small(yes) && small(no) =>\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
+  {
+    name: "mir-tidy-double-negation-kept",
+    breaks: "`!!c ? a : b` is written `!c ? b : a`, negated",
+    file: "src/lower/mir/tidy.rs",
+    find: "        test = (**c).clone();\n",
+    replace: "        break;\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];

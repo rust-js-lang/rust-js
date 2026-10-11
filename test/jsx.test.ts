@@ -250,6 +250,34 @@ pub fn List(items: Vec<&'static str>) -> JSX::Element {
   expect(renderToStaticMarkup(result.List(["a", "b"]))).toBe("<ul><li>a</li><li>b</li></ul>");
 });
 
+// An \`if\` given as a child, of an element or a value, is a conditional
+// child, \`{link ? <a /> : author}\`, from MIR too (ADR 0364), its test as
+// it's written.
+test("an if given as a child is a conditional child", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+pub fn Credit(author: &'static str, author_link: &'static str) -> JSX::Element {
+    jsx! {
+        <cite>
+            {"Illustrated by "}
+            {if !author_link.is_empty() {
+                Box::new(jsx! { <a href={author_link}>{author}</a> }) as Box<dyn ReactNode>
+            } else {
+                Box::new(author)
+            }}
+        </cite>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain("{authorLink ? <a href={authorLink}>{author}</a> : author}");
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Credit("R", "x"))).toBe('<cite>Illustrated by <a href="x">R</a></cite>');
+  expect(renderToStaticMarkup(result.Credit("R", ""))).toBe("<cite>Illustrated by R</cite>");
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;

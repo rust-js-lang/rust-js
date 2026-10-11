@@ -82,3 +82,4 @@ direct element builder ordinary macro is rejected without replacing output
 flattened props given in part are the attributes given
 props of an Fn type parameter are destructured
 a list of children a chain collects is an array's map
+an if given as a child is a conditional child

@@ -789,8 +789,8 @@ fn branch_values(stmts: &mut Vec<Stmt>) {
                     && let Some((y, no)) = assigned_only(otherwise)
                     && x == y
                     // Not one of more branches, which reads best as they are.
-                    && small(yes)
-                    && small(no) =>
+                    // A temporary's, an `if` the program wrote as a value, is one.
+                    && ((small(yes) && small(no)) || is_temporary(x)) =>
             {
                 StmtKind::Assign(Expr::var(x), conditional(test, yes.clone(), no.clone()))
             }
@@ -1037,7 +1037,13 @@ fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr)>
 
 /// `test ? yes : no`, of a `bool` test `test && yes` where `no` is
 /// `false`, and `test || no` where `yes` is `true`.
-fn conditional(test: Expr, yes: Expr, no: Expr) -> Expr {
+fn conditional(mut test: Expr, yes: Expr, no: Expr) -> Expr {
+    // A test is read for its truth alone: `!!c`'s is `c`'s.
+    while let ExprKind::Unary(UnaryOp::Not, inner) = &test.kind
+        && let ExprKind::Unary(UnaryOp::Not, c) = &inner.kind
+    {
+        test = (**c).clone();
+    }
     // `!c ? a : b` is `c ? b : a`.
     let (test, yes, no) = match test.kind {
         ExprKind::Unary(UnaryOp::Not, inner)
