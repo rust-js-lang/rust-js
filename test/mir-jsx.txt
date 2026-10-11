@@ -96,3 +96,5 @@ a let pattern of a struct through a reference takes it apart
 a let pattern's flattened field is the rest of what it takes apart
 a prop held for a borrow is read where it's written, past a plain value's field
 a prop held for a borrow is read where it's written, past an imported tag
+a flattened rest updated ahead of a branch is spread once
+a spread of an object of spreads alone is those spreads

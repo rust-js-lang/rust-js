@@ -27,6 +27,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Prop::Field(name, value) | Prop::Getter(name, value) => {
                             self.capture_jsx_input(&js_ident(name), value, out)
                         }
+                        Prop::Spread(value) if self.spreads_alike(value, out) => {}
                         Prop::Spread(value) => {
                             // JSX spreads read properties now, not when the
                             // later element is built. Preserve getters too.
@@ -104,6 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
                 Prop::Getter(..) => unreachable!("none"),
+                Prop::Spread(value) if self.spreads_alike(value, out) => {}
                 Prop::Spread(value) => {
                     // A spread reads its properties now.
                     let old = std::mem::replace(value, Expr::undefined());
@@ -112,6 +114,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         true
+    }
+
+    /// Whether a spread of `value` reads the same properties wherever it's
+    /// read: of a props pattern's rest, or a plain Rust value, whose fields
+    /// don't change while it doesn't.
+    fn spreads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
+        matches!(&value.kind, js::ExprKind::Var(name) if self.plain_value(name) || self.locals.rests.contains_key(name))
+            && self.reads_alike(value, out)
     }
 
     /// Whether `value` reads the same wherever it's read: a constant, a

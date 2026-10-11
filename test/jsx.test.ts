@@ -4794,3 +4794,118 @@ pub fn Page(home: bool, title: &'static str, path: String) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page(false, "T", "a/b"))).toBe('<div><span title="T">/og/a-b.png</span></div>');
 });
+
+// ADR 0364: a struct update of a flattened props rest, `..props.html` and
+// `..props`, made ahead of a branch, spreads the rest once, as THIR: a
+// rest nothing changes reads its properties alike later, so it isn't copied,
+// `{...{ ...props }}`, as react.dev's Link gives ExternalLink its props.
+test("a flattened rest updated ahead of a branch is spread once", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::{AnchorHTMLAttributes, HTMLAttributes};
+use react::{JSX, ReactNode, jsx};
+pub struct ExternalLinkProps<'a, C: ReactNode> {
+    pub href: Option<&'a str>,
+    pub children: C,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: AnchorHTMLAttributes<'a>,
+}
+pub fn ExternalLink<C: ReactNode>(ExternalLinkProps { href, children, props }: ExternalLinkProps<C>) -> JSX::Element {
+    jsx! { <a href={href} {...props}>{children}</a> }
+}
+pub struct OtherProps<'a> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub anchor: AnchorHTMLAttributes<'a>,
+}
+pub fn Other(OtherProps { anchor }: OtherProps) -> JSX::Element {
+    jsx! { <a {...anchor} /> }
+}
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub struct LinkProps<'a> {
+    pub href: Option<&'a str>,
+    pub class_name: Option<&'a str>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: AnchorHTMLAttributes<'a>,
+}
+pub fn Link(LinkProps { href, class_name, props }: LinkProps) -> JSX::Element {
+    let Some(href) = href.filter(|href| !href.is_empty()) else {
+        return jsx! { <a className={class_name} {...props} /> };
+    };
+    jsx! {
+        <>
+        {if href.starts_with("https://") {
+            jsx! {
+                <ExternalLink
+                    href={Some(href)}
+                    props={AnchorHTMLAttributes {
+                        html: HTMLAttributes {
+                            class_name: Some(cn(&[Some("a"), class_name]).as_str()),
+                            ..props.html
+                        },
+                        ..props
+                    }}>
+                    {"x"}
+                </ExternalLink>
+            }
+        } else {
+            jsx! { <Other anchor={props} /> }
+        }}
+        </>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<ExternalLink href={href} {...props} className={cn([\"a\", className])}>");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Link({ href: "https://x", class_name: "b", title: "t" }))).toBe("<a href=\"https://x\" title=\"t\" class=\"a b\">x</a>");
+});
+
+// ADR 0364: what MIR copies of a dictionary that changes, spread into an
+// object it makes ahead of a later read, `{ ...{ ...extra } }`, is spread
+// itself, `{ ...base, ...extra }`: an object of spreads alone gives what they
+// give, as react.dev's SandpackRoot gives Sandpack its files.
+test("a spread of an object of spreads alone is those spreads", async () => {
+  const made = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct Base {
+    pub a: Option<u32>,
+}
+pub struct Over<'x> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub base: &'x Base,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub extra: &'x js::Dict<u32>,
+}
+unsafe impl js::Defined for Over<'_> {}
+pub struct ShownProps<'x> {
+    pub over: Option<Over<'x>>,
+    pub count: usize,
+}
+pub fn Shown(ShownProps { over, count }: ShownProps) -> JSX::Element {
+    let keys = ["a", "b", "z"].iter().filter(|k| over.as_ref().is_some_and(|o| js::has(js::unknown(o), **k))).count();
+    jsx! { <b>{format!("{keys} {count}")}</b> }
+}
+fn made(given: &'static js::Dict<u32>) -> &'static js::Dict<u32> {
+    given
+}
+fn counted(extra: &js::Dict<u32>) -> usize {
+    js::dict::keys(extra).len()
+}
+pub fn App(base: &'static Base, given: &'static js::Dict<u32>) -> JSX::Element {
+    let extra = made(given);
+    js::dict::set(extra, "z", 3);
+    let outer = |base: &'static Base| {
+        let shown = |n: usize| jsx! { <div><Shown over={Some(Over { base, extra })} count={n + counted(extra)} /></div> };
+        shown(1)
+    };
+    outer(base)
+}
+`);
+  run([...made.args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
+  const jsx = readFileSync(join(made.dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<Shown over={{ ...base, ...extra }}");
+  const { App } = await import(join(made.dir, "lib.jsx"));
+  expect(renderToStaticMarkup(App({ a: 1 }, { b: 2 }))).toBe("<div><b>3 3</b></div>");
+});

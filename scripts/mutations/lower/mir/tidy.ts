@@ -1162,4 +1162,16 @@ export const mutations: Mutation[] = [
       "only passes its arguments on"
     ]
   },
+  {
+    "name": "mir-tidy-spread-spreads-kept",
+    "breaks": "a copy MIR made of a dictionary spread stays `{ ...base, ...{ ...extra } }`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::each_expr_mut(body, &mut spread_spreads);\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

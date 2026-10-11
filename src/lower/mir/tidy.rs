@@ -166,6 +166,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Of each, a callback that passes what it's given on to Rust's function,
     // `(x, i) => f(x, i)`: `f` itself, as THIR's.
     js::each_expr_mut(body, &mut |e| passed_on(e, forwarding));
+    // A copy made of what's spread, read in place, `{ ...a, ...{ ...b } }`:
+    // what it's a copy of.
+    js::each_expr_mut(body, &mut spread_spreads);
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
     // { .. } }`, `if (a && f(a))`.
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
@@ -2319,6 +2322,26 @@ fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
     {
         *f = g;
     }
+}
+
+/// `{ ...a, ...{ ...b } }` or `<X {...{ ...b }} />`, a spread of an object of
+/// spreads alone: those spreads, `{ ...a, ...b }`, which give what it gives,
+/// each read where it was.
+fn spread_spreads(e: &mut Expr) {
+    let props = match &mut e.kind {
+        ExprKind::Object(props) => props,
+        ExprKind::Jsx(jsx) => &mut jsx.props,
+        _ => return,
+    };
+    *props = (std::mem::take(props).into_iter())
+        .flat_map(|prop| match prop {
+            js::Prop::Spread(Expr {
+                kind: ExprKind::Object(inner),
+                ..
+            }) if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))) => inner,
+            prop => vec![prop],
+        })
+        .collect();
 }
 
 /// `const a = e; .. const b = a;`, where nothing else reads `a`, is `const
