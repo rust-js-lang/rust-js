@@ -270,21 +270,47 @@ fn try_catches(body: &mut Vec<Stmt>) {
     }
     let mut i = 0;
     while i + 1 < body.len() {
-        if let Some(caught) = try_catch(&body[i], &body[i + 1], &body[i + 2..]) {
+        // Past what's declared for it to set, `let text;`, as MIR's lowering
+        // declares a variable where the program does.
+        let declared = (body[i + 1..].iter())
+            .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))
+            .count();
+        let at = i + 1 + declared;
+        if at < body.len()
+            && let Some((caught, taken)) = try_catch(&body[i], &body[at], &body[at + 1..])
+        {
             let span = body[i].span;
-            body.splice(i..i + 2, [caught.at(span)]);
+            body.splice(at..i + taken + declared, [caught.at(span)]);
+            body.remove(i);
         }
         i += 1;
     }
 }
 
-fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<StmtKind> {
+/// The `try` of what `made` and `tested`, and the statements of `rest` it
+/// takes, say, with how many statements it is.
+fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<(StmtKind, usize)> {
     let StmtKind::Const(result, value) = &made.kind else {
         return None;
     };
     let call = tried(value)?;
-    let StmtKind::If(test, kept, Some(failed)) = &tested.kind else {
+    let StmtKind::If(test, kept, failed) = &tested.kind else {
         return None;
+    };
+    // An `if` that returns, then the one return of the `Err`, ending the
+    // block: the two arms of a `match`, as MIR's lowering leaves them.
+    let (failed, rest, taken) = match (failed, rest) {
+        (Some(failed), _) => (failed.as_slice(), rest, 2),
+        (
+            None,
+            [
+                last @ Stmt {
+                    kind: StmtKind::Return(_),
+                    ..
+                },
+            ],
+        ) => (std::slice::from_ref(last), &[][..], 3),
+        _ => return None,
     };
     let ExprKind::Binary(js::Op::Eq, tag, ok) = &test.kind else {
         return None;
@@ -300,18 +326,37 @@ fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<StmtKind> {
     {
         return None;
     }
-    // The `Ok`'s value kept, as it is: nothing else, which could throw.
-    let [Stmt { kind: kept, span }] = kept.as_slice() else {
-        return None;
+    // The `Ok`'s value kept, as it is: nothing else, which could throw. Its
+    // binding, `const text = result._0;`, read only by that, is the value.
+    let held;
+    let (kept, span) = match kept.as_slice() {
+        [Stmt { kind, span }] => (kind, span),
+        [
+            Stmt {
+                kind: StmtKind::Const(name, value),
+                ..
+            },
+            Stmt { kind, span },
+        ] if of_result(value, "_0") => {
+            let read = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+            held = match kind {
+                StmtKind::Return(Some(e)) if read(e) => StmtKind::Return(Some(value.clone())),
+                StmtKind::Assign(to, e) if read(e) => StmtKind::Assign(to.clone(), value.clone()),
+                _ => return None,
+            };
+            (&held, span)
+        }
+        _ => return None,
     };
     let body = match kept {
         StmtKind::Return(Some(e)) if of_result(e, "_0") => StmtKind::Return(Some(call.clone())),
-        StmtKind::Assign(to, e) if of_result(e, "_0") && matches!(to.kind, ExprKind::Var(_)) => {
+        // Past an `if` with no `else`, only one that returns.
+        StmtKind::Assign(to, e) if of_result(e, "_0") && matches!(to.kind, ExprKind::Var(_)) && taken == 2 => {
             StmtKind::Assign(to.clone(), call.clone())
         }
         _ => return None,
     };
-    Some(StmtKind::TryCatch(vec![body.at(*span)], None, failed.clone()))
+    Some((StmtKind::TryCatch(vec![body.at(*span)], None, failed.to_vec()), taken))
 }
 
 /// The call `$try(() => call)` tries, of a JS call whose throw is an `Err`

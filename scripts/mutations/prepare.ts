@@ -315,4 +315,36 @@ export const mutations: Mutation[] = [
       "ignored result of a call"
     ]
   },
+  {
+    name: "try-past-declared-blocked",
+    breaks: "a `match` whose value a `let` declared ahead takes, in MIR, is `$try` and its `TAG`, not JS's `try`",
+    file: "src/prepare.rs",
+    find: "            .take_while(|s| matches!(s.kind, StmtKind::Let(_, None)))\n",
+    replace: "            .take_while(|_| false)\n",
+    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+  },
+  {
+    name: "try-of-trailing-return-blocked",
+    breaks: "a `match` of two returns, the `Err`'s past the `if` in MIR, is `$try` and its `TAG`, not JS's `try`",
+    file: "src/prepare.rs",
+    find: "        ) => (std::slice::from_ref(last), &[][..], 3),\n",
+    replace: "        ) if false => (std::slice::from_ref(last), &[][..], 3),\n",
+    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+  },
+  {
+    name: "try-assign-past-unended-if",
+    breaks: "an `if let Ok` that sets, then returns what's set, is a `try` whose `catch` alone returns: undefined where it's `Ok`",
+    file: "src/prepare.rs",
+    find: " && taken == 2 => {\n",
+    replace: " => {\n",
+    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+  },
+  {
+    name: "try-binding-read-otherwise",
+    breaks: "an `Ok`'s binding read in a `format!` is the call's value returned, `\"!\"` dropped",
+    file: "src/prepare.rs",
+    find: "                StmtKind::Return(Some(e)) if read(e) => StmtKind::Return(Some(value.clone())),\n",
+    replace: "                StmtKind::Return(Some(_)) => StmtKind::Return(Some(value.clone())),\n",
+    tests: ["test/bindings.test.ts","-t","node's modules are imported"],
+  },
 ];

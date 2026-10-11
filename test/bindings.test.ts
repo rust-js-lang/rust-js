@@ -706,21 +706,39 @@ pub fn twice(path: &str) -> String {
     };
     format!("{text}{text}")
 }
+
+pub fn read_or(path: &str, mut other: String) -> String {
+    if let Ok(text) = fs::read_file_sync(path, BufferEncoding::Utf8) {
+        other = text;
+    }
+    other
+}
+
+pub fn shouted(path: &str) -> String {
+    match fs::read_file_sync(path, BufferEncoding::Utf8) {
+        Ok(text) => format!("{text}!"),
+        Err(_) => "missing".to_string(),
+    }
+}
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('import { readFileSync } from "fs";');
-  // A `match` of what it threw is JS's `try`, as the page has it (ADR 0035).
-  expect(js).toContain('export function read(path) {\n  try {\n    return readFileSync(path, "utf8");\n  } catch {\n    return "missing";\n  }\n}');
-  expect(js).toContain("return process.cwd();");
-  // One whose value is a variable's too, as react.dev's errors page reads
-  // its `.md` or the generic one, not a conditional of `$try` (ADR 0309).
-  expect(js).toContain('  let text;\n  try {\n    text = readFileSync(path, "utf8");\n  } catch {\n    text = "missing";\n  }');
-  writeFileSync(join(dir, "note.md"), "# Note");
-  const { read, here } = await import(join(dir, "lib.js"));
-  expect([read(join(dir, "note.md")), read(join(dir, "none.md")), here()]).toEqual(["# Note", "missing", process.cwd()]);
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.twice(join(dir, "note.md")), lib.twice(join(dir, "none.md"))]).toEqual(["# Note# Note", "missingmissing"]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('import { readFileSync } from "fs";');
+    // A `match` of what it threw is JS's `try`, as the page has it (ADR 0035).
+    expect(js).toContain('export function read(path) {\n  try {\n    return readFileSync(path, "utf8");\n  } catch {\n    return "missing";\n  }\n}');
+    expect(js).toContain("return process.cwd();");
+    // One whose value is a variable's too, as react.dev's errors page reads
+    // its `.md` or the generic one, not a conditional of `$try` (ADR 0309).
+    expect(js).toContain('  let text;\n  try {\n    text = readFileSync(path, "utf8");\n  } catch {\n    text = "missing";\n  }');
+    writeFileSync(join(dir, "note.md"), "# Note");
+    const { read, here } = await import(join(dir, out));
+    expect([read(join(dir, "note.md")), read(join(dir, "none.md")), here()]).toEqual(["# Note", "missing", process.cwd()]);
+    const lib = await import(join(dir, out));
+    expect([lib.twice(join(dir, "note.md")), lib.twice(join(dir, "none.md"))]).toEqual(["# Note# Note", "missingmissing"]);
+    expect([lib.read_or(join(dir, "note.md"), "x"), lib.read_or(join(dir, "none.md"), "x")]).toEqual(["# Note", "x"]);
+    expect([lib.shouted(join(dir, "note.md")), lib.shouted(join(dir, "none.md"))]).toEqual(["# Note!", "missing"]);
+  }
 });
 
 // ADR 0272: `path`, each of @types/node's: its functions, its constants,
