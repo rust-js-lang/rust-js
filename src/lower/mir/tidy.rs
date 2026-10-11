@@ -2825,6 +2825,7 @@ fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>) {
 /// function's value its branches make: returned where each is made, `if (c)
 /// { s; return a; } return b;`, at the `return`s the program wrote.
 fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
+    returned_from_block(stmts, result);
     let [.., last_if, last] = stmts.as_slice() else {
         return;
     };
@@ -2853,6 +2854,86 @@ fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
         }
         kind => stmts.push(Stmt { kind, span: made.span }),
     }
+}
+
+/// `l: { .. result = a; break l; .. result = b; } return result;`, a
+/// function's returns MIR jumps out of a block for, a loop's too: each a
+/// `return` where it's written, `return a;`, and the block's statements.
+fn returned_from_block(stmts: &mut Vec<Stmt>, result: &str) {
+    let [.., block, last] = stmts.as_slice() else {
+        return;
+    };
+    let StmtKind::Labeled(label, body) = &block.kind else {
+        return;
+    };
+    if !matches!(&last.kind, StmtKind::Return(Some(v)) if matches!(&v.kind, ExprKind::Var(r) if r == result)) {
+        return;
+    }
+    let label = label.clone();
+    let mut body = body.clone();
+    js::statement_lists(&mut body, &mut |list| {
+        let mut i = 0;
+        while i + 1 < list.len() {
+            if let StmtKind::Assign(target, value) = &list[i].kind
+                && matches!(&target.kind, ExprKind::Var(r) if r == result)
+                && matches!(&list[i + 1].kind, StmtKind::Break(Some(l)) if *l == label)
+            {
+                let value = value.clone();
+                let span = list[i].span;
+                list.splice(i..=i + 1, [StmtKind::Return(Some(value)).at(span)]);
+            }
+            i += 1;
+        }
+    });
+    if !made_at_ends(&body, result) {
+        return;
+    }
+    returned_at_ends(&mut body);
+    let mut jumps = false;
+    js::statement_lists(&mut body, &mut |list| jumps |= targets(list, &label));
+    if jumps || js::mentions_in(&body, result) > 0 || js::mentions_in(&stmts[..stmts.len() - 2], result) > 0 {
+        return;
+    }
+    stmts.truncate(stmts.len() - 2);
+    stmts.extend(body);
+    // `if (c) { s; return a; } else { return b; }` of a `return b` written
+    // before `s`, a `let .. else`'s: `if (!c) { return b; } s; return a;`,
+    // as the program wrote it.
+    js::statement_lists(stmts, &mut |list| {
+        for stmt in list.iter_mut() {
+            if let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind
+                && let [
+                    Stmt {
+                        kind: StmtKind::Return(_),
+                        span,
+                    },
+                ] = otherwise.as_slice()
+                && then.last().is_some_and(ends)
+                && !span.is_none()
+                && first_written(then).is_some_and(|first| span.lo < first)
+            {
+                let StmtKind::If(test, then, Some(otherwise)) =
+                    std::mem::replace(&mut stmt.kind, StmtKind::Break(None))
+                else {
+                    unreachable!("matched")
+                };
+                stmt.kind = StmtKind::If(not(test), otherwise, Some(then));
+            }
+        }
+    });
+}
+
+/// Where the first of `stmts` that says is written, inside a loop's too.
+fn first_written(stmts: &[Stmt]) -> Option<u32> {
+    stmts.iter().find_map(|stmt| match &stmt.kind {
+        _ if !stmt.span.is_none() => Some(stmt.span.lo),
+        StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::While { body, .. }
+        | StmtKind::Labeled(_, body) => first_written(body),
+        StmtKind::If(_, then, _) => first_written(then),
+        _ => None,
+    })
 }
 
 /// Whether `stmts` end assigning `result`, or leaving, each branch of an

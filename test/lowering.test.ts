@@ -7126,3 +7126,39 @@ test("flattened options collected from MIR are the array's filter", async () => 
     expect(lib.cn(["a", undefined, "b"])).toBe("a b");
   }
 });
+
+// Returns the program wrote, which MIR's lowering makes assignments of the
+// result and jumps out of a block to its one `return`, from a loop's too:
+// each a `return` where it's written, as react.dev's getRouteMeta finds a
+// route's breadcrumbs.
+test("written returns MIR jumps out of a block for are returns where they're written", async () => {
+  const dir = fixture("block-returns");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Route {
+    pub path: Option<String>,
+    pub routes: Option<Vec<Route>>,
+}
+pub fn crumbs<'a>(path: &str, current: &'a Route, crumbs_so_far: Vec<&'a Route>) -> Vec<&'a Route> {
+    if current.path.as_deref() == Some(path) {
+        return crumbs_so_far;
+    }
+    let Some(routes) = &current.routes else {
+        return Vec::new();
+    };
+    for route in routes {
+        let child = crumbs(path, route, [crumbs_so_far.as_slice(), &[current]].concat());
+        if !child.is_empty() {
+            return child;
+        }
+    }
+    Vec::new()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    if (child.length !== 0) {\n      return child;\n    }\n  }\n  return [];\n}");
+    const lib = await import(join(dir, out));
+    const tree = { path: "/", routes: [{ path: "/a", routes: [{ path: "/a/b" }] }] };
+    expect([lib.crumbs("/a/b", tree, []).map((r: { path: string }) => r.path), lib.crumbs("/x", tree, [])]).toEqual([["/", "/a"], []]);
+  }
+});

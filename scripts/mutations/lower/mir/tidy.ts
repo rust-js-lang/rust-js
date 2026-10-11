@@ -1066,4 +1066,28 @@ export const mutations: Mutation[] = [
       "a cell field a let pattern binds"
     ]
   },
+  {
+    "name": "block-returns-kept",
+    "breaks": "returns MIR jumps out of a block for stay `result = x; break l;` and one `return result;`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    returned_from_block(stmts, result);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "written returns MIR jumps out of a block"
+    ]
+  },
+  {
+    "name": "let-else-return-not-guard",
+    "breaks": "a `let .. else`'s return stays the `else` of a block, not a guard first",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                stmt.kind = StmtKind::If(not(test), otherwise, Some(then));\n",
+    "replace": "                stmt.kind = StmtKind::If(test, then, Some(otherwise));\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "written returns MIR jumps out of a block"
+    ]
+  },
 ];
