@@ -4658,3 +4658,27 @@ pub fn Lines(file: &'static str, code: &'static str) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(() => lib.Lines("a", "x\ny")))).toBe("<b>2</b>");
 });
+
+// A `let` pattern of a struct through a reference, `use_context`'s, takes
+// it apart where it's made, from MIR as from THIR, as react.dev's
+// IllustrationBlock reads `{ isInBlock }` of its context.
+test("a let pattern of a struct through a reference takes it apart", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Context, JSX, create_context, jsx, use_context};
+pub struct Value {
+    pub is_in_block: bool,
+}
+thread_local! {
+    pub static Ctx: Context<&'static Value> = create_context(&Value { is_in_block: false });
+}
+pub fn Block() -> JSX::Element {
+    let Value { is_in_block } = use_context(&Ctx);
+    jsx! { <b>{(!is_in_block).then(|| "x")}</b> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("  const { is_in_block: isInBlock } = useContext(Ctx);\n");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.Block))).toBe("<b>x</b>");
+});

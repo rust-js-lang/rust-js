@@ -1422,4 +1422,40 @@ export const mutations: Mutation[] = [
       "a format string written across lines keeps its lines"
     ]
   },
+  {
+    "name": "let-pattern-deref-unpeeled",
+    "breaks": "a `let` pattern through a reference isn't taken apart where it's made",
+    "file": "src/lower/mir.rs",
+    "find": "            while let thir::PatKind::Deref { subpattern, .. } = &pattern.kind {\n                pattern = subpattern;\n            }\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "let-pattern-ref-binding-unseen",
+    "breaks": "a `let` pattern's binding by reference, `&(*_2).0`, isn't one it takes apart",
+    "file": "src/lower/mir.rs",
+    "find": "                    | Rvalue::Ref(_, BorrowKind::Shared, from),\n",
+    "replace": ",\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "let-pattern-through-deref-unseen",
+    "breaks": "a `let` pattern's field read through a reference, `(*_2).0`, isn't one it takes apart",
+    "file": "src/lower/mir.rs",
+    "find": "                && derefs.iter().all(|p| matches!(p, PlaceElem::Deref))\n",
+    "replace": "                && derefs.is_empty()\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

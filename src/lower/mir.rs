@@ -748,9 +748,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn mir_patterned(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
         let mut spans = Vec::new();
         for stmt in self.thir.stmts.iter() {
-            if let thir::StmtKind::Let { pattern, .. } = &stmt.kind
-                && let thir::PatKind::Leaf { subpatterns } = &pattern.kind
-            {
+            // Through a reference too, `let S { a } = use_context(..)`'s.
+            let thir::StmtKind::Let { pattern, .. } = &stmt.kind else {
+                continue;
+            };
+            let mut pattern = &**pattern;
+            while let thir::PatKind::Deref { subpattern, .. } = &pattern.kind {
+                pattern = subpattern;
+            }
+            if let thir::PatKind::Leaf { subpatterns } = &pattern.kind {
                 for field in subpatterns {
                     if let thir::PatKind::Binding { subpattern: None, .. } = field.pattern.kind {
                         spans.push(field.pattern.span);
@@ -770,10 +776,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect();
         let mut patterned = std::collections::HashSet::new();
         for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
+            // Bound by value or, through a reference, by one: `&(*_2).0`.
             if let StatementKind::Assign(assign) = &statement.kind
-                && let (to, Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)) = &**assign
+                && let (
+                    to,
+                    Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)
+                    | Rvalue::Ref(_, BorrowKind::Shared, from),
+                ) = &**assign
                 && to.as_local().is_some_and(|l| bound.contains(&l))
-                && let [PlaceElem::Field(..)] = from.projection.as_slice()
+                && let [derefs @ .., PlaceElem::Field(..)] = from.projection.as_slice()
+                && derefs.iter().all(|p| matches!(p, PlaceElem::Deref))
                 && body.local_kind(from.local) == LocalKind::Temp
             {
                 patterned.insert(from.local);
