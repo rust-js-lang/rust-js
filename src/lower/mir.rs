@@ -647,7 +647,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 callbacks: &callbacks,
                 tables: &tables,
                 patterns: &(self.let_pattern_bindings(mir_body).into_iter())
-                    .map(|l| state.locals.names[l].clone())
+                    .map(|(l, rest)| (state.locals.names[l].clone(), rest))
                     .collect(),
                 payloads: &(state.payloads.iter())
                     .map(|&l| state.locals.names[l].clone())
@@ -747,8 +747,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The locals a `let`'s struct pattern binds its fields to, through a
-    /// reference too, `let S { a } = use_context(..)`'s.
-    fn let_pattern_bindings(&self, body: &mir::Body<'tcx>) -> Vec<Local> {
+    /// reference too, `let S { a } = use_context(..)`'s; each whether it's
+    /// the rest, a `Rest` or a flattened struct's (ADR 0195, 0204).
+    fn let_pattern_bindings(&self, body: &mir::Body<'tcx>) -> Vec<(Local, bool)> {
         let mut spans = Vec::new();
         for stmt in self.thir.stmts.iter() {
             let thir::StmtKind::Let { pattern, .. } = &stmt.kind else {
@@ -761,18 +762,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let thir::PatKind::Leaf { subpatterns } = &pattern.kind {
                 for field in subpatterns {
                     if let thir::PatKind::Binding { subpattern: None, .. } = field.pattern.kind {
-                        spans.push(field.pattern.span);
+                        let rest = bindings::is_rest_field(self.tcx, pattern.ty, field.field.as_usize());
+                        spans.push((field.pattern.span, rest));
                     }
                 }
             }
         }
         (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
-                mir::VarDebugInfoContents::Place(place)
-                    if place.projection.is_empty() && spans.contains(&info.source_info.span) =>
-                {
-                    Some(place.local)
-                }
+                mir::VarDebugInfoContents::Place(place) if place.projection.is_empty() => (spans.iter())
+                    .find(|(span, _)| *span == info.source_info.span)
+                    .map(|&(_, rest)| (place.local, rest)),
                 _ => None,
             })
             .collect()
@@ -781,7 +781,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The temporaries a `let`'s struct or tuple pattern takes apart: what
     /// its bindings, of its fields, are read from.
     fn mir_patterned(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
-        let bound = self.let_pattern_bindings(body);
+        let bound: Vec<Local> = self.let_pattern_bindings(body).into_iter().map(|(l, _)| l).collect();
         let mut patterned = std::collections::HashSet::new();
         for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
             // Bound by value or, through a reference, by one: `&(*_2).0`.

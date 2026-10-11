@@ -93,3 +93,4 @@ a hook's closure a let names is a named function where it's given
 a child shown where a test holds is test && child
 a ref's object set by its key is read where it's set
 a let pattern of a struct through a reference takes it apart
+a let pattern's flattened field is the rest of what it takes apart

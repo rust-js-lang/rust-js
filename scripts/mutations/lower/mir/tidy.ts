@@ -1038,4 +1038,16 @@ export const mutations: Mutation[] = [
       "an async fn's parameter pattern from MIR"
     ]
   },
+  {
+    "name": "pattern-rest-whole",
+    "breaks": "a `let` pattern's flattened field is the whole value, `const rest = props;`, its `alt` among it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "patterns.get(rest) == Some(&true)",
+    "replace": "patterns.get(rest) == Some(&false) && false",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

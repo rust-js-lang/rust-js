@@ -29,8 +29,8 @@ pub(super) struct Hints<'h> {
     pub(super) callbacks: &'h HashSet<String>,
     /// Where each `match` that reads a table by its key is (ADR 0233).
     pub(super) tables: &'h [js::Span],
-    /// What a `let`'s struct pattern binds, by name.
-    pub(super) patterns: &'h HashSet<String>,
+    /// What a `let`'s struct pattern binds, by name, and whether as the rest.
+    pub(super) patterns: &'h HashMap<String, bool>,
     /// What a pattern binds in an enum's variant, `Some(code)`, by name.
     pub(super) payloads: &'h HashSet<String>,
     pub(super) returns: &'h [js::Span],
@@ -1258,7 +1258,7 @@ fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
 /// b: c } = e;`; `let` if one of them is. Of a variable the program names,
 /// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`;
 /// one too of a `let`'s pattern, `patterns`, `const { message } = error;`.
-fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
+fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashMap<String, bool>) {
     let mut i = 0;
     while i < stmts.len() {
         // What the parts are read of, and where they start: a temporary this
@@ -1281,7 +1281,19 @@ fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
         let parts = parts(&stmts[first..], &name);
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
-        let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));
+        let bound = parts.iter().all(|(_, name, ..)| patterns.contains_key(name));
+        // The rest of what a pattern takes apart, `const rest = props;` of a
+        // flattened field: `{ alt, ...rest }`.
+        let rest = match stmts.get(first + parts.len()).map(|s| &s.kind) {
+            Some(StmtKind::Const(rest, value))
+                if !made
+                    && matches!(&value.kind, ExprKind::Var(of) if *of == name)
+                    && patterns.get(rest) == Some(&true) =>
+            {
+                Some(rest.clone())
+            }
+            _ => None,
+        };
         let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
         if !enough || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
@@ -1315,7 +1327,11 @@ fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
             continue;
         }
         let mutable = parts.iter().any(|(_, _, m, _)| *m);
-        let pattern = pattern.expect("checked");
+        let pattern = match (pattern.expect("checked"), &rest) {
+            (js::Pattern::Object(fields, None), Some(rest)) => js::Pattern::Object(fields, Some(rest.clone())),
+            (pattern, _) => pattern,
+        };
+        let count = count + usize::from(rest.is_some() && matches!(pattern, js::Pattern::Object(_, Some(_))));
         let value = match made {
             true => {
                 stmts.drain(first..first + count);

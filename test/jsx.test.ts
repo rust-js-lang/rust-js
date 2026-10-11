@@ -4682,3 +4682,27 @@ pub fn Block() -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Block))).toBe("<b>x</b>");
 });
+
+// A `let` pattern of props with a flattened field takes the rest apart,
+// `{ alt, ...rest }`, from MIR as from THIR, as react.dev's Image spreads
+// what it isn't given: the rest has no `alt`.
+test("a let pattern's flattened field is the rest of what it takes apart", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::attributes::ImgHTMLAttributes;
+use react::{JSX, jsx};
+pub struct ImageProps<'a> {
+    pub alt: Option<&'a str>,
+    #[rust_js::flatten]
+    pub rest: ImgHTMLAttributes<'a>,
+}
+pub fn Image(props: ImageProps) -> JSX::Element {
+    let ImageProps { alt, rest } = props;
+    jsx! { <img alt={alt} className="pic" {...&rest} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("  const { alt, ...rest } = props;\n");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.Image, { alt: "a", src: "/s.png" }))).toContain('<img alt="a" class="pic" src="/s.png"/>');
+});
