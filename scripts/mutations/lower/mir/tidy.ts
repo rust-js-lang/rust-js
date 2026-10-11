@@ -654,9 +654,9 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-not-past",
     breaks: "a temporary is read in place only by the statement right after it, `const _34 = formatted; const args$1 = args;` kept",
     file: "src/lower/mir/tidy.rs",
-    find: "        let past = |at: usize| (rest[..at]",
-    replace: "        let past = |at: usize| at == 0 && (rest[..at]",
-    tests: ["test/bindings.test.ts","-t","replaced in place from MIR"],
+    find: "        let past = |at: usize| {\n",
+    replace: "        let past = |at: usize| at == 0 && {\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
     name: "mir-tidy-while-test-kept",
@@ -1118,13 +1118,9 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-past-borrow-blocks",
     "breaks": "a chain stays a `const _4` ahead of a callback's borrow, `const list$1 = list;`, not the array's own `forEach`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "        let past = |at: usize| (rest[..at]",
-    "replace": "        let past = |at: usize| (!acts || at == 0) && (rest[..at]",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "past a closure's mutable borrow"
-    ]
+    "find": "        let past = |at: usize| {\n",
+    "replace": "        let past = |at: usize| (!acts || at == 0) && {\n",
+    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-tidy-passed-on-unread",
@@ -1588,6 +1584,18 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "                        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),",
     "replace": "                        false => continue,",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "inlined-pure-not-past-statements",
+    "breaks": "what does nothing, of variables no statement between assigns, `version === \"Canary\"`, stays held before a loop",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)))\n",
+    "replace": "",
     "tests": [
       "test/mir.test.ts",
       "-t",

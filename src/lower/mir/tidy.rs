@@ -3285,7 +3285,14 @@ fn inlined(
         // The statement that reads it, past `const`s of what it may be read
         // past, `const list$1 = list;` a callback's borrow.
         let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name) > 0);
-        let past = |at: usize| (rest[..at].iter()).all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v)));
+        // And what does nothing and reads what no call changes, past any
+        // statement that assigns nothing it reads, a loop's too.
+        let mut reads = Vec::new();
+        value.visit_vars(&mut |v| reads.push(v.to_string()));
+        let past = |at: usize| {
+            (rest[..at].iter()).all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v)))
+                || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)))
+        };
         let Some(at) = at.filter(|&at| past(at)) else {
             i += 1;
             continue;
