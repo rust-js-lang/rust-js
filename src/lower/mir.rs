@@ -192,6 +192,9 @@ struct State<'m, 'tcx> {
     /// what it's bound to, where that reads the same anywhere, is it, as THIR
     /// reads it.
     payloads: std::collections::HashSet<Local>,
+    /// The temporaries a `let`'s pattern takes apart, `let S { a, .. } =
+    /// f();`'s: kept, for tidy to destructure, as THIR's pattern reads.
+    patterned: std::collections::HashSet<Local>,
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
     jsx_props: std::collections::HashSet<Local>,
@@ -335,6 +338,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|e| self.js_span(e.span))
                 .collect(),
             payloads: self.mir_payloads(mir_body),
+            patterned: self.mir_patterned(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
         };
         // A closure's first argument is its environment, read through its fields.
@@ -568,6 +572,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect()
+    }
+
+    /// The temporaries a `let`'s struct or tuple pattern takes apart: what
+    /// its bindings, of its fields, are read from.
+    fn mir_patterned(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+        let mut spans = Vec::new();
+        for stmt in self.thir.stmts.iter() {
+            if let thir::StmtKind::Let { pattern, .. } = &stmt.kind
+                && let thir::PatKind::Leaf { subpatterns } = &pattern.kind
+            {
+                for field in subpatterns {
+                    if let thir::PatKind::Binding { subpattern: None, .. } = field.pattern.kind {
+                        spans.push(field.pattern.span);
+                    }
+                }
+            }
+        }
+        let bound: Vec<Local> = (body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place)
+                    if place.projection.is_empty() && spans.contains(&info.source_info.span) =>
+                {
+                    Some(place.local)
+                }
+                _ => None,
+            })
+            .collect();
+        let mut patterned = std::collections::HashSet::new();
+        for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
+            if let StatementKind::Assign(assign) = &statement.kind
+                && let (to, Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _)) = &**assign
+                && to.as_local().is_some_and(|l| bound.contains(&l))
+                && let [PlaceElem::Field(..)] = from.projection.as_slice()
+                && body.local_kind(from.local) == LocalKind::Temp
+            {
+                patterned.insert(from.local);
+            }
+        }
+        patterned
     }
 
     /// Parameters taken apart where they're given, as THIR takes them: a
@@ -896,6 +939,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.locals.writes[local] == 1
             && (state.locals.reads[local] == 1 || split(&state.locals, local))
             && !state.locals.borrowed[local]
+            && !state.patterned.contains(&local)
     }
 
     // ── Structure ───────────────────────────────────────────────────────

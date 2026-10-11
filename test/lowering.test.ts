@@ -5911,3 +5911,24 @@ pub fn set(xs: &mut [u32], i: usize) {
     expect([lib.second([1, 2]), lib.last_is([{}, { path: "a" }], "a")]).toEqual([3, true]);
   }
 });
+
+test("a `let` pattern of one field from MIR destructures, as THIR's", async () => {
+  const dir = fixture("mir-one-field-pattern");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Collapse { pub get_props: u32, pub other: u32 }
+fn use_collapse(n: u32) -> Collapse { Collapse { get_props: n, other: 2 } }
+pub fn one(n: u32) -> u32 {
+    let Collapse { get_props, .. } = use_collapse(n);
+    get_props + 1
+}
+pub fn field(n: u32) -> u32 {
+    let get_props = use_collapse(n).get_props;
+    get_props + 1
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const { get_props: getProps } = use_collapse(n);\n");
+    expect(js).toContain("  const getProps = use_collapse(n).get_props;\n");
+  }
+});

@@ -1234,4 +1234,12 @@ export const mutations: Mutation[] = [
     replace: "                        => {}\n",
     tests: ["test/lowering.test.ts","-t","nothing proves in bounds"],
   },
+  {
+    name: "mir-patterned-folded",
+    breaks: "a temporary a `let` pattern of one field takes apart is folded, `const getProps = f().get_props`",
+    file: "src/lower/mir.rs",
+    find: "            && !state.patterned.contains(&local)\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","pattern of one field"],
+  },
 ];
