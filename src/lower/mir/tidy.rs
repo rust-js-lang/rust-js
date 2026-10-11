@@ -221,17 +221,21 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
     // A child shown only where a test holds, `c ? <b /> : undefined`: `c &&
     // <b />`, as JSX writes it (ADR 0235), of a boolean test, whose `false`
-    // renders nothing as `undefined` does.
+    // renders nothing as `undefined` does; of another, its truth, `!!href
+    // && <a />`, as `""` or `0` would render.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Jsx(jsx) = &mut e.kind {
             for child in jsx.children.iter_mut() {
                 if let ExprKind::Cond(test, shown, none) = &child.kind
                     && matches!(none.kind, ExprKind::Undefined)
-                    && is_boolean(test, booleans)
                 {
+                    let test = match is_boolean(test, booleans) {
+                        true => (**test).clone(),
+                        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),
+                    };
                     *child = Expr {
                         span: child.span,
-                        kind: ExprKind::Binary(Op::And, test.clone(), shown.clone()),
+                        kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
                     };
                 }
             }

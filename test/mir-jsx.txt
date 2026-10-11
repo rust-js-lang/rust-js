@@ -57,6 +57,7 @@ JSX tests an Option of an object by its truth
 JSX unknown component prop reports the original source and preserves existing output
 JSX uses SVG's tag and attribute spelling
 a callback of several statements stays in its JSX
+a child shown only if a test holds is the test && the child
 a child shown where a state's bool holds is an and
 a child shown where a test holds is test && child
 a child's flattened prop made by a call is made in place

@@ -866,8 +866,8 @@ export const mutations: Mutation[] = [
     "name": "shown-child-conditional",
     "breaks": "a child shown where a test holds is `shown ? hint : undefined`, not `shown && hint`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "                    && is_boolean(test, booleans)\n                {\n                    *child = Expr {",
-    "replace": "                    && false\n                {\n                    *child = Expr {",
+    "find": "                    && matches!(none.kind, ExprKind::Undefined)\n                {\n                    let test = match is_boolean(test, booleans) {",
+    "replace": "                    && false\n                {\n                    let test = match is_boolean(test, booleans) {",
     "tests": [
       "test/mir.test.ts",
       "-t",
@@ -1580,6 +1580,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "an array's iterator for an adapter alone is its values"
+    ]
+  },
+  {
+    "name": "jsx-child-truth-test-kept",
+    "breaks": "a child shown where text is truthy stays `href ? <a /> : undefined`, not `!!href && <a />`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),",
+    "replace": "                        false => continue,",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
     ]
   },
 ];
