@@ -124,6 +124,15 @@ fn sought(test: &Expr) -> Option<Expr> {
     (value.reads_same() && !value.mentions_var(param)).then(|| (**value).clone())
 }
 
+/// Whether `known`, a consumer, may stop before its iterator ends,
+/// leaving the rest.
+fn stops_early(known: Std) -> bool {
+    matches!(
+        known,
+        Std::Position | Std::ArrayMethod("find" | "some" | "every") | Std::IterComb(IterComb::FindMap | IterComb::Nth)
+    )
+}
+
 /// Whether `known` stops before its iterator ends, so a stage before it
 /// that does what can be seen runs fewer times in Rust than over an array,
 /// or, as `rev` does, runs it from the other end.
@@ -849,6 +858,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let value = self.iter_value(receiver, out)?;
             return self.user_iterator(value, receiver_ty, double_ended, "next_back", span);
         }
+        let mut lent = false;
         let items = match self.thir[self.strip(receiver)].kind {
             ExprKind::Adt(ref range)
                 if self.is_lang_adt(receiver_ty, LangItem::Range)
@@ -884,6 +894,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let one = if big { Expr::bigint(1) } else { Expr::int(1) };
                 Expr::call(Expr::var(name), vec![start, Expr::bin(Op::Add, end, one)])
             }
+            // Of one that knows where it is, stepped again after, by what
+            // stops early, `it.position(f)`: through `$lent`, so it's stepped
+            // only as far as Rust steps it, the rest left for its `next()`.
+            _ if self.is_stepping(receiver) && stops_early(known) => {
+                let value = self.expr(receiver, out)?;
+                lent = true;
+                self.lent_iterator(value)
+            }
             _ => {
                 let value = self.iter_value(receiver, out)?;
                 self.iter_source(value, receiver_ty, span, out)?
@@ -893,7 +911,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // and those that stop early, like `find`. Anything else takes all of
         // it, as an array (ADR 0055).
         // A stage of a chain its consumer found must be lazy too (ADR 0139).
-        let lazy = self.is_lazy_value(receiver);
+        let lazy = lent || self.is_lazy_value(receiver);
         let starts = !lazy && self.chains.starts.contains(&self.chain_key(receiver));
         let (items, lazy) = if starts {
             (Expr::call(Expr::member(items, "values"), vec![]), true)

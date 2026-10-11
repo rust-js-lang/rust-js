@@ -637,4 +637,52 @@ export const mutations: Mutation[] = [
       "a lazy chain from MIR spread once"
     ]
   },
+  {
+    "name": "early-stop-drains",
+    "breaks": "`it.position(f)` of an iterator stepped after takes all it has left, `$rest(it)`, and its `next()` finds none",
+    "file": "src/lower/iterators.rs",
+    "find": "            _ if self.is_stepping(receiver) && stops_early(known) => {\n",
+    "replace": "            _ if false && self.is_stepping(receiver) && stops_early(known) => {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an early-stopping consumer leaves the rest"
+    ]
+  },
+  {
+    "name": "early-stop-position-drains",
+    "breaks": "`it.position(f)` of an iterator stepped after takes all it has left",
+    "file": "src/lower/iterators.rs",
+    "find": "        Std::Position | Std::ArrayMethod(\"find\" | \"some\" | \"every\") | Std::IterComb(IterComb::FindMap | IterComb::Nth)\n",
+    "replace": "        Std::ArrayMethod(\"find\" | \"some\" | \"every\") | Std::IterComb(IterComb::FindMap | IterComb::Nth)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an early-stopping consumer leaves the rest"
+    ]
+  },
+  {
+    "name": "early-stop-methods-drain",
+    "breaks": "`it.any(f)`, `find`, `all` of an iterator stepped after take all it has left",
+    "file": "src/lower/iterators.rs",
+    "find": "        Std::Position | Std::ArrayMethod(\"find\" | \"some\" | \"every\") | Std::IterComb(IterComb::FindMap | IterComb::Nth)\n",
+    "replace": "        Std::Position | Std::IterComb(IterComb::FindMap | IterComb::Nth)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an early-stopping consumer leaves the rest"
+    ]
+  },
+  {
+    "name": "early-stop-find-map-nth-drain",
+    "breaks": "`it.find_map(f)`, `it.nth(n)` of an iterator stepped after take all it has left",
+    "file": "src/lower/iterators.rs",
+    "find": "        Std::Position | Std::ArrayMethod(\"find\" | \"some\" | \"every\") | Std::IterComb(IterComb::FindMap | IterComb::Nth)\n",
+    "replace": "        Std::Position | Std::ArrayMethod(\"find\" | \"some\" | \"every\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an early-stopping consumer leaves the rest"
+    ]
+  },
 ];

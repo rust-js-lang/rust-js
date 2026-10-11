@@ -6877,3 +6877,42 @@ pub fn mixed(kind: Kind) -> &'static str {
     expect(["note", "pitfall", "wip"].map((k) => [lib.name(k), lib.mixed(k)])).toEqual([["note", "n"], ["pitfall", "p"], ["wip", "wip"]]);
   }
 });
+
+// A consumer that stops early, `position`, `any`, `find`, `all`, of an
+// iterator stepped again after: it takes only what Rust's takes, and what's
+// left is still there for `next()`, as it is in Rust.
+test("an early-stopping consumer leaves the rest of the iterator", async () => {
+  const dir = fixture("early-stop-rest");
+  writeFileSync(join(dir, "lib.rs"), `pub fn after(ids: &[u32]) -> Vec<Option<u32>> {
+    let mut out = Vec::new();
+    let mut it = ids.iter();
+    out.push(it.position(|&id| id == 2).map(|i| i as u32));
+    out.push(it.next().copied());
+    let mut it = ids.iter();
+    out.push(if it.any(|&id| id == 2) { Some(1) } else { None });
+    out.push(it.next().copied());
+    let mut it = ids.iter();
+    out.push(it.find(|&&id| id == 2).copied());
+    out.push(it.next().copied());
+    let mut it = ids.iter();
+    out.push(if it.all(|&id| id != 2) { Some(1) } else { None });
+    out.push(it.next().copied());
+    let mut it = ids.iter();
+    out.push(it.find_map(|&id| (id == 2).then_some(id * 10)));
+    out.push(it.next().copied());
+    let mut it = ids.iter();
+    out.push(it.nth(1).copied());
+    out.push(it.next().copied());
+    let mut it = ids.iter().peekable();
+    out.push(it.peek().map(|&&id| id));
+    out.push(it.position(|&id| id == 2).map(|i| i as u32));
+    out.push(it.next().copied());
+    out
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect(lib.after([1, 2, 3])).toEqual([1, 3, 1, 3, 2, 3, undefined, 3, 20, 3, 2, 3, 1, 1, 3]);
+  }
+});
