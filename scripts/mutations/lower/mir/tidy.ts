@@ -618,4 +618,20 @@ export const mutations: Mutation[] = [
     replace: "            if let Some(branch) = branch.filter(|_| false) {\n",
     tests: ["test/lowering.test.ts","-t","declared where it.s first named"],
   },
+  {
+    name: "mir-tidy-branch-values-once-more",
+    breaks: "`if (!c) { return false; } return x;` with a temporary between, inlined after, stays, not `c && x`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    // Of what's now beside it, the temporaries between read in place.\n    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","nothing proves in bounds"],
+  },
+  {
+    name: "mir-tidy-let-else-of-written-returns",
+    breaks: "`if c { return a; } else { return b; }`, both written, is `if (!c) { return b; } return a;`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
 ];

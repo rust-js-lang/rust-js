@@ -184,6 +184,10 @@ struct State<'m, 'tcx> {
     /// tuple of them: the place, read as one, which a closure captures as it
     /// is, or the tuple's list of them.
     places: std::collections::HashMap<Local, Value<'tcx>>,
+    /// The indexes whose bounds check is where the element is read, `false`,
+    /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`, as THIR checks
+    /// them (`deferred_check`).
+    deferred: std::collections::HashMap<Local, bool>,
     /// Each variable a pattern binds in an enum's variant, `Some(title)`:
     /// what it's bound to, where that reads the same anywhere, is it, as THIR
     /// reads it.
@@ -324,6 +328,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),
+            deferred: Default::default(),
             discarding: false,
             returns: (self.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
@@ -451,6 +456,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let start = BasicBlock::from_usize(0);
         out.extend(self.mir_tree(&mut state, start)?);
+        // Each bounds check moved to where its element is read, made there.
+        if !state.deferred.is_empty() {
+            return Err(self.unsupported(mir_body.span, "a bounds check this read doesn't make, from its MIR"));
+        }
         // A function's last `return;` says nothing.
         if matches!(
             out.last(),
@@ -823,9 +832,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     count_place(&mut locals, destination, true);
                 }
-                // A check THIR knows passes reads nothing: it's left out.
-                TerminatorKind::Assert { msg, .. } if self.known_in_bounds(msg, data.terminator().source_info.span) => {
-                }
+                // A check THIR knows passes reads nothing: it's left out; nor
+                // one made where the element is read.
+                TerminatorKind::Assert { msg, target, .. }
+                    if self.known_in_bounds(msg, data.terminator().source_info.span)
+                        || deferred_check(body, msg, *target).is_some() => {}
                 TerminatorKind::Assert { cond, msg, .. } => {
                     count_operand(&mut locals, cond);
                     for operand in assert_operands(msg) {
@@ -1136,6 +1147,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `args[i]` THIR's facts know is in bounds, of `0..args.len()`:
                 // unchecked, as THIR writes it.
                 let _ = (cond, expected, unwind);
+                out.extend(self.mir_branch(state, block, *target)?);
+            }
+            // A bounds check, where the element's read or written next.
+            TerminatorKind::Assert { msg, target, .. }
+                if let Some((index, write)) = deferred_check(state.body, msg, *target) =>
+            {
+                state.deferred.insert(index, write);
                 out.extend(self.mir_branch(state, block, *target)?);
             }
             TerminatorKind::Assert {
@@ -1868,7 +1886,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         let mut ty = mir::PlaceTy::from_ty(state.body.local_decls[place.local].ty);
-        for elem in place.projection {
+        let last = place.projection.len();
+        for (at, elem) in place.projection.iter().enumerate() {
+            // Its bounds checked here: `$index(xs, i)` where it's read,
+            // `xs[$at(xs, i)]` where it's the place written.
+            if let PlaceElem::Index(local) = elem
+                && let Some(write) = state.deferred.remove(&local)
+            {
+                let items = match value.reads_same() {
+                    true => value,
+                    false => self.spill("items", value, out),
+                };
+                let index = self.read_local(state, local, out)?;
+                value = match write && at + 1 == last {
+                    true => {
+                        self.runtime.insert(Helper::At);
+                        Expr::index(items.clone(), Expr::call(Expr::var("$at"), vec![items, index]))
+                    }
+                    false => {
+                        self.runtime.insert(Helper::Index);
+                        Expr::call(Expr::var("$index"), vec![items, index])
+                    }
+                };
+                placed = false;
+                ty = ty.projection_ty(self.tcx, elem);
+                continue;
+            }
             // Through a handle, or a box, of a `&mut` to a number: its
             // `value`, but where the place is already named.
             if elem == PlaceElem::Deref
@@ -4224,6 +4267,49 @@ fn label(block: BasicBlock) -> String {
 }
 
 /// Whether `block` does nothing but say it's never reached.
+/// Of a bounds check `msg`, the index whose element `target` reads or
+/// writes first, and whether it writes it: there, `$index(xs, i)` or
+/// `xs[$at(xs, i)]`, the check, as THIR makes it.
+fn deferred_check<'tcx>(
+    body: &mir::Body<'tcx>,
+    msg: &mir::AssertMessage<'tcx>,
+    target: BasicBlock,
+) -> Option<(Local, bool)> {
+    let mir::AssertKind::BoundsCheck {
+        index: Operand::Copy(index) | Operand::Move(index),
+        ..
+    } = msg
+    else {
+        return None;
+    };
+    let local = index.as_local()?;
+    let first = body.basic_blocks[target].statements.iter().find(|s| {
+        !matches!(
+            s.kind,
+            StatementKind::FakeRead(_)
+                | StatementKind::StorageLive(_)
+                | StatementKind::StorageDead(_)
+                | StatementKind::Nop
+        )
+    })?;
+    let StatementKind::Assign(assign) = &first.kind else {
+        return None;
+    };
+    let (written, rvalue) = &**assign;
+    let indexes = |p: &Place<'tcx>| p.projection.contains(&PlaceElem::Index(local));
+    match rvalue {
+        Rvalue::Use(Operand::Copy(read) | Operand::Move(read), _)
+        | Rvalue::CopyForDeref(read)
+        | Rvalue::Ref(_, BorrowKind::Shared, read)
+            if indexes(read) && !indexes(written) =>
+        {
+            Some((local, false))
+        }
+        _ if written.projection.last() == Some(&PlaceElem::Index(local)) => Some((local, true)),
+        _ => None,
+    }
+}
+
 /// Where the program wrote what `block` does first: a macro's, where it
 /// called it.
 fn written_at(body: &mir::Body<'_>, block: BasicBlock) -> Option<rustc_span::BytePos> {

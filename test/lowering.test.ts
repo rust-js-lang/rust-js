@@ -5885,3 +5885,29 @@ test("a `let` from MIR is declared where it's first named, as THIR declares it",
 }`);
   }
 });
+
+test("an index from MIR nothing proves in bounds is checked where it's read or written, as THIR's", async () => {
+  const dir = fixture("mir-checked-index");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Crumb { pub path: Option<&'static str> }
+pub fn last_is(crumbs: &[Crumb], path: Option<&str>) -> bool {
+    crumbs.len() > 1 && crumbs[crumbs.len() - 1].path == path
+}
+pub fn second(xs: &[u32]) -> u32 {
+    xs[1] + 1
+}
+pub fn set(xs: &mut [u32], i: usize) {
+    xs[i] = 3;
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  return crumbs.length > 1 && $index(crumbs, (crumbs.length - 1) >>> 0).path == path;\n");
+    expect(js).toContain("  return ($index(xs, 1) + 1) >>> 0;\n");
+    expect(js).toContain("  xs[$at(xs, i)] = 3;\n");
+    const lib = await import(join(dir, out));
+    expect(() => lib.second([1])).toThrow("index out of bounds: the len is 1 but the index is 1");
+    expect(() => lib.set([1], 4)).toThrow("index out of bounds: the len is 1 but the index is 4");
+    expect([lib.second([1, 2]), lib.last_is([{}, { path: "a" }], "a")]).toEqual([3, true]);
+  }
+});

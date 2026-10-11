@@ -116,6 +116,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));
     named_temporaries(body);
     eager_chains(body);
+    // Of what's now beside it, the temporaries between read in place.
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     tail_returns(body, returns);
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
@@ -1181,6 +1183,9 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
         && let StmtKind::Return(Some(_)) = &last.kind
         && written(returns, last.span)
         && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
+        // Not `if c { return a; } else { return b; }`'s: a `let … else`'s
+        // rest ends where it goes on, not at a `return` the program wrote.
+        && !body.last().is_some_and(|s| matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span))
         && !declared(&body).any(|name| declared(before).any(|n| n == name))
     {
         // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
