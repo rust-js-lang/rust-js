@@ -1150,4 +1150,16 @@ export const mutations: Mutation[] = [
       "past a closure's mutable borrow"
     ]
   },
+  {
+    "name": "mir-tidy-passed-on-unread",
+    "breaks": "an array method's callback from MIR that passes on what it's given reads `xs.map(parseFloat)`, a JS function's, which may read the index",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        && forwarding.contains(&f.span)\n",
+    "replace": "        && true\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only passes its arguments on"
+    ]
+  },
 ];

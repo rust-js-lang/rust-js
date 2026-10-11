@@ -224,6 +224,10 @@ struct Locals {
     /// element made ahead of a branch reads, which tidy reads in place
     /// where it can.
     captured: HashSet<String>,
+    /// Of a body lowered from its MIR, where each closure it makes that
+    /// passes on what it's given to Rust's function is written: an array
+    /// method's, the function itself (ADR 0279).
+    forwarding: Vec<js::Span>,
 }
 
 /// A variable bound by a pattern, and the place in the subject it matched.

@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
 use super::negate;
-use crate::lower::iterators::{eager_chains, eager_spreads, iterated};
+use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
@@ -42,6 +42,9 @@ pub(super) struct Hints<'h> {
     pub(super) booleans: &'h HashSet<String>,
     /// The variables of plain values, which nothing changes (`Locals::plain`).
     pub(super) plain: &'h HashSet<String>,
+    /// Where each closure that passes on what it's given to Rust's function
+    /// is written (ADR 0279).
+    pub(super) forwarding: &'h [js::Span],
 }
 
 /// `body`, tidied, by what `hints` say of it.
@@ -61,6 +64,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         captured,
         booleans,
         plain,
+        forwarding,
     } = *hints;
     // A guard of a handle made for it alone: the place it's a handle on.
     unguarded(body);
@@ -159,6 +163,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
     // $iter(xs);`: the array's, as THIR's.
     eager_chains(body);
+    // Of each, a callback that passes what it's given on to Rust's function,
+    // `(x, i) => f(x, i)`: `f` itself, as THIR's.
+    js::each_expr_mut(body, &mut |e| passed_on(e, forwarding));
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
     // { .. } }`, `if (a && f(a))`.
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
@@ -2292,6 +2299,25 @@ fn leads(e: &Expr, name: &str, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
             in_order(&mut tag.into_iter().chain(props).chain(&jsx.children))
         }
         _ => Some(false),
+    }
+}
+
+/// `xs.map(f)` of `xs.map((x, i) => f(x, i))`, a closure MIR says passes on
+/// what it's given to a function of Rust's, which takes no more: the index
+/// and the array the method gives it too change nothing (ADR 0279).
+fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
+    let ExprKind::Call(callee, args) = &mut e.kind else {
+        return;
+    };
+    let ExprKind::Member(_, name) = &callee.kind else {
+        return;
+    };
+    let [f] = &mut args[..] else { return };
+    if ["map", "filter", "some", "every", "find", "forEach"].contains(&name.as_str())
+        && forwarding.contains(&f.span)
+        && let Some(g) = iterators::passed_on(f)
+    {
+        *f = g;
     }
 }
 

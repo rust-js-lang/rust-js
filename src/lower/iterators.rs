@@ -1312,42 +1312,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// than it's given, so the index and the array the method gives it too
     /// change nothing (ADR 0279). A JS function's, `parseFloat`'s, might.
     fn passed_on(&self, e: ExprId, f: Expr) -> Expr {
-        let js::ExprKind::Arrow(params, body) = &f.kind else {
-            return f;
-        };
-        let [
-            Stmt {
-                kind: StmtKind::Return(Some(call)),
-                ..
-            },
-        ] = &body[..]
-        else {
-            return f;
-        };
-        let js::ExprKind::Call(callee, args) = &call.kind else {
-            return f;
-        };
-        let js::ExprKind::Var(g) = &callee.kind else { return f };
-        let names: Vec<&str> = params
-            .iter()
-            .filter_map(|p| match p {
-                js::Pattern::Name(name) => Some(name.as_str()),
-                _ => None,
-            })
-            .collect();
-        let passed = names.len() == params.len()
-            && args.len() == names.len()
-            && !names.contains(&g.as_str())
-            && args
-                .iter()
-                .zip(&names)
-                .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
-        if !passed || !self.calls_rust(e, false) {
-            return f;
-        }
-        Expr {
-            kind: js::ExprKind::Var(g.clone()),
-            span: f.span,
+        match self.calls_rust(e, false) {
+            true => passed_on(&f).unwrap_or(f),
+            false => f,
         }
     }
 
@@ -1358,7 +1325,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ExprKind::Closure(ref closure) = self.thir[self.strip(e)].kind else {
             return false;
         };
-        let body = self.krate.closures[&closure.closure_id];
+        self.closure_calls_rust(self.krate.closures[&closure.closure_id], dyn_fn)
+    }
+
+    /// `calls_rust`, of a closure's body.
+    pub(super) fn closure_calls_rust(&self, body: &super::Body<'tcx>, dyn_fn: bool) -> bool {
         let thir = &body.thir;
         let mut call = super::body_queries::strip(thir, body.expr);
         if let ExprKind::Block { block } = thir[call].kind
@@ -1428,7 +1399,54 @@ fn indexed_callback(items: &Expr, name: &str, f: Expr) -> Result<(Expr, Expr), E
     // The item's name, `_` where only the index is read: no Rust variable is.
     let mut params = vec![js::Pattern::Name(item.clone().unwrap_or_else(|| "_".into()))];
     params.extend(index.clone().map(js::Pattern::Name));
-    Ok(((**source).clone(), Expr::arrow(params, body.clone())))
+    Ok((
+        (**source).clone(),
+        Expr {
+            span: f.span,
+            ..Expr::arrow(params, body.clone())
+        },
+    ))
+}
+
+/// `g` of `(x, i) => g(x, i)`, an arrow that passes on what it's given, in
+/// order, to a function it doesn't name a parameter.
+pub(super) fn passed_on(f: &Expr) -> Option<Expr> {
+    let js::ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let [
+        Stmt {
+            kind: StmtKind::Return(Some(call)),
+            ..
+        },
+    ] = &body[..]
+    else {
+        return None;
+    };
+    let js::ExprKind::Call(callee, args) = &call.kind else {
+        return None;
+    };
+    let js::ExprKind::Var(g) = &callee.kind else {
+        return None;
+    };
+    let names: Vec<&str> = params
+        .iter()
+        .filter_map(|p| match p {
+            js::Pattern::Name(name) => Some(name.as_str()),
+            _ => None,
+        })
+        .collect();
+    let passed = names.len() == params.len()
+        && args.len() == names.len()
+        && !names.contains(&g.as_str())
+        && args
+            .iter()
+            .zip(&names)
+            .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
+    passed.then(|| Expr {
+        kind: js::ExprKind::Var(g.clone()),
+        span: f.span,
+    })
 }
 
 /// `(x, i) => [i, x]`, which `enumerate()` maps each item with.

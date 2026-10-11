@@ -79,13 +79,15 @@ pub fn parsed(xs: &[String]) -> Vec<f64> {
     xs.iter().map(|x| parse_float(x)).collect()
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return xs.map(double);");
-  expect(js).toContain("return xs.map(f);");
-  expect(js).toContain("return xs.map((x) => parseFloat(x));");
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.doubled([1, 2]), lib.rendered([5, 6], (x: number, i: number) => x + i), lib.parsed(["1.5", "2"])]).toEqual([[2, 4], [5, 7], [1.5, 2]]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return xs.map(double);");
+    expect(js).toContain("return xs.map(f);");
+    expect(js).toContain("return xs.map((x) => parseFloat(x));");
+    const lib = await import(join(dir, out));
+    expect([lib.doubled([1, 2]), lib.rendered([5, 6], (x: number, i: number) => x + i), lib.parsed(["1.5", "2"])]).toEqual([[2, 4], [5, 7], [1.5, 2]]);
+  }
 });
 
 // An `else` of nothing, of only comments in Rust, which rust-js doesn't

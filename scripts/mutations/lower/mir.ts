@@ -1482,4 +1482,16 @@ export const mutations: Mutation[] = [
       "a call giving each variant its own name"
     ]
   },
+  {
+    "name": "mir-closure-forwarding-unmarked",
+    "breaks": "a closure from MIR that passes on what it's given to Rust's function stays `(x) => double(x)`, not `double`",
+    "file": "src/lower/mir.rs",
+    "find": "        if self.closure_calls_rust(body, false) {\n",
+    "replace": "        if false {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only passes its arguments on"
+    ]
+  },
 ];

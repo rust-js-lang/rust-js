@@ -656,6 +656,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 captured: &captured,
                 booleans: &booleans,
                 plain: &self.locals.plain.clone(),
+                forwarding: &self.locals.forwarding.clone(),
             },
         );
         tidy::destructured_params(&mut params, &mut out);
@@ -976,6 +977,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && inner.is_empty()
         {
             return Ok(Expr::async_arrow(params, spawned.clone()));
+        }
+        if self.closure_calls_rust(body, false) {
+            let span = self.js_span(span);
+            self.locals.forwarding.push(span);
+            return Ok(Expr {
+                span,
+                ..Expr::arrow(params, stmts)
+            });
         }
         Ok(Expr::arrow(params, stmts))
     }
