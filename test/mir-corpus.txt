@@ -254,6 +254,7 @@ trait_default_bounds.rs
 trait_mut_self_value.rs
 trait_param_drops.rs
 try_lock.rs
+type_facts.rs
 type_id_debug.rs
 union_const.rs
 unsized_struct_debug.rs

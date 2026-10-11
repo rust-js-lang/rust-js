@@ -1519,6 +1519,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return self.adt_value(made, variant, Vec::new(), c.span);
         }
+        // A promoted reference to a call of nothing, `&size_of::<T>()` of
+        // generic code: the call, a std function's of nothing it's given, or
+        // the crate's const function's.
+        if let Const::Unevaluated(uv, _) = c.const_
+            && let Some(promoted) = uv.promoted
+            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted])
+        {
+            if self.is_rust_fn(def_id) {
+                let given = self.evidence_args(def_id, args, c.span)?;
+                return Ok(Expr::call(self.fn_ref(def_id), given));
+            }
+            if let Some(known) = self.recognition().classify(def_id, args) {
+                let mut made = Vec::new();
+                let value = self.std_by_values(known, def_id, args, &[], Vec::new(), output, c.span, &mut made)?;
+                if made.is_empty() {
+                    return Ok(value);
+                }
+            }
+        }
         // A named constant, as THIR's lowering writes one (ADR 0031); a
         // `const { .. }` block, its value, or as one (ADR 0127).
         if let Const::Unevaluated(uv, _) = c.const_
@@ -2904,6 +2923,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Assign(place, edited).at(self.js_span(span)));
                 taken.unwrap_or_else(Expr::undefined)
             }
+            // rustc's name for the type; of a type parameter, the one its
+            // caller gave (ADR 0145). What `type_name_of_val` is given runs.
+            Std::TypeName { .. } => {
+                for value in values {
+                    let value = self.value_expr(value, span)?;
+                    if value.has_effects() {
+                        self.flush(state, out)?;
+                        out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                    }
+                }
+                let ty = generic_args.type_at(0);
+                self.type_fact_value(ty, super::recognition::TypeFact::Name, span)?
+            }
             // Its capacity is the engine's: what it's given runs, for what it does.
             Std::StringWithCapacity => {
                 for value in values {
@@ -3361,4 +3393,64 @@ fn referred_variant<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Opti
     }
     let (local, ty, variant) = made?;
     (Some(local) == referred).then_some((ty, variant))
+}
+
+/// The call of nothing a promoted body refers to the result of, `_1 =
+/// size_of::<T>() -> bb1; bb1: _0 = &_1`: its function, its arguments and
+/// what it gives.
+fn referred_call<'tcx>(
+    body: &mir::Body<'tcx>,
+) -> Option<(rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>, Ty<'tcx>)> {
+    if body.basic_blocks.len() != 2 {
+        return None;
+    }
+    let (first, second) = (
+        &body.basic_blocks[mir::START_BLOCK],
+        &body.basic_blocks[BasicBlock::from_usize(1)],
+    );
+    let quiet = |data: &mir::BasicBlockData<'_>| {
+        data.statements.iter().all(|s| {
+            matches!(
+                s.kind,
+                StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop
+            )
+        })
+    };
+    let TerminatorKind::Call {
+        func: Operand::Constant(func),
+        args,
+        destination,
+        target: Some(target),
+        ..
+    } = &first.terminator().kind
+    else {
+        return None;
+    };
+    let (def_id, generic_args) = fn_def(func.ty())?;
+    if !quiet(first) || !args.is_empty() || !destination.projection.is_empty() || target.as_usize() != 1 {
+        return None;
+    }
+    let referred = second.statements.iter().find_map(|s| match &s.kind {
+        StatementKind::Assign(assign) => match &**assign {
+            (place, Rvalue::Ref(_, BorrowKind::Shared, target))
+                if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
+            {
+                Some(target.local)
+            }
+            _ => None,
+        },
+        _ => None,
+    })?;
+    let only = second
+        .statements
+        .iter()
+        .filter(|s| matches!(s.kind, StatementKind::Assign(_)))
+        .count()
+        == 1;
+    let output = body.local_decls[destination.local].ty;
+    (only && referred == destination.local && matches!(second.terminator().kind, TerminatorKind::Return)).then_some((
+        def_id,
+        generic_args,
+        output,
+    ))
 }

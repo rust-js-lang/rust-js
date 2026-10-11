@@ -642,4 +642,20 @@ export const mutations: Mutation[] = [
     replace: "            Std::Rc(RcOp::MakeMut) if false => {\n",
     tests: ["test/mir.test.ts","-t","rc_clone_sees_owners|rc_make_mut_clone_panics"],
   },
+  {
+    name: "mir-promoted-call-refused",
+    breaks: "`&size_of::<T>()` of generic code, a promoted call rustc can't evaluate, is refused",
+    file: "src/lower/mir.rs",
+    find: "            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted])\n",
+    replace: "            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted]).filter(|_| false)\n",
+    tests: ["test/mir.test.ts","-t","type_facts"],
+  },
+  {
+    name: "mir-type-name-refused",
+    breaks: "`type_name::<T>()` is refused",
+    file: "src/lower/mir.rs",
+    find: "            Std::TypeName { .. } => {\n",
+    replace: "            Std::TypeName { .. } if false => {\n",
+    tests: ["test/mir.test.ts","-t","type_facts"],
+  },
 ];
