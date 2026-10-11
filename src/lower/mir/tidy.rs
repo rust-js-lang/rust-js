@@ -2579,6 +2579,79 @@ fn unwrapped_values(stmts: &mut [Stmt]) {
     }
 }
 
+/// `_4`, a temporary MIR holds still, read more than once: named as THIR
+/// names one, after the field it reads, `routes` of `tree.routes`, else
+/// `value`, or `tmp` of a `let` its branches set, a name no other in the
+/// function has, its parameters' and closures' too.
+pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
+    let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
+    names_in(body, &mut taken);
+    let mut renames = Vec::new();
+    js::statement_lists(body, &mut |list| {
+        for stmt in list.iter() {
+            match &stmt.kind {
+                StmtKind::Const(name, value) if is_temporary(name) => {
+                    let base = match &value.kind {
+                        ExprKind::Member(_, field) => field.clone(),
+                        _ => "value".to_string(),
+                    };
+                    renames.push((name.clone(), base));
+                }
+                StmtKind::Let(name, _) if is_temporary(name) => renames.push((name.clone(), "tmp".to_string())),
+                _ => {}
+            }
+        }
+    });
+    for (from, base) in renames {
+        let to = crate::names::fresh_in(&mut taken, &base);
+        js::statement_lists(body, &mut |list| {
+            for stmt in list.iter_mut() {
+                if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &mut stmt.kind
+                    && *name == from
+                {
+                    *name = to.clone();
+                }
+            }
+        });
+        js::each_expr_mut(body, &mut |e| {
+            if let ExprKind::Var(v) = &mut e.kind
+                && *v == from
+            {
+                *v = to.clone();
+            }
+        });
+    }
+}
+
+/// Each name `stmts` read or declare, their closures' and parameters' too.
+fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
+    js::visit_stmts(stmts, &mut |name| {
+        names.insert(name.to_string());
+    });
+    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
+        for stmt in list.iter() {
+            match &stmt.kind {
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
+                    names.insert(name.clone());
+                }
+                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
+                    names.extend(pattern.names().into_iter().map(str::to_string));
+                }
+                StmtKind::TryCatch(_, Some(name), _) => {
+                    names.insert(name.clone());
+                }
+                _ => {}
+            }
+        }
+    });
+    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
+        if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
+            names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+            names_in(body, names);
+        }
+    });
+}
+
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.
 fn or_all(a: Expr, b: Expr) -> Expr {
     match b.kind {

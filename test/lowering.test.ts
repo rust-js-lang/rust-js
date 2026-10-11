@@ -7804,3 +7804,29 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
     expect(log).toEqual(["h1", "done"]);
   }
 });
+
+// A temporary MIR holds of what a pattern takes apart, read more than once,
+// is `value`, as THIR names it, not `_4`, a name no other in the function
+// has, as react.dev's CodeBlock reads its regular expressions' matches.
+test("a held temporary is named as THIR names it", async () => {
+  const dir = fixture("temporary-name");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "globalThis.find"]
+    safe fn find(text: &str) -> Option<(String, String)>;
+}
+pub fn lines(meta: &str) -> String {
+    let Some((_, lines)) = find(meta) else {
+        return String::new();
+    };
+    lines.to_uppercase()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const value = globalThis.find(meta);\n  if (!value) {");
+    const lib = await import(join(dir, out));
+    (globalThis as any).find = (text: string) => (text ? [text, "ab"] : undefined);
+    expect([lib.lines("x"), lib.lines("")]).toEqual(["AB", ""]);
+  }
+});

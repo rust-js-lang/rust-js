@@ -1594,4 +1594,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-temporaries-unnamed",
+    "breaks": "a temporary MIR holds is named `_4`, not `value` as THIR names it",
+    "file": "src/lower/mir.rs",
+    "find": "        tidy::readable_temporaries(&params, &mut out);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "held temporary is named as THIR"
+    ]
+  },
 ];

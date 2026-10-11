@@ -682,6 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
         );
         tidy::destructured_params(&mut params, &mut out);
+        tidy::readable_temporaries(&params, &mut out);
         Ok((params, out))
     }
 
