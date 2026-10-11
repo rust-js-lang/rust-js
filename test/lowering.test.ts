@@ -8186,3 +8186,28 @@ pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
     expect([lib.c(true, false, ""), lib.c(false, true, "en"), lib.kept(["en", "fr", "de"], true, ["fr"])]).toEqual([true, false, 1]);
   }
 });
+
+// A name given apart from one given apart already, `caption$1`'s, is the
+// first's next, `caption$2`, which is the name itself where nothing it
+// would shadow is read (ADR 0352), not `caption$1$1`, as react.dev's
+// MDXComponents' IllustrationBlock names its captions from MIR.
+test("a name given apart twice is reclaimed", async () => {
+  const dir = fixture("fresh-twice");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Info {
+    pub caption: Option<&'static str>,
+}
+pub fn shown(infos: &[Info]) -> Vec<String> {
+    infos
+        .iter()
+        .map(|info| info.caption.filter(|caption| !caption.is_empty()).map(|caption| format!("<{caption}>")).unwrap_or_default())
+        .collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("const caption = info.caption ? info.caption : undefined;");
+    const lib = await import(join(dir, out));
+    expect(lib.shown([{ caption: "a" }, { caption: "" }, {}])).toEqual(["<a>", "", ""]);
+  }
+});

@@ -9,8 +9,15 @@ pub(crate) fn fresh_in(taken: &mut HashSet<String>, base: &str) -> String {
     if taken.insert(base.clone()) {
         return base;
     }
+    // One given apart already, `caption$1`: the name it was given apart
+    // from's next, `caption$2`, which reclaiming can make `caption` again
+    // (ADR 0352).
+    let root = match base.rsplit_once('$') {
+        Some((root, k)) if !root.is_empty() && !k.is_empty() && k.bytes().all(|b| b.is_ascii_digit()) => root,
+        _ => &base,
+    };
     (1..)
-        .map(|k| format!("{base}${k}"))
+        .map(|k| format!("{root}${k}"))
         .find(|name| taken.insert(name.clone()))
         .unwrap()
 }
