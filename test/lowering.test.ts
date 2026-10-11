@@ -6004,3 +6004,34 @@ test("a function's value from MIR that branches assign is returned from each, it
 }`);
   }
 });
+
+test("a range loop from MIR whose end is a call holds it first, and a slice of `i..i + 1` reads its bounds, as THIR's", async () => {
+  const dir = fixture("mir-range-loops");
+  writeFileSync(join(dir, "lib.rs"), `pub fn plain(code: &str) -> u32 {
+    let mut n = 0;
+    for i in 0..code.len() {
+        if i > 2 {
+            n += 1;
+        }
+    }
+    n
+}
+pub fn sliced(code: &str) -> u32 {
+    let mut n = 0;
+    for i in 0..3 {
+        if &code[i..i + 1] == "a" {
+            n += 1;
+        }
+    }
+    n
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const end = $byteLen(code);\n  for (let i = 0; i < end; i++) {\n");
+    expect(js).toContain('    if ($strSlice(code, i, (i + 1) >>> 0) === "a") {\n');
+    const lib = await import(join(dir, out));
+    expect([lib.plain("abcdef"), lib.sliced("aba")]).toEqual([3, 2]);
+  }
+});

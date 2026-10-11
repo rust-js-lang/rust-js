@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "                true => Expr::bin(op, a, b),",
     tests: ["test/corpus.test.ts", "-t", "code_point_order"],
   },
+  {
+    name: "range-literal-arithmetic-held",
+    breaks: "a range literal's bound that does nothing but isn't a read, `i + 1`, is held in a `const range` read by its fields",
+    file: "src/lower/std_types/range.rs",
+    find: "                    Prop::Field(field, value) if field == name && (value.reads_same() || !value.has_effects()) => {\n",
+    replace: "                    Prop::Field(field, value) if field == name && value.reads_same() => {\n",
+    tests: ["test/lowering.test.ts","-t","whose end is a call holds it first"],
+  },
 ];

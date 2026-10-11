@@ -118,7 +118,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-for-range-kept",
     breaks: "a range's `while (true)` with `$rangeNext` stays, not `for (let i = 0; i < k; i++)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            if start_key != \"start\" || end_key != \"end\" || !same || mutable {\n",
+    find: "            if start_key != \"start\" || end_key != \"end\" || mutable {\n",
     replace: "            if true {\n",
     tests: ["test/lowering.test.ts","-t","loops from MIR read"],
   },
@@ -633,5 +633,13 @@ export const mutations: Mutation[] = [
     find: "        i = i.saturating_sub(1);\n",
     replace: "",
     tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+  },
+  {
+    name: "mir-tidy-range-end-unheld",
+    breaks: "a range loop whose end is a call stays `while (true)` stepping `$rangeNext`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            let held = (!same).then(|| {\n",
+    replace: "            if !same {\n                return None;\n            }\n            let held = (!same).then(|| {\n",
+    tests: ["test/lowering.test.ts","-t","whose end is a call holds it first"],
   },
 ];

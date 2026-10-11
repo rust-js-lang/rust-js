@@ -236,8 +236,8 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
             body,
         },
         // A range's end, read once by Rust, is read each step by JS's `for`:
-        // only one that reads the same then, a constant or a variable the
-        // body doesn't assign.
+        // one that reads the same then, a constant or a variable the body
+        // doesn't assign; else a `const end` of it first, as THIR writes it.
         _ => {
             let ExprKind::Object(props) = &source.kind else {
                 return None;
@@ -251,16 +251,38 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
                 || matches!(&end.kind, ExprKind::Var(v) if !assigns(&body, v))
                 || matches!(&end.kind, ExprKind::Member(of, length)
                     if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
-            if start_key != "start" || end_key != "end" || !same || mutable {
+            if start_key != "start" || end_key != "end" || mutable {
                 return None;
             }
-            StmtKind::For {
+            let held = (!same).then(|| {
+                let unused = |n: &String| !mentions.contains_key(n);
+                let name = std::iter::once("end".to_string())
+                    .chain((1..).map(|k| format!("end${k}")))
+                    .find(unused)
+                    .expect("a name");
+                (name, end.clone())
+            });
+            if held.is_some() && !(start.is_constant() || matches!(start.kind, ExprKind::Var(_))) {
+                return None;
+            }
+            let test = match &held {
+                Some((held, _)) => Expr::var(held),
+                None => end.clone(),
+            };
+            let looped = StmtKind::For {
                 label: label.clone(),
-                test: Expr::bin(Op::Lt, Expr::var(&name), end.clone()),
+                test: Expr::bin(Op::Lt, Expr::var(&name), test),
                 name,
                 start: start.clone(),
                 body,
-            }
+            };
+            let mut out: Vec<Stmt> = held
+                .into_iter()
+                .map(|(n, e)| StmtKind::Const(n, e).at(js::Span::NONE))
+                .collect();
+            out.push(looped.at(js::Span::NONE));
+            out.extend(exit);
+            return Some(out);
         }
     };
     let mut out = vec![looped.at(js::Span::NONE)];

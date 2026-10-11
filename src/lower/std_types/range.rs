@@ -78,7 +78,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// The bounds of `{ start: a, end: b }` itself, if each reads the same
-    /// wherever it's read.
+    /// wherever it's read, or does nothing, `i + 1`: what it reads, nothing
+    /// changes between.
     pub(in crate::lower) fn range_literal_parts(&self, range: &Expr, kind: RangeKind) -> Option<Vec<Expr>> {
         let js::ExprKind::Object(props) = &range.kind else {
             return None;
@@ -90,7 +91,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .iter()
             .map(|name| {
                 props.iter().find_map(|prop| match prop {
-                    Prop::Field(field, value) if field == name && value.reads_same() => Some(value.clone()),
+                    Prop::Field(field, value) if field == name && (value.reads_same() || !value.has_effects()) => {
+                        Some(value.clone())
+                    }
                     _ => None,
                 })
             })
