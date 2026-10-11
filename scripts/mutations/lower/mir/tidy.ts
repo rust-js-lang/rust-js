@@ -930,4 +930,40 @@ export const mutations: Mutation[] = [
       "a match reading a table from MIR"
     ]
   },
+  {
+    "name": "negated-and-untruthed",
+    "breaks": "`!o ? false : f()` is `o && f()`, `undefined` where `o` is, not `false`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),\n",
+    "replace": "        (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a truthy option's is_some given as a value"
+    ]
+  },
+  {
+    "name": "negated-value-untruthed",
+    "breaks": "`!o ? false : true` is `o`, the object, not `true`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),\n",
+    "replace": "        (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a truthy option's is_some given as a value"
+    ]
+  },
+  {
+    "name": "negated-or-untruthed",
+    "breaks": "`o ? f() : true` of `is_none()`'s is `o || f()`, the object, not `true`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),\n",
+    "replace": "        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a truthy option's is_some given as a value"
+    ]
+  },
 ];

@@ -6916,3 +6916,50 @@ test("an early-stopping consumer leaves the rest of the iterator", async () => {
     expect(lib.after([1, 2, 3])).toEqual([1, 3, 1, 3, 2, 3, undefined, 3, 20, 3, 2, 3, 1, 1, 3]);
   }
 });
+
+// ADR 0298: `is_some()` of an `Option` never falsy, `!!o`, given as a
+// value, a `bool`'s: `!!o && f()` is `false` where it's `None`, never the
+// `undefined` of `o && f()`, as react.dev's DownloadButton keeps whether
+// import maps are supported.
+test("a truthy option's is_some given as a value is a boolean", async () => {
+  const dir = fixture("is-some-value");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use js::JsObject;
+unsafe extern "Rust" {
+    #[link_name = "get globalThis.maybeSupports"]
+    safe fn scriptSupports() -> Option<&'static JsObject>;
+    #[link_name = "globalThis.supportsIt"]
+    safe fn supports(what: &str) -> bool;
+}
+thread_local! {
+    static SUPPORTED: Cell<bool> = const { Cell::new(false) };
+}
+pub fn update() -> bool {
+    SUPPORTED.set(scriptSupports().is_some() && supports("importmap"));
+    SUPPORTED.get()
+}
+pub fn negated() -> bool {
+    if scriptSupports().is_none() { false } else { true }
+}
+pub fn or_none() -> bool {
+    if scriptSupports().is_none() { supports("x") } else { true }
+}
+`);
+  const globals = globalThis as typeof globalThis & { maybeSupports?: object; supportsIt?: (what: string) => boolean };
+  globals.supportsIt = () => true;
+  try {
+    for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+      run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+      const js = readFileSync(join(dir, out), "utf8");
+      expect(js).toContain('  SUPPORTED = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
+      const lib = await import(join(dir, out));
+      delete globals.maybeSupports;
+      const absent = [lib.update(), lib.negated(), lib.or_none()];
+      globals.maybeSupports = {};
+      expect([absent, [lib.update(), lib.negated(), lib.or_none()]]).toEqual([[false, false, true], [true, true, true]]);
+    }
+  } finally {
+    delete globals.maybeSupports;
+    delete globals.supportsIt;
+  }
+});

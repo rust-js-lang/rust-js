@@ -1937,17 +1937,17 @@ fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr)>
 /// where `yes` is `true`, the test `!!test` where it's not a `bool`.
 fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
     // Where the test itself is the value, of what's not a `bool`, `!!c`, as
-    // THIR writes it.
+    // THIR writes it; its negation too, `!!o` of `!o`'s, `is_some()`'s.
     let truth = |test: Expr| match is_boolean(&test, booleans) {
         true => test,
         false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),
     };
     match (&yes.kind, &no.kind) {
         (ExprKind::Bool(true), ExprKind::Bool(false)) => truth(test),
-        (ExprKind::Bool(false), ExprKind::Bool(true)) => negate(test),
+        (ExprKind::Bool(false), ExprKind::Bool(true)) => truth(negate(test)),
         (ExprKind::Bool(true), _) => Expr::bin(Op::Or, truth(test), no),
-        (ExprKind::Bool(false), _) => Expr::bin(Op::And, negate(test), no),
-        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, negate(test), yes),
+        (ExprKind::Bool(false), _) => Expr::bin(Op::And, truth(negate(test)), no),
+        (_, ExprKind::Bool(true)) => Expr::bin(Op::Or, truth(negate(test)), yes),
         (_, ExprKind::Bool(false)) => Expr::bin(Op::And, truth(test), yes),
         _ => Expr::cond(test, yes, no),
     }
