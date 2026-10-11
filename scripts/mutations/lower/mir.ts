@@ -1662,4 +1662,16 @@ export const mutations: Mutation[] = [
       "a function written in a closure is declared where it's written"
     ]
   },
+  {
+    "name": "mir-async-closure-wild-param-kept",
+    "breaks": "an `async` closure's `|_|` from MIR is `async (_) => ..`, not `async () => ..` as THIR's",
+    "file": "src/lower/mir.rs",
+    "find": "            && (name == \"_\" || name.starts_with(\"_$\"))\n",
+    "replace": "            && name == \"never\"\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an async closure's ignored argument is no parameter"
+    ]
+  },
 ];

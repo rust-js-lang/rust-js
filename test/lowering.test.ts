@@ -7947,3 +7947,24 @@ test("a function written in a closure is declared where it's written", async () 
     expect([lib.counted([1, 2, 3], 0), lib.counted([1, 2, 3], -2)]).toEqual([5, 0]);
   }
 });
+
+// From MIR as from THIR: an `async` closure's `|_|`, which takes nothing it
+// reads, takes nothing in JS either, `async () => ..`, as react.dev's
+// PageHeading has its copy button's handler.
+test("an async closure's ignored argument is no parameter", async () => {
+  const dir = fixture("async-wild");
+  writeFileSync(join(dir, "lib.rs"), `pub async fn run(f: impl AsyncFn(u32) -> u32) -> u32 {
+    f(2).await
+}
+pub async fn made() -> u32 {
+    run(async move |_| 1).await + run(async move |x| x).await
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("run(async () => 1)");
+    const lib = await import(join(dir, out));
+    expect(await lib.made()).toBe(3);
+  }
+});

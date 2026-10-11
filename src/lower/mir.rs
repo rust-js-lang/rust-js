@@ -976,6 +976,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 params.pop();
             }
         }
+        // An `async` closure's `|_|`, which its MIR leaves unnamed, and its
+        // THIR binds as `__arg0`: read nowhere, none either.
+        while let Some(js::Pattern::Name(name)) = params.last()
+            && (name == "_" || name.starts_with("_$"))
+            && js::mentions_in(&stmts, name) == 0
+        {
+            params.pop();
+        }
         // An `async` body runs as soon as it's made: an async arrow, called
         // at once (ADR 0029).
         if self.tcx.coroutine_is_async(def_id) {
