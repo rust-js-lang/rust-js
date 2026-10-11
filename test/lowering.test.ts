@@ -8211,3 +8211,27 @@ pub fn shown(infos: &[Info]) -> Vec<String> {
     expect(lib.shown([{ caption: "a" }, { caption: "" }, {}])).toEqual(["<a>", "", ""]);
   }
 });
+
+// From MIR as from THIR: a float THIR knows whole and in range where it's
+// cast, `index as u32` of `indexOf`'s once it isn't -1, is the value as it
+// is (`whole_casts`), not `$f64ToInt(index, ..)`, as react.dev's CodeBlock
+// finds a highlight's column.
+test("a whole float's cast is the float from MIR too", async () => {
+  const dir = fixture("whole-cast");
+  writeFileSync(join(dir, "lib.rs"), `use js::string;
+pub fn column(line: &str, substr: &str) -> u32 {
+    let index = string::index_of(line, substr);
+    if index == -1.0 {
+        panic!("Could not find: '{substr}'");
+    }
+    index as u32 + string::length(substr)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return (index + substr.length) >>> 0;");
+    const lib = await import(join(dir, out));
+    expect(lib.column("abcd", "cd")).toBe(4);
+  }
+});

@@ -2994,6 +2994,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     v
                 } else if to.is_char() {
                     Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![v])
+                } else if self.whole_cast_at(span) {
+                    v
                 } else {
                     self.cast(v, from, *to, span)?
                 }
@@ -3671,6 +3673,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// there, where it's the one.
     fn thir_call_args(&self, def_id: rustc_span::def_id::DefId, fn_span: Span) -> Option<Vec<thir::ExprId>> {
         self.thir_call(def_id, fn_span).map(|(_, args)| args)
+    }
+
+    /// Whether THIR's cast at `span`, MIR's there, is of a float it knows
+    /// whole and in the target's range: the value as it is, as THIR writes
+    /// it (`whole_casts`).
+    fn whole_cast_at(&self, span: Span) -> bool {
+        let mut casts = (self.thir.exprs.iter_enumerated())
+            .filter(|(_, e)| matches!(e.kind, thir::ExprKind::Cast { .. }) && e.span.source_equal(span));
+        matches!((casts.next(), casts.next()), (Some((id, _)), None) if self.body_facts.whole_casts.contains(&id))
     }
 
     /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's

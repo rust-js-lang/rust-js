@@ -1698,4 +1698,16 @@ export const mutations: Mutation[] = [
       "continues a loop's ifs end with are kept"
     ]
   },
+  {
+    "name": "mir-whole-cast-wrapped",
+    "breaks": "a float THIR knows whole and in range, cast, is `$f64ToInt(index, ..)` from MIR, not `index`",
+    "file": "src/lower/mir.rs",
+    "find": "                } else if self.whole_cast_at(span) {",
+    "replace": "                } else if false {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a whole float's cast is the float from MIR too"
+    ]
+  },
 ];
