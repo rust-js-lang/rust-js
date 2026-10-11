@@ -202,6 +202,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     tail_returns(body, returns);
     // A chain's arms, as statements, in the order written.
     js::statement_lists(body, &mut |stmts| written_chains(stmts));
+    // `const result = e; return result;` of what the function gives: `return e;`.
+    js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));
     // And their arms that do nothing.
     bottom_up(body, &mut empty_branches);
     // A cell only its `value` is read and set of, by name: its variable.
@@ -2718,6 +2720,23 @@ fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
             names_in(body, names);
         }
     });
+}
+
+/// `const result = e; return result;`, the place MIR makes what a function
+/// gives in, `returned`'s once it's a `const`: `return e;`.
+fn returned_consts(stmts: &mut Vec<Stmt>, result: &str) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let returns = matches!((&stmts[i].kind, &stmts[i + 1].kind), (StmtKind::Const(name, _), StmtKind::Return(Some(value)))
+            if name == result && matches!(&value.kind, ExprKind::Var(v) if v == name));
+        if returns {
+            let StmtKind::Const(_, value) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            stmts[i].kind = StmtKind::Return(Some(value));
+        }
+        i += 1;
+    }
 }
 
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.

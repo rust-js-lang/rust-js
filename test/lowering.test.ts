@@ -7830,3 +7830,23 @@ pub fn lines(meta: &str) -> String {
     expect([lib.lines("x"), lib.lines("")]).toEqual(["AB", ""]);
   }
 });
+
+// An `||` chain whose first test is a getter's `bool`, `element.isContentEditable`,
+// is one chain returned, from MIR as from THIR, as react.dev's Search tells
+// whether a key goes to what's being edited.
+test("an or chain of a getter's bool is returned as one", async () => {
+  const dir = fixture("getter-or-chain");
+  writeFileSync(join(dir, "lib.rs"), `use react::webapi::HTMLElement;
+pub fn editing(element: &HTMLElement) -> bool {
+    let tag_name = element.tag_name();
+    element.is_content_editable() || tag_name == "INPUT" || tag_name == "SELECT" || tag_name == "TEXTAREA"
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  return (\n    element.isContentEditable ||\n");
+    const lib = await import(join(dir, out));
+    expect([lib.editing({ isContentEditable: false, tagName: "SELECT" }), lib.editing({ isContentEditable: false, tagName: "B" })]).toEqual([true, false]);
+  }
+});

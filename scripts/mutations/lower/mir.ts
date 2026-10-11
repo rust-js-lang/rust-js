@@ -1606,4 +1606,12 @@ export const mutations: Mutation[] = [
       "held temporary is named as THIR"
     ]
   },
+  {
+    "name": "mir-stored-paths-unknown",
+    "breaks": "a getter's `bool` stored in a local isn't known as one, `!!(element.isContentEditable || ..)`",
+    "file": "src/lower/mir.rs",
+    "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.paths.entry(path).or_insert(bool) &= bool;\n        }\n        let unread",
+    "replace": "        }\n        let unread",
+    "tests": ["test/lowering.test.ts", "-t", "or chain of a getter's bool"]
+  },
 ];

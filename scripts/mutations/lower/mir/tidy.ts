@@ -1426,4 +1426,12 @@ export const mutations: Mutation[] = [
     "replace": "    let set = changed.clone();\n",
     "tests": ["test/mir.test.ts", "-t", "JSX tests"]
   },
+  {
+    "name": "mir-tidy-returned-consts-kept",
+    "breaks": "what a function gives from MIR stays `const result = e; return result;`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));\n",
+    "replace": "",
+    "tests": ["test/lowering.test.ts", "-t", "or chain of a getter's bool"]
+  },
 ];

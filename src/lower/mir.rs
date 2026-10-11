@@ -1896,6 +1896,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Place::from(local),
             false => place,
         };
+        // A field's path stored in a local, a getter's `element.isContentEditable`:
+        // whether it's a `bool`, as of a place read (`mir_place`).
+        if place.projection.is_empty()
+            && let Value::Expr(e) = &value
+            && let Some(path) = tidy::field_path(e)
+        {
+            let bool = state.body.local_decls[local].ty.is_bool();
+            *self.locals.paths.entry(path).or_insert(bool) &= bool;
+        }
         let unread = !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local];
         if place.projection.is_empty() && (state.locals.names[local].is_empty() || unread) {
             // Of `()`, or a temporary nothing reads: what made it runs.
