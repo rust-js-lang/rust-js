@@ -1106,4 +1106,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => read,\n",
     tests: ["test/lowering.test.ts","-t","props field's default is read"],
   },
+  {
+    name: "mir-spawning-closure-arrow",
+    breaks: "a closure that only spawns an async block is `() => { (async () => …)(); }`, not `async () => …`",
+    file: "src/lower/mir.rs",
+    find: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
+    replace: "            && let js::ExprKind::AsyncArrow(inner, spawned) = &callee.kind\n            && inner.is_empty()\n            && false\n        {\n            return Ok(Expr::async_arrow(params, spawned.clone()));\n",
+    tests: ["test/lowering.test.ts","-t","only spawns an async block"],
+  },
 ];

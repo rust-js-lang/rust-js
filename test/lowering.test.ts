@@ -2841,7 +2841,8 @@ pub fn both(h: Holder<bool>) -> (Holder<bool>, Holder<bool>) {
 // A closure that only spawns an async block is an async arrow, as
 // react.dev's BrandMenu writes `onSelect={async () => { await
 // navigator.clipboard.writeText(..) }}`: it starts the same, and gives
-// back a promise where nothing reads its `()` (ADR 0257).
+// back a promise where nothing reads its `()` (ADR 0257). From MIR too
+// (ADR 0364).
 test("a closure that only spawns an async block is an async arrow", async () => {
   const dir = fixture("spawning-closure");
   writeFileSync(join(dir, "copy.js"), "export const copied = [];\nexport async function copy(text) { copied.push(text); }\n");
@@ -2858,13 +2859,16 @@ pub fn handler() -> Box<dyn Fn()> {
     })
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
-  const lib = await import(join(dir, "lib.js"));
   const { copied } = await import(join(dir, "copy.js"));
-  lib.handler()();
-  expect(copied).toEqual(["#58C4DC"]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
+    const lib = await import(join(dir, out));
+    copied.length = 0;
+    await lib.handler()();
+    expect(copied).toEqual(["#58C4DC"]);
+  }
 });
 
 // ADR 0266: text is falsy in JS only where it's empty, so text an option
