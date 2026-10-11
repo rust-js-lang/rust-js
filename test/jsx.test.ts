@@ -4596,7 +4596,8 @@ pub fn App(items: &[&'static str]) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("Inside.Provider");
-  expect(jsx).not.toContain("const _");
+  // No temporary held, `_14` or what it's named after, `value`.
+  expect(jsx).not.toMatch(/\bconst (_\d|value\b)/);
   const lib = await import(join(dir, "lib.jsx"));
   expect([["a", "b"], []].map((items) => renderToStaticMarkup(lib.App(items)))).toEqual(["<b>2</b>", ""]);
 });
@@ -4747,25 +4748,29 @@ pub fn Page(home: bool, meta: &Meta, title: &'static str, path: String) -> JSX::
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).not.toContain("const _");
+  // No temporary held, `_14` or what it's named after, `value`.
+  expect(jsx).not.toMatch(/\bconst (_\d|value\b)/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page(false, { tag: "t" }, "T", "a/b"))).toBe('<div><span title="T" lang="t">/og/a-b.png</span></div>');
 });
 
 // ADR 0364: a prop MIR holds in a temporary is read where it's written past
-// an element's tag imported from another module, `<Seo>`, which no call
-// changes, as react.dev's Page gives Seo its image.
+// an element's tag, a static component of another module, `<Seo>`, which no
+// call changes, as react.dev's Page gives Seo its image.
 test("a prop held for a borrow is read where it's written, past an imported tag", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
 mod seo {
-    use react::{JSX, jsx};
+    use react::{JSX, MemoExoticComponent, jsx, memo};
     pub struct SeoProps<'a> {
         pub title: &'a str,
         pub image: &'a str,
     }
-    pub fn Seo(SeoProps { title, image }: SeoProps) -> JSX::Element {
+    fn Inner(SeoProps { title, image }: SeoProps) -> JSX::Element {
         jsx! { <span title={title}>{image}</span> }
+    }
+    thread_local! {
+        pub static Seo: MemoExoticComponent<SeoProps<'static>> = memo(Inner);
     }
 }
 use seo::{Seo, SeoProps};
@@ -4775,7 +4780,7 @@ pub fn Page(home: bool, title: &'static str, path: String) -> JSX::Element {
             <Seo
                 title={title}
                 image={
-                    if home || title.is_empty() {
+                    if home {
                         format!("/og-{}.png", path)
                     } else {
                         format!("/og/{}.png", path.replace('/', "-"))
@@ -4790,7 +4795,8 @@ pub fn Page(home: bool, title: &'static str, path: String) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).not.toContain("const _");
+  // No temporary held, `_14` or what it's named after, `value`.
+  expect(jsx).not.toMatch(/\bconst (_\d|value\b)/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page(false, "T", "a/b"))).toBe('<div><span title="T">/og/a-b.png</span></div>');
 });
@@ -5010,7 +5016,8 @@ pub fn Page(home: bool, show: bool, path: String) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).not.toContain("const _");
+  // No temporary held, `_14` or what it's named after, `value`.
+  expect(jsx).not.toMatch(/\bconst (_\d|value\b)/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page(false, true, "a/b"))).toBe("<div><i>open</i><span>/og/a-b.png</span></div>");
 });
@@ -5178,4 +5185,255 @@ pub fn highlight() -> &'static Highlight {
   expect(js).not.toContain("impl");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.highlight()).toEqual([{ tag: "em", font_style: "italic" }, { tag: "kw", class: "token-keyword" }]);
+});
+
+// ADR 0364: props MIR holds ahead of a later child's closure, `const value$3
+// = cn(..)`, are read where they're written past what no call can change:
+// the closure's making, a conditional of parameters, and a `let` no
+// closure sets, `target`, as react.dev's SidebarLink gives its link
+// classes.
+test("props held ahead of a closure child are read where they're written", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub struct LinkProps<'a, C: ReactNode> {
+    pub href: &'a str,
+    pub target: Option<&'a str>,
+    pub aria_current: Option<&'a str>,
+    pub class_name: Option<&'a str>,
+    pub children: C,
+}
+pub fn Link<C: ReactNode>(LinkProps { href, target, aria_current, class_name, children }: LinkProps<C>) -> JSX::Element {
+    jsx! { <a href={href} target={target.unwrap_or_default()} aria-current={aria_current.unwrap_or_default()} className={class_name.unwrap_or_default()}>{children}</a> }
+}
+pub fn SidebarLink(href: &'static str, title: &'static str, selected: bool, level: u32, external: bool, version: u32) -> JSX::Element {
+    let mut target = None;
+    if external {
+        target = Some("_blank");
+    }
+    jsx! {
+        <Link
+            href={href}
+            target={target}
+            aria_current={selected.then_some("page")}
+            class_name={Some(cn(&[Some("p-2"), (level > 0).then_some("text-sm"), selected.then_some("text-link")]).as_str())}>
+            <div>
+                {title}{" "}
+                {(version == 19).then(|| jsx! { <span>{"React 19"}</span> })}
+                {(version == 20).then(|| jsx! { <b>{"Canary"}</b> })}
+            </div>
+            {(level > 1).then(|| {
+                let arrow = cn(&[Some("arrow"), selected.then_some("open")]);
+                jsx! { <span className={arrow} /> }
+            })}
+        </Link>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  // MIR's, which reads them in place; THIR holds them still.
+  if (process.env.RUST_JS_MIR === "1") {
+    expect(jsx).toContain("      target={target}\n      aria_current={selected ? \"page\" : undefined}\n      class_name={cn([");
+  }
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.SidebarLink("/a", "A", true, 2, true, 19))).toBe('<a href="/a" target="_blank" aria-current="page" class="p-2 text-sm text-link"><div>A <span>React 19</span></div><span class="arrow open"></span></a>');
+});
+
+// ADR 0364: react.dev's SidebarLink, its imports stood in for: the link's
+// classes, `cn(..)`, held for a borrow, are read where they're written, past
+// the props and children MIR holds after them, a `let` no closure sets,
+// `target`, and tests of parameters, `version === "major" && <span>`.
+test("react.dev's SidebarLink writes its classes in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use js::{Kind, Unknown, classify};
+use react::attributes::AnchorHTMLAttributes;
+use react::webapi::HTMLAnchorElement;
+use react::{JSX, ReactNode, RefObject, jsx, use_effect, use_ref};
+unsafe extern "Rust" {
+    #[link_name = "./cn.js#default"]
+    #[cfg_attr(rust_js, rust_js::variadic)]
+    #[cfg_attr(rust_js, rust_js::skips_falsy)]
+    pub safe fn cn(classes: &[Option<&str>]) -> String;
+}
+#[derive(Default)]
+pub struct LinkProps<'a, C> {
+    pub href: &'a str,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub anchor: AnchorHTMLAttributes<'a>,
+    pub replace: Option<bool>,
+    pub scroll: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "passHref")]
+    pub pass_href: Option<bool>,
+    pub r#ref: Option<RefObject<Option<&'static HTMLAnchorElement>>>,
+    #[cfg_attr(rust_js, rust_js::name = "className")]
+    pub class_name: Option<&'a str>,
+    pub target: Option<&'a str>,
+    pub rel: Option<&'a str>,
+    pub id: Option<&'a str>,
+    pub children: C,
+}
+#[rust_js::link_name = "./link.js#default"]
+pub fn Link<C: ReactNode>(props: LinkProps<'_, C>) -> JSX::Element {
+    unreachable!()
+}
+pub struct IconProps<'a> {
+    pub title: Option<&'a str>,
+    pub class_name: Option<&'a str>,
+}
+pub fn IconCanary(IconProps { title, class_name }: IconProps) -> JSX::Element {
+    jsx! { <i title={title.unwrap_or_default()} className={class_name.unwrap_or_default()} /> }
+}
+pub fn IconExperimental(IconProps { title, class_name }: IconProps) -> JSX::Element {
+    jsx! { <i title={title.unwrap_or_default()} className={class_name.unwrap_or_default()} /> }
+}
+#[derive(Clone, Copy, PartialEq)]
+pub enum DisplayDirection {
+    #[cfg_attr(rust_js, rust_js::name = "down")]
+    Down,
+    #[cfg_attr(rust_js, rust_js::name = "end")]
+    End,
+}
+pub struct IconNavArrowProps {
+    pub display_direction: Option<DisplayDirection>,
+}
+pub fn IconNavArrow(IconNavArrowProps { display_direction }: IconNavArrowProps) -> JSX::Element {
+    jsx! { <b>{(display_direction == Some(DisplayDirection::Down)).then_some("v")}</b> }
+}
+#[derive(PartialEq)]
+pub enum Version {
+    #[cfg_attr(rust_js, rust_js::name = "major")]
+    Major,
+    #[cfg_attr(rust_js, rust_js::name = "canary")]
+    Canary,
+    #[cfg_attr(rust_js, rust_js::name = "experimental")]
+    Experimental,
+    #[cfg_attr(rust_js, rust_js::name = "rc")]
+    Rc,
+}
+pub struct SidebarLinkProps<'a> {
+    pub href: &'a str,
+    #[cfg_attr(rust_js, rust_js::default)]
+    pub selected: bool,
+    pub title: &'a str,
+    pub level: u32,
+    pub version: Option<Version>,
+    pub icon: Option<Box<dyn ReactNode>>,
+    pub is_expanded: Option<bool>,
+    pub hide_arrow: Option<bool>,
+    pub is_pending: bool,
+}
+
+unsafe extern "Rust" {
+    // Chrome's and Safari's, not every browser's.
+    #[link_name = "get scrollIntoViewIfNeeded"]
+    safe fn scroll_into_view_if_needed_of(this: &HTMLAnchorElement) -> &'static Unknown;
+    #[link_name = "scrollIntoViewIfNeeded"]
+    safe fn scroll_into_view_if_needed(this: &HTMLAnchorElement);
+}
+
+pub fn SidebarLink(
+    SidebarLinkProps {
+        href,
+        selected,
+        title,
+        version,
+        level,
+        is_expanded,
+        hide_arrow,
+        is_pending,
+        ..
+    }: SidebarLinkProps,
+) -> JSX::Element {
+    let r#ref = use_ref::<Option<&'static HTMLAnchorElement>>(None);
+
+    use_effect(
+        move || {
+            if selected && let Some(current) = r#ref.current() {
+                if matches!(classify(scroll_into_view_if_needed_of(current)), Kind::Function(_)) {
+                    scroll_into_view_if_needed(current);
+                }
+            }
+        },
+        (r#ref, selected),
+    );
+
+    let mut target = "";
+    if href.starts_with("https://") {
+        target = "_blank";
+    }
+    jsx! {
+        <Link
+            href={href}
+            ref={Some(r#ref)}
+            title={Some(title)}
+            target={Some(target)}
+            passHref={Some(true)}
+            aria-current={selected.then_some("page".into())}
+            className={Some(cn(&[
+                Some("p-2 pe-2 w-full rounded-none lg:rounded-e-2xl text-start hover:bg-gray-5 dark:hover:bg-gray-80 relative flex items-center justify-between"),
+                (level > 0).then_some("text-sm ps-6"),
+                (level < 2).then_some("ps-5"),
+                (level == 0).then_some("text-base font-bold"),
+                (level == 0 && !selected).then_some("text-primary dark:text-primary-dark"),
+                (level > 0 && !selected).then_some("text-base text-secondary dark:text-secondary-dark"),
+                selected.then_some("text-base text-link dark:text-link-dark bg-highlight dark:bg-highlight-dark border-blue-40 hover:bg-highlight hover:text-link dark:hover:bg-highlight-dark dark:hover:text-link-dark"),
+                is_pending.then_some("dark:bg-gray-70 bg-gray-3 dark:hover:bg-gray-70 hover:bg-gray-3"),
+            ]).as_str())}>
+            // This here needs to be refactored ofc
+            <div>
+                {title}{" "}
+                {(version == Some(Version::Major)).then(|| jsx! {
+                    <span
+                        title="- This feature is available in React 19 beta and the React canary channel"
+                        className="text-xs px-1 ms-1 rounded bg-gray-10 dark:bg-gray-40 dark:bg-opacity-20 text-gray-40 dark:text-gray-40">
+                        {"React 19"}
+                    </span>
+                })}
+                {(version == Some(Version::Canary)).then(|| jsx! {
+                    <IconCanary
+                        title={Some(" - This feature is available in the latest Canary version of React")}
+                        className={Some("ms-1 text-gray-30 dark:text-gray-60 inline-block w-3.5 h-3.5 align-[-3px]")}
+                    />
+                })}
+                {(version == Some(Version::Experimental)).then(|| jsx! {
+                    <IconExperimental
+                        title={Some(" - This feature is available in the latest Experimental version of React")}
+                        className={Some("ms-1 text-gray-30 dark:text-gray-60 inline-block w-3.5 h-3.5 align-[-3px]")}
+                    />
+                })}
+                {(version == Some(Version::Rc)).then(|| jsx! {
+                    <IconCanary
+                        title={Some(" - This feature is available in the latest RC version")}
+                        className={Some("ms-1 text-gray-30 dark:text-gray-60 inline-block w-3.5 h-3.5 align-[-3px]")}
+                    />
+                })}
+            </div>
+
+            {(is_expanded.is_some() && !hide_arrow.unwrap_or(false)).then(|| jsx! {
+                <span
+                    className={cn(&[
+                        Some("pe-1"),
+                        is_expanded.unwrap_or(false).then_some("text-link dark:text-link-dark"),
+                        (!is_expanded.unwrap_or(false)).then_some("text-tertiary dark:text-tertiary-dark"),
+                    ])}>
+                    <IconNavArrow
+                        displayDirection={Some(if is_expanded.unwrap_or(false) { DisplayDirection::Down } else { DisplayDirection::End })}
+                    />
+                </span>
+            })}
+        </Link>
+    }
+}
+`, {
+    "link.js": 'import { createElement } from "react"; export default function Link({ href, className, target, title, children, ...rest }) { return createElement("a", { href, className, target, title, "aria-current": rest["aria-current"] }, children); }\n',
+    "cn.js": "export default (...classes) => classes.filter(Boolean).join(\" \");\n",
+  });
+  run([...args, "--extern", `js=${join(target, "libjs.rmeta")}`]);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toMatch(/const \w+ = cn\(/);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.SidebarLink, { href: "https://x", selected: true, title: "T", level: 0, version: "major", isPending: false }))).toContain('<a href="https://x" class="p-2 pe-2');
 });

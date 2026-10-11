@@ -106,3 +106,5 @@ an element made where an object's truth holds is read where it's written
 a child shown where a state's bool holds is an and
 children held as a tuple are read as their items
 dyn values given to a JS module's function are the values
+props held ahead of a closure child are read where they're written
+react.dev's SidebarLink writes its classes in place

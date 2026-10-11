@@ -164,14 +164,15 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // `dyn` values given to JS, `[{ value, impl }].map((item) => item.value)`: the values.
     js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));
     let changed = self::changing(body);
+    let set = closures_set(body);
     // What an element MIR made only where a test holds reads, as one value,
     // read in place below, where the test holds.
     js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));
+    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));
+    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
     js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
     // $iter(xs);`: the array's, as THIR's.
@@ -2169,6 +2170,73 @@ fn chained_checks(stmts: &mut [Stmt]) {
     }
 }
 
+/// Whether reading `e` after a call reads what it did before: a constant, a
+/// variable no closure sets, `set`'s, which a call can't then; an import,
+/// `<Seo>`'s tag, a module's export being never set again, a `static mut`
+/// its `{ value }`; a field of a plain value, `meta.tag`, which no call can
+/// change, as MIR's lowering reads it where it's read, or a builtin's
+/// function, `Object.fromEntries`; an element of such, a closure made, and a
+/// test or a choice of such, `selected ? "page" : undefined`.
+fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> bool {
+    let past = |e: &Expr| read_past_calls(e, set, plain);
+    let mut root = e;
+    while let ExprKind::Member(of, _) = &root.kind {
+        root = of;
+    }
+    match &e.kind {
+        ExprKind::Var(v) => !set.contains(v),
+        ExprKind::Symbol(_) => true,
+        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
+        ExprKind::Member(of, _) => {
+            matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v))
+                || matches!(&of.kind, ExprKind::Var(v)
+                    if !set.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String"))
+        }
+        ExprKind::Jsx(_) => inert_element(e, set),
+        ExprKind::Unary(UnaryOp::Not, a) => past(a),
+        ExprKind::Binary(
+            Op::Eq
+            | Op::Ne
+            | Op::LooseEq
+            | Op::LooseNe
+            | Op::Lt
+            | Op::Le
+            | Op::Gt
+            | Op::Ge
+            | Op::And
+            | Op::Or
+            | Op::Coalesce,
+            a,
+            b,
+        ) => past(a) && past(b),
+        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),
+        _ => e.is_made_of_constants(),
+    }
+}
+
+/// The variables a closure in `body` sets, `x = ..` in an arrow's body.
+fn closures_set(body: &[Stmt]) -> HashSet<String> {
+    let mut set = HashSet::new();
+    js::each_expr_mut(&mut body.to_vec(), &mut |e| {
+        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
+            js::statement_lists(&mut body.clone(), &mut |list| {
+                for stmt in list.iter() {
+                    if let StmtKind::Assign(target, _) = &stmt.kind {
+                        let mut root = target;
+                        while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
+                            root = of;
+                        }
+                        if let ExprKind::Var(v) = &root.kind {
+                            set.insert(v.clone());
+                        }
+                    }
+                }
+            });
+        }
+    });
+    set
+}
+
 /// Whether making `e` reads only what no call changes: an element, array or
 /// object of constants, of variables nothing sets again, of imports and of
 /// arrows, which capture what they read, and of such elements.
@@ -2858,7 +2926,14 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
 /// after it, or after those that are moved there too: `e` where it's read, where nothing that runs before it there
 /// does anything, or anywhere outside a closure if `e` does nothing and
 /// reads nothing that changes.
-fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<String>, captured: &HashSet<String>) {
+/// `set`, the variables a closure sets: what a call can change of them.
+fn inlined(
+    stmts: &mut Vec<Stmt>,
+    changing: &HashSet<String>,
+    set: &HashSet<String>,
+    plain: &HashSet<String>,
+    captured: &HashSet<String>,
+) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         let (head, rest) = stmts.split_at_mut(i + 1);
@@ -2878,30 +2953,10 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<St
             false => !e.has_effects(),
             true if element => {
                 let mut unchanged = !e.has_effects();
-                e.visit_vars(&mut |v| unchanged &= !changing.contains(v));
+                e.visit_vars(&mut |v| unchanged &= !set.contains(v));
                 unchanged
             }
-            // A builtin's function too, `Object.fromEntries`, which nothing changes.
-            true => {
-                // A field of a plain value too, `meta.tag`, which no call can
-                // change, as MIR's lowering reads it where it's read.
-                let mut root = e;
-                while let ExprKind::Member(of, _) = &root.kind {
-                    root = of;
-                }
-                e.is_made_of_constants()
-                    || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v))
-                    // An import, `<Seo>`'s tag: a module's export is never set
-                    // again, a `static mut` being its `{ value }`.
-                    || matches!(e.kind, ExprKind::Symbol(_))
-                    || matches!(e.kind, ExprKind::Member(..))
-                        && matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !changing.contains(v))
-                    || matches!(&e.kind, ExprKind::Member(of, _)
-                        if matches!(&of.kind, ExprKind::Var(v)
-                            if !changing.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String")))
-                    // An element of what no call changes, `<Search isOpen={show} />`.
-                    || matches!(e.kind, ExprKind::Jsx(_)) && inert_element(e, changing)
-            }
+            true => read_past_calls(e, set, plain),
         };
         // The statement that reads it, past `const`s of what it may be read
         // past, `const list$1 = list;` a callback's borrow.

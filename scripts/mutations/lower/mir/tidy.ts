@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-past-changed-reads",
     breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",
-    find: "                }\n                e.is_made_of_constants()\n",
-    replace: "                }\n                !e.has_effects() ||\n                e.is_made_of_constants()\n",
+    find: "            matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v))\n",
+    replace: "            true\n",
     tests: ["test/mir.test.ts","-t","assignment_order"],
   },
   {
@@ -574,7 +574,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-late-consts-kept",
     breaks: "a `const` declarations makes last stays, `const _27 = e; _24 = _27;`",
     file: "src/lower/mir/tidy.rs",
-    find: "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));\n",
+    find: "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));\n",
     replace: "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n",
     tests: ["test/lowering.test.ts","-t","else if. given as a value"],
   },
@@ -774,8 +774,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-constant-objects-block",
     breaks: "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
     file: "src/lower/mir/tidy.rs",
-    find: "                }\n                e.is_made_of_constants()\n",
-    replace: "                }\n                e.is_constant()\n",
+    find: "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n        _ => e.is_made_of_constants(),\n",
+    replace: "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n        _ => e.is_constant(),\n",
     tests: ["test/lowering.test.ts","-t","past an object of constants"],
   },
   {
@@ -1106,8 +1106,8 @@ export const mutations: Mutation[] = [
     "name": "plain-field-blocks-inline",
     "breaks": "a prop MIR holds for a borrow stays a `const _14`, read past `meta.tag` of a plain value",
     "file": "src/lower/mir/tidy.rs",
-    "find": "                        && matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !changing.contains(v))\n",
-    "replace": "                        && false\n",
+    "find": "            matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v))\n",
+    "replace": "            false\n",
     "tests": [
       "test/mir.test.ts",
       "-t",
@@ -1118,8 +1118,8 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-import-blocks-inline",
     "breaks": "a prop MIR holds for a borrow stays a `const _13`, read past an imported tag, `<Seo>`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "                    || matches!(e.kind, ExprKind::Symbol(_))\n",
-    "replace": "",
+    "find": "        ExprKind::Symbol(_) => true,\n        ExprKind::Arrow(..)",
+    "replace": "        ExprKind::Arrow(..)",
     "tests": [
       "test/mir.test.ts",
       "-t",
@@ -1274,7 +1274,7 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-sibling-element-blocks",
     "breaks": "a prop MIR holds for a borrow stays a `const _16`, read past a sibling element, `<Search isOpen={show} />`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "                    || matches!(e.kind, ExprKind::Jsx(_)) && inert_element(e, changing)\n",
+    "find": "        ExprKind::Jsx(_) => inert_element(e, set),\n",
     "replace": "",
     "tests": [
       "test/mir.test.ts",
@@ -1401,5 +1401,29 @@ export const mutations: Mutation[] = [
       "-t",
       "JSX tests"
     ]
+  },
+  {
+    "name": "mir-tidy-closure-made-blocks",
+    "breaks": "a closure's making, `const value = () => ..`, blocks props held before it, `const value$3 = cn(..)`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,\n        ExprKind::Member(of, _) => {\n",
+    "replace": "        ExprKind::Member(of, _) => {\n",
+    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+  },
+  {
+    "name": "mir-tidy-choice-blocks",
+    "breaks": "a conditional of parameters, `selected ? \"page\" : undefined`, blocks a prop held after it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n",
+    "replace": "",
+    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+  },
+  {
+    "name": "mir-tidy-lets-block",
+    "breaks": "a `let` no closure sets, `target`, blocks a prop held after it, as any variable set again",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    let set = closures_set(body);\n",
+    "replace": "    let set = changed.clone();\n",
+    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
   },
 ];
