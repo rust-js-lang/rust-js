@@ -1002,4 +1002,16 @@ export const mutations: Mutation[] = [
       "negated matches, string methods"
     ]
   },
+  {
+    "name": "target-root-not-inlined",
+    "breaks": "`const _25 = ref.current; _25[k] = v` stays, not `ref.current[k] = v` (and no `??=` of it)",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    (true, true) => Some(target),\n",
+    "replace": "                    (true, true) => None,\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

@@ -4634,3 +4634,27 @@ pub fn App(hint: Option<&'static str>, shown: bool) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(lib.App("h", true)), renderToStaticMarkup(lib.App("h", false)), renderToStaticMarkup(lib.App(undefined, true))]).toEqual(["<div>h</div>", "<div></div>", "<div></div>"]);
 });
+
+// A ref's `current`, read first as what an index is set of, is read in
+// place, where JS reads an assignment's target before its value: `??=`, as
+// react.dev's CustomPreset counts a file's lines once.
+test("a ref's object set by its key is read where it's set", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use js::dict;
+use react::{JSX, jsx, use_ref};
+pub fn Lines(file: &'static str, code: &'static str) -> JSX::Element {
+    let lineCountRef = use_ref(dict::new::<usize>());
+    if dict::get(lineCountRef.current(), file).is_none() {
+        dict::set(lineCountRef.current(), file, code.split('\\n').count());
+    }
+    let n = *dict::get(lineCountRef.current(), file).unwrap();
+    jsx! { <b>{n.to_string()}</b> }
+}
+`);
+  args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('  lineCountRef.current[file] ??= code.split("\\n").length;\n');
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(() => lib.Lines("a", "x\ny")))).toBe("<b>2</b>");
+});

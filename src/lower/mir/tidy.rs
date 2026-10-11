@@ -2120,7 +2120,18 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet
             StmtKind::Assign(target, e) if !target.has_effects() => {
                 let mut in_target = false;
                 target.visit_vars(&mut |v| in_target |= v == name);
-                (!in_target).then_some(e)
+                // What's set of it, `_25[k] = v`, `_25` what does nothing:
+                // JS reads a target's object first, as it was read.
+                let mut root = &*target;
+                while let ExprKind::Index(of, _) | ExprKind::Member(of, _) = &root.kind {
+                    root = of;
+                }
+                let set_of = matches!(&root.kind, ExprKind::Var(v) if v == name) && !value.has_effects();
+                match (in_target, set_of) {
+                    (false, _) => Some(e),
+                    (true, true) => Some(target),
+                    (true, false) => None,
+                }
             }
             StmtKind::If(test, ..) => {
                 let mut in_test = false;
