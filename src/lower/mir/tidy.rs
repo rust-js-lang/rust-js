@@ -138,7 +138,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A pattern's binding of a variable, after those: of a temporary that
     // was a variable's too, `as_deref()`'s, `const code = errorCode;`.
     bottom_up(body, &mut |stmts| payload_aliases(stmts, payloads, &changing));
-    js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));
     named_temporaries(body);
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));

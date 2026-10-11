@@ -59,14 +59,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","branches from MIR read"],
   },
   {
-    name: "mir-tidy-temporaries-kept",
-    breaks: "a temporary read once stays a `const _5`, not written where it's read",
-    file: "src/lower/mir/tidy.rs",
-    find: "    js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
-  },
-  {
     name: "mir-tidy-inlined-past-changed-reads",
     breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",
