@@ -1008,6 +1008,58 @@ pub mod other {
   }
 });
 
+// ADR 0364: what MIR makes of a branch reads as THIR writes it: `a && b`,
+// `a || b`, `matches!`'s `n === "x"`, `c ? a : b` of two values, and no
+// check of a constant divisor.
+test("branches from MIR read as a person writes them", async () => {
+  const dir = fixture("mir-branches");
+  writeFileSync(join(dir, "lib.rs"), `pub fn both(a: u32, b: u32) -> bool {
+    a > 1 && b > 2
+}
+pub fn either(a: u32, b: u32) -> bool {
+    a > 1 || b > 2
+}
+pub fn named(n: Option<&str>) -> bool {
+    matches!(n, Some("x"))
+}
+pub fn sign(n: i32) -> &'static str {
+    let s = if n < 0 { "-" } else { "+" };
+    s
+}
+pub fn odd(i: u32) -> bool {
+    i % 2 == 1
+}
+pub fn flags(home: bool, index: bool, section: &str) -> (bool, bool) {
+    let mut toc = true;
+    let mut cols = true;
+    if home || index {
+        toc = false;
+    } else if section == "blog" {
+        toc = false;
+        cols = false;
+    }
+    (toc, cols)
+}
+pub fn guard(a: u32, s: &str) -> bool {
+    if a > 1 { s == "x" } else { false }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return a > 1 && b > 2;");
+    expect(js).toContain("return a > 1 || b > 2;");
+    expect(js).toContain('return n === "x";');
+    expect(js).toContain('n < 0 ? "-" : "+"');
+    expect(js).not.toContain("2 === 0");
+    expect(js).toContain('  if (home || index) {\n    toc = false;\n  } else if (section === "blog") {\n');
+    // A branch of `false`, `&&`: as MIR has it, tighter than THIR's `if`.
+    if (out === "mir.js") expect(js).toContain('return a > 1 && s === "x";');
+    const lib = await import(join(dir, out));
+    expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.
