@@ -1654,6 +1654,32 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
         stmt.kind = match kind {
             StmtKind::If(test, then, Some(otherwise)) if then.is_empty() => StmtKind::If(not(test), otherwise, None),
+            // `if (a) { break l; } else if (b) { break l; }`, an or-pattern's
+            // tests: `if (a || b) { break l; }`.
+            StmtKind::If(a, then, Some(mut otherwise))
+                if let [
+                    Stmt {
+                        kind: StmtKind::Break(Some(l)),
+                        ..
+                    },
+                ] = then.as_slice()
+                    && let [
+                        Stmt {
+                            kind: StmtKind::If(_, inner, None),
+                            ..
+                        },
+                    ] = otherwise.as_slice()
+                    && matches!(inner.as_slice(), [Stmt { kind: StmtKind::Break(Some(m)), .. }] if m == l) =>
+            {
+                let Some(Stmt {
+                    kind: StmtKind::If(b, _, None),
+                    ..
+                }) = otherwise.pop()
+                else {
+                    unreachable!("matched")
+                };
+                StmtKind::If(or_all(a, b), then, None)
+            }
             StmtKind::If(test, then, Some(otherwise)) if otherwise.is_empty() => StmtKind::If(test, then, None),
             // A test of two numbers that fails, a check of a constant
             // divisor's, `if (2 === 0)`: nothing.
@@ -1976,6 +2002,14 @@ fn negated(test: &Expr) -> bool {
             part(a) && part(b)
         }
         _ => false,
+    }
+}
+
+/// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.
+fn or_all(a: Expr, b: Expr) -> Expr {
+    match b.kind {
+        ExprKind::Binary(Op::Or, x, y) => Expr::bin(Op::Or, or_all(a, *x), *y),
+        kind => Expr::bin(Op::Or, a, Expr { kind, span: b.span }),
     }
 }
 

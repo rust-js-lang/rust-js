@@ -7536,3 +7536,32 @@ pub fn first(keys: Vec<String>) -> Option<String> {
     expect([lib.clean("/a?b"), lib.clean(""), lib.first([]), lib.first(["k"])]).toEqual(["/a", "", undefined, "k"]);
   }
 });
+
+// `matches!` of an or-pattern, `None | Some(Bottom)`, is its tests'
+// `||`, from MIR as from THIR, no labeled block, as react.dev's Diagram
+// places its caption.
+test("an or-pattern's matches is an or of its tests", async () => {
+  const dir = fixture("or-pattern-matches");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, PartialEq)]
+pub enum CaptionPosition {
+    #[cfg_attr(rust_js, rust_js::name = "top")]
+    Top,
+    #[cfg_attr(rust_js, rust_js::name = "bottom")]
+    Bottom,
+}
+pub fn below(caption_position: Option<CaptionPosition>) -> bool {
+    matches!(caption_position, None | Some(CaptionPosition::Bottom))
+}
+pub fn shown(caption_position: Option<CaptionPosition>, text: &'static str) -> Option<&'static str> {
+    matches!(caption_position, None | Some(CaptionPosition::Bottom)).then_some(text)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return captionPosition == null || captionPosition === "bottom";');
+    expect(js).toContain('return captionPosition == null || captionPosition === "bottom" ? text : undefined;');
+    const lib = await import(join(dir, out));
+    expect([lib.below(undefined), lib.below("top"), lib.shown("bottom", "t"), lib.shown("top", "t")]).toEqual([true, false, "t", undefined]);
+  }
+});

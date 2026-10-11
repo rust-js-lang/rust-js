@@ -1222,4 +1222,16 @@ export const mutations: Mutation[] = [
       "arms as values chain in written order"
     ]
   },
+  {
+    "name": "mir-tidy-or-pattern-blocks",
+    "breaks": "an or-pattern's matches! from MIR tests its first pattern alone",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                StmtKind::If(or_all(a, b), then, None)\n",
+    "replace": "                StmtKind::If(a, then, None)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "or-pattern's matches is an or"
+    ]
+  },
 ];
