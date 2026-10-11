@@ -1282,4 +1282,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-tidy-written-chains-kept",
+    "breaks": "a match's arms as statements from MIR keep their first arm last, `if (message.TAG !== \"resize\") { .. } else { .. }`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| written_chains(stmts));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arms as statements chain in written order"
+    ]
+  },
 ];

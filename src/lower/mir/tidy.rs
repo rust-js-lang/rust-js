@@ -188,6 +188,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
     // What those leave at the end, a `return;` the program didn't write.
     tail_returns(body, returns);
+    // A chain's arms, as statements, in the order written.
+    js::statement_lists(body, &mut |stmts| written_chains(stmts));
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
@@ -2177,6 +2179,44 @@ fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
             tag && props(&jsx.props) && jsx.children.iter().all(|c| inert_element(c, changing))
         }
         _ => e.is_made_of_constants(),
+    }
+}
+
+/// `if (t) { if (..) .. } else { y }`, `y` written before the chain in
+/// the `then`: `if (!t) { y } else if (..) ..`, a match's arms as written,
+/// which MIR tests `!== "a"` of with the rest first.
+fn written_chains(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        let StmtKind::If(_, then, Some(otherwise)) = &stmt.kind else {
+            continue;
+        };
+        let chain = |list: &[Stmt]| {
+            matches!(
+                list,
+                [Stmt {
+                    kind: StmtKind::If(..),
+                    ..
+                }]
+            )
+        };
+        // Where the chain's first arm is written: its `if` is where the match is.
+        let arm = match then.as_slice() {
+            [
+                Stmt {
+                    kind: StmtKind::If(_, arm, _),
+                    ..
+                },
+            ] => first_written(arm),
+            _ => None,
+        };
+        let earlier = matches!((first_written(otherwise), arm), (Some(o), Some(t)) if o < t);
+        if !chain(then) || chain(otherwise) || !earlier {
+            continue;
+        }
+        let StmtKind::If(test, then, Some(otherwise)) = std::mem::replace(&mut stmt.kind, StmtKind::Break(None)) else {
+            unreachable!("matched")
+        };
+        stmt.kind = StmtKind::If(not(test), otherwise, Some(then));
     }
 }
 

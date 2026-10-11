@@ -7678,3 +7678,52 @@ test("an else-if chain's arm before a panic stays an else if", async () => {
     expect(() => lib.path(undefined, "x")).toThrow("missing a filename");
   }
 });
+
+// A match's arms as statements chain in the order written, `if (TAG ===
+// "resize") { .. } else if (TAG === "start") ..`, from MIR as from THIR,
+// not `!== "resize"` with the first arm last, as react.dev's Preview
+// handles Sandpack's messages.
+test("a match's arms as statements chain in written order", async () => {
+  const dir = fixture("match-statements");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Message {
+    #[cfg_attr(rust_js, rust_js::name = "resize")]
+    Resize { height: f64 },
+    #[cfg_attr(rust_js, rust_js::name = "start")]
+    Start { first_load: Option<bool> },
+    #[cfg_attr(rust_js, rust_js::name = "done")]
+    Done,
+    #[cfg_attr(rust_js, rust_js::name = "refresh")]
+    Refresh,
+    #[cfg_attr(rust_js, rust_js::name = "console")]
+    Console,
+}
+pub fn handle(message: &Message, log: &mut Vec<String>) {
+    match message {
+        Message::Resize { height } => {
+            log.push(format!("h{height}"));
+        }
+        Message::Start { first_load } => {
+            if *first_load == Some(true) {
+                log.push("first".to_string());
+            }
+            log.push("start".to_string());
+        }
+        Message::Done => {
+            log.push("done".to_string());
+        }
+        Message::Refresh | Message::Console => {}
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (message.TAG === "resize") {');
+    expect(js).toContain('  } else if (message.TAG === "start") {');
+    expect(js).not.toContain("!==");
+    const lib = await import(join(dir, out));
+    const log: string[] = [];
+    for (const m of [{ TAG: "resize", height: 2 }, { TAG: "start", first_load: true }, "done", "refresh"]) lib.handle(m, log);
+    expect(log).toEqual(["h2", "first", "start", "done"]);
+  }
+});
