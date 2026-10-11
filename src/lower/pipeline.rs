@@ -642,7 +642,7 @@ pub fn lower_crate<'tcx>(
             let plain_ref_cells = plain_ref_cells.get().unwrap_or(&no_plain);
             let declarations =
                 super::declarations::module(tcx, module, default_export, &paths, &reexports, plain_ref_cells);
-            let lowered = LoweredModule {
+            let mut lowered = LoweredModule {
                 path: paths[&module].clone(),
                 file: module_file(tcx, module).name.clone().into_local_path(),
                 directives,
@@ -680,6 +680,9 @@ pub fn lower_crate<'tcx>(
                 jsx: pass.jsx.contains(&module),
                 located: located(tcx, module),
             };
+            if super::mir_mode() {
+                super::mir::plain_statics(&mut lowered.items);
+            }
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));
             let candidates: Vec<_> = imports

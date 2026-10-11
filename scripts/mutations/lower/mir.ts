@@ -1274,4 +1274,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","captures a variable itself where nothing"],
   },
+  {
+    name: "mir-statics-closure-set-unseen",
+    breaks: "a thread-local a closure sets is a `const`, which the closure can't set",
+    file: "src/lower/mir.rs",
+    find: "                js::each_block_mut(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
+    replace: "                js::statement_lists(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
+    tests: ["test/lowering.test.ts","-t","thread-local only its module"],
+  },
+  {
+    name: "mir-promoted-closure-unsupported",
+    breaks: "a promoted reference to a closure that captures nothing, `&|n| LAST.set(n)`, is unsupported",
+    file: "src/lower/mir.rs",
+    find: "                    && let Some(def_id) = referred_closure(&state.promoted[promoted]) =>\n",
+    replace: "                    && let Some(def_id) = referred_closure(&state.promoted[promoted]).filter(|_| false) =>\n",
+    tests: ["test/lowering.test.ts","-t","thread-local only its module"],
+  },
 ];

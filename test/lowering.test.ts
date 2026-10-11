@@ -6339,3 +6339,36 @@ test("a `let` a loop's body makes, from MIR, is declared in the body, as THIR's"
     expect(lib.starts(["ab", "c"], [1, 2])).toEqual([3, 5]);
   }
 });
+
+test("a thread-local only its module reads and sets, from MIR, is its variable (ADR 0270)", async () => {
+  const dir = fixture("mir-plain-statics");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+thread_local! {
+    static COUNT: Cell<u32> = const { Cell::new(0) };
+    static SEEN: Cell<bool> = const { Cell::new(false) };
+}
+pub fn bump() -> u32 {
+    COUNT.set(COUNT.get() + 1);
+    COUNT.get()
+}
+pub fn seen() -> bool {
+    SEEN.get()
+}
+thread_local! {
+    static LAST: Cell<u32> = const { Cell::new(0) };
+}
+pub fn remember(f: &dyn Fn(&dyn Fn(u32))) -> u32 {
+    f(&|n| LAST.set(n));
+    LAST.get()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("let COUNT = 0;\nconst SEEN = false;\n");
+    expect(js).toContain("let LAST = 0;\n");
+    expect(js).toContain("  COUNT = (COUNT + 1) >>> 0;\n  return COUNT;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.bump(), lib.bump(), lib.seen(), lib.remember((g: (n: number) => void) => g(7))]).toEqual([1, 2, false, 7]);
+  }
+});

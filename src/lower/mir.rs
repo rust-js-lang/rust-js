@@ -2390,6 +2390,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Value::Ref(Expr::member(self.fn_ref(def_id), "value")))
             }
+            // A promoted reference to a closure that captures nothing, `&|n|
+            // LAST.set(n)`: the closure, as a reference is what it refers to.
+            Operand::Constant(c)
+                if let Const::Unevaluated(uv, _) = c.const_
+                    && let Some(promoted) = uv.promoted
+                    && let Some(def_id) = referred_closure(&state.promoted[promoted]) =>
+            {
+                Ok(Value::Expr(self.mir_closure(state, def_id, Vec::new(), c.span, out)?))
+            }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
             #[allow(unreachable_patterns)]
             _ => Err(self.unsupported(Span::default(), "this operand, from its MIR")),
@@ -4491,6 +4500,105 @@ fn deferred_check<'tcx>(
     }
 }
 
+/// A module's own `const X = { value: init }`, a thread-local's cell MIR
+/// reads by its `value`, that its module reads and sets only so, by name,
+/// and doesn't export: `let X = init`, `X` where it's read, `const` where
+/// nothing sets it, as THIR keeps such a thread-local (ADR 0270).
+pub(super) fn plain_statics(items: &mut [js::Item]) {
+    let cells: Vec<String> = (items.iter())
+        .filter_map(|item| match item {
+            js::Item::Const(c)
+                if !c.export
+                    && matches!(&c.value.kind, js::ExprKind::Object(props)
+                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == "value")) =>
+            {
+                Some(c.name.clone())
+            }
+            _ => None,
+        })
+        .collect();
+    for name in cells {
+        let (mut reads, mut values, mut sets) = (0, 0, 0);
+        js::each_item_expr_mut(items, &mut |e| match &e.kind {
+            js::ExprKind::Var(v) if *v == name => reads += 1,
+            js::ExprKind::Member(of, key)
+                if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name) =>
+            {
+                values += 1;
+            }
+            _ => {}
+        });
+        // A function's own of that name, or one it binds, may be read so.
+        let mut bound = false;
+        for item in items.iter_mut() {
+            for function in item.functions_mut() {
+                bound |= function.params.iter().any(|p| p.names().contains(&name.as_str()));
+                js::each_block_mut(&mut function.body, &mut |stmts| {
+                    for stmt in stmts.iter() {
+                        bound |= match &stmt.kind {
+                            StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == name,
+                            StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name.as_str()),
+                            _ => false,
+                        };
+                    }
+                });
+                js::each_expr_mut(&mut function.body, &mut |e| {
+                    if let js::ExprKind::Arrow(params, _) | js::ExprKind::AsyncArrow(params, _) = &e.kind {
+                        bound |= params.iter().any(|p| p.names().contains(&name.as_str()));
+                    }
+                });
+            }
+        }
+        if bound || reads != values {
+            continue;
+        }
+        for item in items.iter_mut() {
+            for function in item.functions_mut() {
+                js::each_block_mut(&mut function.body, &mut |stmts| {
+                    for stmt in stmts.iter() {
+                        if let StmtKind::Assign(target, _) = &stmt.kind
+                            && matches!(&target.kind, js::ExprKind::Member(of, key)
+                                if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                        {
+                            sets += 1;
+                        }
+                    }
+                });
+            }
+        }
+        // A handle on it, lent, may set it too.
+        js::each_item_expr_mut(items, &mut |e| {
+            if let js::ExprKind::Handle(place) = &e.kind
+                && matches!(&place.kind, js::ExprKind::Member(of, key)
+                    if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+            {
+                sets += 1;
+            }
+        });
+        js::each_item_expr_mut(items, &mut |e| {
+            if let js::ExprKind::Member(of, key) = &e.kind
+                && key == "value"
+                && matches!(&of.kind, js::ExprKind::Var(v) if *v == name)
+            {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::var(&name)
+                };
+            }
+        });
+        for item in items.iter_mut() {
+            if let js::Item::Const(c) = item
+                && c.name == name
+                && let js::ExprKind::Object(props) = &mut c.value.kind
+                && let Some(js::Prop::Field(_, init)) = props.pop()
+            {
+                c.value = init;
+                c.mutable = sets > 0;
+            }
+        }
+    }
+}
+
 /// Whether `local` is assigned in `from`, or a block it goes on to.
 fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
     let mut seen = std::collections::HashSet::new();
@@ -4868,6 +4976,38 @@ fn referred_variant<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Opti
     }
     let (local, ty, variant) = made?;
     (Some(local) == referred).then_some((ty, variant))
+}
+
+/// The closure that captures nothing a promoted body refers to, `_1 =
+/// {closure}; _0 = &_1`.
+fn referred_closure(body: &mir::Body<'_>) -> Option<rustc_span::def_id::DefId> {
+    if body.basic_blocks.len() != 1 {
+        return None;
+    }
+    let mut made = None;
+    let mut referred = None;
+    for statement in &body.basic_blocks[mir::START_BLOCK].statements {
+        match &statement.kind {
+            StatementKind::Assign(assign) => match &**assign {
+                (place, Rvalue::Aggregate(kind, operands)) if place.projection.is_empty() && operands.is_empty() => {
+                    let AggregateKind::Closure(def_id, _) = **kind else {
+                        return None;
+                    };
+                    made = Some((place.local, def_id));
+                }
+                (place, Rvalue::Ref(_, BorrowKind::Shared, target))
+                    if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
+                {
+                    referred = Some(target.local);
+                }
+                _ => return None,
+            },
+            StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop => {}
+            _ => return None,
+        }
+    }
+    let (local, def_id) = made?;
+    (Some(local) == referred).then_some(def_id)
 }
 
 /// The call of nothing a promoted body refers to the result of, `_1 =
