@@ -2029,6 +2029,20 @@ fn written_across_lines(tcx: TyCtxt<'_>, style: StrStyle, span: Span) -> bool {
         }
 }
 
+/// Whether the string literal at `span` is written across lines, as MIR's
+/// constant of it says only by where it's written.
+pub(super) fn literal_across_lines(tcx: TyCtxt<'_>, span: Span) -> bool {
+    let Ok(code) = tcx.sess.source_map().span_to_snippet(span) else {
+        return false;
+    };
+    let style = match code.chars().next() {
+        Some('r') => StrStyle::Raw(0),
+        Some('"') => StrStyle::Cooked,
+        _ => return false,
+    };
+    written_across_lines(tcx, style, span)
+}
+
 /// A `const`'s text, `const PAGE: &str = r#"<main>..`, written across
 /// lines: a template literal of them, as a literal written so in place is.
 fn const_lines(tcx: TyCtxt<'_>, def_id: LocalDefId, value: Expr) -> Expr {

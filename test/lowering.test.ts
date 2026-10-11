@@ -207,15 +207,17 @@ test("a string written across lines keeps its lines", async () => {
     "}",
     "",
   ].join("\n"));
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("  return `<div>\n  \\`\\${x}\\` \\\\ \"q\"\n</div>`;");
-  expect(js).toContain("  return `a\nb`;");
-  expect(js).toContain('  return "a\\nb";');
-  // A `\` ending a line leaves its break out: the one there is `\n`.
-  expect(js).toMatch(/export function continued\(\) \{\n  return "a\\nb";/);
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.page(), lib.cooked(), lib.escaped(), lib.continued()]).toEqual(['<div>\n  `${x}` \\ "q"\n</div>', "a\nb", "a\nb", "a\nb"]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  return `<div>\n  \\`\\${x}\\` \\\\ \"q\"\n</div>`;");
+    expect(js).toContain("  return `a\nb`;");
+    expect(js).toContain('  return "a\\nb";');
+    // A `\` ending a line leaves its break out: the one there is `\n`.
+    expect(js).toMatch(/export function continued\(\) \{\n  return "a\\nb";/);
+    const lib = await import(join(dir, out));
+    expect([lib.page(), lib.cooked(), lib.escaped(), lib.continued()]).toEqual(['<div>\n  `${x}` \\ "q"\n</div>', "a\nb", "a\nb", "a\nb"]);
+  }
 });
 
 // A field whose JS name isn't a name, `#[rust_js::name = "worker-bundle"]`,

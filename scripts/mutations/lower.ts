@@ -498,4 +498,28 @@ export const mutations: Mutation[] = [
     replace: "        let name = self.fresh(base);\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    "name": "literal-lines-raw-unread",
+    "breaks": "a raw string written across lines, from MIR, is a string of `\\n`s",
+    "file": "src/lower.rs",
+    "find": "        Some('r') => StrStyle::Raw(0),\n",
+    "replace": "        Some('r') => return false,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string written across lines keeps its lines"
+    ]
+  },
+  {
+    "name": "literal-lines-cooked-unread",
+    "breaks": "a string written across lines, from MIR, is a string of `\\n`s",
+    "file": "src/lower.rs",
+    "find": "        Some('\"') => StrStyle::Cooked,\n",
+    "replace": "        Some('\"') => return false,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string written across lines keeps its lines"
+    ]
+  },
 ];

@@ -2557,9 +2557,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(self.fn_ref(def_id));
             }
         }
-        self.mir_const_value(c.const_, ty, c.span)
+        let value = (self.mir_const_value(c.const_, ty, c.span))
             .and_then(|value| const_js(tcx, value))
-            .ok_or_else(|| self.unsupported(c.span, "this constant, from its MIR"))
+            .ok_or_else(|| self.unsupported(c.span, "this constant, from its MIR"))?;
+        // One written across lines keeps them, a template literal, as THIR's.
+        Ok(match &value.kind {
+            js::ExprKind::Str(text) if text.contains('\n') && super::literal_across_lines(tcx, c.span) => {
+                Expr::lines(text.as_str())
+            }
+            _ => value,
+        })
     }
 
     /// The static a constant points to the start of: `&LOG`, a promoted

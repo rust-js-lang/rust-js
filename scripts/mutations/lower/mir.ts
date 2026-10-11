@@ -1374,4 +1374,16 @@ export const mutations: Mutation[] = [
       "an async fn's parameter pattern from MIR"
     ]
   },
+  {
+    "name": "mir-literal-lines-flattened",
+    "breaks": "a string MIR's constant has, written across lines, is a string of `\\n`s",
+    "file": "src/lower/mir.rs",
+    "find": "text.contains('\\n') && super::literal_across_lines(tcx, c.span)",
+    "replace": "text.contains('\\n') && false",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string written across lines keeps its lines"
+    ]
+  },
 ];
