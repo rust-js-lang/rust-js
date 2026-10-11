@@ -29,10 +29,10 @@ pub(super) fn tidy(
             unreachable_after(stmts);
         });
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-        bottom_up(body, &mut branch_values);
+        bottom_up(body, &mut |stmts| branch_values(stmts, returns));
         js::statement_lists(body, &mut unlabeled);
     }
-    bottom_up(body, &mut branch_values);
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns));
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
@@ -57,7 +57,7 @@ pub(super) fn tidy(
     js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
     // A chain of tests a loop ended, its body now ending where the chain's does.
-    bottom_up(body, &mut branch_values);
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns));
     js::statement_lists(body, &mut unlabeled);
     // What's given where `false` is skipped as `undefined` is, `test &&
     // value`, as THIR gives it there: one read there alone, which nothing
@@ -288,13 +288,8 @@ fn and_tests(stmts: &mut [Stmt], conditions: &[js::Span]) {
 /// Where a function ends, a `return;` the program didn't write, `written`
 /// where those it did are: nothing, as it falls off the end there; and
 /// `if (c) { return; } rest`, `if (!c) { rest }`, as the program wrote it.
-fn tail_returns(stmts: &mut Vec<Stmt>, written: &[js::Span]) {
-    let unwritten = |s: &Stmt| {
-        matches!(s.kind, StmtKind::Return(None))
-            && !written
-                .iter()
-                .any(|w| w.lo <= s.span.lo && s.span.hi <= w.hi && !s.span.is_none())
-    };
+fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
+    let unwritten = |s: &Stmt| matches!(s.kind, StmtKind::Return(None)) && !written(returns, s.span);
     while stmts.last().is_some_and(unwritten) {
         stmts.pop();
     }
@@ -315,9 +310,9 @@ fn tail_returns(stmts: &mut Vec<Stmt>, written: &[js::Span]) {
     }
     match stmts.last_mut().map(|s| &mut s.kind) {
         Some(StmtKind::If(test, then, otherwise)) => {
-            tail_returns(then, written);
+            tail_returns(then, returns);
             if let Some(branch) = otherwise {
-                tail_returns(branch, written);
+                tail_returns(branch, returns);
             }
             // A branch it emptied: the other one's, of its test negated.
             if then.is_empty()
@@ -327,9 +322,24 @@ fn tail_returns(stmts: &mut Vec<Stmt>, written: &[js::Span]) {
                 *then = branch;
             }
         }
-        Some(StmtKind::Labeled(_, body)) => tail_returns(body, written),
+        Some(StmtKind::Labeled(_, body)) => tail_returns(body, returns),
         _ => {}
     }
+}
+
+/// Whether `stmts` hold a `return` the program wrote, of `returns`.
+fn writes_return(stmts: &[Stmt], returns: &[js::Span]) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Return(_) => written(returns, stmt.span),
+        StmtKind::If(_, a, b) => writes_return(a, returns) || b.as_deref().is_some_and(|b| writes_return(b, returns)),
+        _ => false,
+    })
+}
+
+/// Whether a statement at `span` is a `return` the program wrote, of
+/// `returns`, where those are.
+fn written(returns: &[js::Span], span: js::Span) -> bool {
+    !span.is_none() && returns.iter().any(|w| w.lo <= span.lo && span.hi <= w.hi)
 }
 
 /// A loop's body that ends in a block, `l: { … break l; … }`, its `break l`
@@ -824,7 +834,7 @@ fn bottom_up(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
 /// { s }` is `if (!c) { s }`; `if (c) { x = a; } else { x = b; }` is `x =
 /// c ? a : b;`, of two branches; and `l: { if (a) { if (b) { x = t; break l; } } x = f; }`,
 /// `matches!`'s, is `x = a && b ? t : f;`.
-fn branch_values(stmts: &mut Vec<Stmt>) {
+fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
@@ -894,6 +904,9 @@ fn branch_values(stmts: &mut Vec<Stmt>) {
         && let Some((tests, yes)) = returned_chain(std::slice::from_ref(last_if))
         && small(&yes)
         && small(no)
+        // Not where the program wrote `return`, an early one.
+        && !written(returns, last.span)
+        && !writes_return(std::slice::from_ref(last_if), returns)
     {
         let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
         let value = conditional(test, yes, no.clone());

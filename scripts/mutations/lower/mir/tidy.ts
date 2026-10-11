@@ -46,7 +46,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-branch-values-kept",
     breaks: "`if (c) { x = a; } else { x = b; }` stays two branches, not `x = c ? a : b`",
     file: "src/lower/mir/tidy.rs",
-    find: "        bottom_up(body, &mut branch_values);\n",
+    find: "        bottom_up(body, &mut |stmts| branch_values(stmts, returns));\n",
     replace: "",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
@@ -361,5 +361,13 @@ export const mutations: Mutation[] = [
     find: "            if then.is_empty()\n                && let Some(branch) = otherwise.take()\n",
     replace: "            if false\n                && let Some(branch) = otherwise.take()\n",
     tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
+  },
+  {
+    name: "mir-tidy-written-return-ternary",
+    breaks: "`if (!g) { return; } return big;`, as the program wrote it, is `return g ? big : undefined`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        && !written(returns, last.span)\n        && !writes_return(std::slice::from_ref(last_if), returns)\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },
 ];

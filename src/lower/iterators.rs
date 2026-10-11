@@ -1033,45 +1033,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // array an iterator started from is copied, so changing one of
             // them doesn't change the other.
             Std::Collect => {
-                let fresh = match &items.kind {
-                    js::ExprKind::Array(_) => true,
-                    js::ExprKind::Call(callee, _) => match &callee.kind {
-                        js::ExprKind::Member(_, name) => [
-                            "map",
-                            "filter",
-                            "slice",
-                            "toReversed",
-                            "split",
-                            "from",
-                            "toArray",
-                            "flatMap",
-                            "flat",
-                            "concat",
-                        ]
-                        .contains(&name.as_str()),
-                        js::ExprKind::Var(name) => [
-                            "$range",
-                            "$bigRange",
-                            "$charRange",
-                            "$zip",
-                            "$takeWhile",
-                            "$skipWhile",
-                            "$windows",
-                            "$chunks",
-                            "$splitBy",
-                            "$lines",
-                            "$slice",
-                            "$rest",
-                            "$scan",
-                            "$drain",
-                            "$splitOff",
-                        ]
-                        .contains(&name.as_str()),
-                        _ => false,
-                    },
-                    _ => false,
+                let items = if fresh(&items) {
+                    items
+                } else {
+                    method(items, "slice", vec![])
                 };
-                let items = if fresh { items } else { method(items, "slice", vec![]) };
                 // Into a `BinaryHeap`: put in heap order, as `BinaryHeap::from` does.
                 match generic_args.types().nth(1) {
                     Some(target) if self.is_std_type(target, StdItem::BinaryHeap) => {
@@ -1467,6 +1433,49 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
         && matches!(&parts[..], [first, second] if var(first, "i") && var(second, "x"))
 }
 
+/// Whether `items` is an array made here, which nothing else holds: an
+/// adapter's, a copy's, a `split`'s, or a helper's.
+fn fresh(items: &Expr) -> bool {
+    match &items.kind {
+        js::ExprKind::Array(_) => true,
+        js::ExprKind::Call(callee, _) => match &callee.kind {
+            js::ExprKind::Member(_, name) => [
+                "map",
+                "filter",
+                "slice",
+                "toReversed",
+                "split",
+                "from",
+                "toArray",
+                "flatMap",
+                "flat",
+                "concat",
+            ]
+            .contains(&name.as_str()),
+            js::ExprKind::Var(name) => [
+                "$range",
+                "$bigRange",
+                "$charRange",
+                "$zip",
+                "$takeWhile",
+                "$skipWhile",
+                "$windows",
+                "$chunks",
+                "$splitBy",
+                "$lines",
+                "$slice",
+                "$rest",
+                "$scan",
+                "$drain",
+                "$splitOff",
+            ]
+            .contains(&name.as_str()),
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
 /// Each chain in `stmts` that MIR made as Rust runs it (ADR 0364), item by
 /// item, `$iter(xs).map(f).toArray()`, written as THIR's of an array,
 /// `xs.map(f)` (ADR 0055), where the order its closures run in can't be
@@ -1490,8 +1499,9 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
         };
         let eager = match (name.as_str(), &args[..]) {
             ("toArray", []) => match eager_items(chain, true, None) {
-                // A new array: a stage's is one already; the source, copied.
-                Some((items, 0)) => Some(Expr::call(Expr::member(items, "slice"), vec![])),
+                // A new array: a stage's is one already; the source, copied,
+                // unless it's one made here.
+                Some((items, 0)) if !fresh(&items) => Some(Expr::call(Expr::member(items, "slice"), vec![])),
                 Some((items, _)) => Some(items),
                 None => None,
             },
@@ -1525,11 +1535,20 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     let mut at = chain;
     while let js::ExprKind::Call(callee, args) = &at.kind
         && let js::ExprKind::Member(source, name) = &callee.kind
-        && matches!(name.as_str(), "map" | "filter")
+        && matches!(name.as_str(), "map" | "filter" | "take" | "drop")
         && let [f] = &args[..]
     {
         stages.push((name.as_str(), f));
         at = source;
+    }
+    // A count's, `take`'s or `drop`'s, the last first: what's before it,
+    // which runs over the items it stops at or passes over only in Rust,
+    // does nothing.
+    let counted = |name: &str| matches!(name, "take" | "drop");
+    if let Some(last) = stages.iter().position(|(name, _)| counted(name))
+        && stages[last + 1..].iter().any(|(_, f)| does(f))
+    {
+        return None;
     }
     let js::ExprKind::Call(_, args) = &at.kind else {
         return None;
@@ -1537,7 +1556,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     let ([source], true) = (&args[..], is_stepped_items(at)) else {
         return None;
     };
-    let doing = stages.iter().filter(|(_, f)| does(f)).count();
+    let doing = stages.iter().filter(|(name, f)| !counted(name) && does(f)).count();
     let quiet = match whole {
         true => doing + usize::from(taker.is_some_and(does)) <= 1,
         false => doing == 0,
@@ -1546,8 +1565,11 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         return None;
     }
     let count = stages.len();
-    let items =
-        (stages.into_iter().rev()).fold(source.clone(), |items, (name, f)| array_method(items, name, f.clone()));
+    let items = (stages.into_iter().rev()).fold(source.clone(), |items, (name, f)| match name {
+        "take" => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), f.clone()]),
+        "drop" => Expr::call(Expr::member(items, "slice"), vec![f.clone()]),
+        name => array_method(items, name, f.clone()),
+    });
     Some((items, count))
 }
 

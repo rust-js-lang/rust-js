@@ -1074,4 +1074,28 @@ export const mutations: Mutation[] = [
     replace: "                let _ = (stmt, written);\n",
     tests: ["test/lowering.test.ts","-t","returning nothing returns where"],
   },
+  {
+    name: "mir-in-bounds-checked",
+    breaks: "`v[0]` THIR knows is in bounds is `$index(v, 0)`",
+    file: "src/lower/mir.rs",
+    find: "            && (self.body_facts.in_bounds.contains(&fun) || self.in_bounds(items_id, index))\n",
+    replace: "            && false\n",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "mir-closure-parent-facts",
+    breaks: "a closure's body reads its parent's facts, by another body's ids",
+    file: "src/lower/mir.rs",
+    find: "        let outer_facts = std::mem::replace(&mut self.body_facts, &body.facts);\n",
+    replace: "        let outer_facts = self.body_facts;\n",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "mir-branch-weight-statements",
+    breaks: "of two branches that both return, the one of fewer statements is first, a big element before `return;`",
+    file: "src/lower/mir.rs",
+    find: "(!exits(&then) || weight(&otherwise) < weight(&then))",
+    replace: "(!exits(&then) || otherwise.len() < then.len())",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
 ];

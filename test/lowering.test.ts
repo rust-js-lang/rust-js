@@ -1247,6 +1247,18 @@ pub fn stops(items: &[u32]) -> Vec<String> {
         .any(|x| *x > 1);
     log.into_inner()
 }
+pub fn taken(items: &[u32]) -> Vec<String> {
+    let log = RefCell::new(Vec::new());
+    let _ = items
+        .iter()
+        .map(|x| {
+            log.borrow_mut().push(format!("a{x}"));
+            x
+        })
+        .take(1)
+        .count();
+    log.into_inner()
+}
 pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     let kept: Vec<u32> = items.iter().copied().collect();
     items.push(9);
@@ -1265,6 +1277,7 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
     expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
     expect(lib.stops([1, 2, 3])).toEqual(["a1", "a2"]);
+    expect(lib.taken([1, 2, 3])).toEqual(["a1"]);
     expect(lib.copied([1])).toEqual([[1], [1, 9]]);
   }
 });
@@ -1559,6 +1572,62 @@ export function one(n, v) {
     lib.nested(3, true, w);
     lib.guarded(true, "abc", x);
     expect([v, w, x]).toEqual([[1], [3], ["abc"]]);
+  }
+});
+
+// A string's parts from MIR (ADR 0364) are THIR's array: its adapters,
+// \`take\` and \`rev\` an array's; a guard returns first, the smaller branch;
+// an element THIR knows is there is read unchecked, in a closure too.
+test("a string's parts from MIR are an array, as THIR's are", async () => {
+  const dir = fixture("mir-split");
+  writeFileSync(join(dir, "lib.rs"), `pub fn groups(group: &str) -> Vec<&str> {
+    group.split(',').map(|g| g.trim()).filter(|g| !g.is_empty()).collect()
+}
+pub fn second(s: &str) -> Option<&str> {
+    let mut parts = s.split(',');
+    parts.next();
+    parts.next()
+}
+pub fn badge(group: &str) -> Option<String> {
+    let parts: Vec<&str> = group.split(',').collect();
+    if parts.is_empty() {
+        return None;
+    }
+    Some(format!("{} and {} more of {}", parts[0], parts.len() - 1, group.to_uppercase()))
+}
+pub fn last_two(s: &str) -> Vec<&str> {
+    s.split(',').rev().take(2).collect()
+}
+pub fn heads(vs: &[Vec<u32>]) -> Vec<u32> {
+    vs.iter().map(|v| if v.is_empty() { 0 } else { v[0] }).collect()
+}
+pub fn shown(group: &str) -> Option<String> {
+    if group.is_empty() {
+        return None;
+    }
+    Some(group.repeat(3).to_uppercase().trim().to_lowercase())
+}
+pub fn pick(c: bool, n: u32) -> u32 {
+    if c {
+        return n + 1;
+    } else {
+        return n * 2;
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  return group\n    .split(",")\n    .map((g) => $trim(g))\n    .filter(Boolean);\n');
+    expect(js).toContain('  const parts = group.split(",");\n  if (parts.length === 0) {\n    return;\n  }\n  return \`\${parts[0]} and ');
+    expect(js).toContain('  return s.split(",").toReversed().slice(0, 2);\n');
+    expect(js).toContain("v[0]");
+    // A \`return\` the program wrote stays one, the smaller branch first.
+    expect(js).toContain("  if (!group) {\n    return;\n  }\n  return $trim(");
+    expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return Math.imul(n, 2) >>> 0;\n");
+    expect(js).not.toContain("$index");
+    const lib = await import(join(dir, out));
+    expect([lib.groups("a, b,"), lib.second("x,y"), lib.badge("p,q"), lib.last_two("1,2,3"), lib.heads([[], [7]]), lib.shown("ab"), lib.pick(false, 3)]).toEqual([["a", "b"], "y", "p and 1 more of P,Q", ["3", "2"], [0, 7], "ababab", 6]);
   }
 });
 

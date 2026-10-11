@@ -131,6 +131,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             it if name == "peekable" => return Ok(Some(it)),
                             it => self.helper(Helper::Rest, "$rest", vec![it]),
                         },
+                        // A `$iter` of an array THIR's lowering made, just made: the
+                        // array.
+                        None if crate::lower::iterators::is_stepped_items(&receiver) => match name {
+                            "peekable" => return Ok(Some(receiver)),
+                            _ => crate::lower::iterators::iterated(receiver),
+                        },
                         None => match from_iterator(receiver) {
                             Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
                             Err(_) => {
@@ -378,6 +384,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(items) | Err(items) => items,
             },
             None if is_js_iterator(&value) => value,
+            // An array THIR's lowering makes of it, `s.split(",")`'s: a `$iter`
+            // of it, as of an array's.
+            None if made_array(&value) => self.stepped_items(value),
             None => self.js_iterator(value),
         }
     }
@@ -437,6 +446,21 @@ fn is_js_iterator(e: &Expr) -> bool {
             js::ExprKind::Var(v) if v == "Object" => false,
             js::ExprKind::Var(v) if v == "Iterator" => name == "from",
             _ => matches!(name.as_str(), "values" | "keys" | "entries"),
+        },
+        _ => false,
+    }
+}
+
+/// Whether `e` is an array as it's made: `[a, b]`, `Array.from(x)`, or a
+/// string's `split`.
+fn made_array(e: &Expr) -> bool {
+    match &e.kind {
+        js::ExprKind::Array(_) => true,
+        js::ExprKind::Call(callee, _) => match &callee.kind {
+            js::ExprKind::Member(object, name) => {
+                name == "split" || (name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Array"))
+            }
+            _ => false,
         },
         _ => false,
     }

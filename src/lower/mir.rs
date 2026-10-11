@@ -640,10 +640,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             });
         }
-        // Its own THIR's shape hints, where its body is written.
+        // Its own THIR's shape hints, and what's known of it, where its body
+        // is written.
         let outer = std::mem::replace(&mut self.thir, &body.thir);
+        let outer_facts = std::mem::replace(&mut self.body_facts, &body.facts);
         let lowered = self.mir_function(mir, Some(captures));
         self.thir = outer;
+        self.body_facts = outer_facts;
         for name in shared {
             self.locals.alike.remove(&name);
         }
@@ -2863,11 +2866,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The arguments of THIR's call of `def_id` at `fn_span`, MIR's call
     /// there, where it's the one.
     fn thir_call_args(&self, def_id: rustc_span::def_id::DefId, fn_span: Span) -> Option<Vec<thir::ExprId>> {
+        self.thir_call(def_id, fn_span).map(|(_, args)| args)
+    }
+
+    /// THIR's call of `def_id` at `fn_span`, MIR's call there, where it's
+    /// the one: its function and its arguments.
+    fn thir_call(&self, def_id: rustc_span::def_id::DefId, fn_span: Span) -> Option<(thir::ExprId, Vec<thir::ExprId>)> {
         let mut calls = self.thir.exprs.iter().filter_map(|e| match &e.kind {
             thir::ExprKind::Call {
                 fun, args, fn_span: at, ..
             } if *at == fn_span && matches!(*self.thir[*fun].ty.kind(), ty::FnDef(id, _) if id == def_id) => {
-                Some(args.to_vec())
+                Some((*fun, args.to_vec()))
             }
             _ => None,
         });
@@ -3410,6 +3419,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A value with a destructor taken, refused as THIR refuses it; a chain
         // that owns its items is `mir_iter_call`'s, so none here does.
         self.check_takes_drops(known, def_id, arg_tys, false, span)?;
+        // `v[i]` THIR knows is in bounds, `v[0]` after `v.is_empty()`'s test
+        // fails, or of an array long enough: unchecked, as THIR writes it.
+        if known == Std::Index
+            && let Some((fun, args)) = self.thir_call(def_id, span)
+            && let [items_id, _] = args[..]
+            && let [Value::Expr(_) | Value::Place(_), Value::Expr(index)] = &values[..]
+            && (self.body_facts.in_bounds.contains(&fun) || self.in_bounds(items_id, index))
+        {
+            let mut exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let index = exprs.pop().expect("an index");
+            let items = exprs.pop().expect("the items");
+            return Ok(Value::Expr(Expr::index(items, index)));
+        }
         // `v[i]` through `index_mut`, of a value JS can't change in place: the
         // element's place, checked as `$index` checks it (ADR 0099).
         if known == Std::Index
@@ -4238,13 +4263,22 @@ fn early_exit(
             out.extend(otherwise);
             out
         }
-        Some(otherwise) if exits(&otherwise) && (!exits(&then) || otherwise.len() < then.len()) => {
+        Some(otherwise) if exits(&otherwise) && (!exits(&then) || weight(&otherwise) < weight(&then)) => {
             let mut out = vec![StmtKind::If(negate(test), otherwise, None).at(span)];
             out.extend(then);
             out
         }
         otherwise => vec![StmtKind::If(test, then, otherwise).at(span)],
     }
+}
+
+/// How much `stmts` hold, about: their statements and their expressions'
+/// parts, so the smaller of two branches that both leave is written first.
+fn weight(stmts: &[Stmt]) -> usize {
+    let mut stmts = stmts.to_vec();
+    let mut parts = stmts.len();
+    js::each_expr_mut(&mut stmts, &mut |_| parts += 1);
+    parts
 }
 
 /// Whether `block` goes on to a call that never returns, a panic's, through

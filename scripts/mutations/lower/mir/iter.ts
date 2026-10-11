@@ -138,4 +138,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","a for over Object.keys"],
   },
+  {
+    name: "mir-made-array-iterator-from",
+    breaks: "a `split`'s array MIR steps is `Iterator.from(…)`, so its chain stays a JS iterator's",
+    file: "src/lower/mir/iter.rs",
+    find: "            None if made_array(&value) => self.stepped_items(value),\n",
+    replace: "            None if false && made_array(&value) => self.stepped_items(value),\n",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "mir-rev-of-fresh-iter-rest",
+    breaks: "`rev()` of a `split` just made is `$rest($iter(…))` reversed, not the array's",
+    file: "src/lower/mir/iter.rs",
+    find: "                            _ => crate::lower::iterators::iterated(receiver),\n",
+    replace: "                            _ => self.helper(Helper::Rest, \"$rest\", vec![receiver]),\n",
+    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
 ];
