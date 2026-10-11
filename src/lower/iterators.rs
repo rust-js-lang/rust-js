@@ -1499,6 +1499,18 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
         let js::ExprKind::Call(callee, args) = &e.kind else {
             return;
         };
+        // `$position`'s, of the array, lent or not: what it steps has no
+        // `return` to close.
+        if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$position")
+            && let [chain, f] = &args[..]
+            && let Some((items, _)) = eager_items(chain, false, None)
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::call((**callee).clone(), vec![items, f.clone()])
+            };
+            return;
+        }
         let js::ExprKind::Member(chain, name) = &callee.kind else {
             return;
         };

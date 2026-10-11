@@ -6654,3 +6654,21 @@ pub fn crumbs(cs: &[Crumb]) -> Vec<Option<String>> {
     expect(lib.crumbs([{ path: "/a", title: "A" }, { path: "/b", skip: true, title: "B" }, { title: "C" }])).toEqual(["/aA", undefined, undefined]);
   }
 });
+
+// `ids.iter().position(..)` of an iterator made for it, as react.dev's
+// Challenges finds the one the URL names: `$position(ids, ..)`, not of
+// `$lent($iter(ids))`, which nothing else steps.
+test("a position of an array's own iterator from MIR is of the array", async () => {
+  const dir = fixture("position-of-array");
+  writeFileSync(join(dir, "lib.rs"), `pub fn second(ids: &[String], path: &str) -> Option<usize> {
+    ids.iter().position(|id| Some(id.as_str()) == path.split('#').nth(1))
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return $position(ids, (id) => id == path.split("#")[1]);');
+    const lib = await import(join(dir, out));
+    expect([lib.second(["a", "b"], "x#b"), lib.second(["a"], "x")]).toEqual([1, undefined]);
+  }
+});

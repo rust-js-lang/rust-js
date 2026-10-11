@@ -589,4 +589,16 @@ export const mutations: Mutation[] = [
     replace: "            (\"toArray\", []) if let Some(parts) = chained(chain).filter(|_| false) => {\n",
     tests: ["test/lowering.test.ts","-t","chain collected from MIR"],
   },
+  {
+    "name": "position-of-lent-array-iterator",
+    "breaks": "`$position($lent($iter(ids)), ..)` of an iterator made for it, not `$position(ids, ..)`",
+    "file": "src/lower/iterators.rs",
+    "find": "        if matches!(&callee.kind, js::ExprKind::Var(v) if v == \"$position\")\n",
+    "replace": "        if matches!(&callee.kind, js::ExprKind::Var(v) if v == \"$position!\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a position of an array's own iterator"
+    ]
+  },
 ];
