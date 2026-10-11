@@ -432,6 +432,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if plain {
                 self.locals.plain.insert(name.clone());
             }
+            // Of an array, of what may be JS's, its items, which only a
+            // `&mut` changes: `...items` (`read_past_calls`).
+            let ty = mir_body.local_decls[local].ty.peel_refs();
+            if !plain && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty)) {
+                self.locals.plain.insert(format!("...{name}"));
+            }
         }
         let mut out = Vec::new();
         // Each flag that says whether a value is there to drop, and the

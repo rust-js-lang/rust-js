@@ -1474,4 +1474,28 @@ export const mutations: Mutation[] = [
       "a let a loop's branch makes is declared in the loop"
     ]
   },
+  {
+    "name": "spread-items-not-read-past-calls",
+    "breaks": "`...first` of an array whose items nothing changes stops a later call's value being read in place",
+    "file": "src/lower/mir/tidy.rs",
+    "find": " || plain.contains(&format!(\"...{v}\"))",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arrays joined are one array of their items"
+    ]
+  },
+  {
+    "name": "array-spread-of-array-kept",
+    "breaks": "`[...first, ...[a, b]]` keeps its spread of an array, not `[...first, a, b]`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    if let ExprKind::Array(items) = &mut e.kind {",
+    "replace": "    if let ExprKind::Array(items) = &mut e.kind && false {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arrays joined are one array of their items"
+    ]
+  },
 ];

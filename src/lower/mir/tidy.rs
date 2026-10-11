@@ -40,7 +40,8 @@ pub(super) struct Hints<'h> {
     pub(super) captured: &'h HashSet<String>,
     /// The variables of Rust's `bool`: JS's `true` and `false` alone.
     pub(super) booleans: &'h HashSet<String>,
-    /// The variables of plain values, which nothing changes (`Locals::plain`).
+    /// The variables of plain values, which nothing changes, and `...items`
+    /// of arrays whose items nothing changes (`Locals::plain`).
     pub(super) plain: &'h HashSet<String>,
     /// Where each closure that passes on what it's given to Rust's function
     /// is written (ADR 0279).
@@ -2213,6 +2214,9 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
                     if !set.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String"))
         }
         ExprKind::Jsx(_) => inert_element(e, set),
+        // The items of an array nothing changes, `...first`.
+        ExprKind::Spread(a) => matches!(&a.kind, ExprKind::Var(v)
+            if !set.contains(v) && (plain.contains(v) || plain.contains(&format!("...{v}")))),
         ExprKind::Unary(UnaryOp::Not, a) => past(a),
         ExprKind::Binary(
             Op::Eq
@@ -3194,8 +3198,25 @@ fn checked_sets(stmts: &mut Vec<Stmt>) {
 
 /// `{ ...a, ...{ ...b } }` or `<X {...{ ...b }} />`, a spread of an object of
 /// spreads alone: those spreads, `{ ...a, ...b }`, which give what it gives,
-/// each read where it was.
+/// each read where it was; and an array's spread of an array, its items.
 fn spread_spreads(e: &mut Expr) {
+    if let ExprKind::Array(items) = &mut e.kind {
+        *items = (std::mem::take(items).into_iter())
+            .flat_map(|item| match item {
+                Expr {
+                    kind: ExprKind::Spread(inner),
+                    ..
+                } if matches!(inner.kind, ExprKind::Array(_)) => {
+                    let ExprKind::Array(inner) = inner.kind else {
+                        unreachable!("matched")
+                    };
+                    inner
+                }
+                item => vec![item],
+            })
+            .collect();
+        return;
+    }
     let props = match &mut e.kind {
         ExprKind::Object(props) => props,
         ExprKind::Jsx(jsx) => &mut jsx.props,

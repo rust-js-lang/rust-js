@@ -1674,4 +1674,16 @@ export const mutations: Mutation[] = [
       "an async closure's ignored argument is no parameter"
     ]
   },
+  {
+    "name": "mir-array-items-not-plain",
+    "breaks": "an array of JS's values isn't known to keep its items past calls, so `[...first, ...]` holds what's made after",
+    "file": "src/lower/mir.rs",
+    "find": "                self.locals.plain.insert(format!(\"...{name}\"));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arrays joined are one array of their items"
+    ]
+  },
 ];

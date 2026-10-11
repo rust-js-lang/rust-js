@@ -8012,3 +8012,29 @@ pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
     expect(widths).toEqual([1, 2]);
   }
 });
+
+// From MIR as from THIR: arrays joined, `[first, vec![..]].concat()`, are
+// one array of the first's items and the made ones, `[...first, made("a"),
+// ..]`: a call can't change the items of an array only a `&mut` changes,
+// as react.dev's SandpackWithHTMLOutput adds its files to its children.
+test("arrays joined are one array of their items", async () => {
+  const dir = fixture("concat-spread");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+unsafe extern "Rust" {
+    #[link_name = "globalThis.made"]
+    safe fn made(name: &str) -> &'static Unknown;
+}
+pub fn all(first: Vec<&'static Unknown>) -> Vec<&'static Unknown> {
+    let children = [first, vec![made("a"), made("b")]].concat();
+    children
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('const children = [...first, globalThis.made("a"), globalThis.made("b")];');
+    const lib = await import(join(dir, out));
+    (globalThis as any).made = (name: string) => ({ name });
+    expect(lib.all([{ name: "x" }])).toEqual([{ name: "x" }, { name: "a" }, { name: "b" }]);
+  }
+});

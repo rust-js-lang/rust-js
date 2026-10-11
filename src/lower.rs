@@ -211,6 +211,7 @@ struct Locals {
     /// that read the same wherever they're read, assigned once and never
     /// borrowed, and of those of plain Rust data, whose fields don't change
     /// either: what THIR's variables say (`reads_alike`, `plain_value`).
+    /// And of the others' arrays, their items, `...items`.
     alike: HashSet<String>,
     plain: HashSet<String>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
