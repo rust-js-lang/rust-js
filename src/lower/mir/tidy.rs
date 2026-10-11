@@ -117,6 +117,17 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     named_temporaries(body);
     eager_chains(body);
     tail_returns(body, returns);
+    // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
+            && truthy_or_undefined(kept)
+        {
+            let ExprKind::Binary(_, kept, otherwise) = std::mem::replace(&mut e.kind, ExprKind::Undefined) else {
+                unreachable!("matched")
+            };
+            e.kind = ExprKind::Binary(Op::Or, Box::new(truth_of(*kept)), otherwise);
+        }
+    });
     // A `let` declared first that nothing's left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
@@ -460,9 +471,7 @@ fn continued(stmts: &mut [Stmt]) {
                     continues(&mut inner, &block, looped.as_deref(), true);
                     body.extend(inner);
                 }
-                Some(StmtKind::If(test, then, None))
-                    if matches!(test.kind, ExprKind::Unary(UnaryOp::Not, _)) && then.len() > 1 =>
-                {
+                Some(StmtKind::If(test, then, None)) if negated(test) && then.len() > 1 => {
                     let Some(Stmt {
                         kind: StmtKind::If(test, then, None),
                         span,
@@ -1356,13 +1365,27 @@ fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     }
 }
 
-/// `!e`, as a person writes it: `!!a` is `a`, `!(a === b)` `a !== b`, and
-/// `!(a && b)` of `bool`s `!a || !b`.
+/// Whether `test` is `!c`, or `!(a && b)` as `not` writes it, `!a || b ==
+/// null`.
+fn negated(test: &Expr) -> bool {
+    match &test.kind {
+        ExprKind::Unary(UnaryOp::Not, _) => true,
+        ExprKind::Binary(Op::Or, a, b) => {
+            let part = |e: &Expr| {
+                negated(e)
+                    || matches!(&e.kind, ExprKind::Binary(Op::LooseEq, _, null) if matches!(null.kind, ExprKind::Null | ExprKind::Undefined))
+            };
+            part(a) && part(b)
+        }
+        _ => false,
+    }
+}
+
+/// `!e`, an `if`'s test, as a person writes it: `!!a` is `a`, `!(a === b)`
+/// `a !== b`, and `!(a && b)` `!a || !b`, whose truth is the same.
 fn not(e: Expr) -> Expr {
     match e.kind {
-        ExprKind::Binary(op @ (Op::And | Op::Or), a, b)
-            if is_boolean(&a, &HashSet::new()) && is_boolean(&b, &HashSet::new()) =>
-        {
+        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => {
             let flipped = if op == Op::And { Op::Or } else { Op::And };
             Expr::bin(flipped, not(*a), not(*b))
         }
@@ -1490,11 +1513,36 @@ fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
     }
 }
 
+/// Whether `e` is truthy or `undefined`, no other falsy value: `x ? x :
+/// undefined`, what `filter` keeps of `x`, and `a || b` and `a ?? b` of
+/// such.
+fn truthy_or_undefined(e: &Expr) -> bool {
+    match &e.kind {
+        ExprKind::Cond(test, yes, no) => matches!(no.kind, ExprKind::Undefined) && same(&test.tested(), yes),
+        ExprKind::Binary(Op::Or, _, b) => truthy_or_undefined(b),
+        ExprKind::Binary(Op::Coalesce, a, b) => truthy_or_undefined(a) && truthy_or_undefined(b),
+        _ => false,
+    }
+}
+
+/// `e`, `truthy_or_undefined`, where only its truthy values are read, as
+/// `||`'s first operand: `x ? x : undefined` is `x`, and `a ?? b` `a || b`.
+fn truth_of(e: Expr) -> Expr {
+    let span = e.span;
+    match e.kind {
+        ExprKind::Cond(_, yes, _) => *yes,
+        ExprKind::Binary(Op::Or, a, b) => Expr::bin(Op::Or, *a, truth_of(*b)),
+        ExprKind::Binary(Op::Coalesce, a, b) => Expr::bin(Op::Or, truth_of(*a), truth_of(*b)),
+        kind => Expr { kind, span },
+    }
+}
+
 /// Whether `a` and `b` are the same variable, or the same property of one.
 fn same(a: &Expr, b: &Expr) -> bool {
     match (&a.kind, &b.kind) {
         (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
-        (ExprKind::Member(x, p), ExprKind::Member(y, q)) => p == q && same(x, y),
+        (ExprKind::Member(x, p), ExprKind::Member(y, q))
+        | (ExprKind::OptionalMember(x, p), ExprKind::OptionalMember(y, q)) => p == q && same(x, y),
         _ => false,
     }
 }

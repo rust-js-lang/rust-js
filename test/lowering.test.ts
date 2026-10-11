@@ -5799,3 +5799,37 @@ test("a let-else of what `filter` keeps from MIR tests the value, as THIR does",
     expect([lib.filtered(undefined), lib.filtered(""), lib.filtered("xy"), lib.filtered("q")]).toEqual(["none", "none", "a", "q"]);
   }
 });
+
+test("tests and values from MIR read as THIR writes them: De Morgan's, and `filter` then `or`", async () => {
+  const dir = fixture("mir-tests-values");
+  writeFileSync(join(dir, "lib.rs"), `pub fn search(section: &str, is_blog_index: bool, order: u32) -> Option<u32> {
+    let mut search_order = None;
+    if section == "learn" || (section == "blog" && !is_blog_index) {
+        search_order = Some(order);
+    }
+    search_order
+}
+pub struct Meta { pub title: Option<&'static str> }
+pub fn title(meta: &Meta, route: Option<&'static str>) -> &'static str {
+    meta.title.filter(|t| !t.is_empty()).or(route.filter(|t| !t.is_empty())).unwrap_or("")
+}
+pub struct Route { pub title: Option<&'static str> }
+pub fn routed(route: Option<&Route>) -> &'static str {
+    route.and_then(|r| r.title).filter(|t| !t.is_empty()).unwrap_or("")
+}
+pub fn page_title(meta: &Meta, route: Option<&Route>) -> &'static str {
+    meta.title.filter(|t| !t.is_empty()).or(route.and_then(|r| r.title).filter(|t| !t.is_empty())).unwrap_or("")
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (section === "learn" || (section === "blog" && !isBlogIndex)) {\n');
+    expect(js).toContain('  return meta.title || route || "";\n');
+    expect(js).toContain('  return route?.title || "";\n');
+    expect(js).toContain('  return meta.title || route?.title || "";\n');
+    const lib = await import(join(dir, out));
+    expect([lib.search("learn", true, 1), lib.search("blog", true, 2), lib.search("blog", false, 3), lib.search("x", false, 4)]).toEqual([1, undefined, 3, undefined]);
+    expect([lib.title({ title: "" }, "r"), lib.title({ title: "t" }, "r"), lib.title({ title: undefined }, ""), lib.title({}, undefined)]).toEqual(["r", "t", "", ""]);
+  }
+});
