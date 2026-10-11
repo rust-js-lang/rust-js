@@ -1670,8 +1670,18 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
                 // `if a || b { x } else { y }` MIR tests `!a && !b` of.
                 // Of two values, not of a test's truth, `a && b`'s.
                 let values = !matches!(yes.kind, ExprKind::Bool(_)) && !matches!(no.kind, ExprKind::Bool(_));
-                let no_first =
-                    values && matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t);
+                // A chain's next test in the `else` whichever comes first, as one
+                // is written: `a === "x" ? y : a === "z" ? .. : ..`, a match's arms.
+                let no_first = match (
+                    matches!(yes.kind, ExprKind::Cond(..)),
+                    matches!(no.kind, ExprKind::Cond(..)),
+                ) {
+                    (true, false) => true,
+                    (false, true) => false,
+                    _ => {
+                        values && matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t)
+                    }
+                };
                 let value = match no_first {
                     true => conditional(not(test.clone()), no.clone(), yes.clone(), booleans),
                     false => conditional(test.clone(), yes.clone(), no.clone(), booleans),

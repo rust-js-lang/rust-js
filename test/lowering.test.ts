@@ -7473,3 +7473,44 @@ pub fn heading(names: Vec<String>) -> Vec<String> {
     ]).toEqual([true, false, false, true, ["H2"]]);
   }
 });
+
+// A match of more than two arms as a value is a chain of its arms in the
+// order written, each tested as it is, `variant === "foundation"`, from MIR
+// as from THIR, not `!==` with the rest first, as react.dev's Tag picks
+// its name and classes.
+test("a match's arms as values chain in written order", async () => {
+  const dir = fixture("match-chain");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum RouteTag {
+    #[cfg_attr(rust_js, rust_js::name = "foundation")]
+    Foundation,
+    #[cfg_attr(rust_js, rust_js::name = "intermediate")]
+    Intermediate,
+    #[cfg_attr(rust_js, rust_js::name = "advanced")]
+    Advanced,
+    #[cfg_attr(rust_js, rust_js::name = "experimental")]
+    Experimental,
+    #[cfg_attr(rust_js, rust_js::name = "deprecated")]
+    Deprecated,
+}
+pub fn tag(variant: RouteTag, text: Option<&'static str>) -> String {
+    let (name, classes) = match variant {
+        RouteTag::Foundation => ("Foundation", "bg-yellow-50 text-white"),
+        RouteTag::Intermediate => ("Intermediate", "bg-purple-40 text-white"),
+        RouteTag::Advanced => ("Advanced", "bg-green-40 text-white"),
+        RouteTag::Experimental => ("Experimental", "bg-ui-orange text-white"),
+        RouteTag::Deprecated => ("Deprecated", "bg-red-40 text-white"),
+    };
+    format!("{} {classes}", text.unwrap_or(name))
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('variant === "foundation"');
+    expect(js).not.toContain("!==");
+    expect(js.indexOf('"Foundation"')).toBeLessThan(js.indexOf('"Deprecated"'));
+    const lib = await import(join(dir, out));
+    expect([lib.tag("advanced", undefined), lib.tag("deprecated", "D")]).toEqual(["Advanced bg-green-40 text-white", "D bg-red-40 text-white"]);
+  }
+});

@@ -1210,4 +1210,16 @@ export const mutations: Mutation[] = [
       "or chain from MIR is written as one"
     ]
   },
+  {
+    "name": "mir-tidy-chain-first",
+    "breaks": "a match's arms as values from MIR chain with the rest first, `variant !== \"foundation\" ? .. : [\"Foundation\", ..]`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    (false, true) => false,\n",
+    "replace": "                    (false, true) => true,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arms as values chain in written order"
+    ]
+  },
 ];
