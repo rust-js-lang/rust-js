@@ -1412,11 +1412,27 @@ impl Expr {
     }
 
     /// This as a test: `!!a` is `a`, in the parts of `&&` and `||` too,
-    /// whose value the test only asks the truth of.
+    /// whose value the test only asks the truth of. `x != null && x` is `x`:
+    /// what's truthy is set.
     pub fn tested(&self) -> Expr {
         match &self.kind {
             ExprKind::Unary(UnaryOp::Not, inner) if let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind => {
                 value.tested()
+            }
+            ExprKind::Binary(Op::And, set, rest)
+                if let ExprKind::Binary(Op::LooseNe, x, null) = &set.kind
+                    && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+                    && matches!(x.kind, ExprKind::Var(_))
+                    && let rest = rest.tested()
+                    && {
+                        let mut first = &rest;
+                        while let ExprKind::Binary(Op::And, a, _) = &first.kind {
+                            first = a;
+                        }
+                        same_path(first, x)
+                    } =>
+            {
+                rest
             }
             ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => Expr {
                 kind: ExprKind::Binary(*op, Box::new(a.tested()), Box::new(b.tested())),

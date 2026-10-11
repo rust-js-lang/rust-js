@@ -124,11 +124,13 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     });
     let changing = changing(body);
     js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
-    bottom_up(body, &mut |stmts| payload_aliases(stmts, payloads, &changing));
     alias_variables(body, &changing);
     js::statement_lists(body, &mut destructured);
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
+    // A pattern's binding of a variable, after those: of a temporary that
+    // was a variable's too, `as_deref()`'s, `const code = errorCode;`.
+    bottom_up(body, &mut |stmts| payload_aliases(stmts, payloads, &changing));
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));
     named_temporaries(body);
     eager_chains(body);

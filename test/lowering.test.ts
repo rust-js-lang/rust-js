@@ -6488,3 +6488,24 @@ pub fn tail(message: &Message, out: &mut Vec<u32>) {
     expect(pushed).toEqual([1, 2, 1]);
   }
 });
+
+// A guard of what a variant binds, `Some(code) if !code.is_empty()` of an
+// `as_deref()`: `errorCode`, its truth, as react.dev's error page tests it,
+// not `errorCode != null && errorCode` and a `const code = errorCode;`.
+test("a guarded binding of an Option's string is its truth", async () => {
+  const dir = fixture("guarded-string");
+  writeFileSync(join(dir, "lib.rs"), `pub fn title(error_code: Option<String>) -> String {
+    match error_code.as_deref() {
+        Some(code) if !code.is_empty() => format!("Minified React error #{code}"),
+        _ => "Minified Error Decoder".to_string(),
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('export function title(errorCode) {\n  if (errorCode) {\n    return `Minified React error #${errorCode}`;\n  }\n');
+    const lib = await import(join(dir, out));
+    expect([lib.title("1"), lib.title(""), lib.title(undefined)]).toEqual(["Minified React error #1", "Minified Error Decoder", "Minified Error Decoder"]);
+  }
+});

@@ -712,7 +712,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    bottom_up(body, &mut |stmts| payload_aliases(stmts, payloads, &changing));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","match guard.s binding from MIR"],
+    tests: ["test/lowering.test.ts","-t","match guard.s binding from MIR|a guarded binding of an Option"],
   },
   {
     name: "mir-tidy-truthy-not-set",

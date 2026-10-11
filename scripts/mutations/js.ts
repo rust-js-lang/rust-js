@@ -256,4 +256,16 @@ export const mutations: Mutation[] = [
       "made only to be dropped"
     ]
   },
+  {
+    "name": "tested-null-check-kept",
+    "breaks": "a test of `x != null && x` keeps its null check, which `x`'s truth says",
+    "file": "src/js.rs",
+    "find": "                        same_path(first, x)\n",
+    "replace": "                        same_path(first, x) && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a guarded binding of an Option"
+    ]
+  },
 ];
