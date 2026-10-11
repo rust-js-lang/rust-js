@@ -141,8 +141,8 @@ struct State<'m, 'tcx> {
     boxes: std::collections::HashSet<String>,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
     branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
-    /// Values made, each written where it's read: a constant, which reads
-    /// the same anywhere, and an element, inside another or given its props,
+    /// Values made, each written where it's read: a constant, or what the
+    /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
     in_place: std::collections::HashMap<Local, Expr>,
     /// Each local a parameter's pattern binds, and the parameter it's moved
@@ -922,7 +922,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut made = Vec::new();
         for (local, value) in std::mem::take(&mut state.pending) {
             let mut expr = self.value_expr(value, Span::default())?;
-            if expr.is_constant() {
+            // A constant, or what the module names, a function or a static,
+            // reads the same anywhere: written where it's read.
+            let module = match &expr.kind {
+                js::ExprKind::Var(name) => self.module_names.contains(name),
+                js::ExprKind::Symbol(_) => true,
+                _ => false,
+            };
+            if expr.is_constant() || module {
                 state.in_place.insert(local, expr);
                 continue;
             }
@@ -2515,6 +2522,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
                 return Ok(Value::Expr(call));
             }
+        }
+        // A `From` into an untagged enum, or `into()` to one: the value (ADR 0214).
+        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {
+            return Ok(values.into_iter().next().expect("one"));
         }
         // A prop `jsx!` isn't given: none, which JSX leaves out (ADR 0213).
         if bindings::is_omitted(tcx, def_id) {

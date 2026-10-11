@@ -782,8 +782,8 @@ export const mutations: Mutation[] = [
     name: "mir-constant-made-as-const",
     breaks: "a constant made before it's used is a `const`, which isn't the `undefined` a flattened struct's field left out is",
     file: "src/lower/mir.rs",
-    find: "            if expr.is_constant() {\n",
-    replace: "            if false && expr.is_constant() {\n",
+    find: "            if expr.is_constant() || module {\n",
+    replace: "            if module {\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
@@ -817,5 +817,21 @@ export const mutations: Mutation[] = [
     find: "                    && fn_def(referred.ty()).is_some() =>\n",
     replace: "                    && fn_def(referred.ty()).is_some() && false =>\n",
     tests: ["test/mir.test.ts","-t","fn_item_referenced"],
+  },
+  {
+    name: "mir-module-name-made-as-const",
+    breaks: "a static's component made before it's used is a `const` of a temporary's name, no tag",
+    file: "src/lower/mir.rs",
+    find: "                js::ExprKind::Var(name) => self.module_names.contains(name),\n",
+    replace: "                js::ExprKind::Var(_) => false,\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
+  {
+    name: "mir-untagged-into-called",
+    breaks: "`into()` to an untagged enum calls `Into::into`, which isn't JS's",
+    file: "src/lower/mir.rs",
+    find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
+    replace: "        if false && values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
   },
 ];

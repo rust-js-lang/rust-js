@@ -4222,3 +4222,30 @@ pub fn Noted() -> JSX::Element {
   expect(renderToStaticMarkup(lib.App())).toBe('<a href="/b" class="c">B</a>');
   expect(renderToStaticMarkup(lib.Noted())).toBe('<a href="/n" target="_blank">N</a>');
 });
+
+// ADR 0364: from MIR as from THIR, a static's component is its static,
+// wherever its tag is read, as after a prop a branch makes.
+test("a static component given a prop a branch makes is its static", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, MemoExoticComponent, jsx, memo};
+pub struct P {
+    pub n: u32,
+}
+thread_local! {
+    pub static Count: MemoExoticComponent<P> = memo({
+        fn Count(P { n }: P) -> JSX::Element {
+            jsx! { <b>{n}</b> }
+        }
+        Count
+    });
+}
+pub fn App(big: bool) -> JSX::Element {
+    jsx! { <Count n={if big { 10 } else { 1 }} /> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<Count n=");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([true, false].map((big) => renderToStaticMarkup(lib.App(big)))).toEqual(["<b>10</b>", "<b>1</b>"]);
+});

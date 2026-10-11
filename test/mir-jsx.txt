@@ -1,6 +1,7 @@
 JSX HTML entity reports the original source and preserves existing output
 JSX SVG tags are their SVG elements, of SVG's attributes
 JSX adjacent roots reports the original source and preserves existing output
+JSX attributes take the values @types/react types them as
 JSX bare text reports the original source and preserves existing output
 JSX checks a literal of an attribute of a few strings
 JSX children have no twelve-sibling tuple limit
@@ -44,8 +45,10 @@ a destructured prop of a hyphenated name is quoted
 a disabled crate or module does not load or expand its contents
 a dyn ReactNode is the node itself
 a flattened struct's pattern takes its fields apart with the props'
+a module's constant element is rendered where it's read
 a module's named component is loaded as a module's default
 a props field's default may be a const
+a static component given a prop a branch makes is its static
 a thread_local component takes props borrowing the caller's
 adjacent text children stay apart
 an attribute is read before a child that assigns what it read
