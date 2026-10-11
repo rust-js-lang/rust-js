@@ -3286,9 +3286,7 @@ fn sunk_lets(stmts: &mut Vec<Stmt>) {
         if alone
             && let StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. } =
                 &mut stmts[first].kind
-            && let Some(at) = (body.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), &name) > 0)
-            && matches!(&body[at].kind, StmtKind::Assign(target, value)
-                if matches!(&target.kind, ExprKind::Var(v) if *v == name) && !value.mentions_var(&name))
+            && assigned_first(body, &name)
             && !looped_reads(&stmts[first], &name)
         {
             let (StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. }) =
@@ -3307,6 +3305,27 @@ fn sunk_lets(stmts: &mut Vec<Stmt>) {
         } else {
             stmts.insert(first, declared);
         }
+    }
+}
+
+/// Whether `stmts` assign `name` before anything reads it, each way through
+/// them that names it: first `name = e`, or a branch of an `if` that does
+/// so, which is all that names it.
+fn assigned_first(stmts: &[Stmt], name: &str) -> bool {
+    let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
+    let Some(at) = stmts.iter().position(names) else {
+        return false;
+    };
+    let alone = !stmts[at + 1..].iter().any(names);
+    let assigned = |stmts: &[Stmt]| !stmts.iter().any(names) || assigned_first(stmts, name);
+    match &stmts[at].kind {
+        StmtKind::Assign(target, value) => {
+            matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name)
+        }
+        StmtKind::If(test, then, otherwise) => {
+            alone && !test.mentions_var(name) && assigned(then) && otherwise.as_deref().is_none_or(assigned)
+        }
+        _ => false,
     }
 }
 

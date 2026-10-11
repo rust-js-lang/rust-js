@@ -1462,4 +1462,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "loop-let-branch-assigned-not-sunk",
+    "breaks": "a `let` a loop's branch makes from MIR stays one `let` before the loop, not a `const` in the branch",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            alone && !test.mentions_var(name) && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
+    "replace": "            false",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let a loop's branch makes is declared in the loop"
+    ]
+  },
 ];

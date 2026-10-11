@@ -7968,3 +7968,47 @@ pub async fn made() -> u32 {
     expect(await lib.made()).toBe(3);
   }
 });
+
+// From MIR as from THIR: a `let` Rust declares in a loop's body is declared
+// there, `const contentBoxSize = ..` where a branch of each turn makes it,
+// not one `let` before the loop, as react.dev's NavigationBar measures its
+// tabs.
+test("a let a loop's branch makes is declared in the loop", async () => {
+  const dir = fixture("loop-branch-let");
+  writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
+pub struct BoxSize {
+    pub inline_size: f64,
+}
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum ContentBoxSize {
+    Array(&'static [&'static BoxSize]),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Single(&'static BoxSize),
+}
+unsafe extern "Rust" {
+    #[link_name = "get contentBoxSize"]
+    safe fn contentBoxSize(this: &Unknown) -> Option<ContentBoxSize>;
+}
+pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
+    for entry in entries {
+        if let Some(size) = contentBoxSize(entry) {
+            let contentBoxSize = match size {
+                ContentBoxSize::Array(sizes) => unsafe { *sizes.get_unchecked(0) },
+                ContentBoxSize::Single(size) => size,
+            };
+            let width = contentBoxSize.inline_size;
+            log(width);
+        }
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("      const contentBoxSize = Array.isArray(size) ? size[0] : size;");
+    const lib = await import(join(dir, out));
+    const widths: number[] = [];
+    lib.widths([{ contentBoxSize: [{ inline_size: 1 }] }, {}, { contentBoxSize: { inline_size: 2 } }], (w: number) => widths.push(w));
+    expect(widths).toEqual([1, 2]);
+  }
+});
