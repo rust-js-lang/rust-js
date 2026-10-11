@@ -1671,6 +1671,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let span = state.body.local_decls[place.local].source_info.span;
                 Ok(Value::Expr(self.mir_place(state, *place, span, out)?))
             }
+            // A function given by reference, `&hello`, a promoted constant:
+            // the function, as a reference is what it refers to (ADR 0023).
+            Operand::Constant(c)
+                if let Const::Unevaluated(uv, _) = c.const_
+                    && let Some(promoted) = uv.promoted
+                    && let Some(referred) = referred_constant(&state.promoted[promoted])
+                    && fn_def(referred.ty()).is_some() =>
+            {
+                self.mir_operand_read(state, &Operand::Constant(Box::new(referred)), out)
+            }
             // A function as a value, `.map(double)` or `f as fn()`: THIR's.
             Operand::Constant(c) if let Some((def_id, args)) = fn_def(c.ty()) => {
                 match self.fn_item_value(def_id, args, c.ty(), c.span, out)? {
@@ -1778,7 +1788,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A reference to a static, which is the static (ADR 0023): a JS
         // global (ADR 0021), or the crate's, its module's `const` (ADR 0096).
-        if let ty::Ref(_, _, ty::Mutability::Not) = ty.kind()
+        if let ty::Ref(_, _, ty::Mutability::Not) | ty::RawPtr(_, ty::Mutability::Not) = ty.kind()
             && let Some(def_id) = self.const_static(c)
             && !tcx.is_mutable_static(def_id)
         {

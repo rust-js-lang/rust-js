@@ -10,6 +10,7 @@ JSX duplicate attribute reports the original source and preserves existing outpu
 JSX duplicate children reports the original source and preserves existing output
 JSX empty attribute expression reports the original source and preserves existing output
 JSX gives a chain of flattened structs as props, a name the props have their own
+JSX gives a component its named props and the rest from a base
 JSX gives a component its props as written, and children that change the base first
 JSX hooks take @types/react's Reducer, EffectCallback and TransitionFunction
 JSX intrinsic generic reports the original source and preserves existing output
@@ -38,10 +39,12 @@ JSX unknown component prop reports the original source and preserves existing ou
 JSX uses SVG's tag and attribute spelling
 a component a JS module exports is a JSX tag, and a binding is a value
 a constant holds a thread-local by reference as its variable
+a default import is named as the module's use renames it
 a destructured prop of a hyphenated name is quoted
 a disabled crate or module does not load or expand its contents
 a dyn ReactNode is the node itself
 a flattened struct's pattern takes its fields apart with the props'
+a module's named component is loaded as a module's default
 a props field's default may be a const
 a thread_local component takes props borrowing the caller's
 adjacent text children stay apart

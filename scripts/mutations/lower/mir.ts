@@ -802,4 +802,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","fn_pointer_of_borrowed_struct"],
   },
+  {
+    name: "mir-foreign-static-by-pointer",
+    breaks: "a JS global a foreign static names, which MIR reads through a raw pointer, isn't its global",
+    file: "src/lower/mir.rs",
+    find: "        if let ty::Ref(_, _, ty::Mutability::Not) | ty::RawPtr(_, ty::Mutability::Not) = ty.kind()\n",
+    replace: "        if let ty::Ref(_, _, ty::Mutability::Not) = ty.kind()\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
+  {
+    name: "mir-fn-item-referenced-undefined",
+    breaks: "a function given by reference, `&hello`, a promoted constant, is `undefined`",
+    file: "src/lower/mir.rs",
+    find: "                    && fn_def(referred.ty()).is_some() =>\n",
+    replace: "                    && fn_def(referred.ty()).is_some() && false =>\n",
+    tests: ["test/mir.test.ts","-t","fn_item_referenced"],
+  },
 ];
