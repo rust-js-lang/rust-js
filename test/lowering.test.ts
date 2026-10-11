@@ -6766,8 +6766,9 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => Math.imul(x, 2) >>> 0);\n");
-    // Not of `Math.random()`, which does something.
-    if (out === "mir.js") expect(js).toContain("  const rolled = $iter(more).map((x) => x + Math.random());\n");
+    // Not of `Math.random()`, which does something: lazy, the array's own
+    // iterator.
+    if (out === "mir.js") expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
     const lib = await import(join(dir, out));
     expect([lib.joined([1], [1, 2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], 2]);
   }
@@ -8349,5 +8350,33 @@ test("an adapter of a JS iterator is not made one again", async () => {
     expect(js).not.toContain("Iterator.from(");
     const lib = await import(join(dir, out));
     expect(lib.evens(10)).toEqual([20, 40, 60, 80]);
+  }
+});
+
+// From MIR: an array's iterator made for an adapter alone, `log.iter()
+// .filter(..)` of closures that do something, is the array's own,
+// `log.values().filter(..)`, lazy as Rust's adapters are; no other name
+// for it steps it, so no `$iter`, which knows where it is, is needed, as
+// react.dev's Console filters what's logged.
+test("an array's iterator for an adapter alone is its values", async () => {
+  const dir = fixture("values-adapter");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "globalThis.seen"]
+    safe fn seen(x: u32) -> u32;
+}
+pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
+    let new_logs = log.iter().filter(|x| seen(**x) != 3).map(|x| seen(x * 2));
+    prev.iter().cloned().chain(new_logs).collect()
+}
+`);
+  for (const [out, env] of [["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("const newLogs = log\n    .values()\n    .filter(");
+    const lib = await import(join(dir, out));
+    const order: number[] = [];
+    (globalThis as any).seen = (x: number) => (order.push(x), x);
+    expect(lib.joined([1], [3, 4])).toEqual([1, 8]);
+    expect(order).toEqual([3, 4, 8]);
   }
 });

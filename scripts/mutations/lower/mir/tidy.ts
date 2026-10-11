@@ -1570,4 +1570,16 @@ export const mutations: Mutation[] = [
       "a value a try makes in each branch is the variable's there"
     ]
   },
+  {
+    "name": "array-values-kept-stepped",
+    "breaks": "an array's `$iter` an adapter alone steps stays `$iter(xs).filter(..)`, not `xs.values().filter(..)`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        && crate::lower::iterators::is_stepped_items(it)\n",
+    "replace": "        && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an array's iterator for an adapter alone is its values"
+    ]
+  },
 ];

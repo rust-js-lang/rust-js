@@ -273,6 +273,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     js::statement_lists(body, &mut forwarded_values);
+    // An array's `$iter` an adapter alone steps, left lazy, as what its
+    // closures do is in Rust's order: the array's own iterator.
+    js::each_expr_mut(body, &mut array_values);
     // A `let` declared first that nothing's left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
@@ -1609,6 +1612,25 @@ fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::
         let returned = StmtKind::Return(Some(conditional(test.clone(), yes.clone(), no.clone(), booleans)));
         let span = last_if.span;
         stmts.splice(stmts.len() - 2.., [returned.at(span)]);
+    }
+}
+
+/// `$iter(xs).filter(f)`, an array's `$iter`, which knows where it is, made
+/// for an iterator helper alone, which nothing else steps: `xs.values()
+/// .filter(f)`, the array's own iterator.
+fn array_values(e: &mut Expr) {
+    if let ExprKind::Call(callee, _) = &mut e.kind
+        && let ExprKind::Member(it, name) = &mut callee.kind
+        && matches!(
+            name.as_str(),
+            "map" | "filter" | "flatMap" | "forEach" | "some" | "every" | "find" | "take" | "drop" | "reduce"
+        )
+        && crate::lower::iterators::is_stepped_items(it)
+        && let ExprKind::Call(_, args) = &mut it.kind
+        && args.len() == 1
+    {
+        let items = args.pop().expect("one");
+        **it = Expr::call(Expr::member(items, "values"), Vec::new());
     }
 }
 
