@@ -139,6 +139,9 @@ struct State<'m, 'tcx> {
     copy_backs: Vec<(Expr, String, bool)>,
     /// The parameters that are boxes their callers give (ADR 0074).
     boxes: std::collections::HashSet<String>,
+    /// Each local holding a read whose `Option` only `.flatten()` reads,
+    /// the JS read itself (ADR 0311).
+    flattened: std::collections::HashSet<Local>,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
     branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
     /// Values made, each written where it's read: a constant, or what the
@@ -227,6 +230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             copy_backs: Vec::new(),
             boxes: Default::default(),
             branches: Default::default(),
+            flattened: Default::default(),
             in_place: Default::default(),
             named: Default::default(),
             parts: Default::default(),
@@ -2137,7 +2141,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .find(|(_, d)| d.val == value)
                     .map(|(v, _)| v)
                     .ok_or_else(|| self.unsupported(span, "this discriminant, from its MIR"))?;
-                self.variant_test(enum_value.clone(), *enum_ty, *adt, variant, span)
+                Ok(self.variant_test(enum_value.clone(), *enum_ty, *adt, variant))
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
@@ -2180,42 +2184,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// That `subject` is `variant` of its enum, as a pattern tests it.
-    fn variant_test(
-        &mut self,
-        subject: Expr,
-        ty: Ty<'tcx>,
-        adt: ty::AdtDef<'tcx>,
-        variant: VariantIdx,
-        span: Span,
-    ) -> R<Expr> {
+    fn variant_test(&mut self, subject: Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>, variant: VariantIdx) -> Expr {
         let def = adt.variant(variant);
         if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
             let inner = self.option_of(ty).expect("an `Option`");
-            return Ok(match self.tcx.is_lang_item(def.def_id, LangItem::OptionSome) {
+            return match self.tcx.is_lang_item(def.def_id, LangItem::OptionSome) {
                 true => self.present(subject, inner),
                 false => self.absent(subject, inner),
-            });
+            };
         }
         // An untagged enum's variant, told by its value's kind (ADR 0214).
         if bindings::is_untagged(self.tcx, adt.did()) {
-            return Ok(self.untagged_variant_test(ty, def, &subject));
+            return self.untagged_variant_test(ty, def, &subject);
         }
+        // A discriminated union's `otherwise`: an object whose tag is none
+        // of the others' (ADR 0284).
         if bindings::is_tagged_otherwise(self.tcx, adt.did(), def) {
-            return Err(self.unsupported(span, "this enum's variant tested, from its MIR"));
+            let key = bindings::tag_key(self.tcx, adt.did());
+            let tests = (adt.variants().iter())
+                .filter(|other| other.def_id != def.def_id)
+                .map(|other| {
+                    let name = bindings::variant_tag(self.tcx, other);
+                    Expr::bin(Op::Ne, Expr::member(subject.clone(), &key), name)
+                })
+                .reduce(|a, b| Expr::bin(Op::And, a, b));
+            return tests.unwrap_or_else(|| Expr::bool(true));
         }
         if let Some(n) = super::recognition::ordering_value(self.tcx, adt.did(), def.name) {
-            return Ok(Expr::bin(Op::Eq, subject, Expr::int(n)));
+            return Expr::bin(Op::Eq, subject, Expr::int(n));
         }
         let name = bindings::variant_tag(self.tcx, def);
         let unit = def.fields.is_empty() && bindings::declared_tag(self.tcx, adt.did()).is_none();
-        Ok(match unit {
+        match unit {
             true => Expr::bin(Op::Eq, subject, name),
             false => Expr::bin(
                 Op::Eq,
                 Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),
                 name,
             ),
-        })
+        }
     }
 
     /// What a failed check says, as Rust's panic does.
@@ -2295,8 +2302,72 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
         let output = destination.ty(decls, self.tcx).ty;
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();
+        let known = self.recognition().classify(def_id, generic_args);
+        // A read of items that may be `None` whose `Option` only `.flatten()`
+        // reads: the JS read itself, which `flatten` gives as it is (ADR 0311).
+        if let Some(known) = known
+            && super::std_types::vec::reads_flattened(known)
+            && self.flattened_by(state, destination)
+        {
+            let values = self.take_operands(state, &operands, out)?;
+            let values = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            state.flattened.insert(destination.local);
+            return Ok(Value::Expr(super::std_types::vec::flattened_read_values(known, values)));
+        }
+        // `flatten()` of it, and a copy that's the item itself: the read.
+        if matches!(known, Some(Std::OptionFlatten | Std::OptionCloned))
+            && let [Operand::Move(read)] = operands[..]
+            && read.projection.is_empty()
+            && state.flattened.contains(&read.local)
+        {
+            state.flattened.insert(destination.local);
+            // The latest made, where it is still: nothing runs here.
+            if state.pending.last().is_some_and(|(local, _)| *local == read.local) {
+                return Ok(state.pending.pop().expect("the latest").1);
+            }
+            return Ok(self.take_operands(state, &operands, out)?.remove(0));
+        }
         let values = self.take_operands(state, &operands, out)?;
         self.mir_call_values(state, (def_id, generic_args), (values, &arg_tys), output, span, out)
+    }
+
+    /// Whether what a call makes, `destination`, is read only by `.flatten()`,
+    /// or by a copy that's the item itself, `.copied()` of a reference, a
+    /// number or text, which only `.flatten()` reads.
+    fn flattened_by(&self, state: &State<'_, 'tcx>, destination: Place<'tcx>) -> bool {
+        let decls = &state.body.local_decls;
+        if !destination.projection.is_empty() || state.locals.reads[destination.local] != 1 {
+            return false;
+        }
+        state.body.basic_blocks.iter().any(|data| {
+            let TerminatorKind::Call {
+                func,
+                args,
+                destination: made,
+                ..
+            } = &data.terminator().kind
+            else {
+                return false;
+            };
+            let reads = matches!(&args[..], [arg]
+                if matches!(&arg.node, Operand::Move(read) if *read == Place::from(destination.local)));
+            let known = fn_def(func.ty(decls, self.tcx))
+                .and_then(|(def_id, generic_args)| self.recognition().classify(def_id, generic_args));
+            let item_itself = || {
+                self.option_of(made.ty(decls, self.tcx).ty)
+                    .and_then(|inner| self.option_of(inner))
+                    .is_some_and(|item| item.is_ref() || item.is_primitive() || self.is_string_like(item))
+            };
+            reads
+                && match known {
+                    Some(Std::OptionFlatten) => true,
+                    Some(Std::OptionCloned) => item_itself() && self.flattened_by(state, *made),
+                    _ => false,
+                }
+        })
     }
 
     /// A JSX binding's arguments, each with what THIR has of it, where THIR

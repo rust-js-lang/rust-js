@@ -2765,12 +2765,15 @@ pub fn all_made(objects: Vec<&'static js::JsObject>) -> Vec<Message> {
     objects.into_iter().map(Message::Other).collect()
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  const lib = await import(join(dir, "lib.js"));
-  const done = { type: "done", compilatonError: false };
-  expect([lib.described({ type: "resize", height: 3 }), lib.described({ type: "start", firstLoad: true }), lib.described(done)])
-    .toEqual(["resize 3", "start true", "other"]);
-  expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.all_made([done])[0] === done]).toEqual([true, false, true, true]);
+  // From MIR too (ADR 0364).
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const lib = await import(join(dir, out));
+    const done = { type: "done", compilatonError: false };
+    expect([lib.described({ type: "resize", height: 3 }), lib.described({ type: "start", firstLoad: true }), lib.described(done)])
+      .toEqual(["resize 3", "start true", "other"]);
+    expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.all_made([done])[0] === done]).toEqual([true, false, true, true]);
+  }
 });
 
 // ADR 0287: a `Cell`, or an `Rc` of one, that only its function and its
@@ -4041,17 +4044,20 @@ pub fn popped(mut items: Vec<Option<u32>>) -> Option<u32> {
     items.pop().flatten()
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("const first = args.shift();");
-  expect(js).toContain("const last = args.pop();");
-  expect(js).toContain("return [items[0], items[i], items.at(-1)];");
-  expect(js).toContain("return items.pop();");
-  expect(js).not.toContain("$someValue");
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.shifted([1, undefined, 3]), lib.shifted([undefined]), lib.shifted([])]).toEqual([[1, 3, 1], [undefined, undefined, 0], [undefined, undefined, 0]]);
-  expect([lib.read([undefined, 2], 1), lib.read([], 0)]).toEqual([[undefined, 2, 2], [undefined, undefined, undefined]]);
-  expect([lib.popped([1, undefined]), lib.popped([]), lib.popped([4])]).toEqual([undefined, undefined, 4]);
+  // From MIR too (ADR 0364).
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("const first = args.shift();");
+    expect(js).toContain("const last = args.pop();");
+    expect(js).toContain("return [items[0], items[i], items.at(-1)];");
+    expect(js).toContain("return items.pop();");
+    expect(js).not.toContain("$someValue");
+    const lib = await import(join(dir, out));
+    expect([lib.shifted([1, undefined, 3]), lib.shifted([undefined]), lib.shifted([])]).toEqual([[1, 3, 1], [undefined, undefined, 0], [undefined, undefined, 0]]);
+    expect([lib.read([undefined, 2], 1), lib.read([], 0)]).toEqual([[undefined, 2, 2], [undefined, undefined, undefined]]);
+    expect([lib.popped([1, undefined]), lib.popped([]), lib.popped([4])]).toEqual([undefined, undefined, 4]);
+  }
 });
 
 // ADR 0313: what react.dev's Console writes, as a person writes it: `!x` of

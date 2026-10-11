@@ -447,7 +447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let js_span = self.js_span(span);
         for (variant, dropped) in arms.into_iter().rev() {
-            let test = self.variant_test(subject.clone(), ty, adt, variant, span)?;
+            let test = self.variant_test(subject.clone(), ty, adt, variant);
             chain = Some(match (dropped.is_empty(), chain) {
                 (true, Some(rest)) if !rest.is_empty() => {
                     vec![StmtKind::If(Expr::unary(js::UnaryOp::Not, test), rest, None).at(js_span)]

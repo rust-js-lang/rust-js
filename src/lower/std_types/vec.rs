@@ -9,6 +9,31 @@ use crate::runtime::Helper;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
 
+/// Whether `known` reads an item, which `flatten` makes the JS read itself.
+pub(in crate::lower) fn reads_flattened(known: Std) -> bool {
+    matches!(
+        known,
+        Std::Method("pop" | "shift") | Std::First | Std::SliceGet | Std::SliceLast
+    )
+}
+
+/// The JS read `known` is of its arguments' values, `items.shift()` or
+/// `items[0]`, whose `undefined` is both no item and a `None` one (ADR 0311).
+pub(in crate::lower) fn flattened_read_values(known: Std, values: Vec<Expr>) -> Expr {
+    let mut values = values.into_iter();
+    let mut value = || values.next().expect("rustc checked the arguments");
+    match known {
+        Std::Method(method @ ("pop" | "shift")) => Expr::call(Expr::member(value(), method), vec![]),
+        Std::First => Expr::index(value(), Expr::int(0)),
+        Std::SliceGet => {
+            let items = value();
+            Expr::index(items, value())
+        }
+        Std::SliceLast => Expr::call(Expr::member(value(), "at"), vec![Expr::int(-1)]),
+        _ => unreachable!("`reads_flattened`'s"),
+    }
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `.flatten()` of a read of items that may be `None`, through a
     /// `copied()` or `cloned()`: the JS read itself, `items.shift()` or
@@ -19,7 +44,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         };
         let args = args.clone();
-        Ok(Some(match self.std_fn(fun) {
+        match self.std_fn(fun) {
             // A copy that's the item itself: of a reference, a number or text.
             Some(Std::OptionCloned)
                 if self
@@ -27,19 +52,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .and_then(|inner| self.option_of(inner))
                     .is_some_and(|item| item.is_ref() || item.is_primitive() || self.is_string_like(item)) =>
             {
-                return self.flattened_read(args[0], out);
+                self.flattened_read(args[0], out)
             }
-            Some(Std::Method(method @ ("pop" | "shift"))) => {
-                Expr::call(Expr::member(self.expr(args[0], out)?, method), vec![])
+            Some(known) if reads_flattened(known) => {
+                let values = args.iter().map(|&arg| self.expr(arg, out)).collect::<R<Vec<_>>>()?;
+                Ok(Some(flattened_read_values(known, values)))
             }
-            Some(Std::First) => Expr::index(self.expr(args[0], out)?, Expr::int(0)),
-            Some(Std::SliceGet) => {
-                let items = self.expr(args[0], out)?;
-                Expr::index(items, self.expr(args[1], out)?)
-            }
-            Some(Std::SliceLast) => Expr::call(Expr::member(self.expr(args[0], out)?, "at"), vec![Expr::int(-1)]),
-            _ => return Ok(None),
-        }))
+            _ => Ok(None),
+        }
     }
 
     /// A `Vec`'s or a slice's method (ADRs 0025, 0036): `None` if `known` is another.
