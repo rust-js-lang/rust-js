@@ -2921,12 +2921,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `P { x, ..base }`: its other fields each read of `base`, where it
         // is, of the same type, which nothing changes meanwhile, nor needs
         // copying, `{ ...base, x }`, as THIR writes it (ADR 0250).
+        // Or one MIR reads none of, every field given (`unread_base`).
         if let AggregateKind::Adt(did, VariantIdx::ZERO, args, None, None) = *kind
             && self.tcx.adt_def(did).is_struct()
+            && let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(did), args)
             && let Some(spread) =
-                self.struct_update(state, Ty::new_adt(self.tcx, self.tcx.adt_def(did), args), operands)
+                (self.struct_update(state, ty, operands)).or_else(|| self.unread_base(state, ty, operands, span))
         {
-            let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(did), args);
             let Shape::Object(names) = self.shape(ty) else {
                 unreachable!("a struct of named fields")
             };
@@ -3448,6 +3449,59 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             };
         (unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)
+    }
+
+    /// The base of a struct update MIR reads none of, every field given,
+    /// `Hit { url, ..*item }`: THIR's at `span`, which THIR spreads whole,
+    /// `..*item` of a shared reference or `..hit` of a variable (ADR 0250),
+    /// its place the variable's, by its debug info.
+    fn unread_base(
+        &self,
+        state: &State<'_, 'tcx>,
+        ty: Ty<'tcx>,
+        operands: &IndexVec<FieldIdx, Operand<'tcx>>,
+        span: Span,
+    ) -> Option<Place<'tcx>> {
+        let strip = |e| super::body_queries::strip(self.thir, e);
+        let base = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
+            thir::ExprKind::Adt(adt) if e.span == span => match &adt.base {
+                thir::AdtExprBase::Base(fru) => Some(strip(fru.base)),
+                _ => None,
+            },
+            _ => None,
+        })?;
+        let (var, deref) = match self.thir[base].kind {
+            thir::ExprKind::Deref { arg } if matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not)) => {
+                (strip(arg), true)
+            }
+            thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. }
+                if !bindings::has_flatten(self.tcx, ty) && (!self.is_copy(ty) || !self.contains_mutated(ty)) =>
+            {
+                (base, false)
+            }
+            _ => return None,
+        };
+        let hir_id = match self.thir[var].kind {
+            thir::ExprKind::VarRef { id } => id.0,
+            thir::ExprKind::UpvarRef { var_hir_id, .. } => var_hir_id.0,
+            _ => return None,
+        };
+        let binding = self.tcx.hir_span(hir_id);
+        let place = (state.body.var_debug_info.iter()).find_map(|info| match info.value {
+            mir::VarDebugInfoContents::Place(place) if info.source_info.span == binding => Some(place),
+            _ => None,
+        })?;
+        // None of its fields read: each one given.
+        if operands
+            .iter()
+            .any(|o| o.place().is_some_and(|p| p.local == place.local))
+        {
+            return None;
+        }
+        Some(match deref {
+            true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
+            false => place,
+        })
     }
 
     /// A JSX binding's arguments, each with what THIR has of it, where THIR

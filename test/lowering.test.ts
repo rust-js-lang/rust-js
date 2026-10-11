@@ -7381,3 +7381,29 @@ pub fn kept(errors: Vec<&'static LintError>, diags: Vec<&'static Diagnostic>) ->
     expect(lib.kept([{ line: 1, ruleId: "a" }, { line: 2, ruleId: null }], [{ from: 1, ruleId: null }, { from: 2, ruleId: "b" }])).toEqual([1, [{ from: 2, ruleId: "b" }]]);
   }
 });
+
+// ADR 0250: a struct update whose every field is given, `Hit { url, ..*item
+// }`, still spreads its base, from MIR as from THIR, which reads none of
+// its fields: what JS gave holds more than Rust names, react.dev's Search
+// gives DocSearch its hits' hierarchy back.
+test("a struct update giving every field spreads its base from MIR", async () => {
+  const dir = fixture("update-all-given");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Hit {
+    pub url: String,
+}
+pub fn cleaned(items: Vec<&'static Hit>) -> Vec<Hit> {
+    items.into_iter().map(|item| Hit { url: item.url.replace("#x", ""), ..*item }).collect()
+}
+pub fn moved(hit: Hit) -> Hit {
+    Hit { url: hit.url.replace("#x", ""), ..hit }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('({ ...item, url: item.url.replaceAll("#x", "") })');
+    expect(js).toContain('return { ...hit, url: hit.url.replaceAll("#x", "") };');
+    const lib = await import(join(dir, out));
+    expect([lib.cleaned([{ url: "a#x", level: 1 }]), lib.moved({ url: "b#x", level: 2 })]).toEqual([[{ url: "a", level: 1 }], { url: "b", level: 2 }]);
+  }
+});

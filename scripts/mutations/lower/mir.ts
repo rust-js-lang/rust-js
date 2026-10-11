@@ -1542,4 +1542,16 @@ export const mutations: Mutation[] = [
       "binding trait method called through a generic"
     ]
   },
+  {
+    "name": "mir-unread-base-dropped",
+    "breaks": "a struct update giving every field from MIR drops its base, `{ url }`, losing what JS's object held besides",
+    "file": "src/lower/mir.rs",
+    "find": ".or_else(|| self.unread_base(state, ty, operands, span))",
+    "replace": ".or(None)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "giving every field spreads its base"
+    ]
+  },
 ];
