@@ -2851,6 +2851,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter).then_some(true)
     }
 
+    /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
+    pub(super) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::collections::vec_deque::Iter")
+    }
+
     pub(super) fn is_array_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         let ty::Adt(adt, _) = ty.kind() else { return false };

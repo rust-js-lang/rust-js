@@ -384,9 +384,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(items) | Err(items) => items,
             },
             None if is_js_iterator(&value) => value,
-            // An array THIR's lowering makes of it, `s.split(",")`'s: a `$iter`
-            // of it, as of an array's.
-            None if made_array(&value) => self.stepped_items(value),
+            // An array THIR's lowering makes of it, `s.split(",")`'s, or a
+            // `VecDeque`'s, an array: a `$iter` of it, as of an array's.
+            None if made_array(&value) || self.recognition().is_deque_iter(ty) => self.stepped_items(value),
             None => self.js_iterator(value),
         }
     }

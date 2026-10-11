@@ -6707,3 +6707,33 @@ pub fn handle(ev: &Ev, open: bool, out: &mut Vec<u32>) {
     expect(pushed).toEqual([1, 2, 1, 1]);
   }
 });
+
+// A `VecDeque`'s iterator from MIR, of the array it is, copied where it's
+// collected, `prev.slice()`, as THIR's, as react.dev's Console keeps its
+// latest messages.
+test("a VecDeque's items collected from MIR are the array's copy", async () => {
+  const dir = fixture("deque-collect");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
+pub fn update(f: &dyn Fn(&dyn Fn(&VecDeque<u32>) -> VecDeque<u32>)) {
+    f(&|prev| {
+        let mut messages: VecDeque<u32> = prev.iter().cloned().collect();
+        while messages.len() > 3 {
+            messages.pop_front();
+        }
+        messages
+    });
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    const messages = prev.slice();\n");
+    const lib = await import(join(dir, out));
+    const prev = [1, 2, 3, 4, 5];
+    let got: number[] = [];
+    lib.update((f: (p: number[]) => number[]) => {
+      got = f(prev);
+    });
+    expect([got, prev]).toEqual([[3, 4, 5], [1, 2, 3, 4, 5]]);
+  }
+});

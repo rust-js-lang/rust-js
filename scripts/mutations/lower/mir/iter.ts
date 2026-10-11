@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "mir-made-array-iterator-from",
     breaks: "a `split`'s array MIR steps is `Iterator.from(…)`, so its chain stays a JS iterator's",
     file: "src/lower/mir/iter.rs",
-    find: "            None if made_array(&value) => self.stepped_items(value),\n",
-    replace: "            None if false && made_array(&value) => self.stepped_items(value),\n",
+    find: "            None if made_array(&value) || self.recognition().is_deque_iter(ty) => self.stepped_items(value),\n",
+    replace: "            None if self.recognition().is_deque_iter(ty) => self.stepped_items(value),\n",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },
   {
@@ -153,5 +153,17 @@ export const mutations: Mutation[] = [
     find: "                            _ => crate::lower::iterators::iterated(receiver),\n",
     replace: "                            _ => self.helper(Helper::Rest, \"$rest\", vec![receiver]),\n",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    "name": "deque-iter-generic",
+    "breaks": "a `VecDeque`'s iterator from MIR is `Iterator.from(prev)`, collected `.toArray()`, not `prev.slice()`",
+    "file": "src/lower/mir/iter.rs",
+    "find": " || self.recognition().is_deque_iter(ty)",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a VecDeque's items collected from MIR"
+    ]
   },
 ];
