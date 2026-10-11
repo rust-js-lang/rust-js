@@ -3995,7 +3995,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         },
                         _ => None,
                     })?;
-                    return Ok(Value::Expr(self.jsx_values(&tag, given, span, out)?));
+                    // Where it's written, as THIR's element is: its tag's line.
+                    let element = self.jsx_values(&tag, given, span, out)?;
+                    return Ok(Value::Expr(element.or_at(self.js_span(span))));
                 }
                 bindings::JsForm::Prop(name) => {
                     let mut given = self

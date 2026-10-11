@@ -546,4 +546,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "attribute-value-unmapped",
+    "breaks": "an attribute's constant value from MIR maps to no Rust line, `allow=` none in the source map",
+    "file": "src/lower/jsx.rs",
+    "find": "let mut value = value.or_at(self.js_span(value_span));",
+    "replace": "let mut value = value;",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

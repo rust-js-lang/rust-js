@@ -45,6 +45,7 @@ JSX passes a handler that calls a function with nothing as the function
 JSX passes an optional event handler on as it is
 JSX passes an optional style on as it is
 JSX passes on flattened props with a field of them set
+JSX preserves evaluation order and maps tags and handler statements to their original lines
 JSX reading a Cell a let took apart reads its value
 JSX reads a context by its Consumer, and a portal is a ReactPortal
 JSX refs are @types/react's Ref and RefCallback
@@ -84,6 +85,7 @@ a hook's closure a let names is a named function where it's given
 a hyphenated attribute read first is a variable of a JS name
 a key is where it was written
 a key that does nothing needs nothing captured
+a key that does something is made before the children
 a key that reads alike keeps a component's children in place
 a let pattern of a struct through a reference takes it apart
 a let pattern's flattened field is the rest of what it takes apart
@@ -106,8 +108,10 @@ a spread of an object of spreads alone is those spreads
 a static component given a prop a branch makes is its static
 a struct of two flattened fields is made as two spreads
 a style and a tag made before a prop's branch stay what they are
+a tag broken onto lines keeps its mappings in order
 a test of a let held ahead of calls is read in place
 a thread_local component takes props borrowing the caller's
+a value held for a prop is named after it
 a variant's test function is a bool in a test
 adjacent text children stay apart
 an attribute is read before a child that assigns what it read
@@ -137,11 +141,11 @@ direct element builder method is rejected without replacing output
 direct element builder ordinary macro is rejected without replacing output
 dyn values given to a JS module's function are the values
 flattened props given in part are the attributes given
+named component imports avoid local functions, nested parameters and duplicate exports
+nested component JSX stays readable, contextually typed and mapped to the original Rust
 props held ahead of a closure child are read where they're written
 props of an Fn type parameter are destructured
 react.dev's SidebarLink writes its classes in place
 what an element reads past elements before it is read where it's written
 what an element reads, made before a branch in its tree, is read where it's written
 what elements read before branches, each a call, is read where it's written
-a value held for a prop is named after it
-a key that does something is made before the children

@@ -936,10 +936,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Jsx(jsx) = &mut element.kind else {
             unreachable!("checked above")
         };
-        let Some(mut value) = lowered.take() else {
+        let Some(value) = lowered.take() else {
             jsx.children.extend(children);
             return Ok(element);
         };
+        // Where it's written, which MIR's value, a constant's, doesn't say.
+        let mut value = value.or_at(self.js_span(value_span));
         // `(e) => { if (f != null) { f(e); } }` as an event's handler is
         // `f`: React ignores what a handler returns, and no handler does
         // what one that calls nothing does (ADR 0198).
