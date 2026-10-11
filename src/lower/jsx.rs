@@ -336,7 +336,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut written: Vec<Prop> = adt
                 .fields
                 .iter()
-                .filter_map(|f| declared[f.name.as_usize()].take())
+                .filter_map(|f| {
+                    let mut prop = declared[f.name.as_usize()].take()?;
+                    // Where it's written, which MIR's value doesn't say: a
+                    // `key` written before it goes before it.
+                    if let Prop::Field(_, value) | Prop::Getter(_, value) = &mut prop
+                        && value.span.is_none()
+                    {
+                        value.span = self.js_span(self.thir[f.expr].span);
+                    }
+                    Some(prop)
+                })
                 .collect();
             written.extend(declared.into_iter().flatten());
             fields = written;

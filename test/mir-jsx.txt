@@ -99,3 +99,4 @@ a prop held for a borrow is read where it's written, past an imported tag
 a flattened rest updated ahead of a branch is spread once
 a spread of an object of spreads alone is those spreads
 an imported context's provider is a tag read where it's written
+a component's key goes where it's written from MIR

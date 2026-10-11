@@ -4943,3 +4943,30 @@ pub fn App(names: Vec<&'static str>) -> JSX::Element {
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(() => result.App(["a"])))).toBe("<nav><h2>On this page</h2><i>a</i><b>dark</b></nav>");
 });
+
+// ADR 0364: a component's `key` written first is first from MIR as from
+// THIR: MIR's prop values are placed by where THIR's fields are written, as
+// react.dev's PageHeading keys each Tag.
+test("a component's key goes where it's written from MIR", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct TagProps<'a> {
+    pub variant: &'a str,
+}
+pub fn Tag(TagProps { variant }: TagProps) -> JSX::Element {
+    jsx! { <b>{variant}</b> }
+}
+pub fn Tags(tags: Vec<&'static str>) -> JSX::Element {
+    jsx! { <div>{tags.iter().map(|tag| jsx! { <Tag key={*tag} variant={*tag} /> }).collect::<Vec<_>>()}</div> }
+}
+pub fn One(section: Option<&'static str>) -> JSX::Element {
+    jsx! { <Tag key={section} variant={"x"} /> }
+}
+`);
+  run(args);
+  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(code).toContain("<Tag key={tag} variant={tag} />");
+  expect(code).toContain('<Tag key={section} variant="x" />');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Tags(["a", "b"]))).toBe("<div><b>a</b><b>b</b></div>");
+});

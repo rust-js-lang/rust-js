@@ -534,4 +534,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "jsx-mir-field-unplaced",
+    "breaks": "a component's `key` from MIR goes last, `<Tag variant={tag} key={tag} />`, its fields' values placed nowhere",
+    "file": "src/lower/jsx.rs",
+    "find": "                        value.span = self.js_span(self.thir[f.expr].span);\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];
