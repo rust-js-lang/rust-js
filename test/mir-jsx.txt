@@ -1,0 +1,55 @@
+JSX HTML entity reports the original source and preserves existing output
+JSX SVG tags are their SVG elements, of SVG's attributes
+JSX adjacent roots reports the original source and preserves existing output
+JSX bare text reports the original source and preserves existing output
+JSX checks a literal of an attribute of a few strings
+JSX children have no twelve-sibling tuple limit
+JSX components take apart a list of children
+JSX duplicate attribute reports the original source and preserves existing output
+JSX duplicate children reports the original source and preserves existing output
+JSX empty attribute expression reports the original source and preserves existing output
+JSX gives a component its props as written, and children that change the base first
+JSX hooks take @types/react's Reducer, EffectCallback and TransitionFunction
+JSX intrinsic generic reports the original source and preserves existing output
+JSX invalid event reports the original source and preserves existing output
+JSX invalid prop type reports the original source and preserves existing output
+JSX invalid spread reports the original source and preserves existing output
+JSX leaves out children of a type parameter
+JSX mismatched tag reports the original source and preserves existing output
+JSX missing closing tag reports the original source and preserves existing output
+JSX missing component prop reports the original source and preserves existing output
+JSX mixed component spread reports the original source and preserves existing output
+JSX multiple spreads reports the original source and preserves existing output
+JSX native_event is the DOM event of its kind
+JSX onInput gets an InputEvent, as @types/react types it
+JSX onSubmit gets a SubmitEvent, of its submitter
+JSX passes an optional style on as it is
+JSX refs are @types/react's Ref and RefCallback
+JSX spread followed by attribute reports the original source and preserves existing output
+JSX spreads a struct through a reference as the struct
+JSX styles spread another style over their own
+JSX styles take the values csstype types them as
+JSX tags take the attributes @types/react gives each
+JSX takes every attribute @types/react types
+JSX tests an Option of an object by its truth
+JSX unknown component prop reports the original source and preserves existing output
+JSX uses SVG's tag and attribute spelling
+a component a JS module exports is a JSX tag, and a binding is a value
+a constant holds a thread-local by reference as its variable
+a disabled crate or module does not load or expand its contents
+a dyn ReactNode is the node itself
+a thread_local component takes props borrowing the caller's
+adjacent text children stay apart
+an attribute is read before a child that assigns what it read
+an element's key may be an Option
+direct element builder UFCS is rejected without replacing output
+direct element builder component is rejected without replacing output
+direct element builder constructor is rejected without replacing output
+direct element builder fragment is rejected without replacing output
+direct element builder function value is rejected without replacing output
+direct element builder import alias is rejected without replacing output
+direct element builder inside JSX expression is rejected without replacing output
+direct element builder inside closure is rejected without replacing output
+direct element builder inside component prop is rejected without replacing output
+direct element builder method is rejected without replacing output
+direct element builder ordinary macro is rejected without replacing output

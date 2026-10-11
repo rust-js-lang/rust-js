@@ -105,8 +105,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
-                self.locals
-                    .vars
+                self.locals.alike.contains(name)
+                    || self
+                        .locals
+                        .vars
                     .values()
                     .any(|var| !var.mutable && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name))
                     || out
@@ -129,18 +131,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// interior mutability anywhere in its type, nor a JS object, whose
     /// properties are getters.
     pub(super) fn plain_value(&self, name: &str) -> bool {
-        self.locals.vars.iter().any(|(id, var)| {
-            !var.mutable
-                && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name)
-                && (self.tcx.typeck(id.0.owner.def_id).node_type(id.0).walk()).all(|arg| match arg.kind() {
-                    ty::GenericArgKind::Type(t) => {
-                        !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
-                            && t.is_freeze(self.tcx, self.typing_env)
-                            && !self.is_js_object(t)
-                    }
-                    _ => true,
-                })
-        })
+        self.locals.plain.contains(name)
+            || self.locals.vars.iter().any(|(id, var)| {
+                !var.mutable
+                    && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name)
+                    && (self.tcx.typeck(id.0.owner.def_id).node_type(id.0).walk()).all(|arg| match arg.kind() {
+                        ty::GenericArgKind::Type(t) => {
+                            !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
+                                && t.is_freeze(self.tcx, self.typing_env)
+                                && !self.is_js_object(t)
+                        }
+                        _ => true,
+                    })
+            })
     }
 
     /// Whether `value` reads only variables that never change, so it's the
@@ -167,20 +170,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// takes nothing, `<>` and an imported component (`<react#StrictMode>`)
     /// take their children, and `<*>` takes a component and its props.
     pub(super) fn jsx(&mut self, tag: &str, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        self.jsx = true;
-        let (tag, props, children) = match (tag, args) {
-            ("*", &[component, props]) => {
+        let mut given = Vec::new();
+        for (i, &arg) in args.iter().enumerate() {
+            let value = match (tag, i) {
                 // A JS module's component is its import, as a tag must be.
-                let tag = match self.binding_component(component) {
+                ("*", 0) => match self.binding_component(arg) {
                     Some(tag) => tag,
-                    None => self.expr(component, out)?,
-                };
+                    None => self.expr(arg, out)?,
+                },
+                _ => self.expr(arg, out)?,
+            };
+            given.push(JsxArg {
+                value,
+                ty: self.thir[arg].ty,
+                expr: Some(arg),
+                span: self.thir[arg].span,
+            });
+        }
+        self.jsx_values(tag, given, span, out)
+    }
+
+    /// A JSX element, of what its binding is given.
+    pub(super) fn jsx_values(
+        &mut self,
+        tag: &str,
+        args: Vec<JsxArg<'tcx>>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        self.jsx = true;
+        let mut args = args.into_iter();
+        let (tag, props, children) = match (tag, args.len()) {
+            ("*", 2) => {
+                let component = args.next().expect("two");
+                let tag = component.value;
                 if !matches!(
                     tag.kind,
                     js::ExprKind::Var(_) | js::ExprKind::Symbol(_) | js::ExprKind::Member(..)
                 ) {
                     return Err(self.unsupported(
-                        self.thir[component].span,
+                        component.span,
                         "a JSX component other than a named function or module member",
                     ));
                 }
@@ -194,24 +223,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     let message =
                         format!("rust-js: a React component's name starts with an uppercase letter, not `{name}`");
-                    return Err(self.tcx.dcx().span_err(self.thir[component].span, message));
+                    return Err(self.tcx.dcx().span_err(component.span, message));
                 }
-                let (props, children) = self.jsx_props(props, out)?;
+                let (props, children) = self.jsx_props(args.next().expect("two"), out)?;
                 (js::JsxTag::Component(tag), props, children)
             }
             // A `react::Tag` the function names, `<Comp>`, whose value is the
             // tag, as JSX reads a capitalized variable's (ADR 0220).
-            ("$", &[tag]) => match self.expr(tag, out)? {
-                tag @ Expr {
-                    kind: js::ExprKind::Var(_),
+            ("$", 1) => match args.next().expect("one") {
+                JsxArg {
+                    value:
+                        tag @ Expr {
+                            kind: js::ExprKind::Var(_),
+                            ..
+                        },
                     ..
                 } => (js::JsxTag::Component(tag), Vec::new(), Vec::new()),
-                _ => return Err(self.unsupported(self.thir[tag].span, "a JSX tag other than a variable")),
+                tag => return Err(self.unsupported(tag.span, "a JSX tag other than a variable")),
             },
-            (tag, [] | [_]) if tag != "*" => {
-                let children = match args {
-                    &[children] => self.jsx_children(children, out)?,
-                    _ => Vec::new(),
+            (tag, 0 | 1) if tag != "*" => {
+                let children = match args.next() {
+                    Some(children) => self.jsx_children(children, out),
+                    None => Vec::new(),
                 };
                 let tag = match tag {
                     "" => js::JsxTag::Fragment,
@@ -228,9 +261,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A component's props as attributes: a struct's fields, with its
     /// `children` as the element's; `()` for none; anything else spread,
     /// `{...props}`.
-    pub(super) fn jsx_props(&mut self, props: ExprId, out: &mut Vec<Stmt>) -> R<(Vec<Prop>, Vec<Expr>)> {
-        let ty = self.thir[props].ty;
-        let value = self.expr(props, out)?;
+    fn jsx_props(&mut self, props: JsxArg<'tcx>, out: &mut Vec<Stmt>) -> R<(Vec<Prop>, Vec<Expr>)> {
+        let JsxArg {
+            value,
+            ty,
+            expr: props,
+            span: props_span,
+        } = props;
         let mut fields = match value.kind {
             js::ExprKind::Undefined => return Ok((Vec::new(), Vec::new())),
             js::ExprKind::Object(fields) => fields,
@@ -239,7 +276,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // As written, as JSX's are, its children last; then what a base
         // gives, in the struct's order (ADR 0203). Rust makes them in that
         // order too.
-        if let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
+        if let Some(props) = props
+            && let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
             && adt.adt_def.is_struct()
             && fields.len() == adt.adt_def.non_enum_variant().fields.len()
         {
@@ -282,10 +320,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where each prop is written, by its name: its value's place in the
         // source, a flattened struct made here followed in (ADR 0213).
         let mut written = HashMap::new();
-        self.written_at(props, ty, &mut written);
+        if let Some(props) = props {
+            self.written_at(props, ty, &mut written);
+        }
         // What gives each prop, by its name, where the struct is made here.
         let mut given = HashMap::new();
-        if let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
+        if let Some(props) = props
+            && let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind
             && let Shape::Object(types) = self.shape(ty)
         {
             for field in adt.fields.iter() {
@@ -310,7 +351,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .filter(|(n, _)| !rest_fields.contains(n))
                         .map(|(n, _)| n.clone())
                         .collect();
-                    let span = self.thir[props].span;
+                    let span = props_span;
                     let flattened = self.flattened_attrs(field_ty, value, &own, span)?;
                     // Where its fields are written, the first: a struct made
                     // there, `AnchorHTMLAttributes { .., ..props }`, is.
@@ -577,10 +618,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(attrs)
     }
 
-    pub(super) fn jsx_children(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
-        let value = self.expr(e, out)?;
-        let value = self.shown_if(e, value);
-        Ok(self.spread_children(value, self.thir[e].ty, out))
+    fn jsx_children(&mut self, children: JsxArg<'tcx>, out: &mut Vec<Stmt>) -> Vec<Expr> {
+        let value = match children.expr {
+            Some(e) => self.shown_if(e, children.value),
+            None => children.value,
+        };
+        self.spread_children(value, children.ty, out)
     }
 
     /// A child shown only if a test holds, `test ? <b /> : undefined`, as JSX
@@ -662,6 +705,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .collect()
     }
 
+    /// What `<el {...props}>` spreads: a struct's fields, or a JS value's own
+    /// properties, a `Rest`'s or a `js::Unknown` read from JSON say, or
+    /// none, `undefined`, which JS spreads as nothing (ADR 0268).
+    pub(super) fn jsx_spread_checked(&self, name: &str, ty: Ty<'tcx>, span: Span) -> R<()> {
+        let js_object = |ty: Ty<'tcx>| self.recognition().is_js_object(ty.peel_refs());
+        // Through a reference, the struct itself, which JS spreads alike.
+        let spread = ty.peel_refs();
+        if name == "..."
+            && !matches!(self.shape(spread), Shape::Object(_))
+            && !js_object(spread)
+            && !self.option_of(spread).is_some_and(js_object)
+        {
+            return Err(self.unsupported(span, "JSX props spread of a non-struct value"));
+        }
+        Ok(())
+    }
+
+    /// An attribute set on what isn't an element being made.
+    pub(super) fn one_expression(&self, span: Span) -> rustc_span::ErrorGuaranteed {
+        let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
+        self.tcx.dcx().span_err(span, message)
+    }
+
     /// `{}` or `{__html}`: an object literal, its fields the arguments.
     pub(super) fn object_binding(
         &mut self,
@@ -728,37 +794,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             _ => return Err(self.unsupported(span, "this JSX attribute binding's signature")),
         };
-        let value_id = value;
-        let mut element = self.expr(args[0], out)?;
+        let element = self.expr(args[0], out)?;
         if let js::ExprKind::Object(_) = element.kind {
             return self.object_field(element, name, value, out);
         }
+        let element_span = self.thir[args[0]].span;
         if !matches!(element.kind, js::ExprKind::Jsx(_)) {
-            let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
-            return Err(self.tcx.dcx().span_err(self.thir[args[0]].span, message));
+            return Err(self.one_expression(element_span));
         }
-        // A struct's fields, or a JS value's own properties, a `Rest`'s or a
-        // `js::Unknown` read from JSON say, or none, `undefined`, which JS
-        // spreads as nothing (ADR 0268).
-        let js_object = |ty: Ty<'tcx>| self.recognition().is_js_object(ty.peel_refs());
-        // Through a reference, the struct itself, which JS spreads alike.
-        let spread = self.thir[value].ty.peel_refs();
-        if name == "..."
-            && !matches!(self.shape(spread), Shape::Object(_))
-            && !js_object(spread)
-            && !self.option_of(spread).is_some_and(js_object)
-        {
-            return Err(self.unsupported(self.thir[value].span, "JSX props spread of a non-struct value"));
-        }
+        self.jsx_spread_checked(&name, self.thir[value].ty, self.thir[value].span)?;
         // The value, and what it needs done first, its statements, aside: JSX
         // reads its attributes in order, then its children, as Rust does, so
         // only those statements, which run before the whole element, would
         // jump ahead of what's read already, and only matter where the
         // value does more than read.
         let mut first = Vec::new();
+        let given = JsxArg {
+            value: self.expr(value, &mut first)?,
+            ty: self.thir[value].ty,
+            expr: Some(value),
+            span: self.thir[value].span,
+        };
+        let simple = self.is_simple(value);
+        self.jsx_prop_values(name, element, given, (first, simple), out)
+    }
+
+    /// An element's attribute, `name`, given: the element made, its value,
+    /// what that needs done first, and whether it's simple, THIR's
+    /// `is_simple`.
+    pub(super) fn jsx_prop_values(
+        &mut self,
+        name: String,
+        mut element: Expr,
+        given: JsxArg<'tcx>,
+        (mut first, simple): (Vec<Stmt>, bool),
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let value_id = given.expr;
+        let value_span = given.span;
         let (children, mut lowered) = match name.as_str() {
-            "children" => (self.jsx_children(value, &mut first)?, None),
-            _ => (Vec::new(), Some(self.expr(value, &mut first)?)),
+            "children" => (self.jsx_children(given, &mut first), None),
+            _ => (Vec::new(), Some(given.value)),
         };
         // The receiver is evaluated before the argument. JSX prints attributes
         // before children; later attributes must not jump ahead of earlier
@@ -772,7 +848,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Jsx(jsx) = &mut element.kind else {
             unreachable!("checked above")
         };
-        if (!first.is_empty() && !self.is_simple(value)) || (name != "children" && !jsx.children.is_empty() && !alike) {
+        if (!first.is_empty() && !simple) || (name != "children" && !jsx.children.is_empty() && !alike) {
             // One read already, a `const` of its own, is read as it is (ADR 0194).
             for prop in &mut jsx.props {
                 let (base, value) = match prop {
@@ -808,14 +884,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if event {
             let spilled = match (&value.kind, out.last().map(|s| &s.kind)) {
                 (js::ExprKind::Var(var), Some(StmtKind::Const(declared, arrow))) if var == declared => {
-                    passed_handler(arrow, self.calls_rust(value_id, true))
+                    passed_handler(arrow, value_id.is_some_and(|id| self.calls_rust(id, true)))
                 }
                 _ => None,
             };
             if let Some(handler) = spilled {
                 out.pop();
                 value = handler;
-            } else if let Some(handler) = passed_handler(&value, self.calls_rust(value_id, true)) {
+            } else if let Some(handler) = passed_handler(&value, value_id.is_some_and(|id| self.calls_rust(id, true))) {
                 value = handler;
             }
         }
@@ -824,7 +900,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // base's spread, written last and put first (ADR 0250), follows it.
         let at = match name.as_str() {
             "key" => {
-                let written = self.js_span(self.thir[value_id].span).lo;
+                let written = self.js_span(value_span).lo;
                 jsx.props.iter().position(|prop| match prop {
                     Prop::Spread(v) if v.span.is_none() => true,
                     Prop::Field(_, v) | Prop::Getter(_, v) | Prop::Spread(v) => {
@@ -845,6 +921,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         Ok(element)
     }
+}
+
+/// A JSX binding's argument: its value, its type, and its THIR expression
+/// where there's one, for its shape, and its span.
+pub(super) struct JsxArg<'tcx> {
+    pub(super) value: Expr,
+    pub(super) ty: Ty<'tcx>,
+    pub(super) expr: Option<ExprId>,
+    pub(super) span: Span,
 }
 
 /// JSX syntax evaluated here, rather than inside a callback passed elsewhere.

@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "binding-component-as-value",
     breaks: "a JS module's component is lowered as a value, an arrow, which isn't a JSX tag",
     file: "src/lower/jsx.rs",
-    find: "                let tag = match self.binding_component(component) {\n",
-    replace: "                let tag = match self.binding_component(component).filter(|_| false) {\n",
+    find: "                (\"*\", 0) => match self.binding_component(arg) {\n",
+    replace: "                (\"*\", 0) => match self.binding_component(arg).filter(|_| false) {\n",
     tests: ["test/jsx.test.ts", "-t", "a binding is a value"],
   },
   {
@@ -134,15 +134,15 @@ export const mutations: Mutation[] = [
     name: "jsx-prop-read-first-for-any-child",
     breaks: "a prop before children that aren't simple is read into a `const` first, though their JS needs no statements",
     file: "src/lower/jsx.rs",
-    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
-    replace: "        if !self.is_simple(value) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
+    find: "        if (!first.is_empty() && !simple) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
+    replace: "        if !simple || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
     tests: ["test/jsx.test.ts", "-t", "a prop before children"],
   },
   {
     name: "jsx-prop-read-first-for-reads",
     breaks: "a child's statement that only reads makes the attributes before it `const`s first, `const className = props.className`",
     file: "src/lower/jsx.rs",
-    find: "        if (!first.is_empty() && !self.is_simple(value)) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
+    find: "        if (!first.is_empty() && !simple) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
     replace: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
     tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
   },
@@ -174,8 +174,8 @@ export const mutations: Mutation[] = [
     name: "tag-as-children",
     breaks: "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
     file: "src/lower/jsx.rs",
-    find: "            (\"$\", &[tag]) => match self.expr(tag, out)? {\n",
-    replace: "            (\"$$\", &[tag]) => match self.expr(tag, out)? {\n",
+    find: "            (\"$\", 1) => match args.next().expect(\"one\") {\n",
+    replace: "            (\"$$\", 1) => match args.next().expect(\"one\") {\n",
     tests: ["test/jsx.test.ts", "-t", "tag that.s a value"],
   },
   {
@@ -438,8 +438,8 @@ export const mutations: Mutation[] = [
     "name": "jsx-spread-reference-refused",
     "breaks": "a struct spread through a reference, `{...&rest}`, is refused as a spread of a non-struct",
     "file": "src/lower/jsx.rs",
-    "find": "        let spread = self.thir[value].ty.peel_refs();",
-    "replace": "        let spread = self.thir[value].ty;",
+    "find": "        let spread = ty.peel_refs();",
+    "replace": "        let spread = ty;",
     "tests": [
       "test/jsx.test.ts",
       "-t",
@@ -505,5 +505,13 @@ export const mutations: Mutation[] = [
       "-t",
       "children declared any node"
     ]
+  },
+  {
+    name: "mir-alike-unknown",
+    breaks: "what MIR says reads alike doesn't, so JSX reads each attribute into a `const` first",
+    file: "src/lower/jsx.rs",
+    find: "                self.locals.alike.contains(name)\n",
+    replace: "                false\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
   },
 ];

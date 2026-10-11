@@ -26,11 +26,13 @@ use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
     Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp,
 };
+use rustc_middle::thir;
 use rustc_middle::ty::{self, Ty};
 use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
 use super::combinators::StepOp;
+use super::jsx::JsxArg;
 use super::recognition::{Std, StdItem};
 use super::representation::{const_js, variant_field};
 use super::std_types::map::MapOp;
@@ -135,6 +137,10 @@ struct State<'m, 'tcx> {
     boxes: std::collections::HashSet<String>,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
     branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
+    /// Elements made, each written where it's used, inside another or given
+    /// its props, as JSX writes it: what each is made of was read where it
+    /// was made (ADR 0040).
+    elements: std::collections::HashMap<Local, Expr>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -206,12 +212,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             copy_backs: Vec::new(),
             boxes: Default::default(),
             branches: Default::default(),
+            elements: Default::default(),
         };
         state.borrowed_names = (state.locals.borrowed.iter_enumerated())
             .filter(|&(_, &borrowed)| borrowed)
             .map(|(local, _)| state.locals.names[local].clone())
             .collect();
         state.own_names = state.locals.names.iter().filter(|n| !n.is_empty()).cloned().collect();
+        // What reads the same wherever it's read, as THIR's variables say.
+        for (local, name) in state.locals.names.iter_enumerated() {
+            if name.is_empty()
+                || state.locals.writes[local] > 1
+                || state.locals.borrowed[local]
+                || state.locals.changed[local]
+            {
+                continue;
+            }
+            self.locals.alike.insert(name.clone());
+            let plain = mir_body.local_decls[local].ty.walk().all(|arg| match arg.kind() {
+                ty::GenericArgKind::Type(t) => {
+                    !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
+                        && t.is_freeze(self.tcx, self.typing_env)
+                        && !self.is_js_object(t)
+                }
+                _ => true,
+            });
+            if plain {
+                self.locals.plain.insert(name.clone());
+            }
+        }
         // A closure's first argument is its environment, read through its fields.
         let skip = usize::from(captures.is_some());
         let params: Vec<js::Pattern> = mir_body
@@ -794,7 +823,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let unwind = state.unwind.take();
         let mut made = Vec::new();
         for (local, value) in std::mem::take(&mut state.pending) {
-            let expr = self.value_expr(value, Span::default())?;
+            let mut expr = self.value_expr(value, Span::default())?;
+            // An element, what it's made of read here, made where it's used.
+            let before = made.len();
+            if self.capture_jsx(&mut expr, &mut made) {
+                for stmt in &made[before..] {
+                    if let StmtKind::Const(name, _) = &stmt.kind {
+                        self.locals.alike.insert(name.clone());
+                        state.own_names.insert(name.clone());
+                    }
+                }
+                state.elements.insert(local, expr);
+                continue;
+            }
             let name = state.locals.names[local].clone();
             state.locals.declared[local] = true;
             made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
@@ -834,6 +875,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if state.pending.iter().any(|(l, _)| *l == local) && self.admit(state, &[local], true, out)? {
             let at = state.pending.iter().position(|(l, _)| *l == local).expect("admitted");
             return Ok(state.pending.remove(at).1);
+        }
+        if let Some(element) = state.elements.get(&local) {
+            return Ok(Value::Expr(element.clone()));
         }
         if let Some(place) = state.refs.get(&local) {
             return Ok(Value::Ref(place.clone()));
@@ -2088,6 +2132,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.mir_call_values(state, (def_id, generic_args), (values, &arg_tys), output, span, out)
     }
 
+    /// A JSX binding's arguments, each with what THIR has of it, where THIR
+    /// has the call too, for its shape. `component` says a component's
+    /// tag, where it's one, in place of its value.
+    fn jsx_args(
+        &mut self,
+        def_id: rustc_span::def_id::DefId,
+        values: Vec<Value<'tcx>>,
+        arg_tys: &[Ty<'tcx>],
+        span: Span,
+        component: impl Fn(&Self, usize, Ty<'tcx>) -> Option<Expr>,
+    ) -> R<Vec<JsxArg<'tcx>>> {
+        let exprs = self.thir_call_args(def_id, span);
+        let mut given = Vec::new();
+        for (i, (value, &ty)) in values.into_iter().zip(arg_tys).enumerate() {
+            let value = match component(self, i, ty) {
+                Some(tag) => tag,
+                None => self.value_expr(value, span)?,
+            };
+            let expr = exprs.as_ref().and_then(|exprs| exprs.get(i).copied());
+            given.push(JsxArg {
+                value,
+                ty,
+                expr,
+                span: expr.map_or(span, |e| self.thir[e].span),
+            });
+        }
+        Ok(given)
+    }
+
+    /// The arguments of THIR's call of `def_id` at `fn_span`, MIR's call
+    /// there, where it's the one.
+    fn thir_call_args(&self, def_id: rustc_span::def_id::DefId, fn_span: Span) -> Option<Vec<thir::ExprId>> {
+        let mut calls = self.thir.exprs.iter().filter_map(|e| match &e.kind {
+            thir::ExprKind::Call {
+                fun, args, fn_span: at, ..
+            } if *at == fn_span && matches!(*self.thir[*fun].ty.kind(), ty::FnDef(id, _) if id == def_id) => {
+                Some(args.to_vec())
+            }
+            _ => None,
+        });
+        let call = calls.next()?;
+        calls.next().is_none().then_some(call)
+    }
+
     /// Any other function as a value, `.map(str::len)`: the arrow that calls
     /// it, its call lowered as one from MIR is, of its parameters.
     fn mir_called_value(
@@ -2295,18 +2383,71 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(call));
             }
         }
+        // A prop `jsx!` isn't given: none, which JSX leaves out (ADR 0213).
+        if bindings::is_omitted(tcx, def_id) {
+            return Ok(Value::Expr(Expr::undefined()));
+        }
         // A binding: the JS function, method, property or operator it names
         // (ADRs 0019, 0020), given its arguments as THIR gives them.
         if bindings::is_binding(tcx, def_id) {
             if rustc_hir::find_attr!(tcx, def_id, RustcEiiForeignItem) {
                 return Err(self.unsupported(span, "externally implementable items, `#[eii]`,"));
             }
-            if let bindings::JsForm::Jsx(_)
-            | bindings::JsForm::Prop(_)
-            | bindings::JsForm::Object(_)
-            | bindings::JsForm::Import { .. } = bindings::js_form(tcx, def_id)
-            {
-                return Err(self.unsupported(span, "this JSX, from its MIR"));
+            match bindings::js_form(tcx, def_id) {
+                bindings::JsForm::Jsx(tag) => {
+                    let given = self.jsx_args(def_id, values, &arg_tys, span, |cx, i, ty| match (tag.as_str(), i) {
+                        // A JS module's component is its import, as a tag must be.
+                        ("*", 0) => match *ty.peel_refs().kind() {
+                            ty::FnDef(id, _) => cx.binding_component_of(id),
+                            _ => None,
+                        },
+                        _ => None,
+                    })?;
+                    return Ok(Value::Expr(self.jsx_values(&tag, given, span, out)?));
+                }
+                bindings::JsForm::Prop(name) => {
+                    let mut given = self
+                        .jsx_args(def_id, values, &arg_tys, span, |_, _, _| None)?
+                        .into_iter();
+                    let element = given.next().expect("the element");
+                    let name = match name {
+                        Some(name) => name,
+                        None => match given.next().map(|name| name.value.kind) {
+                            Some(js::ExprKind::Str(name)) => name,
+                            _ => return Err(self.unsupported(span, "an attribute's name other than a string literal")),
+                        },
+                    };
+                    let value = given.next().expect("the value");
+                    let mut element = element.value;
+                    // `style.color("red")` on an object being built: one more field.
+                    if let js::ExprKind::Object(fields) = &mut element.kind {
+                        fields.push(match name.as_str() {
+                            "..." => Prop::Spread(value.value),
+                            _ => Prop::Field(name, value.value),
+                        });
+                        return Ok(Value::Expr(element));
+                    }
+                    if !matches!(element.kind, js::ExprKind::Jsx(_)) {
+                        return Err(self.one_expression(span));
+                    }
+                    self.jsx_spread_checked(&name, value.ty, value.span)?;
+                    let made = self.jsx_prop_values(name, element, value, (Vec::new(), true), out)?;
+                    return Ok(Value::Expr(made));
+                }
+                bindings::JsForm::Object(keys) => {
+                    if keys.len() != values.len() {
+                        return Err(self.unsupported(span, "an object binding whose fields don't match its arguments"));
+                    }
+                    let mut fields = Vec::new();
+                    for (key, value) in keys.into_iter().zip(values) {
+                        fields.push(Prop::Field(key, self.value_expr(value, span)?));
+                    }
+                    return Ok(Value::Expr(Expr::object(fields)));
+                }
+                bindings::JsForm::Import { .. } => {
+                    return Err(self.unsupported(span, "a dynamic import, from its MIR"));
+                }
+                _ => {}
             }
             let nullable = bindings::nullable_params(tcx, def_id);
             let idents = tcx.fn_arg_idents(def_id);

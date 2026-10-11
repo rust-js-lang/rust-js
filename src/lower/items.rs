@@ -141,6 +141,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return None;
         };
+        self.binding_component_of(def_id)
+    }
+
+    /// The JS component binding `def_id` names, if it names one.
+    pub(super) fn binding_component_of(&self, def_id: DefId) -> Option<Expr> {
         match js_form(self.tcx, def_id) {
             JsForm::Call(name) if is_binding(self.tcx, def_id) && !is_method(self.tcx, def_id) => {
                 Some(self.js_ref(&name))

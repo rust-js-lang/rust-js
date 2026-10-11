@@ -47,3 +47,18 @@ for (const name of listed) {
     }
   }, 120_000);
 }
+
+// And the JSX tests `mir-jsx.txt` lists, which pass from MIR: each runs, and
+// passes. `bun scripts/mirJsx.ts` says which others pass now.
+test("the JSX tests mir-jsx.txt lists, from their MIR", () => {
+  const listed = readFileSync(join(root, "test/mir-jsx.txt"), "utf8").split("\n").filter(Boolean);
+  const run = Bun.spawnSync(["bun", "test", "test/jsx.test.ts"], {
+    cwd: root,
+    env: { ...process.env, RUST_JS_MIR: "1", RUST_JS_MIR_ALL: "0" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const log = run.stdout.toString() + run.stderr.toString();
+  expect(run.exitCode === 0 ? "passed" : log.slice(-4000)).toBe("passed");
+  expect(Number(/^ (\d+) pass$/m.exec(log)?.[1] ?? 0)).toBe(listed.length);
+}, 300_000);

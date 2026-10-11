@@ -207,6 +207,12 @@ struct Locals {
     /// A props pattern's rest, JS's `...props`, by its name: the keys the
     /// pattern names, which it never holds (ADRs 0195, 0205).
     rests: HashMap<String, Vec<String>>,
+    /// Of a body lowered from its MIR (ADR 0364): the names of its locals
+    /// that read the same wherever they're read, assigned once and never
+    /// borrowed, and of those of plain Rust data, whose fields don't change
+    /// either: what THIR's variables say (`reads_alike`, `plain_value`).
+    alike: HashSet<String>,
+    plain: HashSet<String>,
 }
 
 /// A variable bound by a pattern, and the place in the subject it matched.

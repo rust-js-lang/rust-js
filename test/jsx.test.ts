@@ -1,10 +1,19 @@
-import { beforeAll, expect, test } from "bun:test";
+import { beforeAll, expect, test as bunTest } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup, renderToString } from "react-dom/server";
 import { buildReact, compiler, expectSnapshot, fixture, root, run, target } from "./support";
 import { decodeMappings, lookup } from "./sourcemap";
+
+// With bodies lowered from their MIR, `RUST_JS_MIR=1` (ADR 0364), the tests
+// `mir-jsx.txt` lists, which pass so; all of them with `RUST_JS_MIR_ALL=1`,
+// as `bun scripts/mirJsx.ts` runs them to grow the list.
+const mirListed = new Set(readFileSync(join(root, "test/mir-jsx.txt"), "utf8").split("\n").filter(Boolean));
+const test = ((name: string, ...rest: Parameters<typeof bunTest> extends [string, ...infer R] ? R : never) =>
+  process.env.RUST_JS_MIR === "1" && process.env.RUST_JS_MIR_ALL !== "1" && !mirListed.has(name)
+    ? bunTest.skip(name, ...rest)
+    : bunTest(name, ...rest)) as typeof bunTest;
 
 beforeAll(buildReact, 600_000);
 
@@ -4136,4 +4145,29 @@ pub fn Shown(a: bool, b: bool) -> JSX::Element {
   expect(jsx).toContain("<Boxed>{a && b && <b>x</b>}</Boxed>");
   const lib = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(lib.Shown(true, true)), renderToStaticMarkup(lib.Shown(true, false))]).toEqual(["<div><b>x</b></div>", "<div></div>"]);
+});
+
+// ADR 0364: from MIR as from THIR, a component of the crate's is its
+// function, a prop not given is left out, and an attribute is read before
+// a child that assigns what it read, but one that reads what never changes,
+// which reads alike after.
+test("an attribute is read before a child that assigns what it read", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct Props { pub label: &'static str, pub note: Option<&'static str> }
+pub fn Tag(p: Props) -> JSX::Element {
+    jsx! { <b>{p.label}{p.note}</b> }
+}
+pub fn App() -> JSX::Element {
+    let mut n = "one";
+    let tip = "en";
+    jsx! { <div title={n} lang={tip}><Tag label="x" />{{ n = "five"; n }}</div> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('<Tag label="x" />');
+  expect(jsx).toContain("<div title={title} lang={tip}>");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.App())).toBe('<div title="one" lang="en"><b>x</b>five</div>');
 });
