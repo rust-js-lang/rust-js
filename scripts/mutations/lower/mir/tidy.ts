@@ -1354,4 +1354,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-tidy-empty-branches-kept",
+    "breaks": "a match arm that does nothing from MIR is `else if (message !== \"refresh\") {}`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    bottom_up(body, &mut empty_branches);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "match arm that does nothing"
+    ]
+  },
 ];

@@ -196,6 +196,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     tail_returns(body, returns);
     // A chain's arms, as statements, in the order written.
     js::statement_lists(body, &mut |stmts| written_chains(stmts));
+    // And their arms that do nothing.
+    bottom_up(body, &mut empty_branches);
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
@@ -2394,6 +2396,19 @@ fn in_closure(stmts: &[Stmt], name: &str) -> bool {
         }
     });
     found
+}
+
+/// `else if (t) {}`, an arm that does nothing, a match's `_ => {}`, of a
+/// test that does nothing: nothing, nor its `else` then.
+fn empty_branches(stmts: &mut Vec<Stmt>) {
+    for stmt in stmts.iter_mut() {
+        if let StmtKind::If(_, _, otherwise) = &mut stmt.kind
+            && otherwise.as_ref().is_some_and(|o| o.is_empty())
+        {
+            *otherwise = None;
+        }
+    }
+    stmts.retain(|s| !matches!(&s.kind, StmtKind::If(test, then, None) if then.is_empty() && !test.has_effects()));
 }
 
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.

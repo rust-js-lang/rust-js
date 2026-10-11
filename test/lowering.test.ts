@@ -7764,3 +7764,43 @@ pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Opt
     expect([lib.fixed({ title: "Runtime Exception" }, undefined), lib.fixed(undefined, { title: "x" })]).toEqual(["Runtime Error", "x"]);
   }
 });
+
+// A match's arm that does nothing, `Refresh | Console { .. } | Other(_) =>
+// {}`, is no `else if (message !== "refresh") {}`, from MIR as from THIR,
+// as react.dev's Preview ignores Sandpack's other messages.
+test("a match arm that does nothing is no empty else if", async () => {
+  const dir = fixture("empty-arm");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Message {
+    #[cfg_attr(rust_js, rust_js::name = "resize")]
+    Resize { height: f64 },
+    #[cfg_attr(rust_js, rust_js::name = "done")]
+    Done,
+    #[cfg_attr(rust_js, rust_js::name = "refresh")]
+    Refresh,
+    #[cfg_attr(rust_js, rust_js::name = "console")]
+    Console { log: Vec<String> },
+    #[cfg_attr(rust_js, rust_js::untagged)]
+    Other(&'static str),
+}
+pub fn handle(message: &Message, log: &mut Vec<String>) {
+    match message {
+        Message::Resize { height } => {
+            log.push(format!("h{height}"));
+        }
+        Message::Done => {
+            log.push("done".to_string());
+        }
+        Message::Refresh | Message::Console { .. } | Message::Other(_) => {}
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  } else if (message === "done") {\n    log.push("done");\n  }\n}');
+    const lib = await import(join(dir, out));
+    const log: string[] = [];
+    for (const m of [{ TAG: "resize", height: 1 }, "done", "refresh", "x"]) lib.handle(m, log);
+    expect(log).toEqual(["h1", "done"]);
+  }
+});
