@@ -661,12 +661,7 @@ fn destructured(stmts: &mut Vec<Stmt>) {
             }
         };
         let made = first > i;
-        let mut parts = parts(&stmts[first..], &name);
-        // Of a variable, only the parts the program names: a temporary's is
-        // better read where it's used.
-        if !made && let Some(at) = parts.iter().position(|(_, bound, _)| is_temporary(bound)) {
-            parts.truncate(at);
-        }
+        let parts = parts(&stmts[first..], &name);
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
         let enough = count >= if made { 1 } else { 2 };

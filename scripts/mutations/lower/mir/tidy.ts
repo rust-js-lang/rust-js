@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "            stmts.splice(i..first + count, each);\n            continue;\n",
     replace: "            let _ = each;\n            i += 1;\n            continue;\n",
-    tests: ["test/lowering.test.ts","-t","what reads the same anywhere"],
+    tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
   },
   {
     name: "mir-tidy-eager-chains-off",
@@ -233,14 +233,6 @@ export const mutations: Mutation[] = [
     find: "        (_, ExprKind::Bool(false)) => both(test, yes),\n",
     replace: "",
     tests: ["test/bindings.test.ts","-t","skips what's falsy"],
-  },
-  {
-    name: "mir-tidy-destructured-temporary-named",
-    breaks: "a variable's part read where it's used is bound by the pattern, `{ dir, name: _3 }`",
-    file: "src/lower/mir/tidy.rs",
-    find: "            parts.truncate(at);\n",
-    replace: "            let _ = at;\n",
-    tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
   },
   {
     name: "mir-tidy-inlined-no-backtrack",

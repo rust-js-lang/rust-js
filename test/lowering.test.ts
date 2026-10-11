@@ -1140,6 +1140,10 @@ pub fn fields(p: P) -> u32 {
     let P { a, b } = p;
     a + b
 }
+pub fn ends() -> u32 {
+    let [first, .., last] = [1, 2, 3, 4];
+    first * 10 + last
+}
 pub struct Q { pub dir: Option<u32>, pub name: Option<String> }
 fn join(a: Option<&str>, b: Option<&str>) -> String { format!("{a:?}{b:?}") }
 pub fn label(q: &Q) -> String {
@@ -1155,8 +1159,10 @@ pub fn label(q: &Q) -> String {
     expect(js).toContain("  const { a, b } = p;\n");
     // A part read where it's used isn't one a pattern names.
     expect(js).toContain("  const dir = q.dir;\n  return join(q.name, ");
+    // Of an array made for them, each part itself.
+    if (out === "mir.js") expect(js).toContain("  const first = 1;\n  const last = 4;\n");
     const lib = await import(join(dir, out));
-    expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 })]).toEqual([6, 8, 3]);
+    expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 }), lib.ends()]).toEqual([6, 8, 3, 14]);
   }
 });
 
