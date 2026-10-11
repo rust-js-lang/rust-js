@@ -5775,3 +5775,33 @@ pub fn Looped() -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Looped())).toBe('<a href="h" title="two">L2</a>');
 });
+
+// ADR 0364: JS's JSX runtime makes a `key` after the children, so a key
+// that does something is made first, held, in source order: what's read
+// in it waits on the children too, from MIR as from THIR.
+test("a key that does something is made before the children", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+unsafe extern "Rust" { #[link_name = "globalThis.recordKey"] safe fn record(n: i32) -> i32; }
+pub struct Props { pub title: i32, pub children: i32 }
+pub(crate) fn Card(p: Props) -> JSX::Element { jsx! { <div>{p.title}{p.children}</div> } }
+pub fn App() -> JSX::Element {
+    let three = 3;
+    jsx! { <Card title={record(1)} key={record(2)}>{record(three)}</Card> }
+}
+pub fn Chosen(c: bool) -> JSX::Element {
+    jsx! { <Card title={record(1)} key={record(2)}>{if c { record(3) } else { record(4) }}</Card> }
+}
+`);
+  run(args);
+  const log: number[] = [];
+  (globalThis as any).recordKey = (n: number) => (log.push(n), n);
+  const lib = await import(join(dir, "lib.jsx"));
+  const tree = lib.App();
+  expect(log).toEqual([1, 2, 3]);
+  expect([tree.key, tree.props]).toEqual(["2", { title: 1, children: 3 }]);
+  log.length = 0;
+  const chosen = lib.Chosen(false);
+  expect(log).toEqual([1, 2, 4]);
+  expect(chosen.key).toBe("2");
+});

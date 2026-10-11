@@ -1259,6 +1259,12 @@ fn assigns(stmts: &[Stmt], name: &str) -> bool {
 }
 
 /// Whether `name` is a temporary MIR made, `_5`, not one the program names.
+/// Whether `name` is MIR's lowering's of an argument it holds, `_arg`,
+/// named once tidied.
+fn is_held_arg(name: &str) -> bool {
+    name.split('$').next() == Some("_arg")
+}
+
 fn is_temporary(name: &str) -> bool {
     name.strip_prefix('_')
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
@@ -2956,7 +2962,7 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
             for prop in &jsx.props {
                 if let js::Prop::Field(key, value) = prop
                     && let ExprKind::Var(v) = &value.kind
-                    && is_temporary(v)
+                    && (is_temporary(v) || is_held_arg(v))
                     && key.chars().all(|c| c.is_ascii_alphanumeric())
                 {
                     given.entry(v.clone()).or_insert_with(|| key.clone());
@@ -2964,7 +2970,7 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
             }
             for child in &jsx.children {
                 if let ExprKind::Var(v) = &child.kind
-                    && is_temporary(v)
+                    && (is_temporary(v) || is_held_arg(v))
                 {
                     given.entry(v.clone()).or_insert_with(|| "children".to_string());
                 }
@@ -2975,9 +2981,10 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
     js::statement_lists(body, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
-                StmtKind::Const(name, value) if is_temporary(name) => {
+                StmtKind::Const(name, value) if is_temporary(name) || is_held_arg(name) => {
                     let base = match (given.get(name), &value.kind) {
                         (Some(prop), _) => prop.clone(),
+                        (None, _) if is_held_arg(name) => "arg".to_string(),
                         (None, ExprKind::Member(_, field)) => field.clone(),
                         (None, _) => "value".to_string(),
                     };
@@ -3438,6 +3445,19 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
                 let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Spread(v)) = p;
                 v
             });
+            // JS's JSX runtime makes `key` after the children, and
+            // `createElement` before them: read there, after both.
+            let key = (jsx.props.iter()).find_map(|p| match p {
+                js::Prop::Field(k, v) if k == "key" => Some(v),
+                _ => None,
+            });
+            if let Some(key) = key
+                && let Some(found) = leads(key, name, guard, passes)
+            {
+                let others = props.filter(|v| !std::ptr::eq(*v, key));
+                let mut before = tag.into_iter().chain(others).chain(&jsx.children);
+                return Some(found && before.all(|e| leads(e, name, guard, passes).is_none() && passes(e)));
+            }
             in_order(&mut tag.into_iter().chain(props).chain(&jsx.children))
         }
         _ => Some(false),

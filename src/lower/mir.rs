@@ -2570,8 +2570,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // first, its fields read by its name.
         let mut in_order = items[..field].iter().all(|item| movable(state, item))
             && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));
-        // None read yet: each that does something held first, in order, `const
-        // arg = …`, as THIR holds them, the rest read where they are.
+        // None read yet: each that does something held first, in order, as
+        // THIR holds them, the rest read where they are: `_arg`, named for
+        // what it's given as once tidied, `const key = …`, or `arg`.
         let acting: Vec<usize> = (items.iter().enumerate())
             .filter(|(_, item)| !movable(state, item) && matches!(item, Value::Expr(e) if e.has_effects()))
             .map(|(k, _)| k)
@@ -2592,7 +2593,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let item = std::mem::replace(&mut items[k], Value::Expr(Expr::undefined()));
                 let item = self.value_expr(item, span)?;
-                let held = self.spill("arg", item, out);
+                let held = self.spill("_arg", item, out);
                 let Value::List(items) = &mut state.pending[0].1 else {
                     unreachable!("a list")
                 };

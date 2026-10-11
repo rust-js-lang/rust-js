@@ -1614,4 +1614,28 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "jsx-key-read-in-written-order",
+    "breaks": "a `key` that does something is read in place, made after the children by JS's JSX runtime, `[1, 3, 2]`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                && let Some(found) = leads(key, name, guard, passes)\n",
+    "replace": "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "held-arg-named-value",
+    "breaks": "an argument MIR holds, `format!`'s, is named `value`, not `arg` as THIR names it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "(None, _) if is_held_arg(name) => \"arg\".to_string(),",
+    "replace": "(None, _) if is_held_arg(name) => \"value\".to_string(),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "format!"
+    ]
+  },
 ];
