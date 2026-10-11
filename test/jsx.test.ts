@@ -5603,6 +5603,9 @@ pub fn Kinds<C: ReactNode>(children: C) -> JSX::Element {
   const Hint = Object.assign(() => null, { mdxName: "Hint" });
   const element = createElement(Hint, { key: "h" });
   expect(renderToStaticMarkup(lib.Kinds(["a", element, "b"]))).toBe('<p data-hints="1" data-solutions="0">ab</p>');
+  const Solution = Object.assign(() => null, { mdxName: "Solution" });
+  const solution = createElement(Solution, { key: "s" });
+  expect(renderToStaticMarkup(lib.Kinds(["a", solution, "b"]))).toBe('<p data-hints="0" data-solutions="1">b</p>');
 });
 
 // ADR 0364: what MIR holds ahead of the children before it, `showToc &&

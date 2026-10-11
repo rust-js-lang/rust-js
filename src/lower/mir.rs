@@ -922,6 +922,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What it shares a reference to nothing changes while it runs
         // (borrowck says so): there, it reads alike.
         let mut shared = Vec::new();
+        let upvars = match self.tcx.type_of(def_id).skip_binder().kind() {
+            ty::Closure(_, args) => args.as_closure().upvar_tys().to_vec(),
+            _ => Vec::new(),
+        };
         for (i, value) in captured.into_iter().enumerate() {
             if let Value::Place(place) = &value
                 && let js::ExprKind::Var(name) = &place.kind
@@ -931,6 +935,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             captures.push(match value {
                 Value::Ref(place) | Value::Place(place) => (place, true),
+                // A `&mut` to a variable of the maker's own, an object: the
+                // variable, which the closure reads and assigns as JS's
+                // closures do theirs.
+                Value::Expr(e)
+                    if matches!(
+                        upvars.get(i).map(|t| t.kind()),
+                        Some(ty::Ref(_, _, ty::Mutability::Mut))
+                    ) && matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
+                            .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref())) =>
+                {
+                    (e, true)
+                }
                 // One it took and changes is its own: a `let` of it, made here.
                 value if writes_capture(&mir.body, i) => {
                     let e = self.value_expr(value, span)?;
@@ -4132,6 +4148,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = |e: &Expr| {
             matches!(&e.kind, js::ExprKind::Var(name) if (state.locals.names.iter_enumerated())
                 .any(|(local, n)| n == name && !state.body.local_decls[local].ty.is_ref()))
+                || (state.captures.iter()).any(|(capture, place)| {
+                    *place && matches!((&capture.kind, &e.kind), (js::ExprKind::Var(a), js::ExprKind::Var(b)) if a == b)
+                })
         };
         let mut values = values.enumerate().map(|(i, value)| match value {
             Value::Expr(e) | Value::Place(e) if i < borrowed && variables && own(&e) => Value::Ref(e),

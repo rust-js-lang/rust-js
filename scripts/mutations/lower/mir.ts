@@ -1722,4 +1722,16 @@ export const mutations: Mutation[] = [
       "taking a variable assigns the variable"
     ]
   },
+  {
+    "name": "mir-mut-capture-copied",
+    "breaks": "a closure's `&mut` capture of its maker's variable is a copy, `let current$1 = current`, so taking it only rebinds the copy",
+    "file": "src/lower/mir.rs",
+    "find": "                        upvars.get(i).map(|t| t.kind()),\n",
+    "replace": "                        upvars.get(i).map(|t| t.kind()).filter(|_| false),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "taking a variable assigns the variable"
+    ]
+  },
 ];
