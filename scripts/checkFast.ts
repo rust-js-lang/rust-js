@@ -5,7 +5,7 @@
 // change touched after (DEVELOPMENT.md).
 //
 //   bun run check:fast                 the change's checks
-//   bun run check:fast --all           THIR's corpus and JSX tests too
+//   bun run check:fast --all           THIR's suites too
 //   bun run check:fast test/x.test.ts  and these files
 import { readFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
@@ -22,7 +22,7 @@ const changed = [...git(["diff", "--name-only", "HEAD"]), ...git(["ls-files", "-
 // MIR's own lowering, and the runtime.
 const mirOnly = (file: string) => file === "src/lower/mir.rs" || file.startsWith("src/lower/mir/");
 const shared = all || changed.some((file) => (file.startsWith("src/") && !mirOnly(file)) || file.startsWith("runtime/"));
-const corpus = shared || changed.some((file) => file.startsWith("test/corpus/"));
+const corpus = shared || changed.some((file) => file.startsWith("test/corpus") || ["test/support.ts", "test/programs.ts"].includes(file));
 const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
 
 // The mutations the change adds or changes: each `name` its lists' diff adds.
@@ -49,7 +49,12 @@ const jobs: [string, string[], Record<string, string>][] = [
   ...inParts("MIR corpus", "test/mir.test.ts"),
   ...(corpus ? inParts("corpus", "test/corpus.test.ts") : []),
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
-  ...(shared ? [["lowering", ["bun", "test", "test/lowering.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
+  // What pins the JS THIR writes, the names it gives and what it refuses.
+  ...(shared
+    ? ["lowering", "compiler", "snapshots", "diagnostics"].map(
+        (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
+      )
+    : []),
   ...(added.length > 0
     ? [["mutations the change adds", ["bun", "scripts/mutations.ts", ...new Set(added)], {}] as [string, string[], Record<string, string>]]
     : []),
