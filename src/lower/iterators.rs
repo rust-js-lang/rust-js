@@ -1615,6 +1615,12 @@ pub(super) fn eager_spreads(stmts: &mut [Stmt]) {
 fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr, usize)> {
     let mut stages = Vec::new();
     let mut at = unlent(chain);
+    // `Iterator.from(it)` of what's a JS iterator already, `flatten()`'s: it.
+    if is_iterator_from(at)
+        && let js::ExprKind::Call(_, of) = &at.kind
+    {
+        at = &of[0];
+    }
     while let js::ExprKind::Call(callee, args) = &at.kind
         && let js::ExprKind::Member(source, name) = &callee.kind
         && matches!(name.as_str(), "map" | "filter" | "take" | "drop")

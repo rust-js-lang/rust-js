@@ -7108,3 +7108,21 @@ pub fn retitle(error: &E) -> String {
     expect([lib.show(error), lib.show({ message: "m" }), lib.retitle(error), error.title]).toEqual(["T: m", "Error: m", "New: m", "New"]);
   }
 });
+
+// `flatten()` of `Option` items, a JS iterator of what's there, collected:
+// the array's `filter`, from MIR as from THIR, not `Iterator.from(..)` of
+// `$iter`'s chain, as a class name's parts are joined.
+test("flattened options collected from MIR are the array's filter", async () => {
+  const dir = fixture("flatten-collect");
+  writeFileSync(join(dir, "lib.rs"), `pub fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  return parts.filter((item) => item != null).join(" ");\n');
+    const lib = await import(join(dir, out));
+    expect(lib.cn(["a", undefined, "b"])).toBe("a b");
+  }
+});

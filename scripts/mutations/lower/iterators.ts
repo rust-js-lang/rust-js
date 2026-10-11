@@ -709,4 +709,16 @@ export const mutations: Mutation[] = [
       "a count of an array's items from MIR"
     ]
   },
+  {
+    "name": "iterator-from-chain-kept",
+    "breaks": "`Iterator.from($iter(xs).filter(f)).toArray()` of a `flatten()` stays, not `xs.filter(f)`",
+    "file": "src/lower/iterators.rs",
+    "find": "    if is_iterator_from(at)\n        && let js::ExprKind::Call(_, of) = &at.kind\n    {\n        at = &of[0];\n    }\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "flattened options collected from MIR"
+    ]
+  },
 ];
