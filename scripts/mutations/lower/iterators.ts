@@ -721,4 +721,28 @@ export const mutations: Mutation[] = [
       "flattened options collected from MIR"
     ]
   },
+  {
+    "name": "mir-next-stepped",
+    "breaks": "`next()` of an array's fresh iterator from MIR is `$next($iter(keys))`, not `keys[0]`",
+    "file": "src/lower/iterators.rs",
+    "find": "        if matches!(&callee.kind, js::ExprKind::Var(v) if v == \"$next\")\n",
+    "replace": "        if false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "next of a fresh iterator of an array"
+    ]
+  },
+  {
+    "name": "mir-next-split-stepped",
+    "breaks": "`next()` of a split from MIR is `$next(Iterator.from($splitBy(..)))`, not its `[0]`",
+    "file": "src/lower/iterators.rs",
+    "find": "eager_items(chain, false, None).or_else(|| split(chain))",
+    "replace": "eager_items(chain, false, None)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "next of a fresh iterator of an array"
+    ]
+  },
 ];

@@ -1535,6 +1535,31 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
         let js::ExprKind::Call(callee, args) = &e.kind else {
             return;
         };
+        // `next()`'s, `$next(chain)`, of an iterator made here of an array
+        // whose stages do nothing: its first item, `xs[0]`, as THIR writes it.
+        // A split's too, `Iterator.from(path.split(c))`, an array.
+        let split = |chain: &Expr| match &chain.kind {
+            js::ExprKind::Call(_, of) if is_iterator_from(chain) => match &of[0].kind {
+                js::ExprKind::Call(f, _)
+                    if matches!(&f.kind, js::ExprKind::Var(v) if v == "$splitBy")
+                        || matches!(&f.kind, js::ExprKind::Member(_, m) if m == "split") =>
+                {
+                    Some((of[0].clone(), 0))
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$next")
+            && let [chain] = &args[..]
+            && let Some((items, _)) = eager_items(chain, false, None).or_else(|| split(chain))
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::index(items, Expr::int(0))
+            };
+            return;
+        }
         // `$position`'s, of the array, lent or not: what it steps has no
         // `return` to close.
         if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$position")

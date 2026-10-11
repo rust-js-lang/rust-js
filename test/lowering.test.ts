@@ -7514,3 +7514,25 @@ pub fn tag(variant: RouteTag, text: Option<&'static str>) -> String {
     expect([lib.tag("advanced", undefined), lib.tag("deprecated", "D")]).toEqual(["Advanced bg-green-40 text-white", "D bg-red-40 text-white"]);
   }
 });
+
+// `next()` of an array's iterator that nothing else steps, a split's,
+// `path.split(..).next()`, is its first item, `xs[0]`, from MIR as from
+// THIR, as react.dev's PageHeading and NavigationBar take theirs.
+test("next of a fresh iterator of an array is its first item", async () => {
+  const dir = fixture("next-first");
+  writeFileSync(join(dir, "lib.rs"), `pub fn clean(path: &str) -> &str {
+    path.split(['?', '#']).next().unwrap_or("")
+}
+pub fn first(keys: Vec<String>) -> Option<String> {
+    keys.into_iter().next()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return $splitBy(path, (c) => ["?", "#"].includes(c))[0] ?? "";');
+    expect(js).toContain("return keys[0];");
+    const lib = await import(join(dir, out));
+    expect([lib.clean("/a?b"), lib.clean(""), lib.first([]), lib.first(["k"])]).toEqual(["/a", "", undefined, "k"]);
+  }
+});
