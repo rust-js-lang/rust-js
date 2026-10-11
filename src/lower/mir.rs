@@ -614,7 +614,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut booleans = std::collections::HashSet::new();
         let mut others = std::collections::HashSet::new();
         for (local, name) in state.locals.names.iter_enumerated().filter(|(_, n)| !n.is_empty()) {
-            match mir_body.local_decls[local].ty.is_bool() {
+            // A shared reference to one too, `*show_hint`'s, which JS reads as it.
+            let ty = mir_body.local_decls[local].ty;
+            let bool = match ty.kind() {
+                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),
+                _ => ty.is_bool(),
+            };
+            match bool {
                 true => booleans.insert(name.clone()),
                 false => others.insert(name.clone()),
             };

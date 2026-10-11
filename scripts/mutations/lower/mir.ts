@@ -1570,4 +1570,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-bool-ref-unknown",
+    "breaks": "a state's `bool`, a `&bool` local, isn't known as one, `showHint ? hint : undefined`",
+    "file": "src/lower/mir.rs",
+    "find": "                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

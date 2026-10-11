@@ -5073,3 +5073,25 @@ pub fn Preview(error: Option<&'static Failure>, expanded: bool) -> JSX::Element 
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Preview({ message: "bad" }, true))).toBe('<div class="p-0"><div class="z-50 sticky">bad</div><span class="overlay"></span></div>');
 });
+
+// ADR 0235: a child shown where a state's `bool` holds, `if *show_hint {
+// hint } else { None }`, is `showHint && hint` from MIR as from THIR: the
+// state, read through its handle, is a `bool`, as react.dev's Challenge
+// shows its hint.
+test("a child shown where a state's bool holds is an and", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx, use_state};
+pub struct HintProps<'a> {
+    pub hint: Option<&'a dyn ReactNode>,
+}
+pub fn Hint(HintProps { hint }: HintProps) -> JSX::Element {
+    let (show_hint, _set_show_hint) = use_state(true);
+    jsx! { <div>{if *show_hint { hint } else { None }}</div> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<div>{showHint && hint}</div>");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.Hint, { hint: "h" }))).toBe("<div>h</div>");
+});
