@@ -540,6 +540,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Vec::new(),
             })
             .collect();
+        // Where each `&&` or `||` the program wrote is.
+        let logicals: Vec<js::Span> = (self.thir.exprs.iter())
+            .filter(|e| matches!(e.kind, thir::ExprKind::LogicalOp { .. }))
+            .map(|e| self.js_span(e.span))
+            .collect();
         // Where each `if` the program wrote of a `continue` tests: one alone,
         // or one that ends what it does.
         let continues: Vec<js::Span> = (self.thir.exprs.iter())
@@ -671,6 +676,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 conditions: &conditions,
                 loops: &loops,
                 continues: &continues,
+                logicals: &logicals,
                 callbacks: &callbacks,
                 tables: &tables,
                 patterns: &(self.let_pattern_bindings(mir_body).into_iter())

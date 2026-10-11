@@ -23,8 +23,11 @@ pub(super) struct Hints<'h> {
     pub(super) conditions: &'h [(js::Span, js::Span)],
     /// Where each loop is written, and whether as a `while`.
     pub(super) loops: &'h [(js::Span, bool)],
-    /// Where each `if` the program wrote of a `continue` alone tests.
+    /// Where each `if` the program wrote of a `continue` tests: one alone,
+    /// or one that ends what it does.
     pub(super) continues: &'h [js::Span],
+    /// Where each `&&` or `||` the program wrote is.
+    pub(super) logicals: &'h [js::Span],
     /// The closures a `let` names that a hook's function alone is (ADR 0297).
     pub(super) callbacks: &'h HashSet<String>,
     /// Where each `match` that reads a table by its key is (ADR 0233).
@@ -60,6 +63,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         conditions,
         loops: written,
         continues,
+        logicals,
         payloads,
         callbacks,
         tables,
@@ -119,6 +123,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain of tests a loop ended, its body now ending where the chain's does.
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     js::statement_lists(body, &mut unlabeled);
+    js::statement_lists(body, &mut |stmts| logical_returns(stmts, logicals, returns, booleans));
     // What's given where `false` is skipped as `undefined` is, `test &&
     // value`, as THIR gives it there: one read there alone, which nothing
     // else tells from `undefined`.
@@ -1578,6 +1583,31 @@ pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stm
         let Some(pattern) = nested_pattern(&read) else { continue };
         body.drain(..count);
         *param = pattern;
+    }
+}
+
+/// `if (t) { return a; } return b;`, MIR's of a value the program wrote
+/// with `&&` or `||` where `t` is tested: one value returned, `t ? a : b`,
+/// as the program wrote it, each test before it folded in, `s !== "en" &&
+/// (t ? a : b)`; not where it wrote a `return`.
+fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::Span], booleans: &HashSet<String>) {
+    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
+    while let [.., last_if, last] = stmts.as_slice()
+        && let StmtKind::Return(Some(no)) = &last.kind
+        && let StmtKind::If(test, then, None) = &last_if.kind
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(yes)),
+                span: yes_span,
+            },
+        ] = then.as_slice()
+        && within(last_if.span)
+        && !written(returns, last.span)
+        && !written(returns, *yes_span)
+    {
+        let returned = StmtKind::Return(Some(conditional(test.clone(), yes.clone(), no.clone(), booleans)));
+        let span = last_if.span;
+        stmts.splice(stmts.len() - 2.., [returned.at(span)]);
     }
 }
 

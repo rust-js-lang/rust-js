@@ -1534,4 +1534,16 @@ export const mutations: Mutation[] = [
       "a closure's nested patterns are nested JS patterns"
     ]
   },
+  {
+    "name": "logical-returns-kept",
+    "breaks": "a value written with `&&`, `s != \"en\" && (if t {..} else {..})`, stays MIR's `return` of each branch",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        && within(last_if.span)\n",
+    "replace": "        && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a value written with && is returned as one"
+    ]
+  },
 ];

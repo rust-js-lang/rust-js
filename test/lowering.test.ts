@@ -8157,3 +8157,32 @@ pub fn named(challenges: &[(u32, Challenge)]) -> Vec<String> {
     expect(lib.named([[7, { id: "a", name: "A", order: 1 }]])).toEqual(["7 A"]);
   }
 });
+
+// From MIR as from THIR: a value the program wrote with `&&`, `s != "en" &&
+// (if t { .. } else { .. })`, is one value returned, `s !== "en" && (t ? ..
+// : ..)`, not a `return` of each branch MIR makes of it, as react.dev's
+// MDXComponents filters its LanguageList; a tail `if` stays statements.
+test("a value written with && is returned as one", async () => {
+  const dir = fixture("logical-values");
+  writeFileSync(join(dir, "lib.rs"), `pub fn a(t: bool, x: u32) -> u32 {
+    if t { x + 1 } else { x * 2 }
+}
+pub fn c(t: bool, u: bool, s: &str) -> bool {
+    s != "en" && (if t { s.is_empty() } else { u })
+}
+pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
+    all.iter()
+        .filter(|code| *code != "en" && (if complete { done.contains(&code.as_str()) } else { !done.contains(&code.as_str()) }))
+        .count()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return s !== "en" && (t ? !s : u);');
+    expect(js).toContain('(code) => code !== "en" && (complete ? done.includes(code) : !done.includes(code))');
+    expect(js).toContain("  if (t) {\n    return (x + 1) >>> 0;\n  }");
+    const lib = await import(join(dir, out));
+    expect([lib.c(true, false, ""), lib.c(false, true, "en"), lib.kept(["en", "fr", "de"], true, ["fr"])]).toEqual([true, false, 1]);
+  }
+});
