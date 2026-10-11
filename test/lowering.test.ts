@@ -1008,6 +1008,51 @@ pub mod other {
   }
 });
 
+// ADR 0204: a struct with flattened fields made outside JSX is one object of
+// their fields, `{ ...template, ...files }`, from MIR as from THIR (ADR 0364).
+test("a struct of flattened fields made outside JSX is one object", async () => {
+  const dir = fixture("flattened-made");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Inner {
+    pub a: u32,
+}
+pub struct Files<'a> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub template: &'a Inner,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub files: &'a js::Unknown,
+}
+pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
+    Files { template, files }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
+  }
+});
+
+// ADR 0364: `for` over what `Object.keys` gives, a `Vec`, steps through
+// its array, from MIR as from THIR: `Object.keys(o)` is no JS iterator.
+test("a for over Object.keys steps through its array", async () => {
+  const dir = fixture("object-keys-loop");
+  writeFileSync(join(dir, "lib.rs"), `pub fn listed(o: &js::Unknown) -> u32 {
+    let mut n = 0;
+    for key in js::object::keys(o) {
+        if !key.is_empty() {
+            n += 1;
+        }
+    }
+    n
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.listed({ a: 1, b: 2 }), lib.listed({})]).toEqual([2, 0]);
+  }
+});
+
 // ADR 0364: an `on_load!` body from MIR, which ends a loop by its end, is
 // its module's top all the same, where JS has no `return`.
 test("an on_load body's loop ends at the module's top", async () => {

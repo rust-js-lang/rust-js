@@ -175,6 +175,9 @@ struct State<'m, 'tcx> {
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
+    /// Each struct JSX gives a component as its props, and those of their
+    /// flattened fields: JSX takes them apart (ADR 0213).
+    jsx_props: std::collections::HashSet<Local>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -282,6 +285,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             in_place: Default::default(),
             named: Default::default(),
             parts: Default::default(),
+            jsx_props: self.mir_jsx_props(mir_body),
         };
         // A closure's first argument is its environment, read through its fields.
         // A coroutine's are that and what it's resumed with, which an async
@@ -1237,6 +1241,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        // One with a flattened field, made outside JSX, an object of its
+        // fields and the flattened one's (ADR 0204).
+        if let Rvalue::Aggregate(kind, _) = rvalue
+            && let AggregateKind::Adt(..) = **kind
+            && !state.jsx_props.contains(&place.local)
+        {
+            let ty = place.ty(&state.body.local_decls, self.tcx).ty;
+            if bindings::has_flatten(self.tcx, ty) {
+                let made = self.mir_rvalue(state, rvalue, span, out)?;
+                let made = self.value_expr(made, span)?;
+                let made = Value::Expr(self.flattened_object(made, ty));
+                return self.mir_store(state, *place, made, span, out);
+            }
+        }
         // A part of a parameter its pattern binds, bound there already.
         if let Some(&arg) = state.parts.get(&place.local)
             && place.projection.is_empty()
@@ -2449,6 +2467,49 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let values = self.take_operands(state, &operands, out)?;
         self.mir_call_values(state, (def_id, generic_args), (values, &arg_tys), output, span, out)
+    }
+
+    /// The locals each struct JSX gives a component as its props is made in,
+    /// `<*>`'s second, and those of their flattened fields, made there.
+    fn mir_jsx_props(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+        let decls = &body.local_decls;
+        let mut made: Vec<Local> = (body.basic_blocks.iter())
+            .filter_map(|data| match &data.terminator().kind {
+                TerminatorKind::Call { func, args, .. } => {
+                    let (def_id, _) = fn_def(func.ty(decls, self.tcx))?;
+                    let component = bindings::is_binding(self.tcx, def_id)
+                        && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::Jsx(tag) if tag == "*");
+                    match (component, &args[..]) {
+                        (true, [_, given]) => given.node.place().filter(|p| p.projection.is_empty()).map(|p| p.local),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+            .collect();
+        let mut props = std::collections::HashSet::new();
+        while let Some(local) = made.pop() {
+            if !props.insert(local) {
+                continue;
+            }
+            for statement in body.basic_blocks.iter().flat_map(|data| &data.statements) {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && assign.0 == Place::from(local)
+                    && let Rvalue::Aggregate(kind, operands) = &assign.1
+                    && let AggregateKind::Adt(..) = **kind
+                {
+                    let ty = assign.0.ty(decls, self.tcx).ty;
+                    for (i, operand) in operands.iter_enumerated() {
+                        if bindings::is_flatten_field(self.tcx, ty, i.as_usize())
+                            && let Some(field) = operand.place().filter(|p| p.projection.is_empty())
+                        {
+                            made.push(field.local);
+                        }
+                    }
+                }
+            }
+        }
+        props
     }
 
     /// Whether what a call makes, `destination`, is read only by `.flatten()`,

@@ -970,4 +970,20 @@ export const mutations: Mutation[] = [
     replace: "        if false && let Operand::Copy(_) | Operand::Move(_) = func\n",
     tests: ["test/bindings.test.ts","-t","js::import! loads a module"],
   },
+  {
+    name: "mir-flattened-struct-nested",
+    breaks: "a struct with flattened fields made outside JSX holds them as fields, `{ template, files }`",
+    file: "src/lower/mir.rs",
+    find: "            if bindings::has_flatten(self.tcx, ty) {\n",
+    replace: "            if false && bindings::has_flatten(self.tcx, ty) {\n",
+    tests: ["test/lowering.test.ts","-t","a struct of flattened fields made outside JSX"],
+  },
+  {
+    name: "mir-jsx-props-flattened",
+    breaks: "a component's props with a flattened field are flattened before JSX takes them apart",
+    file: "src/lower/mir.rs",
+    find: "            && !state.jsx_props.contains(&place.local)\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];

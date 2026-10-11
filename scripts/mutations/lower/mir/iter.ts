@@ -130,4 +130,12 @@ export const mutations: Mutation[] = [
     replace: "                } else if false && self.is_map(output) {\n",
     tests: ["test/mir.test.ts","-t","value_keys|user_hash|range_into_set"],
   },
+  {
+    name: "mir-object-keys-iterated",
+    breaks: "`Object.keys(o)`, an array, is taken as a JS iterator and stepped as one",
+    file: "src/lower/mir/iter.rs",
+    find: "            js::ExprKind::Var(v) if v == \"Object\" => false,\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","a for over Object.keys"],
+  },
 ];

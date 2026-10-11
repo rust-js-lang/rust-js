@@ -1901,9 +1901,6 @@ fn is_union(ty: Ty<'_>) -> bool {
     ty.ty_adt_def().is_some_and(|adt| adt.is_union())
 }
 
-/// A Rust variable's name as JS code writes it (ADR 0038): `set_count` is
-/// `setCount`. Leading and trailing underscores stay (`_unused`, `type_`),
-/// and so does a name with no lowercase letter, like a constant's.
 /// `name` without its hyphens, each next letter capitalized: a hyphenated
 /// key's variable, `data-step`'s `dataStep`.
 fn unhyphenated(name: &str) -> String {
@@ -1922,6 +1919,9 @@ fn unhyphenated(name: &str) -> String {
     out
 }
 
+/// A Rust variable's name as JS code writes it (ADR 0038): `set_count` is
+/// `setCount`. Leading and trailing underscores stay (`_unused`, `type_`),
+/// and so does a name with no lowercase letter, like a constant's.
 fn camel_case(name: &str) -> String {
     let core = name.trim_matches('_');
     if !core.contains('_') || !core.contains(|c: char| c.is_ascii_lowercase()) {

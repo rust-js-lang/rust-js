@@ -430,10 +430,12 @@ fn is_js_iterator(e: &Expr) -> bool {
     };
     match &callee.kind {
         js::ExprKind::Var(_) => crate::lower::iterators::is_stepped_items(e),
-        js::ExprKind::Member(object, name) => {
-            matches!(name.as_str(), "values" | "keys" | "entries")
-                || (name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator"))
-        }
+        // Not `Object.keys(o)`'s, an array.
+        js::ExprKind::Member(object, name) => match &object.kind {
+            js::ExprKind::Var(v) if v == "Object" => false,
+            js::ExprKind::Var(v) if v == "Iterator" => name == "from",
+            _ => matches!(name.as_str(), "values" | "keys" | "entries"),
+        },
         _ => false,
     }
 }

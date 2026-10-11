@@ -4276,6 +4276,7 @@ pub fn App(small: bool) -> JSX::Element {
 }
 `);
   run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<Heading ");
   const lib = await import(join(dir, "lib.jsx"));
   expect([true, false].map((small) => renderToStaticMarkup(lib.App(small)))).toEqual([
     '<div style="opacity:1;transition:t"><h4 id="t" class="a">H</h4></div>',
