@@ -4156,7 +4156,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Value::Fmt(_, ty, _) => self.krate.any_failing && ty.peel_refs().is_adt(),
                     _ => false,
                 });
-                let joined = super::display::join(parts);
+                // Written across lines, its line breaks as they are (ADR 0066).
+                let lines = bytes.contains(&b'\n') && self.format_string_across_lines(span);
+                let joined = super::display::join(parts).with_lines(lines);
                 if fails {
                     return Ok(Value::Fmt(Std::FmtNew, output, joined));
                 }

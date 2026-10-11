@@ -1410,4 +1410,16 @@ export const mutations: Mutation[] = [
       "a while in a closure from MIR keeps its test|while"
     ]
   },
+  {
+    "name": "mir-format-lines-flattened",
+    "breaks": "a format string MIR's template has, written across lines, is a template of `\\n`s",
+    "file": "src/lower/mir.rs",
+    "find": "let lines = bytes.contains(&b'\\n') && self.format_string_across_lines(span);",
+    "replace": "let lines = false;",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a format string written across lines keeps its lines"
+    ]
+  },
 ];

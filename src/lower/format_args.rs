@@ -334,7 +334,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// string literal's (`written_across_lines`). rustc keeps no span of the
     /// format string's own, so it's the call's first string literal,
     /// `format!("..", ..)`'s and `write!(f, "..", ..)`'s, by Rust's lexer.
-    fn format_string_across_lines(&self, span: Span) -> bool {
+    pub(super) fn format_string_across_lines(&self, span: Span) -> bool {
         let Ok(code) = self.tcx.sess.source_map().span_to_snippet(span.source_callsite()) else {
             return false;
         };
