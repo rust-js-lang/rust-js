@@ -117,10 +117,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether a spread of `value` reads the same properties wherever it's
-    /// read: of a props pattern's rest, or a plain Rust value, whose fields
-    /// don't change while it doesn't.
+    /// read: of a props pattern's rest, which JS made a copy of what it was
+    /// given, no getter. Not a plain Rust value, whose JS may have them, an
+    /// extern's object.
     fn spreads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
-        matches!(&value.kind, js::ExprKind::Var(name) if self.plain_value(name) || self.locals.rests.contains_key(name))
+        matches!(&value.kind, js::ExprKind::Var(name) if self.locals.rests.contains_key(name))
             && self.reads_alike(value, out)
     }
 

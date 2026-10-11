@@ -526,8 +526,8 @@ export const mutations: Mutation[] = [
     "name": "jsx-alike-spread-copied",
     "breaks": "a props rest spread in an element made ahead of a branch is copied, `{...props} {...{ ...props }}`, react.dev's Link",
     "file": "src/lower/jsx.rs",
-    "find": "        matches!(&value.kind, js::ExprKind::Var(name) if self.plain_value(name) || self.locals.rests.contains_key(name))\n",
-    "replace": "        false && matches!(&value.kind, js::ExprKind::Var(name) if self.plain_value(name) || self.locals.rests.contains_key(name))\n",
+    "find": "        matches!(&value.kind, js::ExprKind::Var(name) if self.locals.rests.contains_key(name))\n",
+    "replace": "        false\n",
     "tests": [
       "test/mir.test.ts",
       "-t",
