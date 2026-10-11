@@ -131,6 +131,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let changing = changing(body);
     js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
     alias_variables(body, &changing);
+    read_handles(body);
     js::statement_lists(body, &mut |stmts| destructured(stmts, patterns));
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
@@ -2600,6 +2601,71 @@ fn unguarded(body: &mut Vec<Stmt>) {
             *e = Expr {
                 span: e.span,
                 ..place.clone()
+            };
+        }
+    });
+}
+
+/// `const h = { get value() { return o.f; }, .. }`, a `&Cell`'s handle on a
+/// field, whose `value` alone is read, never set nor the handle given:
+/// `const h = o.f`, `h` where its `value` is read, as THIR reads a cell
+/// field a pattern binds where it's bound (ADR 0287).
+fn read_handles(body: &mut Vec<Stmt>) {
+    let mut handles: Vec<String> = Vec::new();
+    js::statement_lists(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, value) = &stmt.kind
+                && let ExprKind::Handle(place) = &value.kind
+                && matches!(place.kind, ExprKind::Member(..))
+            {
+                handles.push(name.clone());
+            }
+        }
+    });
+    handles.retain(|name| {
+        // Each read of it one of its `value`, none set: none left once
+        // those are read otherwise.
+        let mut set = false;
+        js::statement_lists(&mut body.clone(), &mut |stmts| {
+            for stmt in stmts.iter() {
+                if let StmtKind::Assign(target, _) = &stmt.kind {
+                    target.visit_vars(&mut |v| set |= v == name);
+                }
+            }
+        });
+        let mut rest = body.clone();
+        js::each_expr_mut(&mut rest, &mut |e| {
+            if let ExprKind::Member(of, key) = &e.kind
+                && key == "value"
+                && matches!(&of.kind, ExprKind::Var(v) if v == name)
+            {
+                *e = Expr::undefined();
+            }
+        });
+        !set && js::mentions_in(&rest, name) == 0
+    });
+    if handles.is_empty() {
+        return;
+    }
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            if let StmtKind::Const(name, value) = &mut stmt.kind
+                && handles.contains(name)
+                && let ExprKind::Handle(place) = &value.kind
+            {
+                *value = (**place).clone();
+            }
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == "value"
+            && let ExprKind::Var(v) = &of.kind
+            && handles.contains(v)
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::var(v)
             };
         }
     });

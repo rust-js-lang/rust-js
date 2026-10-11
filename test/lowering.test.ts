@@ -7078,3 +7078,33 @@ pub fn written(error: &E) -> String {
     expect([lib.one({ message: "m" }), lib.written({ message: "w" })]).toEqual(["m", "w"]);
   }
 });
+
+// A `Cell` field a `let` pattern binds by reference, only read, is its
+// value where it's bound, from MIR as from THIR (ADR 0287), as react.dev's
+// ErrorMessage reads its error's title: `const { message, title } = error`.
+test("a cell field a let pattern binds, only read, is its value", async () => {
+  const dir = fixture("pattern-cell-field");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+pub struct E {
+    pub title: Cell<Option<&'static str>>,
+    pub message: String,
+}
+pub fn show(error: &E) -> String {
+    let E { message, title } = error;
+    format!("{}: {message}", title.get().filter(|t| !t.is_empty()).unwrap_or("Error"))
+}
+pub fn retitle(error: &E) -> String {
+    let E { message, title } = error;
+    title.set(Some("New"));
+    format!("{}: {message}", title.get().unwrap_or("Error"))
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("export function show(error) {\n  const { message, title } = error;\n");
+    const lib = await import(join(dir, out));
+    const error = { title: "T", message: "m" };
+    expect([lib.show(error), lib.show({ message: "m" }), lib.retitle(error), error.title]).toEqual(["T: m", "Error: m", "New: m", "New"]);
+  }
+});

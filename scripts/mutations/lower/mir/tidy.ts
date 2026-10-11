@@ -1050,4 +1050,28 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "read-handles-off",
+    "breaks": "a cell field a pattern binds, only read, is a handle, `{ get value() { .. } }`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    read_handles(body);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a cell field a let pattern binds"
+    ]
+  },
+  {
+    "name": "read-handles-set",
+    "breaks": "a cell field a pattern binds and sets is its value read once, its set lost",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        !set && js::mentions_in(&rest, name) == 0\n",
+    "replace": "        js::mentions_in(&rest, name) == 0\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a cell field a let pattern binds"
+    ]
+  },
 ];
