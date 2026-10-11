@@ -780,6 +780,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     count_place(&mut locals, destination, true);
                 }
+                // A check THIR knows passes reads nothing: it's left out.
+                TerminatorKind::Assert { msg, .. } if self.known_in_bounds(msg, data.terminator().source_info.span) => {
+                }
                 TerminatorKind::Assert { cond, msg, .. } => {
                     count_operand(&mut locals, cond);
                     for operand in assert_operands(msg) {
@@ -1056,6 +1059,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     chain_panics = false;
                 }
                 out.extend(chain.unwrap_or_default());
+            }
+            TerminatorKind::Assert {
+                cond,
+                expected,
+                msg,
+                target,
+                unwind,
+            } if self.known_in_bounds(msg, span) => {
+                // `args[i]` THIR's facts know is in bounds, of `0..args.len()`:
+                // unchecked, as THIR writes it.
+                let _ = (cond, expected, unwind);
+                out.extend(self.mir_branch(state, block, *target)?);
             }
             TerminatorKind::Assert {
                 cond,
@@ -1374,6 +1389,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Array(items) => matches!(ty.kind(), ty::Tuple(_)) && items.iter().all(alike),
             _ => alike(e),
         }
+    }
+
+    /// Whether an `Assert` at `span` checks an index THIR's facts know is in
+    /// bounds: the index there, `a[i]`, is among them.
+    fn known_in_bounds(&self, msg: &mir::AssertMessage<'tcx>, span: Span) -> bool {
+        matches!(msg, mir::AssertKind::BoundsCheck { .. })
+            && (self.thir.exprs.iter_enumerated()).any(|(id, e)| {
+                matches!(e.kind, thir::ExprKind::Index { .. })
+                    && e.span == span
+                    && self.body_facts.in_bounds.contains(&id)
+            })
     }
 
     fn read_local(&mut self, state: &mut State<'_, 'tcx>, local: Local, out: &mut Vec<Stmt>) -> R<Expr> {

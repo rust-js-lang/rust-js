@@ -1138,4 +1138,12 @@ export const mutations: Mutation[] = [
     replace: "                self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?\n",
     tests: ["test/lowering.test.ts","-t","loops one after another from MIR"],
   },
+  {
+    name: "mir-known-bounds-checked",
+    breaks: "`args[i]` of `0..args.len()` THIR's facts know is in bounds is checked, `if (!(i < args.length)) throw`",
+    file: "src/lower/mir.rs",
+    find: "        matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
+    replace: "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
+    tests: ["test/lowering.test.ts","-t","early returns and index loops from MIR"],
+  },
 ];

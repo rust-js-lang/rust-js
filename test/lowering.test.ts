@@ -1805,6 +1805,40 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
   }
 });
 
+// From MIR (ADR 0364), as THIR writes them: a \`return\` the program wrote
+// first, as written; a range's loop over an array's indices, whose length
+// it only reads, a counted \`for\`; its index, checked by THIR's facts, read
+// unchecked.
+test("early returns and index loops from MIR read as written", async () => {
+  const dir = fixture("mir-early-returns");
+  writeFileSync(join(dir, "lib.rs"), `pub fn get_type(message: &str) -> &'static str {
+    if message == "log" || message == "info" {
+        return "info";
+    }
+    if message == "warn" {
+        return "warning";
+    }
+    "error"
+}
+pub fn joined(args: &[String], mut formatted: String) -> String {
+    if !args.is_empty() {
+        for i in 0..args.len() {
+            formatted += &format!(" {}", args[i]);
+        }
+    }
+    formatted
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (message === "warn") {\n    return "warning";\n  }\n  return "error";\n');
+    expect(js).toContain("    for (let i = 0; i < args.length; i++) {\n      formatted += ` ${args[i]}`;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.get_type("warn"), lib.get_type("x"), lib.joined(["a", "b"], "f")]).toEqual(["warning", "error", "f a b"]);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

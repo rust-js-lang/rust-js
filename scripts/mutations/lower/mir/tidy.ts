@@ -450,4 +450,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","loops one after another from MIR"],
   },
+  {
+    name: "mir-tidy-written-return-last",
+    breaks: "`if (!c) { return a; } return b;`, `b` the program wrote first, stays negated",
+    file: "src/lower/mir/tidy.rs",
+    find: "                StmtKind::If(not(test), otherwise, Some(then))\n",
+    replace: "                StmtKind::If(test, then, Some(otherwise))\n",
+    tests: ["test/lowering.test.ts","-t","early returns and index loops from MIR"],
+  },
+  {
+    name: "mir-tidy-range-end-length-kept",
+    breaks: "a range's loop to `v.length` of a `v` the body only reads stays `while (true)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    if length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
+    replace: "                    if false && length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
+    tests: ["test/lowering.test.ts","-t","early returns and index loops from MIR"],
+  },
 ];

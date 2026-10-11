@@ -208,7 +208,11 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
                 return None;
             };
             let js::Pattern::Name(name) = pattern else { return None };
-            let same = end.is_constant() || matches!(&end.kind, ExprKind::Var(v) if !assigns(&body, v));
+            // Or `v.length` of what the body only reads, by index or its length.
+            let same = end.is_constant()
+                || matches!(&end.kind, ExprKind::Var(v) if !assigns(&body, v))
+                || matches!(&end.kind, ExprKind::Member(of, length)
+                    if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
             if start_key != "start" || end_key != "end" || !same || mutable {
                 return None;
             }
@@ -648,6 +652,24 @@ fn names_break(stmts: &[Stmt], label: &str) -> bool {
     })
 }
 
+/// Whether `stmts` read `name` alone, `name[i]` or `name.length`: not
+/// assign it, call a method of it, or give it to what could change it.
+fn only_read(stmts: &[Stmt], name: &str) -> bool {
+    let mut stmts = stmts.to_vec();
+    let (mut all, mut read) = (0, 0);
+    js::each_expr_mut(&mut stmts, &mut |e| match &e.kind {
+        ExprKind::Var(v) if v == name => all += 1,
+        ExprKind::Index(of, _) | ExprKind::Member(of, _)
+            if matches!(&of.kind, ExprKind::Var(v) if v == name)
+                && !matches!(&e.kind, ExprKind::Member(_, m) if m != "length") =>
+        {
+            read += 1
+        }
+        _ => {}
+    });
+    all == read && !assigns(&stmts, name)
+}
+
 /// Whether `stmts` assign `name`.
 fn assigns(stmts: &[Stmt], name: &str) -> bool {
     let mut stmts = stmts.to_vec();
@@ -1068,9 +1090,21 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
                         },
                     ] = otherwise.as_slice()
                     && small(yes)
-                    && small(no) =>
+                    && small(no)
+                    // Not where the program wrote `return`, an early one.
+                    && !written(returns, then[0].span)
+                    && !written(returns, otherwise[0].span) =>
             {
                 StmtKind::Return(Some(conditional(test, yes.clone(), no.clone())))
+            }
+            // `if (c) { return a; } else { return b; }`, `b` the `return` the
+            // program wrote and `a` where it goes on: that one first, as
+            // written, `if (!c) { return b; } return a;`.
+            StmtKind::If(test, then, Some(otherwise))
+                if matches!(then.as_slice(), [s] if matches!(s.kind, StmtKind::Return(_)) && !written(returns, s.span))
+                    && matches!(otherwise.as_slice(), [s] if matches!(s.kind, StmtKind::Return(_)) && written(returns, s.span)) =>
+            {
+                StmtKind::If(not(test), otherwise, Some(then))
             }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
             // b) { t } else { s }`, where nothing else breaks to `l`; and
