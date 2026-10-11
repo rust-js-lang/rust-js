@@ -715,14 +715,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","continue.s from MIR are where"],
   },
   {
-    name: "mir-tidy-set-and-true-kept",
-    breaks: "a test that `x` is set and true stays `x != null && x`",
-    file: "src/lower/mir/tidy.rs",
-    find: "                    && same(x, &t)\n",
-    replace: "                    && same(x, &t)\n                    && false\n",
-    tests: ["test/lowering.test.ts","-t","is set and true reads"],
-  },
-  {
     name: "mir-tidy-payload-alias-kept",
     breaks: "a pattern's binding of a variable stays `const code = errorCode`",
     file: "src/lower/mir/tidy.rs",
@@ -745,5 +737,13 @@ export const mutations: Mutation[] = [
     find: "    js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));\n",
     replace: "",
     tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
+  {
+    name: "mir-tidy-loop-let-outside",
+    breaks: "a `let` a loop's body assigns before it's read is declared outside the loop, `let start;`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            && !looped_reads(&stmts[first], &name)\n",
+    replace: "            && false\n",
+    tests: ["test/lowering.test.ts","-t","loop.s body makes, from MIR"],
   },
 ];

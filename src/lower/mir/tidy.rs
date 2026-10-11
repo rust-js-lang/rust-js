@@ -145,19 +145,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
-    // What's only tested, `x != null && x`: `x`.
-    js::statement_lists(body, &mut |stmts| {
-        for stmt in stmts.iter_mut() {
-            if let StmtKind::If(test, ..) | StmtKind::While { cond: test, .. } = &mut stmt.kind {
-                truthful(test);
-            }
-        }
-    });
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Cond(test, ..) = &mut e.kind {
-            truthful(test);
-        }
-    });
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
@@ -1991,7 +1978,7 @@ fn aliases(body: &mut Vec<Stmt>) {
 
 /// A `let x;` MIR declares first, where it's first named, as THIR declares
 /// it: before the first statement that names it, and in the one branch of
-/// an `if` that does. Not into a loop, each turn of which starts it again.
+/// an `if` that does; in a loop's body that assigns it before it's read.
 fn sunk_lets(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -2023,6 +2010,24 @@ fn sunk_lets(stmts: &mut Vec<Stmt>) {
                 continue;
             }
         }
+        // Into a loop whose body assigns it before anything reads it, each
+        // turn: the variable Rust declares in the body, each turn its own.
+        if alone
+            && let StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. } =
+                &mut stmts[first].kind
+            && let Some(at) = (body.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), &name) > 0)
+            && matches!(&body[at].kind, StmtKind::Assign(target, value)
+                if matches!(&target.kind, ExprKind::Var(v) if *v == name) && !value.mentions_var(&name))
+            && !looped_reads(&stmts[first], &name)
+        {
+            let (StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } | StmtKind::While { body, .. }) =
+                &mut stmts[first].kind
+            else {
+                unreachable!("matched")
+            };
+            body.insert(0, declared);
+            continue;
+        }
         // Only `let`s between, where it is; otherwise, what followed it is
         // next.
         if stmts[i..first].iter().all(|s| matches!(s.kind, StmtKind::Let(_, None))) {
@@ -2031,6 +2036,16 @@ fn sunk_lets(stmts: &mut Vec<Stmt>) {
         } else {
             stmts.insert(first, declared);
         }
+    }
+}
+
+/// Whether loop `stmt`'s own test, start or what it steps names `name`.
+fn looped_reads(stmt: &Stmt, name: &str) -> bool {
+    match &stmt.kind {
+        StmtKind::While { cond, .. } => cond.mentions_var(name),
+        StmtKind::For { start, test, .. } => start.mentions_var(name) || test.mentions_var(name),
+        StmtKind::ForOf { iterable, .. } => iterable.mentions_var(name),
+        _ => true,
     }
 }
 
@@ -2282,47 +2297,6 @@ fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>) {
             continue;
         }
         i += 1;
-    }
-}
-
-/// `test`, read for its truth alone, without what it says twice: `x !=
-/// null && x`, set and true, is `x`, of its `&&`s, `||`s and `!`s.
-fn truthful(test: &mut Expr) {
-    match &mut test.kind {
-        ExprKind::Binary(Op::Or, a, b) => {
-            truthful(a);
-            truthful(b);
-        }
-        ExprKind::Unary(UnaryOp::Not, a) => truthful(a),
-        ExprKind::Binary(Op::And, ..) => {
-            let mut tests = Vec::new();
-            fn spread(e: Expr, tests: &mut Vec<Expr>) {
-                match e.kind {
-                    ExprKind::Binary(Op::And, a, b) => {
-                        spread(*a, tests);
-                        spread(*b, tests);
-                    }
-                    kind => tests.push(Expr { kind, span: e.span }),
-                }
-            }
-            spread(std::mem::replace(test, Expr::undefined()), &mut tests);
-            let mut kept: Vec<Expr> = Vec::new();
-            for mut t in tests {
-                if let Some(last) = kept.last()
-                    && let ExprKind::Binary(Op::LooseNe, x, null) = &last.kind
-                    && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
-                    && same(x, &t)
-                {
-                    kept.pop();
-                }
-                truthful(&mut t);
-                kept.push(t);
-            }
-            *test = (kept.into_iter().rev())
-                .reduce(|b, a| Expr::bin(Op::And, a, b))
-                .expect("one");
-        }
-        _ => {}
     }
 }
 

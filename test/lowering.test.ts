@@ -6316,3 +6316,26 @@ pub fn each(n: u32) -> Vec<u32> {
     expect([seen, lib.each(3)]).toEqual([3, [0, 1, 2]]);
   }
 });
+
+test("a `let` a loop's body makes, from MIR, is declared in the body, as THIR's", async () => {
+  const dir = fixture("mir-loop-lets");
+  writeFileSync(join(dir, "lib.rs"), `pub fn starts(lines: &[&str], ends: &[usize]) -> Vec<usize> {
+    let mut out = Vec::new();
+    for end in ends {
+        let mut start = 0;
+        for i in 0..*end {
+            start += lines[i].len() + 1;
+        }
+        out.push(start);
+    }
+    out
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  for (const end of ends) {\n    let start = 0;\n");
+    const lib = await import(join(dir, out));
+    expect(lib.starts(["ab", "c"], [1, 2])).toEqual([3, 5]);
+  }
+});
