@@ -1470,4 +1470,16 @@ export const mutations: Mutation[] = [
       "a method's self from MIR is named after its type"
     ]
   },
+  {
+    "name": "mir-own-name-called",
+    "breaks": "`section.as_str()` from MIR is `Section.as_str(section)`, not `section`",
+    "file": "src/lower/mir.rs",
+    "find": "        if values.len() == 1 && self.gives_own_name(def_id) {\n",
+    "replace": "        if values.len() == 1 && false {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a call giving each variant its own name"
+    ]
+  },
 ];

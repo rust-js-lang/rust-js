@@ -3797,6 +3797,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out,
             )?));
         }
+        // A function giving each variant its own name gives what it's given,
+        // `section.as_str()` is `section` (ADR 0264).
+        if values.len() == 1 && self.gives_own_name(def_id) {
+            return Ok(values.into_iter().next().expect("one"));
+        }
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
             let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;

@@ -7194,3 +7194,36 @@ pub fn label(section: Section) -> String {
     expect(lib.label("home")).toBe("og-home");
   }
 });
+
+// ADR 0264: a function giving each variant its own name gives what it's
+// given, from MIR as from THIR: `section.as_str()` is `section`, as
+// react.dev's Page names its section's image.
+test("a call giving each variant its own name from MIR is what it's given", async () => {
+  const dir = fixture("own-name-call");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum Section {
+    #[cfg_attr(rust_js, rust_js::name = "learn")]
+    Learn,
+    #[cfg_attr(rust_js, rust_js::name = "unknown")]
+    Unknown,
+}
+impl Section {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Section::Learn => "learn",
+            Section::Unknown => "unknown",
+        }
+    }
+}
+pub fn image(section: Option<Section>) -> String {
+    format!("/images/og-{}.png", section.unwrap_or(Section::Unknown).as_str())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  return `/images/og-${section ?? "unknown"}.png`;\n');
+    const lib = await import(join(dir, out));
+    expect([lib.image("learn"), lib.image(undefined)]).toEqual(["/images/og-learn.png", "/images/og-unknown.png"]);
+  }
+});
