@@ -2219,6 +2219,9 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<St
                 }
                 e.is_made_of_constants()
                     || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v))
+                    // An import, `<Seo>`'s tag: a module's export is never set
+                    // again, a `static mut` being its `{ value }`.
+                    || matches!(e.kind, ExprKind::Symbol(_))
                     || matches!(e.kind, ExprKind::Member(..))
                         && matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !changing.contains(v))
                     || matches!(&e.kind, ExprKind::Member(of, _)

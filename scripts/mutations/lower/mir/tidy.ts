@@ -1126,4 +1126,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-tidy-import-blocks-inline",
+    "breaks": "a prop MIR holds for a borrow stays a `const _13`, read past an imported tag, `<Seo>`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    || matches!(e.kind, ExprKind::Symbol(_))\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

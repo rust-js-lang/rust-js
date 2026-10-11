@@ -4751,3 +4751,46 @@ pub fn Page(home: bool, meta: &Meta, title: &'static str, path: String) -> JSX::
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page(false, { tag: "t" }, "T", "a/b"))).toBe('<div><span title="T" lang="t">/og/a-b.png</span></div>');
 });
+
+// ADR 0364: a prop MIR holds in a temporary is read where it's written past
+// an element's tag imported from another module, `<Seo>`, which no call
+// changes, as react.dev's Page gives Seo its image.
+test("a prop held for a borrow is read where it's written, past an imported tag", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+mod seo {
+    use react::{JSX, jsx};
+    pub struct SeoProps<'a> {
+        pub title: &'a str,
+        pub image: &'a str,
+    }
+    pub fn Seo(SeoProps { title, image }: SeoProps) -> JSX::Element {
+        jsx! { <span title={title}>{image}</span> }
+    }
+}
+use seo::{Seo, SeoProps};
+pub fn Page(home: bool, title: &'static str, path: String) -> JSX::Element {
+    jsx! {
+        <div>
+            <Seo
+                title={title}
+                image={
+                    if home || title.is_empty() {
+                        format!("/og-{}.png", path)
+                    } else {
+                        format!("/og/{}.png", path.replace('/', "-"))
+                    }
+                    .as_str()
+                }
+            />
+            {home.then(|| jsx! { <b>{"rss"}</b> })}
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toContain("const _");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page(false, "T", "a/b"))).toBe('<div><span title="T">/og/a-b.png</span></div>');
+});
