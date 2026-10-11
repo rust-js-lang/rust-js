@@ -738,4 +738,12 @@ export const mutations: Mutation[] = [
     replace: "            if false && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, by) =>\n",
     tests: ["test/lowering.test.ts","-t","match guard.s binding from MIR"],
   },
+  {
+    name: "mir-tidy-callback-unnamed",
+    breaks: "a hook's closure a `let` names stays `const tick = () => …; useEffect(tick, …)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];

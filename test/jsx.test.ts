@@ -502,6 +502,26 @@ pub fn Page(home: bool, blog: bool, content: &str) -> JSX::Element {
   expect(renderToStaticMarkup(result.Page(true, false, "c"))).toBe('<div class="page on"><b>h</b><div class="cols"><p class="text">c</p><p class="more on">c</p></div></div>');
 });
 
+// A closure a \`let\` names, only a hook's function: written there, named by
+// the \`let\` (ADR 0297), from MIR too (ADR 0364).
+test("a hook's closure a let names is a named function where it's given", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx, use_effect, use_state};
+pub fn Counter() -> JSX::Element {
+    let (count, set_count) = use_state::<i32>(0);
+    let tick = move || {
+        set_count.set(count + 1);
+    };
+    use_effect(tick, [count]);
+    jsx! { <b>{count}</b> }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain("  useEffect(\n    function tick() {\n      setCount((count + 1) | 0);\n    },\n    [count],\n  );\n");
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;

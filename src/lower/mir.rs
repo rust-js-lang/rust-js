@@ -519,6 +519,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        // The closures a `let` names that a hook's function alone is, by
+        // their names (ADR 0297).
+        let named: Vec<rustc_span::Span> = (self.thir.stmts.iter())
+            .filter_map(|stmt| match &stmt.kind {
+                thir::StmtKind::Let { pattern, .. }
+                    if let thir::PatKind::Binding { var, .. } = pattern.kind
+                        && self.body_facts.named_callbacks.contains(&var) =>
+                {
+                    Some(pattern.span)
+                }
+                _ => None,
+            })
+            .collect();
+        let callbacks: std::collections::HashSet<String> = (mir_body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place)
+                    if place.projection.is_empty() && named.contains(&info.source_info.span) =>
+                {
+                    Some(state.locals.names[place.local].clone())
+                }
+                _ => None,
+            })
+            .collect();
         // Where each loop is written, and whether as a `while`.
         let loops: Vec<(js::Span, bool)> = (self.thir.exprs.iter())
             .filter_map(|e| match e.kind {
@@ -568,6 +591,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 conditions: &conditions,
                 loops: &loops,
                 continues: &continues,
+                callbacks: &callbacks,
                 payloads: &(state.payloads.iter())
                     .map(|&l| state.locals.names[l].clone())
                     .collect(),

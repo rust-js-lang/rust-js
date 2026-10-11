@@ -24,6 +24,8 @@ pub(super) struct Hints<'h> {
     pub(super) loops: &'h [(js::Span, bool)],
     /// Where each `if` the program wrote of a `continue` alone tests.
     pub(super) continues: &'h [js::Span],
+    /// The closures a `let` names that a hook's function alone is (ADR 0297).
+    pub(super) callbacks: &'h HashSet<String>,
     /// What a pattern binds in an enum's variant, `Some(code)`, by name.
     pub(super) payloads: &'h HashSet<String>,
     pub(super) returns: &'h [js::Span],
@@ -45,6 +47,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         loops: written,
         continues,
         payloads,
+        callbacks,
         returns,
         captured,
         booleans,
@@ -141,6 +144,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
+    js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
     // What's only tested, `x != null && x`: `x`.
     js::statement_lists(body, &mut |stmts| {
         for stmt in stmts.iter_mut() {
@@ -2232,6 +2236,53 @@ fn plain_cells(body: &mut Vec<Stmt>) {
             };
         }
     });
+}
+
+/// `const tick = () => { … }; useEffect(tick, [count]);`, a closure only a
+/// hook's function is: written there, a function its `let` names, `function
+/// tick() { … }`, unless it reads that name (ADR 0297).
+fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::Const(name, value) = &stmts[i].kind
+            && callbacks.contains(name)
+            && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
+            && !value.mentions_var(name)
+            && js::mentions_in(&stmts[i + 1..], name) == 1
+        {
+            let span = stmts[i].span;
+            let StmtKind::Const(name, value) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            let (params, body, is_async) = match value.kind {
+                ExprKind::Arrow(params, body) => (params, body, false),
+                ExprKind::AsyncArrow(params, body) => (params, body, true),
+                _ => unreachable!("matched"),
+            };
+            let function = js::Function {
+                name: name.clone(),
+                params,
+                body,
+                export: false,
+                is_async,
+                span: value.span,
+                name_span: span,
+            };
+            let mut function = Some(function);
+            js::each_expr_mut(&mut stmts[i..], &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(v) if *v == name)
+                    && let Some(function) = function.take()
+                {
+                    *e = Expr {
+                        kind: ExprKind::Function(Box::new(function)),
+                        span: e.span,
+                    };
+                }
+            });
+            continue;
+        }
+        i += 1;
+    }
 }
 
 /// `test`, read for its truth alone, without what it says twice: `x !=

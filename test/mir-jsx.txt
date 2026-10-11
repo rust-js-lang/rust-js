@@ -89,3 +89,4 @@ what an element reads past elements before it is read where it's written
 a let-else of what filter keeps, returning an element, is a guard first
 a let-else of what filter keeps, then an early return, are guards first
 what elements read before branches, each a call, is read where it's written
+a hook's closure a let names is a named function where it's given
