@@ -1011,9 +1011,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // what jumps there is, if it's one.
         if is_return(state.body, to) {
             let mut out = self.mir_terminator(state, to)?;
-            let data = &state.body.basic_blocks[from];
-            let spans = (data.statements.iter().map(|s| s.source_info.span))
-                .chain([data.terminator().source_info.span])
+            // Back through the drops on the way, to where the value is made.
+            let mut blocks = vec![from];
+            let preds = state.body.basic_blocks.predecessors();
+            while let Some(&block) = blocks.last()
+                && !(state.body.basic_blocks[block].statements.iter())
+                    .any(|s| matches!(&s.kind, StatementKind::Assign(a) if a.0.local == mir::RETURN_PLACE))
+                && let [only] = preds[block].as_slice()
+                && !blocks.contains(only)
+            {
+                blocks.push(*only);
+            }
+            let spans = (blocks.iter())
+                .flat_map(|&b| {
+                    let data = &state.body.basic_blocks[b];
+                    (data.statements.iter().map(|s| s.source_info.span)).chain([data.terminator().source_info.span])
+                })
                 .map(|span| self.js_span(span));
             let written = spans
                 .filter_map(|s| (state.returns.iter()).find(|w| !s.is_none() && w.lo <= s.lo && s.hi <= w.hi))

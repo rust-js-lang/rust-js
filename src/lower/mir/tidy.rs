@@ -116,6 +116,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing, captured));
     named_temporaries(body);
     eager_chains(body);
+    returned_in_branches(body, result);
     // Of what's now beside it, the temporaries between read in place.
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     tail_returns(body, returns);
@@ -1905,6 +1906,67 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
     }
 }
 
+/// `if (c) { s; result = a; } else { result = b; } return result;`, the
+/// function's value its branches make: returned where each is made, `if (c)
+/// { s; return a; } return b;`, at the `return`s the program wrote.
+fn returned_in_branches(stmts: &mut Vec<Stmt>, result: &str) {
+    let [.., last_if, last] = stmts.as_slice() else {
+        return;
+    };
+    let returns_result =
+        matches!(&last.kind, StmtKind::Return(Some(v)) if matches!(&v.kind, ExprKind::Var(r) if r == result));
+    if !returns_result
+        || !matches!(last_if.kind, StmtKind::If(_, _, Some(_)))
+        || !made_at_ends(std::slice::from_ref(last_if), result)
+    {
+        return;
+    }
+    let mut made = stmts[stmts.len() - 2].clone();
+    returned_at_ends(std::slice::from_mut(&mut made));
+    // Read nowhere else.
+    if js::mentions_in(std::slice::from_ref(&made), result) > 0
+        || js::mentions_in(&stmts[..stmts.len() - 2], result) > 0
+    {
+        return;
+    }
+    stmts.truncate(stmts.len() - 2);
+    // An `else` after a branch that returns: what follows it.
+    match made.kind {
+        StmtKind::If(test, then, Some(otherwise)) if then.last().is_some_and(ends) => {
+            stmts.push(StmtKind::If(test, then, None).at(made.span));
+            stmts.extend(otherwise);
+        }
+        kind => stmts.push(Stmt { kind, span: made.span }),
+    }
+}
+
+/// Whether `stmts` end assigning `result`, or leaving, each branch of an
+/// `if` that ends them too.
+fn made_at_ends(stmts: &[Stmt], result: &str) -> bool {
+    match stmts.last().map(|s| &s.kind) {
+        Some(StmtKind::Assign(target, _)) => matches!(&target.kind, ExprKind::Var(r) if r == result),
+        Some(StmtKind::Return(_) | StmtKind::Throw(_)) => true,
+        Some(StmtKind::If(_, then, Some(otherwise))) => made_at_ends(then, result) && made_at_ends(otherwise, result),
+        _ => false,
+    }
+}
+
+/// `stmts`, of `made_at_ends`, returning what they assign the result.
+fn returned_at_ends(stmts: &mut [Stmt]) {
+    let Some(last) = stmts.last_mut() else { return };
+    match &mut last.kind {
+        StmtKind::Assign(_, value) => {
+            let value = std::mem::replace(value, Expr::undefined());
+            last.kind = StmtKind::Return(Some(value));
+        }
+        StmtKind::If(_, then, Some(otherwise)) => {
+            returned_at_ends(then);
+            returned_at_ends(otherwise);
+        }
+        _ => {}
+    }
+}
+
 /// What follows a `return`, a `throw`, a `break` or a `continue` in the
 /// same list never runs, nor what follows an `if` each of whose branches
 /// ends so, nor a `while (true)` no `break` leaves.
@@ -1955,7 +2017,8 @@ fn tail_jumps(stmts: &mut [Stmt]) {
 
 /// `const h = x ? x : undefined; if (h == null) { exit }`, a `let … else`
 /// of what `filter` keeps: `if (!x) { exit }`, as THIR tests it, `h` and
-/// what binds it then `x`, which it is.
+/// what binds it then `x`, which it is; and `if (h != null) { s }`, `h`
+/// read there alone, `if (x) { s }`.
 fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
     for i in 1..stmts.len() {
         let [made, checked] = &stmts[i - 1..=i] else {
@@ -1968,43 +2031,70 @@ fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
             continue;
         };
         let test = test.tested();
-        if let ExprKind::Var(x) = &test.kind
-            && !changing.contains(x)
-            && matches!(&yes.kind, ExprKind::Var(y) if y == x)
-            && matches!(no.kind, ExprKind::Undefined)
-            && let StmtKind::If(guard, then, None) = &checked.kind
-            && let ExprKind::Binary(Op::LooseEq, tested, null) = &guard.kind
-            && matches!(&tested.kind, ExprKind::Var(t) if t == h)
-            && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
-            && then.last().is_some_and(ends)
+        let ExprKind::Var(x) = &test.kind else {
+            continue;
+        };
+        if changing.contains(x)
+            || !matches!(&yes.kind, ExprKind::Var(y) if y == x)
+            || !matches!(no.kind, ExprKind::Undefined)
         {
-            // `h`, and a binding of it nothing changes, read as `x`: unread,
-            // they go.
-            let (h, x) = (h.clone(), x.clone());
-            let mut read: Vec<String> = vec![h];
-            stmts.remove(i - 1);
-            for stmt in &stmts[i - 1..] {
-                if let StmtKind::Const(name, value) = &stmt.kind
-                    && matches!(&value.kind, ExprKind::Var(of) if read.contains(of))
-                    && !changing.contains(name)
+            continue;
+        }
+        let StmtKind::If(guard, then, otherwise) = &checked.kind else {
+            continue;
+        };
+        let ExprKind::Binary(op @ (Op::LooseEq | Op::LooseNe), tested, null) = &guard.kind else {
+            continue;
+        };
+        if !matches!(&tested.kind, ExprKind::Var(t) if t == h)
+            || !matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+        {
+            continue;
+        }
+        let kept = match op {
+            Op::LooseEq => otherwise.is_none() && then.last().is_some_and(ends),
+            _ => {
+                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h) == 0)
+                    && js::mentions_in(&stmts[i + 1..], h) == 0
+            }
+        };
+        if !kept {
+            continue;
+        }
+        let truth = match op {
+            Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(x)),
+            _ => Expr::var(x),
+        };
+        // `h`, and a binding of it nothing changes, read as `x`: they go.
+        let (h, x) = (h.clone(), x.clone());
+        stmts.remove(i - 1);
+        let mut read: Vec<String> = vec![h];
+        let mut rest = stmts.split_off(i - 1);
+        js::statement_lists(&mut rest, &mut |list| {
+            list.retain(|stmt| match &stmt.kind {
+                StmtKind::Const(name, value)
+                    if matches!(&value.kind, ExprKind::Var(of) if read.contains(of)) && !changing.contains(name) =>
                 {
                     read.push(name.clone());
+                    false
                 }
-            }
-            let StmtKind::If(guard, ..) = &mut stmts[i - 1].kind else {
-                unreachable!("the guard, where the `const` was")
-            };
-            *guard = Expr::unary(UnaryOp::Not, Expr::var(&x));
-            js::each_expr_mut(&mut stmts[i - 1..], &mut |e| {
-                if matches!(&e.kind, ExprKind::Var(v) if read.contains(v)) {
-                    *e = Expr {
-                        span: e.span,
-                        ..Expr::var(&x)
-                    };
-                }
+                _ => true,
             });
-            return;
-        }
+        });
+        let StmtKind::If(guard, ..) = &mut rest[0].kind else {
+            unreachable!("the test, where the `const` was")
+        };
+        *guard = truth;
+        js::each_expr_mut(&mut rest, &mut |e| {
+            if matches!(&e.kind, ExprKind::Var(v) if read.contains(v)) {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::var(&x)
+                };
+            }
+        });
+        stmts.extend(rest);
+        return;
     }
 }
 

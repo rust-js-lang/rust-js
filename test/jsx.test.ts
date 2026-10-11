@@ -392,6 +392,85 @@ pub fn Nav() -> JSX::Element {
   expect(renderToStaticMarkup(result.Nav())).toBe('<a href="/b/x">l</a><a href="/b/y">l</a>');
 });
 
+// A let-else of what \`filter\` keeps, its \`else\` an element: a guard first,
+// \`if (!href)\`, as THIR writes it, from MIR too (ADR 0364), where the
+// \`return\` is reached through what the component drops.
+test("a let-else of what filter keeps, returning an element, is a guard first", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub struct LinkProps<'a> {
+    pub href: Option<&'a str>,
+    pub class_name: Option<&'a str>,
+    pub items: Vec<&'a str>,
+}
+pub fn Link(LinkProps { href, class_name, items }: LinkProps) -> JSX::Element {
+    let classes = "inline";
+    let modified: Vec<String> = items.iter().map(|i| i.to_uppercase()).collect();
+    let Some(href) = href.filter(|href| !href.is_empty()) else {
+        return jsx! { <a href={href} className={class_name} /> };
+    };
+    jsx! {
+        <>
+            {if href.starts_with("https://") {
+                jsx! { <b className={classes}>{href}{modified}</b> }
+            } else {
+                jsx! { <i>{href}</i> }
+            }}
+        </>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain("  if (!href) {\n    return <a href={href} className={className} />;\n  }\n");
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Link({ href: "", items: [] }))).toBe('<a href=""></a>');
+  expect(renderToStaticMarkup(result.Link({ href: "https://x", items: ["a"] }))).toBe('<b class="inline">https://xA</b>');
+});
+
+// A let-else of what \`filter\` keeps, then an early \`return\`: guards first, each
+// \`return\` where it's written, from MIR too (ADR 0364), whose value the
+// branches make and one \`return\` gave back.
+test("a let-else of what filter keeps, then an early return, are guards first", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+fn cn(a: &str, b: bool) -> String {
+    format!("{a}{}", if b { " h" } else { "" })
+}
+pub struct FooterLinkProps<'a, C: ReactNode> {
+    pub href: Option<&'a str>,
+    pub children: C,
+    pub is_header: bool,
+}
+pub fn FooterLink<C: ReactNode>(FooterLinkProps { href, children, is_header }: FooterLinkProps<C>) -> JSX::Element {
+    let classes = cn("link", is_header);
+    let Some(href) = href.filter(|href| !href.is_empty()) else {
+        return jsx! { <div className={classes}>{children}</div> };
+    };
+    if href.starts_with("https://") {
+        return jsx! {
+            <div>
+                <a href={href} className={classes.as_str()}>{children}</a>
+            </div>
+        };
+    }
+    jsx! {
+        <div>
+            <b title={href} className={classes.as_str()}>{children}</b>
+        </div>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain('  if (!href) {\n    return <div className={classes}>{children}</div>;\n  }\n  if (href.startsWith("https://")) {\n');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.FooterLink({ href: "https://x", children: "c", is_header: true }))).toBe('<div><a href="https://x" class="link h">c</a></div>');
+  expect(renderToStaticMarkup(result.FooterLink({ href: "", children: "c", is_header: false }))).toBe('<div class="link">c</div>');
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;

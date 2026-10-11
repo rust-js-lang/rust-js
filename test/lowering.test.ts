@@ -5954,3 +5954,53 @@ test("an `if … else if` given as a value from MIR is the conditional THIR writ
     expect(js).toContain('  return `[${href.startsWith("https://") ? "ext" : href.startsWith("#") ? "hash" : href}]`;\n');
   }
 });
+
+test("a let-else from MIR whose rest is long, and drops what it owns, is a guard first, as THIR's", async () => {
+  const dir = fixture("mir-let-else-dropping");
+  writeFileSync(join(dir, "lib.rs"), `pub fn named(href: Option<&str>, items: Vec<String>) -> String {
+    let Some(href) = href.filter(|h| !h.is_empty()) else {
+        return format!("none{}", items.len());
+    };
+    format!("[{}{}]", if href.starts_with("x") { "a" } else { href }, items.len())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function named(href, items) {
+  if (!href) {
+    return \`none\${items.length}\`;
+  }
+  return \`[\${href.startsWith("x") ? "a" : href}\${items.length}]\`;
+}`);
+  }
+});
+
+test("a function's value from MIR that branches assign is returned from each, its guards first, as THIR's", async () => {
+  const dir = fixture("mir-assigned-returns");
+  writeFileSync(join(dir, "lib.rs"), `pub fn footer(href: Option<&str>, children: Vec<String>) -> String {
+    let classes = format!("c{}", children.len());
+    let Some(href) = href.filter(|href| !href.is_empty()) else {
+        return format!("<div {classes}>");
+    };
+    if href.starts_with("https://") {
+        return format!("<ext {href} {classes}>");
+    }
+    format!("<next {href} {classes}>")
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function footer(href, children) {
+  const classes = \`c\${children.length}\`;
+  if (!href) {
+    return \`<div \${classes}>\`;
+  }
+  if (href.startsWith("https://")) {
+    return \`<ext \${href} \${classes}>\`;
+  }
+  return \`<next \${href} \${classes}>\`;
+}`);
+  }
+});

@@ -1242,4 +1242,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","pattern of one field"],
   },
+  {
+    name: "mir-written-return-past-drops",
+    breaks: "a `return` the program wrote, reached through drops, isn't known as written",
+    file: "src/lower/mir.rs",
+    find: "                && let [only] = preds[block].as_slice()\n",
+    replace: "                && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];
