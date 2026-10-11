@@ -1651,7 +1651,17 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
                     // A temporary's, an `if` the program wrote as a value, is one.
                     && ((small(yes) && small(no)) || is_temporary(x)) =>
             {
-                StmtKind::Assign(Expr::var(x), conditional(test, yes.clone(), no.clone(), booleans))
+                // The value the program wrote first, first: `a || b ? x : y` of
+                // `if a || b { x } else { y }` MIR tests `!a && !b` of.
+                // Of two values, not of a test's truth, `a && b`'s.
+                let values = !matches!(yes.kind, ExprKind::Bool(_)) && !matches!(no.kind, ExprKind::Bool(_));
+                let no_first =
+                    values && matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t);
+                let value = match no_first {
+                    true => conditional(not(test.clone()), no.clone(), yes.clone(), booleans),
+                    false => conditional(test.clone(), yes.clone(), no.clone(), booleans),
+                };
+                StmtKind::Assign(Expr::var(x), value)
             }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
             // b) { t } else { s }`, where nothing else breaks to `l`; and

@@ -1090,4 +1090,28 @@ export const mutations: Mutation[] = [
       "written returns MIR jumps out of a block"
     ]
   },
+  {
+    "name": "or-branches-reversed",
+    "breaks": "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    true => conditional(not(test.clone()), no.clone(), yes.clone(), booleans),\n",
+    "replace": "                    true => conditional(test.clone(), yes.clone(), no.clone(), booleans),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an if of an or from MIR keeps its branches"
+    ]
+  },
+  {
+    "name": "or-branches-of-booleans-reversed",
+    "breaks": "a test's truth MIR makes of `!a && b` is `!(a || !b)`, its booleans reordered",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    values && matches!(",
+    "replace": "                    matches!(",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an if of an or from MIR keeps its branches"
+    ]
+  },
 ];

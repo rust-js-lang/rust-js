@@ -7227,3 +7227,35 @@ pub fn image(section: Option<Section>) -> String {
     expect([lib.image("learn"), lib.image(undefined)]).toEqual(["/images/og-learn.png", "/images/og-unknown.png"]);
   }
 });
+
+// An `if` of an `||`, its branches as the program wrote them: `home ||
+// !meta.title ? a : b`, from MIR as from THIR, not `!home && meta.title ? b
+// : a`, as react.dev's Page picks its image.
+test("an if of an or from MIR keeps its branches in the order written", async () => {
+  const dir = fixture("or-branch-order");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Meta {
+    pub title: &'static str,
+    pub path: &'static str,
+}
+pub fn image(home: bool, meta: &Meta) -> String {
+    let image = if home || meta.title.is_empty() {
+        format!("/images/og-{}.png", meta.path)
+    } else {
+        format!("/images/og/{}.png", meta.path.replace('/', "-"))
+    };
+    image
+}
+// A test's truth, not two values: as written.
+pub fn flagged(heading: bool, crumb: bool, expanded: bool) -> Option<&'static str> {
+    (!heading && crumb && !expanded).then_some("on")
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    home || !meta.title\n      ? `/images/og-${meta.path}.png`\n");
+    expect(js).toContain('  return !heading && crumb && !expanded ? "on" : undefined;\n');
+    const lib = await import(join(dir, out));
+    expect([lib.image(true, { title: "t", path: "/a" }), lib.image(false, { title: "t", path: "/a/b" }), lib.flagged(false, true, false)]).toEqual(["/images/og-/a.png", "/images/og/-a-b.png", "on"]);
+  }
+});
