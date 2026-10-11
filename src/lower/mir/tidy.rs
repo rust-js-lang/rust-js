@@ -52,6 +52,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         captured,
         booleans,
     } = *hints;
+    // A guard of a handle made for it alone: the place it's a handle on.
+    unguarded(body);
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {
@@ -2147,6 +2149,128 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
         }
         i += 1;
     }
+}
+
+/// `const g = $borrow(h, true)` of a handle `h` made there, a plain
+/// `RefCell` field's (ADR 0362): what counts its borrows is that new
+/// object, which nothing else sees, so none can fail. `g.value` is the
+/// place `h` is a handle on, `$unborrow(g)` nothing, and a `try` left
+/// only rethrowing what it catches, its body.
+fn unguarded(body: &mut Vec<Stmt>) {
+    let mut places: HashMap<String, Expr> = HashMap::new();
+    let mut mixed: HashSet<String> = HashSet::new();
+    let guard_of = |stmt: &Stmt| -> Option<(String, Expr)> {
+        let (name, value) = match &stmt.kind {
+            StmtKind::Const(name, value) => (name, value),
+            StmtKind::Assign(target, value) if let ExprKind::Var(name) = &target.kind => (name, value),
+            _ => return None,
+        };
+        let ExprKind::Call(callee, args) = &value.kind else {
+            return None;
+        };
+        let ExprKind::Handle(place) = &args.first()?.kind else {
+            return None;
+        };
+        (matches!(&callee.kind, ExprKind::Var(f) if f == "$borrow" || f == "$borrowMut") && place.reads_same())
+            .then(|| (name.clone(), (**place).clone()))
+    };
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let Some((name, place)) = guard_of(stmt) {
+                match places.get(&name) {
+                    Some(seen) if !same(seen, &place) => {
+                        mixed.insert(name);
+                    }
+                    _ => {
+                        places.insert(name, place);
+                    }
+                }
+            }
+        }
+    });
+    places.retain(|name, _| !mixed.contains(name));
+    // Each read of it its `value`, or what `$unborrow` is given.
+    let mut reads: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |v| {
+        if places.contains_key(v) {
+            *reads.entry(v.to_string()).or_default() += 1;
+        }
+    });
+    let mut kept: HashMap<String, usize> = HashMap::new();
+    js::each_expr_mut(&mut body.clone(), &mut |e| match &e.kind {
+        ExprKind::Member(of, key)
+            if key == "value"
+                && let ExprKind::Var(g) = &of.kind
+                && places.contains_key(g) =>
+        {
+            *kept.entry(g.clone()).or_default() += 1;
+        }
+        ExprKind::Call(callee, args)
+            if matches!(&callee.kind, ExprKind::Var(f) if f == "$unborrow")
+                && let [a] = args.as_slice()
+                && let ExprKind::Var(g) = &a.kind
+                && places.contains_key(g) =>
+        {
+            *kept.entry(g.clone()).or_default() += 1;
+        }
+        _ => {}
+    });
+    // Its own assignments, `_27 = $borrowMut(..)`, name it too.
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Assign(target, _) = &stmt.kind
+                && let ExprKind::Var(g) = &target.kind
+                && places.contains_key(g)
+            {
+                *kept.entry(g.clone()).or_default() += 1;
+            }
+        }
+    });
+    places.retain(|name, _| reads.get(name) == kept.get(name));
+    js::each_block_mut(body, &mut |stmts| {
+        stmts.retain(|stmt| !guard_of(stmt).is_some_and(|(name, _)| places.contains_key(&name)));
+    });
+    if places.is_empty() {
+        return;
+    }
+    js::each_block_mut(body, &mut |stmts| {
+        stmts.retain(|stmt| {
+            !matches!(&stmt.kind, StmtKind::Expr(e)
+            if matches!(&e.kind, ExprKind::Call(callee, args)
+                if matches!(&callee.kind, ExprKind::Var(f) if f == "$unborrow")
+                    && matches!(args.as_slice(), [a] if matches!(&a.kind, ExprKind::Var(g) if places.contains_key(g)))))
+        });
+    });
+    js::each_block_mut(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            if let StmtKind::TryCatch(_, Some(error), handler) = &stmts[i].kind
+                && let [rethrow] = handler.as_slice()
+                && matches!(&rethrow.kind, StmtKind::Throw(e) if matches!(&e.kind, ExprKind::Var(v) if v == error))
+            {
+                let StmtKind::TryCatch(inner, ..) = stmts.remove(i).kind else {
+                    unreachable!("matched")
+                };
+                let n = inner.len();
+                stmts.splice(i..i, inner);
+                i += n;
+                continue;
+            }
+            i += 1;
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == "value"
+            && let ExprKind::Var(g) = &of.kind
+            && let Some(place) = places.get(g)
+        {
+            *e = Expr {
+                span: e.span,
+                ..place.clone()
+            };
+        }
+    });
 }
 
 /// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose

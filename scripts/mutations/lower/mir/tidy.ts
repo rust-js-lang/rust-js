@@ -746,4 +746,20 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/lowering.test.ts","-t","loop.s body makes, from MIR"],
   },
+  {
+    name: "mir-tidy-guards-kept",
+    breaks: "a guard of a handle made for it alone stays `$borrowMut({ get value() { … } }, true)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    // A guard of a handle made for it alone: the place it's a handle on.\n    unguarded(body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
+  },
+  {
+    name: "mir-tidy-rethrow-kept",
+    breaks: "`try { s } catch (error) { throw error; }` stays, not `s`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                && let [rethrow] = handler.as_slice()\n",
+    replace: "                && let [rethrow] = handler.as_slice().get(..0).unwrap_or_default()\n",
+    tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
+  },
 ];

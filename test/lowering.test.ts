@@ -6372,3 +6372,37 @@ pub fn remember(f: &dyn Fn(&dyn Fn(u32))) -> u32 {
     expect([lib.bump(), lib.bump(), lib.seen(), lib.remember((g: (n: number) => void) => g(7))]).toEqual([1, 2, false, 7]);
   }
 });
+
+test("a `RefCell` field only ever borrowed for a moment, from MIR, is its value (ADR 0362)", async () => {
+  const dir = fixture("mir-plain-ref-cells");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::rc::Rc;
+pub struct Node {
+    pub item: u32,
+    pub children: RefCell<Vec<Rc<Node>>>,
+}
+pub fn tree(items: &[u32]) -> Rc<Node> {
+    let root = Rc::new(Node { item: 0, children: RefCell::new(vec![]) });
+    for &i in items {
+        let node = Rc::new(Node { item: i, children: RefCell::new(vec![]) });
+        root.children.borrow_mut().push(node);
+    }
+    root
+}
+pub fn count(node: &Node) -> usize {
+    if node.children.borrow().len() < 2 {
+        return 0;
+    }
+    node.children.borrow().len()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    const node = { item: i, children: [] };\n    root.children.push(node);\n");
+    expect(js).toContain("  if (node.children.length < 2) {\n    return 0;\n  }\n  return node.children.length;\n");
+    const lib = await import(join(dir, out));
+    const root = lib.tree([1, 2, 3]);
+    expect([lib.count(root), lib.count(root.children[0])]).toEqual([3, 0]);
+  }
+});
