@@ -3714,7 +3714,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A `&mut` to a number is boxed for the crate's own trait or impl;
         // std's, `write!` to a `String` say, takes its place below.
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
+        // Not one that's a binding, a default method's `get ruleId` called
+        // through a generic's bound: the binding, below, as THIR's.
         if !matches!(known, Some(Std::Any(_)))
+            && !bindings::is_binding(tcx, def_id)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && (rust_impl
                 || (super::recognition::operational(tcx, self.krate.foreign, trait_id)

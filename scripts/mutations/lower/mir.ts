@@ -1530,4 +1530,16 @@ export const mutations: Mutation[] = [
       "nullable field's clone"
     ]
   },
+  {
+    "name": "mir-binding-trait-dispatched",
+    "breaks": "a binding default method called through a generic from MIR is a dictionary's, `{}.rule_id(error)`, which throws",
+    "file": "src/lower/mir.rs",
+    "find": "            && !bindings::is_binding(tcx, def_id)\n            && let Some(trait_id) = tcx.trait_of_assoc(def_id)\n",
+    "replace": "            && let Some(trait_id) = tcx.trait_of_assoc(def_id)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "binding trait method called through a generic"
+    ]
+  },
 ];

@@ -7344,3 +7344,40 @@ pub fn diags(msgs: Vec<&Msg>) -> Vec<Diag> {
     expect(lib.diags([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }])).toEqual([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }]);
   }
 });
+
+// A trait's default method that's a binding, `get ruleId`, called through
+// a generic's bound, `error.rule_id()` of `E: RuleIdentified`: the
+// binding of the value, `error.ruleId`, from MIR as from THIR, as
+// react.dev's useSandpackLint keeps the errors of a rule.
+test("a binding trait method called through a generic is the binding", async () => {
+  const dir = fixture("generic-binding-method");
+  writeFileSync(join(dir, "lib.rs"), `pub struct LintError {
+    pub line: u32,
+}
+pub struct Diagnostic {
+    pub from: f64,
+}
+trait RuleIdentified {
+    #[cfg_attr(rust_js, rust_js::link_name = "get ruleId")]
+    fn rule_id(&self) -> &Option<String> {
+        unreachable!()
+    }
+}
+impl RuleIdentified for LintError {}
+impl RuleIdentified for Diagnostic {}
+pub fn kept(errors: Vec<&'static LintError>, diags: Vec<&'static Diagnostic>) -> (usize, Vec<&'static Diagnostic>) {
+    fn isReactRuleError<E: RuleIdentified>(error: &E) -> bool {
+        error.rule_id().is_some()
+    }
+    let n = errors.into_iter().filter(|e| isReactRuleError(*e)).count();
+    (n, diags.into_iter().filter(|d| isReactRuleError(*d)).collect())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return error.ruleId != null;");
+    const lib = await import(join(dir, out));
+    expect(lib.kept([{ line: 1, ruleId: "a" }, { line: 2, ruleId: null }], [{ from: 1, ruleId: null }, { from: 2, ruleId: "b" }])).toEqual([1, [{ from: 2, ruleId: "b" }]]);
+  }
+});
