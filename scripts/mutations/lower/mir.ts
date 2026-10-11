@@ -658,4 +658,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::TypeName { .. } if false => {\n",
     tests: ["test/mir.test.ts","-t","type_facts"],
   },
+  {
+    name: "mir-try-fmt-result-refused",
+    breaks: "`writeln!(out, ..)?` of a `fmt::Result` is refused as one of its methods",
+    file: "src/lower/mir.rs",
+    find: "            && !tcx.is_lang_item(def_id, LangItem::TryTraitBranch)\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","write_to_string"],
+  },
 ];

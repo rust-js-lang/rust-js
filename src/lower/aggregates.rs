@@ -304,6 +304,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             unreachable!("an ADT's value")
         };
         let variant = adt_def.variant(variant_index);
+        // A `fmt::Result`'s `Ok` is nothing (ADR 0054), and so is an
+        // `io::Result<()>`'s (ADR 0132); a `fmt::Error` is thrown (ADR 0187).
+        if self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty) {
+            return match variant.name.as_str() {
+                "Ok" => Ok(Expr::undefined()),
+                _ if self.is_fmt_result(ty) => {
+                    self.runtime.insert(Helper::FmtError);
+                    Ok(Expr::call(Expr::var("$fmtError"), Vec::new()))
+                }
+                _ => Err(self.unsupported(span, "an `io::Error`")),
+            };
+        }
         if let Some(inner) = self.option_of(ty) {
             return Ok(match fields.into_iter().next() {
                 Some(value) if self.boxed_payload(inner) => self.some(value),

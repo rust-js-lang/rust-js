@@ -267,4 +267,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && let Some(n) = ordering_value(self.tcx, adt_def.did(), variant.name) {\n",
     tests: ["test/mir.test.ts","-t","collection_methods"],
   },
+  {
+    name: "adt-value-fmt-ok-thrown",
+    breaks: "a `fmt::Result`'s `Ok` from MIR is thrown as an `Err` is",
+    file: "src/lower/aggregates.rs",
+    find: "                \"Ok\" => Ok(Expr::undefined()),\n                _ if self.is_fmt_result(ty) => {\n",
+    replace: "                \"Ok\" if false => Ok(Expr::undefined()),\n                _ if self.is_fmt_result(ty) => {\n",
+    tests: ["test/mir.test.ts","-t","write_to_string"],
+  },
 ];

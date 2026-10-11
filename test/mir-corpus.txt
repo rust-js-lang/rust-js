@@ -271,3 +271,4 @@ utf8_unwrap_panic.rs
 wrapping.rs
 wrapping_rem_zero.rs
 wrapping_unary.rs
+write_to_string.rs

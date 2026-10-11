@@ -2094,6 +2094,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `()`, after what made it ran (ADR 0148), `is_ok()` `true`.
         if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))
             && tcx.def_kind(def_id) == DefKind::AssocFn
+            && !tcx.is_lang_item(def_id, LangItem::TryTraitBranch)
         {
             let Some(answer) = super::recognition::fmt_result_answer(tcx, def_id) else {
                 return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR"));

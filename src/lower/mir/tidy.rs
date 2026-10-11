@@ -9,17 +9,16 @@ use crate::js::{self, ExprKind, Stmt, StmtKind};
 
 /// `body`, tidied: `result` is the name of the function's return place.
 pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
-    js::statement_lists(body, &mut |stmts| {
-        returned(stmts, result);
-        unreachable_after(stmts);
-        tail_jumps(stmts);
-    });
-    js::statement_lists(body, &mut unlabeled);
-    // What a block's statements, in its place, are followed by.
-    js::statement_lists(body, &mut |stmts| {
-        returned(stmts, result);
-        unreachable_after(stmts);
-    });
+    // Twice: what a block's statements, in its place, are followed by, and
+    // a loop's label nothing names then.
+    for _ in 0..2 {
+        js::statement_lists(body, &mut |stmts| {
+            returned(stmts, result);
+            unreachable_after(stmts);
+        });
+        js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
+        js::statement_lists(body, &mut unlabeled);
+    }
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
