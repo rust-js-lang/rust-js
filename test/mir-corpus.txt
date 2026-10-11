@@ -23,16 +23,19 @@ block_modules.rs
 box_uninit.rs
 box_zeroed_struct.rs
 boxed_str.rs
+btree_end_entries.rs
 byte_ascii.rs
 byte_strings.rs
 cell_const.rs
 char_from_code.rs
+char_ranges_stepped.rs
 clamp_reversed.rs
 closure_capture.rs
 closure_clone.rs
 closure_clone_cell.rs
 closure_clone_shared.rs
 closure_mut_ref.rs
+code_point_order.rs
 collection_methods.rs
 combinators_owned_drops.rs
 compound_assignment_order.rs
@@ -72,6 +75,7 @@ drop_replace_panics.rs
 drop_scopes.rs
 drop_temporaries.rs
 drop_temporary_operands.rs
+duration.rs
 duration_overflow.rs
 dyn_any_closure.rs
 dyn_any_counted_rc.rs
@@ -195,6 +199,7 @@ question_early_returns.rs
 radix_negative.rs
 radix_out_of_range.rs
 range_inclusive_next_back.rs
+range_into_set.rs
 range_searches.rs
 rc_clone_sees_owners.rs
 rc_make_mut_clone_panics.rs
@@ -272,7 +277,9 @@ user_as_mut.rs
 user_collections.rs
 user_deref.rs
 user_fmt_traits.rs
+user_hash.rs
 utf8_unwrap_panic.rs
+value_keys.rs
 wrapping.rs
 wrapping_rem_zero.rs
 wrapping_unary.rs

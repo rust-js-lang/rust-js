@@ -911,24 +911,67 @@ export function* $rangeFrom(start) {
   }
 }
 
+// A `Range`'s `next()`, `{ start, end }`: its start, moved past, while it's
+// before its end; a `char`'s by its code point.
 export function $rangeNext(range) {
+  if (typeof range.start === "string") {
+    if (range.start.codePointAt(0) >= range.end.codePointAt(0)) return undefined;
+    const c = range.start;
+    range.start = $charStep(c, 1);
+    return c;
+  }
   return range.start < range.end ? range.start++ : undefined;
 }
 
 // A `RangeInclusive`'s `next()`, `{ start, end }`: its start, moved past,
-// while it's at most its end. Past its end, as Rust's, it gives nothing.
+// while it's at most its end. Past its end, as Rust's, it gives nothing; a
+// `char`'s by its code point, and past the last `char`, its start its end's
+// and its end before it.
 export function $rangeInclusiveNext(range) {
+  if (typeof range.start === "string") {
+    if (range.start.codePointAt(0) > range.end.codePointAt(0)) return undefined;
+    const c = range.start;
+    const next = $charStep(c, 1);
+    if (next === undefined) range.end = $charStep(c, -1);
+    else range.start = next;
+    return c;
+  }
   return range.start <= range.end ? range.start++ : undefined;
 }
 
+// A `Range`'s `next_back()`, `{ start, end }`: its end, moved down, while
+// it's past its start; a `char`'s by its code point.
 export function $rangeNextBack(range) {
+  if (typeof range.start === "string") {
+    if (range.start.codePointAt(0) >= range.end.codePointAt(0)) return undefined;
+    range.end = $charStep(range.end, -1);
+    return range.end;
+  }
   return range.start < range.end ? --range.end : undefined;
 }
 
 // A `RangeInclusive`'s `next_back()`, `{ start, end }`: its end, moved
-// down, while it's at least its start.
+// down, while it's at least its start; a `char`'s by its code point, and
+// before the first `char`, its end its start's and its start past it.
 export function $rangeInclusiveNextBack(range) {
+  if (typeof range.start === "string") {
+    if (range.start.codePointAt(0) > range.end.codePointAt(0)) return undefined;
+    const c = range.end;
+    const before = $charStep(c, -1);
+    if (before === undefined) range.start = $charStep(c, 1);
+    else range.end = before;
+    return c;
+  }
   return range.start <= range.end ? range.end-- : undefined;
+}
+
+// A `char` range's step, a JS string's code point `by` one up or down,
+// past the surrogates, which no `char` is: `undefined` past the first or
+// the last `char`.
+export function $charStep(c, by) {
+  let code = c.codePointAt(0) + by;
+  if (code >= 0xd800 && code <= 0xdfff) code = by > 0 ? 0xe000 : 0xd7ff;
+  return code < 0 || code > 0x10ffff ? undefined : String.fromCodePoint(code);
 }
 
 export function $rangeFromNext(range) {

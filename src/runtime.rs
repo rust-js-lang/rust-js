@@ -97,6 +97,7 @@ helpers! {
     RangeInclusiveNext,
     RangeNextBack,
     RangeInclusiveNextBack,
+    CharStep,
     RangeFromNext,
     AsciiCase,
     Append,
@@ -360,6 +361,9 @@ impl Helper {
     fn dependencies(self) -> &'static [Helper] {
         match self {
             Helper::DebugF64 => &[Helper::DisplayF64],
+            Helper::RangeNext | Helper::RangeInclusiveNext | Helper::RangeNextBack | Helper::RangeInclusiveNextBack => {
+                &[Helper::CharStep]
+            }
             Helper::FmtError => &[Helper::Print],
             Helper::DisplayF32 => &[Helper::F32Digits],
             Helper::LowerExp => &[Helper::F32Digits],
@@ -609,6 +613,7 @@ impl Helper {
             Helper::Exchange => include_str!("runtime/exchange.js"),
             Helper::RangeNextBack => include_str!("runtime/range_next_back.js"),
             Helper::RangeInclusiveNextBack => include_str!("runtime/range_inclusive_next_back.js"),
+            Helper::CharStep => include_str!("runtime/char_step.js"),
             Helper::BigRange => include_str!("runtime/big_range.js"),
             Helper::Cmp => include_str!("runtime/cmp.js"),
             // `{:.2}` of an `f64`: its exact value, rounded to even on a tie, as

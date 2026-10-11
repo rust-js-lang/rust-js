@@ -122,4 +122,12 @@ export const mutations: Mutation[] = [
     replace: "                && method == \"map\" && false\n",
     tests: ["test/mir.test.ts","-t","size_hint"],
   },
+  {
+    name: "mir-collect-map-refused",
+    breaks: "`collect` into a map or a set is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                } else if self.is_map(output) {\n",
+    replace: "                } else if false && self.is_map(output) {\n",
+    tests: ["test/mir.test.ts","-t","value_keys|user_hash|range_into_set"],
+  },
 ];

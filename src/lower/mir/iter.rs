@@ -319,6 +319,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     method("toArray", it, Vec::new())
                 } else if self.is_lang_adt(output, LangItem::String) {
                     method("join", method("toArray", it, Vec::new()), vec![Expr::str("")])
+                } else if self.is_map(output) {
+                    // A map or a set of what its key is, as THIR's `From` of
+                    // items makes one (ADR 0121).
+                    let key = match output.kind() {
+                        ty::Adt(_, args) => args.types().next(),
+                        _ => None,
+                    };
+                    let class = self.map_class(self.is_set(output), key);
+                    Expr::new_(class, vec![it])
                 } else {
                     return Err(self.unsupported(span, &format!("`collect` into a `{output}`, from its MIR")));
                 }

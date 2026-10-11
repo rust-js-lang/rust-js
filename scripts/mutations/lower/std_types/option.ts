@@ -240,4 +240,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","untagged_enums"],
   },
+  {
+    name: "never-falsy-duration",
+    breaks: "`None` of a `Duration` is tested `!o`, which `ZERO` passes",
+    file: "src/lower/std_types/option.rs",
+    find: "            && !crate::lower::recognition::is_duration_ty(ty)\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","duration"],
+  },
 ];

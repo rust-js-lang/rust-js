@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "--range.end",
     tests: ["test/mir.test.ts","-t","range_inclusive_next_back"],
   },
+  {
+    name: "range-inclusive-back-char-as-number",
+    breaks: "a `char` range is stepped from its end as a number, past its start",
+    file: "src/runtime/range_inclusive_next_back.js",
+    find: "  if (typeof range.start === \"string\") {\n",
+    replace: "  if (false) {\n",
+    tests: ["test/mir.test.ts","-t","char_ranges_stepped"],
+  },
 ];
