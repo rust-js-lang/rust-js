@@ -822,4 +822,28 @@ export const mutations: Mutation[] = [
       "an async fn's parameter pattern from MIR"
     ]
   },
+  {
+    "name": "break-test-nested-unread",
+    "breaks": "a guard that tests on, `if (k) { if (!m) { .. } }`, isn't one of the `||`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        None => Some(Expr::bin(Op::And, test.clone(), inner(then)?)),\n",
+    "replace": "        None => None,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an or of ands from MIR is one test"
+    ]
+  },
+  {
+    "name": "break-test-else-unnegated",
+    "breaks": "`if (!m) { .. } else { break l; }` is read as `!m || ..`, breaking where `m` doesn't hold",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "Some(Expr::bin(Op::Or, not(test.clone()), inner(then)?)),\n",
+    "replace": "Some(Expr::bin(Op::Or, test.clone(), inner(then)?)),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an or of ands from MIR is one test"
+    ]
+  },
 ];

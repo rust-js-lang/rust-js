@@ -640,23 +640,19 @@ fn written(returns: &[js::Span], span: js::Span) -> bool {
 /// `l: { if (a) { break l; } if (b) { break l; } rest } t`, of `let … else`
 /// and checks that go on to one end, `t`, a `throw` or a `return`, and
 /// `rest` never going on past its own: `if (a || b) { t } rest`, as a
-/// person writes a guard.
+/// person writes a guard; each guard one that tests on too, an `||` of
+/// `&&`s the program tests (`break_test`).
 fn guarded(stmts: &mut Vec<Stmt>) {
     for i in 0..stmts.len() {
         let StmtKind::Labeled(label, body) = &stmts[i].kind else {
             continue;
         };
         let tail = &stmts[i + 1..];
+        let guards = (body.iter()).take_while(|s| break_test(s, label).is_some()).count();
+        let rest = &body[guards..];
         if !tail.last().is_some_and(ends) {
             continue;
         }
-        let guards = (body.iter())
-            .take_while(|s| {
-                matches!(&s.kind, StmtKind::If(_, then, None)
-                    if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label))
-            })
-            .count();
-        let rest = &body[guards..];
         if guards == 0 || targets(rest, label) || !rest.last().is_some_and(ends) {
             continue;
         }
@@ -665,10 +661,7 @@ fn guarded(stmts: &mut Vec<Stmt>) {
             continue;
         }
         let test = (body[..guards].iter())
-            .map(|s| match &s.kind {
-                StmtKind::If(test, ..) => test.clone(),
-                _ => unreachable!("a guard"),
-            })
+            .map(|s| break_test(s, label).expect("a guard"))
             .reduce(|a, b| Expr::bin(Op::Or, a, b))
             .expect("one");
         let span = stmts[i].span;
@@ -678,6 +671,26 @@ fn guarded(stmts: &mut Vec<Stmt>) {
         stmts.push(StmtKind::If(test, tail, None).at(span));
         stmts.extend(rest);
         return;
+    }
+}
+
+/// When `stmt` breaks out to `label`, of `if`s that do or test on:
+/// `if (k) { if (!m) { if (c) { break l; } } else { break l; } }`'s `k && (m
+/// || c)`.
+fn break_test(stmt: &Stmt, label: &str) -> Option<Expr> {
+    let StmtKind::If(test, then, otherwise) = &stmt.kind else {
+        return None;
+    };
+    let breaks = |s: &[Stmt]| matches!(s, [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label);
+    let inner = |s: &[Stmt]| match s {
+        [one] => break_test(one, label),
+        _ => None,
+    };
+    match otherwise.as_deref() {
+        None if breaks(then) => Some(test.clone()),
+        None => Some(Expr::bin(Op::And, test.clone(), inner(then)?)),
+        Some(otherwise) if breaks(otherwise) => Some(Expr::bin(Op::Or, not(test.clone()), inner(then)?)),
+        Some(_) => None,
     }
 }
 

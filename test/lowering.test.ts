@@ -1951,7 +1951,8 @@ test("an on_load body's loop ends at the module's top", async () => {
     safe fn seen(n: u32);
 }
 js::on_load! {
-    for n in [1u32, 2, 3] {
+    let mut it = [1u32, 2, 3].iter();
+    while let Some(&n) = it.next() {
         if n == 3 {
             break;
         }
@@ -6670,5 +6671,39 @@ test("a position of an array's own iterator from MIR is of the array", async () 
     expect(js).toContain('return $position(ids, (id) => id == path.split("#")[1]);');
     const lib = await import(join(dir, out));
     expect([lib.second(["a", "b"], "x#b"), lib.second(["a"], "x")]).toEqual([1, undefined]);
+  }
+});
+
+// An `||` of `&&`s, `(a && b) || (c && (d || e)) || f`, which MIR jumps
+// out of where each holds, is the one test written, as react.dev's Search
+// opens on its keys.
+test("an or of ands from MIR is one test", async () => {
+  const dir = fixture("or-of-ands");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Ev {
+    pub key_code: u32,
+    pub key: String,
+    pub meta: bool,
+    pub ctrl: bool,
+}
+fn editing(ev: &Ev) -> bool {
+    ev.key == "x"
+}
+pub fn handle(ev: &Ev, open: bool, out: &mut Vec<u32>) {
+    if (ev.key_code == 27 && open) || (ev.key == "k" && (ev.meta || ev.ctrl)) || (!editing(ev) && ev.key == "/" && !open) {
+        out.push(1);
+        if open {
+            out.push(2);
+        }
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (\n    (ev.key_code === 27 && open) ||\n    (ev.key === "k" && (ev.meta || ev.ctrl)) ||\n    (!editing(ev) && ev.key === "/" && !open)\n  ) {\n    out.push(1);\n');
+    const lib = await import(join(dir, out));
+    const pushed: number[] = [];
+    for (const [ev, open] of [[{ key_code: 27, key: "", meta: false, ctrl: false }, true], [{ key_code: 0, key: "k", meta: false, ctrl: true }, false], [{ key_code: 0, key: "k", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, true]] as const) lib.handle(ev, open, pushed);
+    expect(pushed).toEqual([1, 2, 1, 1]);
   }
 });
