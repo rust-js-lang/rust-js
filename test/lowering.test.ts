@@ -8299,3 +8299,37 @@ pub fn kept(items: &[u32]) -> (Vec<Vec<u32>>, Vec<u32>) {
     expect(lib.kept([1, 0, 2, 3])).toEqual([[[1]], [2, 3]]);
   }
 });
+
+// From MIR as from THIR: a value made in each branch of a `try`, a match of
+// what a call gives, and given to a variable, `children = match .. {}`, is
+// given to the variable in each, not to a temporary assigned after, as
+// react.dev's Console shows what's logged.
+test("a value a try makes in each branch is the variable's there", async () => {
+  const dir = fixture("try-assigned");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, json, object};
+pub fn shown(msg: Option<&Unknown>, tagged: bool) -> Option<String> {
+    let children;
+    if tagged {
+        children = Some("tag".to_string());
+    } else {
+        children = match json::stringify_with(&msg, None, 2) {
+            Ok(json) => json,
+            Err(_) => match object::to_string(msg) {
+                Ok(tag) => Some(tag),
+                Err(_) => Some(format!("[{}]", js::type_of(msg))),
+            },
+        };
+    }
+    children
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    try {\n      children = JSON.stringify(msg, null, 2);");
+    const lib = await import(join(dir, out));
+    const cyclic: any = {};
+    cyclic.self = cyclic;
+    expect([lib.shown({ a: 1 }, false), lib.shown(cyclic, false), lib.shown(undefined, true)]).toEqual(['{\n  "a": 1\n}', "[object Object]", "tag"]);
+  }
+});

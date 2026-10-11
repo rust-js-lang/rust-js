@@ -272,6 +272,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             e.kind = ExprKind::Binary(Op::Or, Box::new(truth_of(*kept)), otherwise);
         }
     });
+    js::statement_lists(body, &mut forwarded_values);
     // A `let` declared first that nothing's left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
@@ -1608,6 +1609,64 @@ fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::
         let returned = StmtKind::Return(Some(conditional(test.clone(), yes.clone(), no.clone(), booleans)));
         let span = last_if.span;
         stmts.splice(stmts.len() - 2.., [returned.at(span)]);
+    }
+}
+
+/// `let t; try { t = a; } catch { t = b; } x = t;`, a temporary each way
+/// through a statement gives its value last, then given to a variable: the
+/// variable given it there, as THIR gives a match's value, where the
+/// statement reads the variable nowhere.
+fn forwarded_values(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 2 < stmts.len() {
+        if let StmtKind::Let(t, None) = &stmts[i].kind
+            && is_temporary(t)
+            && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
+            && let ExprKind::Var(x) = &target.kind
+            && matches!(&value.kind, ExprKind::Var(v) if v == t)
+            && js::mentions_in(&stmts[i + 1..=i + 1], x) == 0
+            && js::mentions_in(&stmts[i + 3..], t) == 0
+            && last_assigns(&stmts[i + 1..=i + 1], t)
+        {
+            let (t, x) = (t.clone(), x.clone());
+            let mut given = vec![stmts.remove(i + 1)];
+            js::statement_lists(&mut given, &mut |stmts| {
+                for stmt in stmts.iter_mut() {
+                    if let StmtKind::Assign(target, _) = &mut stmt.kind
+                        && matches!(&target.kind, ExprKind::Var(v) if *v == t)
+                    {
+                        *target = Expr::var(&x);
+                    }
+                }
+            });
+            stmts.splice(i..i + 2, given);
+            continue;
+        }
+        i += 1;
+    }
+}
+
+/// Whether each way through `stmts` that goes on past them gives `t` its
+/// value last, `t = e` of what doesn't read it, in a branch of an `if` or
+/// a `try` that ends them, and nothing else names `t`.
+fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
+    let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), t) > 0;
+    let Some((last, before)) = stmts.split_last() else {
+        return false;
+    };
+    if before.iter().any(names) {
+        return false;
+    }
+    if !names(last) {
+        return ends(last);
+    }
+    match &last.kind {
+        StmtKind::Assign(target, value) => matches!(&target.kind, ExprKind::Var(v) if v == t) && !value.mentions_var(t),
+        StmtKind::If(test, then, otherwise) => {
+            !test.mentions_var(t) && last_assigns(then, t) && otherwise.as_deref().is_some_and(|o| last_assigns(o, t))
+        }
+        StmtKind::TryCatch(body, _, caught) => last_assigns(body, t) && last_assigns(caught, t),
+        _ => false,
     }
 }
 

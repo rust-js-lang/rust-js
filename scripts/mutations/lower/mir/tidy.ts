@@ -1558,4 +1558,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "forwarded-value-kept",
+    "breaks": "a value a `try` makes in each branch stays a temporary's, `children = tmp` after it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            && last_assigns(&stmts[i + 1..=i + 1], t)\n",
+    "replace": "            && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a value a try makes in each branch is the variable's there"
+    ]
+  },
 ];
