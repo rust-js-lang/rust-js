@@ -1303,8 +1303,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 from_end: false,
                 ..
             } => Expr::index(base, Expr::int(offset.into())),
+            // Counted from the end, a slice pattern's suffix: `xs[xs.length -
+            // 1]`, or of an array, its index, as THIR's patterns read it.
+            PlaceElem::ConstantIndex {
+                offset, from_end: true, ..
+            } if base.reads_same() => {
+                let index = match self.array_length(ty.ty) {
+                    Some(n) => Expr::int(n - i128::from(offset)),
+                    None => Expr::bin(Op::Sub, Expr::member(base.clone(), "length"), Expr::int(offset.into())),
+                };
+                Expr::index(base, index)
+            }
+            // A slice pattern's rest, `xs.slice(1, xs.length - 1)`: a copy, as
+            // `&v[a..b]` is (ADR 0063), which a `&mut` to can't be (above).
+            PlaceElem::Subslice { from, to, from_end } if base.reads_same() => {
+                let mut range = vec![Expr::int(from.into())];
+                match (from_end, self.array_length(ty.ty)) {
+                    (true, _) if to == 0 => {}
+                    (true, Some(n)) => range.push(Expr::int(n - i128::from(to))),
+                    (true, None) => range.push(Expr::bin(
+                        Op::Sub,
+                        Expr::member(base.clone(), "length"),
+                        Expr::int(to.into()),
+                    )),
+                    (false, _) => range.push(Expr::int(to.into())),
+                }
+                Expr::call(Expr::member(base, "slice"), range)
+            }
             _ => return Err(self.unsupported(span, "this place, from its MIR")),
         })
+    }
+
+    /// An array type's length, rustc's.
+    fn array_length(&self, ty: Ty<'tcx>) -> Option<i128> {
+        match ty.kind() {
+            ty::Array(_, len) => len.try_to_target_usize(self.tcx).map(i128::from),
+            _ => None,
+        }
     }
 
     /// A field: of a struct or a tuple by its shape, of a variant as its
@@ -1706,6 +1741,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A reference is what it refers to (ADR 0023): a `&mut` to a
             // value JS can't share, a number's, needs what isn't made yet.
             Rvalue::Ref(_, kind, place) => {
+                // A part of a slice's copy, a slice pattern's rest, can't be
+                // written through.
+                if matches!(kind, BorrowKind::Mut { .. })
+                    && place
+                        .projection
+                        .iter()
+                        .any(|elem| matches!(elem, PlaceElem::Subslice { .. }))
+                {
+                    return Err(self.unsupported(span, "a `&mut` to part of a slice, from its MIR"));
+                }
                 // `&(*(_5.0))`, the reference `_5.0` is, a list's item.
                 if matches!(kind, BorrowKind::Shared)
                     && let Some(item) = self.take_field(state, place, out)?
@@ -1827,6 +1872,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let item = self.mir_expr(state, operand, out)?;
                 self.repeat((item, item_ty), *count, constant, span, out)?
             }
+            // A borrow only for a slice's length, a slice pattern's test: the
+            // slice, whose `PtrMetadata` is its `length`.
+            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
     }

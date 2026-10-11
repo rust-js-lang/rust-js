@@ -217,11 +217,14 @@ size_hint.rs
 size_of.rs
 slice_bytes_text.rs
 slice_from_past_len.rs
+slice_pattern_mut_rest.rs
+slice_patterns.rs
 slice_prefixes.rs
 slice_split.rs
 slice_split_at_panic.rs
 slice_start_past_len.rs
 slice_to_array.rs
+slice_view_past_len.rs
 static_fns.rs
 static_mut.rs
 static_mut_reference.rs
@@ -264,6 +267,7 @@ unsized_struct_slice.rs
 unwrap_none.rs
 unwrap_string_debug.rs
 unwrap_typed_debug.rs
+user_as_mut.rs
 user_collections.rs
 user_deref.rs
 user_fmt_traits.rs
