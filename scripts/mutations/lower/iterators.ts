@@ -581,4 +581,12 @@ export const mutations: Mutation[] = [
     replace: "            e\n",
     tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
   },
+  {
+    name: "iter-chain-collected-lazily",
+    breaks: "a chain MIR collects stays `Iterator.from($lazyChain(a, b)).toArray()`, not `[...a, ...b]`",
+    file: "src/lower/iterators.rs",
+    find: "            (\"toArray\", []) if let Some(parts) = chained(chain) => {\n",
+    replace: "            (\"toArray\", []) if let Some(parts) = chained(chain).filter(|_| false) => {\n",
+    tests: ["test/lowering.test.ts","-t","chain collected from MIR"],
+  },
 ];

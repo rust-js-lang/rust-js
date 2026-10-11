@@ -1503,6 +1503,9 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             return;
         };
         let eager = match (name.as_str(), &args[..]) {
+            ("toArray", []) if let Some(parts) = chained(chain) => {
+                Some(Expr::array(parts.into_iter().map(Expr::spread).collect()))
+            }
             ("toArray", []) => match eager_items(chain, true, None) {
                 // A new array: a stage's is one already; the source, copied,
                 // unless it's one made here.
@@ -1577,6 +1580,39 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         name => array_method(items, name, f.clone()),
     });
     Some((items, count))
+}
+
+/// Of `Iterator.from($lazyChain(a, b))`, a `chain` MIR makes: what each part
+/// steps, `a` and `b`, which spread in turn as it steps them, `[...a, ...b]`,
+/// as THIR collects it; of a part `Iterator.from(xs)`, or `cloned()`'s
+/// `xs.map((x) => x)`, `xs`.
+fn chained(e: &Expr) -> Option<Vec<Expr>> {
+    fn part(e: &Expr) -> Vec<Expr> {
+        match &e.kind {
+            js::ExprKind::Call(callee, args) => match (&callee.kind, args.as_slice()) {
+                (js::ExprKind::Var(v), [a, b]) if v == "$lazyChain" => [part(a), part(b)].concat(),
+                (js::ExprKind::Member(of, m), [f]) if m == "map" && f.is_identity() => part(of),
+                _ if is_stepped_items(e) || is_iterator_from(e) => part(&args[0]),
+                _ => vec![e.clone()],
+            },
+            _ => vec![e.clone()],
+        }
+    }
+    let js::ExprKind::Call(_, args) = &e.kind else {
+        return None;
+    };
+    let [chain] = args.as_slice() else { return None };
+    let js::ExprKind::Call(callee, _) = &chain.kind else {
+        return None;
+    };
+    (is_iterator_from(e) && matches!(&callee.kind, js::ExprKind::Var(v) if v == "$lazyChain")).then(|| part(chain))
+}
+
+/// Whether `e` is `Iterator.from(x)`.
+fn is_iterator_from(e: &Expr) -> bool {
+    matches!(&e.kind, js::ExprKind::Call(callee, args) if args.len() == 1
+        && matches!(&callee.kind, js::ExprKind::Member(object, from)
+            if from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")))
 }
 
 /// What `$lent(e)` lends, `e`, made for this call alone, which no one else

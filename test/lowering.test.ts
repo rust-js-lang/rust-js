@@ -6179,3 +6179,24 @@ pub fn halved(mut n: u32, out: &mut Vec<u32>) {
     expect([lib.trimmed([1, 2, 3], 1), lib.counted(9), pushed, lib.stopped(15), lib.stopped(9), lib.stopped(40), lib.looped(18), lib.looped(4)]).toEqual([[3], 3, [15, 0], 70, 109, 101, 109, 1]);
   }
 });
+
+test("a chain collected from MIR is the spread THIR writes", async () => {
+  const dir = fixture("mir-chain-collect");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
+const MAX: usize = 2;
+pub fn capped(prev: &VecDeque<u32>, more: Vec<u32>) -> VecDeque<u32> {
+    let mut messages: VecDeque<u32> = prev.iter().cloned().chain(more).collect();
+    while messages.len() > MAX {
+        messages.pop_front();
+    }
+    messages
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const messages = [...prev, ...more];\n");
+    const lib = await import(join(dir, out));
+    expect(lib.capped([1, 2], [3])).toEqual([2, 3]);
+  }
+});
