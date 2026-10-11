@@ -168,6 +168,9 @@ struct State<'m, 'tcx> {
     flattened: std::collections::HashSet<Local>,
     /// Each local holding what `?`'s `Try::branch` made (`Value::Branch`).
     branches: std::collections::HashMap<Local, (Expr, Ty<'tcx>)>,
+    /// Each local holding an update's derived `Default` base, its fields'
+    /// defaults, each read where its field is (`default_base_at`).
+    defaults: std::collections::HashMap<Local, Vec<Expr>>,
     /// Values made, each written where it's read: a constant, or what the
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
@@ -339,6 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             copy_backs: Vec::new(),
             boxes: Default::default(),
             branches: Default::default(),
+            defaults: Default::default(),
             flattened: Default::default(),
             in_place: Default::default(),
             named: Default::default(),
@@ -2274,6 +2278,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        // A field of an update's derived `Default` base: its default.
+        if let Some(defaults) = state.defaults.get(&place.local)
+            && let [PlaceElem::Field(field, _)] = place.projection.as_slice()
+        {
+            return Ok(defaults[field.as_usize()].clone());
+        }
         if let Some((tried, ty)) = state.branches.get(&place.local).cloned() {
             return match place.projection.as_slice() {
                 [PlaceElem::Downcast(_, variant), PlaceElem::Field(..)] if variant.as_u32() == 0 => {
@@ -3395,6 +3405,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             super::calls::given_to_js(&mut exprs);
             return Ok(Value::Expr(Expr::call(callee, exprs)));
         };
+        // `..Default::default()` of a struct whose `Default` is derived, an
+        // update's base: as THIR makes it, each default the update reads,
+        // none it replaces that does nothing, a component's `children: C`
+        // among them, which needs no dictionary then (`update_default`).
+        if args.is_empty()
+            && let Some(fields) = self.default_base_at(span)?
+        {
+            // Each field read where it's read, `{ size, tags: [] }`, of one
+            // held whole; else the object of them.
+            if destination.projection.is_empty() {
+                let values = fields.into_iter().map(|(_, value)| value).collect();
+                state.defaults.insert(destination.local, values);
+                return Ok(Value::Expr(Expr::undefined()));
+            }
+            let props = fields
+                .into_iter()
+                .map(|(name, value)| Prop::Field(name, value))
+                .collect();
+            return Ok(Value::Expr(Expr::object(props)));
+        }
         // A function a variable holds, `js::import!(f).await`'s: called as
         // that variable, which may be all that holds it, not as its import.
         // One a JS function, or the crate's that JS calls as it is, given no
@@ -3717,6 +3747,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. }
                 )
             })
+    }
+
+    /// THIR's update whose base is the call at `span`, MIR's there, of a
+    /// derived `Default`, `P { a, ..Default::default() }`: the base's fields
+    /// as THIR makes them, each default the update reads. `None` of another, or
+    /// where a default the update replaces is made still, for its effects.
+    fn default_base_at(&mut self, span: Span) -> R<Option<Vec<(String, Expr)>>> {
+        let strip = |e| super::body_queries::strip(self.thir, e);
+        let found = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
+            thir::ExprKind::Adt(adt) => match &adt.base {
+                thir::AdtExprBase::Base(fru)
+                    if matches!(self.thir[strip(fru.base)].kind,
+                        thir::ExprKind::Call { fn_span, .. } if fn_span.source_equal(span)) =>
+                {
+                    Some((
+                        strip(fru.base),
+                        e.ty,
+                        adt.fields.iter().map(|f| f.name.as_usize()).collect::<Vec<_>>(),
+                    ))
+                }
+                _ => None,
+            },
+            _ => None,
+        });
+        let Some((base, ty, given)) = found else {
+            return Ok(None);
+        };
+        let Some(fields) = self.derived_default_fields(base, ty) else {
+            return Ok(None);
+        };
+        let (props, kept) = self.update_default(fields, &given, span)?;
+        Ok((!kept).then_some(props))
     }
 
     /// Whether THIR's cast at `span`, MIR's there, is of a float it knows

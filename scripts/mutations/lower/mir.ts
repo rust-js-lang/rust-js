@@ -1770,4 +1770,28 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-default-base-called",
+    "breaks": "an update's derived `Default` base is its `default()` called, which a generic component's `children: C` needs a dictionary for, refused",
+    "file": "src/lower/mir.rs",
+    "find": "            && let Some(fields) = self.default_base_at(span)?\n",
+    "replace": "            && false\n            && let Some(fields) = self.default_base_at(span)?\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-default-base-fields-held",
+    "breaks": "a field of an update's default base is read of an object held for it, `{ name: value.name, .. }`, not its default",
+    "file": "src/lower/mir.rs",
+    "find": "        if let Some(defaults) = state.defaults.get(&place.local)\n",
+    "replace": "        if let Some(defaults) = state.defaults.get(&place.local).filter(|_| false)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an update's default base is the defaults it reads"
+    ]
+  },
 ];

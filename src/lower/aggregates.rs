@@ -447,7 +447,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The fields of `ty`, a struct whose `Default` is derived, when `base`
     /// is its `Default::default()`: what an update's base is made of.
-    fn derived_default_fields(&self, base: ExprId, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
+    pub(super) fn derived_default_fields(&self, base: ExprId, ty: Ty<'tcx>) -> Option<Vec<(String, Ty<'tcx>)>> {
         let thir::ExprKind::Call { fun, args, .. } = &self.thir[super::body_queries::strip(self.thir, base)].kind
         else {
             return None;
@@ -473,7 +473,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `fields`: each one's default, but none for a field the update gives
     /// where making it does nothing, as a `ReactNode`'s does (ADR 0201). And
     /// whether one the update gives is made still, for its effects.
-    fn update_default(
+    pub(super) fn update_default(
         &mut self,
         fields: Vec<(String, Ty<'tcx>)>,
         given: &[usize],

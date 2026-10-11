@@ -8385,3 +8385,34 @@ pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
     expect(order).toEqual([3, 4, 8]);
   }
 });
+
+// From MIR as from THIR: an update's derived `Default` base,
+// `..Default::default()`, is each default the update reads, where it reads
+// it, `{ size, name: "", tags: [] }`, made without the base's `default()`,
+// which a generic component's `children: C` would need a dictionary for.
+test("an update's default base is the defaults it reads", async () => {
+  const dir = fixture("default-base");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Default, Debug)]
+pub struct Options {
+    pub name: String,
+    pub size: u32,
+    pub tags: Vec<String>,
+    pub label: Option<String>,
+}
+pub fn sized(size: u32) -> Options {
+    Options { size, ..Default::default() }
+}
+pub fn named(name: String, size: u32) -> String {
+    let o = Options { name, size, ..Default::default() };
+    format!("{} {} {}", o.name, o.size, o.tags.len())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return { name: "", size, tags: [] };');
+    expect(js).toContain("const o = { name, size, tags: [] };");
+    const lib = await import(join(dir, out));
+    expect([lib.sized(3), lib.named("a", 2)]).toEqual([{ name: "", size: 3, tags: [] }, "a 2 0"]);
+  }
+});
