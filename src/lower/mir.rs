@@ -217,6 +217,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             out = body;
         }
+        // The functions written in its body, closures' too, each declared
+        // at its top, which JS hoists, as Rust sees them throughout their
+        // block (ADR 0308).
+        let mut written: Vec<(rustc_span::BytePos, rustc_span::def_id::DefId)> = (self.krate.local_functions.keys())
+            .filter(|&&id| {
+                let mut parent = self.tcx.parent(id);
+                while self.tcx.is_closure_like(parent) {
+                    parent = self.tcx.parent(parent);
+                }
+                parent == def_id
+            })
+            .map(|&id| (self.tcx.def_span(id).lo(), id))
+            .collect();
+        written.sort_by_key(|&(at, _)| at);
+        let holes = written.into_iter().map(|(_, id)| {
+            StmtKind::Expr(Expr {
+                kind: js::ExprKind::FunctionHole(id.index.as_u32()),
+                span: js::Span::NONE,
+            })
+            .at(js::Span::NONE)
+        });
+        out.splice(0..0, holes);
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
         Ok(LoweredFn {

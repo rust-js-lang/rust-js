@@ -1008,6 +1008,31 @@ pub mod other {
   }
 });
 
+// ADR 0308: a function written in a body is declared there, from MIR as
+// from THIR (ADR 0364), where what uses it reads it.
+test("a function written in a body is declared in it", async () => {
+  const dir = fixture("local-functions");
+  writeFileSync(join(dir, "lib.rs"), `pub fn doubled(n: u32) -> u32 {
+    fn twice(n: u32) -> u32 {
+        n * 2
+    }
+    let apply = |f: fn(u32) -> u32| f(n);
+    if n > 10 {
+        fn big() -> u32 {
+            1000
+        }
+        return big();
+    }
+    apply(twice)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.doubled(3), lib.doubled(11)]).toEqual([6, 1000]);
+  }
+});
+
 // ADR 0204: a struct with flattened fields made outside JSX is one object of
 // their fields, `{ ...template, ...files }`, from MIR as from THIR (ADR 0364).
 test("a struct of flattened fields made outside JSX is one object", async () => {

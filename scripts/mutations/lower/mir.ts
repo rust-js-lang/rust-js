@@ -986,4 +986,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    name: "mir-local-functions-undeclared",
+    breaks: "a function written in a body is declared nowhere from MIR, so what calls it reads nothing",
+    file: "src/lower/mir.rs",
+    find: "        out.splice(0..0, holes);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","a function written in a body is declared"],
+  },
 ];
