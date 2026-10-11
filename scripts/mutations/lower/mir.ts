@@ -1558,4 +1558,16 @@ export const mutations: Mutation[] = [
       "reading one field of its base"
     ]
   },
+  {
+    "name": "mir-branch-capture-unrecorded",
+    "breaks": "what a branch's element reads, MIR's `let`, isn't known as MIR's, `let className$2; if (..) { .. }` kept",
+    "file": "src/lower/mir.rs",
+    "find": "                        StmtKind::Let(name, None) => {\n",
+    "replace": "                        StmtKind::Let(name, None) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

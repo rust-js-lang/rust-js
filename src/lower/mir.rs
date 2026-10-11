@@ -1572,10 +1572,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let before = made.len();
             if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {
                 for stmt in &made[before..] {
-                    if let StmtKind::Const(name, _) = &stmt.kind {
-                        self.locals.captured.insert(name.clone());
-                        self.locals.alike.insert(name.clone());
-                        state.own_names.insert(name.clone());
+                    match &stmt.kind {
+                        StmtKind::Const(name, _) => {
+                            self.locals.captured.insert(name.clone());
+                            self.locals.alike.insert(name.clone());
+                            state.own_names.insert(name.clone());
+                        }
+                        // What a branch's element reads, set where its test
+                        // holds: no `const`, but MIR's too.
+                        StmtKind::Let(name, None) => {
+                            self.locals.captured.insert(name.clone());
+                            state.own_names.insert(name.clone());
+                        }
+                        _ => {}
                     }
                 }
                 state.in_place.insert(local, expr);

@@ -156,12 +156,18 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     declarations(body);
     // What those `const`s now read once, where it's read, and the values
     // of branches that leaves.
+    // A pattern's copy of a variable, `const error = raw;`: the variable.
+    js::statement_lists(body, &mut |stmts| copied_bindings(stmts));
     let changed = self::changing(body);
+    // What an element MIR made only where a test holds reads, as one value,
+    // read in place below, where the test holds.
+    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));
+    js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
     // $iter(xs);`: the array's, as THIR's.
     eager_chains(body);
@@ -2220,6 +2226,176 @@ fn written_chains(stmts: &mut [Stmt]) {
     }
 }
 
+/// `let c; if (t) { c = e; }`, what MIR made of an element only where its
+/// test holds, ahead of a later child, read once: `const c = t ? e :
+/// undefined;`, which reads as one, and is read in place as one.
+fn guarded_lets(stmts: &mut Vec<Stmt>, captured: &HashSet<String>) {
+    let mut i = 0;
+    while i + 2 < stmts.len() {
+        let made = match (&stmts[i].kind, &stmts[i + 1].kind) {
+            (StmtKind::Let(x, None), StmtKind::If(test, then, None))
+                if let [
+                    Stmt {
+                        kind: StmtKind::Assign(target, value),
+                        ..
+                    },
+                ] = then.as_slice()
+                    && matches!(&target.kind, ExprKind::Var(v) if v == x)
+                    && (is_temporary(x) || captured.contains(x))
+                    && js::mentions_in(&stmts[i + 2..], x) == 1 =>
+            {
+                Some((x.clone(), Expr::cond(test.clone(), value.clone(), Expr::undefined())))
+            }
+            _ => None,
+        };
+        if let Some((x, value)) = made {
+            let span = stmts[i + 1].span;
+            stmts.splice(i..i + 2, [StmtKind::Const(x, value).at(span)]);
+        }
+        i += 1;
+    }
+}
+
+/// `t && <div className={t ? e : undefined} />`: `e`, where `t` holds, of a
+/// test that does nothing and reads what nothing changes.
+fn implied_tests(e: &mut Expr, changing: &HashSet<String>) {
+    let (ExprKind::Binary(Op::And, test, child) | ExprKind::Cond(test, child, _)) = &mut e.kind else {
+        return;
+    };
+    let mut unchanged = !test.has_effects();
+    test.visit_vars(&mut |v| unchanged &= !changing.contains(v));
+    if !unchanged {
+        return;
+    }
+    let test = (**test).clone();
+    child.each_mut(&mut |e| {
+        if let ExprKind::Cond(t, yes, no) = &e.kind
+            && matches!(no.kind, ExprKind::Undefined)
+            && same_test(t, &test)
+        {
+            *e = (**yes).clone();
+        }
+    });
+}
+
+/// Whether `a` and `b` are one test of what nothing changes: one path,
+/// `!` of one, or one compared to one constant, `error != null`.
+fn same_test(a: &Expr, b: &Expr) -> bool {
+    // `!!x`, a test of `x`'s truth, as `x` is.
+    fn truth(e: &Expr) -> &Expr {
+        match &e.kind {
+            ExprKind::Unary(UnaryOp::Not, x) if let ExprKind::Unary(UnaryOp::Not, x) = &x.kind => x,
+            _ => e,
+        }
+    }
+    let (a, b) = (truth(a), truth(b));
+    match (&a.kind, &b.kind) {
+        (ExprKind::Unary(UnaryOp::Not, x), ExprKind::Unary(UnaryOp::Not, y)) => same_test(x, y),
+        (ExprKind::Binary(p, x, k), ExprKind::Binary(q, y, l)) if p == q => {
+            same(x, y)
+                && match (&k.kind, &l.kind) {
+                    (ExprKind::Null | ExprKind::Undefined, ExprKind::Null | ExprKind::Undefined) => true,
+                    (ExprKind::Str(k), ExprKind::Str(l)) => k == l,
+                    _ => k.as_int().is_some() && k.as_int() == l.as_int(),
+                }
+        }
+        _ => same(a, b),
+    }
+}
+
+/// `if (raw) { const error = raw; .. }`, a pattern's binding of a variable,
+/// `if let Some(error) = raw`, which MIR copies where `raw` is borrowed:
+/// `raw` where `error` is read, as THIR binds it, where the block sets
+/// neither again, declares neither, nor reads `error` in a closure, which
+/// may run after.
+fn copied_bindings(stmts: &mut [Stmt]) {
+    for stmt in stmts.iter_mut() {
+        let StmtKind::If(test, then, _) = &mut stmt.kind else {
+            continue;
+        };
+        let Some(Stmt {
+            kind: StmtKind::Const(b, value),
+            ..
+        }) = then.first()
+        else {
+            continue;
+        };
+        let ExprKind::Var(a) = &value.kind else {
+            continue;
+        };
+        // What the test says is there, `raw` of `raw && ..`, `!!raw` or `raw
+        // != null`.
+        let mut first = &*test;
+        while let ExprKind::Binary(Op::And, x, _) = &first.kind {
+            first = x;
+        }
+        if let ExprKind::Unary(UnaryOp::Not, x) = &first.kind
+            && let ExprKind::Unary(UnaryOp::Not, x) = &x.kind
+        {
+            first = x;
+        }
+        let present = match &first.kind {
+            ExprKind::Var(v) => v == a,
+            ExprKind::Binary(Op::LooseNe, v, null) => {
+                matches!(&v.kind, ExprKind::Var(v) if v == a)
+                    && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+            }
+            _ => false,
+        };
+        let (a, b) = (a.clone(), b.clone());
+        if !present || is_temporary(&a) || is_temporary(&b) || a == b {
+            continue;
+        }
+        let rest = &then[1..];
+        if rebinds(rest, &a) || rebinds(rest, &b) || in_closure(rest, &b) {
+            continue;
+        }
+        then.remove(0);
+        js::each_expr_mut(then, &mut |e| {
+            if let ExprKind::Var(v) = &mut e.kind
+                && *v == b
+            {
+                *v = a.clone();
+            }
+        });
+    }
+}
+
+/// Whether `stmts` set `name` again, or declare it, a closure's in them too.
+fn rebinds(stmts: &[Stmt], name: &str) -> bool {
+    let mut found = false;
+    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
+        for stmt in list.iter() {
+            found |= match &stmt.kind {
+                StmtKind::Const(n, _) | StmtKind::Let(n, _) => n == name,
+                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
+                    pattern.names().contains(&name)
+                }
+                StmtKind::For { name: n, .. } => n == name,
+                StmtKind::Assign(target, _) => matches!(&target.kind, ExprKind::Var(v) if v == name),
+                _ => false,
+            };
+        }
+    });
+    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
+        if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
+            found |= params.iter().any(|p| p.names().contains(&name)) || rebinds(body, name);
+        }
+    });
+    found
+}
+
+/// Whether a closure in `stmts` reads `name`.
+fn in_closure(stmts: &[Stmt], name: &str) -> bool {
+    let mut found = false;
+    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
+        if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &e.kind {
+            found |= js::mentions_in(body, name) > 0;
+        }
+    });
+    found
+}
+
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.
 fn or_all(a: Expr, b: Expr) -> Expr {
     match b.kind {
@@ -2519,7 +2695,13 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<St
             i += 1;
             continue;
         };
-        if !stable && leads(read, name, &passes) != Some(true) {
+        // One made where a test holds, `t ? e : undefined`, may be read where
+        // that test holds.
+        let guard = match &value.kind {
+            ExprKind::Cond(test, _, no) if matches!(no.kind, ExprKind::Undefined) => Some(&**test),
+            _ => None,
+        };
+        if !stable && leads(read, name, guard, &passes) != Some(true) {
             i += 1;
             continue;
         }
@@ -2538,7 +2720,7 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<St
 /// Whether `e` reads `name` where all that JS evaluates before it in `e`
 /// `passes`: `Some(true)`; `Some(false)` if something doesn't, or it's read
 /// where it may not be; `None` if it isn't read.
-fn leads(e: &Expr, name: &str, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
+fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
     let mut reads = false;
     e.visit_vars(&mut |v| reads |= v == name);
     if !reads {
@@ -2546,7 +2728,7 @@ fn leads(e: &Expr, name: &str, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
     }
     let in_order = |items: &mut dyn Iterator<Item = &Expr>| {
         for item in items {
-            match leads(item, name, passes) {
+            match leads(item, name, guard, passes) {
                 Some(found) => return Some(found),
                 None if !passes(item) => return Some(false),
                 None => {}
@@ -2561,11 +2743,18 @@ fn leads(e: &Expr, name: &str, passes: &dyn Fn(&Expr) -> bool) -> Option<bool> {
         | ExprKind::Unary(_, a)
         | ExprKind::Spread(a)
         | ExprKind::Stringed(a)
-        | ExprKind::Await(a) => leads(a, name, passes),
+        | ExprKind::Await(a) => leads(a, name, guard, passes),
         ExprKind::Index(a, b) => in_order(&mut [&**a, &**b].into_iter()),
+        // Of what runs where its own test holds, `t ? e : undefined`, `b` of
+        // `t && b` too: `e` runs there just where it ran.
+        ExprKind::Binary(Op::And, a, b) | ExprKind::Cond(a, b, _)
+            if guard.is_some_and(|g| same_test(a, g)) && leads(a, name, guard, passes).is_none() && passes(a) =>
+        {
+            leads(b, name, guard, passes)
+        }
         // What runs only as a test says is `b`, `c` of `a ? b : c`.
         ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _) | ExprKind::Cond(a, ..) => {
-            leads(a, name, passes).or(Some(false))
+            leads(a, name, guard, passes).or(Some(false))
         }
         ExprKind::Binary(_, a, b) => in_order(&mut [&**a, &**b].into_iter()),
         ExprKind::Array(items) | ExprKind::Template(_, items, _) => in_order(&mut items.iter()),

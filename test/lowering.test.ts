@@ -7727,3 +7727,40 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
     expect(log).toEqual(["h2", "first", "start", "done"]);
   }
 });
+
+// A pattern's binding of a variable, `if let Some(error) = raw`, a copy of
+// it MIR makes where the variable is borrowed, `const error = raw;`: the
+// variable itself where the block sets neither again, from MIR as from
+// THIR, as react.dev's Preview renames a runtime error.
+test("a copy binding of a variable is the variable from MIR", async () => {
+  const dir = fixture("copy-binding");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+pub struct Error {
+    pub title: Cell<Option<&'static str>>,
+}
+fn debounced(e: Option<&'static Error>) -> Option<&'static Error> {
+    e
+}
+pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Option<&'static str> {
+    let mut raw = given;
+    let first = &raw;
+    if first.is_none_or(|e| e.title.get() == Some("Runtime Exception")) && lint.is_some() {
+        raw = lint;
+    }
+    if let Some(error) = raw
+        && error.title.get() == Some("Runtime Exception")
+    {
+        error.title.set(Some("Runtime Error"));
+    }
+    let error = debounced(raw);
+    error.and_then(|e| e.title.get())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (raw && raw.title === "Runtime Exception") {\n    raw.title = "Runtime Error";\n  }');
+    const lib = await import(join(dir, out));
+    expect([lib.fixed({ title: "Runtime Exception" }, undefined), lib.fixed(undefined, { title: "x" })]).toEqual(["Runtime Error", "x"]);
+  }
+});

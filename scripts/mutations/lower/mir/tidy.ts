@@ -574,8 +574,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-late-consts-kept",
     breaks: "a `const` declarations makes last stays, `const _27 = e; _24 = _27;`",
     file: "src/lower/mir/tidy.rs",
-    find: "    let changed = self::changing(body);\n    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));\n",
-    replace: "    let changed = self::changing(body);\n",
+    find: "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n    js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, plain, captured));\n",
+    replace: "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n",
     tests: ["test/lowering.test.ts","-t","else if. given as a value"],
   },
   {
@@ -1292,6 +1292,66 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "arms as statements chain in written order"
+    ]
+  },
+  {
+    "name": "mir-tidy-guarded-lets-kept",
+    "breaks": "an element MIR makes only where a test holds stays `let className$2; if (error != null) { .. }`, the props before it held too",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-tidy-implied-tests-kept",
+    "breaks": "a value read where its test holds keeps the test, `error != null && <div className={error != null ? cn(..) : undefined}>`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-tidy-guarded-read-blocked",
+    "breaks": "a value made where its test holds isn't read where that test holds, `const className$2 = error != null ? cn(..) : undefined` kept",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            if guard.is_some_and(|g| same_test(a, g))",
+    "replace": "            if false && guard.is_some_and(|g| same_test(a, g))",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-tidy-copied-bindings-kept",
+    "breaks": "an if-let's binding of a variable MIR copies stays `const error = raw;`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| copied_bindings(stmts));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "copy binding of a variable is the variable"
+    ]
+  },
+  {
+    "name": "mir-tidy-same-test-truth",
+    "breaks": "`!!error` isn't the same test as `error`, so a value made where an object's truth holds stays a `const`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    let (a, b) = (truth(a), truth(b));\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
     ]
   },
 ];

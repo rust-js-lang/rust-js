@@ -101,3 +101,5 @@ a spread of an object of spreads alone is those spreads
 an imported context's provider is a tag read where it's written
 a component's key goes where it's written from MIR
 a prop held for a borrow is read where it's written, past a sibling element
+an element made where a test holds is read where it's written
+an element made where an object's truth holds is read where it's written

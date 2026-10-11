@@ -5014,3 +5014,62 @@ pub fn Page(home: bool, show: bool, path: String) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page(false, true, "a/b"))).toBe("<div><i>open</i><span>/og/a-b.png</span></div>");
 });
+
+// ADR 0364: an element MIR makes only where a test holds, ahead of a later
+// child, `let c; if (error != null) { c = cn(..); }`, is made where it's
+// written, `error != null && <div className={cn(..)}>`, and so are the props
+// before it, as react.dev's Preview shows its error.
+test("an element made where a test holds is read where it's written", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub fn Preview(error: Option<&'static str>, expanded: bool) -> JSX::Element {
+    jsx! {
+        <div className={cn(&[Some("p-0"), (!expanded).then_some("overflow-auto")])}>
+            <iframe className={cn(&[Some("frame"), expanded.then_some("wide")])} />
+            {error.map(|error| jsx! {
+                <div className={cn(&[Some("z-50"), expanded.then_some("sticky")])}>{error}</div>
+            })}
+            <span className={cn(&[Some("overlay"), (!expanded).then_some("hidden")])} />
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toContain("const className");
+  expect(jsx).not.toContain("let className");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Preview("bad", true))).toBe('<div class="p-0"><iframe class="frame wide"></iframe><div class="z-50 sticky">bad</div><span class="overlay"></span></div>');
+});
+
+// ADR 0364: as above, of an `Option` of an object, tested by its truth,
+// `!!error` where MIR makes the value and `error &&` where it's shown.
+test("an element made where an object's truth holds is read where it's written", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub struct Failure {
+    pub message: String,
+}
+pub fn Preview(error: Option<&'static Failure>, expanded: bool) -> JSX::Element {
+    jsx! {
+        <div className={cn(&[Some("p-0"), (!expanded).then_some("overflow-auto")])}>
+            {error.map(|error| jsx! {
+                <div className={cn(&[Some("z-50"), expanded.then_some("sticky")])}>{error.message.as_str()}</div>
+            })}
+            <span className={cn(&[Some("overlay"), (!expanded).then_some("hidden")])} />
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toContain("const className");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Preview({ message: "bad" }, true))).toBe('<div class="p-0"><div class="z-50 sticky">bad</div><span class="overlay"></span></div>');
+});
