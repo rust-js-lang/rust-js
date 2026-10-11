@@ -4282,3 +4282,27 @@ pub fn App(small: bool) -> JSX::Element {
     '<div style="opacity:0;transition:t"></div>',
   ]);
 });
+
+// ADR 0364: from MIR as from THIR, a context's provider read before its
+// children's branch is a tag, capitalized as JSX reads one.
+test("a provider read before its children's branch is a tag", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{Context, JSX, create_context, jsx};
+thread_local! {
+    pub static Inside: Context<bool> = create_context(false);
+}
+pub fn App(items: &[&'static str]) -> JSX::Element {
+    jsx! {
+        <Inside.Provider value={true}>
+            {(!items.is_empty()).then(|| jsx! { <b>{items.len().to_string()}</b> })}
+        </Inside.Provider>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("Inside.Provider");
+  expect(jsx).not.toContain("const _");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([["a", "b"], []].map((items) => renderToStaticMarkup(lib.App(items)))).toEqual(["<b>2</b>", ""]);
+});

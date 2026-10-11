@@ -866,4 +866,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts","-t","nested_type_chain"],
   },
+  {
+    name: "mir-held-component-lowercase",
+    breaks: "a component a temporary held is its temporary's lowercase name, no tag",
+    file: "src/lower/mir.rs",
+    find: "                        && (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l])\n",
+    replace: "                        && false\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];

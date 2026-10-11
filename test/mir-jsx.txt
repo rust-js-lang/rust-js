@@ -1,12 +1,14 @@
 JSX HTML entity reports the original source and preserves existing output
 JSX SVG tags are their SVG elements, of SVG's attributes
 JSX adjacent roots reports the original source and preserves existing output
+JSX among a vec!'s items is elements
 JSX attributes take the values @types/react types them as
 JSX bare text reports the original source and preserves existing output
 JSX checks a literal of an attribute of a few strings
 JSX children have no twelve-sibling tuple limit
 JSX components take apart a list of children
 JSX components take no drop of their type parameters
+JSX context providers take any node as children
 JSX duplicate attribute reports the original source and preserves existing output
 JSX duplicate children reports the original source and preserves existing output
 JSX empty attribute expression reports the original source and preserves existing output
@@ -48,6 +50,7 @@ a flattened struct's pattern takes its fields apart with the props'
 a module's constant element is rendered where it's read
 a module's named component is loaded as a module's default
 a props field's default may be a const
+a provider read before its children's branch is a tag
 a static component given a prop a branch makes is its static
 a style and a tag made before a prop's branch stay what they are
 a thread_local component takes props borrowing the caller's

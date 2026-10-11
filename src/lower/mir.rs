@@ -2574,6 +2574,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         },
                         _ => None,
                     })?;
+                    let mut given = given;
+                    // A component a temporary held, made before, `Inside.Provider`
+                    // read ahead of a branch: named as JSX reads one, capitalized.
+                    if tag == "*"
+                        && let Some(component) = given.first_mut()
+                        && let js::ExprKind::Var(name) = &component.value.kind
+                        && (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l])
+                    {
+                        let held = std::mem::replace(&mut component.value, Expr::undefined());
+                        component.value = self.spill("Component", held, out);
+                    }
                     return Ok(Value::Expr(self.jsx_values(&tag, given, span, out)?));
                 }
                 bindings::JsForm::Prop(name) => {

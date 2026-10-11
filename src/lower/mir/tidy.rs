@@ -27,6 +27,37 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
         body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name == result));
     }
     declarations(body);
+    aliases(body);
+}
+
+/// `const a = e; .. const b = a;`, where nothing else reads `a`, is `const
+/// b = e;` where `a` was: `b` is read nowhere before, which JS's `const`
+/// says of its block.
+fn aliases(body: &mut Vec<Stmt>) {
+    js::statement_lists(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            let alias = match &stmts[i].kind {
+                StmtKind::Const(a, _) => (i + 1..stmts.len())
+                    .find(|&j| js::mentions_in(&stmts[j..=j], a) > 0)
+                    .filter(|&j| {
+                        matches!(&stmts[j].kind, StmtKind::Const(_, value)
+                            if matches!(&value.kind, ExprKind::Var(read) if read == a))
+                            && js::mentions_in(&stmts[j..], a) == 1
+                    }),
+                _ => None,
+            };
+            if let Some(j) = alias {
+                let StmtKind::Const(b, _) = stmts.remove(j).kind else {
+                    unreachable!("matched")
+                };
+                if let StmtKind::Const(a, _) = &mut stmts[i].kind {
+                    *a = b;
+                }
+            }
+            i += 1;
+        }
+    });
 }
 
 /// `let x; .. x = e;` is `.. let x = e;`, where nothing between names `x`,

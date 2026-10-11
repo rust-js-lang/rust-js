@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "        if false && let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind\n",
     tests: ["test/mir.test.ts","-t","mut_ref_handle"],
   },
+  {
+    name: "mir-tidy-alias-kept",
+    breaks: "a `const` read once, by another `const` of it, stays a name for a name",
+    file: "src/lower/mir/tidy.rs",
+    find: "                            && js::mentions_in(&stmts[j..], a) == 1\n",
+    replace: "                            && false\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];
