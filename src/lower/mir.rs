@@ -242,6 +242,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "this `async fn`, from its MIR"));
             };
             out = body;
+            // Its parameters as its body takes them apart, `{ params }`.
+            tidy::destructured_params(&mut params, &mut out);
         }
         // The functions written in its body, closures' too, each declared
         // at its top, which JS hoists, as Rust sees them throughout their

@@ -6603,3 +6603,25 @@ pub fn revive(val: Option<&'static Unknown>) -> Option<&'static Unknown> {
     expect([lib.revive(["$r", 1]), lib.revive(["x", 1]), lib.revive(undefined), lib.revive("$r")]).toEqual([1, ["x", 1], undefined, "$r"]);
   }
 });
+
+// An `async fn`'s parameter pattern, as react.dev's errors page takes
+// `{ params }` of Next.js's context: taken apart where it's given, not
+// `__arg0` and a `const params = __arg0.params;`.
+test("an async fn's parameter pattern from MIR is taken apart where it's given", async () => {
+  const dir = fixture("async-param-pattern");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Ctx {
+    pub params: Option<String>,
+    pub locale: Option<String>,
+}
+pub async fn props(Ctx { params, .. }: Ctx) -> String {
+    params.unwrap_or_default()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('export async function props({ params }) {\n  return params ?? "";\n}');
+    const lib = await import(join(dir, out));
+    expect([await lib.props({ params: "a" }), await lib.props({})]).toEqual(["a", ""]);
+  }
+});

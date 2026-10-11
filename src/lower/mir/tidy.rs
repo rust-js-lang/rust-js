@@ -1215,22 +1215,31 @@ fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
 /// and reads nowhere else, `(_2) => { const i = _2[0]; const c = _2[1]; … }`:
 /// taken apart where it's given, `([i, c]) => …`, as THIR writes a pattern.
 pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
+    // An `async fn`'s too, `__arg0`, which its body's `let` takes apart,
+    // of the copy its body holds, `__arg0$1`.
+    let unnamed = |name: &str| {
+        let arg = name.split('$').next().and_then(|n| n.strip_prefix("__arg"));
+        is_temporary(name) || arg.is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()))
+    };
     for param in params.iter_mut() {
         let js::Pattern::Name(name) = param else { continue };
-        if !is_temporary(name) {
+        if !unnamed(name) {
             continue;
         }
-        let name = name.clone();
+        let mut name = name.clone();
         // `(_2) => { const n = _2; … }`, `|&n|`'s: `(n) => …`.
-        if let Some(Stmt {
+        while let Some(Stmt {
             kind: StmtKind::Const(bound, value),
             ..
         }) = body.first()
             && matches!(&value.kind, ExprKind::Var(v) if *v == name)
             && js::mentions_in(&body[1..], &name) == 0
         {
-            *param = js::Pattern::Name(bound.clone());
+            name = bound.clone();
+            *param = js::Pattern::Name(name.clone());
             body.remove(0);
+        }
+        if !unnamed(&name) {
             continue;
         }
         let read = parts(body, &name);

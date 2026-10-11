@@ -550,8 +550,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-deref-param-kept",
     breaks: "`|&n|` stays `(_2) => { const n = _2; … }`",
     file: "src/lower/mir/tidy.rs",
-    find: "            *param = js::Pattern::Name(bound.clone());\n            body.remove(0);\n            continue;\n",
-    replace: "            let _ = bound;\n",
+    find: "            *param = js::Pattern::Name(name.clone());\n            body.remove(0);\n",
+    replace: "            break;\n",
     tests: ["test/lowering.test.ts","-t","names its .&x. parameter"],
   },
   {
@@ -809,5 +809,17 @@ export const mutations: Mutation[] = [
     find: "        if alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
     replace: "        if false && alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {\n",
     tests: ["test/lowering.test.ts","-t","of .matches!. from MIR"],
+  },
+  {
+    "name": "async-arg-named",
+    "breaks": "`__arg0`, an `async fn`'s parameter, is a name the program wrote, kept",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        is_temporary(name) || arg.is_some_and(",
+    "replace": "        is_temporary(name) || false && arg.is_some_and(",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an async fn's parameter pattern from MIR"
+    ]
   },
 ];

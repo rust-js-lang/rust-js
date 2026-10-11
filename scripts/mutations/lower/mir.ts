@@ -1362,4 +1362,16 @@ export const mutations: Mutation[] = [
       "a nullable field of Some or None by a branch"
     ]
   },
+  {
+    "name": "async-params-whole",
+    "breaks": "an `async fn`'s parameter pattern is `__arg0` and a `const params = __arg0.params;`",
+    "file": "src/lower/mir.rs",
+    "find": "            tidy::destructured_params(&mut params, &mut out);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an async fn's parameter pattern from MIR"
+    ]
+  },
 ];
