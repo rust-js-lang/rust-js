@@ -7162,3 +7162,35 @@ pub fn crumbs<'a>(path: &str, current: &'a Route, crumbs_so_far: Vec<&'a Route>)
     expect([lib.crumbs("/a/b", tree, []).map((r: { path: string }) => r.path), lib.crumbs("/x", tree, [])]).toEqual([["/", "/a"], []]);
   }
 });
+
+// A method's `self` is named after its type, `section` of a `Section`, from
+// MIR as from THIR, as react.dev's TopNav names `Section.asStr`'s.
+test("a method's self from MIR is named after its type", async () => {
+  const dir = fixture("self-name");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum Section {
+    #[cfg_attr(rust_js, rust_js::name = "learn")]
+    Learn,
+    #[cfg_attr(rust_js, rust_js::name = "home")]
+    Home,
+}
+impl Section {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Section::Learn => "learn",
+            Section::Home => "home",
+        }
+    }
+}
+pub fn label(section: Section) -> String {
+    format!("og-{}", section.as_str())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  as_str(section) {\n    return section;\n  },\n");
+    const lib = await import(join(dir, out));
+    expect(lib.label("home")).toBe("og-home");
+  }
+});

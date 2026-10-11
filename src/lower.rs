@@ -1955,7 +1955,7 @@ fn camel_case(name: &str) -> String {
 }
 
 /// `Counter` → `counter`: a value of the type, named after it.
-fn lower_first(name: &str) -> String {
+pub(super) fn lower_first(name: &str) -> String {
     let mut chars = name.chars();
     chars
         .next()

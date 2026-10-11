@@ -1006,7 +1006,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !info.source_info.span.is_desugaring(rustc_span::DesugaringKind::Await)
                 && !continued.contains(&place.local)
             {
-                user[place.local] = Some(super::camel_case(info.name.as_str()));
+                // A method's `self`, named after its type, `counter` for a
+                // `Counter`, as THIR names it.
+                let name = match body.local_decls[place.local].ty.peel_refs().kind() {
+                    ty::Adt(adt, _) if info.name.as_str() == "self" => {
+                        super::lower_first(self.tcx.item_name(adt.did()).as_str())
+                    }
+                    _ => info.name.to_string(),
+                };
+                user[place.local] = Some(super::camel_case(&name));
                 locals.user[place.local] = true;
             }
         }

@@ -1458,4 +1458,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-self-named-self",
+    "breaks": "a method's `self` from MIR is named `self`, not after its type",
+    "file": "src/lower/mir.rs",
+    "find": "ty::Adt(adt, _) if info.name.as_str() == \"self\" =>",
+    "replace": "ty::Adt(adt, _) if false =>",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a method's self from MIR is named after its type"
+    ]
+  },
 ];
