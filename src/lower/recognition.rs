@@ -4056,6 +4056,14 @@ pub(super) fn is_dyn_iter<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
         if traits.principal_def_id().is_some_and(|id| tcx.is_diagnostic_item(sym::Iterator, id)))
 }
 
+/// Whether `ty` is a React context's `Provider` or `Consumer`, which
+/// `react::provider` gives of a context, and React never changes.
+pub(crate) fn is_context_member(tcx: TyCtxt<'_>, ty: Ty<'_>) -> bool {
+    matches!(ty.kind(), ty::Adt(adt, _)
+        if tcx.crate_name(adt.did().krate).as_str() == "react"
+            && matches!(tcx.item_name(adt.did()).as_str(), "Provider" | "Consumer"))
+}
+
 /// What `size_of`, `align_of` and `type_name` tell of a type (ADR 0145).
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Debug)]
 pub(crate) enum TypeFact {

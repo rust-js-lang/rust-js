@@ -1747,8 +1747,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => e.is_constant(),
         };
+        // A context's `Provider` or `Consumer`, `react::provider`'s, which
+        // React never changes.
+        let context_member = super::recognition::is_context_member(self.tcx, ty);
         match &e.kind {
             js::ExprKind::Array(items) => matches!(ty.kind(), ty::Tuple(_)) && items.iter().all(alike),
+            js::ExprKind::Member(..) if context_member => true,
             _ => alike(e),
         }
     }

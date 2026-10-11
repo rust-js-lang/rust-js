@@ -4909,3 +4909,37 @@ pub fn App(base: &'static Base, given: &'static js::Dict<u32>) -> JSX::Element {
   const { App } = await import(join(made.dir, "lib.jsx"));
   expect(renderToStaticMarkup(App({ a: 1 }, { b: 2 }))).toBe("<div><b>3 3</b></div>");
 });
+
+// ADR 0364: a context's `Provider`, of a context of another module, is the
+// element's tag where it's written, made ahead of a branch: React never
+// changes it, as react.dev's Toc gives its headings `IsInTocContext`.
+test("an imported context's provider is a tag read where it's written", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx, use_context};
+mod theme {
+    use react::{Context, create_context};
+    thread_local! { pub static THEME: Context<&'static str> = create_context("light"); }
+}
+use theme::THEME;
+fn Label() -> JSX::Element {
+    let theme = use_context(&THEME);
+    jsx! { <b>{*theme}</b> }
+}
+pub fn App(names: Vec<&'static str>) -> JSX::Element {
+    jsx! {
+        <nav>
+            {(!names.is_empty()).then(|| jsx! { <h2>{"On this page"}</h2> })}
+            <THEME.Provider value="dark">
+                {names.iter().map(|name| jsx! { <i key={*name}>{*name}</i> }).collect::<Vec<_>>()}
+                <Label />
+            </THEME.Provider>
+        </nav>
+    }
+}
+`);
+  run(args);
+  const code = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(code).toContain("<THEME.Provider value=\"dark\">");
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(() => result.App(["a"])))).toBe("<nav><h2>On this page</h2><i>a</i><b>dark</b></nav>");
+});

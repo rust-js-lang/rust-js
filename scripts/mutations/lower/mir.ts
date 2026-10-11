@@ -1494,4 +1494,16 @@ export const mutations: Mutation[] = [
       "only passes its arguments on"
     ]
   },
+  {
+    "name": "mir-context-member-held",
+    "breaks": "an imported context's provider MIR reads ahead of a branch is held, `const Component = THEME.Provider`",
+    "file": "src/lower/mir.rs",
+    "find": "            js::ExprKind::Member(..) if context_member => true,\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];
