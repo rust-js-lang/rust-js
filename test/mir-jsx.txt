@@ -109,3 +109,4 @@ dyn values given to a JS module's function are the values
 props held ahead of a closure child are read where they're written
 react.dev's SidebarLink writes its classes in place
 a held handler of one call is a concise arrow
+a variant's test function is a bool in a test

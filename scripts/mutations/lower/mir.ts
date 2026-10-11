@@ -702,8 +702,8 @@ export const mutations: Mutation[] = [
     name: "mir-untagged-variant-tagged",
     breaks: "an untagged enum's variant is tested by a tag it has none of",
     file: "src/lower/mir.rs",
-    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, def, &subject);\n",
-    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, def, &subject);\n",
+    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            let test = self.untagged_variant_test(ty, def, &subject);\n",
+    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            let test = self.untagged_variant_test(ty, def, &subject);\n",
     tests: ["test/mir.test.ts","-t","untagged_enums"],
   },
   {
@@ -1620,6 +1620,22 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "        let concise = self.closure_calls_for_nothing(body);\n",
     "replace": "        let concise = false;\n",
+    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+  },
+  {
+    "name": "mir-call-paths-unrecorded",
+    "breaks": "what a call gives isn't recorded a `bool`, `!!isItem(item) && ..`",
+    "file": "src/lower/mir.rs",
+    "find": ".or_else(|| tidy::call_path(e))",
+    "replace": "",
+    "tests": ["test/lowering.test.ts", "-t", "call giving a bool is one in a test"]
+  },
+  {
+    "name": "mir-variant-test-not-bool",
+    "breaks": "a variant's test function isn't known to give a `bool`, `!!(isValidElement(child) && ..)`",
+    "file": "src/lower/mir.rs",
+    "find": "                    self.locals.paths.entry(path).or_insert(true);\n",
+    "replace": "",
     "tests": ["test/mir.test.ts", "-t", "JSX tests"]
   },
 ];

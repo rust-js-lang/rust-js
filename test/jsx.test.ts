@@ -5475,3 +5475,32 @@ pub fn Example(deep: bool) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(() => lib.Example(true)))).toBe('<button class="deep"><span>Show</span></button>');
 });
+
+// A variant's test function, `isValidElement(child)`, gives a `bool`, so a
+// pattern's test of it is no `!!(..)`, from MIR as from THIR, as react.dev's
+// CodeDiagram keeps its images.
+test("a variant's test function is a bool in a test", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::children::{self, Child};
+use react::{JSX, ReactElement, ReactNode, jsx};
+unsafe extern "Rust" {
+    #[link_name = "get type"]
+    safe fn tag(this: &ReactElement) -> Option<&'static str>;
+}
+pub struct DiagramProps<C: ReactNode> {
+    pub children: C,
+}
+pub fn Diagram<C: ReactNode>(DiagramProps { children }: DiagramProps<C>) -> JSX::Element {
+    let images: Vec<Child> = children::to_array(&children)
+        .into_iter()
+        .filter(|child| matches!(child, Child::Element(element) if tag(element) == Some("img")))
+        .collect();
+    jsx! { <section>{images}</section> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('(child) => isValidElement(child) && child.type === "img"');
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.Diagram, null, createElement("img"), "text", createElement("b")))).toBe("<section><img/></section>");
+});

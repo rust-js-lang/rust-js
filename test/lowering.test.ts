@@ -7850,3 +7850,29 @@ pub fn editing(element: &HTMLElement) -> bool {
     expect([lib.editing({ isContentEditable: false, tagName: "SELECT" }), lib.editing({ isContentEditable: false, tagName: "B" })]).toEqual([true, false]);
   }
 });
+
+// A call of a function that gives a `bool`, `isItem(item)`, is one, so
+// it's no `!!isItem(item)` in a test, from MIR as from THIR, as react.dev's
+// CodeDiagram keeps its images.
+test("a call giving a bool is one in a test", async () => {
+  const dir = fixture("bool-call");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Item {
+    pub kind: String,
+}
+unsafe extern "Rust" {
+    #[link_name = "globalThis.isItem"]
+    safe fn is_item(x: &Item) -> bool;
+}
+pub fn images(items: Vec<&Item>) -> Vec<&Item> {
+    items.into_iter().filter(|item| is_item(item) && item.kind == "img").collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('items.filter((item) => globalThis.isItem(item) && item.kind === "img")');
+    const lib = await import(join(dir, out));
+    (globalThis as any).isItem = (x: { kind: string }) => x.kind !== "";
+    expect(lib.images([{ kind: "img" }, { kind: "p" }, { kind: "" }])).toEqual([{ kind: "img" }]);
+  }
+});

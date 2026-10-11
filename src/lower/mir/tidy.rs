@@ -2920,6 +2920,7 @@ fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
         ExprKind::Bool(_) | ExprKind::Unary(UnaryOp::Not, _) => true,
         ExprKind::Var(name) => booleans.contains(name),
         ExprKind::Member(..) => field_path(e).is_some_and(|path| booleans.contains(&path)),
+        ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,
         ExprKind::Binary(
             Op::Eq | Op::Ne | Op::LooseEq | Op::LooseNe | Op::Lt | Op::Le | Op::Gt | Op::Ge | Op::InstanceOf | Op::In,
             ..,
@@ -2930,6 +2931,18 @@ fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
             if matches!(m.as_str(), "includes" | "startsWith" | "endsWith" | "some" | "every" | "has" | "isArray")),
         _ => false,
     }
+}
+
+/// `isItem()` of `isItem(item)`, `globalThis.isItem()`, what a call calls, as a key.
+pub(super) fn call_path(e: &Expr) -> Option<String> {
+    let ExprKind::Call(callee, _) = &e.kind else {
+        return None;
+    };
+    let callee = match &callee.kind {
+        ExprKind::Var(name) => name.clone(),
+        _ => field_path(callee)?,
+    };
+    Some(format!("{callee}()"))
 }
 
 /// `element.editable`, a field's path of a variable, as a key.

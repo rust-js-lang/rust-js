@@ -1904,11 +1904,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Place::from(local),
             false => place,
         };
-        // A field's path stored in a local, a getter's `element.isContentEditable`:
-        // whether it's a `bool`, as of a place read (`mir_place`).
+        // A field's path stored in a local, a getter's `element.isContentEditable`,
+        // or a call's, `isItem()` of `isItem(item)`: whether it's a `bool`, as
+        // of a place read (`mir_place`).
         if place.projection.is_empty()
             && let Value::Expr(e) = &value
-            && let Some(path) = tidy::field_path(e)
+            && let Some(path) = tidy::field_path(e).or_else(|| tidy::call_path(e))
         {
             let bool = state.body.local_decls[local].ty.is_bool();
             *self.locals.paths.entry(path).or_insert(bool) &= bool;
@@ -3202,7 +3203,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // An untagged enum's variant, told by its value's kind (ADR 0214).
         if bindings::is_untagged(self.tcx, adt.did()) {
-            return self.untagged_variant_test(ty, def, &subject);
+            let test = self.untagged_variant_test(ty, def, &subject);
+            // A variant's test function it calls, `isValidElement(child)`, gives
+            // a `bool`, which tidy writes a test of as one.
+            test.clone().each_mut(&mut |e| {
+                if let Some(path) = tidy::call_path(e) {
+                    self.locals.paths.entry(path).or_insert(true);
+                }
+            });
+            return test;
         }
         // A discriminated union's `otherwise`: an object whose tag is none
         // of the others' (ADR 0284).

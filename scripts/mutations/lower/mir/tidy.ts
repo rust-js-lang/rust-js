@@ -1442,4 +1442,12 @@ export const mutations: Mutation[] = [
     "replace": "                    && false\n",
     "tests": ["test/mir.test.ts", "-t", "JSX tests"]
   },
+  {
+    "name": "mir-tidy-bool-call-unknown",
+    "breaks": "a call giving a `bool` isn't one in a test, `!!isItem(item) && ..`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        ExprKind::Call(..) if call_path(e).is_some_and(|path| booleans.contains(&path)) => true,\n",
+    "replace": "",
+    "tests": ["test/lowering.test.ts", "-t", "call giving a bool is one in a test"]
+  },
 ];
