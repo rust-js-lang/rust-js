@@ -197,6 +197,10 @@ struct State<'m, 'tcx> {
     /// The temporaries a `let`'s pattern takes apart, `let S { a, .. } =
     /// f();`'s: kept, for tidy to destructure, as THIR's pattern reads.
     patterned: std::collections::HashSet<Local>,
+    /// The `Option`s made only `Some(..)` or `None` and read only by
+    /// `#[rust_js::nullable]` fields: their `None` is `null` where it's
+    /// made, `c ? v : null`, as THIR's `nullable` makes it (ADR 0275).
+    null_nones: std::collections::HashSet<Local>,
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
     jsx_props: std::collections::HashSet<Local>,
@@ -343,7 +347,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             payloads: self.mir_payloads(mir_body),
             patterned: self.mir_patterned(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
+            null_nones: Default::default(),
         };
+        state.null_nones = self.mir_null_nones(mir_body, &state.locals);
         // A closure's first argument is its environment, read through its fields.
         // A coroutine's are that and what it's resumed with, which an async
         // function has neither of.
@@ -651,6 +657,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => None,
             })
+            .collect()
+    }
+
+    /// The locals `State::null_nones` says: each write a `Some(..)` or a
+    /// `None`, one at least, and each read a nullable field's.
+    fn mir_null_nones(&self, body: &mir::Body<'tcx>, locals: &Locals) -> std::collections::HashSet<Local> {
+        let mut made: std::collections::HashMap<Local, (usize, bool)> = Default::default();
+        let mut given: std::collections::HashMap<Local, usize> = Default::default();
+        for statement in body.basic_blocks.iter().flat_map(|b| &b.statements) {
+            let mir::StatementKind::Assign(assign) = &statement.kind else {
+                continue;
+            };
+            let Rvalue::Aggregate(kind, operands) = &assign.1 else {
+                continue;
+            };
+            let AggregateKind::Adt(did, variant, ..) = **kind else {
+                continue;
+            };
+            if assign.0.projection.is_empty() && self.tcx.is_lang_item(did, LangItem::Option) {
+                let (writes, none) = made.entry(assign.0.local).or_default();
+                *writes += 1;
+                *none |= variant.as_u32() == 0;
+            }
+            let fields = &self.tcx.adt_def(did).variant(variant).fields;
+            for (field, operand) in operands.iter_enumerated() {
+                if let Some(read) = operand.place()
+                    && read.projection.is_empty()
+                    && bindings::is_nullable(self.tcx, &fields[field])
+                {
+                    *given.entry(read.local).or_default() += 1;
+                }
+            }
+        }
+        (made.into_iter())
+            .filter(|&(local, (writes, none))| {
+                none && writes == locals.writes[local] && given.get(&local) == Some(&locals.reads[local])
+            })
+            .map(|(local, _)| local)
             .collect()
     }
 
@@ -1684,6 +1728,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        // A `None` only nullable fields read: `null` (ADR 0275).
+        if place.projection.is_empty()
+            && state.null_nones.contains(&place.local)
+            && let Rvalue::Aggregate(kind, _) = rvalue
+            && let AggregateKind::Adt(_, variant, ..) = **kind
+            && variant.as_u32() == 0
+        {
+            return self.mir_store(state, *place, Value::Expr(Expr::null()), span, out);
+        }
         // One with a flattened field, made outside JSX, an object of its
         // fields and the flattened one's (ADR 0204).
         if let Rvalue::Aggregate(kind, _) = rvalue
@@ -2861,6 +2914,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if !place.projection.is_empty() {
             return false;
+        }
+        if state.null_nones.contains(&place.local) {
+            return true;
         }
         if state.locals.writes[place.local] != 1 {
             return false;

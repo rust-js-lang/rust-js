@@ -6538,3 +6538,42 @@ pub fn upper(s: &str) -> Option<String> {
     expect([lib.held(""), lib.held("a"), lib.held(undefined), lib.upper(""), lib.upper("b")]).toEqual([undefined, "A", undefined, undefined, "B"]);
   }
 });
+
+// ADR 0275: a nullable field given `Some(..)` or `None` by a branch, as
+// react.dev's errors page gives `errorMessage`: the branch's `null`, `code
+// ? errorCodes[code] : null`, not `(c ? v : undefined) ?? null`.
+test("a nullable field of Some or None by a branch is the branch's null", async () => {
+  const dir = fixture("nullable-branch");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Props {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub message: Option<String>,
+}
+
+pub fn props(code: Option<&str>) -> Props {
+    Props {
+        message: match code {
+            Some(code) if !code.is_empty() => Some(code.to_uppercase()),
+            _ => None,
+        },
+    }
+}
+
+pub fn later(code: Option<&str>) -> Props {
+    Props {
+        message: match code {
+            Some(c) if c.is_empty() => None,
+            Some(c) => c.strip_prefix("x").map(|s| s.to_string()),
+            None => None,
+        },
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return { message: code ? code.toUpperCase() : null };");
+    const lib = await import(join(dir, out));
+    expect([lib.props("a"), lib.props(""), lib.props(undefined)]).toEqual([{ message: "A" }, { message: null }, { message: null }]);
+    expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);
+  }
+});

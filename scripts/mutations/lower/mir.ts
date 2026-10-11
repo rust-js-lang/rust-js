@@ -1326,4 +1326,40 @@ export const mutations: Mutation[] = [
       "a nullable field's None is null"
     ]
   },
+  {
+    "name": "mir-null-none-undefined",
+    "breaks": "a `None` only a nullable field reads is `undefined`, and the field `(c ? v : undefined) ?? null`",
+    "file": "src/lower/mir.rs",
+    "find": "            && variant.as_u32() == 0\n",
+    "replace": "            && variant.as_u32() == 9\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field of Some or None by a branch"
+    ]
+  },
+  {
+    "name": "mir-null-none-coalesced",
+    "breaks": "a nullable field of an `Option` made `null` where it's `None` is `?? null` again",
+    "file": "src/lower/mir.rs",
+    "find": "        if state.null_nones.contains(&place.local) {\n",
+    "replace": "        if false {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field of Some or None by a branch"
+    ]
+  },
+  {
+    "name": "mir-null-none-past-other-writes",
+    "breaks": "an `Option` a call sets too, `and_then`'s `undefined`, is given to a nullable field as it is",
+    "file": "src/lower/mir.rs",
+    "find": "none && writes == locals.writes[local] && ",
+    "replace": "none && ",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a nullable field of Some or None by a branch"
+    ]
+  },
 ];
