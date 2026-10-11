@@ -6511,3 +6511,30 @@ test("a guarded binding of an Option's string is its truth", async () => {
     expect([lib.title("1"), lib.title(""), lib.title(undefined)]).toEqual(["Minified React error #1", "Minified Error Decoder", "Minified Error Decoder"]);
   }
 });
+
+// Text's truth, `!!code` of `!code.is_empty()`, isn't a presence test: an
+// empty string is there. `code ? code.toUpperCase() : undefined` is not
+// `code?.toUpperCase()`, which gives `""` where Rust gives `None`; an
+// `Option` never falsy's `!!o` is one still (ADR 0298).
+test("a test of text's truth is no optional chain", async () => {
+  const dir = fixture("text-truth-chain");
+  writeFileSync(join(dir, "lib.rs"), `pub fn held(code: Option<&str>) -> Option<String> {
+    let s = match code {
+        Some(code) if !code.is_empty() => Some(code.to_uppercase()),
+        _ => None,
+    };
+    s
+}
+pub fn upper(s: &str) -> Option<String> {
+    let upper = if !s.is_empty() { Some(s.to_uppercase()) } else { None };
+    upper
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).not.toContain("?.toUpperCase()");
+    const lib = await import(join(dir, out));
+    expect([lib.held(""), lib.held("a"), lib.held(undefined), lib.upper(""), lib.upper("b")]).toEqual([undefined, "A", undefined, undefined, "B"]);
+  }
+});

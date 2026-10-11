@@ -248,4 +248,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","stepped by hand"],
   },
+  {
+    "name": "truthy-option-map-unchained",
+    "breaks": "`map` of an `Option` never falsy is `o ? o.test(x) : undefined`, not `o?.test(x)`",
+    "file": "src/lower/std_types/option.rs",
+    "find": "                let tested = js::presence_of(&present).map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));\n",
+    "replace": "                let tested: Option<Expr> = None;\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an option's method call ends where it's None"
+    ]
+  },
 ];

@@ -268,4 +268,16 @@ export const mutations: Mutation[] = [
       "a guarded binding of an Option"
     ]
   },
+  {
+    "name": "text-truth-chained",
+    "breaks": "`s ? s.toUpperCase() : undefined` of text's truth is `s?.toUpperCase()`, `\"\"` where Rust gives `None`",
+    "file": "src/js.rs",
+    "find": "fn null_tested(test: &Expr) -> Option<&Expr> {\n    match &test.kind {\n",
+    "replace": "fn null_tested(test: &Expr) -> Option<&Expr> {\n    match &test.kind {\n        ExprKind::Unary(UnaryOp::Not, not) if let ExprKind::Unary(UnaryOp::Not, x) = &not.kind => Some(x),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a test of text's truth is no optional chain"
+    ]
+  },
 ];

@@ -276,7 +276,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     value
                 };
-                Expr::cond(present, value, Expr::undefined())
+                // Of an `Option` never falsy, `!!o`, as of `o != null`: `o?.m(x)`
+                // (ADR 0298); else its test as it is.
+                let tested = js::presence_of(&present).map(|o| Expr::bin(Op::LooseNe, o.clone(), Expr::null()));
+                match Expr::cond(tested.unwrap_or_else(|| present.clone()), value, Expr::undefined()) {
+                    Expr {
+                        kind: js::ExprKind::Cond(_, value, none),
+                        span,
+                    } => Expr {
+                        kind: js::ExprKind::Cond(Box::new(present), value, none),
+                        span,
+                    },
+                    chain => chain,
+                }
             }
             // Of a number or text, a handle on the `Option`'s own place: `Some(x)`
             // of one is `x` (ADR 0030), so writing it writes the `Option`.

@@ -83,6 +83,14 @@ pub(crate) fn presence_of(test: &Expr) -> Option<&Expr> {
     }
 }
 
+/// `x` of `x != null`.
+fn null_tested(test: &Expr) -> Option<&Expr> {
+    match &test.kind {
+        ExprKind::Binary(Op::LooseNe, x, null) if matches!(null.kind, ExprKind::Null) => Some(x),
+        _ => None,
+    }
+}
+
 /// Are `a` and `b` one path: a variable, or `a.b.c` or `a?.b` of the same names?
 pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
     match (&a.kind, &b.kind) {
@@ -978,8 +986,10 @@ impl Expr {
 
     pub fn cond(test: Expr, then: Expr, els: Expr) -> Expr {
         // `a != null ? a.b : undefined` is `a?.b`, as a person writes it. One
-        // property only: `a?.b.c` would end the chain at `.c` too.
-        if let Some(tested) = presence_of(&test)
+        // property only: `a?.b.c` would end the chain at `.c` too. Not of
+        // `!!a`, which an empty string fails, `!s.is_empty()`'s: an
+        // `Option` never falsy's is lowered as one of `a != null` (ADR 0298).
+        if let Some(tested) = null_tested(&test)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Member(object, property) = &then.kind
             && same_path(tested, object)
@@ -992,7 +1002,7 @@ impl Expr {
         }
         // `a != null ? a.m(x) : undefined` is `a?.m(x)`: `?.` skips the call,
         // its arguments too, where `a` is, as the test does.
-        if let Some(tested) = presence_of(&test)
+        if let Some(tested) = null_tested(&test)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Call(callee, args) = &then.kind
             && let ExprKind::Member(object, property) = &callee.kind

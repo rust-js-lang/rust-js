@@ -23,7 +23,9 @@ function, is there where it's truthy: `is_some()` is `!!o`, `is_none()` is
 `!o`, and a test of one, an `if let Some(..)`'s or a `map`'s, `o`.** A
 test reads `!!o` as `o`, and so does JSX where it shows `o && <el />`,
 which renders nothing for `undefined`. `!!o ? o.m(x) : undefined` is
-`o?.m(x)`, as `o != null ? ..` is.
+`o?.m(x)`, as `o != null ? ..` is. (Amended: the `Option`'s `map` says so, which knows
+it's never falsy; JS's `!!s` alone may be text's, `!s.is_empty()`, which
+`""` fails, and `s ? s.m() : undefined` is no `s?.m()`.)
 
 **A `const` only tests read is read by its truth too**: `const hideContent
 = !!error || ..` read only by `if`s, `?:`s and `!`, is `error || ..`, as
