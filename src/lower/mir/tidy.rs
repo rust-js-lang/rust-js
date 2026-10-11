@@ -133,7 +133,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     named_temporaries(body);
     eager_chains(body);
     returned_in_branches(body, result);
-    tail_returns(body, returns);
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
     declarations(body);
@@ -144,6 +143,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
+    // What those leave at the end, a `return;` the program didn't write.
+    tail_returns(body, returns);
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
@@ -542,17 +543,23 @@ fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     while stmts.last().is_some_and(unwritten) {
         stmts.pop();
     }
+    // Of `if (a) { if (b) { return; } }`, `a && b`'s.
     if let Some(at) = (stmts.iter())
-        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if ands(then).1.last().is_some_and(unwritten)))
     {
         let rest = stmts.split_off(at + 1);
         let Some(Stmt {
-            kind: StmtKind::If(test, mut then, None),
+            kind: StmtKind::If(test, then, None),
             span,
         }) = stmts.pop()
         else {
             unreachable!("found")
         };
+        let (tests, mut then) = ands(&then);
+        let test = (std::iter::once(test).chain(tests))
+            .rev()
+            .reduce(|b, a| Expr::bin(Op::And, a, b))
+            .expect("one");
         then.pop();
         match (then.is_empty(), rest.is_empty()) {
             (true, true) => {}
@@ -2052,6 +2059,11 @@ fn sunk_lets(stmts: &mut Vec<Stmt>) {
                 branch.insert(0, declared);
                 continue;
             }
+        }
+        // Into a labeled block, a block.
+        if alone && let StmtKind::Labeled(_, body) = &mut stmts[first].kind {
+            body.insert(0, declared);
+            continue;
         }
         // Into a loop whose body assigns it before anything reads it, each
         // turn: the variable Rust declares in the body, each turn its own.

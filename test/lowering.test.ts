@@ -6454,3 +6454,37 @@ pub fn theme() -> Theme {
     expect(js).toContain('    font: { body: unquoted(joined(["a", "b"])), mono: unquoted(joined(["c"])), size: "14px" },\n');
   }
 });
+
+test("an `||` of `matches!` from MIR is the test THIR writes, at a function's end or not", async () => {
+  const dir = fixture("mir-or-matches");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Message {
+    Start { first_load: Option<bool> },
+    Refresh,
+    Other,
+}
+pub fn starts(message: &Message, out: &mut Vec<u32>) {
+    if matches!(message, Message::Start { first_load: Some(true) }) || matches!(message, Message::Refresh) {
+        out.push(1);
+    }
+    out.push(2);
+}
+pub fn tail(message: &Message, out: &mut Vec<u32>) {
+    if matches!(message, Message::Start { first_load: Some(true) }) || matches!(message, Message::Refresh) {
+        out.push(1);
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    const test = '  if ((message.TAG === "Start" && message.first_load) || message === "Refresh") {\n    out.push(1);\n  }\n';
+    expect(js).toContain(`export function starts(message, out) {\n${test}  out.push(2);\n}`);
+    expect(js).toContain(`export function tail(message, out) {\n${test}}`);
+    const lib = await import(join(dir, out));
+    const pushed: number[] = [];
+    lib.starts({ TAG: "Start", first_load: true }, pushed);
+    lib.tail("Refresh", pushed);
+    lib.tail("Other", pushed);
+    expect(pushed).toEqual([1, 2, 1]);
+  }
+});
