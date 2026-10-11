@@ -102,6 +102,7 @@ fmt_error_format.rs
 fmt_error_println.rs
 fmt_error_to_string.rs
 fn_items_as_values.rs
+fn_pointer_of_borrowed_struct.rs
 folded_call_panic_drops.rs
 format_args_order.rs
 format_width_arguments.rs

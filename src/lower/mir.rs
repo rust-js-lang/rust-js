@@ -27,7 +27,7 @@ use rustc_middle::mir::{
     Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp,
 };
 use rustc_middle::thir;
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
@@ -290,6 +290,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let plain = mir_body.local_decls[local].ty.walk().all(|arg| match arg.kind() {
                 ty::GenericArgKind::Type(t) => {
                     !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
+                        // Inside a binder, a function pointer's parameter, unknown.
+                        && !t.has_escaping_bound_vars()
                         && t.is_freeze(self.tcx, self.typing_env)
                         && !self.is_js_object(t)
                 }

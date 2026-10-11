@@ -794,4 +794,12 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    name: "mir-plain-of-bound-vars",
+    breaks: "a local's type inside a binder, a function pointer's parameter, is asked whether it's `Freeze`, which crashes rustc",
+    file: "src/lower/mir.rs",
+    find: "                        && !t.has_escaping_bound_vars()\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","fn_pointer_of_borrowed_struct"],
+  },
 ];
