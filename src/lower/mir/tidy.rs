@@ -95,7 +95,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| continued(stmts, continues));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
-    bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
     // A chain of tests a loop ended, its body now ending where the chain's does.
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     js::statement_lists(body, &mut unlabeled);
@@ -145,6 +144,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
+    // A chain's tests, where each is read in place now: `if (a) { if (f(a))
+    // { .. } }`, `if (a && f(a))`.
+    bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
     // What those leave at the end, a `return;` the program didn't write.
     tail_returns(body, returns);
     // A cell only its `value` is read and set of, by name: its variable.

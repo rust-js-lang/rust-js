@@ -6577,3 +6577,29 @@ pub fn later(code: Option<&str>) -> Props {
     expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);
   }
 });
+
+// A let chain's tests, each read where it's tested once what holds them
+// is gone, one `if`: `val != null` of `Array.isArray(val)` none, as
+// react.dev's errors page revives its elements.
+test("a let chain from MIR is one test, past what held its parts", async () => {
+  const dir = fixture("let-chain-tests");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Kind, Unknown, classify};
+
+pub fn revive(val: Option<&'static Unknown>) -> Option<&'static Unknown> {
+    if let Some(val) = val
+        && matches!(classify(val), Kind::Array(_))
+        && matches!(js::get(val, &0).map(classify), Some(Kind::String("$r")))
+    {
+        return js::get(val, &1);
+    }
+    val
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('export function revive(val) {\n  if (Array.isArray(val) && val[0] === "$r") {\n    return val[1];\n  }\n  return val;\n}');
+    const lib = await import(join(dir, out));
+    expect([lib.revive(["$r", 1]), lib.revive(["x", 1]), lib.revive(undefined), lib.revive("$r")]).toEqual([1, ["x", 1], undefined, "$r"]);
+  }
+});

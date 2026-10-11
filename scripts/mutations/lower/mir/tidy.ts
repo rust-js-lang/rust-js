@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    bottom_up(body, &mut |stmts| and_tests(stmts, conditions));\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR|a let chain from MIR is one test"],
   },
   {
     name: "mir-tidy-and-tests-any-condition",

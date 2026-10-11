@@ -970,10 +970,20 @@ impl Expr {
             return rhs;
         }
         // `a != null && Array.isArray(a)` is `Array.isArray(a)`: no array is
-        // `null` or `undefined`.
+        // `null` or `undefined`; and of `Array.isArray(a) && ..`, that.
+        let mut first = &rhs;
+        while let ExprKind::Binary(Op::And, a, _) = &first.kind {
+            first = a;
+        }
+        // Read for its truth, `!!Array.isArray(a)`, the same.
+        if let ExprKind::Unary(UnaryOp::Not, not) = &first.kind
+            && let ExprKind::Unary(UnaryOp::Not, value) = &not.kind
+        {
+            first = value;
+        }
         if op == Op::And
             && let Some(tested) = presence_of(&lhs)
-            && let ExprKind::Call(callee, args) = &rhs.kind
+            && let ExprKind::Call(callee, args) = &first.kind
             && let (ExprKind::Member(array, is_array), [of]) = (&callee.kind, args.as_slice())
             && matches!(&array.kind, ExprKind::Var(name) if name == "Array")
             && is_array == "isArray"

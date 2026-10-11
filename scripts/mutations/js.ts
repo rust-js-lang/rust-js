@@ -280,4 +280,28 @@ export const mutations: Mutation[] = [
       "a test of text's truth is no optional chain"
     ]
   },
+  {
+    "name": "is-array-truth-unpeeled",
+    "breaks": "`val != null && !!Array.isArray(val)` keeps its null test",
+    "file": "src/js.rs",
+    "find": "            first = value;\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let chain from MIR is one test"
+    ]
+  },
+  {
+    "name": "is-array-chain-first-unread",
+    "breaks": "`val != null && Array.isArray(val) && ..` keeps its null test",
+    "file": "src/js.rs",
+    "find": "        while let ExprKind::Binary(Op::And, a, _) = &first.kind {\n            first = a;\n        }\n        // Read for its truth",
+    "replace": "        // Read for its truth",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let chain from MIR is one test"
+    ]
+  },
 ];
