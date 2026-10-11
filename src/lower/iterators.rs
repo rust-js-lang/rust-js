@@ -1548,6 +1548,16 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             }
             ("reduce", [f, init]) => eager_items(chain, true, Some(f))
                 .map(|(items, _)| Expr::call(Expr::member(items, "reduce"), vec![f.clone(), init.clone()])),
+            // Whether any item is a literal, which `===` and `includes` agree
+            // of whatever the items are: `includes`, as THIR's.
+            ("some", [f])
+                if let Some(value) = sought(f).filter(|v| {
+                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_)) || v.as_int().is_some()
+                }) =>
+            {
+                eager_items(chain, false, None)
+                    .map(|(items, _)| Expr::call(Expr::member(items, "includes"), vec![value]))
+            }
             ("some" | "every", [f]) => {
                 eager_items(chain, false, None).map(|(items, _)| array_method(items, name, f.clone()))
             }

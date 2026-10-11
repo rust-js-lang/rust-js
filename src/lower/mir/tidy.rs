@@ -182,6 +182,16 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             }
         }
     });
+    // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
+    // `Expr::unary` makes it, `t !== "pre"`.
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Unary(op, arg) = &e.kind {
+            *e = Expr {
+                span: e.span,
+                ..Expr::unary(*op, (**arg).clone())
+            };
+        }
+    });
     // What `filter` keeps, then `or` or `unwrap_or`: `x || y`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Binary(Op::Coalesce, kept, _) = &e.kind
@@ -2049,6 +2059,9 @@ fn is_boolean(e: &Expr, booleans: &HashSet<String>) -> bool {
             ..,
         ) => true,
         ExprKind::Binary(Op::And | Op::Or, a, b) => is_boolean(a, booleans) && is_boolean(b, booleans),
+        // What JS's methods of the kind give, `s.includes(t)`, `Array.isArray(x)`.
+        ExprKind::Call(callee, _) => matches!(&callee.kind, ExprKind::Member(_, m)
+            if matches!(m.as_str(), "includes" | "startsWith" | "endsWith" | "some" | "every" | "has" | "isArray")),
         _ => false,
     }
 }

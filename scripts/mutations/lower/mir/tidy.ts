@@ -978,4 +978,28 @@ export const mutations: Mutation[] = [
       "an array's iterator read in place late"
     ]
   },
+  {
+    "name": "late-not-unsimplified",
+    "breaks": "`!matches!(t, \"pre\")` read in place stays `!(t === \"pre\")`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                ..Expr::unary(*op, (**arg).clone())\n",
+    "replace": "                kind: ExprKind::Unary(*op, arg.clone()),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "negated matches, string methods"
+    ]
+  },
+  {
+    "name": "string-method-not-boolean",
+    "breaks": "`s.includes(t)` isn't known a boolean, so `||` of it is `!!s.includes(t) || ..`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "\"includes\" | \"startsWith\" | \"endsWith\"",
+    "replace": "\"startsWith\" | \"endsWith\"",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "negated matches, string methods"
+    ]
+  },
 ];

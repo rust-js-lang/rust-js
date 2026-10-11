@@ -6994,3 +6994,35 @@ pub fn button(Props { provided_files }: Props, supported: bool) -> Option<u32> {
     expect([lib.button({ provided_files: ["/App.js"] }, true), lib.button({ provided_files: ["/x.js"] }, true), lib.button({ provided_files: [] }, false)]).toEqual([1, undefined, undefined]);
   }
 });
+
+// From MIR as from THIR, as react.dev's createFileMap reads a code block's
+// meta: `!matches!(t, "pre")` is `t !== "pre"`; a string method's `bool`,
+// `includes`, is one already, no `!!`; and `any(|t| t == "hidden")` of
+// strings is `includes("hidden")`.
+test("negated matches, string methods and any of equals from MIR read as THIR's", async () => {
+  const dir = fixture("file-map-shapes");
+  writeFileSync(join(dir, "lib.rs"), `pub fn not_pre(t: &str, u: &str, out: &mut Vec<u32>) {
+    if !matches!(t, "pre") && !matches!(u, "pre") {
+        out.push(1);
+    }
+}
+pub fn found(tokens: &[String]) -> Option<&String> {
+    tokens.iter().find(|token| token.contains('/') || token.contains('.'))
+}
+pub fn hidden(tokens: &[String]) -> bool {
+    tokens.iter().any(|token| token == "hidden")
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (t !== "pre" && u !== "pre") {\n');
+    expect(js).toContain('  return tokens.find((token) => token.includes("/") || token.includes("."));\n');
+    expect(js).toContain('  return tokens.includes("hidden");\n');
+    const lib = await import(join(dir, out));
+    const pushed: number[] = [];
+    lib.not_pre("a", "b", pushed);
+    lib.not_pre("pre", "b", pushed);
+    expect([pushed, lib.found(["a", "b.js"]), lib.found(["a"]), lib.hidden(["hidden"]), lib.hidden(["x"])]).toEqual([[1], "b.js", undefined, true, false]);
+  }
+});

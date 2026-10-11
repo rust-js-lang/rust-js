@@ -685,4 +685,16 @@ export const mutations: Mutation[] = [
       "an early-stopping consumer leaves the rest"
     ]
   },
+  {
+    "name": "some-of-literal-not-includes",
+    "breaks": "`any(|t| t == \"hidden\")` from MIR is `some((t) => t === \"hidden\")`, not `includes(\"hidden\")`",
+    "file": "src/lower/iterators.rs",
+    "find": "                    matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_)) || v.as_int().is_some()\n",
+    "replace": "                    false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "negated matches, string methods"
+    ]
+  },
 ];
