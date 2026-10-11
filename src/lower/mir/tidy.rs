@@ -150,6 +150,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, captured));
+    // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
+    // $iter(xs);`: the array's, as THIR's.
+    eager_chains(body);
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
     // { .. } }`, `if (a && f(a))`.
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));

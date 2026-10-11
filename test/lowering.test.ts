@@ -6963,3 +6963,32 @@ pub fn or_none() -> bool {
     delete globals.supportsIt;
   }
 });
+
+// A consumer of an array's own iterator, read in place only once MIR's
+// temporary of it is, after an early return, `any(f)`: the array's `some`,
+// as THIR's, as react.dev's DownloadButton checks its files.
+test("an array's iterator read in place late from MIR is the array's method", async () => {
+  const dir = fixture("late-eager-chain");
+  writeFileSync(join(dir, "lib.rs"), `pub const SUPPORTED: [&str; 2] = ["/App.js", "/styles.css"];
+pub struct Props {
+    pub provided_files: Vec<String>,
+}
+pub fn button(Props { provided_files }: Props, supported: bool) -> Option<u32> {
+    if !supported {
+        return None;
+    }
+    if provided_files.iter().any(|file| !SUPPORTED.contains(&file.as_str())) {
+        return None;
+    }
+    let n = provided_files.len() as u32;
+    Some(n)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  if (providedFiles.some((file) => !SUPPORTED.includes(file))) {\n");
+    const lib = await import(join(dir, out));
+    expect([lib.button({ provided_files: ["/App.js"] }, true), lib.button({ provided_files: ["/x.js"] }, true), lib.button({ provided_files: [] }, false)]).toEqual([1, undefined, undefined]);
+  }
+});

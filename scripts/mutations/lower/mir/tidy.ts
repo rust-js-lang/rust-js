@@ -182,9 +182,9 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-eager-chains-off",
     breaks: "`$iter(xs).map(f).toArray()` stays, not `xs.map(f)`",
     file: "src/lower/mir/tidy.rs",
-    find: "    eager_chains(body);\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+    find: "    named_temporaries(body);\n    eager_chains(body);\n",
+    replace: "    named_temporaries(body);\n",
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR|a lazy chain from MIR spread once"],
   },
   {
     name: "mir-tidy-params-not-destructured",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        body.drain(..count);\n        *param = pattern;\n",
     replace: "        let _ = pattern;\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
+    tests: ["test/lowering.test.ts","-t","iterator chains from MIR|a lazy chain from MIR spread once"],
   },
   {
     name: "mir-tidy-falsy-temporary-kept",
@@ -964,6 +964,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a truthy option's is_some given as a value"
+    ]
+  },
+  {
+    "name": "late-eager-chains-off",
+    "breaks": "an array's iterator read in place late stays `$lent($iter(xs)).some(f)`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    // $iter(xs);`: the array's, as THIR's.\n    eager_chains(body);\n",
+    "replace": "    // $iter(xs);`: the array's, as THIR's.\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an array's iterator read in place late"
     ]
   },
 ];
