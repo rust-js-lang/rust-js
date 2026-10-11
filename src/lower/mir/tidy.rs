@@ -232,7 +232,7 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
             label: label.clone(),
             pattern,
             mutable,
-            iterable: iterated(source.clone()),
+            iterable: unarrayed(iterated(source.clone())),
             body,
         },
         // A range's end, read once by Rust, is read each step by JS's `for`:
@@ -288,6 +288,22 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
     let mut out = vec![looped.at(js::Span::NONE)];
     out.extend(exit);
     Some(out)
+}
+
+/// What a `for…of` iterates, of `Array.from(xs)`, a string's `chars()`:
+/// `xs` itself, the same items, which nothing changes as it's iterated.
+fn unarrayed(e: Expr) -> Expr {
+    match e.kind {
+        ExprKind::Call(callee, mut args)
+            if args.len() == 1
+                && matches!(&callee.kind, ExprKind::Member(object, from)
+                    if from == "from" && matches!(&object.kind, ExprKind::Var(v) if v == "Array"))
+                && matches!(args[0].kind, ExprKind::Var(_)) =>
+        {
+            args.pop().expect("one")
+        }
+        kind => Expr { kind, span: e.span },
+    }
 }
 
 /// A loop's body that ends `if (c) { a; continue l; } break;`, `l` the loop

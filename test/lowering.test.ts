@@ -6035,3 +6035,32 @@ pub fn sliced(code: &str) -> u32 {
     expect([lib.plain("abcdef"), lib.sliced("aba")]).toEqual([3, 2]);
   }
 });
+
+test("a `format!`'s arguments read out of order, and a string's `chars()` iterated, from MIR read as THIR's", async () => {
+  const dir = fixture("mir-format-chars");
+  writeFileSync(join(dir, "lib.rs"), `pub fn lines(code: &str) -> Vec<String> {
+    let mut line_output: Vec<String> = Vec::new();
+    let mut final_output = Vec::new();
+    let mut line_index = 0;
+    for c in code.chars() {
+        if c == '\\n' {
+            let current = line_index;
+            final_output.push(format!("{current}:{}", line_output.join("")));
+            line_output = Vec::new();
+            line_index += 1;
+        } else {
+            line_output.push(c.to_string());
+        }
+    }
+    final_output
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  for (const c of code) {\n");
+    expect(js).toContain('      const arg = lineOutput.join("");\n      finalOutput.push(`${current}:${arg}`);\n');
+    const lib = await import(join(dir, out));
+    expect(lib.lines("ab\ncd\n")).toEqual(["0:ab", "1:cd"]);
+  }
+});

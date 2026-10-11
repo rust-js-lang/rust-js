@@ -642,4 +642,12 @@ export const mutations: Mutation[] = [
     replace: "            if !same {\n                return None;\n            }\n            let held = (!same).then(|| {\n",
     tests: ["test/lowering.test.ts","-t","whose end is a call holds it first"],
   },
+  {
+    name: "mir-tidy-chars-arrayed",
+    breaks: "a string's `chars()` iterated is `Array.from(code)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            iterable: unarrayed(iterated(source.clone())),\n",
+    replace: "            iterable: iterated(source.clone()),\n",
+    tests: ["test/lowering.test.ts","-t","arguments read out of order"],
+  },
 ];

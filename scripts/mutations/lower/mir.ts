@@ -1250,4 +1250,12 @@ export const mutations: Mutation[] = [
     replace: "                && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    name: "mir-format-args-array",
+    breaks: "a `format!`'s arguments read out of order are an array, `${_26[1]}:${_26[0]}`",
+    file: "src/lower/mir.rs",
+    find: "        if !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
+    replace: "        if false && !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {\n",
+    tests: ["test/lowering.test.ts","-t","arguments read out of order"],
+  },
 ];

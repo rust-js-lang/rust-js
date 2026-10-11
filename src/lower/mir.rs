@@ -2190,8 +2190,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Read out of order, or one that does something before others that
         // do, which made after it would run first: the list made whole
         // first, its fields read by its name.
-        let in_order = items[..field].iter().all(|item| movable(state, item))
+        let mut in_order = items[..field].iter().all(|item| movable(state, item))
             && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));
+        // None read yet: each that does something held first, in order, `const
+        // arg = …`, as THIR holds them, the rest read where they are.
+        let acting: Vec<usize> = (items.iter().enumerate())
+            .filter(|(_, item)| !movable(state, item) && matches!(item, Value::Expr(e) if e.has_effects()))
+            .map(|(k, _)| k)
+            .collect();
+        if !in_order && !acting.is_empty() && !state.taken.contains(&place.local) {
+            let at = state
+                .pending
+                .iter()
+                .position(|(l, _)| *l == place.local)
+                .expect("pending");
+            let rest = state.pending.split_off(at);
+            self.flush(state, out)?;
+            state.pending = rest;
+            let span = state.body.local_decls[place.local].source_info.span;
+            for k in acting {
+                let Value::List(items) = &mut state.pending[0].1 else {
+                    unreachable!("a list")
+                };
+                let item = std::mem::replace(&mut items[k], Value::Expr(Expr::undefined()));
+                let item = self.value_expr(item, span)?;
+                let held = self.spill("arg", item, out);
+                let Value::List(items) = &mut state.pending[0].1 else {
+                    unreachable!("a list")
+                };
+                items[k] = Value::Expr(held);
+            }
+            in_order = true;
+        }
         if !in_order || !self.admit(state, &[place.local], true, out)? {
             if let Some(at) = state.pending.iter().position(|(l, _)| *l == place.local) {
                 let rest = state.pending.split_off(at + 1);
