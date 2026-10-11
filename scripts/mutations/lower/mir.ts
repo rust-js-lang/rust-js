@@ -392,7 +392,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    if self.implements_iterator(output)\n",
     replace: "                    if false && self.implements_iterator(output)\n",
-    tests: ["test/mir.test.ts","-t","integer_bits"],
+    tests: ["test/lowering.test.ts","-t","stepped by hand"],
   },
   {
     name: "mir-to-int-unchecked-uncast",

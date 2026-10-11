@@ -246,6 +246,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/option.rs",
     find: "            && !crate::lower::recognition::is_duration_ty(ty)\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","duration"],
+    tests: ["test/lowering.test.ts","-t","stepped by hand"],
   },
 ];

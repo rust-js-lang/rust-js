@@ -1427,6 +1427,45 @@ pub fn chained(nodes: &[Node]) -> u32 {
   }
 });
 
+// What a loop's recovery (ADR 0364) no longer shows: an iterator stepped by
+// hand, a std one THIR's lowering makes an array of and a generic one given
+// an array, each a JS iterator; a \`None\` of a \`Duration\` tested \`== null\`,
+// as \`ZERO\` is falsy; and a \`const\` another takes is that one, from MIR.
+test("iterators stepped by hand, a Duration's None and a const another takes", async () => {
+  const dir = fixture("mir-by-hand");
+  writeFileSync(join(dir, "lib.rs"), `use std::time::Duration;
+pub struct B { pub a: u32, pub c: u32 }
+pub fn moved() -> u32 {
+    let whole = B { a: 5, c: 6 };
+    let mut moved = whole;
+    moved.c = 7;
+    moved.a + moved.c
+}
+pub fn second(s: &str) -> Option<u8> {
+    let mut b = s.bytes();
+    b.next();
+    b.next()
+}
+fn first<I: IntoIterator<Item = u32>>(items: I) -> Option<u32> {
+    items.into_iter().next()
+}
+pub fn first_of(v: Vec<u32>) -> Option<u32> {
+    first(v)
+}
+pub fn zero(a: u64, b: u64) -> bool {
+    let d = Duration::from_secs(a).checked_sub(Duration::from_secs(b));
+    if let Some(x) = d { x.as_secs() == 0 } else { false }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    if (out === "mir.js") expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
+    const lib = await import(join(dir, out));
+    expect([lib.moved(), lib.second("ab"), lib.first_of([4, 5]), lib.zero(5n, 5n), lib.zero(4n, 5n)]).toEqual([12, 98, 4, true, false]);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

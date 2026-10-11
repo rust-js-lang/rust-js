@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            if matches!(receiver_ty.kind(), ty::Param(_)) {\n",
     replace: "            if false && matches!(receiver_ty.kind(), ty::Param(_)) {\n",
-    tests: ["test/mir.test.ts","-t","user_collections"],
+    tests: ["test/lowering.test.ts","-t","stepped by hand"],
   },
   {
     name: "mir-rev-items-forward",

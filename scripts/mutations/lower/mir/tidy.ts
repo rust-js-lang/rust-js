@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                            && js::mentions_in(&stmts[j..], a) == 1\n",
     replace: "                            && false\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/lowering.test.ts","-t","stepped by hand"],
   },
   {
     name: "mir-tidy-branch-values-kept",
