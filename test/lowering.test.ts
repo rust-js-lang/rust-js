@@ -6800,3 +6800,26 @@ pub fn run() -> Vec<u32> {
     expect(lib.run()).toEqual([3, 4]);
   }
 });
+
+// A temporary MIR makes of what calls, given to a builtin's function,
+// `Object.fromEntries(_5)`, is read in place: `Object`'s members never
+// change, so reading one first is the same, as react.dev's RSC template
+// makes its files an object.
+test("a call's temporary from MIR is read in place by a builtin's function", async () => {
+  const dir = fixture("builtin-callee-inline");
+  writeFileSync(join(dir, "lib.rs"), `use js::dict;
+pub fn files(code: String, other: String) -> &'static js::Dict<String> {
+    dict::from_entries(vec![
+        ("/index.js".to_string(), code.to_uppercase()),
+        ("/other.js".to_string(), other),
+    ])
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  return { "/index.js": code.toUpperCase(), "/other.js": other };\n');
+    const lib = await import(join(dir, out));
+    expect(lib.files("a", "b")).toEqual({ "/index.js": "A", "/other.js": "b" });
+  }
+});

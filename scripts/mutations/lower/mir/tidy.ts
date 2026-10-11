@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-past-changed-reads",
     breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            true => e.is_made_of_constants() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),\n",
-    replace: "            true => !e.has_effects(),\n",
+    find: "            true => {\n                e.is_made_of_constants()\n",
+    replace: "            true => {\n                !e.has_effects() ||\n                e.is_made_of_constants()\n",
     tests: ["test/mir.test.ts","-t","assignment_order"],
   },
   {
@@ -782,8 +782,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-constant-objects-block",
     breaks: "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            true => e.is_made_of_constants() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),\n",
-    replace: "            true => e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),\n",
+    find: "            true => {\n                e.is_made_of_constants()\n",
+    replace: "            true => {\n                e.is_constant()\n",
     tests: ["test/lowering.test.ts","-t","past an object of constants"],
   },
   {
@@ -856,6 +856,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a while in a closure from MIR keeps its test"
+    ]
+  },
+  {
+    "name": "builtin-callee-blocks-inline",
+    "breaks": "a call's temporary given to `Object.fromEntries` stays a `const`, and no object literal is made of it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "\"Object\" | \"Math\"",
+    "replace": "\"Object!\" | \"Math\"",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "read in place by a builtin's function"
     ]
   },
 ];

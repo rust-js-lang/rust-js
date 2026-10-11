@@ -1955,7 +1955,14 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet
                 e.visit_vars(&mut |v| unchanged &= !changing.contains(v));
                 unchanged
             }
-            true => e.is_made_of_constants() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),
+            // A builtin's function too, `Object.fromEntries`, which nothing changes.
+            true => {
+                e.is_made_of_constants()
+                    || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v))
+                    || matches!(&e.kind, ExprKind::Member(of, _)
+                        if matches!(&of.kind, ExprKind::Var(v)
+                            if !changing.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String")))
+            }
         };
         if !stable && leads(read, name, &passes) != Some(true) {
             i += 1;
