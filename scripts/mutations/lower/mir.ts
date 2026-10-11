@@ -954,4 +954,20 @@ export const mutations: Mutation[] = [
     replace: "                || false)\n",
     tests: ["test/compiler.test.ts","-t","async code becomes"],
   },
+  {
+    name: "mir-on-load-returns",
+    breaks: "an `on_load!` body from MIR returns at its module's top, which JS has no `return` at",
+    file: "src/lower/mir.rs",
+    find: "                        stmt.kind = StmtKind::Break(Some(label.clone()));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","on_load body's loop"],
+  },
+  {
+    name: "mir-imported-binding-called-static",
+    breaks: "a JS function a variable holds, `js::import!(f).await`'s, is called as its static import",
+    file: "src/lower/mir.rs",
+    find: "        if let Operand::Copy(_) | Operand::Move(_) = func\n",
+    replace: "        if false && let Operand::Copy(_) | Operand::Move(_) = func\n",
+    tests: ["test/bindings.test.ts","-t","js::import! loads a module"],
+  },
 ];

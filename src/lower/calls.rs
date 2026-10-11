@@ -121,48 +121,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// export it is (ADR 0304). It's read nowhere else, so nothing imports
     /// its module statically.
     fn dynamic_import(&mut self, item: ExprId, module: bool, span: Span) -> R<Expr> {
-        let tcx = self.tcx;
         let e = &self.thir[self.strip(item)];
         let Some((id, _)) = fn_def(e.ty).filter(|_| matches!(e.kind, ExprKind::ZstLiteral { .. })) else {
             return Err(self.unsupported(span, "importing what isn't a function"));
         };
-        let (from, export) = if is_binding(tcx, id) {
-            let path = super::bindings::js_path(tcx, id).unwrap_or_default();
-            match super::bindings::js_import(&path) {
-                Some(((from, export), "")) => (js::ImportFrom::Specifier(from), export),
-                _ => return Err(self.unsupported(span, "importing a binding that isn't a JS module's export")),
-            }
-        } else if let Some(info) = id.as_local().and(self.krate.fns.get(&id))
-            && info.owner.is_none()
-            && tcx.visibility(id).is_public()
-        {
-            let default = super::bindings::default_exports(tcx, info.module)
-                .iter()
-                .any(|&(exported, _)| exported == Some(id));
-            let export = if default {
-                "default".to_string()
-            } else {
-                info.name.clone()
-            };
-            (js::ImportFrom::Module(super::module_path(tcx, info.module)), export)
-        } else {
-            return Err(self.unsupported(
-                span,
-                "importing what isn't a pub function of the crate's, or a binding's",
-            ));
-        };
-        if module {
-            if export != "default" {
-                return Err(self.unsupported(span, "importing a module by what isn't its default export"));
-            }
-            return Ok(Expr::import(from));
-        }
-        let m = "m".to_string();
-        let read = Expr::arrow(
-            vec![m.clone().into()],
-            vec![StmtKind::Return(Some(Expr::member(Expr::var(&m), export))).at(js::Span::NONE)],
-        );
-        Ok(Expr::call(Expr::member(Expr::import(from), "then"), vec![read]))
+        self.dynamic_import_of(id, module, span)
     }
 
     /// A type whose `Borrow` is the crate's that std's function would take

@@ -47,6 +47,7 @@ a destructured prop of a hyphenated name is quoted
 a disabled crate or module does not load or expand its contents
 a dyn ReactNode is the node itself
 a flattened struct's pattern takes its fields apart with the props'
+a hyphenated attribute read first is a variable of a JS name
 a module's constant element is rendered where it's read
 a module's named component is loaded as a module's default
 a props field's default may be a const

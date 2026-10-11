@@ -190,6 +190,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         params.extend(evidence);
         // An `async fn`'s body is its coroutine's, an async arrow called
         // at once: the async function's own (ADR 0029).
+        // An `on_load!` body is its module's top, where JS has no `return`:
+        // each a `break` out of a labeled block of it (ADR 0267).
+        if bindings::is_on_load(self.tcx, def_id) {
+            let label = self.fresh("load");
+            let mut returns = false;
+            js::statement_lists(&mut out, &mut |stmts| {
+                for stmt in stmts.iter_mut() {
+                    if let StmtKind::Return(None) = stmt.kind {
+                        stmt.kind = StmtKind::Break(Some(label.clone()));
+                        returns = true;
+                    }
+                }
+            });
+            if returns {
+                out = vec![StmtKind::Labeled(label, out).at(js::Span::NONE)];
+            }
+        }
         let is_async = self.tcx.asyncness(def_id).is_async();
         if is_async {
             let Some(body) = called_async_body(&mut out) else {
@@ -2361,6 +2378,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             super::calls::given_to_js(&mut exprs);
             return Ok(Value::Expr(Expr::call(callee, exprs)));
         };
+        // A function a variable holds, `js::import!(f).await`'s: called as
+        // that variable, which may be all that holds it, not as its import.
+        // One a JS function, or the crate's that JS calls as it is, given no
+        // dictionaries nor boxes.
+        let called_as_js = match bindings::is_binding(self.tcx, def_id) {
+            true => {
+                !super::bindings::is_method(self.tcx, def_id)
+                    && matches!(bindings::js_form(self.tcx, def_id), bindings::JsForm::Call(_))
+            }
+            false => {
+                self.krate.fns.contains_key(&def_id)
+                    && self.tcx.generics_of(def_id).count() == 0
+                    && (0..args.len()).all(|i| !self.param_is_box(def_id, i))
+            }
+        };
+        if let Operand::Copy(_) | Operand::Move(_) = func
+            && called_as_js
+        {
+            let mut operands: Vec<&Operand<'tcx>> = vec![func];
+            operands.extend(args.iter().map(|a| &a.node));
+            let values = self.take_operands(state, &operands, out)?;
+            let mut exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let callee = exprs.remove(0);
+            super::calls::given_to_js(&mut exprs);
+            return Ok(Value::Expr(Expr::call(callee, exprs)));
+        }
+        // `js::import!(f)`: what `f` names imported, not its value.
+        if bindings::is_binding(self.tcx, def_id)
+            && let bindings::JsForm::Import { module } = bindings::js_form(self.tcx, def_id)
+        {
+            let Some((item, _)) = args.first().and_then(|a| fn_def(a.node.ty(decls, self.tcx))) else {
+                return Err(self.unsupported(span, "importing what isn't a function"));
+            };
+            return Ok(Value::Expr(self.dynamic_import_of(item, module, span)?));
+        }
         let arg_tys: Vec<Ty<'tcx>> = args.iter().map(|a| a.node.ty(decls, self.tcx)).collect();
         let output = destination.ty(decls, self.tcx).ty;
         let operands: Vec<&Operand<'tcx>> = args.iter().map(|a| &a.node).collect();

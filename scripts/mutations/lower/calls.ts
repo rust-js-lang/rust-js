@@ -175,14 +175,6 @@ export const mutations: Mutation[] = [
     tests: ["test/compiler.test.ts", "-t", "the builtins crate's object and js_error functions are JS's"],
   },
   {
-    name: "dynamic-import-default-named",
-    breaks: "a module's default export is imported by its function's name, so `import_module!` refuses it",
-    file: "src/lower/calls.rs",
-    find: "            let export = if default {\n",
-    replace: "            let export = if false && default {\n",
-    tests: ["test/bindings.test.ts", "-t", "js::import! loads a module"],
-  },
-  {
     name: "flattened-read-boxed",
     breaks: "`args.pop_front().flatten()` of items that may be `None` is refused, not `args.shift()`",
     file: "src/lower/calls.rs",

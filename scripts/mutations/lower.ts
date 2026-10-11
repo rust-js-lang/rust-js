@@ -490,4 +490,12 @@ export const mutations: Mutation[] = [
     replace: "                =>",
     tests: ["test/lowering.test.ts", "-t", "const of a string written across lines"],
   },
+  {
+    name: "spill-hyphenated-name",
+    breaks: "an attribute read first is a variable of its hyphenated name, `const data-step`",
+    file: "src/lower.rs",
+    find: "        let name = self.fresh(&unhyphenated(base));\n",
+    replace: "        let name = self.fresh(base);\n",
+    tests: ["test/mir.test.ts","-t","JSX tests"],
+  },
 ];

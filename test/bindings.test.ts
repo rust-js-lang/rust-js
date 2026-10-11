@@ -1686,15 +1686,18 @@ pub async fn rooted() -> u32 {
     module.default()()
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('const { run } = await import("./lint.js");');
-  expect(js).toContain('const { twice } = await import("./math.js");');
-  expect(js).toContain('const { run: next } = await import("./lint.js");');
-  expect(js).toContain('const module = await import("./root.js");');
-  expect(js).not.toMatch(/^import /m);
-  const lib = await import(join(dir, "lib.js"));
-  expect([await lib.linted(1), await lib.doubled(3), await lib.named(2), await lib.rooted()]).toEqual([2, 6, 3, 7]);
+  // From MIR too (ADR 0364).
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('const { run } = await import("./lint.js");');
+    expect(js).toContain('const { twice } = await import("./math.js");');
+    expect(js).toContain('const { run: next } = await import("./lint.js");');
+    expect(js).toContain('const module = await import("./root.js");');
+    expect(js).not.toMatch(/^import /m);
+    const lib = await import(join(dir, out));
+    expect([await lib.linted(1), await lib.doubled(3), await lib.named(2), await lib.rooted()]).toEqual([2, 6, 3, 7]);
+  }
 });
 
 // ADR 0305: a binding marked `#[rust_js::require]` is read through

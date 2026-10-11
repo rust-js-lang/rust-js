@@ -4306,3 +4306,20 @@ pub fn App(items: &[&'static str]) -> JSX::Element {
   const lib = await import(join(dir, "lib.jsx"));
   expect([["a", "b"], []].map((items) => renderToStaticMarkup(lib.App(items)))).toEqual(["<b>2</b>", ""]);
 });
+
+// ADR 0364: an attribute read first, before what a child's branch makes,
+// is read into a variable named as JS names one, a hyphenated name's too.
+test("a hyphenated attribute read first is a variable of a JS name", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+pub fn App(step: u32, open: bool) -> JSX::Element {
+    jsx! { <div data-step={step.to_string()}>{if open { "a" } else { "b" }}</div> }
+}
+`);
+  run(args);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([renderToStaticMarkup(lib.App(2, true)), renderToStaticMarkup(lib.App(3, false))]).toEqual([
+    '<div data-step="2">a</div>',
+    '<div data-step="3">b</div>',
+  ]);
+});

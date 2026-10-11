@@ -1824,7 +1824,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `const <base> = value;`, so it's evaluated here, then its name.
     fn spill(&mut self, base: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
-        let name = self.fresh(base);
+        let name = self.fresh(&unhyphenated(base));
         let span = value.span;
         out.push(StmtKind::Const(name.clone(), value).at(span));
         Expr::var(&name)
@@ -1904,6 +1904,24 @@ fn is_union(ty: Ty<'_>) -> bool {
 /// A Rust variable's name as JS code writes it (ADR 0038): `set_count` is
 /// `setCount`. Leading and trailing underscores stay (`_unused`, `type_`),
 /// and so does a name with no lowercase letter, like a constant's.
+/// `name` without its hyphens, each next letter capitalized: a hyphenated
+/// key's variable, `data-step`'s `dataStep`.
+fn unhyphenated(name: &str) -> String {
+    let mut out = String::new();
+    let mut capital = false;
+    for c in name.chars() {
+        match (c, capital) {
+            ('-', _) => capital = true,
+            (c, true) => {
+                out.extend(c.to_uppercase());
+                capital = false;
+            }
+            (c, false) => out.push(c),
+        }
+    }
+    out
+}
+
 fn camel_case(name: &str) -> String {
     let core = name.trim_matches('_');
     if !core.contains('_') || !core.contains(|c: char| c.is_ascii_lowercase()) {

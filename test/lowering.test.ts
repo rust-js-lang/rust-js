@@ -1008,6 +1008,41 @@ pub mod other {
   }
 });
 
+// ADR 0364: an `on_load!` body from MIR, which ends a loop by its end, is
+// its module's top all the same, where JS has no `return`.
+test("an on_load body's loop ends at the module's top", async () => {
+  const dir = fixture("on-load-loop");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "globalThis.onLoadLooped"]
+    safe fn seen(n: u32);
+}
+js::on_load! {
+    for n in [1u32, 2, 3] {
+        if n == 3 {
+            break;
+        }
+        seen(n);
+    }
+}
+pub fn ready() -> u32 {
+    1
+}
+`);
+  const seen: number[] = [];
+  const globals = globalThis as typeof globalThis & { onLoadLooped?: (n: number) => void };
+  globals.onLoadLooped = (n) => seen.push(n);
+  try {
+    for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+      run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+      seen.length = 0;
+      expect((await import(join(dir, out))).ready()).toBe(1);
+      expect(seen).toEqual([1, 2]);
+    }
+  } finally {
+    delete globals.onLoadLooped;
+  }
+});
+
 // ADR 0034: a replacement is the text it is, as Rust's is: JS reads `$&` and
 // `$1` in a string as what's matched, so one with a `$` doubles it, and one
 // not written out is a function's, `() => t`. `replacen(.., 1)` is JS's
