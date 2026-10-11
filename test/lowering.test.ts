@@ -8333,3 +8333,21 @@ pub fn shown(msg: Option<&Unknown>, tagged: bool) -> Option<String> {
     expect([lib.shown({ a: 1 }, false), lib.shown(cyclic, false), lib.shown(undefined, true)]).toEqual(['{\n  "a": 1\n}', "[object Object]", "tag"]);
   }
 });
+
+// An iterator's adapter of a JS iterator, `.map(..)` of a range's, is a JS
+// iterator already: the next adapter is its own, not `Iterator.from(..)`'s,
+// as react.dev's useTocHighlight finds its anchors.
+test("an adapter of a JS iterator is not made one again", async () => {
+  const dir = fixture("iterator-from-adapter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn evens(n: u32) -> Vec<u32> {
+    (0..n).filter_map(|i| if i % 2 == 0 { Some(i * 10) } else { None }).filter(|x| *x > 5).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).not.toContain("Iterator.from(");
+    const lib = await import(join(dir, out));
+    expect(lib.evens(10)).toEqual([20, 40, 60, 80]);
+  }
+});

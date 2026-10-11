@@ -178,4 +178,16 @@ export const mutations: Mutation[] = [
       "a crate function given as a callback is passed as itself"
     ]
   },
+  {
+    "name": "mir-adapter-not-js-iterator",
+    "breaks": "an adapter of a JS iterator, `.map(f)` of a range's, is made one again, `Iterator.from(..)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            _ if matches!(name.as_str(), \"map\" | \"filter\" | \"flatMap\" | \"take\" | \"drop\") => is_js_iterator(object),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an adapter of a JS iterator is not made one again"
+    ]
+  },
 ];

@@ -451,17 +451,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 /// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
-/// `$iter`, or a collection's `values()`, `keys()` or `entries()`.
+/// `$iter` or a range's `$iterator`, a collection's `values()`, `keys()`
+/// or `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
 fn is_js_iterator(e: &Expr) -> bool {
     let js::ExprKind::Call(callee, _) = &e.kind else {
         return false;
     };
     match &callee.kind {
-        js::ExprKind::Var(_) => crate::lower::iterators::is_stepped_items(e),
+        js::ExprKind::Var(v) => v == "$iterator" || crate::lower::iterators::is_stepped_items(e),
         // Not `Object.keys(o)`'s, an array.
         js::ExprKind::Member(object, name) => match &object.kind {
             js::ExprKind::Var(v) if v == "Object" => false,
             js::ExprKind::Var(v) if v == "Iterator" => name == "from",
+            _ if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") => is_js_iterator(object),
             _ => matches!(name.as_str(), "values" | "keys" | "entries"),
         },
         _ => false,
