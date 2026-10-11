@@ -1080,11 +1080,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     cases = ordered.into_iter().map(|(_, case)| case).collect();
                 }
                 // `if c { a } else { b }`, MIR's test of `false`, `!c`, first:
-                // the program's, `c`, its branch `a` first.
+                // the program's, `c`, its branch `a` first. Not `if !c { a }
+                // else { b }`'s, which MIR tests as `c`, `a` its `false`.
                 if ty.is_bool()
                     && targets.iter().all(|(value, _)| value == 0)
                     && let [(test, target)] = cases.as_mut_slice()
                     && let Some(yes) = otherwise
+                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)
                 {
                     *test = negate(std::mem::replace(test, Expr::undefined()));
                     otherwise = Some(std::mem::replace(target, yes));

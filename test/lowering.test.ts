@@ -5660,3 +5660,37 @@ pub fn colors(message: &str) -> &'static str {
     expect([lib.either({ n: 1 }, false), lib.either(undefined, false)]).toEqual([true, false]);
   }
 });
+
+test("an `if !c` from MIR, which MIR tests as `c`, keeps its branch first", async () => {
+  const dir = fixture("mir-negated-if");
+  writeFileSync(join(dir, "lib.rs"), `pub fn guard(active: bool, v: &mut Vec<u32>) {
+    if !active {
+        v.push(0);
+        return;
+    }
+    v.push(1);
+    v.push(2);
+}
+pub fn either(active: bool) -> u32 {
+    if !active { 1 } else { 2 }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`export function guard(active, v) {
+  if (!active) {
+    v.push(0);
+    return;
+  }
+  v.push(1);
+  v.push(2);
+}`);
+    expect(js).toContain(`export function either(active) {
+  if (!active) {
+    return 1;
+  }
+  return 2;
+}`);
+  }
+});

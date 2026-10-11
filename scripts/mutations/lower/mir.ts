@@ -1186,4 +1186,12 @@ export const mutations: Mutation[] = [
     replace: "        booleans.clear();\n",
     tests: ["test/lowering.test.ts","-t","value of two branches is returned"],
   },
+  {
+    name: "mir-negated-if-flipped",
+    breaks: "`if !c { a } else { b }`, which MIR tests as `c`, is `if (c) { b }`, its second branch first",
+    file: "src/lower/mir.rs",
+    find: "                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","keeps its branch first"],
+  },
 ];
