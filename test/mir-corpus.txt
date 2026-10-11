@@ -264,6 +264,7 @@ unsized_struct_debug.rs
 unsized_struct_dyn.rs
 unsized_struct_fn.rs
 unsized_struct_slice.rs
+untagged_enums.rs
 unwrap_none.rs
 unwrap_string_debug.rs
 unwrap_typed_debug.rs

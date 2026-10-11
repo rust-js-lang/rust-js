@@ -569,8 +569,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let ty = ty.peel_refs();
         let any = matches!(ty.kind(), ty::Adt(adt, _)
             if matches!(crate::lower::declarations::written_types(self.tcx, adt.did()).as_deref(), Some("unknown" | "any")));
+        // An untagged enum is its payload, which may be falsy (ADR 0214).
         self.option_of(ty).is_none()
             && !any
+            && self.untagged(ty).is_none()
             && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))
     }
 

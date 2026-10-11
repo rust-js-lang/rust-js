@@ -1985,7 +1985,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => self.absent(subject, inner),
             });
         }
-        if bindings::is_untagged(self.tcx, adt.did()) || bindings::is_tagged_otherwise(self.tcx, adt.did(), def) {
+        // An untagged enum's variant, told by its value's kind (ADR 0214).
+        if bindings::is_untagged(self.tcx, adt.did()) {
+            return Ok(self.untagged_variant_test(ty, def, &subject));
+        }
+        if bindings::is_tagged_otherwise(self.tcx, adt.did(), def) {
             return Err(self.unsupported(span, "this enum's variant tested, from its MIR"));
         }
         if let Some(n) = super::recognition::ordering_value(self.tcx, adt.did(), def.name) {

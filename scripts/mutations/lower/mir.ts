@@ -698,4 +698,12 @@ export const mutations: Mutation[] = [
     replace: "                        .any(|elem| false && matches!(elem, PlaceElem::Subslice { .. }))\n",
     tests: ["test/mir.test.ts","-t","slice_pattern_mut_rest"],
   },
+  {
+    name: "mir-untagged-variant-tagged",
+    breaks: "an untagged enum's variant is tested by a tag it has none of",
+    file: "src/lower/mir.rs",
+    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return Ok(self.untagged_variant_test(ty, def, &subject));\n",
+    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return Ok(self.untagged_variant_test(ty, def, &subject));\n",
+    tests: ["test/mir.test.ts","-t","untagged_enums"],
+  },
 ];

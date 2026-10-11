@@ -232,4 +232,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","option_result_mut"],
   },
+  {
+    name: "never-falsy-untagged",
+    breaks: "`None` of an untagged enum is tested `!o`, which its `false` passes",
+    file: "src/lower/std_types/option.rs",
+    find: "            && self.untagged(ty).is_none()\n",
+    replace: "",
+    tests: ["test/mir.test.ts","-t","untagged_enums"],
+  },
 ];
