@@ -166,4 +166,16 @@ export const mutations: Mutation[] = [
       "a VecDeque's items collected from MIR"
     ]
   },
+  {
+    "name": "mir-crate-fn-item-callback-wrapped",
+    "breaks": "a crate function given as a callback from MIR is `(item) => is_rule(item)`, not `is_rule` as THIR has it",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            js::ExprKind::Var(_) if own => f,\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a crate function given as a callback is passed as itself"
+    ]
+  },
 ];

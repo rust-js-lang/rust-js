@@ -7876,3 +7876,44 @@ pub fn images(items: Vec<&Item>) -> Vec<&Item> {
     expect(lib.images([{ kind: "img" }, { kind: "p" }, { kind: "" }])).toEqual([{ kind: "img" }]);
   }
 });
+
+// ADR 0279, of a function item given as the callback, `filter(is_rule)`, as
+// react.dev's useSandpackLint has it: the crate's function itself, from MIR as
+// from THIR; a JS function's still takes the item alone.
+test("a crate function given as a callback is passed as itself", async () => {
+  const dir = fixture("fn-item-callback");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "parseFloat"]
+    safe fn parse_float(text: &str) -> f64;
+}
+pub struct E {
+    pub rule: Option<String>,
+}
+fn is_rule(e: &&E) -> bool {
+    e.rule.is_some()
+}
+fn twice(x: i32) -> i32 {
+    x * 2
+}
+pub fn kept(errors: Vec<&E>) -> usize {
+    errors.into_iter().filter(is_rule).count()
+}
+pub fn doubled(v: Vec<i32>) -> Vec<i32> {
+    v.into_iter().map(twice).collect()
+}
+pub fn parsed(v: Vec<&str>) -> Vec<f64> {
+    v.into_iter().map(parse_float).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(".filter(is_rule)");
+    expect(js).toContain("v.map(twice)");
+    expect(js).toContain("v.map((text) => parseFloat(text))");
+    const lib = await import(join(dir, out));
+    expect(lib.kept([{ rule: "a" }, { rule: undefined }])).toBe(1);
+    expect(lib.doubled([1, 2])).toEqual([2, 4]);
+    expect(lib.parsed(["1", "2"])).toEqual([1, 2]);
+  }
+});

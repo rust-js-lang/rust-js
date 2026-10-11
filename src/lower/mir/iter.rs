@@ -15,7 +15,7 @@ use crate::js::{self, Expr, Op, StmtKind};
 use crate::lower::recognition::{StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
-use crate::lower::{FnCx, R};
+use crate::lower::{FnCx, R, bindings};
 use crate::runtime::Helper;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -227,25 +227,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")));
         }
         let mut arg = || values.next().expect("rustc checked the arguments");
+        // A function of the crate given as the callback, `filter(is_rule)`:
+        // itself, as THIR's, which takes no more than it's given (ADR 0279).
+        let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match name {
-            "map" => method("map", it, vec![self.unary_callback(arg())]),
-            "filter" => method("filter", it, vec![self.unary_callback(arg())]),
-            "flat_map" => method("flatMap", it, vec![self.unary_callback(arg())]),
+            "map" => method("map", it, vec![self.unary_callback(arg(), own)]),
+            "filter" => method("filter", it, vec![self.unary_callback(arg(), own)]),
+            "flat_map" => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
             "take" => method("take", it, vec![arg()]),
             "skip" => method("drop", it, vec![arg()]),
-            "for_each" => method("forEach", it, vec![self.unary_callback(arg())]),
-            "any" => method("some", it, vec![self.unary_callback(arg())]),
-            "all" => method("every", it, vec![self.unary_callback(arg())]),
+            "for_each" => method("forEach", it, vec![self.unary_callback(arg(), own)]),
+            "any" => method("some", it, vec![self.unary_callback(arg(), own)]),
+            "all" => method("every", it, vec![self.unary_callback(arg(), own)]),
             "find" => {
-                let found = method("find", it, vec![self.unary_callback(arg())]);
+                let found = method("find", it, vec![self.unary_callback(arg(), own)]);
                 match item.is_some_and(|item| self.boxed_payload(item)) {
                     true => return Err(self.unsupported(span, "`find` of what looks like `None`, from its MIR")),
                     false => found,
                 }
             }
             "position" => {
-                let found = self.unary_callback(arg());
+                let found = self.unary_callback(arg(), own);
                 self.helper(Helper::Position, "$position", vec![it, found])
             }
             // THIR's pairing, `(x, i) => [i, x]`, in place of which a
@@ -401,14 +404,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A function JS's helpers give an item, and its index too, as one
     /// that takes the item alone: an arrow of one parameter as it is,
     /// anything else called with the item alone.
-    fn unary_callback(&mut self, f: Expr) -> Expr {
+    fn unary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,
+            js::ExprKind::Var(_) if own => f,
             _ => {
                 let x = self.fresh("item");
                 let call = Expr::call(f, vec![Expr::var(&x)]);
                 Expr::arrow(vec![x.into()], vec![StmtKind::Return(Some(call)).at(js::Span::NONE)])
             }
+        }
+    }
+
+    /// Is `ty` a function item of the crate's own, not a JS binding's or a
+    /// trait's method, whose JS is called with what Rust gives it alone?
+    fn is_crate_fn_item(&self, ty: Ty<'tcx>) -> bool {
+        match *ty.kind() {
+            ty::FnDef(def_id, _) => {
+                def_id.is_local()
+                    && self.tcx.trait_of_assoc(def_id).is_none()
+                    && !bindings::is_binding(self.tcx, def_id)
+            }
+            _ => false,
         }
     }
 
