@@ -24,6 +24,8 @@ pub(super) struct Hints<'h> {
     pub(super) loops: &'h [(js::Span, bool)],
     /// Where each `if` the program wrote of a `continue` alone tests.
     pub(super) continues: &'h [js::Span],
+    /// What a pattern binds in an enum's variant, `Some(code)`, by name.
+    pub(super) payloads: &'h HashSet<String>,
     pub(super) returns: &'h [js::Span],
     /// The `const`s MIR's lowering made of what an element it made ahead
     /// of a branch reads (`capture_jsx`): as its temporaries, read where
@@ -42,6 +44,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         conditions,
         loops: written,
         continues,
+        payloads,
         returns,
         captured,
         booleans,
@@ -116,6 +119,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     });
     let changing = changing(body);
     js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
+    bottom_up(body, &mut |stmts| payload_aliases(stmts, payloads, &changing));
     alias_variables(body, &changing);
     js::statement_lists(body, &mut destructured);
     // What an array made for its parts left, `const _5 = 6;`, too.
@@ -916,6 +920,46 @@ fn is_temporary(name: &str) -> bool {
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
 }
 
+/// `const code = errorCode;`, what a pattern binds of a variable nothing
+/// changes, nor it: `errorCode` where it's read after, in its block, as THIR
+/// reads a pattern's binding, of a match guard's too.
+fn payload_aliases(stmts: &mut Vec<Stmt>, payloads: &HashSet<String>, changing: &HashSet<String>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::Const(name, value) = &stmts[i].kind
+            && payloads.contains(name)
+            && !changing.contains(name)
+            && let ExprKind::Var(of) = &value.kind
+            // Of a temporary, the temporary takes its name (`named_temporaries`).
+            && !is_temporary(of)
+            && !changing.contains(of)
+            && !declared_anywhere(&stmts[i + 1..], name)
+        {
+            let (name, of) = (name.clone(), of.clone());
+            stmts.remove(i);
+            js::each_expr_mut(&mut stmts[i..], &mut |e| {
+                if matches!(&e.kind, ExprKind::Var(v) if *v == name) {
+                    *e = Expr {
+                        span: e.span,
+                        ..Expr::var(&of)
+                    };
+                }
+            });
+            continue;
+        }
+        i += 1;
+    }
+}
+
+/// Whether `stmts` declare `name`, however deep.
+fn declared_anywhere(stmts: &[Stmt], name: &str) -> bool {
+    let mut found = false;
+    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
+        found |= declared(list).any(|n| n == name);
+    });
+    found
+}
+
 /// `const _5 = children;`, a temporary of a variable nothing changes, nor it,
 /// or of a constant: `children`, or the constant, wherever it's read.
 fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
@@ -1665,12 +1709,18 @@ fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> E
     }
 }
 
-/// Whether `test` holds where `by` does: `x != null` where `x === "lit"`,
-/// `typeof x === "string"` there too, and where each side of `a || b` says
-/// it.
+/// Whether `test` holds where `by` does: `x != null` where `x === "lit"`, or
+/// `x`, `typeof x === "string"` there too, and where each side of `a || b`
+/// says it.
 fn implies(by: &Expr, test: &Expr) -> bool {
     match (&test.kind, &by.kind) {
         (_, ExprKind::Binary(Op::Or, a, b)) => implies(a, test) && implies(b, test),
+        // `x` truthy, set.
+        (ExprKind::Binary(Op::LooseNe, x, null), _)
+            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, by) =>
+        {
+            true
+        }
         (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, y, literal))
             if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
         {

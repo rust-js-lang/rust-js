@@ -584,7 +584,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));\n",
     replace: "            && true;\n",
-    tests: ["test/mir.test.ts","-t","lent_iterators"],
+    tests: ["test/mir.test.ts","-t","byte_strings|statics"],
   },
   {
     name: "mir-out-of-order-fields-undeclared",

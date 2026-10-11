@@ -568,6 +568,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 conditions: &conditions,
                 loops: &loops,
                 continues: &continues,
+                payloads: &(state.payloads.iter())
+                    .map(|&l| state.locals.names[l].clone())
+                    .collect(),
                 returns: &state.returns,
                 captured: &captured,
                 booleans: &booleans,

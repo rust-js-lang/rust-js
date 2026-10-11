@@ -6270,3 +6270,19 @@ pub fn titled(error_code: Option<&str>) -> String {
     expect([pushed, lib.titled("e"), lib.titled(""), lib.titled(undefined)]).toEqual([[1, 1], "#e", "none", "none"]);
   }
 });
+
+test("a match guard's binding from MIR is what it binds, as THIR's", async () => {
+  const dir = fixture("mir-guard-binding");
+  writeFileSync(join(dir, "lib.rs"), `pub fn titled(error_code: Option<&str>) -> String {
+    match error_code {
+        Some(code) if !code.is_empty() => format!("#{code}"),
+        _ => "none".to_string(),
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('export function titled(errorCode) {\n  if (errorCode) {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
+  }
+});

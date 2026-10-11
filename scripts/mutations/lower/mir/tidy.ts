@@ -632,7 +632,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        i = i.saturating_sub(1);\n",
     replace: "",
-    tests: ["test/bindings.test.ts","-t","skips what's falsy"],
+    tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
     name: "mir-tidy-range-end-unheld",
@@ -721,5 +721,21 @@ export const mutations: Mutation[] = [
     find: "                    && same(x, &t)\n",
     replace: "                    && same(x, &t)\n                    && false\n",
     tests: ["test/lowering.test.ts","-t","is set and true reads"],
+  },
+  {
+    name: "mir-tidy-payload-alias-kept",
+    breaks: "a pattern's binding of a variable stays `const code = errorCode`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    bottom_up(body, &mut |stmts| payload_aliases(stmts, payloads, &changing));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","match guard.s binding from MIR"],
+  },
+  {
+    name: "mir-tidy-truthy-not-set",
+    breaks: "`x` truthy isn't known to be set, `if (x != null) { if (x) { … } }` kept",
+    file: "src/lower/mir/tidy.rs",
+    find: "            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, by) =>\n",
+    replace: "            if false && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, by) =>\n",
+    tests: ["test/lowering.test.ts","-t","match guard.s binding from MIR"],
   },
 ];

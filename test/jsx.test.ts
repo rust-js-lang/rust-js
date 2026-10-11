@@ -471,6 +471,37 @@ pub fn FooterLink<C: ReactNode>(FooterLinkProps { href, children, is_header }: F
   expect(renderToStaticMarkup(result.FooterLink({ href: "", children: "c", is_header: false }))).toBe('<div class="link">c</div>');
 });
 
+// What elements read, made before branches in their tree, each a call:
+// each read where it's written, the last first, then the one before it,
+// from MIR too (ADR 0364).
+test("what elements read before branches, each a call, is read where it's written", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::{JSX, jsx};
+fn cn(a: &str, b: bool) -> String {
+    format!("{a}{}", if b { " on" } else { "" })
+}
+pub fn Page(home: bool, blog: bool, content: &str) -> JSX::Element {
+    jsx! {
+        <div className={cn("page", home)}>
+            {(home || blog).then(|| jsx! { <b>{"h"}</b> })}
+            <div className={cn("cols", blog)}>
+                {blog.then(|| jsx! { <i>{"s"}</i> })}
+                <p className={cn("text", blog)}>{content}</p>
+                <p className={cn("more", home)}>{content}</p>
+            </div>
+        </div>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const output = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(output).toContain('    <div className={cn("page", home)}>\n');
+  expect(output).toContain('      <div className={cn("cols", blog)}>\n');
+  const result = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(result.Page(true, false, "c"))).toBe('<div class="page on"><b>h</b><div class="cols"><p class="text">c</p><p class="more on">c</p></div></div>');
+});
+
 test("a prop before children that need no statements stays where it's written", () => {
   const source = `#![allow(non_snake_case)]
 use react::attributes::AnchorHTMLAttributes;
