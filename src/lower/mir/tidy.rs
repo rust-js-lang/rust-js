@@ -166,6 +166,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Of each, a callback that passes what it's given on to Rust's function,
     // `(x, i) => f(x, i)`: `f` itself, as THIR's.
     js::each_expr_mut(body, &mut |e| passed_on(e, forwarding));
+    // An element's place checked, then set: the place the check gives.
+    js::statement_lists(body, &mut checked_sets);
     // A copy made of what's spread, read in place, `{ ...a, ...{ ...b } }`:
     // what it's a copy of.
     js::each_expr_mut(body, &mut spread_spreads);
@@ -2321,6 +2323,38 @@ fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
         && let Some(g) = iterators::passed_on(f)
     {
         *f = g;
+    }
+}
+
+/// `$index(xs, i); xs[i] = v;`, an element's place MIR checks, then sets:
+/// `xs[$at(xs, i)] = v;`, the place `$at` checks, as THIR writes it. `v`
+/// is made before either, as Rust makes it.
+fn checked_sets(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let StmtKind::Expr(check) = &stmts[i].kind
+            && let ExprKind::Call(f, args) = &check.kind
+            && matches!(&f.kind, ExprKind::Var(v) if v == "$index")
+            && let [items, index] = &args[..]
+            && let StmtKind::Assign(target, _) = &stmts[i + 1].kind
+            && let ExprKind::Index(of, at) = &target.kind
+            && same(of, items)
+            && (same(at, index) || at.as_int().is_some() && at.as_int() == index.as_int())
+        {
+            let checked = Expr::index(
+                items.clone(),
+                Expr::call(Expr::var("$at"), vec![items.clone(), index.clone()]),
+            );
+            if let StmtKind::Assign(target, _) = &mut stmts[i + 1].kind {
+                *target = Expr {
+                    span: target.span,
+                    ..checked
+                };
+            }
+            stmts.remove(i);
+            continue;
+        }
+        i += 1;
     }
 }
 

@@ -1506,4 +1506,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-checked-index-copied",
+    "breaks": "a parameter MIR checks an element's place at is copied first, `const index = i;`",
+    "file": "src/lower/mir.rs",
+    "find": "                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.alike.contains(v))\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "checked element set is one statement"
+    ]
+  },
 ];

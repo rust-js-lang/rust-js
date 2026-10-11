@@ -1174,4 +1174,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-tidy-checked-sets-kept",
+    "breaks": "an element's place MIR checks then sets stays two statements, `$index(args, 0); args[0] = v;`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut checked_sets);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "checked element set is one statement"
+    ]
+  },
 ];

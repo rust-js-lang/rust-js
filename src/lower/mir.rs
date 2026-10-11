@@ -4047,12 +4047,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 self.spill("items", items, out)
             };
-            let index = if index.is_constant() {
+            // A variable that reads the same wherever it's read, a parameter,
+            // read where it's set too.
+            let index = if index.is_constant()
+                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.alike.contains(v))
+            {
                 index
             } else {
                 self.spill("index", index, out)
             };
             self.runtime.insert(Helper::Index);
+            // And `$at`, the place tidy writes where it's set next.
+            self.runtime.insert(Helper::At);
             let check = Expr::call(Expr::var("$index"), vec![items.clone(), index.clone()]);
             out.push(StmtKind::Expr(check).at(self.js_span(span)));
             return Ok(Value::Ref(Expr::index(items, index)));

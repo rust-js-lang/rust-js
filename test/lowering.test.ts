@@ -7286,3 +7286,32 @@ test("a chain is read in place past a closure's mutable borrow", async () => {
     expect(lib.list(["a", "b", "c"])).toEqual(["1b", "2c"]);
   }
 });
+
+// An element's place checked then set, `args[0] = v`, from MIR as THIR
+// writes it, `args[$at(args, 0)] = v`, its index read in place where nothing
+// changes it, as react.dev's ErrorDecoder sets its first argument. What's
+// set is made before the check, as Rust makes it.
+test("a checked element set is one statement from MIR", async () => {
+  const dir = fixture("checked-set");
+  writeFileSync(join(dir, "lib.rs"), `pub fn fill(args: &mut Vec<String>) {
+    if args.len() == 1 && args[0].is_empty() {
+        args[0] = "HTML".to_string();
+    }
+}
+pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
+    args[i] = made();
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('    args[$at(args, 0)] = "HTML";\n');
+    expect(js).toMatch(/  args\[\$at\(args, i\)\] = \w+;\n}/);
+    const lib = await import(join(dir, out));
+    const args = [""];
+    lib.fill(args);
+    const made: string[] = [];
+    expect(() => lib.put(args, 1, () => (made.push("x"), "x"))).toThrow();
+    expect([args, made]).toEqual([["HTML"], ["x"]]);
+  }
+});
