@@ -5833,3 +5833,18 @@ pub fn page_title(meta: &Meta, route: Option<&Route>) -> &'static str {
     expect([lib.title({ title: "" }, "r"), lib.title({ title: "t" }, "r"), lib.title({ title: undefined }, ""), lib.title({}, undefined)]).toEqual(["r", "t", "", ""]);
   }
 });
+
+test("a closure from MIR names its `&x` parameter and knows the `bool`s it captures", async () => {
+  const dir = fixture("mir-closure-captured-bools");
+  writeFileSync(join(dir, "lib.rs"), `pub fn flags(force: bool, items: &[u32]) -> Vec<bool> {
+    items.iter().map(|&n| force || n > 2).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  return items.map((n) => force || n > 2);\n");
+    const lib = await import(join(dir, out));
+    expect([lib.flags(false, [1, 3]), lib.flags(true, [1])]).toEqual([[false, true], [true]]);
+  }
+});

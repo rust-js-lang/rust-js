@@ -939,6 +939,18 @@ pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stm
             continue;
         }
         let name = name.clone();
+        // `(_2) => { const n = _2; … }`, `|&n|`'s: `(n) => …`.
+        if let Some(Stmt {
+            kind: StmtKind::Const(bound, value),
+            ..
+        }) = body.first()
+            && matches!(&value.kind, ExprKind::Var(v) if *v == name)
+            && js::mentions_in(&body[1..], &name) == 0
+        {
+            *param = js::Pattern::Name(bound.clone());
+            body.remove(0);
+            continue;
+        }
         let read = parts(body, &name);
         let count = read.len();
         if js::mentions_in(&body[count..], &name) > 0 {

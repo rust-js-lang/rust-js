@@ -1194,4 +1194,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","keeps its branch first"],
   },
+  {
+    name: "mir-captured-booleans-unknown",
+    breaks: "a closure doesn't know a `bool` it captures as one, `!!force || n > 2`",
+    file: "src/lower/mir.rs",
+    find: "                    match ty.peel_refs().is_bool() {\n",
+    replace: "                    match false {\n",
+    tests: ["test/lowering.test.ts","-t","names its .&x. parameter"],
+  },
 ];

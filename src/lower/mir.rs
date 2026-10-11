@@ -482,6 +482,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => others.insert(name.clone()),
             };
         }
+        // And a closure's, of what it captures: its parent's.
+        let env = mir_body
+            .args_iter()
+            .next()
+            .map(|local| mir_body.local_decls[local].ty.peel_refs());
+        if let Some(ty::Closure(_, args)) = env.map(|ty| ty.kind()) {
+            for (ty, (capture, _)) in args.as_closure().upvar_tys().iter().zip(&state.captures) {
+                if let js::ExprKind::Var(name) = &capture.kind {
+                    match ty.peel_refs().is_bool() {
+                        true => booleans.insert(name.clone()),
+                        false => others.insert(name.clone()),
+                    };
+                }
+            }
+        }
         booleans.retain(|name| !others.contains(name));
         tidy::tidy(
             &mut out,

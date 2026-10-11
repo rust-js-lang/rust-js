@@ -594,4 +594,12 @@ export const mutations: Mutation[] = [
     replace: "                negated(e)\n",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
+  {
+    name: "mir-tidy-deref-param-kept",
+    breaks: "`|&n|` stays `(_2) => { const n = _2; … }`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            *param = js::Pattern::Name(bound.clone());\n            body.remove(0);\n            continue;\n",
+    replace: "            let _ = bound;\n",
+    tests: ["test/lowering.test.ts","-t","names its .&x. parameter"],
+  },
 ];
