@@ -670,8 +670,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-while-test-kept",
     breaks: "`while (true) { if (!c) { return x; } … }` stays, not `while (c) { … } return x;`",
     file: "src/lower/mir/tidy.rs",
-    find: "    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));\n",
-    replace: "",
+    find: "    bottom_up(body, &mut |stmts| loops(stmts, &mentions));\n    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));\n",
+    replace: "    bottom_up(body, &mut |stmts| loops(stmts, &mentions));\n",
     tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
   },
   {
@@ -844,6 +844,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "an or of ands from MIR is one test"
+    ]
+  },
+  {
+    "name": "late-while-tests-off",
+    "breaks": "a `while` whose test MIR held first, `const _7 = m.length;`, stays `while (true)` and a `return`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    // > n)) { .. } }`'s of `const _7 = m.length;`.\n    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));\n",
+    "replace": "    // > n)) { .. } }`'s of `const _7 = m.length;`.\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a while in a closure from MIR keeps its test"
     ]
   },
 ];

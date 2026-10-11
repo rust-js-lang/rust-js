@@ -6768,3 +6768,35 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
     expect([lib.joined([1], [1, 2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], 2]);
   }
 });
+
+// A `while` in a closure from MIR, whose test reads what MIR held first,
+// `const _7 = messages.length;`, is the `while` written, as react.dev's
+// Console keeps its latest messages: not `while (true)` and a `return`;
+// incremental too, where the closure's spans are its own.
+test("a while in a closure from MIR keeps its test", async () => {
+  const dir = fixture("closure-while");
+  writeFileSync(join(dir, "lib.rs"), `pub fn listen(on: &dyn Fn(u32) -> Box<dyn Fn(Vec<u32>) -> Vec<u32>>) -> Vec<u32> {
+    let f = on(2);
+    f(vec![1, 2, 3, 4])
+}
+pub fn run() -> Vec<u32> {
+    listen(&|keep| {
+        Box::new(move |prev: Vec<u32>| {
+            let mut messages = prev;
+            while messages.len() > keep as usize {
+                messages.remove(0);
+            }
+            messages
+        })
+    })
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    // Incremental, as an app's build is: spans of a closure's body hold it.
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "-C", `incremental=${join(dir, "incremental")}`], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    while (messages.length > keep) {\n      $removeAt(messages, 0);\n    }\n    return messages;\n");
+    const lib = await import(join(dir, out));
+    expect(lib.run()).toEqual([3, 4]);
+  }
+});

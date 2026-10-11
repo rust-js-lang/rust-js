@@ -575,9 +575,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter_map(|e| match e.kind {
                 thir::ExprKind::Loop { .. } => {
                     let written = e.span.source_callsite();
+                    // Where it's written, not the body it's in, which a closure's
+                    // span holds too.
                     let whiles = (self.thir.exprs.iter()).any(|w| {
                         w.span.is_desugaring(rustc_span::DesugaringKind::WhileLoop)
-                            && w.span.source_callsite() == written
+                            && w.span.source_callsite().source_equal(written)
                     });
                     Some((self.js_span(written), whiles))
                 }

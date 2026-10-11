@@ -1398,4 +1398,16 @@ export const mutations: Mutation[] = [
       "a match arm's guard from MIR is one test"
     ]
   },
+  {
+    "name": "while-hint-span-whole",
+    "breaks": "a `while` in a closure isn't known as one: its desugared test's span, of another body, isn't the loop's",
+    "file": "src/lower/mir.rs",
+    "find": "                            && w.span.source_callsite().source_equal(written)\n",
+    "replace": "                            && w.span.source_callsite() == written\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a while in a closure from MIR keeps its test|while"
+    ]
+  },
 ];

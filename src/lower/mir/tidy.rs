@@ -149,6 +149,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
     // { .. } }`, `if (a && f(a))`.
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
+    // A loop's test those read in place now, `while (true) { if (!(m.length
+    // > n)) { .. } }`'s of `const _7 = m.length;`.
+    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
     // What those leave at the end, a `return;` the program didn't write.
     tail_returns(body, returns);
     // A cell only its `value` is read and set of, by name: its variable.
