@@ -1498,4 +1498,16 @@ export const mutations: Mutation[] = [
       "arrays joined are one array of their items"
     ]
   },
+  {
+    "name": "ending-continue-as-else",
+    "breaks": "an `if` the program ended with `continue` stays MIR's `if (t) { a } else { .. }`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    if written(guards, body.last().expect(\"matched\").span)\n",
+    "replace": "                    if false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "continues a loop's ifs end with are kept"
+    ]
+  },
 ];

@@ -540,7 +540,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Vec::new(),
             })
             .collect();
-        // Where each `if` the program wrote of a `continue` alone tests.
+        // Where each `if` the program wrote of a `continue` tests: one alone,
+        // or one that ends what it does.
         let continues: Vec<js::Span> = (self.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::If { cond, then, .. } => {
@@ -554,9 +555,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return None;
                     };
                     let block = &self.thir[block];
-                    let only = match (block.stmts.as_ref(), block.expr) {
-                        ([], Some(e)) => Some(e),
-                        ([s], None) => match self.thir[*s].kind {
+                    let only = match (block.stmts.last(), block.expr) {
+                        (_, Some(e)) => Some(e),
+                        (Some(s), None) => match self.thir[*s].kind {
                             thir::StmtKind::Expr { expr, .. } => Some(expr),
                             _ => None,
                         },

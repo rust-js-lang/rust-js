@@ -981,6 +981,25 @@ fn continued(stmts: &mut [Stmt], guards: &[js::Span]) {
                     continues(&mut inner, &block, looped.as_deref(), true);
                     body.extend(inner);
                 }
+                // One the program ended with a `continue`, `if (t) { a;
+                // continue; }`, of what MIR has as its `else`.
+                Some(StmtKind::If(_, _, Some(otherwise)))
+                    if written(guards, body.last().expect("matched").span)
+                        && !declared(otherwise).any(|name| declared(&body[..body.len() - 1]).any(|n| n == name)) =>
+                {
+                    let Some(Stmt {
+                        kind: StmtKind::If(test, mut then, Some(otherwise)),
+                        span,
+                    }) = body.pop()
+                    else {
+                        unreachable!("matched")
+                    };
+                    if !then.last().is_some_and(ends) {
+                        then.push(StmtKind::Continue(None).at(span));
+                    }
+                    body.push(StmtKind::If(test, then, None).at(span));
+                    body.extend(otherwise);
+                }
                 // Of one statement, where the program wrote the `continue`.
                 Some(StmtKind::If(test, then, None))
                     if negated(test) && (then.len() > 1 || written(guards, body.last().expect("matched").span)) =>

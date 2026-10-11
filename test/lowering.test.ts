@@ -8038,3 +8038,49 @@ pub fn all(first: Vec<&'static Unknown>) -> Vec<&'static Unknown> {
     expect(lib.all([{ name: "x" }])).toEqual([{ name: "x" }, { name: "a" }, { name: "b" }]);
   }
 });
+
+// From MIR as from THIR: a loop's `if`s the program ends with `continue`,
+// `if c == "{" { depth += 1; continue; }`, are written so, each then what
+// follows, not an `else if` chain, as react.dev's createFileMap splits a
+// meta string.
+test("continues a loop's ifs end with are kept", async () => {
+  const dir = fixture("ending-continues");
+  writeFileSync(join(dir, "lib.rs"), `pub fn split(meta: &str) -> Vec<String> {
+    let mut tokens: Vec<String> = Vec::new();
+    let mut current = String::new();
+    let mut depth: i32 = 0;
+    for c in meta.chars() {
+        let c = c.to_string();
+        if c == "{" {
+            depth += 1;
+            continue;
+        }
+        if c == "}" {
+            depth -= 1;
+            continue;
+        }
+        if depth > 0 {
+            continue;
+        }
+        if c == " " {
+            if !current.is_empty() {
+                tokens.push(current);
+                current = String::new();
+            }
+            continue;
+        }
+        current += &c;
+    }
+    tokens
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('      depth = (depth + 1) | 0;\n      continue;\n    }\n    if (c === "}") {');
+    expect(js).toContain("    if (depth > 0) {\n      continue;\n    }");
+    expect(js).not.toContain("else");
+    const lib = await import(join(dir, out));
+    expect(lib.split("a {b c} d e")).toEqual(["a", "d"]);
+  }
+});

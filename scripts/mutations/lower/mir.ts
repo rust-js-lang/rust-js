@@ -1686,4 +1686,16 @@ export const mutations: Mutation[] = [
       "arrays joined are one array of their items"
     ]
   },
+  {
+    "name": "mir-continue-alone-only",
+    "breaks": "only an `if` of a `continue` alone is known written so, not one that ends with one",
+    "file": "src/lower/mir.rs",
+    "find": "let only = match (block.stmts.last(), block.expr) {",
+    "replace": "let only = match (block.stmts.last().filter(|_| block.stmts.len() == 1), block.expr) {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "continues a loop's ifs end with are kept"
+    ]
+  },
 ];
