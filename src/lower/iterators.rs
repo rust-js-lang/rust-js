@@ -1483,19 +1483,24 @@ fn fresh(items: &Expr) -> bool {
 /// made for this call alone, no one else steps.
 pub(super) fn eager_chains(stmts: &mut [Stmt]) {
     js::each_expr_mut(stmts, &mut |e| {
+        // `nth(n)`'s, `chain.drop(n).take(1).toArray()[0]`: of an array
+        // whose stages do nothing, `xs[n]`, as THIR writes it.
+        if let js::ExprKind::Index(first, zero) = &e.kind
+            && zero.as_int() == Some(0)
+            && let Some((chain, n)) = nth_of(first)
+            && let Some((items, _)) = eager_items(chain, false, None)
+        {
+            *e = Expr {
+                span: e.span,
+                ..Expr::index(items, n.clone())
+            };
+            return;
+        }
         let js::ExprKind::Call(callee, args) = &e.kind else {
             return;
         };
         let js::ExprKind::Member(chain, name) = &callee.kind else {
             return;
-        };
-        let chain = match &chain.kind {
-            js::ExprKind::Call(lent, of)
-                if matches!(&lent.kind, js::ExprKind::Var(v) if v == "$lent") && of.len() == 1 =>
-            {
-                &of[0]
-            }
-            _ => chain,
         };
         let eager = match (name.as_str(), &args[..]) {
             ("toArray", []) => match eager_items(chain, true, None) {
@@ -1550,6 +1555,14 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     {
         return None;
     }
+    // One that's lent, `$lent($iter(xs))`, made for this call alone, no
+    // one else steps.
+    if let js::ExprKind::Call(lent, of) = &at.kind
+        && matches!(&lent.kind, js::ExprKind::Var(v) if v == "$lent")
+        && let [of] = &of[..]
+    {
+        at = of;
+    }
     let js::ExprKind::Call(_, args) = &at.kind else {
         return None;
     };
@@ -1571,6 +1584,27 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         name => array_method(items, name, f.clone()),
     });
     Some((items, count))
+}
+
+/// Of `chain.drop(n).take(1).toArray()`, `nth(n)`'s first: `chain` and `n`.
+fn nth_of(e: &Expr) -> Option<(&Expr, &Expr)> {
+    fn call<'e>(e: &'e Expr, name: &str) -> Option<(&'e Expr, &'e [Expr])> {
+        match &e.kind {
+            js::ExprKind::Call(callee, args) => match &callee.kind {
+                js::ExprKind::Member(of, m) if m == name => Some((&**of, args.as_slice())),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+    let (taken, []) = call(e, "toArray")? else { return None };
+    let (dropped, [one]) = call(taken, "take")? else {
+        return None;
+    };
+    let (chain, [n]) = call(dropped, "drop")? else {
+        return None;
+    };
+    (one.as_int() == Some(1)).then_some((chain, n))
 }
 
 /// `items.name(f)`, of an array, `f` taking each enumerated pair apart

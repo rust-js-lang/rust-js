@@ -1695,6 +1695,69 @@ pub fn first_over(items: &[u32], k: u32, out: &mut Vec<u32>) {
   }
 });
 
+// A \`let … else\` from MIR (ADR 0364), its tests each leaving to one panic,
+// is a guard, \`if (a || b) { throw … }\`, then the rest, as THIR writes it;
+// what it binds keeps its name; \`nth(n)\` of a string's parts is \`[n]\`.
+test("a let-else from MIR is a guard, then the rest", async () => {
+  const dir = fixture("mir-let-else");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Title {
+    pub kind: &'static str,
+    pub id: u32,
+}
+pub enum Node {
+    Text(&'static str),
+    Element(Title),
+}
+pub fn heading(children: &[Node], kind: &str, path: &str) -> u32 {
+    let Some(Node::Element(first)) = children.first() else {
+        panic!("{kind} is missing a title");
+    };
+    if first.kind != "h4" {
+        panic!("{kind} is missing an h4");
+    }
+    let hash = path.split('#').nth(1).unwrap_or("");
+    first.id * 2 + hash.len() as u32
+}
+pub fn sample(titled: bool) -> Vec<Node> {
+    match titled {
+        true => vec![Node::Element(Title { kind: "h4", id: 3 })],
+        false => vec![Node::Text("t")],
+    }
+}
+#[rust_js::untagged]
+pub enum Part<'a> {
+    Text(&'static str),
+    Element(&'a Title),
+}
+pub fn element_id(parts: &[Part]) -> u32 {
+    let Some(Part::Element(first)) = parts.first() else {
+        return 0;
+    };
+    first.id + first.id
+}
+pub fn first_id(items: &[Title]) -> u32 {
+    let Some(first) = items.first() else {
+        return 0;
+    };
+    first.id + first.id
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).not.toMatch(/bb\d+:/);
+    expect(js).toContain("    throw new Error(`${kind} is missing a title`);\n  }\n");
+    expect(js).toContain('  const hash = path.split("#")[1] ?? "";\n');
+    expect(js).toContain("  const first = items[0];\n");
+    if (out === "mir.js") {
+      expect(js).toContain('  const first = parts[0];\n  if (first == null || typeof first !== "object") {\n    return 0;\n  }\n');
+    }
+    const lib = await import(join(dir, out));
+    expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.first_id([{ kind: "p", id: 4 }]), lib.first_id([]), lib.element_id([{ kind: "p", id: 5 }]), lib.element_id(["t"])]).toEqual([8, 8, 0, 10, 0]);
+    expect(() => lib.heading(lib.sample(false), "k", "")).toThrow("k is missing a title");
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

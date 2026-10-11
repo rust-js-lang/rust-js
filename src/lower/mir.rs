@@ -1493,8 +1493,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => None,
         };
+        // A payload's of a temporary keeps its name, which the temporary
+        // takes (tidy's `named_temporaries`).
+        let of_temporary = matches!(&value, Value::Place(target) if matches!(&target.kind, js::ExprKind::Var(name)
+            if (state.locals.names.iter_enumerated()).any(|(l, n)| n == name && !state.locals.user[l])));
         let one = place.projection.is_empty()
-            && (!state.locals.user[local] || state.payloads.contains(&local))
+            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))
             && state.locals.writes[local] == 1
             && !state.locals.borrowed[local];
         let places = match &value {

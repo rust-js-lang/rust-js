@@ -53,6 +53,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     if !read.contains(result) {
         body.retain(|s| !matches!(&s.kind, StmtKind::Let(name, None) if name == result));
     }
+    js::statement_lists(body, &mut guarded);
     declarations(body);
     aliases(body);
     // Of `const`s now, the iterator's too; and what a loop made so ends with,
@@ -354,6 +355,50 @@ fn writes_return(stmts: &[Stmt], returns: &[js::Span]) -> bool {
 /// `returns`, where those are.
 fn written(returns: &[js::Span], span: js::Span) -> bool {
     !span.is_none() && returns.iter().any(|w| w.lo <= span.lo && span.hi <= w.hi)
+}
+
+/// `l: { if (a) { break l; } if (b) { break l; } rest } t`, of `let … else`
+/// and checks that go on to one end, `t`, a `throw` or a `return`, and
+/// `rest` never going on past its own: `if (a || b) { t } rest`, as a
+/// person writes a guard.
+fn guarded(stmts: &mut Vec<Stmt>) {
+    for i in 0..stmts.len() {
+        let StmtKind::Labeled(label, body) = &stmts[i].kind else {
+            continue;
+        };
+        let tail = &stmts[i + 1..];
+        if !tail.last().is_some_and(ends) {
+            continue;
+        }
+        let guards = (body.iter())
+            .take_while(|s| {
+                matches!(&s.kind, StmtKind::If(_, then, None)
+                    if matches!(then.as_slice(), [Stmt { kind: StmtKind::Break(Some(l)), .. }] if l == label))
+            })
+            .count();
+        let rest = &body[guards..];
+        if guards == 0 || targets(rest, label) || !rest.last().is_some_and(ends) {
+            continue;
+        }
+        // What `rest` declares, now beside what's before it.
+        if declared(rest).any(|name| declared(&stmts[..i]).any(|n| n == name)) {
+            continue;
+        }
+        let test = (body[..guards].iter())
+            .map(|s| match &s.kind {
+                StmtKind::If(test, ..) => test.clone(),
+                _ => unreachable!("a guard"),
+            })
+            .reduce(|a, b| Expr::bin(Op::Or, a, b))
+            .expect("one");
+        let span = stmts[i].span;
+        let rest = rest.to_vec();
+        let tail = stmts.split_off(i + 1);
+        stmts.pop();
+        stmts.push(StmtKind::If(test, tail, None).at(span));
+        stmts.extend(rest);
+        return;
+    }
 }
 
 /// A loop's body that ends in a block, `l: { … break l; … }`, its `break l`
@@ -1063,7 +1108,59 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         let span = last_if.span;
         stmts.truncate(stmts.len() - 2);
         stmts.push(StmtKind::Return(Some(value)).at(span));
+    } else if let [before @ .., last_if, last] = stmts.as_slice()
+        && let StmtKind::Return(Some(_)) = &last.kind
+        && written(returns, last.span)
+        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))
+        && !declared(&body).any(|name| declared(before).any(|n| n == name))
+    {
+        // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
+        // return f; } t`, as THIR guards it.
+        let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
+        let (span, guard) = (last_if.span, stmts.pop().expect("the return"));
+        stmts.pop();
+        stmts.push(StmtKind::If(not(test), vec![guard], None).at(span));
+        stmts.extend(body);
     }
+}
+
+/// Of `if (a) { const x = e; if (b) { s } }`, `s` ending where it leaves:
+/// `[a, b]` and `const x = e; s`, what a level binds before its test, a
+/// read that does nothing, written into later tests, as `broken_chain`'s.
+fn returning_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Vec<Stmt>)> {
+    let [
+        bound @ ..,
+        Stmt {
+            kind: StmtKind::If(test, inner, None),
+            ..
+        },
+    ] = stmts
+    else {
+        return None;
+    };
+    if !bound
+        .iter()
+        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_same()))
+    {
+        return None;
+    }
+    let (mut tests, body) = match returning_chain(inner) {
+        Some(chain) => chain,
+        None if inner.last().is_some_and(ends) => (Vec::new(), inner.clone()),
+        None => return None,
+    };
+    tests.insert(0, test.clone());
+    for stmt in bound.iter().rev() {
+        let StmtKind::Const(name, value) = &stmt.kind else {
+            unreachable!("matched")
+        };
+        for test in &mut tests {
+            *test = test.substitute(&|v| (v == name).then(|| value.clone()))?;
+        }
+    }
+    let mut all = bound.to_vec();
+    all.extend(body);
+    Some((tests, all))
 }
 
 /// Of `if (a) { if (b) { return t; } }`: its tests, `[a, b]`, and `t`.

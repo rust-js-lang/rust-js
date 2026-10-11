@@ -402,4 +402,20 @@ export const mutations: Mutation[] = [
     replace: "        let temporary = is_temporary(name);\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
+  {
+    name: "mir-tidy-guarded-off",
+    breaks: "a `let … else` stays a labeled block holding the rest of the function",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut guarded);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+  },
+  {
+    name: "mir-tidy-let-else-return-nested",
+    breaks: "a `let … else { return f }` stays `if (a) { if (b) { return t; } } return f;`, not a guard",
+    file: "src/lower/mir/tidy.rs",
+    find: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if))\n",
+    replace: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if)).filter(|_| false)\n",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+  },
 ];

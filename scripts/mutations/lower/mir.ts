@@ -1118,8 +1118,16 @@ export const mutations: Mutation[] = [
     name: "mir-payload-of-temporary-in-place",
     breaks: "`Some(current)` of a temporary is read as the temporary, `_5`, losing its name",
     file: "src/lower/mir.rs",
-    find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n",
-    replace: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n",
+    find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
+    replace: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     tests: ["test/lowering.test.ts","-t","if-let's binding from MIR keeps"],
+  },
+  {
+    name: "mir-payload-place-of-temporary",
+    breaks: "`Some(first)` of a temporary holding a reference is read as the temporary, `_18`, losing its name",
+    file: "src/lower/mir.rs",
+    find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
+    replace: "            && (!state.locals.user[local] || state.payloads.contains(&local))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local];\n",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
   },
 ];

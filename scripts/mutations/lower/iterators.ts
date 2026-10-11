@@ -534,14 +534,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
   },
   {
-    name: "iter-eager-lent-kept",
-    breaks: "`$lent($iter(xs)).some(f)` stays, not `xs.some(f)`",
-    file: "src/lower/iterators.rs",
-    find: "                &of[0]\n",
-    replace: "                chain\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
-  },
-  {
     name: "iter-eager-collect-uncopied",
     breaks: "`$iter(xs).toArray()` is `xs`, which changes with it, not a copy",
     file: "src/lower/iterators.rs",
@@ -572,5 +564,21 @@ export const mutations: Mutation[] = [
     find: "        \"take\" => Expr::call(Expr::member(items, \"slice\"), vec![Expr::int(0), f.clone()]),\n",
     replace: "        \"take\" => Expr::call(Expr::member(items, \"take\"), vec![f.clone()]),\n",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+  },
+  {
+    name: "iter-eager-nth-kept",
+    breaks: "`nth(1)` of a string's parts stays `drop(1).take(1).toArray()[0]`",
+    file: "src/lower/iterators.rs",
+    find: "            && zero.as_int() == Some(0)\n",
+    replace: "            && zero.as_int() == Some(0)\n            && false\n",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+  },
+  {
+    name: "iter-eager-lent-root-kept",
+    breaks: "a chain on `$lent($iter(xs))` just made stays a JS iterator's",
+    file: "src/lower/iterators.rs",
+    find: "        at = of;\n",
+    replace: "        let _ = of;\n",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
   },
 ];
