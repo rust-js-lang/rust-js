@@ -1518,4 +1518,16 @@ export const mutations: Mutation[] = [
       "checked element set is one statement"
     ]
   },
+  {
+    "name": "mir-nullable-clone-renulled",
+    "breaks": "a clone of a nullable field given to one from MIR is `m.rule_id ?? null`",
+    "file": "src/lower/mir.rs",
+    "find": "        if itself\n",
+    "replace": "        if false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nullable field's clone"
+    ]
+  },
 ];

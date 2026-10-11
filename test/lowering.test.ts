@@ -7315,3 +7315,32 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
     expect([args, made]).toEqual([["HTML"], ["x"]]);
   }
 });
+
+// A clone of a nullable field's `Option`, `m.rule_id.clone()`, is its JS
+// value, null or the string, so given to another nullable field it's read
+// as it is, from MIR as from THIR, as react.dev's runESLint gives each
+// diagnostic its rule.
+test("a nullable field's clone is given to a nullable field as it is", async () => {
+  const dir = fixture("nullable-clone");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Msg {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub rule_id: Option<String>,
+    pub line: u32,
+}
+pub struct Diag {
+    #[cfg_attr(rust_js, rust_js::nullable)]
+    pub rule_id: Option<String>,
+    pub line: u32,
+}
+pub fn diags(msgs: Vec<&Msg>) -> Vec<Diag> {
+    msgs.iter().map(|m| Diag { rule_id: m.rule_id.clone(), line: m.line }).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("({ rule_id: m.rule_id, line: m.line })");
+    const lib = await import(join(dir, out));
+    expect(lib.diags([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }])).toEqual([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }]);
+  }
+});

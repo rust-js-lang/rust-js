@@ -3020,6 +3020,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             mir::StatementKind::Assign(assign) if assign.0 == place.local.into() => Some(&assign.1),
             _ => None,
         });
+        // A clone of such, `m.rule_id.clone()`, of an item a clone gives as
+        // it is, a string's, a number's or a reference's: its JS value.
+        let itself = self
+            .option_of(state.body.local_decls[place.local].ty)
+            .is_some_and(|item| item.is_ref() || item.is_primitive() || self.is_string_like(item));
+        let cloned = (state.body.basic_blocks.iter()).find_map(|b| match &b.terminator().kind {
+            mir::TerminatorKind::Call {
+                func,
+                args,
+                destination,
+                ..
+            } if *destination == place.local.into() => Some((func, args)),
+            _ => None,
+        });
+        if itself
+            && let Some((func, args)) = cloned
+            && let Some((def_id, _)) = fn_def(func.ty(state.body, self.tcx))
+            && (self.tcx.trait_of_assoc(def_id)).is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
+            && let [arg] = &args[..]
+            && let Some(reference) = arg.node.place()
+            && reference.projection.is_empty()
+            && state.locals.writes[reference.local] == 1
+            && let Some(Rvalue::Ref(_, _, borrowed)) = (state.body.basic_blocks.iter().flat_map(|b| &b.statements))
+                .find_map(|s| match &s.kind {
+                    mir::StatementKind::Assign(assign) if assign.0 == reference.local.into() => Some(&assign.1),
+                    _ => None,
+                })
+        {
+            return self.nulled(state, &Operand::Copy(*borrowed));
+        }
         match assigned {
             Some(Rvalue::Use(operand, _)) => self.nulled(state, operand),
             Some(Rvalue::Aggregate(kind, fields)) => {
