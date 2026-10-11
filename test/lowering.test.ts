@@ -7565,3 +7565,60 @@ pub fn shown(caption_position: Option<CaptionPosition>, text: &'static str) -> O
     expect([lib.below(undefined), lib.below("top"), lib.shown("bottom", "t"), lib.shown("top", "t")]).toEqual([true, false, "t", undefined]);
   }
 });
+
+// An `if let .. else if let .. else { panic!() }` chain is its arms in
+// the order written, from MIR as from THIR, not the panic's first in a
+// labeled block, as react.dev's TerminalBlock reads its message.
+test("an if-let chain ending in a panic keeps its arms in written order", async () => {
+  const dir = fixture("if-let-chain-panic");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Kind {
+    Text(String),
+    Element(Option<String>),
+    Other,
+}
+pub fn message(kind: Kind) -> String {
+    let message: String;
+    if let Kind::Text(text) = &kind {
+        message = text.to_string();
+    } else if let Kind::Element(child) = &kind
+        && let Some(text) = child
+    {
+        message = text.to_string();
+    } else {
+        panic!("Expected a plain string.");
+    }
+    message
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (kind.TAG === "Text") {\n    message = kind._0;\n  } else if (kind.TAG === "Element" && kind._0 != null) {\n    message = kind._0;\n  } else {\n    throw');
+    const lib = await import(join(dir, out));
+    expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: "b" })]).toEqual(["a", "b"]);
+    expect(() => lib.message({ TAG: "Element", _0: undefined })).toThrow("plain string");
+  }
+});
+
+// `x != null && typeof x === "string"`, an `Option`'s test before a
+// classification's: the `typeof` test, which holds of no `null`, as
+// react.dev's TerminalBlock reads its children's text from MIR.
+test("a typeof test after a null check is the typeof test from MIR", async () => {
+  const dir = fixture("typeof-after-null");
+  writeFileSync(join(dir, "lib.rs"), `pub fn text(ok: bool, given: Option<&'static js::Unknown>) -> &'static str {
+    if ok
+        && let Some(t) = given
+        && let js::Kind::String(s) = js::classify(t)
+    {
+        s
+    } else {
+        "none"
+    }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, { RUST_JS_MIR: "1" });
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('if (ok && typeof given === "string") {');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.text(true, "a"), lib.text(true, undefined), lib.text(true, 3), lib.text(false, "a")]).toEqual(["a", "none", "none", "none"]);
+});

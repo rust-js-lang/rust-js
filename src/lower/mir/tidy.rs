@@ -75,6 +75,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             returned(stmts, result);
             unreachable_after(stmts);
         });
+        // An arm MIR made the block's fall-through, written first: first.
+        js::statement_lists(body, &mut |stmts| written_first(stmts));
         js::statement_lists(body, &mut |stmts| branch_ends(stmts));
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
         bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
@@ -174,6 +176,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain's tests, where each is read in place now: `if (a) { if (f(a))
     // { .. } }`, `if (a && f(a))`.
     bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
+    // What a block ends after, its tests read in place now: its `else`.
+    js::statement_lists(body, &mut |stmts| tail_elses(stmts));
+    js::statement_lists(body, &mut unlabeled);
+    // `x != null && typeof x === "string"`: the `typeof` test, which says it.
+    js::each_expr_mut(body, &mut typeof_tests);
     // A loop's test those read in place now, `while (true) { if (!(m.length
     // > n)) { .. } }`'s of `const _7 = m.length;`.
     js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
@@ -2003,6 +2010,111 @@ fn negated(test: &Expr) -> bool {
         }
         _ => false,
     }
+}
+
+/// `l: { if (t) { a; throw e; } b; }`, of an arm `b` MIR made the block's
+/// fall-through though it's written before `a`, which leaves the block,
+/// `if let Text(..) = k { b } else { a }`: `l: { if (!t) { b } else { a } }`,
+/// as written. `b` runs where `t` doesn't hold either way.
+fn written_first(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        let StmtKind::Labeled(label, body) = &mut stmt.kind else {
+            continue;
+        };
+        let [first, rest @ ..] = body.as_slice() else {
+            continue;
+        };
+        let StmtKind::If(_, then, None) = &first.kind else {
+            continue;
+        };
+        let leaves = |s: &Stmt| match &s.kind {
+            StmtKind::Throw(_) | StmtKind::Return(_) => true,
+            StmtKind::Break(Some(l)) => l == label,
+            _ => false,
+        };
+        let earlier = matches!((first_written(rest), first_written(then)), (Some(b), Some(a)) if b < a);
+        if rest.is_empty() || !then.last().is_some_and(leaves) || !earlier {
+            continue;
+        }
+        let mut rest = std::mem::take(body);
+        let first = rest.remove(0);
+        let StmtKind::If(test, then, None) = first.kind else {
+            unreachable!("matched")
+        };
+        if rest
+            .last()
+            .is_some_and(|s| matches!(&s.kind, StmtKind::Break(Some(l)) if l == label))
+        {
+            rest.pop();
+        }
+        *body = vec![StmtKind::If(not(test), rest, Some(then)).at(first.span)];
+    }
+}
+
+/// Of each block `l`, the statements it ends after, `tail_else`'s.
+fn tail_elses(stmts: &mut [Stmt]) {
+    fn tails(list: &mut Vec<Stmt>, label: &str) {
+        *list = tail_else(std::mem::take(list), label);
+        if let Some(Stmt {
+            kind: StmtKind::If(_, then, otherwise),
+            ..
+        }) = list.last_mut()
+        {
+            tails(then, label);
+            if let Some(otherwise) = otherwise {
+                tails(otherwise, label);
+            }
+        }
+    }
+    for stmt in stmts {
+        if let StmtKind::Labeled(label, body) = &mut stmt.kind {
+            let label = label.clone();
+            tails(body, &label);
+        }
+    }
+}
+
+/// `if (c) { s; break l; } t`, statements `l` ends after: `if (c) { s }
+/// else { t }`, an `else if` chain's, `t` so too.
+fn tail_else(mut stmts: Vec<Stmt>, label: &str) -> Vec<Stmt> {
+    let breaks = |list: &[Stmt]| matches!(list.last(), Some(Stmt { kind: StmtKind::Break(Some(l)), .. }) if l == label);
+    if stmts.len() < 2 || !matches!(&stmts[0].kind, StmtKind::If(_, then, None) if breaks(then)) {
+        return stmts;
+    }
+    let rest = stmts.split_off(1);
+    let first = stmts.remove(0);
+    let StmtKind::If(test, mut then, None) = first.kind else {
+        unreachable!("matched")
+    };
+    then.pop();
+    vec![StmtKind::If(test, then, Some(tail_else(rest, label))).at(first.span)]
+}
+
+/// `a && x != null && typeof x === "string"`, an `Option`'s test before a
+/// classification's: `a && typeof x === "string"`, of a type no `null` is.
+fn typeof_tests(e: &mut Expr) {
+    let ExprKind::Binary(Op::And, left, right) = &e.kind else {
+        return;
+    };
+    let ExprKind::Binary(Op::Eq, kind, name) = &right.kind else {
+        return;
+    };
+    let (ExprKind::Unary(UnaryOp::Typeof, x), ExprKind::Str(name)) = (&kind.kind, &name.kind) else {
+        return;
+    };
+    if matches!(name.as_str(), "object" | "undefined") {
+        return;
+    }
+    let set = |e: &Expr| {
+        matches!(&e.kind, ExprKind::Binary(Op::LooseNe, y, null)
+            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && js::same_path(x, y))
+    };
+    let tested = (**right).clone();
+    *e = match &left.kind {
+        _ if set(left) => tested,
+        ExprKind::Binary(Op::And, first, last) if set(last) => Expr::bin(Op::And, (**first).clone(), tested),
+        _ => return,
+    };
 }
 
 /// `a || b`, of `b` a chain itself too, `a || b1 || b2`, as one is written.

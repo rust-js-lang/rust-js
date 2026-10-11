@@ -1234,4 +1234,40 @@ export const mutations: Mutation[] = [
       "or-pattern's matches is an or"
     ]
   },
+  {
+    "name": "mir-tidy-written-first-unswapped",
+    "breaks": "an if-let chain from MIR keeps its first arm last, the panic's test first: `if (kind.TAG !== \"Text\") { .. throw } message = ..`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        js::statement_lists(body, &mut |stmts| written_first(stmts));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "if-let chain ending in a panic"
+    ]
+  },
+  {
+    "name": "mir-tidy-tail-elses-kept",
+    "breaks": "an else-if chain's arm from MIR breaks its block, `if (c) { s; break bb19; } throw ..`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| tail_elses(stmts));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "if-let chain ending in a panic"
+    ]
+  },
+  {
+    "name": "mir-tidy-typeof-null-kept",
+    "breaks": "a typeof test from MIR keeps the null check before it, `given != null && typeof given === \"string\"`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::each_expr_mut(body, &mut typeof_tests);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "typeof test after a null check"
+    ]
+  },
 ];
