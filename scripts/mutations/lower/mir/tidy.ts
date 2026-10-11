@@ -654,8 +654,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-not-past",
     breaks: "a temporary is read in place only by the statement right after it, `const _34 = formatted; const args$1 = args;` kept",
     file: "src/lower/mir/tidy.rs",
-    find: "            at == 0\n                || !value.has_effects()\n",
-    replace: "            at == 0\n                || false && !value.has_effects()\n",
+    find: "        let past = |at: usize| (rest[..at]",
+    replace: "        let past = |at: usize| at == 0 && (rest[..at]",
     tests: ["test/bindings.test.ts","-t","replaced in place from MIR"],
   },
   {
@@ -1136,6 +1136,18 @@ export const mutations: Mutation[] = [
       "test/mir.test.ts",
       "-t",
       "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-tidy-past-borrow-blocks",
+    "breaks": "a chain stays a `const _4` ahead of a callback's borrow, `const list$1 = list;`, not the array's own `forEach`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        let past = |at: usize| (rest[..at]",
+    "replace": "        let past = |at: usize| (!acts || at == 0) && (rest[..at]",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "past a closure's mutable borrow"
     ]
   },
 ];

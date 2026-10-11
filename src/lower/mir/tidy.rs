@@ -2143,14 +2143,44 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<St
             continue;
         };
         let temporary = is_temporary(name) || captured.contains(name);
-        // The statement that reads it, past `const`s that do nothing, where
-        // what it does nothing either.
-        let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name) > 0);
-        let past = |at: usize| {
-            at == 0
-                || !value.has_effects()
-                    && (rest[..at].iter()).all(|s| matches!(&s.kind, StmtKind::Const(_, v) if !v.has_effects()))
+        // What's read before it: what does nothing, where it does nothing
+        // either; else only constants and variables nothing changes, which
+        // what it does can't change. Of what an element made ahead of a
+        // branch reads, what does nothing and reads no such variable: the
+        // element's tree is the order the program makes them in.
+        let acts = value.has_effects();
+        let element = captured.contains(name);
+        let passes = |e: &Expr| match acts {
+            false => !e.has_effects(),
+            true if element => {
+                let mut unchanged = !e.has_effects();
+                e.visit_vars(&mut |v| unchanged &= !changing.contains(v));
+                unchanged
+            }
+            // A builtin's function too, `Object.fromEntries`, which nothing changes.
+            true => {
+                // A field of a plain value too, `meta.tag`, which no call can
+                // change, as MIR's lowering reads it where it's read.
+                let mut root = e;
+                while let ExprKind::Member(of, _) = &root.kind {
+                    root = of;
+                }
+                e.is_made_of_constants()
+                    || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v))
+                    // An import, `<Seo>`'s tag: a module's export is never set
+                    // again, a `static mut` being its `{ value }`.
+                    || matches!(e.kind, ExprKind::Symbol(_))
+                    || matches!(e.kind, ExprKind::Member(..))
+                        && matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !changing.contains(v))
+                    || matches!(&e.kind, ExprKind::Member(of, _)
+                        if matches!(&of.kind, ExprKind::Var(v)
+                            if !changing.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String")))
+            }
         };
+        // The statement that reads it, past `const`s of what it may be read
+        // past, `const list$1 = list;` a callback's borrow.
+        let at = (rest.iter()).position(|s| js::mentions_in(std::slice::from_ref(s), name) > 0);
+        let past = |at: usize| (rest[..at].iter()).all(|s| matches!(&s.kind, StmtKind::Const(_, v) if passes(v)));
         let Some(at) = at.filter(|&at| past(at)) else {
             i += 1;
             continue;
@@ -2194,40 +2224,6 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, plain: &HashSet<St
         let Some(read) = read else {
             i += 1;
             continue;
-        };
-        // What's read before it: what does nothing, where it does nothing
-        // either; else only constants and variables nothing changes, which
-        // what it does can't change. Of what an element made ahead of a
-        // branch reads, what does nothing and reads no such variable: the
-        // element's tree is the order the program makes them in.
-        let acts = value.has_effects();
-        let element = captured.contains(name);
-        let passes = |e: &Expr| match acts {
-            false => !e.has_effects(),
-            true if element => {
-                let mut unchanged = !e.has_effects();
-                e.visit_vars(&mut |v| unchanged &= !changing.contains(v));
-                unchanged
-            }
-            // A builtin's function too, `Object.fromEntries`, which nothing changes.
-            true => {
-                // A field of a plain value too, `meta.tag`, which no call can
-                // change, as MIR's lowering reads it where it's read.
-                let mut root = e;
-                while let ExprKind::Member(of, _) = &root.kind {
-                    root = of;
-                }
-                e.is_made_of_constants()
-                    || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v))
-                    // An import, `<Seo>`'s tag: a module's export is never set
-                    // again, a `static mut` being its `{ value }`.
-                    || matches!(e.kind, ExprKind::Symbol(_))
-                    || matches!(e.kind, ExprKind::Member(..))
-                        && matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !changing.contains(v))
-                    || matches!(&e.kind, ExprKind::Member(of, _)
-                        if matches!(&of.kind, ExprKind::Var(v)
-                            if !changing.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String")))
-            }
         };
         if !stable && leads(read, name, &passes) != Some(true) {
             i += 1;

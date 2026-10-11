@@ -7259,3 +7259,28 @@ pub fn flagged(heading: bool, crumb: bool, expanded: bool) -> Option<&'static st
     expect([lib.image(true, { title: "t", path: "/a" }), lib.image(false, { title: "t", path: "/a/b" }), lib.flagged(false, true, false)]).toEqual(["/images/og-/a.png", "/images/og/-a-b.png", "on"]);
   }
 });
+
+// A chain read past the alias MIR makes of what its callback borrows
+// mutably, `const list$1 = list;`: reading a variable nothing sets again is
+// the same before the chain is made or after, so it's the array's own
+// `forEach`, as react.dev's toCommaSeparatedList steps its items.
+test("a chain is read in place past a closure's mutable borrow", async () => {
+  const dir = fixture("chain-past-borrow");
+  writeFileSync(join(dir, "lib.rs"), `pub fn list(array: &[String]) -> Vec<String> {
+    let mut list: Vec<String> = Vec::new();
+    array.iter().enumerate().for_each(|(index, item)| {
+        if index > 0 {
+            list.push(format!("{index}{item}"));
+        }
+    });
+    list
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  array.forEach((item, index) => {\n");
+    const lib = await import(join(dir, out));
+    expect(lib.list(["a", "b", "c"])).toEqual(["1b", "2c"]);
+  }
+});
