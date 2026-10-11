@@ -3,7 +3,7 @@
 //! where each path ends, and what the structure needed to reach it, a
 //! labeled block or a `break`, goes. A closure's body is tidied as its own.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
@@ -11,8 +11,9 @@ use super::negate;
 use crate::lower::iterators::{eager_chains, iterated};
 
 /// `body`, tidied: `result` is the name of the function's return place,
-/// `falsy` the temporaries a function that skips what's falsy is given.
-pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>) {
+/// `falsy` the temporaries a function that skips what's falsy is given,
+/// `conditions` where the program writes each `if`'s condition.
+pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>, conditions: &[js::Span]) {
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {
@@ -36,9 +37,20 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>) 
     aliases(body);
     // Of `const`s now, the iterator's too; and what a loop made so ends with,
     // a `continue` and its label, goes.
-    js::statement_lists(body, &mut loops);
+    // An iterator a loop inside another makes, a `let` assigned each time,
+    // read by nothing else.
+    let mut mentions: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
+    js::statement_lists(body, &mut |stmts| loops(stmts, &mentions));
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
+    js::statement_lists(body, &mut unlabeled);
+    js::statement_lists(body, &mut |stmts| continued(stmts));
+    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
+    js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
+    bottom_up(body, &mut |stmts| and_tests(stmts, conditions));
+    // A chain of tests a loop ended, its body now ending where the chain's does.
+    bottom_up(body, &mut branch_values);
     js::statement_lists(body, &mut unlabeled);
     // What's given where `false` is skipped as `undefined` is, `test &&
     // value`, as THIR gives it there: one read there alone, which nothing
@@ -62,6 +74,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>) 
     alias_variables(body, &changing);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing));
     eager_chains(body);
+    // A `let` declared first that nothing's left to assign or read.
+    let mut mentions: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
+    body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
 }
 
 /// A `for` loop as MIR has it, `const iter = $iter(xs); while (true) {
@@ -71,19 +87,26 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str, falsy: &HashSet<String>) 
 /// reads the iterator, and only its end leaves the loop. MIR's other shape,
 /// `if (t != null) { const x = t; body } exit`, is `for (const x of xs) {
 /// body; break; } exit`, its body going on to the exit where it ends.
-fn loops(stmts: &mut Vec<Stmt>) {
+fn loops(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        if let Some(made) = for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..]) {
+        if let Some(made) = for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], mentions) {
             stmts.splice(i..i + 2, made);
         }
         i += 1;
     }
 }
 
-fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<Vec<Stmt>> {
-    let StmtKind::Const(iter, source) = &made.kind else {
-        return None;
+fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String, usize>) -> Option<Vec<Stmt>> {
+    let (iter, source) = match &made.kind {
+        StmtKind::Const(iter, source) => (iter, source),
+        StmtKind::Assign(target, source)
+            if let ExprKind::Var(iter) = &target.kind
+                && mentions.get(iter) == Some(&2) =>
+        {
+            (iter, source)
+        }
+        _ => return None,
     };
     let StmtKind::While { label, cond, body } = &looped.kind else {
         return None;
@@ -209,6 +232,184 @@ fn early_breaks(stmts: &mut [Stmt]) {
         body.push(StmtKind::If(not(test), vec![StmtKind::Break(None).at(span)], None).at(span));
         body.extend(then);
     }
+}
+
+/// `if (a) { if (b) { s } }`, the tests of one condition the program wrote,
+/// `a && b`'s: `if (a && b) { s }`. What's bound between them, a read that
+/// does nothing, comes first in `s`, and `b` reads its value, as
+/// `if let`s chained with `&&` read.
+fn and_tests(stmts: &mut [Stmt], conditions: &[js::Span]) {
+    let within = |c: &js::Span, s: js::Span| !s.is_none() && c.lo <= s.lo && s.hi <= c.hi;
+    for stmt in stmts.iter_mut() {
+        let span = stmt.span;
+        let StmtKind::If(test, then, None) = &mut stmt.kind else {
+            continue;
+        };
+        let [bound @ .., inner] = then.as_slice() else { continue };
+        let StmtKind::If(second, _, None) = &inner.kind else {
+            continue;
+        };
+        let one = conditions.iter().any(|c| within(c, span) && within(c, inner.span));
+        let pure = bound
+            .iter()
+            .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_same()));
+        if !one || !pure {
+            continue;
+        }
+        let second = bound
+            .iter()
+            .rev()
+            .try_fold(second.clone(), |second, stmt| match &stmt.kind {
+                StmtKind::Const(name, value) => second.substitute(&|v| (v == name).then(|| value.clone())),
+                _ => None,
+            });
+        let Some(second) = second else { continue };
+        let Some(Stmt {
+            kind: StmtKind::If(_, body, None),
+            ..
+        }) = then.pop()
+        else {
+            unreachable!("matched")
+        };
+        let first = std::mem::replace(test, Expr::undefined());
+        *test = both(first, second);
+        then.extend(body);
+    }
+}
+
+/// A loop's body that ends in a block, `l: { … break l; … }`, its `break l`
+/// the loop's `continue`: the block's statements in its place. And one that
+/// ends `if (!c) { a; b }`, as MIR has a `continue` the program wrote,
+/// `if (c) { continue; } a; b`.
+fn continued(stmts: &mut [Stmt]) {
+    for stmt in stmts.iter_mut() {
+        let (looped, body) = match &mut stmt.kind {
+            StmtKind::While { label, body, .. }
+            | StmtKind::ForOf { label, body, .. }
+            | StmtKind::For { label, body, .. } => (label.clone(), body),
+            _ => continue,
+        };
+        loop {
+            match body.last().map(|s| &s.kind) {
+                Some(StmtKind::Labeled(..)) => {
+                    let Some(Stmt {
+                        kind: StmtKind::Labeled(block, mut inner),
+                        span,
+                    }) = body.pop()
+                    else {
+                        unreachable!("matched")
+                    };
+                    let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
+                    if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
+                        body.push(StmtKind::Labeled(block, inner).at(span));
+                        break;
+                    }
+                    continues(&mut inner, &block, looped.as_deref(), true);
+                    body.extend(inner);
+                }
+                Some(StmtKind::If(test, then, None))
+                    if matches!(test.kind, ExprKind::Unary(UnaryOp::Not, _)) && then.len() > 1 =>
+                {
+                    let Some(Stmt {
+                        kind: StmtKind::If(test, then, None),
+                        span,
+                    }) = body.pop()
+                    else {
+                        unreachable!("matched")
+                    };
+                    body.push(StmtKind::If(not(test), vec![StmtKind::Continue(None).at(span)], None).at(span));
+                    body.extend(then);
+                }
+                _ => break,
+            }
+        }
+    }
+}
+
+/// A `continue l` or a `break l` of loop `l` where it's the innermost
+/// loop: `continue` or `break`, as JS's unlabeled ones go there.
+fn innermost_jumps(stmts: &mut [Stmt]) {
+    fn unlabel(stmts: &mut [Stmt], looped: &str) {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::Continue(label) | StmtKind::Break(label) if label.as_deref() == Some(looped) => *label = None,
+                StmtKind::If(_, a, b) => {
+                    unlabel(a, looped);
+                    if let Some(b) = b {
+                        unlabel(b, looped);
+                    }
+                }
+                StmtKind::Labeled(_, body) => unlabel(body, looped),
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    unlabel(a, looped);
+                    unlabel(b, looped);
+                }
+                _ => {}
+            }
+        }
+    }
+    for stmt in stmts {
+        if let StmtKind::While {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::ForOf {
+            label: Some(label),
+            body,
+            ..
+        }
+        | StmtKind::For {
+            label: Some(label),
+            body,
+            ..
+        } = &mut stmt.kind
+        {
+            unlabel(body, label);
+        }
+    }
+}
+
+/// Each `break block` in `stmts` a `continue` of the loop around, labeled
+/// `looped`, written if `write`: `None` where one inside a loop of its own
+/// would need the loop's label, and it has none.
+fn continues(stmts: &mut [Stmt], block: &str, looped: Option<&str>, write: bool) -> Option<()> {
+    fn each(stmts: &mut [Stmt], block: &str, looped: Option<&str>, inner: bool, write: bool) -> Option<()> {
+        for stmt in stmts {
+            match &mut stmt.kind {
+                StmtKind::Break(Some(l)) if l == block => {
+                    let label = match inner {
+                        true => Some(looped?.to_string()),
+                        false => None,
+                    };
+                    if write {
+                        stmt.kind = StmtKind::Continue(label);
+                    }
+                }
+                StmtKind::If(_, a, b) => {
+                    each(a, block, looped, inner, write)?;
+                    if let Some(b) = b {
+                        each(b, block, looped, inner, write)?;
+                    }
+                }
+                StmtKind::Labeled(_, body) => each(body, block, looped, inner, write)?,
+                StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => {
+                    each(a, block, looped, inner, write)?;
+                    each(b, block, looped, inner, write)?;
+                }
+                StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+                    each(body, block, looped, true, write)?
+                }
+                _ => {}
+            }
+        }
+        Some(())
+    }
+    // Not `looped` itself, a label the block's statements can't name twice.
+    if looped == Some(block) {
+        return None;
+    }
+    each(stmts, block, looped, false, write)
 }
 
 /// Whether `test` says `item`, what `$next` gave, is none: `item == null`,
@@ -613,12 +814,15 @@ fn branch_values(stmts: &mut Vec<Stmt>) {
                 StmtKind::Return(Some(conditional(test, yes.clone(), no.clone())))
             }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
-            // b) { t } else { s }`, where nothing else breaks to `l`.
+            // b) { t } else { s }`, where nothing else breaks to `l`; and
+            // `if (a && b) { s } else { t }` of tests not all negated.
             StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
+                let negated = tests.iter().all(|t| matches!(t.kind, ExprKind::Unary(UnaryOp::Not, _)));
                 let test = (tests.into_iter()).rev().reduce(|b, a| both(a, b)).expect("one");
-                match then.is_empty() {
-                    true => StmtKind::If(test, otherwise, None),
-                    false => StmtKind::If(not(test), then, Some(otherwise)),
+                match (then.is_empty(), negated) {
+                    (true, _) => StmtKind::If(test, otherwise, None),
+                    (false, true) => StmtKind::If(not(test), then, Some(otherwise)),
+                    (false, false) => StmtKind::If(test, otherwise, Some(then)),
                 }
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {
@@ -750,18 +954,35 @@ fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stm
     Some((tests, otherwise, then.to_vec()))
 }
 
-/// Of `if (a) { if (b) { s; break l; } }`: `[a, b]` and `s`.
+/// Of `if (a) { if (b) { s; break l; } }`: `[a, b]` and `s`. What a level
+/// binds before its test, `if (a) { const x = o.x; if (x) { … } }`, a read
+/// that does nothing, comes first in `s`, and a test reads its value,
+/// `a && o.x`, as `if let`s chained with `&&` read.
 fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     match stmts {
         [
+            bound @ ..,
             Stmt {
                 kind: StmtKind::If(test, inner, None),
                 ..
             },
-        ] => {
+        ] if bound
+            .iter()
+            .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_same())) =>
+        {
             let (mut tests, otherwise) = broken_chain(inner, label)?;
             tests.insert(0, test.clone());
-            Some((tests, otherwise))
+            for stmt in bound.iter().rev() {
+                let StmtKind::Const(name, value) = &stmt.kind else {
+                    unreachable!("matched")
+                };
+                for test in &mut tests {
+                    *test = test.substitute(&|v| (v == name).then(|| value.clone()))?;
+                }
+            }
+            let mut body = bound.to_vec();
+            body.extend(otherwise);
+            Some((tests, body))
         }
         [
             rest @ ..,
@@ -1186,6 +1407,16 @@ fn tail_jumps(stmts: &mut [Stmt]) {
         match &mut stmt.kind {
             StmtKind::Labeled(label, body) => drop_tail(body, &StmtKind::Break(Some(label.clone()))),
             StmtKind::While {
+                label: Some(label),
+                body,
+                ..
+            }
+            | StmtKind::ForOf {
+                label: Some(label),
+                body,
+                ..
+            }
+            | StmtKind::For {
                 label: Some(label),
                 body,
                 ..

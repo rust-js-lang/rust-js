@@ -900,10 +900,12 @@ impl Expr {
     }
 
     pub fn index(object: Expr, index: Expr) -> Expr {
-        // `[x][0]` is `x`, where `x` is an item, not `...items`.
-        if let (ExprKind::Array(items), Some(0)) = (&object.kind, index.as_int())
-            && let [item] = &items[..]
-            && !matches!(item.kind, ExprKind::Spread(_))
+        // `[a, b][1]` is `b`, where none is `...items`, and what's left
+        // unread does nothing.
+        if let (ExprKind::Array(items), Some(k)) = (&object.kind, index.as_int())
+            && let Some(item) = usize::try_from(k).ok().and_then(|k| items.get(k))
+            && !items.iter().any(|i| matches!(i.kind, ExprKind::Spread(_)))
+            && items.iter().all(|i| std::ptr::eq(i, item) || !i.has_effects())
         {
             return item.clone();
         }

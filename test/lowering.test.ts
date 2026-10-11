@@ -1263,6 +1263,170 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   }
 });
 
+// `if let`s chained with `&&`, and loops, from MIR (ADR 0364), as THIR
+// writes them: one condition's tests one `&&`, a variant's binding the
+// place it reads where that reads the same, a tuple's parts in place, a
+// loop's labeled block its `continue`; and `if`s the program nests, nested.
+test("if-let chains and loops from MIR read as THIR's", async () => {
+  const dir = fixture("mir-let-chains");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+pub struct Route { pub title: Option<String>, pub path: Option<String>, pub routes: Option<Vec<Route>> }
+pub fn pages(routes: &[Route]) -> Vec<String> {
+    let mut out = Vec::new();
+    for route in routes {
+        if let Some(title) = &route.title
+            && let Some(children) = &route.routes
+            && !children.is_empty()
+        {
+            out.push(format!("{title}:{}", children.len()));
+        } else if let (Some(title), Some(path)) = (&route.title, &route.path) {
+            out.push(format!("{title}={path}"));
+        }
+    }
+    out
+}
+pub fn sections(routes: &[Route]) -> Vec<String> {
+    let mut out = Vec::new();
+    for route in routes {
+        if route.path.as_deref().is_some_and(|p| p.starts_with("http")) {
+            continue;
+        }
+        if let Some(title) = &route.title
+            && let Some(children) = &route.routes
+            && !children.is_empty()
+        {
+            for child in children {
+                if let Some(t) = &child.title {
+                    out.push(format!("{title}/{t}"));
+                }
+            }
+            continue;
+        }
+        if let Some(path) = &route.path {
+            out.push(path.clone());
+        }
+    }
+    out
+}
+pub fn nested(a: Option<u32>, b: bool) -> u32 {
+    let mut n = 0;
+    if let Some(x) = a {
+        if b {
+            n = x;
+        }
+    }
+    n
+}
+pub struct Item { pub kind: &'static str, pub valid: bool }
+fn valid(i: &Item) -> Option<&Item> {
+    if i.valid { Some(i) } else { None }
+}
+pub fn kept(items: &[Item]) -> usize {
+    items.iter().filter(|c| !matches!(valid(c), Some(e) if e.kind == "pre")).count()
+}
+// Data whose fields may change, which a value is read out of first, or a
+// reference to a field of, which reads the field where it's used.
+pub struct Named { pub title: Option<String>, pub seen: Cell<bool> }
+pub fn titled(nodes: &[Named]) -> Vec<String> {
+    let mut out = Vec::new();
+    for node in nodes {
+        node.seen.set(true);
+        if let Some(title) = &node.title
+            && title.len() > 1
+        {
+            out.push(title.clone());
+        }
+    }
+    out
+}
+pub struct Node { pub count: Option<u32>, pub items: Vec<u32>, pub seen: Cell<bool> }
+pub fn counts(nodes: &[Node]) -> u32 {
+    let mut n = 0;
+    for node in nodes {
+        if node.seen.get()
+            && let Some(c) = node.count
+            && c > 1
+        {
+            n += c;
+        } else {
+            n += 1;
+        }
+    }
+    n
+}
+pub fn totals(nodes: &[Node]) -> u32 {
+    let mut n = 0;
+    for node in nodes {
+        node.seen.set(true);
+        for item in &node.items {
+            n += item;
+        }
+    }
+    n
+}
+pub fn chained(nodes: &[Node]) -> u32 {
+    let mut n = 0;
+    for node in nodes {
+        if node.seen.get()
+            && let Some(c) = node.count
+        {
+            for item in &node.items {
+                n += item * c;
+            }
+            continue;
+        }
+        n += 1;
+    }
+    n
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`  for (const route of routes) {
+    if (route.title != null && route.routes && route.routes.length !== 0) {
+      out.push(\`\${route.title}:\${route.routes.length}\`);
+    } else if (route.title != null && route.path != null) {
+      out.push(\`\${route.title}=\${route.path}\`);
+    }
+  }
+`);
+    expect(js).toContain(`  for (const route of routes) {
+    if (route.path != null && route.path.startsWith("http")) {
+      continue;
+    }
+    if (route.title != null && route.routes && route.routes.length !== 0) {
+      for (const child of route.routes) {
+        if (child.title != null) {
+          out.push(\`\${route.title}/\${child.title}\`);
+        }
+      }
+      continue;
+    }
+    if (route.path != null) {
+      out.push(route.path);
+    }
+  }
+`);
+    expect(js).toContain("  if (a != null) {\n    if (b) {\n");
+    expect(js).toContain("    if (node.seen && node.count != null && node.count > 1) {\n");
+    expect(js).not.toContain("let iter");
+    expect(js).not.toMatch(/bb\d+:/);
+    expect(js).toContain("    if (node.title != null && $byteLen(node.title) > 1) {\n      out.push(node.title);\n");
+    const lib = await import(join(dir, out));
+    const routes = [
+      { title: "a", path: "x", routes: [{ title: "c" }] },
+      { title: "b", path: "y", routes: [] },
+      { path: "http://z" },
+    ];
+    expect([lib.pages(routes), lib.sections(routes), lib.nested(3, true), lib.nested(3, false)]).toEqual([["a:1", "b=y"], ["a/c", "y"], 3, 0]);
+    const nodes = () => [{ count: 3, items: [1, 2], seen: true }, { count: undefined, items: [5], seen: false }];
+    expect([lib.counts(nodes()), lib.totals(nodes()), lib.chained(nodes())]).toEqual([4, 8, 10]);
+    expect(lib.titled([{ title: "ab", seen: false }, { title: "a", seen: false }])).toEqual(["ab"]);
+    expect(lib.kept([{ kind: "pre", valid: true }, { kind: "pre", valid: false }, { kind: "p", valid: true }])).toBe(2);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

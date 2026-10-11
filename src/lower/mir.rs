@@ -175,6 +175,14 @@ struct State<'m, 'tcx> {
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
+    /// Each shared reference to a place written where it's read, and each
+    /// tuple of them: the place, read as one, which a closure captures as it
+    /// is, or the tuple's list of them.
+    places: std::collections::HashMap<Local, Value<'tcx>>,
+    /// Each variable a pattern binds in an enum's variant, `Some(title)`:
+    /// what it's bound to, where that reads the same anywhere, is it, as THIR
+    /// reads it.
+    payloads: std::collections::HashSet<Local>,
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
     jsx_props: std::collections::HashSet<Local>,
@@ -308,6 +316,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             in_place: Default::default(),
             named: Default::default(),
             parts: Default::default(),
+            places: Default::default(),
+            payloads: match captures {
+                None => self.mir_payloads(mir_body),
+                Some(_) => Default::default(),
+            },
             jsx_props: self.mir_jsx_props(mir_body),
         };
         // A closure's first argument is its environment, read through its fields.
@@ -441,9 +454,67 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A closure's own, which it named, apart from its body's.
         let falsy = std::mem::replace(&mut self.locals.falsy, outer_falsy);
-        tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE], &falsy);
+        // Where each `if`'s condition is written, of the body THIR has:
+        // tests in one are `&&`'s.
+        let conditions: Vec<js::Span> = match captures {
+            None => (self.thir.exprs.iter())
+                .filter_map(|e| match e.kind {
+                    thir::ExprKind::If { cond, .. } => Some(self.js_span(self.thir[cond].span)),
+                    _ => None,
+                })
+                .collect(),
+            Some(_) => Vec::new(),
+        };
+        tidy::tidy(&mut out, &state.locals.names[mir::RETURN_PLACE], &falsy, &conditions);
         tidy::destructured_params(&mut params, &mut out);
         Ok((params, out))
+    }
+
+    /// The locals that patterns bind in an enum's variant, by THIR's
+    /// patterns: `if let`s', `match`es' and `let`s'.
+    fn mir_payloads(&self, body: &mir::Body<'tcx>) -> std::collections::HashSet<Local> {
+        let mut spans = Vec::new();
+        let mut bound = |pat: &thir::Pat<'tcx>| {
+            pat.walk(|p| match &p.kind {
+                // Not a `for` loop's `Some(x)`: its item, a variable.
+                thir::PatKind::Variant { subpatterns, .. }
+                    if !p.span.is_desugaring(rustc_span::DesugaringKind::ForLoop) =>
+                {
+                    for field in subpatterns {
+                        field.pattern.walk_always(|b| {
+                            if let thir::PatKind::Binding { .. } = b.kind {
+                                spans.push(b.span);
+                            }
+                        });
+                    }
+                    false
+                }
+                _ => true,
+            })
+        };
+        for stmt in self.thir.stmts.iter() {
+            if let thir::StmtKind::Let { pattern, .. } = &stmt.kind {
+                bound(pattern);
+            }
+        }
+        for expr in self.thir.exprs.iter() {
+            if let thir::ExprKind::Let { pat, .. } = &expr.kind {
+                bound(pat);
+            }
+        }
+        for arm in self.thir.arms.iter() {
+            bound(&arm.pattern);
+        }
+        (body.var_debug_info.iter())
+            .filter_map(|info| match info.value {
+                mir::VarDebugInfoContents::Place(place)
+                    if place.projection.is_empty() && spans.contains(&info.source_info.span) =>
+                {
+                    Some(place.local)
+                }
+                _ => None,
+            })
+            .collect()
     }
 
     /// Parameters taken apart where they're given, as THIR takes them: a
@@ -1046,16 +1117,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut made = Vec::new();
         for (local, value) in std::mem::take(&mut state.pending) {
             let mut expr = self.value_expr(value, Span::default())?;
-            // A constant, what the module names, a function or a static, or a
-            // variable nothing changes, reads the same anywhere: written where
-            // it's read.
-            let module = match &expr.kind {
-                js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),
-                js::ExprKind::Symbol(_) => true,
-                _ => false,
-            };
             let named = state.named.contains(&local);
-            if (expr.is_constant() || module) && !named {
+            if self.reads_same_anywhere(&expr, state.body.local_decls[local].ty) && !named {
                 state.in_place.insert(local, expr);
                 continue;
             }
@@ -1117,6 +1180,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(place) = state.refs.get(&local) {
             return Ok(Value::Ref(place.clone()));
+        }
+        if let Some(value) = state.places.get(&local) {
+            return Ok(value.clone());
         }
         match state.locals.names[local].as_str() {
             "" => Ok(Value::Expr(Expr::undefined())),
@@ -1222,6 +1288,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Ok(true)
+    }
+
+    /// Whether `e` reads the same wherever it's read, so it's written there:
+    /// a constant, what the module names, a function or a static, a variable
+    /// nothing changes, a field of plain data in one, or a tuple of them, of
+    /// type `ty`: not an array, which a slice pattern takes apart.
+    fn reads_same_anywhere(&self, e: &Expr, ty: Ty<'tcx>) -> bool {
+        let alike = |e: &Expr| match &e.kind {
+            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),
+            js::ExprKind::Symbol(_) => true,
+            js::ExprKind::Member(..) => {
+                let mut root = e;
+                while let js::ExprKind::Member(object, _) = &root.kind {
+                    root = object;
+                }
+                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.plain.contains(name))
+            }
+            _ => e.is_constant(),
+        };
+        match &e.kind {
+            js::ExprKind::Array(items) => matches!(ty.kind(), ty::Tuple(_)) && items.iter().all(alike),
+            _ => alike(e),
+        }
     }
 
     fn read_local(&mut self, state: &mut State<'_, 'tcx>, local: Local, out: &mut Vec<Stmt>) -> R<Expr> {
@@ -1339,6 +1428,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.refs.insert(local, target.clone());
             return Ok(());
         }
+        // A shared reference a temporary or a variant's binding holds, made
+        // once, to a place of a variable nothing changes, `&route.title`: the
+        // place, read where it's used, as THIR reads a reference (ADR 0023);
+        // borrowck keeps it the same meanwhile.
+        // And a tuple of them, `format_args!`'s.
+        let held = |value: &Value<'tcx>| match value {
+            Value::Place(target)
+                if same_place(state, target)
+                    && root_var(target).is_some_and(|root| self.locals.alike.contains(root)) =>
+            {
+                Some(target.clone())
+            }
+            _ => None,
+        };
+        let one = place.projection.is_empty()
+            && (!state.locals.user[local] || state.payloads.contains(&local))
+            && state.locals.writes[local] == 1
+            && !state.locals.borrowed[local];
+        let places = match &value {
+            Value::List(items) => items
+                .iter()
+                .map(held)
+                .collect::<Option<Vec<_>>>()
+                .map(|items| Value::List(items.into_iter().map(Value::Place).collect())),
+            value => held(value).map(Value::Place),
+        };
+        if one && let Some(places) = places {
+            state.places.insert(local, places);
+            return Ok(());
+        }
         // An object of constants read only by its fields, `Html::default()`'s:
         // read where each is.
         if place.projection.is_empty()
@@ -1369,6 +1488,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let expr = self.value_expr(value, span)?;
         let js_span = self.js_span(span);
+        // A temporary made once of what reads the same anywhere, however
+        // often it's read, or what a variant's pattern binds to it: written
+        // where it is.
+        if place.projection.is_empty()
+            && (!state.locals.user[local] || state.payloads.contains(&local))
+            && state.locals.writes[local] == 1
+            && !state.locals.borrowed[local]
+            && !state.named.contains(&local)
+            && self.reads_same_anywhere(&expr, state.body.local_decls[local].ty)
+        {
+            state.in_place.insert(local, expr);
+            return Ok(());
+        }
         if place.projection.is_empty() && !state.locals.declared[local] {
             self.flush(state, out)?;
             state.locals.declared[local] = true;
@@ -4035,6 +4167,15 @@ fn same_place(state: &State<'_, '_>, place: &Expr) -> bool {
                         if state.locals.names.iter_enumerated().any(|(l, n)| n == name && state.locals.writes[l] == 1)))
         }
         _ => false,
+    }
+}
+
+/// The variable a place is of, `route` of `route.title[0]`.
+fn root_var(place: &Expr) -> Option<&str> {
+    match &place.kind {
+        js::ExprKind::Var(name) => Some(name),
+        js::ExprKind::Member(object, _) | js::ExprKind::Index(object, _) => root_var(object),
+        _ => None,
     }
 }
 
