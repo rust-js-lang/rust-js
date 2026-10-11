@@ -6433,3 +6433,24 @@ pub fn scroll(pos: usize, navs: &[Nav], out: &mut Vec<u32>) {
   }`);
   }
 });
+
+test("a call from MIR is read in place past an object of constants before it, as THIR's", async () => {
+  const dir = fixture("mir-past-constant-objects");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Colors { pub accent: &'static str, pub base: &'static str }
+pub struct Font { pub body: String, pub mono: String, pub size: &'static str }
+pub struct Theme { pub colors: Colors, pub font: Font }
+fn joined(parts: &[&str]) -> String { parts.join(", ") }
+fn unquoted(s: &str) -> String { s.replace('"', "") }
+pub fn theme() -> Theme {
+    Theme {
+        colors: Colors { accent: "inherit", base: "inherit" },
+        font: Font { body: unquoted(&joined(&["a", "b"])), mono: unquoted(&joined(&["c"])), size: "14px" },
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('    font: { body: unquoted(joined(["a", "b"])), mono: unquoted(joined(["c"])), size: "14px" },\n');
+  }
+});

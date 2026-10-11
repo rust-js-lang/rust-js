@@ -70,7 +70,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-inlined-past-changed-reads",
     breaks: "a temporary that does something is written past reads of what it changes, `d.n + reset(d)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            true => e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),\n",
+    find: "            true => e.is_made_of_constants() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),\n",
     replace: "            true => !e.has_effects(),\n",
     tests: ["test/mir.test.ts","-t","assignment_order"],
   },
@@ -785,5 +785,13 @@ export const mutations: Mutation[] = [
     find: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {\n",
     replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => {\n",
     tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
+  },
+  {
+    name: "mir-tidy-constant-objects-block",
+    breaks: "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            true => e.is_made_of_constants() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),\n",
+    replace: "            true => e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),\n",
+    tests: ["test/lowering.test.ts","-t","past an object of constants"],
   },
 ];

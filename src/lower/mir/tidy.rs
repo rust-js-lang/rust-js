@@ -1917,7 +1917,7 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet
                 e.visit_vars(&mut |v| unchanged &= !changing.contains(v));
                 unchanged
             }
-            true => e.is_constant() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),
+            true => e.is_made_of_constants() || matches!(&e.kind, ExprKind::Var(v) if !changing.contains(v)),
         };
         if !stable && leads(read, name, &passes) != Some(true) {
             i += 1;
