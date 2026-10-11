@@ -72,8 +72,11 @@ impl<'tcx> Mir<'tcx> {
 /// Whether bodies are lowered from their MIR: `RUST_JS_MIR=1`, while the
 /// proof of concept runs (ADR 0364).
 pub fn mir_mode() -> bool {
-    std::env::var_os("RUST_JS_MIR").is_some_and(|v| v == "1")
+    std::env::var_os(MIR).is_some_and(|v| v == "1")
 }
+
+/// The variable that says which lowering: `1`, MIR's.
+pub const MIR: &str = "RUST_JS_MIR";
 
 /// What a temporary holds until it's used: a value, or a part of a
 /// `format_args!` that only its `Arguments` shows.

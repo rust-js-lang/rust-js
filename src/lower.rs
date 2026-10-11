@@ -82,7 +82,7 @@ use crate::program::TestFn;
 use crate::runtime::Helper;
 pub use analysis::{collect_bodies, collect_initializers, collect_mir};
 use bindings::{Export, JsForm, is_binding, js_form, js_name};
-pub use mir::mir_mode;
+pub use mir::{MIR, mir_mode};
 pub use pipeline::lower_crate;
 use recognition::{Std, TypeFact};
 use representation::{
