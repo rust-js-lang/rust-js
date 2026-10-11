@@ -418,4 +418,20 @@ export const mutations: Mutation[] = [
     replace: "        && let Some((tests, body)) = returning_chain(std::slice::from_ref(last_if)).filter(|_| false)\n",
     tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
   },
+  {
+    name: "mir-tidy-dead-store-kept",
+    breaks: "`t = undefined; t = [..];`, a `vec!`'s box made then filled, keeps its first store",
+    file: "src/lower/mir/tidy.rs",
+    find: "            && !made.has_effects()\n",
+    replace: "            && !made.has_effects()\n            && false\n",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+  },
+  {
+    name: "mir-tidy-temporary-returned-kept",
+    breaks: "`_3 = e; return _3;` of a temporary stays, not `return e;`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        let returned_var = |name: &str| name == result || is_temporary(name);\n",
+    replace: "        let returned_var = |name: &str| name == result;\n",
+    tests: ["test/lowering.test.ts","-t","let-else from MIR is a guard"],
+  },
 ];

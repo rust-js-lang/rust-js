@@ -1683,10 +1683,23 @@ fn assigned(body: &mut Vec<Stmt>) -> HashSet<String> {
 fn returned(stmts: &mut Vec<Stmt>, result: &str) {
     let mut i = 0;
     while i + 1 < stmts.len() {
+        // `t = e; t = f;`, `e` doing nothing and `f` not reading `t`: `t = f;`,
+        // a `vec!`'s box made, then filled.
+        if let (StmtKind::Assign(first, made), StmtKind::Assign(second, filled)) = (&stmts[i].kind, &stmts[i + 1].kind)
+            && let (ExprKind::Var(a), ExprKind::Var(b)) = (&first.kind, &second.kind)
+            && a == b
+            && !made.has_effects()
+            && !filled.mentions_var(a)
+        {
+            stmts.remove(i);
+            continue;
+        }
+        // `result = e; return result;`, or a temporary's.
+        let returned_var = |name: &str| name == result || is_temporary(name);
         let assigns = matches!(&stmts[i].kind, StmtKind::Assign(target, _)
-            if matches!(&target.kind, ExprKind::Var(name) if name == result));
-        let returns = matches!(&stmts[i + 1].kind, StmtKind::Return(Some(value))
-            if matches!(&value.kind, ExprKind::Var(name) if name == result));
+            if matches!(&target.kind, ExprKind::Var(name) if returned_var(name)));
+        let returns = matches!((&stmts[i].kind, &stmts[i + 1].kind), (StmtKind::Assign(target, _), StmtKind::Return(Some(value)))
+            if matches!((&target.kind, &value.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b));
         if assigns && returns {
             let StmtKind::Assign(_, value) = stmts.remove(i).kind else {
                 unreachable!("matched")

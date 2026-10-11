@@ -1751,6 +1751,8 @@ pub fn first_id(items: &[Title]) -> u32 {
     expect(js).toContain("  const first = items[0];\n");
     if (out === "mir.js") {
       expect(js).toContain('  const first = parts[0];\n  if (first == null || typeof first !== "object") {\n    return 0;\n  }\n');
+      // A \`vec!\` a branch gives back, its box made, then filled: the array.
+      expect(js).toContain('  return titled ? [{ TAG: "Element", _0: { kind: "h4", id: 3 } }] : [{ TAG: "Text", _0: "t" }];\n');
     }
     const lib = await import(join(dir, out));
     expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.first_id([{ kind: "p", id: 4 }]), lib.first_id([]), lib.element_id([{ kind: "p", id: 5 }]), lib.element_id(["t"])]).toEqual([8, 8, 0, 10, 0]);
