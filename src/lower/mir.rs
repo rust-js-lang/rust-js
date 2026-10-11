@@ -908,6 +908,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(out);
                 }
                 let otherwise = Some(targets.otherwise()).filter(|&b| reached(b));
+                let mut chain_panics = otherwise.is_some_and(|b| panics(state.body, b));
                 let mut chain: Option<Vec<Stmt>> = match otherwise {
                     Some(b) => Some(self.mir_branch(state, block, b)?),
                     None => None,
@@ -916,11 +917,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if chain.is_none()
                     && let Some((_, last)) = cases.pop()
                 {
+                    chain_panics = panics(state.body, last);
                     chain = Some(self.mir_branch(state, block, last)?);
                 }
                 for (test, target) in cases.into_iter().rev() {
                     let then = self.mir_branch(state, block, target)?;
-                    chain = Some(early_exit(test, then, chain, self.js_span(span)));
+                    let branches_panic = [panics(state.body, target), chain_panics];
+                    chain = Some(early_exit(test, then, chain, branches_panic, self.js_span(span)));
+                    chain_panics = false;
                 }
                 out.extend(chain.unwrap_or_default());
             }
@@ -4040,8 +4044,16 @@ fn negate(test: Expr) -> Expr {
 
 /// `if (test) { then } else { otherwise }`, written with the branch that
 /// returns or throws first and the other after it, as a person writes an
-/// early exit: the same, as that branch never goes on.
-fn early_exit(test: Expr, then: Vec<Stmt>, otherwise: Option<Vec<Stmt>>, span: js::Span) -> Vec<Stmt> {
+/// early exit: the same, as that branch never goes on. Of the branches,
+/// `panics` says which panic: one that does is first, as a person writes a
+/// check.
+fn early_exit(
+    test: Expr,
+    then: Vec<Stmt>,
+    otherwise: Option<Vec<Stmt>>,
+    panics: [bool; 2],
+    span: js::Span,
+) -> Vec<Stmt> {
     let exits = |stmts: &[Stmt]| {
         matches!(
             stmts.last().map(|s| &s.kind),
@@ -4049,7 +4061,10 @@ fn early_exit(test: Expr, then: Vec<Stmt>, otherwise: Option<Vec<Stmt>>, span: j
         )
     };
     match otherwise {
-        Some(otherwise) if exits(&then) && !exits(&otherwise) => {
+        Some(otherwise) if panics == [false, true] => {
+            early_exit(negate(test), otherwise, Some(then), [true, false], span)
+        }
+        Some(otherwise) if panics == [true, false] || exits(&then) && !exits(&otherwise) => {
             let mut out = vec![StmtKind::If(test, then, None).at(span)];
             out.extend(otherwise);
             out
@@ -4061,6 +4076,24 @@ fn early_exit(test: Expr, then: Vec<Stmt>, otherwise: Option<Vec<Stmt>>, span: j
         }
         otherwise => vec![StmtKind::If(test, then, otherwise).at(span)],
     }
+}
+
+/// Whether `block` goes on to a call that never returns, a panic's, through
+/// blocks that only go on: the message it's given made on the way.
+fn panics(body: &mir::Body<'_>, mut block: BasicBlock) -> bool {
+    // A `loop {}` goes on forever.
+    for _ in 0..body.basic_blocks.len() {
+        match body.basic_blocks[block].terminator().kind {
+            TerminatorKind::Call { target: None, .. } => return true,
+            TerminatorKind::Goto { target }
+            | TerminatorKind::Call {
+                target: Some(target), ..
+            }
+            | TerminatorKind::Drop { target, .. } => block = target,
+            _ => return false,
+        }
+    }
+    false
 }
 
 /// Whether `block` only returns, through blocks that do nothing but go on.

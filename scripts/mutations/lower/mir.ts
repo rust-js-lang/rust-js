@@ -1002,4 +1002,20 @@ export const mutations: Mutation[] = [
     replace: "        (false && unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)\n",
     tests: ["test/lowering.test.ts","-t","a struct update of a base nothing changes"],
   },
+  {
+    name: "mir-early-exit-panic-last",
+    breaks: "a check that panics is written after what goes on, `if (n === 6) { return n; } fail()`, not `if (n !== 6) { fail() } return n;`",
+    file: "src/lower/mir.rs",
+    find: "        Some(otherwise) if panics == [false, true] => {\n",
+    replace: "        Some(otherwise) if panics == [false, true] && false => {\n",
+    tests: ["test/lowering.test.ts","-t","what reads the same anywhere"],
+  },
+  {
+    name: "mir-panics-through-calls-not",
+    breaks: "a panic whose message a call makes isn't seen as one, its check written last",
+    file: "src/lower/mir.rs",
+    find: "            TerminatorKind::Goto { target }\n            | TerminatorKind::Call {\n                target: Some(target), ..\n            }\n",
+    replace: "            TerminatorKind::Goto { target }\n",
+    tests: ["test/lowering.test.ts","-t","what reads the same anywhere"],
+  },
 ];

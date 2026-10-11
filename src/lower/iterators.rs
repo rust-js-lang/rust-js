@@ -1471,3 +1471,23 @@ fn is_enumerate_pairing(e: &Expr) -> bool {
 pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$iter"))
 }
+
+/// What `for (x of e)` steps through of `e`, `$iter(xs)`'s or
+/// `Iterator.from(xs)`'s: `xs` itself.
+pub(super) fn iterated(e: Expr) -> Expr {
+    match e.kind {
+        js::ExprKind::Call(callee, mut args)
+            if args.len() == 1
+                && match &callee.kind {
+                    js::ExprKind::Var(f) => f == "$iter",
+                    js::ExprKind::Member(object, from) => {
+                        from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")
+                    }
+                    _ => false,
+                } =>
+        {
+            args.pop().expect("one")
+        }
+        kind => Expr { kind, span: e.span },
+    }
+}

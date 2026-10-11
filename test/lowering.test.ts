@@ -1060,6 +1060,133 @@ pub fn guard(a: u32, s: &str) -> bool {
   }
 });
 
+// A `for` loop from MIR (ADR 0364) is the `for…of` or counted `for` THIR
+// writes, not the `while (true)` stepping an iterator MIR has.
+test("loops from MIR read as a person writes them", async () => {
+  const dir = fixture("mir-loops");
+  writeFileSync(join(dir, "lib.rs"), `pub fn counted(items: &[u32]) -> u32 {
+    let mut n = 0;
+    for x in items {
+        if *x > 2 {
+            n += 1;
+        }
+    }
+    n
+}
+pub fn found(items: &[u32]) -> Option<u32> {
+    for &x in items {
+        if x > 2 {
+            return Some(x);
+        }
+    }
+    None
+}
+pub fn pairs(items: &[(u32, u32)]) -> u32 {
+    let mut n = 0;
+    for (a, b) in items {
+        n += a * b;
+    }
+    n
+}
+pub fn upto(k: u32) -> u32 {
+    let mut n = 0;
+    for i in 0..k {
+        n += i;
+    }
+    n
+}
+pub fn stops(items: &[u32]) -> u32 {
+    let mut n = 0;
+    for x in items {
+        if *x == 0 {
+            break;
+        }
+        n += x;
+    }
+    n
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      n = ");
+    expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      return x;\n");
+    expect(js).toContain("  for (const [a, b] of items) {\n");
+    expect(js).toContain("  for (let i = 0; i < k; i++) {\n");
+    expect(js).toContain("    if (x === 0) {\n      break;\n    }\n");
+    expect(js).not.toContain("while (true)");
+    expect(js).not.toContain("$iter");
+    const lib = await import(join(dir, out));
+    expect([lib.counted([1, 3, 4]), lib.found([1, 3]), lib.found([1]), lib.pairs([[1, 2], [3, 4]]), lib.upto(4), lib.stops([1, 2, 0, 5])]).toEqual([2, 3, undefined, 14, 6, 3]);
+  }
+});
+
+// A pattern's bindings from MIR (ADR 0364), each a part read on its own
+// line, are the destructuring THIR writes: of a value made for them, or of a
+// variable.
+test("a pattern's bindings from MIR are destructured", async () => {
+  const dir = fixture("mir-destructured");
+  writeFileSync(join(dir, "lib.rs"), `pub struct P { pub a: u32, pub b: u32 }
+fn pair(n: u32) -> (u32, u32) { (n, n + 1) }
+pub fn split(n: u32) -> u32 {
+    let (a, b) = pair(n);
+    a * b
+}
+pub fn both(t: (u32, u32)) -> u32 {
+    let (a, b) = t;
+    a * b + a
+}
+pub fn fields(p: P) -> u32 {
+    let P { a, b } = p;
+    a + b
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const [a, b] = pair(n);\n");
+    expect(js).toContain("  const [a, b] = t;\n");
+    expect(js).toContain("  const { a, b } = p;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 })]).toEqual([6, 8, 3]);
+  }
+});
+
+// A temporary MIR (ADR 0364) makes of a variable nothing changes, or of a
+// constant, is what it holds where it's read, as THIR writes it: of
+// `assert_eq!`'s pair, each value compared. Its check, a branch that
+// panics, comes first, as a person writes it.
+test("a temporary from MIR of what reads the same anywhere is what it holds", async () => {
+  const dir = fixture("mir-aliases");
+  writeFileSync(join(dir, "lib.rs"), `use std::any::type_name;
+pub fn describe<T>(_: &T) -> String {
+    format!("{} {}", type_name::<T>(), size_of::<T>())
+}
+pub fn checked(n: u32) -> u32 {
+    assert_eq!(n, 6, "not six");
+    n
+}
+pub fn small(n: u32) -> u32 {
+    if n > 9 {
+        panic!("big");
+    }
+    n
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  return `${TName} ${TSize}`;\n");
+    expect(js).toContain("  if (n !== 6) {\n    ");
+    expect(js).toContain("  }\n  return n;\n");
+    expect(js).toContain("  if (n > 9) {\n    ");
+    const lib = await import(join(dir, out));
+    expect(lib.checked(6)).toBe(6);
+    expect(() => lib.checked(7)).toThrow();
+    expect(lib.small(9)).toBe(9);
+  }
+});
+
 // ADR 0250: a struct update of a base nothing changes is that base spread,
 // `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
 // doesn't hold stays out, where a field read of it each would be there.

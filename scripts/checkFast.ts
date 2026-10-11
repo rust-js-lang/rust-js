@@ -42,7 +42,8 @@ const inParts = (name: string, file: string) =>
     { RUST_JS_CASES: `${i + 1}/${parts}` },
   ]);
 const jobs: [string, string[], Record<string, string>][] = [
-  ["fmt", ["bun", "run", "fmt:check"], {}],
+  // The compiler just built: a build of its own, as others run it, races them.
+  ["fmt", ["bun", "run", "fmt:check"], { RUST_JS_COMPILER: join(root, "target", "debug", "rust-js") }],
   ["typecheck", ["bun", "run", "typecheck"], {}],
   ["clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], {}],
   ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/mutations.test.ts"], {}],

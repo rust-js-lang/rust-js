@@ -8,6 +8,7 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
 use super::negate;
+use crate::lower::iterators::iterated;
 
 /// `body`, tidied: `result` is the name of the function's return place.
 pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
@@ -32,8 +33,462 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, result: &str) {
     }
     declarations(body);
     aliases(body);
+    // Of `const`s now, the iterator's too; and what a loop made so ends with,
+    // a `continue` and its label, goes.
+    js::statement_lists(body, &mut loops);
+    js::statement_lists(body, &mut |stmts| early_breaks(stmts));
+    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
+    js::statement_lists(body, &mut unlabeled);
     let changing = changing(body);
+    alias_variables(body, &changing);
+    js::statement_lists(body, &mut destructured);
+    // What an array made for its parts left, `const _5 = 6;`, too.
+    alias_variables(body, &changing);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changing));
+}
+
+/// A `for` loop as MIR has it, `const iter = $iter(xs); while (true) {
+/// const t = $next(iter); if (t == null) { exit } const x = t; body }`, is
+/// `for (const x of xs) { body } exit`; of a range, `$rangeNext` of
+/// `{ start, end }`, `for (let i = start; i < end; i++)`: where nothing else
+/// reads the iterator, and only its end leaves the loop. MIR's other shape,
+/// `if (t != null) { const x = t; body } exit`, is `for (const x of xs) {
+/// body; break; } exit`, its body going on to the exit where it ends.
+fn loops(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        if let Some(made) = for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..]) {
+            stmts.splice(i..i + 2, made);
+        }
+        i += 1;
+    }
+}
+
+fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt]) -> Option<Vec<Stmt>> {
+    let StmtKind::Const(iter, source) = &made.kind else {
+        return None;
+    };
+    let StmtKind::While { label, cond, body } = &looped.kind else {
+        return None;
+    };
+    if !matches!(cond.kind, ExprKind::Bool(true)) {
+        return None;
+    }
+    let [first, second, rest @ ..] = body.as_slice() else {
+        return None;
+    };
+    let StmtKind::Const(item, next) = &first.kind else {
+        return None;
+    };
+    let ExprKind::Call(callee, args) = &next.kind else {
+        return None;
+    };
+    let step = match (&callee.kind, args.as_slice()) {
+        (
+            ExprKind::Var(f),
+            [
+                Expr {
+                    kind: ExprKind::Var(it),
+                    ..
+                },
+            ],
+        ) if it == iter => f.as_str(),
+        _ => return None,
+    };
+    if !matches!(step, "$next" | "$rangeNext")
+        || js::mentions_in(std::slice::from_ref(looped), iter) != 1
+        || js::mentions_in(after, iter) != 0
+    {
+        return None;
+    }
+    // When it's done, the exit; else, the body, which in the other shape goes
+    // on to the exit, out of the loop.
+    let (exit, mut inner, falls_out) = match &second.kind {
+        StmtKind::If(test, then, None) if absent(test, item) => (then.clone(), rest.to_vec(), false),
+        StmtKind::If(test, then, Some(other)) if absent(test, item) && rest.is_empty() => {
+            (then.clone(), other.clone(), false)
+        }
+        StmtKind::If(test, then, None) if present(test, item) => (rest.to_vec(), then.clone(), true),
+        _ => return None,
+    };
+    if !exit.last().is_some_and(ends) || breaks(&inner, label.as_deref()) {
+        return None;
+    }
+    if falls_out {
+        inner.push(StmtKind::Break(None).at(js::Span::NONE));
+    }
+    let (pattern, mutable, taken) = binding(&inner, item)?;
+    let body = inner[taken..].to_vec();
+    if js::mentions_in(&body, item) > 0 || js::mentions_in(&exit, item) > 0 {
+        return None;
+    }
+    let looped = match step {
+        "$next" => StmtKind::ForOf {
+            label: label.clone(),
+            pattern,
+            mutable,
+            iterable: iterated(source.clone()),
+            body,
+        },
+        // A range's end, read once by Rust, is read each step by JS's `for`:
+        // only one that reads the same then, a constant or a variable the
+        // body doesn't assign.
+        _ => {
+            let ExprKind::Object(props) = &source.kind else {
+                return None;
+            };
+            let [js::Prop::Field(start_key, start), js::Prop::Field(end_key, end)] = props.as_slice() else {
+                return None;
+            };
+            let js::Pattern::Name(name) = pattern else { return None };
+            let same = end.is_constant() || matches!(&end.kind, ExprKind::Var(v) if !assigns(&body, v));
+            if start_key != "start" || end_key != "end" || !same || mutable {
+                return None;
+            }
+            StmtKind::For {
+                label: label.clone(),
+                test: Expr::bin(Op::Lt, Expr::var(&name), end.clone()),
+                name,
+                start: start.clone(),
+                body,
+            }
+        }
+    };
+    let mut out = vec![looped.at(js::Span::NONE)];
+    out.extend(exit);
+    Some(out)
+}
+
+/// A loop's body that ends `if (c) { a; continue l; } break;`, `l` the loop
+/// or none: `if (!c) { break; } a`, as a person writes an early exit.
+fn early_breaks(stmts: &mut [Stmt]) {
+    for stmt in stmts.iter_mut() {
+        let (label, body) = match &mut stmt.kind {
+            StmtKind::While { label, body, .. }
+            | StmtKind::ForOf { label, body, .. }
+            | StmtKind::For { label, body, .. } => (label.clone(), body),
+            _ => continue,
+        };
+        let [.., last_if, last] = body.as_slice() else { continue };
+        let continues = |s: &Stmt| match &s.kind {
+            StmtKind::Continue(None) => true,
+            StmtKind::Continue(Some(l)) => Some(l) == label.as_ref(),
+            _ => false,
+        };
+        let shape = matches!(&last.kind, StmtKind::Break(None))
+            && matches!(&last_if.kind, StmtKind::If(_, then, None) if then.last().is_some_and(continues));
+        if !shape {
+            continue;
+        }
+        body.pop();
+        let Some(Stmt {
+            kind: StmtKind::If(test, mut then, None),
+            span,
+        }) = body.pop()
+        else {
+            unreachable!("matched")
+        };
+        then.pop();
+        body.push(StmtKind::If(not(test), vec![StmtKind::Break(None).at(span)], None).at(span));
+        body.extend(then);
+    }
+}
+
+/// Whether `test` says `item`, what `$next` gave, is none: `item == null`,
+/// or `!item` of an array's.
+fn absent(test: &Expr, item: &str) -> bool {
+    match &test.kind {
+        ExprKind::Binary(Op::LooseEq, a, b) => {
+            matches!(&a.kind, ExprKind::Var(v) if v == item) && matches!(b.kind, ExprKind::Null | ExprKind::Undefined)
+        }
+        ExprKind::Unary(UnaryOp::Not, a) => matches!(&a.kind, ExprKind::Var(v) if v == item),
+        _ => false,
+    }
+}
+
+/// Whether `test` says `item` is there: `item != null`, or `item`.
+fn present(test: &Expr, item: &str) -> bool {
+    match &test.kind {
+        ExprKind::Binary(Op::LooseNe, a, b) => {
+            matches!(&a.kind, ExprKind::Var(v) if v == item) && matches!(b.kind, ExprKind::Null | ExprKind::Undefined)
+        }
+        ExprKind::Var(v) => v == item,
+        _ => false,
+    }
+}
+
+/// What a `for` binds of `item`, read by the first statements of `body`:
+/// `const x = item;`, or `const a = item[0]; const b = item[1];`, its
+/// pattern, whether it's a `let`, and how many statements; `_` where nothing
+/// reads it.
+fn binding(body: &[Stmt], item: &str) -> Option<(js::Pattern, bool, usize)> {
+    let reads = |value: &Expr| -> Option<Result<Option<usize>, String>> {
+        match &value.kind {
+            ExprKind::Var(v) if v == item => Some(Ok(None)),
+            ExprKind::Index(of, index)
+                if matches!(&of.kind, ExprKind::Var(v) if v == item)
+                    && let ExprKind::Num(k) = index.kind
+                    && k >= 0.0
+                    && k.fract() == 0.0 =>
+            {
+                Some(Ok(Some(k as usize)))
+            }
+            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == item) => Some(Err(key.clone())),
+            _ => None,
+        }
+    };
+    let mut parts = Vec::new();
+    for stmt in body {
+        let (bound, value, mutable) = match &stmt.kind {
+            StmtKind::Const(bound, value) => (bound, value, false),
+            StmtKind::Let(bound, Some(value)) => (bound, value, true),
+            _ => break,
+        };
+        match reads(value) {
+            Some(part) => parts.push((part, bound.clone(), mutable)),
+            None => break,
+        }
+    }
+    let mutable = parts.iter().any(|&(_, _, m)| m);
+    match parts.as_slice() {
+        [] if js::mentions_in(body, item) == 0 => Some((js::Pattern::Name("_".to_string()), false, 0)),
+        [(Ok(None), bound, mutable)] => Some((js::Pattern::Name(bound.clone()), *mutable, 1)),
+        _ if !parts.is_empty() && parts.iter().all(|(p, ..)| matches!(p, Ok(Some(_)))) => {
+            let last = parts.iter().filter_map(|(p, ..)| p.clone().ok().flatten()).max()?;
+            let mut items = vec![None; last + 1];
+            for (part, bound, _) in &parts {
+                items[part.clone().ok().flatten()?] = Some(bound.clone());
+            }
+            Some((js::Pattern::Array(items), mutable, parts.len()))
+        }
+        _ if !parts.is_empty() && parts.iter().all(|(p, ..)| p.is_err()) => {
+            let fields = (parts.iter())
+                .map(|(p, bound, _)| (p.clone().expect_err("keyed"), bound.clone(), None))
+                .collect();
+            Some((js::Pattern::Object(fields, None), mutable, parts.len()))
+        }
+        _ => None,
+    }
+}
+
+/// Whether a `break` in `stmts` leaves the loop they're the body of, labeled
+/// `label`: one of no label not inside a loop of their own, or of its label.
+fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(None) => true,
+        StmtKind::Break(Some(l)) => Some(l.as_str()) == label,
+        StmtKind::If(_, a, b) => breaks(a, label) || b.as_deref().is_some_and(|b| breaks(b, label)),
+        StmtKind::Labeled(_, body) => breaks(body, label),
+        // In a loop of its own, one that names it.
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            label.is_some_and(|l| names_break(body, l))
+        }
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => breaks(a, label) || breaks(b, label),
+        _ => false,
+    })
+}
+
+/// Whether a `break` in `stmts`, however deep, names `label`.
+fn names_break(stmts: &[Stmt], label: &str) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(Some(l)) => l == label,
+        StmtKind::If(_, a, b) => names_break(a, label) || b.as_deref().is_some_and(|b| names_break(b, label)),
+        StmtKind::While { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::Labeled(_, body) => names_break(body, label),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_break(a, label) || names_break(b, label),
+        _ => false,
+    })
+}
+
+/// Whether `stmts` assign `name`.
+fn assigns(stmts: &[Stmt], name: &str) -> bool {
+    let mut stmts = stmts.to_vec();
+    let mut assigned = false;
+    js::statement_lists(&mut stmts, &mut |list| {
+        assigned |= list.iter().any(|s| {
+            matches!(&s.kind, StmtKind::Assign(target, _)
+            if matches!(&target.kind, ExprKind::Var(v) if v == name))
+        });
+    });
+    assigned
+}
+
+/// Whether `name` is a temporary MIR made, `_5`, not one the program names.
+fn is_temporary(name: &str) -> bool {
+    name.strip_prefix('_')
+        .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
+}
+
+/// `const _5 = children;`, a temporary of a variable nothing changes, nor it,
+/// or of a constant: `children`, or the constant, wherever it's read.
+fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
+    let mut aliases: Vec<(String, Expr)> = Vec::new();
+    js::statement_lists(body, &mut |stmts| {
+        stmts.retain(|stmt| match &stmt.kind {
+            StmtKind::Const(name, value)
+                if is_temporary(name)
+                    && !changing.contains(name)
+                    && (value.is_constant() || matches!(&value.kind, ExprKind::Var(of) if !changing.contains(of))) =>
+            {
+                aliases.push((name.clone(), value.clone()));
+                false
+            }
+            _ => true,
+        });
+    });
+    if aliases.is_empty() {
+        return;
+    }
+    // An alias of an alias, its variable or constant.
+    let of = |name: &str| {
+        let mut value = Expr::var(name);
+        while let ExprKind::Var(name) = &value.kind
+            && let Some((_, to)) = aliases.iter().find(|(from, _)| from == name)
+        {
+            value = to.clone();
+        }
+        value
+    };
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Var(name) = &e.kind
+            && aliases.iter().any(|(from, _)| from == name)
+        {
+            *e = Expr {
+                span: e.span,
+                ..of(name)
+            };
+        }
+    });
+}
+
+/// `const _5 = e; const a = _5[0]; const b = _5[1];`, the temporary read
+/// nowhere else, is `const [a, b] = e;`; and of its properties, `const { a,
+/// b: c } = e;`; `let` if one of them is. Of a variable the program names,
+/// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`.
+fn destructured(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        // What the parts are read of, and where they start: a temporary this
+        // statement makes, the statements after it; or a variable this one
+        // reads a part of, here.
+        let (name, first) = match &stmts[i].kind {
+            StmtKind::Const(name, _) if is_temporary(name) => (name.clone(), i + 1),
+            StmtKind::Const(_, value) | StmtKind::Let(_, Some(value))
+                if let ExprKind::Index(of, _) | ExprKind::Member(of, _) = &value.kind
+                    && let ExprKind::Var(v) = &of.kind
+                    && !is_temporary(v) =>
+            {
+                (v.clone(), i)
+            }
+            _ => {
+                i += 1;
+                continue;
+            }
+        };
+        let made = first > i;
+        // Each part read: its index or key, the variable, and whether it's a
+        // `let`.
+        let mut parts: Vec<(Result<usize, String>, String, bool)> = Vec::new();
+        for stmt in &stmts[first..] {
+            let (bound, value, mutable) = match &stmt.kind {
+                StmtKind::Const(bound, value) => (bound, value, false),
+                StmtKind::Let(bound, Some(value)) => (bound, value, true),
+                _ => break,
+            };
+            if *bound == name {
+                break;
+            }
+            let part = match &value.kind {
+                ExprKind::Index(of, index)
+                    if matches!(&of.kind, ExprKind::Var(v) if *v == name)
+                        && let ExprKind::Num(k) = index.kind
+                        && k >= 0.0
+                        && k.fract() == 0.0 =>
+                {
+                    Ok(k as usize)
+                }
+                ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if *v == name) => Err(key.clone()),
+                _ => break,
+            };
+            parts.push((part, bound.clone(), mutable));
+        }
+        let count = parts.len();
+        let indexed = parts.iter().all(|(p, ..)| p.is_ok());
+        let keyed = parts.iter().all(|(p, ..)| p.is_err());
+        let enough = count >= if made { 1 } else { 2 };
+        if !enough || !(indexed || keyed) || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
+            i += 1;
+            continue;
+        }
+        // Of an array made here, `const [, b] = [x, 6]`: each part itself,
+        // where what no part reads does nothing.
+        if made
+            && indexed
+            && let StmtKind::Const(_, value) = &stmts[i].kind
+            && let ExprKind::Array(items) = &value.kind
+            && parts.windows(2).all(|w| w[0].0 < w[1].0)
+            && parts.iter().all(|(p, ..)| matches!(p, Ok(k) if *k < items.len()))
+            && (items.iter().enumerate()).all(|(k, item)| {
+                parts.iter().any(|(p, ..)| *p == Ok(k)) || item.is_constant() || matches!(item.kind, ExprKind::Var(_))
+            })
+        {
+            let span = stmts[i].span;
+            let each: Vec<Stmt> = (parts.iter())
+                .map(|(part, bound, mutable)| {
+                    let item = items[*part.as_ref().expect("indexed")].clone();
+                    match mutable {
+                        true => StmtKind::Let(bound.clone(), Some(item)),
+                        false => StmtKind::Const(bound.clone(), item),
+                    }
+                    .at(span)
+                })
+                .collect();
+            stmts.splice(i..first + count, each);
+            continue;
+        }
+        let mutable = parts.iter().any(|&(_, _, m)| m);
+        let pattern = match indexed {
+            true => {
+                let last = parts
+                    .iter()
+                    .map(|(p, ..)| *p.as_ref().expect("indexed"))
+                    .max()
+                    .expect("one");
+                let mut items = vec![None; last + 1];
+                for (part, bound, _) in &parts {
+                    items[*part.as_ref().expect("indexed")] = Some(bound.clone());
+                }
+                js::Pattern::Array(items)
+            }
+            false => js::Pattern::Object(
+                (parts.iter())
+                    .map(|(part, bound, _)| (part.clone().expect_err("keyed"), bound.clone(), None))
+                    .collect(),
+                None,
+            ),
+        };
+        let value = match made {
+            true => {
+                stmts.drain(first..first + count);
+                let StmtKind::Const(_, value) = std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None)) else {
+                    unreachable!("matched")
+                };
+                value
+            }
+            false => {
+                stmts.drain(i + 1..i + count);
+                Expr::var(&name)
+            }
+        };
+        stmts[i].kind = StmtKind::Destructure {
+            pattern,
+            value,
+            mutable,
+        };
+        i += 1;
+    }
 }
 
 /// Each list of statements in `stmts`, the nested ones first, not in its
@@ -426,9 +881,7 @@ fn inlined(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
             i += 1;
             continue;
         };
-        let temporary = name
-            .strip_prefix('_')
-            .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'));
+        let temporary = is_temporary(name);
         if !temporary || js::mentions_in(rest, name) != 1 || js::mentions_in(&rest[..1], name) != 1 {
             i += 1;
             continue;
@@ -730,7 +1183,9 @@ fn unlabeled(stmts: &mut Vec<Stmt>) {
             // What it held is looked at again: a label inside it, now here.
             continue;
         }
-        if let StmtKind::While { label, body, .. } = &mut stmts[i].kind
+        if let StmtKind::While { label, body, .. }
+        | StmtKind::ForOf { label, body, .. }
+        | StmtKind::For { label, body, .. } = &mut stmts[i].kind
             && label.as_deref().is_some_and(|l| !targets(body, l))
         {
             *label = None;
