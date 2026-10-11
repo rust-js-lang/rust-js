@@ -1,8 +1,7 @@
-// The checks CI runs of what's pushed to `main` (DEVELOPMENT.md), started
-// and read from here, by GitHub's CLI. Started by hand, not on each push, as
-// GitHub's free minutes are counted:
+// The checks CI runs of each push to `main` (DEVELOPMENT.md), read from
+// here, and of another branch started from here, by GitHub's CLI:
 //
-//   bun run ci:check [branch] [--shards=4] [--since=<rev>]  # check it as it's pushed
+//   bun run ci:check [branch] [--shards=4] [--since=<rev>]  # check it as it's pushed, again
 //   bun run ci:status                       # each branch's latest run, and what failed, and the nightly's
 //   bun run ci:bless [branch]               # apply its latest run's bless patches
 //
@@ -97,6 +96,25 @@ async function check(branch: string, shards: string, since?: string) {
   console.log(`started ${workflow} of ${branch} at ${local.slice(0, 10)}, the suite on ${shards} machine${shards === "1" ? "" : "s"}, the ${count} mutations of what changed since ${base.slice(0, 10)} on ${machines}: bun run ci:status`);
 }
 
+/** Of a push, in CI: what its mutations are of, what changed since `main`'s
+ * last finished check, or the commit before, and how many machines they
+ * take, as GitHub's step outputs. */
+async function plan() {
+  let since = "HEAD~1";
+  try {
+    since = checkedSince(runs(), "main") ?? since;
+  } catch {}
+  let count = 0;
+  try {
+    count = (await changedSince(since)).length;
+  } catch {
+    since = "HEAD~1";
+    count = (await changedSince(since)).length;
+  }
+  console.log(`since=${since}`);
+  console.log(`shards=${mutationShards(count)}`);
+}
+
 function bless(branch: string) {
   const run = latestRuns(runs()).find((r) => r.headBranch === branch && r.status === "completed");
   if (!run) throw new Error(`no completed ${workflow} run of ${branch}`);
@@ -129,8 +147,9 @@ if (import.meta.main) {
     if (command === "status") status();
     else if (command === "check") await check(branch, shards, since);
     else if (command === "bless") bless(branch);
+    else if (command === "plan") await plan();
     else {
-      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch]");
+      console.error("usage: bun scripts/ci.ts check [branch] [--shards=1|2|4] [--since=<rev>] | status | bless [branch] | plan");
       process.exit(2);
     }
   } catch (error) {

@@ -28,46 +28,45 @@ Keep two loops.
   the failing test seen to fail, then pass, and the generated JS read. It
   takes seconds to minutes.
 - **The outer loop** goes to GitHub Actions. It's what tells us nothing
-  else broke: everything else, once a change is pushed to `main`, started
-  by hand, `bun run ci:check`. It runs on GitHub's machines while we work
-  on the next thing. A red run is fixed at once, on `main`.
+  else broke: everything else, of each push to `main`. It runs on GitHub's
+  machines while we work on the next thing. A red run is fixed at once, on
+  `main`, before the next change is built on it.
 
 ```
  we (or an agent)               main on GitHub            GitHub Actions
    │                               │                         │
    │ test fails, fix, test passes  │                         │
    │ (inner loop, local)           │                         │
-   │ commit on main, push ────────▶│                         │
-   │ bun run ci:check ─────────────┼───────────────────────▶ │ check  ~30–40 min
-   │                               │                         │  (jobs at once)
+   │ commit on main, push ────────▶│ push starts it ───────▶ │ check  ~10 min
+   │                               │                         │  (jobs at once; a
+   │                               │                         │   newer push cancels it)
    │ next change                   │                         │
    │ ...                           │                         │
-   │ ◀── bun run ci:status ────────┼─────────────────────────│
-   │ red: fix on main, push, check again                     │
+   │ ◀── bun run ci:status ────────┼─────────────────────────│ before each commit
+   │ red: fix on main first, push                            │
    │ bless patch? review, apply, commit, push                │
 ```
 
 The key fact: a check's result isn't needed to start the next change. So
 we don't wait for it; we only come back to it.
 
-## GitHub's minutes
+## GitHub's machines
 
-GitHub gives the repository a number of free minutes of its machines, and
-every job of a run counts its own, setup included. So nothing runs on its
-own but the nightly: no run on each push. `main` is checked once a change
-is pushed, and again only after a fix. A check costs about
-the sum of its jobs, some 2 to 3 hours of machine time with rustc's
-shards; splitting the suite across more machines ends sooner but costs
-more, as each sets itself up again.
+The repository is public, so GitHub's machines cost it nothing: every push
+to `main` is checked, all of it, the suite on two machines, about ten
+minutes. One run at a time: a newer push cancels the run of the one
+before, and the next finished run's mutations are of what changed since
+the last finished run, the cancelled one's changes too.
 
 ## What runs where
 
-| Check | Inner loop (local) | `bun run ci:check` | Nightly, of `main` |
+| Check | Inner loop (local) | Each push to `main` | Nightly, of `main` |
 |---|---|---|---|
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 8 machines |
-| `bun run check:fast`: lint, the MIR corpus, THIR's suites a change touches, its new mutations, at once | yes, before each commit | | |
+| `bun run check:fast`: lint, the MIR corpus, the suites that check MIR's JS as THIR's, THIR's other suites a change touches, its new mutations, at once | yes, before each commit | | |
+| `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
 | `bun run test`, the whole suite | | **test** job, or shards | |
@@ -76,7 +75,7 @@ more, as each sets itself up again.
 | The Vite example's build | | **examples** job | |
 | Generated programs (fuzz) | | | yes |
 | Release qualification | | | yes |
-| react.dev port: build and the 823 pages compared | yes: the port has no remote | | |
+| react.dev port: MIR's JS against THIR's, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 
 Every local run is five minutes at most
 ([AGENTS.md](AGENTS.md#five-minutes-per-local-command)); what may take
@@ -141,17 +140,24 @@ On the M3 Max, with the scan off:
 | One mutation | 2-5 s |
 | Eight mutations, four at a time | 11 s |
 | The react.dev port, built | 30 s |
-| `bun run check:fast`, of a change to MIR's lowering | 33 s |
-| `bun run check:fast --all`, THIR's corpus, JSX and lowering tests too | 37 s |
+| `bun run check:fast`, of a change to MIR's lowering | 40 s |
+| `bun run check:fast --all`, THIR's corpus, JSX, snapshots and diagnostics too | 40 s |
+| `bun run port measure`, MIR's compile of react.dev against THIR's JS | 7 s |
+| `bun run port compare`, its build and 823 pages | 3–4 min |
 
 What keeps them there:
 
 - **`check:fast` runs its checks at once**, each a process of its own, and
   the two corpora in parts, a third of the cases each (`RUST_JS_CASES=i/n`,
-  test/support.ts): one after another they took four minutes. THIR's corpus
-  and JSX and lowering tests run where the change touches what THIR reads,
-  any of `src/` but MIR's own lowering, or the runtime; the mutations, those
-  the change adds or changes; CI runs the rest.
+  test/support.ts): one after another they took four minutes. The lowering,
+  compiler and bindings tests, which check MIR's JS as THIR's, always run;
+  THIR's corpus, JSX, snapshot and diagnostic tests where the change touches
+  what THIR reads, any of `src/` but MIR's own lowering, or the runtime; the
+  mutations, those the change adds or changes; CI runs the rest. Each job
+  is given the compiler it built, `RUST_JS_COMPILER`: one that builds its
+  own links it again, and races the others.
+- **`bun run port measure`** fails when MIR's compile of the port does: a
+  module that fails keeps its JS from before, which reads as no difference.
 - **`bun scripts/mirDiff.ts <file.rs>`** compiles a program from THIR and
   from MIR and shows how their JS differs, for MIR's lowering to make it
   none (ADR 0364).
@@ -177,13 +183,12 @@ What keeps them there:
   pull requests. Its message is titled `feat(rust-js): …`.
 - **A push that fails**, GitHub down say, isn't a reason to stop: keep
   committing on `main` locally, and push when it works again.
-- **The check comes after the push**, `bun run ci:check`: its mutations
-  are those of what changed since `main`'s last finished check, or the
-  commit before, `--since=<rev>` to say otherwise. A red run is fixed at
-  once, with another commit.
-- **One run at a time.** A new check, of any branch, or a `rustc tests`
-  run started by hand, cancels the one running: the latest is what's
-  checked, and two never spend minutes at once.
+- **The check comes with the push**: its mutations are those of what
+  changed since `main`'s last finished check, or the commit before (its
+  `plan` job). A red run is fixed at once, with another commit.
+- **One run at a time.** A new check, a push's, another branch's, or a
+  `rustc tests` run started by hand, cancels the one running: the latest
+  is what's checked.
 
 ## When CI writes something: bless patches
 
@@ -205,23 +210,22 @@ git commit -m "chore(rust-js): bless"; git push
 #   on main: failing test, fix, focused tests, new mutations, ADR
 bun run check:fast                       # the change's checks, at once
 git commit -m "feat(rust-js): …"
-git push                                 # or later, if GitHub won't take it now
-bun run ci:check                         # main's check, on GitHub
+git push                                 # starts main's check, on GitHub
 #   next change, while it runs
-bun run ci:status                        # green, red or running, and what failed
+bun run ci:status                        # before each commit: green, red or running, and what failed
 gh run view <id> --log-failed            # why
 bun run ci:bless                         # apply its bless patches, review, commit, push
 ```
 
-`bun run ci:check --shards=4` splits the suite across four machines: done
-sooner, at more minutes.
+`bun run ci:check` checks another branch, or `main` again; `--shards=4`
+splits the suite across four machines.
 
 ## For agents
 
-- **Check once a change is pushed, and move on.** `bun run ci:check`
-  after the push that completes the change, not after every push. Don't wait for
-  the run, poll it, or schedule a check of it: read it with `bun run
-  ci:status` when the desktop app says it's done, or when asked.
+- **Push, and move on; read main's run before the next commit.** The push
+  starts the check. Don't wait for the run, poll it, or schedule a check of
+  it: read it with `bun run ci:status` before each commit, and fix a red
+  run first, so nothing is built on what's broken.
 - **Five minutes per local command, at most** ([AGENTS.md](AGENTS.md#five-minutes-per-local-command)):
   each is run with a timeout; what may take longer is CI's.
 - **The inner loop is never delegated.** The failing test is seen to fail
@@ -232,15 +236,18 @@ sooner, at more minutes.
 
 ## Workflows
 
-### `check.yml`, started by `bun run ci:check`
+### `check.yml`, of each push to `main`, and `bun run ci:check`
 
-`workflow_dispatch` of a branch, `main`, with `test_shards`, 1, 2 or 4, and `since`, the commit the mutations are of what changed since. A new run,
-of any branch, cancels the one in progress. Its jobs run at once:
+Each push to `main`, its suite on 2 machines; or `workflow_dispatch` of a
+branch, by `bun run ci:check`, with `test_shards`, 1, 2 or 4, and
+`since`, the commit the mutations are of what changed since. A new run, of
+any branch, cancels the one in progress. Its jobs run at once:
 
 | Job | What | Time, about |
 |---|---|---|
+| `plan` | of a push, the commit its mutations are since, `main`'s last finished check, and their machines | 1 min |
 | `lint` | typecheck, fmt, clippy, `cargo test` | 10 min |
-| `test` | `bun run test`, or a shard of it; a bless patch on failure | 30 min, or less in shards |
+| `test` | `bun run test`, or a shard of it; a bless patch on failure | 9 min, 5 in 2 shards |
 | `examples` | the Vite example's build | 10 min |
 | `wasm` | build `rust-js.wasm`, then the snapshot and playground tests with it | 30 min |
 | `rustc` | rustc's suite, a release build, then 6 shards and a report; a lists patch on failure | 20 min |
@@ -263,7 +270,7 @@ gh workflow run "rustc tests" -f bless=true    # rustc's lists, as a bless patch
 Every test there is: `check.yml`'s jobs, its suite in 2 shards and every
 mutation on 8 machines where a branch's check runs only its own, and 600
 generated programs, new ones each night, from the day's number. It's a
-group of its own, so it neither cancels nor waits for a `ci:check`.
+group of its own, so it neither cancels nor waits for a push's check.
 `bun run ci:status` shows its latest run first; GitHub mails a failure to
 whoever last changed the schedule. Of a public repository, its machines
 cost nothing. Started by hand too: `gh workflow run nightly.yml`.
@@ -281,7 +288,10 @@ cost nothing. Started by hand too: `gh workflow run nightly.yml`.
   long each file took.
 - `scripts/mutations.ts --changed=<base>` and `--shard=i/n`, by
   `scripts/shard.ts`.
-- `scripts/ci.ts`: `bun run ci:check`, `ci:status` and `ci:bless`.
+- `scripts/ci.ts`: `bun run ci:check`, `ci:status`, `ci:bless`, and a
+  push's `plan`.
+- `scripts/port.ts`: `bun run port measure` and `compare`, of the
+  react.dev port beside this checkout.
 - `test/ci.test.ts`: the shards, the changed mutations, each branch's
   latest run.
 

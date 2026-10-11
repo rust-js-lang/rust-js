@@ -1,8 +1,9 @@
 // What a change is checked by before it's committed, all at once, in a
 // minute or so: lint, the MIR corpus and the JSX tests MIR lists in parts,
-// what THIR shares only where the change touches it, and the mutations it
-// adds or changes. CI runs the whole suite and every mutation of what the
-// change touched after (DEVELOPMENT.md).
+// the suites that check JS from MIR as from THIR, what only THIR's reads
+// where the change touches it, and the mutations it adds or changes. CI
+// runs the whole suite and every mutation of what the change touched after
+// each push (DEVELOPMENT.md).
 //
 //   bun run check:fast                 the change's checks
 //   bun run check:fast --all           THIR's suites too
@@ -48,10 +49,14 @@ const jobs: [string, string[], Record<string, string>][] = [
   ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/mutations.test.ts"], {}],
   ...inParts("MIR corpus", "test/mir.test.ts"),
   ...(corpus ? inParts("corpus", "test/corpus.test.ts") : []),
+  // What checks the JS MIR writes as THIR's, each of its tests in both.
+  ...["lowering", "compiler", "bindings"].map(
+    (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
+  ),
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
   // What pins the JS THIR writes, the names it gives and what it refuses.
   ...(shared
-    ? ["lowering", "compiler", "snapshots", "diagnostics"].map(
+    ? ["snapshots", "diagnostics"].map(
         (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
       )
     : []),
@@ -85,5 +90,5 @@ const results = await Promise.all(
 );
 const failed = results.filter((r) => r.code !== 0);
 for (const { name, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
-console.log(`\n${failed.length === 0 ? "all passed" : `${failed.length} failed`} in ${((Date.now() - started) / 1000).toFixed(0)}s${shared ? "" : " (MIR only: THIR's corpus, JSX and lowering skipped)"}`);
+console.log(`\n${failed.length === 0 ? "all passed" : `${failed.length} failed`} in ${((Date.now() - started) / 1000).toFixed(0)}s${shared ? "" : " (MIR only: THIR's corpus, JSX, snapshots and diagnostics skipped)"}`);
 process.exit(failed.length === 0 ? 0 : 1);

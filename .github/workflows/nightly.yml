@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: read
+  # check.yml's plan reads its runs.
+  actions: read
 
 concurrency:
   group: nightly
