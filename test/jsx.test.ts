@@ -5141,3 +5141,41 @@ pub fn Buttons(recipes: bool, shown: bool, toggle: &'static dyn Fn()) -> JSX::El
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Buttons(false, true, () => {}))).toBe('<div><button class="me-2" disabled=""><i class="me-1.5"></i> Hide solution</button></div>');
 });
+
+// `&dyn Any` values given to a JS module's function, `define(vec![&a, &b])`,
+// are the values, `HighlightStyle.define([a, b])`, from MIR as from THIR, no
+// `{ value, impl }` pairs unwrapped, read in place past the import's
+// member, which no call changes, as react.dev's CodeBlock defines its
+// highlighting.
+test("dyn values given to a JS module's function are the values", async () => {
+  const { dir, args } = compile(`use std::any::Any;
+pub struct Highlight;
+unsafe extern "Rust" {
+    #[rust_js::link_name = "./style.js#HighlightStyle.define"]
+    safe fn define(specs: Vec<&dyn Any>) -> &'static Highlight;
+}
+struct ClassStyle {
+    tag: &'static str,
+    class: String,
+}
+struct FontStyle {
+    tag: &'static str,
+    font_style: &'static str,
+}
+fn token(name: &str) -> String {
+    format!("token-{name}")
+}
+pub fn highlight() -> &'static Highlight {
+    define(vec![
+        &FontStyle { tag: "em", font_style: "italic" },
+        &ClassStyle { tag: "kw", class: token("keyword") },
+    ])
+}
+`, { "style.js": "export const HighlightStyle = { define: (specs) => specs };\n" });
+  run(args);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("return HighlightStyle.define([");
+  expect(js).not.toContain("impl");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.highlight()).toEqual([{ tag: "em", font_style: "italic" }, { tag: "kw", class: "token-keyword" }]);
+});

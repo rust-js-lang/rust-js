@@ -647,6 +647,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
+        // And the module's imports, whose fields JS's modules never change
+        // either, `HighlightStyle.define`, as THIR's `reads_alike` has them.
+        let mut plain = self.locals.plain.clone();
+        plain.extend(
+            self.krate
+                .imports
+                .get(&self.module)
+                .into_iter()
+                .flat_map(|imports| imports.values().cloned()),
+        );
         tidy::tidy(
             &mut out,
             &tidy::Hints {
@@ -667,7 +677,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 returns: &state.returns,
                 captured: &captured,
                 booleans: &booleans,
-                plain: &self.locals.plain.clone(),
+                plain: &plain,
                 forwarding: &self.locals.forwarding.clone(),
             },
         );

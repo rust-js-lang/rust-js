@@ -1390,4 +1390,16 @@ export const mutations: Mutation[] = [
       "mut_ref_temporary"
     ]
   },
+  {
+    "name": "mir-tidy-dyn-pairs-kept",
+    "breaks": "dyn values MIR gives JS stay `{ value, impl }` pairs, unwrapped with `.map((item) => item.value)`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

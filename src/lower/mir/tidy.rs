@@ -161,6 +161,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A tuple read item by item, `children[0]`: its items.
     let changing = self::changing(body);
     js::statement_lists(body, &mut |stmts| tuple_reads(stmts, &changing, captured));
+    // `dyn` values given to JS, `[{ value, impl }].map((item) => item.value)`: the values.
+    js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));
     let changed = self::changing(body);
     // What an element MIR made only where a test holds reads, as one value,
     // read in place below, where the test holds.
@@ -2477,6 +2479,103 @@ fn tuple_reads(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &Has
             }
         });
         stmts.remove(i);
+    }
+}
+
+/// `[{ value: a, impl }, ..].map((item) => item.value)`, `dyn` values MIR
+/// unwraps for JS, of what else does nothing: `[a, ..]`.
+fn projected(e: &Expr) -> Option<Expr> {
+    let ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let (ExprKind::Member(items, map), [f]) = (&callee.kind, args.as_slice()) else {
+        return None;
+    };
+    let (ExprKind::Array(items), "map") = (&items.kind, map.as_str()) else {
+        return None;
+    };
+    let field = field_of(f)?;
+    let values = items.iter().map(|item| match &item.kind {
+        ExprKind::Object(props) => {
+            let mut value = None;
+            for prop in props {
+                match prop {
+                    js::Prop::Field(name, v) if *name == field => value = Some(v.clone()),
+                    js::Prop::Field(_, v) if !v.has_effects() => {}
+                    _ => return None,
+                }
+            }
+            value
+        }
+        _ => None,
+    });
+    Some(Expr {
+        span: e.span,
+        ..Expr::array(values.collect::<Option<Vec<_>>>()?)
+    })
+}
+
+/// `f` of `(item) => item.f`.
+fn field_of(f: &Expr) -> Option<String> {
+    let ExprKind::Arrow(params, body) = &f.kind else {
+        return None;
+    };
+    let (
+        [js::Pattern::Name(x)],
+        [
+            Stmt {
+                kind: StmtKind::Return(Some(read)),
+                ..
+            },
+        ],
+    ) = (params.as_slice(), body.as_slice())
+    else {
+        return None;
+    };
+    match &read.kind {
+        ExprKind::Member(of, field) if matches!(&of.kind, ExprKind::Var(v) if v == x) => Some(field.clone()),
+        _ => None,
+    }
+}
+
+/// `const t = [{ value: a, impl }, ..]; .. t.map((item) => item.value)`, read
+/// so alone: `const t = [a, ..]; .. t`, `projected`'s, held.
+fn unwrapped_values(stmts: &mut [Stmt]) {
+    for i in 0..stmts.len() {
+        let StmtKind::Const(t, value) = &stmts[i].kind else {
+            continue;
+        };
+        if !is_temporary(t) || !matches!(value.kind, ExprKind::Array(_)) || js::mentions_in(&stmts[i + 1..], t) != 1 {
+            continue;
+        }
+        let t = t.clone();
+        let mut field = None;
+        js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+            if let ExprKind::Call(callee, args) = &e.kind
+                && let (ExprKind::Member(of, map), [f]) = (&callee.kind, args.as_slice())
+                && matches!(&of.kind, ExprKind::Var(v) if *v == t)
+                && map == "map"
+            {
+                field = field_of(f).map(|_| f.clone());
+            }
+        });
+        let Some(f) = field else { continue };
+        let StmtKind::Const(_, value) = &stmts[i].kind else {
+            unreachable!("matched")
+        };
+        let call = Expr::call(Expr::member(value.clone(), "map"), vec![f]);
+        let Some(values) = projected(&call) else {
+            continue;
+        };
+        stmts[i].kind = StmtKind::Const(t.clone(), values);
+        js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
+            if let ExprKind::Call(callee, _) = &e.kind
+                && let ExprKind::Member(of, _) = &callee.kind
+                && matches!(&of.kind, ExprKind::Var(v) if *v == t)
+            {
+                *e = Expr::var(&t);
+            }
+        });
     }
 }
 

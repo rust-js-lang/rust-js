@@ -1582,4 +1582,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-imports-not-plain",
+    "breaks": "an import's member, `HighlightStyle.define`, blocks what's read after it, `const _3 = [..]` held",
+    "file": "src/lower/mir.rs",
+    "find": "                .flat_map(|imports| imports.values().cloned()),\n",
+    "replace": "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];
