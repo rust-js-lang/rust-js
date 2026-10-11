@@ -1798,7 +1798,7 @@ fn counts(f: &Expr) -> bool {
 
 /// Whether calling `f` may do what can be seen, or throw: anything but an
 /// arrow whose statements only make and give back what does nothing.
-fn does(f: &Expr) -> bool {
+pub(super) fn does(f: &Expr) -> bool {
     // `Math`'s functions, `Math.imul(x, 2)` of a `u32`'s `*`, do nothing
     // but give their value; not `Math.random()`, which steps its state.
     fn acts(e: &Expr) -> bool {

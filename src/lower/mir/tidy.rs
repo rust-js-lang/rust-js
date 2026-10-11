@@ -177,6 +177,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let set = closures_set(body);
     // What an element MIR made only where a test holds reads, as one value,
     // read in place below, where the test holds.
+    // A match's table read, `TITLES[kind]`, where it's written, before
+    // what it's given to reads it in place.
+    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
@@ -2183,10 +2186,21 @@ fn never(test: &Expr) -> bool {
 /// itself, of more branches, nor an element, which reads best returned or
 /// assigned as it is, nor a function.
 fn small(e: &Expr) -> bool {
-    !matches!(
-        e.kind,
-        ExprKind::Cond(..) | ExprKind::Jsx(_) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
-    )
+    // An element of two levels at most, `<b>Save</b>`, a value as THIR
+    // writes one; one of more reads best as a branch of its own.
+    fn levels(e: &Expr) -> usize {
+        match &e.kind {
+            ExprKind::Jsx(jsx) => 1 + jsx.children.iter().map(levels).max().unwrap_or(0),
+            _ => 0,
+        }
+    }
+    match &e.kind {
+        ExprKind::Jsx(_) => levels(e) <= 2,
+        _ => !matches!(
+            e.kind,
+            ExprKind::Cond(..) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
+        ),
+    }
 }
 
 /// The variable `stmts` only assign, and what to: `x = a;`.
@@ -3577,9 +3591,9 @@ fn aliases(body: &mut Vec<Stmt>, captured: &HashSet<String>) {
                     unreachable!("matched")
                 };
                 // A variable the program names, of one MIR's lowering made
-                // for a prop, `const code = activeCode`: the variable, read
-                // where the prop was.
-                if !is_temporary(a) && captured.contains(&b) {
+                // for a prop, `const code = activeCode`, or a temporary,
+                // `const _5 = props`: the variable, read where that was.
+                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {
                     let a = a.clone();
                     js::each_expr_mut(&mut stmts[j..], &mut |e| {
                         if let ExprKind::Var(v) = &mut e.kind

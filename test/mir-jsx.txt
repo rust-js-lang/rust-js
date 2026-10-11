@@ -13,6 +13,7 @@ JSX components take apart a list of children
 JSX components take no drop of their type parameters
 JSX context providers and refs work on React 18 while newer APIs stay gated
 JSX context providers take any node as children
+JSX covers generic functions, memo/lazy/forward-ref values and context providers
 JSX duplicate attribute reports the original source and preserves existing output
 JSX duplicate children reports the original source and preserves existing output
 JSX elements have props of a type, and bigint and promise children
@@ -23,6 +24,8 @@ JSX gives a component its props as written, and children that change the base fi
 JSX gives a generic component's children on with a base, and the component no dictionary
 JSX gives a props field the literal default it says, of its type
 JSX gives a props field's default where the props are taken apart
+JSX gives a tag's element to its handlers and its ref
+JSX grammar: spread precedence, children overrides, component paths and keyed fragments
 JSX handler props are @types/react's EventHandler aliases
 JSX hooks take @types/react's Reducer, EffectCallback and TransitionFunction
 JSX intrinsic generic reports the original source and preserves existing output
@@ -55,6 +58,7 @@ JSX spread followed by attribute reports the original source and preserves exist
 JSX spreads a struct through a reference as the struct
 JSX styles spread another style over their own
 JSX styles take the values csstype types them as
+JSX supports components across modules, fragments, lists, conditions and spreads
 JSX tags take the attributes @types/react gives each
 JSX takes an async event handler as the async function it is
 JSX takes every attribute @types/react types
@@ -99,6 +103,7 @@ a module's named component is loaded as a module's default
 a named variable moved into a held prop keeps its name
 a namespace import's component is a tag where it's written
 a program implements a trait of no items, react's Key of its enum
+a prop before children that need no statements stays where it's written
 a prop held for a borrow is read where it's written, past a plain value's field
 a prop held for a borrow is read where it's written, past a sibling element
 a prop held for a borrow is read where it's written, past an imported tag

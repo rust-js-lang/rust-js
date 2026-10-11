@@ -8416,3 +8416,29 @@ pub fn named(name: String, size: u32) -> String {
     expect([lib.sized(3), lib.named("a", 2)]).toEqual([{ name: "", size: 3, tags: [] }, "a 2 0"]);
   }
 });
+
+// From MIR as from THIR: a range's items each mapped, all collected,
+// `(0..n).map(f).collect()`, are `$range(0, n).map(f)`, an array made as
+// big as what's collected anyway; one filtered or taken from stays lazy,
+// as a big range's array would be made for little.
+test("a range mapped and collected is its array mapped", async () => {
+  const dir = fixture("range-mapped");
+  writeFileSync(join(dir, "lib.rs"), `pub fn squares(n: u32) -> Vec<u32> {
+    (0..n).map(|i| i * i).collect()
+}
+pub fn few() -> Vec<u32> {
+    (0..u32::MAX).filter(|i| i % 2 == 0).take(3).collect()
+}
+pub fn wide(n: i64) -> Vec<i64> {
+    (0..n).map(|i| i * 2).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
+    const lib = await import(join(dir, out));
+    expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
+    if (out === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
+  }
+});

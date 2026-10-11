@@ -327,7 +327,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "fuse" => it,
             "collect" => {
                 if self.is_vec_like(output) {
-                    method("toArray", it, Vec::new())
+                    match self.mapped_range(&it, iter_ty) {
+                        Some(items) => items,
+                        None => method("toArray", it, Vec::new()),
+                    }
                 } else if self.is_lang_adt(output, LangItem::String) {
                     method("join", method("toArray", it, Vec::new()), vec![Expr::str("")])
                 } else if self.is_map(output) {
@@ -392,6 +395,57 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None if made_array(&value) || self.recognition().is_deque_iter(ty) => self.stepped_items(value),
             None => self.js_iterator(value),
         }
+    }
+
+    /// `$iterator({ start: a, end: b }, $rangeNext).map(f)`, a range of
+    /// numbers `iter_ty` steps, each item mapped, all collected: its array
+    /// mapped, `$range(a, b).map(f)`, as THIR's, made as big as what's
+    /// collected anyway; what more than one map does in Rust's order, one
+    /// item through them all at a time, only lazily.
+    fn mapped_range(&mut self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
+        let mut maps = Vec::new();
+        let mut at = it;
+        while let js::ExprKind::Call(callee, args) = &at.kind
+            && let js::ExprKind::Member(source, name) = &callee.kind
+            && name == "map"
+            && let [f] = &args[..]
+        {
+            maps.push(f.clone());
+            at = source;
+        }
+        let js::ExprKind::Call(callee, args) = &at.kind else {
+            return None;
+        };
+        let (js::ExprKind::Var(iterator), [range, next]) = (&callee.kind, &args[..]) else {
+            return None;
+        };
+        let (js::ExprKind::Object(bounds), js::ExprKind::Var(next)) = (&range.kind, &next.kind) else {
+            return None;
+        };
+        let [js::Prop::Field(s, start), js::Prop::Field(e, end)] = &bounds[..] else {
+            return None;
+        };
+        let numbers = (iter_ty.walk())
+            .filter_map(|arg| arg.as_type())
+            .find(|&t| self.range_kind(t) == Some(RangeKind::Exclusive))
+            .and_then(|t| self.range_index(t))
+            .and_then(Num::of)
+            .is_some_and(|num| !num.big());
+        if iterator != "$iterator"
+            || next != "$rangeNext"
+            || (s.as_str(), e.as_str()) != ("start", "end")
+            || maps.is_empty()
+            || !numbers
+            || maps.iter().filter(|f| crate::lower::iterators::does(f)).count() > 1 && maps.len() > 1
+        {
+            return None;
+        }
+        let items = self.helper(Helper::Range, "$range", vec![start.clone(), end.clone()]);
+        Some(
+            maps.into_iter()
+                .rev()
+                .fold(items, |items, f| Expr::call(Expr::member(items, "map"), vec![f])),
+        )
     }
 
     /// Whether `ty` is an iterator: one whose `Item` is a type.

@@ -878,8 +878,8 @@ export const mutations: Mutation[] = [
     "name": "table-reads-off",
     "breaks": "a `match` reading a table is MIR's tests of each variant, not `MAP[kind]`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));\n",
-    "replace": "",
+    "find": "    let within = |s: js::Span| !s.is_none() && tables.iter().any(|t| t.lo <= s.lo && s.hi <= t.hi);",
+    "replace": "    let within = |s: js::Span| false && !s.is_none() && tables.iter().any(|t| t.lo <= s.lo && s.hi <= t.hi);",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -1546,7 +1546,7 @@ export const mutations: Mutation[] = [
     "name": "alias-takes-prop-name",
     "breaks": "a named variable moved into a held prop takes the prop's name, `const code = ..`, and is read away",
     "file": "src/lower/mir/tidy.rs",
-    "find": "                if !is_temporary(a) && captured.contains(&b) {",
+    "find": "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
     "replace": "                if false {",
     "tests": [
       "test/mir.test.ts",
@@ -1636,6 +1636,42 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "format!"
+    ]
+  },
+  {
+    "name": "alias-takes-temporary-name",
+    "breaks": "a variable the program names, `const props = {..}`, aliased by a temporary, takes the temporary's place and is read away",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
+    "replace": "if !is_temporary(a) && captured.contains(&b) {",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "element-branch-not-small",
+    "breaks": "a small element chosen, `busy ? <span>\u2026</span> : <b>Save</b>`, stays `let label; if (busy) ..`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        ExprKind::Jsx(_) => levels(e) <= 2,\n",
+    "replace": "        ExprKind::Jsx(_) => false,\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "table-read-after-inlining",
+    "breaks": "a match's table read MIR has already read in place, a child's, stays its chain of tests, not `TITLES[kind]`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    // what it's given to reads it in place.\n    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));\n",
+    "replace": "    // what it's given to reads it in place.\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
     ]
   },
 ];

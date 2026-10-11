@@ -374,10 +374,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .skip(skip)
             .map(|local| {
                 state.locals.declared[local] = true;
+                // One the program names nothing and reads nowhere, `_: Ref`,
+                // is `_`, as THIR's.
+                if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {
+                    state.locals.names[local] = String::new();
+                }
                 let name = match state.locals.names[local].as_str() {
                     "" => self.fresh("_"),
                     name => name.to_string(),
                 };
+                state.locals.names[local].clone_from(&name);
                 // A `&mut` to a value JS can't change in place: the box its
                 // caller gives, its place the box's `value` (ADR 0074).
                 let boxed = match captures {
@@ -3488,10 +3494,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.flattened.contains(&read.local)
         {
             state.flattened.insert(destination.local);
-            // The latest made, where it is still: nothing runs here.
-            if state.pending.last().is_some_and(|(local, _)| *local == read.local) {
-                return Ok(state.pending.pop().expect("the latest").1);
-            }
             return Ok(self.take_operands(state, &operands, out)?.remove(0));
         }
         let values = self.take_operands(state, &operands, out)?;

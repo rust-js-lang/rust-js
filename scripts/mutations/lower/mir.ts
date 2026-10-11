@@ -891,14 +891,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","flatten of a read of items"],
   },
   {
-    name: "mir-flattened-passed-runs",
-    breaks: "a flattened read passed on, `.copied()` or `.flatten()`, is taken as if it ran there, so the reads before it are `const`s",
-    file: "src/lower/mir.rs",
-    find: "            if state.pending.last().is_some_and(|(local, _)| *local == read.local) {\n",
-    replace: "            if false {\n",
-    tests: ["test/lowering.test.ts","-t","flatten of a read of items"],
-  },
-  {
     name: "mir-await-loop-kept",
     breaks: "an `.await`'s poll loop is lowered as it is, its `yield` none JS has",
     file: "src/lower/mir.rs",
@@ -1792,6 +1784,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "an update's default base is the defaults it reads"
+    ]
+  },
+  {
+    "name": "mir-unread-param-named-temporary",
+    "breaks": "a parameter the program names nothing and reads nowhere is `_2`, not `_`",
+    "file": "src/lower/mir.rs",
+    "find": "if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
+    "replace": "if false && !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
     ]
   },
 ];

@@ -190,4 +190,16 @@ export const mutations: Mutation[] = [
       "an adapter of a JS iterator is not made one again"
     ]
   },
+  {
+    "name": "mir-mapped-range-lazy",
+    "breaks": "a range mapped and collected stays `$iterator({ start, end }, $rangeNext).map(f).toArray()`, not `$range(a, b).map(f)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "match self.mapped_range(&it, iter_ty) {",
+    "replace": "match None::<Expr> {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected is its array mapped"
+    ]
+  },
 ];
