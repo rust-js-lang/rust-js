@@ -762,4 +762,28 @@ export const mutations: Mutation[] = [
     replace: "                && let [rethrow] = handler.as_slice().get(..0).unwrap_or_default()\n",
     tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
   },
+  {
+    name: "mir-tidy-inner-let-else-kept",
+    breaks: "`if (c) { s } else { return; }`, a let-else's, stays, not the guard `if (!c) { return; } s`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        && !then.last().is_some_and(ends)\n    {\n        let Some(Stmt {\n            kind: StmtKind::If(test, then, Some(otherwise)),\n",
+    replace: "        && false\n    {\n        let Some(Stmt {\n            kind: StmtKind::If(test, then, Some(otherwise)),\n",
+    tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
+  },
+  {
+    name: "mir-tidy-let-else-binding-after",
+    breaks: "a let-else's binding is after its guard, which tests what it's bound to",
+    file: "src/lower/mir/tidy.rs",
+    find: "                Some(b.clone())\n            }\n            _ => None,\n        };\n        let test = match &bound {",
+    replace: "                let _ = b;\n                None::<String>\n            }\n            _ => None,\n        };\n        let test = match &bound {",
+    tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
+  },
+  {
+    name: "mir-tidy-same-item-unknown",
+    breaks: "`xs[i].f` isn't known as the same as `xs[i].f`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {\n",
+    replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => {\n",
+    tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
+  },
 ];

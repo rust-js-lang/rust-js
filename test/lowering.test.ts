@@ -6406,3 +6406,30 @@ pub fn count(node: &Node) -> usize {
     expect([lib.count(root), lib.count(root.children[0])]).toEqual([3, 0]);
   }
 });
+
+test("a let-else from MIR inside a branch, its `else` a `return`, is a guard there, as THIR's", async () => {
+  const dir = fixture("mir-inner-let-else");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Nav { pub offset: Option<u32> }
+pub fn scroll(pos: usize, navs: &[Nav], out: &mut Vec<u32>) {
+    if pos < navs.len() {
+        let Some(offset) = navs[pos].offset else {
+            return;
+        };
+        out.push(offset);
+        out.push(offset + 1);
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`  if (pos < navs.length) {
+    const offset = navs[pos].offset;
+    if (offset == null) {
+      return;
+    }
+    out.push(offset);
+    out.push((offset + 1) >>> 0);
+  }`);
+  }
+});

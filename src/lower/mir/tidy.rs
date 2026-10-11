@@ -561,6 +561,43 @@ fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
             (false, false) => stmts.push(StmtKind::If(test, then, Some(rest)).at(span)),
         }
     }
+    // `if (c) { s } else { return; }`, a `let … else`'s `return` the program
+    // wrote: `if (!c) { return; } s`, its binding first, `const b = x; if (b
+    // == null) { return; }`, as THIR guards it.
+    if let Some(Stmt {
+        kind: StmtKind::If(_, then, Some(otherwise)),
+        ..
+    }) = stmts.last()
+        && matches!(otherwise.as_slice(), [r] if matches!(r.kind, StmtKind::Return(None)) && written(returns, r.span))
+        && !then.last().is_some_and(ends)
+    {
+        let Some(Stmt {
+            kind: StmtKind::If(test, then, Some(otherwise)),
+            span,
+        }) = stmts.pop()
+        else {
+            unreachable!("matched")
+        };
+        let mut then = then.into_iter().peekable();
+        // The binding of what it tests is set, first, tested itself.
+        let bound = match (&test.kind, then.peek().map(|s| &s.kind)) {
+            (ExprKind::Binary(Op::LooseNe, x, null), Some(StmtKind::Const(b, value)))
+                if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, value) =>
+            {
+                Some(b.clone())
+            }
+            _ => None,
+        };
+        let test = match &bound {
+            Some(b) => {
+                stmts.push(then.next().expect("the binding"));
+                Expr::bin(Op::LooseEq, Expr::var(b), Expr::null())
+            }
+            None => not(test),
+        };
+        stmts.push(StmtKind::If(test, otherwise, None).at(span));
+        stmts.extend(then);
+    }
     match stmts.last_mut().map(|s| &mut s.kind) {
         Some(StmtKind::If(_, then, otherwise)) => {
             tail_returns(then, returns);
@@ -1770,12 +1807,16 @@ fn truth_of(e: Expr) -> Expr {
     }
 }
 
-/// Whether `a` and `b` are the same variable, or the same property of one.
+/// Whether `a` and `b` are the same variable, or the same property or item
+/// of one.
 fn same(a: &Expr, b: &Expr) -> bool {
     match (&a.kind, &b.kind) {
         (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
         (ExprKind::Member(x, p), ExprKind::Member(y, q))
         | (ExprKind::OptionalMember(x, p), ExprKind::OptionalMember(y, q)) => p == q && same(x, y),
+        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {
+            same(x, y) && (same(i, j) || i.as_int().is_some() && i.as_int() == j.as_int())
+        }
         _ => false,
     }
 }
