@@ -918,8 +918,8 @@ export const mutations: Mutation[] = [
     name: "mir-async-closure-called-body",
     breaks: "an `async` closure is an arrow that calls an async arrow, not the async arrow",
     file: "src/lower/mir.rs",
-    find: "            && let Some(body) = called_async_body(&mut stmts)\n",
-    replace: "            && let Some(body) = called_async_body(&mut stmts).filter(|_| false)\n",
+    find: "            && let Some(mut body) = called_async_body(&mut stmts)\n",
+    replace: "            && let Some(mut body) = called_async_body(&mut stmts).filter(|_| false)\n",
     tests: ["test/compiler.test.ts","-t","async code becomes"],
   },
   {
@@ -982,7 +982,7 @@ export const mutations: Mutation[] = [
     name: "mir-local-functions-undeclared",
     breaks: "a function written in a body is declared nowhere from MIR, so what calls it reads nothing",
     file: "src/lower/mir.rs",
-    find: "        out.splice(0..0, holes);\n",
+    find: "        self.place_written(written, &mut out);\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","a function written in a body is declared"],
   },
@@ -1637,5 +1637,29 @@ export const mutations: Mutation[] = [
     "find": "                    self.locals.paths.entry(path).or_insert(true);\n",
     "replace": "",
     "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+  },
+  {
+    "name": "mir-written-fn-in-closure-at-top",
+    "breaks": "a function written in a closure is declared at its function's top from MIR, not in the closure",
+    "file": "src/lower/mir.rs",
+    "find": "            .filter(|&&id| self.tcx.parent(id) == def_id)",
+    "replace": "            .filter(|_| false)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a function written in a closure is declared where it's written"
+    ]
+  },
+  {
+    "name": "mir-written-fn-before-all",
+    "breaks": "a function written in a body is declared before all of it from MIR, not before what's written after it",
+    "file": "src/lower/mir.rs",
+    "find": ".position(|s| !s.span.is_none() && s.span.lo > at)",
+    "replace": ".position(|_| true)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a function written in a closure is declared where it's written"
+    ]
   },
 ];

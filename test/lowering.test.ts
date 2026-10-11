@@ -7917,3 +7917,33 @@ pub fn parsed(v: Vec<&str>) -> Vec<f64> {
     expect(lib.parsed(["1", "2"])).toEqual([1, 2]);
   }
 });
+
+// ADR 0308, from MIR as from THIR: a function written in a body, a closure's
+// too, is declared there, before what's written after it, as react.dev's
+// useSandpackLint has `isReactRuleError` in its linter's callback.
+test("a function written in a closure is declared where it's written", async () => {
+  const dir = fixture("written-fn-place");
+  writeFileSync(join(dir, "lib.rs"), `pub fn counted(xs: Vec<i32>, m: i32) -> usize {
+    let k = m + 1;
+    fn small(x: i32) -> bool {
+        x < 0
+    }
+    let f = move || {
+        let n = xs.len();
+        fn big(x: &&i32) -> bool {
+            **x > 1
+        }
+        xs.iter().filter(big).count() + n
+    };
+    if small(k) { 0 } else { f() }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toMatch(/const k = .*\n  function small\(x\)/);
+    expect(js).toMatch(/const n = xs\.length;\n    function big\(x\)/);
+    const lib = await import(join(dir, out));
+    expect([lib.counted([1, 2, 3], 0), lib.counted([1, 2, 3], -2)]).toEqual([5, 0]);
+  }
+});

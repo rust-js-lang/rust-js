@@ -248,28 +248,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its parameters as its body takes them apart, `{ params }`.
             tidy::destructured_params(&mut params, &mut out);
         }
-        // The functions written in its body, closures' too, each declared
-        // at its top, which JS hoists, as Rust sees them throughout their
-        // block (ADR 0308).
-        let mut written: Vec<(rustc_span::BytePos, rustc_span::def_id::DefId)> = (self.krate.local_functions.keys())
+        // The functions written in its body, each declared before what's
+        // written after it, as THIR's (ADR 0308); a closure's in its own,
+        // where `mir_closure` put them, unless it's lowered otherwise.
+        let mut placed = std::collections::HashSet::new();
+        js::each_expr_mut(&mut out, &mut |e| {
+            if let js::ExprKind::FunctionHole(index) = e.kind {
+                placed.insert(index);
+            }
+        });
+        let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())
             .filter(|&&id| {
                 let mut parent = self.tcx.parent(id);
                 while self.tcx.is_closure_like(parent) {
                     parent = self.tcx.parent(parent);
                 }
-                parent == def_id
+                parent == def_id && !placed.contains(&id.index.as_u32())
             })
-            .map(|&id| (self.tcx.def_span(id).lo(), id))
+            .copied()
             .collect();
-        written.sort_by_key(|&(at, _)| at);
-        let holes = written.into_iter().map(|(_, id)| {
-            StmtKind::Expr(Expr {
-                kind: js::ExprKind::FunctionHole(id.index.as_u32()),
-                span: js::Span::NONE,
-            })
-            .at(js::Span::NONE)
-        });
-        out.splice(0..0, holes);
+        self.place_written(written, &mut out);
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
         Ok(LoweredFn {
@@ -959,6 +957,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.locals.alike.remove(&name);
         }
         let (mut params, mut stmts) = lowered?;
+        // The functions written in it, in its body, as THIR's (ADR 0308).
+        let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())
+            .filter(|&&id| self.tcx.parent(id) == def_id)
+            .copied()
+            .collect();
         // JS ignores extra arguments, so `|_| ..` is `() => ..`, as THIR's,
         // unless the closure drops what it's given.
         let given = &body.thir.params.raw[1.min(body.thir.params.len())..];
@@ -976,18 +979,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An `async` body runs as soon as it's made: an async arrow, called
         // at once (ADR 0029).
         if self.tcx.coroutine_is_async(def_id) {
+            self.place_written(written, &mut stmts);
             return Ok(Expr::call(Expr::async_arrow(params, stmts), Vec::new()));
         }
         // An `async` closure's body is the one it makes: its async arrow's.
         if matches!(self.tcx.type_of(def_id).skip_binder().kind(), ty::CoroutineClosure(..))
-            && let Some(body) = called_async_body(&mut stmts)
+            && let Some(mut body) = called_async_body(&mut stmts)
         {
+            self.place_written(written, &mut body);
             return Ok(Expr::async_arrow(params, body));
         }
         // A closure of `()` that only spawns an async block is that block's
         // async arrow, as THIR's: it starts the same, and gives back a
         // promise where nothing reads its `()` (ADR 0257).
         if let ty::Closure(_, args) = self.tcx.type_of(def_id).skip_binder().kind()
+            && written.is_empty()
             && args.as_closure().sig().output().skip_binder().is_unit()
             && let [
                 Stmt {
@@ -1002,6 +1008,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(Expr::async_arrow(params, spawned.clone()));
         }
+        self.place_written(written, &mut stmts);
         let forwarding = self.closure_calls_rust(body, false);
         let concise = self.closure_calls_for_nothing(body);
         if forwarding || concise {
@@ -1018,6 +1025,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
         }
         Ok(Expr::arrow(params, stmts))
+    }
+
+    /// A hole for each function of `written`, before the first statement of
+    /// `out` written after it, or the `return` that ends it: a function
+    /// declaration's, which JS hoists, as THIR places it (ADR 0308).
+    fn place_written(&self, written: Vec<rustc_span::def_id::DefId>, out: &mut Vec<Stmt>) {
+        let mut written: Vec<(u32, rustc_span::def_id::DefId)> = (written.into_iter())
+            .map(|id| (self.js_span(self.tcx.def_span(id)).lo, id))
+            .collect();
+        written.sort_by_key(|&(at, _)| at);
+        for (at, id) in written {
+            let after = out.iter().position(|s| !s.span.is_none() && s.span.lo > at);
+            let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
+            let i = after.unwrap_or(out.len() - usize::from(ends));
+            let hole = Expr {
+                kind: js::ExprKind::FunctionHole(id.index.as_u32()),
+                span: js::Span::NONE,
+            };
+            out.insert(i, StmtKind::Expr(hole).at(js::Span::NONE));
+        }
     }
 
     /// Each local's name, the user's where it has one, and how it's used.
