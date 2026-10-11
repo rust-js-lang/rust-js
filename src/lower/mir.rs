@@ -1079,6 +1079,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !self.is_cell_pointee(pointee)
             && self.is_object(pointee)
         {
+            // An `Rc` or a `Weak` is a pointer its owners share: the place
+            // given another, not the one it holds changed, which every
+            // owner would see.
+            if self.counted_rc(pointee).is_some() || self.weak_of(pointee).is_some() {
+                return Err(self.unsupported(span, "an `Rc` or a `Weak` written through a `&mut`, from its MIR"));
+            }
             self.runtime.insert(Helper::Assign);
             let assigned = Expr::call(Expr::var("$assign"), vec![target, value]);
             out.push(StmtKind::Expr(assigned).at(js_span));
@@ -2774,6 +2780,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.extend(end);
                     self.view_call(if checked { "$viewGet" } else { "$view" }, list)
                 }
+            }
+            // `Rc::make_mut(&mut rc)` of a local `Rc` of this body: the local
+            // given the one `$makeMut` gives. Through a reference the place
+            // isn't here, which a variable given another would leave.
+            Std::Rc(RcOp::MakeMut) => {
+                let place = self.value_expr(values.next().expect("the `Rc`"), span)?;
+                let item = self.counted_rc(arg_tys[0].peel_refs());
+                let local = match &place.kind {
+                    js::ExprKind::Var(name) => state.locals.names.iter_enumerated().find(|(_, n)| *n == name),
+                    _ => None,
+                };
+                let (Some(item), Some((local, _))) = (item, local) else {
+                    return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
+                };
+                if state.body.local_kind(local) == LocalKind::Arg || state.body.local_decls[local].ty.is_ref() {
+                    return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
+                }
+                self.counted_here(item, span)?;
+                self.runtime.insert(Helper::Rc);
+                self.flush(state, out)?;
+                self.make_mut_values(place, item, span, out)?
             }
             // An `Rc`'s or a `Weak`'s, but `make_mut`, which writes its place.
             Std::Rc(op) if op != RcOp::MakeMut => {

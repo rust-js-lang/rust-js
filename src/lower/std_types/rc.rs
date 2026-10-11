@@ -65,15 +65,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let Some((place, _)) = self.ref_place(args[0]) else {
                 return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
             };
-            let mut given = vec![place.clone(), self.clone_arg(item, span)?];
-            given.extend(self.drop_function(item, span)?);
-            let made = Expr::call(Expr::var("$makeMut"), given);
-            out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));
-            return Ok(self.through_rc(place, item));
+            return self.make_mut_values(place, item, span, out);
         }
         let values = self.operands(args, out)?;
         let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
         self.rc_values(op, (values, &tys), span, out)
+    }
+
+    /// `Rc::make_mut(&mut place)` of an `Rc` of `item`: the place given the
+    /// one `$makeMut` gives, and what it points to (ADR 0364).
+    pub(in crate::lower) fn make_mut_values(
+        &mut self,
+        place: Expr,
+        item: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let mut given = vec![place.clone(), self.clone_arg(item, span)?];
+        given.extend(self.drop_function(item, span)?);
+        let made = Expr::call(Expr::var("$makeMut"), given);
+        out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));
+        Ok(self.through_rc(place, item))
     }
 
     /// An `Rc`'s or a `Weak`'s function, of its arguments' values, `tys`

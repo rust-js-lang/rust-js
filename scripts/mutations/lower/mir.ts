@@ -634,4 +634,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::StringWithCapacity if false => {\n",
     tests: ["test/mir.test.ts","-t","text_edits|string_editing|text_aliases|string_insert_boundary"],
   },
+  {
+    name: "mir-make-mut-refused",
+    breaks: "`Rc::make_mut(&mut rc)` of a local `Rc` is refused",
+    file: "src/lower/mir.rs",
+    find: "            Std::Rc(RcOp::MakeMut) => {\n",
+    replace: "            Std::Rc(RcOp::MakeMut) if false => {\n",
+    tests: ["test/mir.test.ts","-t","rc_clone_sees_owners|rc_make_mut_clone_panics"],
+  },
 ];

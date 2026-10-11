@@ -196,6 +196,8 @@ radix_negative.rs
 radix_out_of_range.rs
 range_inclusive_next_back.rs
 range_searches.rs
+rc_clone_sees_owners.rs
+rc_make_mut_clone_panics.rs
 refcell_borrow_while_mut.rs
 refcell_clone_while_mut.rs
 refcell_double_borrow.rs
