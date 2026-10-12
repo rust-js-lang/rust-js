@@ -1429,10 +1429,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 blocks.push(*only);
             }
+            // What each does, not a temporary's storage ending, which a `?`'s
+            // has where it's written, on its way on too.
             let spans = (blocks.iter())
                 .flat_map(|&b| {
                     let data = &state.body.basic_blocks[b];
-                    (data.statements.iter().map(|s| s.source_info.span)).chain([data.terminator().source_info.span])
+                    (data.statements.iter())
+                        .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))
+                        .map(|s| s.source_info.span)
+                        .chain([data.terminator().source_info.span])
                 })
                 .map(|span| self.js_span(span));
             let written = spans

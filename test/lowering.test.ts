@@ -6282,6 +6282,42 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
+// Each \`?\` from MIR is a guard where it's written, \`if (result.TAG ===
+// "Err") return result;\`, the rest after it, as THIR's: not the rest
+// nested in a test that it's \`Ok\`.
+test("a function's ?s from MIR are guards, the rest after them", async () => {
+  const dir = fixture("mir-tried-guards");
+  writeFileSync(join(dir, "lib.rs"), `pub fn parse2(a: &str, b: &str) -> Result<i32, std::num::ParseIntError> {
+    let x = a.parse::<i32>()?;
+    let y = b.parse::<i32>()?;
+    Ok(x + y)
+}
+pub fn opt2(a: Option<i32>, b: Option<i32>) -> Option<i32> {
+    let x = a?;
+    let y = b?;
+    Some(x + y)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`  const result = $parseInt(a, -2147483648, 2147483647);
+  if (result.TAG === "Err") {
+    return result;
+  }
+  const x = result._0;
+  const result$1 = $parseInt(b, -2147483648, 2147483647);
+  if (result$1.TAG === "Err") {
+    return result$1;
+  }
+  const y = result$1._0;
+  return { TAG: "Ok", _0: (x + y) | 0 };`);
+    expect(js).toContain("  if (a == null) {\n    return;\n  }\n  if (b == null) {\n    return;\n  }\n  return (a + b) | 0;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.parse2("1", "2"), lib.parse2("x", "2").TAG, lib.opt2(1, 2), lib.opt2(1, undefined)]).toEqual([{ TAG: "Ok", _0: 3 }, "Err", 3, undefined]);
+  }
+});
+
 // A wide field updated through a \`&mut\`, from MIR, is written where it's
 // made, \`m.cents = BigInt.asIntN(64, m.cents + 1n)\`, as THIR's: wrapping
 // it does nothing a place could see.

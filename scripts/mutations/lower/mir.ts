@@ -1930,4 +1930,16 @@ export const mutations: Mutation[] = [
       "a let of an Option's . from MIR"
     ]
   },
+  {
+    "name": "mir-return-written-by-storage",
+    "breaks": "the value a `?` goes on to is returned at the `?`'s span, a `return` the program wrote, so its `?` stays nested, not a guard",
+    "file": "src/lower/mir.rs",
+    "find": "                        .filter(|s| !matches!(s.kind, StatementKind::StorageLive(_) | StatementKind::StorageDead(_)))\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a function's .s from MIR are guards"
+    ]
+  },
 ];
