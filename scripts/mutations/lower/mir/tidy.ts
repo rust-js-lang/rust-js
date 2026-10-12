@@ -1842,4 +1842,40 @@ export const mutations: Mutation[] = [
       "a range pattern's tests from MIR"
     ]
   },
+  {
+    "name": "mir-or-tests-nested",
+    "breaks": "`\"a\" | \"e\" => \u2026` from MIR is a test failing for each, one inside another, the arm after them",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    bottom_up(body, &mut or_tests);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string's or-pattern from MIR"
+    ]
+  },
+  {
+    "name": "mir-set-of-iter",
+    "breaks": "`[1, 2].into_iter().collect::<HashSet<_>>()` from MIR is `new Set($iter([1, 2]))`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "if c == \"Set\" || c == \"Map\")",
+    "replace": "if c == \"None\")",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "sets and maps from MIR"
+    ]
+  },
+  {
+    "name": "mir-map-count-literal-key",
+    "breaks": "`*m.entry(\"a\").or_insert(0) += 5` from MIR stays a handle, `$mutGet(m, \"a\")`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "ExprKind::Str(a), ExprKind::Str(b)) if a == b))",
+    "replace": "ExprKind::Str(a), ExprKind::Str(b)) if a == b && false))",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a count kept in a map from MIR"
+    ]
+  },
 ];

@@ -224,10 +224,8 @@ function main() {
   const other = new Set([1, 4, 9]);
   console.log(
     `[${$setAlgebra(set, other, "union", $cmp)
-      .slice()
       .map((item) => String(item))
       .join(", ")}] [${$setAlgebra(set, other, "symmetric", $cmp)
-      .slice()
       .map((item) => String(item))
       .join(", ")}]`,
   );

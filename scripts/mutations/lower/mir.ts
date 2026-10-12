@@ -248,7 +248,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            if e.reads_same() && movable(state, &Value::Expr(e.clone())) =>\n",
     replace: "                            if e.reads_same() =>\n",
-    tests: ["test/mir.test.ts","-t","atomics|operands_before_replace"],
+    tests: ["test/lowering.test.ts","-t","a nested pattern of a captured item from MIR"],
   },
   {
     name: "mir-index-mut-a-value",
@@ -1980,6 +1980,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "iterator chains from MIR are array methods"
+    ]
+  },
+  {
+    "name": "mir-arm-binding-held",
+    "breaks": "an arm binding the value whole, `x if x.len() > 1`, from MIR holds `const x = s;`",
+    "file": "src/lower/mir.rs",
+    "find": "            thir::PatKind::Binding { .. } => Some(arm.pattern.span),\n",
+    "replace": "            thir::PatKind::Binding { .. } => None::<rustc_span::Span>,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string's or-pattern from MIR"
     ]
   },
 ];

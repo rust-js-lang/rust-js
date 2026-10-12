@@ -793,4 +793,16 @@ export const mutations: Mutation[] = [
       "iterator chains from MIR are array methods"
     ]
   },
+  {
+    "name": "fresh-set-algebra-copied",
+    "breaks": "a set's algebra collected is `$setAlgebra(a, b, op).slice()`, a copy of a new array",
+    "file": "src/lower/iterators.rs",
+    "find": "                \"$setAlgebra\",\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "sets and maps from MIR"
+    ]
+  },
 ];

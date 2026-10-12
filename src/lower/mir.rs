@@ -797,6 +797,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for arm in self.thir.arms.iter() {
             bound(&arm.pattern);
         }
+        // An arm's of the value whole, `x if x.len() > 1`, as a variant's part.
+        spans.extend((self.thir.arms.iter()).filter_map(|arm| match arm.pattern.kind {
+            thir::PatKind::Binding { .. } => Some(arm.pattern.span),
+            _ => None,
+        }));
         (body.var_debug_info.iter())
             .filter_map(|info| match info.value {
                 mir::VarDebugInfoContents::Place(place)

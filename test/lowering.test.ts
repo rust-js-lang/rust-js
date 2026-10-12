@@ -6329,6 +6329,89 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
+// A nested pattern of an item a closure reads of what it captured, from
+// MIR, takes it apart once, as THIR's and as react.dev's Preview reads its
+// first lint error: \`const { line, column, message } = errors[0];\`.
+test("a nested pattern of a captured item from MIR takes it apart once", async () => {
+  const dir = fixture("mir-captured-pattern");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Message { pub line: u32, pub column: u32, pub message: String, pub rule: String }
+pub struct Lint {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub item: &'static Message,
+    pub severity: &'static str,
+}
+pub fn first(errors: &'static Vec<Lint>) -> impl Fn() -> Option<String> {
+    move || {
+        if errors.is_empty() {
+            None
+        } else {
+            let Lint { item: Message { line, column, message, .. }, .. } = &errors[0];
+            Some(format!("{line}:{column} - {message}"))
+        }
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("const { line, column, message } = errors[0]");
+    const lib = await import(join(dir, out));
+    expect(lib.first([{ line: 1, column: 2, message: "m", rule: "r", severity: "error" }])()).toBe("1:2 - m");
+  }
+});
+
+// Sets and maps from MIR made of arrays and read as arrays, as THIR's:
+// \`new Set([1, 2, 3])\`, a set's algebra and a sorted map's entries mapped.
+test("sets and maps from MIR are made of arrays and read as them", async () => {
+  const dir = fixture("mir-sets-maps");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::{BTreeMap, HashSet};
+pub fn both() -> Vec<u32> {
+    let a: HashSet<u32> = [1, 2, 3].into_iter().collect();
+    let b: HashSet<u32> = [2, 3, 4].into_iter().collect();
+    let mut both: Vec<u32> = a.intersection(&b).copied().collect();
+    both.sort();
+    both
+}
+pub fn keys(m: &BTreeMap<String, u32>) -> Vec<String> {
+    m.iter().map(|(k, v)| format!("{k}{v}")).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const a = new Set([1, 2, 3]);\n");
+    expect(js).toContain('  const both = $setAlgebra(a, b, "intersection");\n');
+    expect(js).toContain("  return $sortedEntries(m, $cmp).map(");
+    const lib = await import(join(dir, out));
+    expect([lib.both(), lib.keys(new Map([["b", 1], ["a", 2]]))]).toEqual([[2, 3], ["a2", "b1"]]);
+  }
+});
+
+// A string's or-pattern from MIR is one test of each, \`s === "a" || …\`,
+// its arm first, as THIR's: not a test failing for each, one inside
+// another, the arm after them all.
+test("a string's or-pattern from MIR is an or of its tests", async () => {
+  const dir = fixture("mir-string-or");
+  writeFileSync(join(dir, "lib.rs"), `pub fn kind(s: &str) -> &'static str {
+    match s {
+        "a" | "e" | "i" => "vowel",
+        "" => "empty",
+        x if x.len() > 1 => "word",
+        _ => "consonant",
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (s === "a" || s === "e" || s === "i") {\n    return "vowel";\n  }\n');
+    // What an arm binds of the value whole is the value.
+    expect(js).toContain("  if ($byteLen(s) > 1) {\n");
+    const lib = await import(join(dir, out));
+    expect(["a", "i", "", "z", "zz"].map(lib.kind)).toEqual(["vowel", "vowel", "empty", "consonant", "word"]);
+  }
+});
+
 // A range pattern's tests from MIR read as THIR's, the value first, \`k >=
 // 2\`, and a bound the type has anyway, \`0 <= k\` of a \`u8\`, none; a
 // comparison the program wrote stays as written.
@@ -6562,13 +6645,19 @@ pub fn counts(words: &str) -> Vec<(String, u32)> {
     all.sort();
     all
 }
+pub fn bumped(mut m: HashMap<&'static str, u32>) -> u32 {
+    *m.entry("a").or_insert(0) += 5;
+    m["a"]
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    const current = $orInsert(counts, w, 0);\n    counts.set(w, (current + 1) >>> 0);\n");
+    expect(js).toContain('  const current = $orInsert(m, "a", 0);\n  m.set("a", (current + 5) >>> 0);\n');
     const lib = await import(join(dir, out));
     expect(lib.counts("a b a")).toEqual([["a", 2], ["b", 1]]);
+    expect([lib.bumped(new Map()), lib.bumped(new Map([["a", 1]]))]).toEqual([5, 6]);
   }
 });
 

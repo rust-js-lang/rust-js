@@ -283,7 +283,7 @@ export function sorted_maps(text) {
     ["Gold", 3],
     ["Bronze", 1],
   ]);
-  const tmp = $sortedEntries(counts, $cmp).slice();
+  const tmp = $sortedEntries(counts, $cmp);
   const tmp$1 = order;
   const arg = $sortedKeys(set, $cmp).toReversed();
   const tmp$2 = `{${Array.from($sortedKeys(set, $cmp))

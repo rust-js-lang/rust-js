@@ -92,6 +92,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         js::statement_lists(body, &mut unlabeled);
     }
     bottom_up(body, &mut pattern_tests);
+    bottom_up(body, &mut or_tests);
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
@@ -1656,6 +1657,16 @@ fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::
 /// for an iterator helper alone, which nothing else steps: `xs.values()
 /// .filter(f)`, the array's own iterator.
 fn array_values(e: &mut Expr) {
+    // A set or a map made of an array's `$iter`, `new Set($iter(xs))`: of
+    // the array, whose items it steps the same.
+    if let ExprKind::New(class, args) = &mut e.kind
+        && matches!(&class.kind, ExprKind::Var(c) if c == "Set" || c == "Map")
+        && let [items] = args.as_mut_slice()
+        && crate::lower::iterators::is_stepped_items(items)
+    {
+        *items = iterated(items.clone());
+        return;
+    }
     // A string's characters joined, `Array.from(c.toUpperCase()).join("")`,
     // a `char`'s capital collected: the string.
     if let ExprKind::Call(callee, args) = &e.kind
@@ -3356,7 +3367,7 @@ fn map_counts(stmts: &mut Vec<Stmt>) {
             && let Some(got) = call_of(got, "$mutGet")
             && let [m, k] = &got[..]
             && same(map, m)
-            && same(key, k)
+            && (same(key, k) || matches!((&key.kind, &k.kind), (ExprKind::Str(a), ExprKind::Str(b)) if a == b))
             && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
             && matches!(&target.kind, ExprKind::Member(of, v)
                 if v == "value" && matches!(&of.kind, ExprKind::Var(h) if h == handle))
@@ -4803,6 +4814,57 @@ fn loop_exits(body: &mut Vec<Stmt>, returns: &[js::Span], loops: &[(js::Span, bo
         *body = inner;
     }
     body.push(ret);
+}
+
+/// An or-pattern of constants as MIR tests it, each alternative failing, one
+/// inside another, `if (s !== "a") { if (s !== "e") { b } } t`, where `b`
+/// and `t` leave: its arm first, `if (s === "a" || s === "e") { t } b`, as
+/// THIR writes one.
+fn or_tests(stmts: &mut Vec<Stmt>) {
+    // Each test, `s !== "a"`, of one subject, and what the last guards.
+    fn chain<'s>(stmt: &'s Stmt, subject: &mut Option<&'s Expr>, tests: &mut Vec<&'s Expr>) -> Option<&'s [Stmt]> {
+        let StmtKind::If(test, then, None) = &stmt.kind else {
+            return None;
+        };
+        let ExprKind::Binary(Op::Ne, of, constant) = &test.kind else {
+            return None;
+        };
+        if !constant.is_constant() || !subject.is_none_or(|s| same(s, of)) {
+            return None;
+        }
+        *subject = Some(of);
+        tests.push(test);
+        match then.as_slice() {
+            [inner] if let Some(body) = chain(inner, subject, tests) => Some(body),
+            body => Some(body),
+        }
+    }
+    let mut i = 0;
+    while i + 1 < stmts.len() {
+        let mut tests = Vec::new();
+        let made = chain(&stmts[i], &mut None, &mut tests).and_then(|body| {
+            let rest = &stmts[i + 1..];
+            (tests.len() > 1
+                && body.last().is_some_and(ends)
+                && rest.last().is_some_and(ends)
+                && !declared(body).any(|name| declared(rest).any(|n| n == name)))
+            .then(|| {
+                let test = (tests.iter())
+                    .map(|t| not((*t).clone()))
+                    .reduce(|a, b| Expr::bin(Op::Or, a, b))
+                    .expect("two");
+                (test, body.to_vec())
+            })
+        });
+        if let Some((test, body)) = made {
+            let span = stmts[i].span;
+            let rest: Vec<Stmt> = stmts.drain(i + 1..).collect();
+            stmts[i] = StmtKind::If(test, rest, None).at(span);
+            stmts.extend(body);
+            return;
+        }
+        i += 1;
+    }
 }
 
 /// A pattern's test as MIR makes it of a bound a type has anyway, a

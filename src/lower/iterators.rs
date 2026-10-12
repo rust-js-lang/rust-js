@@ -1510,6 +1510,9 @@ fn fresh(items: &Expr) -> bool {
                 "$scan",
                 "$drain",
                 "$splitOff",
+                "$setAlgebra",
+                "$sortedEntries",
+                "$sortedKeys",
             ]
             .contains(&name.as_str()),
             _ => false,
