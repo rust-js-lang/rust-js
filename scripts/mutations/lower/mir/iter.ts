@@ -478,4 +478,16 @@ export const mutations: Mutation[] = [
       "stepped through by_ref from MIR"
     ]
   },
+  {
+    "name": "mir-collect-heap-unheaped",
+    "breaks": "`collect()` into a `BinaryHeap` from MIR is its items as they came, not in heap order",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                if self.is_std_type(output, StdItem::BinaryHeap) {\n",
+    "replace": "                if false && self.is_std_type(output, StdItem::BinaryHeap) {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "heap_peek_mut"
+    ]
+  },
 ];

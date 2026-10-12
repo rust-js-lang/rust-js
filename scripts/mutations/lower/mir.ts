@@ -2278,4 +2278,28 @@ export const mutations: Mutation[] = [
       "option_result_methods"
     ]
   },
+  {
+    "name": "mir-cow-refused",
+    "breaks": "a `Cow`'s `into_owned()` or `to_mut()` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Cow(op) => {\n",
+    "replace": "            Std::Cow(op) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "cows"
+    ]
+  },
+  {
+    "name": "mir-heap-refused",
+    "breaks": "a `BinaryHeap`'s `append` or `peek_mut` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Heap(op) => {\n",
+    "replace": "            Std::Heap(op) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "heap_methods|heap_peek_mut"
+    ]
+  },
 ];

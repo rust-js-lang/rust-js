@@ -15,6 +15,7 @@ use crate::js::{self, Expr, Op, StmtKind};
 use crate::lower::iterators::made_array;
 use crate::lower::recognition::{StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
+use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R, bindings};
 use crate::runtime::Helper;
@@ -430,7 +431,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "by_ref" => it,
             "fuse" => it,
             "collect" => {
-                if self.is_vec_like(output) {
+                // Into a heap: its items in heap order, `$heapFrom`, THIR's.
+                if self.is_std_type(output, StdItem::BinaryHeap) {
+                    let items = method("toArray", it, Vec::new());
+                    self.heap_values(HeapOp::From, vec![items], output, span)?
+                } else if self.is_vec_like(output) {
                     match self.mapped_range(&it, iter_ty) {
                         Some(items) => items,
                         None => method("toArray", it, Vec::new()),

@@ -61,6 +61,7 @@ copied_closure_bound.rs
 copy_from_slice_panic.rs
 copy_mutation.rs
 cow_own_to_owned.rs
+cows.rs
 debug_options.rs
 declarations_assigned_later.rs
 default_method_clones.rs
@@ -147,6 +148,8 @@ generic_operators.rs
 generic_traits.rs
 guard_statements.rs
 guarded_bindings.rs
+heap_methods.rs
+heap_peek_mut.rs
 higher_ranked_bound.rs
 higher_ranked_dyn.rs
 hrtb_into_iter.rs

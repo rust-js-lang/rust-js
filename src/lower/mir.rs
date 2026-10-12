@@ -37,6 +37,7 @@ use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{Std, StdItem, std_item, trait_method};
 use super::representation::{const_js, variant_field};
+use super::std_types::cow::CowOp;
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
 use super::std_types::rc::RcOp;
@@ -4229,6 +4230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
         // Not one that's a binding, a default method's `get ruleId` called
         // through a generic's bound: the binding, below, as THIR's.
+        // Nor `BinaryHeap::from(items)`, which std's own lowering heaps.
         if !matches!(known, Some(Std::Any(_)))
             && !bindings::is_binding(tcx, def_id)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
@@ -5167,6 +5169,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let [items, range]: [Expr; 2] = exprs.try_into().ok().expect("the items and a range");
                 let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
                 self.range_edit(op, range, rest)
+            }
+            // A `BinaryHeap`'s, and its `peek_mut()` guard's, THIR's.
+            Std::Heap(op) => {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.heap_values(op, exprs, arg_tys[0], span)?
+            }
+            // A `Cow`'s `into_owned()`, its deref, and its `to_mut()` of what's
+            // its own place, THIR's.
+            Std::Cow(op) => {
+                let cow = match (op, values.next().expect("the `Cow`")) {
+                    (CowOp::ToMut, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => place,
+                    (CowOp::ToMut, _) => return Err(self.unsupported(span, "`to_mut()` of this `Cow`, from its MIR")),
+                    (_, value) => self.value_expr(value, span)?,
+                };
+                self.flush(state, out)?;
+                self.cow_values(op, cow, arg_tys[0].peel_refs(), span, out)?
             }
             // `o.get_or_insert(x)` and the like: the `Option`'s place given its
             // value where it has none, and a `&mut` to what it holds, THIR's.

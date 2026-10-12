@@ -41,14 +41,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
+        let heap_ty = self.thir[args[0]].ty;
+        let values = self.operands(args, out)?;
+        self.heap_values(op, values, heap_ty, span)
+    }
+
+    /// `heap_call`'s, of its arguments' values, the heap's type `heap_ty`
+    /// as it's given: THIR's and MIR's.
+    pub(in crate::lower) fn heap_values(
+        &mut self,
+        op: HeapOp,
+        mut values: Vec<Expr>,
+        heap_ty: Ty<'tcx>,
+        span: Span,
+    ) -> R<Expr> {
         let heap_ty = match op {
-            HeapOp::From => self.thir[args[0]].ty,
-            _ => self.thir[args[0]].ty.peel_refs(),
+            HeapOp::From => heap_ty,
+            _ => heap_ty.peel_refs(),
         };
         // A guard's, of its top.
         if let HeapOp::PeekTop { .. } | HeapOp::PeekPop = op {
             let item = self.recognition().peek_mut_of(heap_ty).expect("a `PeekMut`");
-            let guard = self.expr(args[0], out)?;
+            let guard = values.remove(0);
             self.runtime.insert(Helper::HeapOps);
             return Ok(match op {
                 HeapOp::PeekTop { mutable: false } => Expr::index(Expr::member(guard, "heap"), Expr::int(0)),
@@ -67,11 +81,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok_or_else(|| self.unsupported(span, "this heap"))?;
         self.heap_of(item, span)?;
         if op == HeapOp::Drain {
-            let heap = self.expr(args[0], out)?;
+            let heap = values.remove(0);
             return Ok(Expr::call(Expr::member(heap, "splice"), vec![Expr::int(0)]));
         }
         let compare = self.cmp_fn(item, false, span)?;
-        let mut values = self.operands(args, out)?;
         values.push(compare);
         let (helper, name) = match op {
             HeapOp::Push => (Helper::HeapPush, "$heapPush"),

@@ -29,6 +29,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let cow_ty = self.thir[args[0]].ty.peel_refs();
+        let cow = self.expr(args[0], out)?;
+        self.cow_values(op, cow, cow_ty, span, out)
+    }
+
+    /// `cow_call`'s, of the `Cow`'s value, its place for `to_mut()`, and its
+    /// type: THIR's and MIR's.
+    pub(in crate::lower) fn cow_values(
+        &mut self,
+        op: CowOp,
+        cow: Expr,
+        cow_ty: ty::Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let Some((_, owned)) = self.recognition().cow_parts(cow_ty) else {
             return Err(self.unsupported(span, &format!("a `{cow_ty}`, of a type with its own `ToOwned`")));
         };
@@ -40,7 +54,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (variants.next().expect("`Borrowed`"), variants.next().expect("`Owned`"));
         // `to_mut()` of text or a number, which JS never changes in place, is
         // a handle, `$cowMut` (`item_handles`).
-        let cow = self.expr(args[0], out)?;
         if op == CowOp::Deref || op == CowOp::IntoOwned && !self.needs_clone(owned) {
             return Ok(Expr::member(cow, "_0"));
         }
