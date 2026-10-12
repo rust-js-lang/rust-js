@@ -456,4 +456,12 @@ export const mutations: Mutation[] = [
     replace: "        if self.krate.library || super::mir_mode() {\n            return HashSet::new();\n        }\n",
     tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
   },
+  {
+    name: "owned-iter-left-undropped",
+    breaks: "what a `vec::IntoIter` hasn't given yet isn't dropped when a loop leaves early",
+    file: "src/lower/drops.rs",
+    find: "            ty::Adt(_, args) if self.array_source(ty) == Some(true) || self.recognition().owns_one_item(ty) => {\n",
+    replace: "            ty::Adt(_, args) if false => {\n",
+    tests: ["test/mir.test.ts", "-t", "loop_drops"],
+  },
 ];

@@ -3,6 +3,7 @@
 
 use crate::js::{Expr, Stmt};
 use crate::lower::calls::Call;
+use crate::lower::combinators::IterSource;
 use crate::lower::combinators::{Comb, StepOp};
 use crate::lower::drops::Drops;
 use crate::lower::recognition::Std;
@@ -52,6 +53,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     | Std::Push
                     | Std::Same
                     | Std::Leak
+                    // Moves it into its iterator, whose drop is its item's.
+                    | Std::OptionIter
+                    | Std::IterSource(IterSource::Once)
                     // Counts what it takes, or gives it back (ADR 0320).
                     | Std::Rc(_)
                     // A map keeps what it takes, and gives back what it replaces or

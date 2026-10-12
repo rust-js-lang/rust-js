@@ -447,6 +447,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.drop_in(value, args.type_at(0), span, made, out)?
             }
             ty::Adt(_, args) if self.is_vec_like(ty) => self.drop_items(value, args.type_at(0), span, made, out)?,
+            // An iterator owning an array's items: each it hasn't given yet.
+            ty::Adt(_, args) if self.array_source(ty) == Some(true) || self.recognition().owns_one_item(ty) => {
+                self.drop_items(value, args.type_at(0), span, made, out)?
+            }
             // A channel's end (ADR 0142).
             ty::Adt(..) if let Some(end) = self.recognition().channel_end(ty) => {
                 self.runtime.insert(Helper::Channel);

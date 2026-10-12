@@ -371,6 +371,16 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // is its cell's to drop.
             ty::Adt(..) if self.recognition.is_guard(ty) && walk.guards_none => Drops::Nothing,
             ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
+            // An iterator that owns an array's items, `vec::IntoIter`: what it
+            // hasn't given yet, each dropped in order, as a loop that leaves
+            // early drops them (ADR 0098). From MIR, which drops it as a
+            // value; THIR takes a chain's apart itself.
+            ty::Adt(_, args)
+                if crate::lower::mir::mir_mode()
+                    && (self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty)) =>
+            {
+                self.drops_in(args.type_at(0), walk)
+            }
             // A heap's `PeekMut`: its top sifted down, if it changed (ADR 0333).
             ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Runs,
             // Never dropped, or dropped by hand.

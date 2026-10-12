@@ -2869,6 +2869,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter).then_some(true)
     }
 
+    /// An iterator that owns the one item it may give, `Some(x).into_iter()`
+    /// or `iter::once(x)`: the array of none or one (ADR 0128).
+    pub(super) fn owns_one_item(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        matches!(ty.kind(), ty::Adt(adt, _)
+            if matches!(std_path(self.tcx, adt.did()).as_str(), "std::option::IntoIter" | "std::iter::Once"))
+    }
+
     /// A B-tree map's `range()` or `range_mut()`: the array of its entries in
     /// the bounds, `$treeRange`'s (ADR 0325).
     pub(super) fn is_tree_range(&self, ty: Ty<'tcx>) -> bool {

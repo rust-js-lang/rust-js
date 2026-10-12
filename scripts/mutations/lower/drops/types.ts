@@ -147,4 +147,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if self.recognition.peek_mut_of(ty).is_some() => Drops::Nothing,",
     tests: ["test/corpus.test.ts", "-t", "heap_peek_mut"],
   },
+  {
+    name: "owned-iter-drops-unsupported",
+    breaks: "a `vec::IntoIter` of what has a destructor is refused, as a std type holding one",
+    file: "src/lower/drops/types.rs",
+    find: "                    && (self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty)) =>\n",
+    replace: "                    && false =>\n",
+    tests: ["test/mir.test.ts", "-t", "loop_drops"],
+  },
 ];

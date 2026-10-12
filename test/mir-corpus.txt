@@ -187,6 +187,7 @@ leaked_string_written.rs
 lent_iterators.rs
 linked_lists.rs
 locks.rs
+loop_drops.rs
 loop_values.rs
 map_collect_drops.rs
 map_drops.rs

@@ -114,4 +114,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts","-t","try_lock"],
   },
+  {
+    name: "option-iter-takes-drops-refused",
+    breaks: "`Some(x).into_iter()` of what has a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::OptionIter\n                    | Std::IterSource(IterSource::Once)\n",
+    replace: "                    | Std::IterSource(IterSource::Once)\n",
+    tests: ["test/mir.test.ts", "-t", "loop_drops"],
+  },
+  {
+    name: "once-takes-drops-refused",
+    breaks: "`iter::once(x)` of what has a destructor is refused",
+    file: "src/lower/std_types/values.rs",
+    find: "                    | Std::OptionIter\n                    | Std::IterSource(IterSource::Once)\n",
+    replace: "                    | Std::OptionIter\n",
+    tests: ["test/mir.test.ts", "-t", "loop_drops"],
+  },
 ];
