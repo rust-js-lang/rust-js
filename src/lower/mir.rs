@@ -2171,7 +2171,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && !state.body.local_decls[local].ty.is_integral()
             && let Value::Branch(tried, ty) = &value
         {
-            state.branches.insert(local, (tried.clone(), *ty));
+            let mut tried = tried.clone();
+            // An `Option`'s held, which is what a `let` binds of it, `let f =
+            // xs.find(..)?;`: held under that name, `f`, bound there already.
+            if let js::ExprKind::Var(held) = &tried.kind
+                && self.option_of(*ty).is_some_and(|inner| !self.boxed_payload(inner))
+                && let Some((bound, from)) = continued_binding(state, local)
+                && let Some(Stmt {
+                    kind: StmtKind::Const(name, _),
+                    ..
+                }) = (out.iter_mut().rev()).find(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == held))
+            {
+                *name = state.locals.names[bound].clone();
+                tried = Expr::var(name);
+                state.parts.insert(bound, from);
+                state.locals.declared[bound] = true;
+            }
+            state.branches.insert(local, (tried, *ty));
             return Ok(());
         }
         // A `&mut` to a place that's always the same, made once: the
@@ -5177,6 +5193,42 @@ fn overflow_message(op: BinOp) -> &'static str {
         BinOp::Rem => "attempt to calculate the remainder with overflow",
         BinOp::Shl => "attempt to shift left with overflow",
         _ => "attempt to shift right with overflow",
+    }
+}
+
+/// The variable the program binds what `?`'s `branch`, `tried`, holds to
+/// where it goes on, `f`, of `val = copy ((tried as Continue).0); f = copy
+/// val;`, given nothing else, and the local its binding reads.
+fn continued_binding(state: &State<'_, '_>, tried: Local) -> Option<(Local, Local)> {
+    // Each variable given just `from`, which holds what's held.
+    let given = |from: &dyn Fn(&Place<'_>) -> bool| {
+        let mut found = None;
+        for data in state.body.basic_blocks.iter() {
+            for statement in &data.statements {
+                if let StatementKind::Assign(assign) = &statement.kind
+                    && let (place, Rvalue::Use(Operand::Copy(read) | Operand::Move(read), ..)) = &**assign
+                    && from(read)
+                    && place.projection.is_empty()
+                    && state.locals.writes[place.local] == 1
+                    && found.replace(place.local).is_some()
+                {
+                    return None;
+                }
+            }
+        }
+        found
+    };
+    let val = given(&|read| {
+        read.local == tried
+            && matches!(read.projection.as_slice(), [PlaceElem::Downcast(_, variant), PlaceElem::Field(field, _)]
+                if variant.as_u32() == 0 && field.as_u32() == 0)
+    })?;
+    // And what it's read from, `tried` or `val`, where it's bound.
+    match state.locals.user[val] {
+        true => Some((val, tried)),
+        false => given(&|read| read.local == val && read.projection.is_empty())
+            .filter(|&l| state.locals.user[l])
+            .map(|l| (l, val)),
     }
 }
 

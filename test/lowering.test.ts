@@ -6264,6 +6264,24 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }
 });
 
+// What \`?\` of an \`Option\` gives a \`let\`, from MIR, is held under the
+// name the program gives it, \`f\`, as THIR's: not \`value\`.
+test("a let of an Option's ? from MIR is named as the program names it", async () => {
+  const dir = fixture("mir-tried-named");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first_even(xs: &[i32]) -> Option<i32> {
+    let f = xs.iter().find(|x| *x % 2 == 0)?;
+    Some(f * 10)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return Math.imul(f, 10);\n");
+    const lib = await import(join(dir, out));
+    expect([lib.first_even([1, 4]), lib.first_even([1])]).toEqual([40, undefined]);
+  }
+});
+
 // A wide field updated through a \`&mut\`, from MIR, is written where it's
 // made, \`m.cents = BigInt.asIntN(64, m.cents + 1n)\`, as THIR's: wrapping
 // it does nothing a place could see.

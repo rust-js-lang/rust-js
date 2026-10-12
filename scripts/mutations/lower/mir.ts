@@ -1918,4 +1918,16 @@ export const mutations: Mutation[] = [
       "the rest of a string's chars from MIR"
     ]
   },
+  {
+    "name": "mir-tried-named-value",
+    "breaks": "`let f = xs.find(..)?;` from MIR holds the value as `value`, not `f`",
+    "file": "src/lower/mir.rs",
+    "find": "                && let Some((bound, from)) = continued_binding(state, local)\n",
+    "replace": "                && let Some((bound, from)) = continued_binding(state, local).filter(|_| false)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let of an Option's . from MIR"
+    ]
+  },
 ];
