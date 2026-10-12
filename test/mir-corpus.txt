@@ -198,6 +198,7 @@ mut_ref_as_generic.rs
 mut_ref_box_parts.rs
 mut_ref_handle.rs
 mut_ref_kept.rs
+mut_ref_local.rs
 mut_ref_loop.rs
 mut_ref_loop_bounds.rs
 mut_ref_std_items.rs

@@ -5283,6 +5283,25 @@ pub fn og() -> OpenGraph<'static> {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support flattening an enum variant's field yet")]);
 });
 
+// MIR's cell only its function uses is a plain variable (tidy's
+// \`plain_cells\`), but not where a callback's parameter of its name reads
+// a \`value\` of its own, \`{:?}\`'s of a \`Vec<&mut str>\`.
+test("a cell a callback's parameter shadows stays a cell", async () => {
+  const dir = fixture("cell-shadowed");
+  writeFileSync(join(dir, "lib.rs"), `pub fn show() -> String {
+    let item = Box::leak(Box::new(5));
+    *item += 1;
+    let v: Vec<&'static mut str> = vec![String::from("a").leak()];
+    format!("{item} {v:?}")
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect(lib.show()).toBe('6 ["a"]');
+  }
+});
+
 // `s[a..b].make_ascii_uppercase()` gives `s` its text with that part
 // changed (ADR 0334), from MIR as from THIR, not a handle on a part.
 test("a string's part changed in place gives the string its text", async () => {

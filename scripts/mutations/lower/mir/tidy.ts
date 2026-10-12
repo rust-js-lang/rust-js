@@ -1974,4 +1974,12 @@ export const mutations: Mutation[] = [
       "a range mapped and collected"
     ]
   },
+  {
+    name: "mir-tidy-plain-cell-shadowed",
+    breaks: "a cell a callback's parameter shadows is made plain, `(item) => item.value` read as `item`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "callback's parameter shadows"],
+  },
 ];

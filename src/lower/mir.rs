@@ -2056,6 +2056,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        // A `&mut` a variable keeps to a variable that's a `&mut` itself,
+        // `let outer = &mut list`: `list`, where it's used, so `*outer = ..`
+        // gives `list` it, as THIR's.
+        if place.projection.is_empty()
+            && state.locals.user[place.local]
+            && state.locals.writes[place.local] == 1
+            && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
+            && target.projection.is_empty()
+            && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
+            && !self.is_cell_pointee(*pointee)
+        {
+            let list = self.mir_place(state, *target, span, out)?;
+            if matches!(list.kind, js::ExprKind::Var(_)) {
+                state.refs.insert(place.local, list);
+                return Ok(());
+            }
+        }
         // A `None` only nullable fields read: `null` (ADR 0275).
         if place.projection.is_empty()
             && state.null_nones.contains(&place.local)
@@ -2226,6 +2243,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.branches.insert(local, (tried, *ty));
             return Ok(());
         }
+        // A `&mut` a variable keeps, `let first = &mut h.list[0]`: its place
+        // fixed where it's borrowed, what it's in and where, as THIR's
+        // `fixed_place`, so what changes `h.list` later changes no borrow.
+        let value = match value {
+            Value::Ref(target) if place.projection.is_empty() && state.locals.user[local] => {
+                Value::Ref(self.fixed_kept(state, target, out)?)
+            }
+            value => value,
+        };
         // A `&mut` to a place that's always the same, made once: the
         // place, named where it's used, as borrowck keeps it the same.
         if place.projection.is_empty()
@@ -2451,6 +2477,45 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             exprs.push(Expr::var(&name));
         }
         Ok(exprs)
+    }
+
+    /// `place`, a `&mut` a variable keeps, fixed: the object it's in held
+    /// where it may change while it's borrowed, `const list = h.list`. Only
+    /// a reference can, a variable of one written again too; MIR holds an
+    /// index already.
+    fn fixed_kept(&mut self, state: &mut State<'_, 'tcx>, place: Expr, out: &mut Vec<Stmt>) -> R<Expr> {
+        // A cell made here, `leak()`'s `{ value: s }`: only it has it.
+        if let js::ExprKind::Member(object, _) = &place.kind
+            && matches!(object.kind, js::ExprKind::Object(_))
+        {
+            return Ok(place);
+        }
+        let (object, part) = match place.kind {
+            js::ExprKind::Member(object, field) => (*object, Ok(field)),
+            js::ExprKind::Index(object, index) => (*object, Err(*index)),
+            kind => return Ok(Expr { kind, ..place }),
+        };
+        let stays = match &object.kind {
+            js::ExprKind::Var(name) => (state.locals.names.iter_enumerated())
+                .find(|(_, n)| *n == name)
+                .is_none_or(|(l, _)| state.locals.writes[l] <= 1 || !state.body.local_decls[l].ty.is_ref()),
+            _ => object.is_constant(),
+        };
+        let object = match stays {
+            true => object,
+            false => {
+                self.flush(state, out)?;
+                let name = match &object.kind {
+                    js::ExprKind::Member(_, field) => super::camel_case(field),
+                    _ => "item".to_string(),
+                };
+                self.spill(&name, object, out)
+            }
+        };
+        Ok(match part {
+            Ok(field) => Expr::member(object, field),
+            Err(index) => Expr::index(object, index),
+        })
     }
 
     /// A place, for a read or a write.
@@ -3218,6 +3283,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             if e.reads_same() && movable(state, &Value::Expr(e.clone())) =>
                         {
                             Value::Place(e)
+                        }
+                        // Through `outer`, a `&mut` to `list`, a `&mut` to what
+                        // isn't a cell: what `list` is.
+                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {
+                            Value::Expr(e)
                         }
                         (_, value) => value,
                     });

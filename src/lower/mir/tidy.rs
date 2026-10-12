@@ -4336,6 +4336,24 @@ fn plain_cells(body: &mut Vec<Stmt>) {
             }
         }
     });
+    // Not one a closure's parameter or another declaration shadows, whose
+    // `value` isn't the cell's.
+    let mut bound: HashMap<String, usize> = HashMap::new();
+    js::statement_lists(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
+                *bound.entry(name.clone()).or_default() += 1;
+            }
+        }
+    });
+    js::each_expr_mut(&mut body.clone(), &mut |e| {
+        if let ExprKind::Arrow(params, _) | ExprKind::AsyncArrow(params, _) = &e.kind {
+            for name in params.iter().flat_map(|p| p.names()) {
+                *bound.entry(name.to_string()).or_default() += 1;
+            }
+        }
+    });
+    cells.retain(|c| bound.get(c).copied().unwrap_or(0) <= 1);
     // Each clone, to its cell.
     let cell_of = |name: &str| {
         let mut name = name;
