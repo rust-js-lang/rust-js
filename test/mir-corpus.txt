@@ -264,6 +264,7 @@ slice_patterns.rs
 slice_prefix_eq.rs
 slice_prefixes.rs
 slice_split.rs
+slice_split_off.rs
 slice_split_at_panic.rs
 slice_start_past_len.rs
 slice_to_array.rs

@@ -5044,6 +5044,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 self.extract_if_values(items, bounds, f, generic_args.type_at(0))
             }
+            // `s.split_off(..n)` and the like: the slice's place given what's
+            // left, THIR's (ADR 0338).
+            Std::Slice(SliceOp::SplitOff { end, mutable }) => {
+                // Of a `&mut [T]`, which a `&mut` to isn't a cell: the
+                // variable `rest.split_off_mut(..)` borrows, not one holding a
+                // `&mut` to it, which JS would assign instead.
+                let place = match values.next().expect("the slice") {
+                    Value::Ref(place) if fixed_place(&place) => place,
+                    Value::Expr(place)
+                        if matches!(place.kind, js::ExprKind::Var(_)) && self.borrows_variable(def_id, span, 0) =>
+                    {
+                        place
+                    }
+                    _ => return Err(self.unsupported(span, "splitting this slice")),
+                };
+                let bounds = match end {
+                    None => {
+                        let range = self.value_expr(values.next().expect("the range"), span)?;
+                        Some(self.range_value_bounds(range, arg_tys[1], span, out)?)
+                    }
+                    Some(_) => None,
+                };
+                self.flush(state, out)?;
+                let split =
+                    self.split_off_values((end, mutable), place.clone(), bounds, generic_args.type_at(0), out);
+                let left = Expr::index(split.clone(), Expr::int(0));
+                out.push(StmtKind::Assign(place, left).at(self.js_span(span)));
+                Expr::index(split, Expr::int(1))
+            }
             // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items, THIR's (ADR 0335).
             Std::Slice(SliceOp::View { checked }) => {
                 let items = self.value_expr(values.next().expect("the items"), span)?;

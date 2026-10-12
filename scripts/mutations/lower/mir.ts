@@ -2350,4 +2350,20 @@ export const mutations: Mutation[] = [
       "generic_writers"
     ]
   },
+  {
+    name: "mir-split-off-unwritten",
+    breaks: "MIR's `s.split_off(..n)` leaves `s` as it was",
+    file: "src/lower/mir.rs",
+    find: "                out.push(StmtKind::Assign(place, left).at(self.js_span(span)));\n                Expr::index(split, Expr::int(1))\n",
+    replace: "                Expr::index(split, Expr::int(1))\n",
+    tests: ["test/mir.test.ts", "-t", "slice_split_off"],
+  },
+  {
+    name: "mir-split-off-held",
+    breaks: "MIR's `r.split_off_mut(..n)`, `r` a `&mut` to `rest`, gives `r` what's left",
+    file: "src/lower/mir.rs",
+    find: "                        if matches!(place.kind, js::ExprKind::Var(_)) && self.borrows_variable(def_id, span, 0) =>\n",
+    replace: "                        if matches!(place.kind, js::ExprKind::Var(_)) =>\n",
+    tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
+  },
 ];

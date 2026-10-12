@@ -364,6 +364,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var("$extractIf"), list)
     }
 
+    /// `s.split_off(..n)` and the like of a slice read as `read`, with the
+    /// range's bounds, or `split_off_first`'s or `last`'s, `end`: a `const`
+    /// of what's left, `[0]`, which the slice's place is given, and what it
+    /// takes, `[1]` (ADR 0338). THIR's and MIR's.
+    pub(in crate::lower) fn split_off_values(
+        &mut self,
+        (end, mutable): (Option<bool>, bool),
+        read: Expr,
+        bounds: Option<(Expr, Option<Expr>)>,
+        item: ty::Ty<'tcx>,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let mut list = vec![read];
+        match (end, bounds) {
+            (None, Some((_, Some(n)))) => list.push(n),
+            (None, Some((n, None))) => list.extend([n, Expr::bool(true)]),
+            (Some(last), _) => {
+                list.push(Expr::bool(last));
+                if mutable && self.is_boxable(item) {
+                    list.push(Expr::bool(true));
+                }
+            }
+            (None, None) => unreachable!("a range's bounds"),
+        }
+        let name = match (end, mutable) {
+            (None, false) => "$sliceSplitOff",
+            (None, true) => "$sliceSplitOffMut",
+            (Some(_), false) => "$sliceSplitOffEnd",
+            (Some(_), true) => "$sliceSplitOffEndMut",
+        };
+        let split = match mutable {
+            false => {
+                self.runtime.insert(Helper::SliceOps);
+                Expr::call(Expr::var(name), list)
+            }
+            true => self.view_call(name, list),
+        };
+        self.spill("split", split, out)
+    }
+
     /// `v.copy_within(start..end, dest)`: `$copyWithin`.
     pub(in crate::lower) fn copy_within_values(
         &mut self,
@@ -387,10 +427,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let helper = |cx: &mut Self, name: &str, list: Vec<Expr>| {
-            cx.runtime.insert(Helper::SliceOps);
-            Expr::call(Expr::var(name), list)
-        };
         let item = || generic_args.type_at(0);
         Ok(match op {
             // `s.split_off(..n)`: `s` given what's left, `s = split[0]`, and what
@@ -400,30 +436,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "splitting this slice"));
                 };
                 let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
-                let mut list = vec![target.read()];
-                match end {
-                    None => match self.range_bounds(args[1], span, out)? {
-                        (_, Some(n)) => list.push(n),
-                        (n, None) => list.extend([n, Expr::bool(true)]),
-                    },
-                    Some(last) => {
-                        list.push(Expr::bool(last));
-                        if mutable && self.is_boxable(item()) {
-                            list.push(Expr::bool(true));
-                        }
-                    }
-                }
-                let name = match (end, mutable) {
-                    (None, false) => "$sliceSplitOff",
-                    (None, true) => "$sliceSplitOffMut",
-                    (Some(_), false) => "$sliceSplitOffEnd",
-                    (Some(_), true) => "$sliceSplitOffEndMut",
+                let bounds = match end {
+                    None => Some(self.range_bounds(args[1], span, out)?),
+                    Some(_) => None,
                 };
-                let split = match mutable {
-                    false => helper(self, name, list),
-                    true => self.view_call(name, list),
-                };
-                let split = self.spill("split", split, out);
+                let split = self.split_off_values((end, mutable), target.read(), bounds, item(), out);
                 target.write(Expr::index(split.clone(), Expr::int(0)), self.js_span(span), out);
                 Expr::index(split, Expr::int(1))
             }

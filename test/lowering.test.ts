@@ -5283,6 +5283,29 @@ pub fn og() -> OpenGraph<'static> {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support flattening an enum variant's field yet")]);
 });
 
+// MIR's `rest.split_off_mut(..n)` gives `rest` what's left; through `r`,
+// which holds a `&mut` to `rest`, JS would give `r` it, so it's refused.
+test("MIR's split_off through a held `&mut` is refused", () => {
+  const dir = fixture("mir-split-off-held");
+  writeFileSync(join(dir, "lib.rs"), `pub fn run() -> Vec<i32> {
+    let mut w = vec![1, 2, 3, 4, 5];
+    let mut rest: &mut [i32] = &mut w;
+    let r = &mut rest;
+    if let Some(h) = r.split_off_mut(..2) {
+        h[0] = 9;
+    }
+    rest[0] = -7;
+    w
+}
+`);
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+    cwd: root,
+    stderr: "pipe",
+    env: { ...process.env, RUST_JS_MIR: "1" },
+  });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support splitting this slice yet")]);
+});
+
 // `&v[..]`, all of a slice, is the slice itself, as `&s[..]` of a string
 // is and `&mut v[..]` is (ADR 0335): nothing changes it while it's
 // borrowed, so the copy a part is made as isn't needed.
