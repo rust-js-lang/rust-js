@@ -126,6 +126,7 @@ f32_parse.rs
 float_clamp_nan.rs
 float_normal.rs
 fmt_error_format.rs
+fmt_error_pieces.rs
 fmt_error_println.rs
 fmt_error_to_string.rs
 fmt_error_write.rs

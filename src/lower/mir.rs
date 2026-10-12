@@ -877,7 +877,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         tidy::destructured_params(&mut params, &mut out);
         tidy::readable_temporaries(&params, &mut out);
         if let Some((_, name)) = &state.writer {
-            tidy::writer_body(&mut out, name);
+            match self.writer_fails() {
+                // One that may fail gives what it wrote before, in front of
+                // what what it called did (ADR 0187): `let f = ""; try { .. }
+                // catch (error) { .. } return f;`, as THIR's.
+                true => {
+                    self.runtime.insert(Helper::FmtError);
+                    let made = (out.iter()).position(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name));
+                    let mut body = out.split_off(made.map_or(0, |at| at + 1));
+                    // Its last `return f`, the one after the `try`.
+                    if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r)))
+                        if matches!(&r.kind, js::ExprKind::Var(v) if v == name))
+                    {
+                        body.pop();
+                    }
+                    let error = self.fresh("error");
+                    let written = Expr::call(Expr::var("$fmtWritten"), vec![Expr::var(&error), Expr::var(name)]);
+                    let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
+                    out.push(StmtKind::TryCatch(body, Some(error), handler).at(js::Span::NONE));
+                    out.push(StmtKind::Return(Some(Expr::var(name))).at(js::Span::NONE));
+                }
+                false => tidy::writer_body(&mut out, name),
+            }
         }
         Ok((params, out))
     }
@@ -2235,6 +2256,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return match rvalue {
                     Rvalue::Use(..) => Ok(()),
                     Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(_, VariantIdx::ZERO, ..)) => {
+                        Ok(())
+                    }
+                    // `Err(fmt::Error)`, thrown (ADR 0187).
+                    Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(..)) => {
+                        self.flush(state, out)?;
+                        self.runtime.insert(Helper::FmtError);
+                        let thrown = Expr::call(Expr::var("$fmtError"), Vec::new());
+                        out.push(StmtKind::Expr(thrown).at(self.js_span(span)));
                         Ok(())
                     }
                     _ => Err(self.unsupported(span, "this `fmt::Result`, from its MIR")),
@@ -4175,13 +4204,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .recognition()
                 .write_call(def_id, self.krate.fns.contains_key(&def_id));
             let values = self.take_operands(state, &others, out)?;
+            // A `write!` of what may fail: piece by piece, what came before
+            // written (ADR 0187).
+            let pieces = values.iter().any(|v| matches!(v, Value::Fmt(Std::FmtNew, ..)));
             let values = (values.into_iter())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
             let pretty = self.writer_pretty();
             let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
             self.flush(state, out)?;
-            super::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+            super::display::append_written(&Expr::var(&name), written, pieces, self.js_span(span), out);
             return Ok(Value::Expr(Expr::undefined()));
         }
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
@@ -6600,9 +6632,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// value or another writer, given it where a writer takes it; not its
     /// options, a builder, nor a writer that may fail, which are THIR's.
     pub(super) fn mir_writes(&self, body: &mir::Body<'tcx>, param: usize) -> bool {
-        if self.writer_fails() {
-            return false;
-        }
         let aliases = formatter_aliases(body, Local::from_usize(param + 1));
         let mut location = mir::Location::START;
         for (block, data) in body.basic_blocks.iter_enumerated() {
