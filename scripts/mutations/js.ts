@@ -304,4 +304,16 @@ export const mutations: Mutation[] = [
       "a let chain from MIR is one test"
     ]
   },
+  {
+    "name": "wrap-call-an-effect",
+    "breaks": "a number wrapped to its width, `BigInt.asIntN(64, n)`, is something done, held first, `const value = \u2026; m.cents = value;`",
+    "file": "src/js.rs",
+    "find": "(\"BigInt\", \"asIntN\" | \"asUintN\") | (\"Math\", \"imul\")",
+    "replace": "(\"$none\", \"none\")",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a wide field updated from MIR"
+    ]
+  },
 ];

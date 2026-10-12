@@ -131,9 +131,8 @@ export function grids(n) {
   const m = Array.from({ length: n }, () => new Array(n).fill(0));
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
-      const value = ((Math.imul(i, n) >>> 0) + j) >>> 0;
       const items = $index(m, i);
-      items[$at(items, j)] = value;
+      items[$at(items, j)] = ((Math.imul(i, n) >>> 0) + j) >>> 0;
     }
   }
   const t = Array.from({ length: n }, () => new Array(n).fill(0));

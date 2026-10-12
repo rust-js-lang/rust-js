@@ -6264,6 +6264,27 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }
 });
 
+// A wide field updated through a \`&mut\`, from MIR, is written where it's
+// made, \`m.cents = BigInt.asIntN(64, m.cents + 1n)\`, as THIR's: wrapping
+// it does nothing a place could see.
+test("a wide field updated from MIR is written where it's made", async () => {
+  const dir = fixture("mir-wide-field");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Money { pub cents: i64 }
+pub fn bump(m: &mut Money) {
+    m.cents += 1;
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("export function bump(m) {\n  m.cents = BigInt.asIntN(64, m.cents + 1n);\n}");
+    const lib = await import(join(dir, out));
+    const m = { cents: 9223372036854775807n };
+    lib.bump(m);
+    expect(m.cents).toBe(-9223372036854775808n);
+  }
+});
+
 // What's left of a string's \`chars()\` once stepped, \`as_str()\`, from MIR
 // as from THIR: the rest of it, \`$restStr(c)\`.
 test("the rest of a string's chars from MIR is a string", async () => {

@@ -1631,6 +1631,18 @@ impl Expr {
             ExprKind::Unary(_, a) => a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
             ExprKind::Cond(a, b, c) => a.has_effects() || b.has_effects() || c.has_effects(),
+            // A number wrapped to its width, `BigInt.asIntN(64, n)`, or
+            // multiplied so, `Math.imul(a, b)`: what its arguments do.
+            ExprKind::Call(callee, args)
+                if let ExprKind::Member(of, name) = &callee.kind
+                    && let ExprKind::Var(global) = &of.kind
+                    && matches!(
+                        (global.as_str(), name.as_str()),
+                        ("BigInt", "asIntN" | "asUintN") | ("Math", "imul")
+                    ) =>
+            {
+                args.iter().any(Expr::has_effects)
+            }
             ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,
             // Making an element runs nothing: a component runs when React renders it.
             ExprKind::Jsx(jsx) => {
