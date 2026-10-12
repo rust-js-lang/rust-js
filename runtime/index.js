@@ -353,17 +353,19 @@ export function $unwrap(value, message = "called `Option::unwrap()` on a `None` 
 }
 
 // `Some(x)` of a generic `T` (ADR 0051): `x`, unless it looks like `None`,
-// as `undefined`, `null` or such a box does. Then it's a box one deeper.
+// as `undefined`, `null` or such a box does. Then it's a box one deeper,
+// which keeps a `null` it holds, as JS tells it from `undefined`.
 export function $some(x) {
-  if (x == null) return { $someNone: 0 };
-  if (typeof x === "object" && "$someNone" in x) return { $someNone: x.$someNone + 1 };
+  if (x === null) return { $someNone: 0, $value: null };
+  if (x === undefined) return { $someNone: 0 };
+  if (typeof x === "object" && "$someNone" in x) return { ...x, $someNone: x.$someNone + 1 };
   return x;
 }
 
-// What's in a `$some`: the box one level shallower.
+// What's in a `$some`: the box one level shallower, or the `null` it kept.
 export function $someValue(x) {
   if (x != null && typeof x === "object" && "$someNone" in x) {
-    return x.$someNone === 0 ? undefined : { $someNone: x.$someNone - 1 };
+    return x.$someNone === 0 ? x.$value : { ...x, $someNone: x.$someNone - 1 };
   }
   return x;
 }
