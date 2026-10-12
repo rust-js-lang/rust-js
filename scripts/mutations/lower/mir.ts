@@ -2591,14 +2591,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts", "-t", "refcell_borrows"],
   },
   {
-    name: "mir-guard-rc-value",
-    breaks: "MIR's `*cell.borrow_mut() = w` of a `Weak` reads the guard's `value` into a temporary, which isn't the place",
-    file: "src/lower/mir.rs",
-    find: "            return Ok(Value::Place(Expr::member(guard.clone(), \"value\")));\n",
-    replace: "            return Ok(Value::Expr(Expr::member(guard.clone(), \"value\")));\n",
-    tests: ["test/mir.test.ts", "-t", "rc_counts"],
-  },
-  {
     name: "mir-mut-temp-place-held",
     breaks: "MIR's `&mut` temporary of a guard's `value` is a `const` of it, not the place",
     file: "src/lower/mir.rs",

@@ -4848,17 +4848,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let first_ty = || generic_args.types().next();
         let tcx = self.tcx;
-        // `*cell.borrow_mut() = w` of an `Rc` or a `Weak` a guard holds: its
-        // `value`, a place read where it's used and given `w` there, as
-        // THIR's, not the pointer every owner shares changed in place.
-        if known == (Std::GuardValue { mutable: true })
-            && let ty::Ref(_, pointee, _) = *output.kind()
-            && (self.counted_rc(pointee).is_some() || self.weak_of(pointee).is_some())
-            && let [Value::Expr(guard) | Value::Place(guard)] = values.as_slice()
-            && guard.reads_same()
-        {
-            return Ok(Value::Place(Expr::member(guard.clone(), "value")));
-        }
         // `format!`, `print!` and `to_string()` of what may fail: in a `try`,
         // a `fmt::Error` std's panic, as THIR's `failing_consumer` (ADR 0187).
         let fails = match known {
