@@ -1872,12 +1872,14 @@ pub(super) fn does(f: &Expr) -> bool {
     }
 }
 
-/// Whether `e` is an array as it's made: `[a, b]`, `Array.from(x)`, or a
-/// string's `split`, and through an array's methods that make one,
+/// Whether `e` is an array as it's made: `[a, b]`, `Array.from(x)`, a
+/// string's `split` or a helper's, and through an array's methods that make one,
 /// `.filter(f)`, not an iterator's of the same names, `$iter(xs).filter(f)`.
 pub(super) fn made_array(e: &Expr) -> bool {
     match &e.kind {
         js::ExprKind::Array(_) => true,
+        // A helper's that makes one, `$windows(v, 2)`.
+        js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),
         js::ExprKind::Call(callee, _) => match &callee.kind {
             js::ExprKind::Member(object, name) => match name.as_str() {
                 "split" => true,

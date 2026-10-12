@@ -769,4 +769,16 @@ export const mutations: Mutation[] = [
       "iterator chains from MIR are array methods"
     ]
   },
+  {
+    "name": "made-array-helper-lazy",
+    "breaks": "`v.windows(2).map(f).collect()` from MIR stays `Iterator.from($windows(v, 2)).map(f).toArray()`",
+    "file": "src/lower/iterators.rs",
+    "find": "        js::ExprKind::Call(callee, _) if matches!(callee.kind, js::ExprKind::Var(_)) => fresh(e),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];

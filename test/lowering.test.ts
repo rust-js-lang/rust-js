@@ -1259,6 +1259,10 @@ pub fn lens(groups: &[Vec<u32>]) -> Vec<usize> {
 pub fn sizes(words: &[&str]) -> Vec<usize> {
     words.iter().copied().map(str::len).collect()
 }
+// What a helper makes an array of, each window, mapped as one.
+pub fn diffs(v: &[i32]) -> Vec<i32> {
+    v.windows(2).map(|w| w[1] - w[0]).collect()
+}
 pub fn order(items: &[u32]) -> Vec<String> {
     let log = RefCell::new(Vec::new());
     let _ = items
@@ -1318,11 +1322,13 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect(js).toContain("  return c.toUpperCase();\n");
     expect(js).toContain("  return groups.map((x) => x.length);\n");
     expect(js).toContain("words.map((s) => $byteLen(s))");
+    expect(js).toContain("  return $windows(v, 2).map(");
     const lib = await import(join(dir, out));
     expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
     expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);
     expect([lib.flat([[1, 2], [], [3]]), lib.words(" a  b ")]).toEqual([[10, 20, 30], "A B"]);
     expect([lib.mid([1, 2, 3, 4, 5, 6]), lib.mid([1]), lib.up("ß")]).toEqual([[3, 4, 5], [], "SS"]);
+    expect(lib.diffs([1, 4, 9])).toEqual([3, 5]);
     const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
     expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
     expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
