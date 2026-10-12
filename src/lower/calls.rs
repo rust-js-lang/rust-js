@@ -81,14 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (def_id, generic_args) = self
             .resolve_into(def_id, generic_args)
             .unwrap_or((def_id, generic_args));
-        if let Some(collection) = self.collection_as_iterable(def_id, generic_args) {
-            let what = format!("a `{collection}`, whose `IntoIterator` is the crate's, where any `IntoIterator` goes");
-            return Err(self.unsupported(span, &what));
-        }
-        if let Some(ty) = self.borrowed_by_user(def_id, generic_args)? {
-            let path = self.tcx.def_path_str(def_id);
-            return Err(self.unsupported(span, &format!("`{path}` of a `{ty}` as what its own `Borrow` gives")));
-        }
+        self.check_call_takes(def_id, generic_args, span)?;
         let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
         let call = Call {
             fun: Some(fun),
@@ -124,42 +117,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "importing what isn't a function"));
         };
         self.dynamic_import_of(id, module, span)
-    }
-
-    /// A type whose `Borrow` is the crate's that std's function would take
-    /// as the value itself, for what it borrows as (ADR 0167): not the
-    /// crate's own `borrow()` or `borrow_mut()`, which is the crate's.
-    fn borrowed_by_user(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> R<Option<Ty<'tcx>>> {
-        let crates = self
-            .resolve_instance(def_id, generic_args)?
-            .is_some_and(|instance| self.is_rust_fn(instance.def_id()));
-        Ok(match self.is_rust_fn(def_id) || crates {
-            true => None,
-            false => self.recognition().borrowed_by_user(def_id, generic_args),
-        })
-    }
-
-    /// A collection of the crate's that a call takes as any `IntoIterator`:
-    /// generic code, std's or the crate's, iterates what it's given as JS
-    /// does, which never calls the collection's own `into_iter` (ADR 0160).
-    /// Not `into_iter` itself, which is the collection's.
-    fn collection_as_iterable(&self, def_id: DefId, generic_args: ty::GenericArgsRef<'tcx>) -> Option<Ty<'tcx>> {
-        let into_iterator = std_item(self.tcx, StdItem::IntoIterator);
-        if self.tcx.trait_of_assoc(def_id) == Some(into_iterator) {
-            return None;
-        }
-        let clauses = self.tcx.clauses_of(def_id).instantiate(self.tcx, generic_args);
-        clauses.clauses.iter().find_map(|clause| {
-            // A bound of any lifetime, `for<'a> &'a T: IntoIterator`, is of an
-            // erased one: a type rustc can select an impl for.
-            let bound = self
-                .tcx
-                .instantiate_bound_regions_with_erased(clause.skip_normalization().as_trait_clause()?)
-                .trait_ref;
-            (bound.def_id == into_iterator)
-                .then(|| bound.self_ty())
-                .filter(|&ty| self.user_into_iter(ty).is_some())
-        })
     }
 
     /// A call of what isn't one of std's functions: the crate's own, a

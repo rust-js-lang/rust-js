@@ -40,6 +40,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let name = name.as_str();
         let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
         let iter_ty = receiver_ty.peel_refs();
+        // One taken by value, `items.fold(..)`'s, dropped as it's done, which
+        // JS doesn't: of a generic iterator, one its callers give none with a
+        // destructor (ADR 0190); of the crate's own with one, refused, THIR's.
+        if !receiver_ty.is_ref()
+            && is_std_def(tcx, trait_id, StdItem::Iterator)
+            && self.drops(receiver_ty) != crate::lower::drops::Drops::Nothing
+        {
+            if self.drop_query().drops_but_params(receiver_ty) == crate::lower::drops::Drops::Nothing {
+                self.require_no_drops(receiver_ty);
+            } else if self.is_user_iterator(receiver_ty) {
+                return Err(self.unsupported(
+                    span,
+                    &format!("`{name}` of an iterator with a destructor, from its MIR"),
+                ));
+            }
+        }
         // `x.into_iter()`: a range stays one, an iterator is itself, and a
         // collection's items are a JS iterator of them.
         if is_std_def(tcx, trait_id, StdItem::IntoIterator) && name == "into_iter" {

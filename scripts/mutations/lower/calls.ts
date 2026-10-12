@@ -69,22 +69,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "write_to_string"],
   },
   {
-    name: "collection-as-iterable-unchecked",
-    breaks: "a collection of the crate's given to `extend` or generic code is iterated as JS does, to nothing or a crash",
-    file: "src/lower/calls.rs",
-    find: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args) {",
-    replace: "        if let Some(collection) = self.collection_as_iterable(def_id, generic_args).filter(|_| false) {",
-    tests: ["test/diagnostics.test.ts","-t","collection of the crate"],
-  },
-  {
-    name: "own-borrow-mut-guarded",
-    breaks: "the crate's own `borrow_mut()`, whose trait needs its `Borrow`, is refused as a std call taking what it borrows as",
-    file: "src/lower/calls.rs",
-    find: "        Ok(match self.is_rust_fn(def_id) || crates {",
-    replace: "        Ok(match self.is_rust_fn(def_id) {",
-    tests: ["test/corpus.test.ts", "-t", "user_as_mut"],
-  },
-  {
     name: "to-int-unchecked-unknown",
     breaks: "a float's `to_int_unchecked()` is an error, not its `as` cast",
     file: "src/lower/calls.rs",

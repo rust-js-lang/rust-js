@@ -534,4 +534,12 @@ export const mutations: Mutation[] = [
     replace: "                    Some(_) => test,\n",
     tests: ["test/mir.test.ts", "-t", "collect_drops"],
   },
+  {
+    name: "mir-fold-drops-unrequired",
+    breaks: "MIR's generic `fold` of an iterator its callers give a destructor drops it never",
+    file: "src/lower/mir/iter.rs",
+    find: "                self.require_no_drops(receiver_ty);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic fold"],
+  },
 ];

@@ -2443,6 +2443,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(assigned).at(js_span));
             return Ok(());
         }
+        // `*r = v` of a `&mut` the variable `r` is, to what's neither an
+        // object nor a cell, a closure: JS would only give `r` another,
+        // THIR's (not an alias `r` names a place by, `*outer = ..`).
+        if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
+            && base.projection.is_empty()
+            && matches!(target.kind, js::ExprKind::Var(ref name) if *name == state.locals.names[base.local])
+        {
+            return Err(self.unsupported(span, "assigning a whole value through a `&mut`"));
+        }
         out.push(StmtKind::Assign(target, value).at(js_span));
         Ok(())
     }
@@ -3473,6 +3482,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match coercion {
                     PointerCoercion::Unsize if to_dyn => {
                         let from = operand.ty(decls, tcx);
+                        // What owns a value with a destructor drops it through
+                        // its dictionary's `$drop`: of a `dyn Send`, or of what
+                        // rust-js can't drop, there's nowhere for it, THIR's.
+                        if !to.is_ref()
+                            && let ty::Dynamic(predicates, ..) = self.pointee(*to).kind()
+                            && match self.drops(self.pointee(from)) {
+                                super::drops::Drops::Nothing => false,
+                                super::drops::Drops::Runs => {
+                                    !predicates.principal_def_id().is_some_and(|id| self.is_rust_trait(id))
+                                }
+                                super::drops::Drops::Unsupported(..) => true,
+                            }
+                        {
+                            return Err(self.unsupported(span, "a `dyn` of a value with a destructor"));
+                        }
                         let value = self.mir_expr(state, operand, out)?;
                         if self.recognition().is_dyn_iter(*to) {
                             let iterator = from.builtin_deref(true).unwrap_or(from);
@@ -3716,6 +3740,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .find(|(_, d)| d.val == value)
                     .map(|(v, _)| v)
                     .ok_or_else(|| self.unsupported(span, "this discriminant, from its MIR"))?;
+                // An untagged enum's variants JS can't tell apart, THIR's (ADR 0214).
+                if bindings::is_untagged(self.tcx, adt.did())
+                    && let Some(other) = self.untagged_alike(*enum_ty, adt.variant(variant))
+                {
+                    let message = format!(
+                        "`{}` and `{other}` hold values of one kind, which JS can't tell apart in an untagged enum (ADR 0214)",
+                        adt.variant(variant).name
+                    );
+                    return Err(self.tcx.dcx().span_err(span, message));
+                }
                 Ok(self.variant_test(enum_value.clone(), *enum_ty, *adt, variant))
             }
             _ => {
@@ -4283,6 +4317,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let arg_tys = arg_tys.to_vec();
         let tcx = self.tcx;
+        // What THIR refuses of a call: the crate's collection or `Borrow`
+        // where std's code takes JS's (ADRs 0160, 0167).
+        self.check_call_takes(def_id, generic_args, span)?;
         // `x == &mut 1`, `p > q`, of `&mut`s to what JS can't change in place:
         // of what they point at, as THIR's (ADR 0099), not the handles.
         if let Some(trait_id) = tcx.trait_of_assoc(def_id)

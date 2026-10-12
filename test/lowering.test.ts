@@ -5379,6 +5379,28 @@ pub fn run() {
   }
 });
 
+// What THIR refuses because JS can't do it soundly, MIR refuses too: each
+// compiled to output that ran unlike Rust, found running them both.
+for (const [name, source, message] of [
+  ["a destructor given where a generic fold takes none", "pub struct Counter(pub u32);\nimpl Iterator for Counter { type Item = u32; fn next(&mut self) -> Option<u32> { if self.0 < 3 { self.0 += 1; Some(self.0) } else { None } } }\nimpl Drop for Counter { fn drop(&mut self) {} }\nfn total<I: Iterator<Item = u32>>(items: I) -> u32 { items.fold(0, |a, b| a + b) }\npub fn f() -> u32 { total(Counter(0)) }", "giving `total`'s `I` a type with a destructor, where it takes none"],
+  ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "as what its own `Borrow` gives"],
+  ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "whose `IntoIterator` is the crate's"],
+  ["an untagged enum's variants of one kind, matched", "#[rust_js::untagged] pub enum E { A(&'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "which JS can't tell apart"],
+  ["a Box<dyn Send> of a value with a destructor", "pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let _: Box<dyn Send> = Box::new(D); }", "a `dyn` of a value with a destructor"],
+  ["a new closure assigned through a &mut to one", "pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }", "assigning a whole value through a `&mut`"],
+] as [string, string, string][]) {
+  test(`MIR refuses ${name}, as THIR does`, () => {
+    const dir = fixture("mir-refused");
+    writeFileSync(join(dir, "lib.rs"), source);
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+      cwd: root,
+      stderr: "pipe",
+      env: { ...process.env, RUST_JS_MIR: "1" },
+    });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(message)]);
+  });
+}
+
 // MIR's cell only its function uses is a plain variable (tidy's
 // \`plain_cells\`), but not where a callback's parameter of its name reads
 // a \`value\` of its own, \`{:?}\`'s of a \`Vec<&mut str>\`.
