@@ -777,31 +777,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A part of a string as a `&mut str` (ADR 0334): `$strPart(cell, a, b)`
     /// of the cell its `&mut` is, `$strGetMut` and `$strSplitAtMut`.
     fn str_part(&mut self, op: TextOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let mut list = vec![self.str_cell(args[0], span, out)?];
+        let cell = self.str_cell(args[0], span, out)?;
+        let given = match op {
+            TextOp::StrSplitAtMut { .. } | TextOp::StrPart { bounds: true } => self.operands(&args[1..], out)?,
+            _ => {
+                let (start, end) = self.range_bounds(args[1], span, out)?;
+                std::iter::once(start).chain(end).collect()
+            }
+        };
+        Ok(self.str_part_values(op, cell, given))
+    }
+
+    /// Of `cell`, a `&mut str`'s, and what's `given`, a range's bounds or a
+    /// `split_at_mut`'s index: the part, THIR's and MIR's.
+    pub(in crate::lower) fn str_part_values(&mut self, op: TextOp, cell: Expr, given: Vec<Expr>) -> Expr {
+        let mut list = vec![cell];
+        list.extend(given);
         let name = match op {
             TextOp::StrSplitAtMut { checked } => {
-                list.extend(self.operands(&args[1..], out)?);
                 if checked {
                     list.push(Expr::bool(true));
                 }
                 "$strSplitAtMut"
             }
-            TextOp::StrPart { bounds: true } => {
-                list.extend(self.operands(&args[1..], out)?);
-                "$strPart"
-            }
-            _ => {
-                let (start, end) = self.range_bounds(args[1], span, out)?;
-                list.push(start);
-                list.extend(end);
-                match op {
-                    TextOp::StrGetMut => "$strGetMut",
-                    _ => "$strPart",
-                }
-            }
+            TextOp::StrGetMut => "$strGetMut",
+            _ => "$strPart",
         };
         self.runtime.insert(Helper::StrPart);
-        Ok(Expr::call(Expr::var(name), list))
+        Expr::call(Expr::var(name), list)
     }
 
     /// What a `&mut str` is written through (ADR 0334): a box or a part it

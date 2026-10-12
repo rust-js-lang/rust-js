@@ -294,6 +294,9 @@ stock_orders.rs
 str_bytes.rs
 str_circumfix.rs
 str_circumfix_closure.rs
+str_mut.rs
+str_mut_boundary.rs
+str_part_boundary.rs
 string_bytes.rs
 string_drain_from_past_len.rs
 string_editing.rs

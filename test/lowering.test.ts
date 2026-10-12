@@ -5283,6 +5283,28 @@ pub fn og() -> OpenGraph<'static> {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support flattening an enum variant's field yet")]);
 });
 
+// `s[a..b].make_ascii_uppercase()` gives `s` its text with that part
+// changed (ADR 0334), from MIR as from THIR, not a handle on a part.
+test("a string's part changed in place gives the string its text", async () => {
+  const dir = fixture("str-part-case");
+  writeFileSync(join(dir, "lib.rs"), `pub fn shout(mut name: String) -> String {
+    name[2..4].make_ascii_uppercase();
+    name[..].make_ascii_lowercase();
+    name[2..].make_ascii_uppercase();
+    name
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("name = $asciiCase(name, true, 2, 4);");
+    expect(js).toContain("name = $asciiCase(name, false);");
+    expect(js).toContain("name = $asciiCase(name, true, 2);");
+    const lib = await import(join(dir, out));
+    expect(lib.shout("élan Vital")).toBe("éLAN VITAL");
+  }
+});
+
 // MIR's `rest.split_off_mut(..n)` gives `rest` what's left; through `r`,
 // which holds a `&mut` to `rest`, JS would give `r` it, so it's refused.
 test("MIR's split_off through a held `&mut` is refused", () => {

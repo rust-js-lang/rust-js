@@ -2029,11 +2029,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Kept or given: a handle on its place, which reads and writes it
             // (ADR 0099), where the place is always the same one.
             // A handle on the `value` of what a variable holds, a box, a handle
-            // or a cell, is that: what it's read and written through.
+            // or a cell, is that: what it's read and written through. Of what
+            // a call gives, `$strPart(..)`'s, the one it gives, there.
             Value::Ref(ref place)
                 if let js::ExprKind::Member(holder, field) = &place.kind
                     && field == "value"
-                    && matches!(holder.kind, js::ExprKind::Var(_)) =>
+                    && matches!(holder.kind, js::ExprKind::Var(_) | js::ExprKind::Call(..)) =>
             {
                 (**holder).clone()
             }
@@ -2410,7 +2411,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             // A `dyn`'s, or a slice's, the callee can't replace whole: its box
-            // is never written, so it isn't copied back.
+            // is never written, so it isn't copied back. A `str`'s is: its
+            // text is written whole, `make_ascii_uppercase`'s.
             let param = self
                 .tcx
                 .fn_sig(def_id)
@@ -2419,7 +2421,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .inputs()[i];
             if param
                 .builtin_deref(true)
-                .is_some_and(|pointee| !pointee.is_sized(self.tcx, self.typing_env))
+                .is_some_and(|pointee| !pointee.is_sized(self.tcx, self.typing_env) && !pointee.is_str())
             {
                 exprs.push(Expr::object(vec![Prop::Field("value".into(), place)]));
                 continue;
@@ -4717,6 +4719,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::MutGet);
             return Ok(Value::Expr(Expr::call(Expr::var("$mutGet"), vec![map, key])));
         }
+        // `&mut *s` of a `String`, `as_mut_str()`: a `&mut str` to all of
+        // it, the same place the `&mut String` is.
+        if known == Std::Same
+            && self.is_cell(output)
+            && let [Value::Ref(place)] = values.as_slice()
+        {
+            return Ok(Value::Ref(place.clone()));
+        }
         // A `&mut` it made to an item JS can't change in place: a handle on
         // each, as THIR's `item_handles` makes (ADR 0152).
         if let Some(cell) = self.makes_items_of(output, generic_args, arg_tys) {
@@ -5044,6 +5054,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 self.extract_if_values(items, bounds, f, generic_args.type_at(0))
             }
+            // A part of a string as a `&mut str` (ADR 0334), of the cell its
+            // `&mut` is, THIR's.
+            Std::Text(op @ (TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. })) => {
+                let cell = self.value_expr(values.next().expect("the string"), span)?;
+                let mut given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                if matches!(op, TextOp::StrPart { bounds: false } | TextOp::StrGetMut) {
+                    let range = given.remove(0);
+                    let (start, end) = self.range_value_bounds(range, arg_tys[1], span, out)?;
+                    given = std::iter::once(start).chain(end).collect();
+                }
+                self.str_part_values(op, cell, given)
+            }
             // A slice of `MaybeUninit`s written from a slice, and each item
             // dropped, THIR's (ADR 0332).
             Std::Slice(SliceOp::UninitWrite { clone }) => {
@@ -5285,6 +5307,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::StringEdit(edit) => {
                 let place = match values.next().expect("the string") {
                     Value::Ref(place) if fixed_place(&place) => place,
+                    // `s[a..b].make_ascii_uppercase()`: `s` given its new
+                    // text, that part changed, `s = $asciiCase(s, true, a, b)`,
+                    // THIR's (ADR 0334).
+                    Value::Ref(ref place)
+                        if let StringEdit::AsciiCase { upper } = edit
+                            && let Some((whole, mut bounds)) = str_part_of(place) =>
+                    {
+                        self.flush(state, out)?;
+                        if bounds.first().and_then(Expr::as_int) == Some(0) && bounds.len() == 1 {
+                            bounds.clear();
+                        }
+                        let mut list = vec![whole.clone(), Expr::bool(upper)];
+                        list.extend(bounds);
+                        self.runtime.insert(Helper::AsciiCase);
+                        let edited = Expr::call(Expr::var("$asciiCase"), list);
+                        out.push(StmtKind::Assign(whole, edited).at(self.js_span(span)));
+                        return Ok(Value::Expr(Expr::undefined()));
+                    }
+                    // A part another call gives, `$strGetMut(..)`'s: held,
+                    // its `value` the place.
+                    Value::Ref(ref place)
+                        if let js::ExprKind::Member(cell, field) = &place.kind
+                            && field == "value" =>
+                    {
+                        self.flush(state, out)?;
+                        let cell = self.spill("part", (**cell).clone(), out);
+                        Expr::member(cell, "value")
+                    }
                     _ => return Err(self.unsupported(span, "changing this string, from its MIR")),
                 };
                 let mut given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
@@ -6067,6 +6117,25 @@ fn is_return(body: &mir::Body<'_>, mut block: BasicBlock) -> bool {
 /// Whether `place` is one a handle can read and write wherever it's read:
 /// variables, their fields, and elements at a constant index or one a
 /// variable holds, which an index is read into where it's checked.
+/// Of `place`, a part of a string's `value`, `$strPart(s, a, b).value` of a
+/// handle on a place `s` always is: `s`, and the part's bounds.
+fn str_part_of(place: &Expr) -> Option<(Expr, Vec<Expr>)> {
+    let js::ExprKind::Member(part, field) = &place.kind else {
+        return None;
+    };
+    let js::ExprKind::Call(f, args) = &part.kind else {
+        return None;
+    };
+    let (js::ExprKind::Var(name), "value") = (&f.kind, field.as_str()) else {
+        return None;
+    };
+    let (js::ExprKind::Handle(whole), "$strPart") = (&args.first()?.kind, name.as_str()) else {
+        return None;
+    };
+    let bounds = args[1..].to_vec();
+    (fixed_place(whole) && bounds.iter().all(|b| !b.has_effects())).then(|| ((**whole).clone(), bounds))
+}
+
 fn fixed_place(place: &Expr) -> bool {
     match &place.kind {
         js::ExprKind::Var(_) => true,
