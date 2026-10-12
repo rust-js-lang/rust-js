@@ -442,6 +442,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|(local, _)| state.locals.names[local].clone())
             .collect();
         state.own_names = state.locals.names.iter().filter(|n| !n.is_empty()).cloned().collect();
+        for (local, name) in state.locals.names.iter_enumerated() {
+            if !name.is_empty() && self.is_cell(mir_body.local_decls[local].ty) {
+                self.locals.cells.insert(name.clone());
+            }
+        }
         // What reads the same wherever it's read, as THIR's variables say.
         for (local, name) in state.locals.names.iter_enumerated() {
             if name.is_empty()
@@ -2034,10 +2039,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Ref(ref place)
                 if let js::ExprKind::Member(holder, field) = &place.kind
                     && field == "value"
-                    && matches!(
-                        holder.kind,
-                        js::ExprKind::Var(_) | js::ExprKind::Call(..) | js::ExprKind::Object(_)
-                    ) =>
+                    && match &holder.kind {
+                        js::ExprKind::Var(name) => self.locals.cells.contains(name),
+                        js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
+                        _ => false,
+                    } =>
             {
                 (**holder).clone()
             }
@@ -3271,7 +3277,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
                 if matches!(kind, BorrowKind::Mut { .. }) && self.is_cell_pointee(pointee) {
-                    return Ok(Value::Ref(self.mir_place(state, *place, span, out)?));
+                    let target = self.mir_place(state, *place, span, out)?;
+                    // Of a reference written again, `list` of `&mut list.value`
+                    // in a loop that moves `list` on: what it is now, held.
+                    let root = place.projection.first() == Some(&PlaceElem::Deref)
+                        && state.locals.writes[place.local]
+                            + usize::from(state.body.args_iter().any(|a| a == place.local))
+                            > 1
+                        && state.body.local_decls[place.local].ty.is_ref();
+                    let target = match root {
+                        true => {
+                            let name = state.locals.names[place.local].clone();
+                            self.flush(state, out)?;
+                            let held = self.spill(&name, Expr::var(&name), out);
+                            target
+                                .substitute(&|v| (v == name).then(|| held.clone()))
+                                .unwrap_or(target)
+                        }
+                        false => target,
+                    };
+                    return Ok(Value::Ref(target));
                 }
                 if self.through_values(state.body, place, true) {
                     let value = self.read_local_value(state, place.local, out)?;
@@ -4343,6 +4368,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let exprs = self.boxed_args(state, (def_id, generic_args), values.clone(), span, out)?;
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
+                // A generic `&mut T`'s box, the crate's `deref_mut`'s, of an
+                // object `T` here: what's in it.
+                let call = self.generic_result_values(self.callee(def_id, generic_args), call, span)?;
                 return Ok(Value::Expr(call));
             }
         }
@@ -4501,6 +4529,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             exprs.extend(self.evidence_args(def_id, generic_args, span)?);
             let called = Expr::call(self.fn_ref(def_id), exprs);
+            // A generic `&mut T`'s box, of an object `T` here: what's in it.
+            let called = self.generic_result_values((def_id, generic_args), called, span)?;
             return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));
         }
         if let Some(known) = known {
@@ -4842,6 +4872,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => self.std_iterator(handles, output),
                     false => handles,
                 }));
+            }
+            // `o.as_mut()` of an `Option` of what a `&mut` to is a cell, a
+            // number or a `Box`: a handle on its place where it's `Some`.
+            if known == Std::Pointee
+                && let Some(item) = self.option_of(receiver)
+                && !self.boxed_payload(item)
+                && let [Value::Ref(place)] = values.as_slice()
+                && fixed_place(place)
+            {
+                let none = Expr::bin(js::Op::LooseEq, place.clone(), Expr::null());
+                return Ok(Value::Expr(Expr::cond(
+                    none,
+                    Expr::undefined(),
+                    Expr::handle(place.clone()),
+                )));
             }
             if !known.gives_its_cell() {
                 let path = tcx.def_path_str(def_id);

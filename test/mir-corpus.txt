@@ -145,6 +145,7 @@ generic_iterator_map_lazy.rs
 generic_iterator_rest_lazy.rs
 generic_mut_map.rs
 generic_mut_ref.rs
+generic_mut_ref_kept.rs
 generic_operators.rs
 generic_traits.rs
 generic_writers.rs

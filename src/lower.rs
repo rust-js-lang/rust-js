@@ -214,6 +214,10 @@ struct Locals {
     /// And of the others' arrays, their items, `...items`.
     alike: HashSet<String>,
     plain: HashSet<String>,
+    /// And the names of its cells, `&mut`s to what JS can't change in
+    /// place: a box or a handle, whose `value` is what it points at, unlike
+    /// a struct's field of that name.
+    cells: HashSet<String>,
     /// Of a body lowered from its MIR, the temporaries a function that skips
     /// what's falsy is given, whose `test ? value : undefined` is given as
     /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.

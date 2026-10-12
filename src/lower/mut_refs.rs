@@ -634,6 +634,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(value);
         };
         let (def_id, generic_args) = self.callee(def_id, generic_args);
+        self.generic_result_values((def_id, generic_args), value, span)
+    }
+
+    /// `generic_result` of the call of `def_id`, given `generic_args`, that
+    /// gives `value`: THIR's and MIR's.
+    pub(in crate::lower) fn generic_result_values(
+        &self,
+        (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),
+        value: Expr,
+        span: Span,
+    ) -> R<Expr> {
         if !self.is_rust_fn(def_id) {
             return Ok(value);
         }
