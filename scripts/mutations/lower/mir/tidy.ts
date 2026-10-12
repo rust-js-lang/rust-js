@@ -491,14 +491,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","De Morgan"],
   },
   {
-    name: "mir-tidy-negated-null-test",
-    breaks: "`!(x != null && c)` as `not` writes it, `x == null || !c`, isn't known as a negation, a loop's `continue` lost",
-    file: "src/lower/mir/tidy.rs",
-    find: "                negated(e)\n                    || matches!(&e.kind, ExprKind::Binary(Op::LooseEq, _, null) if matches!(null.kind, ExprKind::Null | ExprKind::Undefined))\n",
-    replace: "                negated(e)\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
-  },
-  {
     name: "mir-tidy-deref-param-kept",
     breaks: "`|&n|` stays `(_2) => { const n = _2; … }`",
     file: "src/lower/mir/tidy.rs",

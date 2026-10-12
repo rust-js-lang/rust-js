@@ -2467,18 +2467,12 @@ fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     }
 }
 
-/// Whether `test` is `!c`, or `!(a && b)` as `not` writes it, `!a || b ==
-/// null`. Not `!!c`, `c`'s truth, an `Option` never falsy's presence.
+/// Whether `test` is `!c`, or `!(a && b)` as `not` writes it, `!a || !b`.
+/// Not `!!c`, `c`'s truth, an `Option` never falsy's presence.
 fn negated(test: &Expr) -> bool {
     match &test.kind {
         ExprKind::Unary(UnaryOp::Not, c) => !matches!(c.kind, ExprKind::Unary(UnaryOp::Not, _)),
-        ExprKind::Binary(Op::Or, a, b) => {
-            let part = |e: &Expr| {
-                negated(e)
-                    || matches!(&e.kind, ExprKind::Binary(Op::LooseEq, _, null) if matches!(null.kind, ExprKind::Null | ExprKind::Undefined))
-            };
-            part(a) && part(b)
-        }
+        ExprKind::Binary(Op::Or, a, b) => negated(a) && negated(b),
         _ => false,
     }
 }
