@@ -1770,4 +1770,16 @@ export const mutations: Mutation[] = [
       "nested loops from MIR read as written"
     ]
   },
+  {
+    "name": "mir-map-count-handle",
+    "breaks": "`*m.entry(k).or_insert(0) += 1` from MIR is a handle on the key's value, `$mutGet(m, k).value = \u2026`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut map_counts);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a count kept in a map from MIR"
+    ]
+  },
 ];

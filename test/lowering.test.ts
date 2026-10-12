@@ -6264,6 +6264,30 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }
 });
 
+// A count kept in a map, `*m.entry(k).or_insert(0) += 1`, from MIR is the
+// value there or put in, then set, as THIR's: no handle on the key's value.
+test("a count kept in a map from MIR is its value, then set", async () => {
+  const dir = fixture("mir-map-count");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
+pub fn counts(words: &str) -> Vec<(String, u32)> {
+    let mut counts: HashMap<&str, u32> = HashMap::new();
+    for w in words.split(' ') {
+        *counts.entry(w).or_insert(0) += 1;
+    }
+    let mut all: Vec<(String, u32)> = counts.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+    all.sort();
+    all
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    const current = $orInsert(counts, w, 0);\n    counts.set(w, (current + 1) >>> 0);\n");
+    const lib = await import(join(dir, out));
+    expect(lib.counts("a b a")).toEqual([["a", 2], ["b", 1]]);
+  }
+});
+
 // A slice's items with their indices, `iter().enumerate()`, from MIR are
 // the array's `entries()`, as THIR's, and a loop's label the program's
 // own; a `break 'outer` out of the loop inside keeps both loops.

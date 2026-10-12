@@ -261,6 +261,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     js::statement_lists(body, &mut |stmts| named_labels(stmts, written));
+    js::statement_lists(body, &mut map_counts);
     // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
     // `Expr::unary` makes it, `t !== "pre"`.
     js::each_expr_mut(body, &mut |e| {
@@ -3350,6 +3351,59 @@ fn truth_of(e: Expr) -> Expr {
         ExprKind::Binary(Op::Or, a, b) => Expr::bin(Op::Or, *a, truth_of(*b)),
         ExprKind::Binary(Op::Coalesce, a, b) => Expr::bin(Op::Or, truth_of(*a), truth_of(*b)),
         kind => Expr { kind, span },
+    }
+}
+
+/// `$orInsert(m, k, 0); const h = $mutGet(m, k); h.value = f(h.value);`,
+/// MIR's `*m.entry(k).or_insert(0) += 1`, the handle read nowhere else: the
+/// value there or put in, then set, `const current = $orInsert(m, k, 0);
+/// m.set(k, f(current));`, as THIR writes it.
+fn map_counts(stmts: &mut Vec<Stmt>) {
+    let call_of = |e: &Expr, helper: &str| match &e.kind {
+        ExprKind::Call(callee, args) if matches!(&callee.kind, ExprKind::Var(f) if f == helper) => Some(args.clone()),
+        _ => None,
+    };
+    let mut i = 0;
+    while i + 2 < stmts.len() {
+        if let StmtKind::Expr(inserted) = &stmts[i].kind
+            && let Some(args) = call_of(inserted, "$orInsert")
+            && let [map, key, _] = &args[..]
+            && let StmtKind::Const(handle, got) = &stmts[i + 1].kind
+            && let Some(got) = call_of(got, "$mutGet")
+            && let [m, k] = &got[..]
+            && same(map, m)
+            && same(key, k)
+            && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
+            && matches!(&target.kind, ExprKind::Member(of, v)
+                if v == "value" && matches!(&of.kind, ExprKind::Var(h) if h == handle))
+            && js::mentions_in(&stmts[i + 3..], handle) == 0
+        {
+            let name = (std::iter::once("current".to_string()))
+                .chain((1..).map(|n| format!("current${n}")))
+                .find(|n| js::mentions_in(stmts, n) == 0)
+                .expect("a name");
+            let mut value = vec![StmtKind::Expr(value.clone()).at(js::Span::NONE)];
+            js::each_expr_mut(&mut value, &mut |e| {
+                if let ExprKind::Member(of, v) = &e.kind
+                    && v == "value"
+                    && matches!(&of.kind, ExprKind::Var(h) if h == handle)
+                {
+                    *e = Expr::var(&name);
+                }
+            });
+            if js::mentions_in(&value, handle) > 0 {
+                i += 1;
+                continue;
+            }
+            let StmtKind::Expr(value) = value.pop().expect("one").kind else {
+                unreachable!("made")
+            };
+            let set = Expr::call(Expr::member(map.clone(), "set"), vec![key.clone(), value]);
+            let span = stmts[i + 2].span;
+            stmts[i].kind = StmtKind::Const(name, inserted.clone());
+            stmts.splice(i + 1..i + 3, [StmtKind::Expr(set).at(span)]);
+        }
+        i += 1;
     }
 }
 
