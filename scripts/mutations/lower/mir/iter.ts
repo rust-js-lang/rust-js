@@ -322,4 +322,28 @@ export const mutations: Mutation[] = [
       "a range mapped and collected"
     ]
   },
+  {
+    "name": "mir-from-iter-string-refused",
+    "breaks": "`String::from_iter(items)` from MIR is refused",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            && name == \"from_iter\"\n",
+    "replace": "            && name == \"from_iter!\"\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string from items from MIR"
+    ]
+  },
+  {
+    "name": "mir-from-iter-iterator-joined",
+    "breaks": "`String::from_iter` of an iterator from MIR calls its `join`, which a JS iterator has none of",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            let items = match given.is_array() || given.is_slice() || self.is_vec_like(given) {\n",
+    "replace": "            let items = match true {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a string from items from MIR"
+    ]
+  },
 ];

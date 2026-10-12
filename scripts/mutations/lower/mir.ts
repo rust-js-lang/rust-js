@@ -2050,4 +2050,28 @@ export const mutations: Mutation[] = [
       "a vec.s specs from MIR stay in place"
     ]
   },
+  {
+    "name": "mir-switch-cases-ungrouped",
+    "breaks": "an or-pattern's values that go to one block are a test each from MIR, the block copied into each, one copy's `const right` an assignment of nothing declared",
+    "file": "src/lower/mir.rs",
+    "find": "                    match grouped.iter_mut().find(|(_, t)| *t == target) {\n",
+    "replace": "                    match None::<&mut (Expr, BasicBlock)> {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an or-pattern's values from MIR"
+    ]
+  },
+  {
+    "name": "mir-std-param-output-an-iterator",
+    "breaks": "a `T` a std call gives, `unwrap_or(fallback)`'s, is wrapped `Iterator.from(..)` from MIR, which throws of a number",
+    "file": "src/lower/mir.rs",
+    "find": "                        && !matches!(output.kind(), ty::Param(_))\n                        && !output.is_box()",
+    "replace": "                        && !output.is_box()",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "generic_from_str"
+    ]
+  },
 ];

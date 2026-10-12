@@ -1579,6 +1579,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(out);
                 }
                 let mut otherwise = Some(targets.otherwise()).filter(|&b| reached(b));
+                // Values that go to one block, an or-pattern's `'+' | '-'`:
+                // one test of either, the block once, as the program wrote it.
+                let mut grouped: Vec<(Expr, BasicBlock)> = Vec::new();
+                for (test, target) in cases {
+                    match grouped.iter_mut().find(|(_, t)| *t == target) {
+                        Some((either, _)) => {
+                            *either = Expr::bin(Op::Or, std::mem::replace(either, Expr::undefined()), test);
+                        }
+                        None => grouped.push((test, target)),
+                    }
+                }
+                let mut cases = grouped;
                 // Each case tested, an enum's `match`'s: its arms in the order
                 // the program wrote them, not its variants'.
                 if otherwise.is_none()
@@ -4373,10 +4385,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )?;
             // A std iterator THIR's lowering makes an array of, `bytes()`'s:
             // a JS iterator, which MIR steps. Not one that's the string it
-            // shows, an escape's.
+            // shows, an escape's; nor a `T` it gives, `unwrap_or`'s, its value.
             return Ok(match value {
                 Value::Expr(e)
                     if self.implements_iterator(output)
+                        && !matches!(output.kind(), ty::Param(_))
                         && !output.is_box()
                         && self.range_kind(output).is_none()
                         && !self.is_user_iterator(output)

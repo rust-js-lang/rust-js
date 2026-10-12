@@ -9820,3 +9820,72 @@ pub fn evens(n: u32) -> Vec<u32> {
   const { first } = await import(join(dir, "mir.js"));
   expect(first(1_000_000_000, (i: number) => i === 2)).toBe(2);
 });
+
+// An or-pattern's values that go to one block, `op @ ('+' | '-')`, are one
+// test from MIR, `op === "+" || op === "-"`, and the block once, as the
+// program wrote it: not a copy for each, which declared what the block
+// binds, `const right`, in one copy alone.
+test("an or-pattern's values from MIR are one test of its block", async () => {
+  const dir = fixture("or-pattern-block");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone)]
+pub enum Token { Op(char), Num(f64) }
+pub struct P { pub toks: Vec<Token>, pub at: usize }
+impl P {
+    fn peek(&self) -> Option<&Token> { self.toks.get(self.at) }
+    fn next(&mut self) { self.at += 1; }
+    fn term(&mut self) -> Result<f64, String> {
+        match self.toks.get(self.at).cloned() {
+            Some(Token::Num(n)) => { self.at += 1; Ok(n) }
+            _ => Err("num".into()),
+        }
+    }
+    pub fn expr(&mut self) -> Result<f64, String> {
+        let mut left = self.term()?;
+        while let Some(Token::Op(op @ ('+' | '-'))) = self.peek().cloned() {
+            self.next();
+            let right = self.term()?;
+            left = if op == '+' { left + right } else { left - right };
+        }
+        Ok(left)
+    }
+}
+pub fn run() -> f64 {
+    let mut p = P { toks: vec![Token::Num(1.0), Token::Op('+'), Token::Num(2.0), Token::Op('-'), Token::Num(0.5)], at: 0 };
+    p.expr().unwrap()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js.split("P.next(p);").length - 1).toBe(1);
+    expect((await import(join(dir, out))).run()).toBe(2.5);
+  }
+});
+
+// `String::from_iter(items)` from MIR, as THIR's: an array's joined, `["h",
+// "i"].join("")`, or what an iterator steps through, joined.
+test("a string from items from MIR is them joined", async () => {
+  const dir = fixture("string-from-iter");
+  writeFileSync(join(dir, "lib.rs"), `pub fn letters() -> String {
+    String::from_iter(['h', 'é', '!'])
+}
+pub fn backwards(s: &str) -> String {
+    String::from_iter(s.chars().rev().filter(|c| *c != 'x'))
+}
+fn of<I: Iterator<Item = char>>(items: I) -> String {
+    String::from_iter(items)
+}
+pub fn counted(n: u32) -> String {
+    of((0..n).map(|i| char::from_digit(i, 10).unwrap()))
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('return ["h", "é", "!"].join("");');
+    // A JS iterator has no \`join\` but Bun's: its items, an array's.
+    if (out === "mir.js") expect(js).toContain('return Iterator.from(items).toArray().join("");');
+    const lib = await import(join(dir, out));
+    expect([lib.letters(), lib.backwards("axbc"), lib.counted(4)]).toEqual(["hé!", "cba", "0123"]);
+  }
+});

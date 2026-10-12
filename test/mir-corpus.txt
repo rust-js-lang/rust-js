@@ -28,6 +28,7 @@ btree_range_panic.rs
 by_ref_chains.rs
 byte_ascii.rs
 byte_strings.rs
+calculator.rs
 cell_const.rs
 cell_deque_char_methods.rs
 char_from_code.rs
@@ -41,6 +42,7 @@ closure_clone_cell.rs
 closure_clone_shared.rs
 closure_mut_ref.rs
 code_point_order.rs
+collect_fallible.rs
 collection_methods.rs
 combinators_owned_drops.rs
 compound_assignment_order.rs
@@ -123,6 +125,7 @@ generic_associated_types.rs
 generic_bitwise_operators.rs
 generic_borrow.rs
 generic_fmt_traits.rs
+generic_from_str.rs
 generic_impl_consts.rs
 generic_into.rs
 generic_iterator_map_lazy.rs
@@ -253,9 +256,11 @@ static_raw_address.rs
 statics.rs
 std_errors_boxed.rs
 std_function_value_panic.rs
+std_function_values.rs
 std_mut_items.rs
 std_struct_const.rs
 stepped_nested.rs
+stock_orders.rs
 str_circumfix.rs
 string_bytes.rs
 string_drain_from_past_len.rs
@@ -271,6 +276,7 @@ swap_replace.rs
 temporaries_taken_apart.rs
 text_aliases.rs
 text_edits.rs
+text_predicates.rs
 thread_local_borrow_inside.rs
 thread_local_syntax.rs
 trait_default_bounds.rs
@@ -292,6 +298,7 @@ user_as_mut.rs
 user_collections.rs
 user_deref.rs
 user_fmt_traits.rs
+user_from_str.rs
 user_hash.rs
 utf8_unwrap_panic.rs
 value_keys.rs

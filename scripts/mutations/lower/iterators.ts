@@ -337,8 +337,8 @@ export const mutations: Mutation[] = [
     name: "collect-fallible-any-target",
     breaks: "`collect()` into a `Result<String, _>` is an array, not a string",
     file: "src/lower/iterators.rs",
-    find: "                if !self.is_vec_like(collection) && !collection.boxed_ty().is_some_and(|t| t.is_slice()) {",
-    replace: "                if false {",
+    find: "        if !self.is_vec_like(collection) && !collection.boxed_ty().is_some_and(|t| t.is_slice()) {",
+    replace: "        if false {",
     tests: ["test/diagnostics.test.ts", "-t", "collecting into a Result"],
   },
   {

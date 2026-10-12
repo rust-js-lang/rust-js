@@ -216,6 +216,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::member(Expr::var("Iterator"), "from"), vec![value])
     }
 
+    /// `items`, each a `Result` or an `Option` (of `item`), collected into
+    /// `target`, a `Result` or an `Option` of an array: the first `Err` or
+    /// `None`, which ends it, or `Ok` of all the values, or the values.
+    pub(in crate::lower) fn collect_fallible(
+        &mut self,
+        items: Expr,
+        target: Ty<'tcx>,
+        item: Option<Ty<'tcx>>,
+        span: Span,
+    ) -> R<Expr> {
+        let ty::Adt(_, target_args) = target.kind() else {
+            unreachable!("a `Result` or an `Option`")
+        };
+        let collection = target_args.type_at(0);
+        if !self.is_vec_like(collection) && !collection.boxed_ty().is_some_and(|t| t.is_slice()) {
+            return Err(self.unsupported(span, &format!("collecting into a `{target}`")));
+        }
+        Ok(if self.option_of(target).is_some() {
+            let mut list = vec![items];
+            if item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner))) {
+                self.runtime.insert(Helper::SomeValue);
+                list.push(Expr::bool(true));
+            }
+            self.runtime.insert(Helper::CollectOptions);
+            Expr::call(Expr::var("$collectOptions"), list)
+        } else {
+            self.runtime.insert(Helper::CollectResults);
+            Expr::call(Expr::var("$collectResults"), vec![items])
+        })
+    }
+
     /// `$lent(it)`: a generic iterator lent as a `&mut`, which steps `it` and
     /// can't close it, as its lender goes on stepping it (ADR 0071).
     pub(super) fn lent_iterator(&mut self, it: Expr) -> Expr {
@@ -1072,26 +1103,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `None`, which ends it, or `Ok` of all the values, or the values.
             Std::CollectFallible => {
                 let target = generic_args.types().nth(1).expect("a collection's type");
-                let ty::Adt(_, target_args) = target.kind() else {
-                    unreachable!("a `Result` or an `Option`")
-                };
-                let collection = target_args.type_at(0);
-                if !self.is_vec_like(collection) && !collection.boxed_ty().is_some_and(|t| t.is_slice()) {
-                    return Err(self.unsupported(span, &format!("collecting into a `{target}`")));
-                }
-                if self.option_of(target).is_some() {
-                    let mut list = vec![items];
-                    let item = generic_args.types().next().and_then(|i| self.iterator_item(i));
-                    if item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner))) {
-                        self.runtime.insert(Helper::SomeValue);
-                        list.push(Expr::bool(true));
-                    }
-                    self.runtime.insert(Helper::CollectOptions);
-                    Expr::call(Expr::var("$collectOptions"), list)
-                } else {
-                    self.runtime.insert(Helper::CollectResults);
-                    Expr::call(Expr::var("$collectResults"), vec![items])
-                }
+                let item = generic_args.types().next().and_then(|i| self.iterator_item(i));
+                self.collect_fallible(items, target, item, span)?
             }
             Std::Position => {
                 self.runtime.insert(Helper::Position);

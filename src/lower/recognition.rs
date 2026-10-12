@@ -2858,6 +2858,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::slice::IterMut")
     }
 
+    /// A `Result`.
+    pub(super) fn is_result(&self, ty: Ty<'tcx>) -> bool {
+        self.is_std_adt(ty, sym::Result)
+    }
+
+    /// `FromIterator`, the trait `collect` makes what it collects with.
+    pub(super) fn is_from_iterator(&self, trait_id: DefId) -> bool {
+        self.tcx.is_diagnostic_item(sym::FromIterator, trait_id)
+    }
+
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
     pub(super) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);

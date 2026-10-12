@@ -62,6 +62,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(None);
         }
+        // `String::from_iter(items)`, `items.collect()` into a `String`: an
+        // array's joined, as THIR's, or a JS iterator's items.
+        if self.recognition().is_from_iterator(trait_id)
+            && name == "from_iter"
+            && self.is_lang_adt(output, LangItem::String)
+        {
+            let items = values.into_iter().next().expect("the items");
+            let given = receiver_ty.peel_refs();
+            let items = match given.is_array() || given.is_slice() || self.is_vec_like(given) {
+                true => items,
+                false => Expr::call(Expr::member(self.js_iterator(items), "toArray"), Vec::new()),
+            };
+            return Ok(Some(Expr::call(Expr::member(items, "join"), vec![Expr::str("")])));
+        }
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
         // range or a `$iter` (ADR 0071); not a lazy or a generic one.
         let recognition = self.recognition();
@@ -359,6 +373,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 } else if self.is_lang_adt(output, LangItem::String) {
                     method("join", method("toArray", it, Vec::new()), vec![Expr::str("")])
+                } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
+                    self.collect_fallible(it, output, item, span)?
                 } else if self.is_map(output) {
                     // A map or a set of what its key is, as THIR's `From` of
                     // items makes one (ADR 0121).
