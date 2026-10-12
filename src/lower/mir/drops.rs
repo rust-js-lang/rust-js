@@ -503,13 +503,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What a panic drops as it unwinds from a terminator: its cleanup
     /// blocks' drops, in order, nothing if it has none.
-    pub(super) fn mir_unwind(&mut self, state: &mut State<'_, 'tcx>, unwind: UnwindAction, span: Span) -> R<Vec<Stmt>> {
+    pub(super) fn mir_unwind(&mut self, state: &mut State<'_, 'tcx>, unwind: UnwindAction) -> R<Vec<Stmt>> {
         let UnwindAction::Cleanup(mut block) = unwind else {
             return Ok(Vec::new());
         };
         let mut out = Vec::new();
         loop {
             let data = &state.body.basic_blocks[block];
+            // Where its Rust is, as a cleanup has no span of its own.
+            let span = data.terminator().source_info.span;
             for (index, statement) in data.statements.iter().enumerate() {
                 match &statement.kind {
                     StatementKind::StorageDead(_) | StatementKind::StorageLive(_) | StatementKind::Nop => {}

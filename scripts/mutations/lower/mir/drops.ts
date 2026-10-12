@@ -74,4 +74,12 @@ export const mutations: Mutation[] = [
     replace: "        if false {\n",
     tests: ["test/mir.test.ts", "-t", "generic_iterator_items"],
   },
+  {
+    name: "mir-cleanup-spanless",
+    breaks: "what MIR refuses of a cleanup's drop says no place in the Rust",
+    file: "src/lower/mir/drops.rs",
+    find: "            let span = data.terminator().source_info.span;\n            for (index, statement) in data.statements.iter().enumerate() {\n",
+    replace: "            let span = rustc_span::DUMMY_SP;\n            for (index, statement) in data.statements.iter().enumerate() {\n",
+    tests: ["test/traits.test.ts", "-t", "loop over an adapter of owned items"],
+  },
 ];

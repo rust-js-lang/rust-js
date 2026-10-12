@@ -300,6 +300,18 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
+    // For the source map: a `return` given the value it returns, at MIR's
+    // end of the body, which the map has nothing of, where that value was
+    // written; an `if`, where its test says, `if c` or its arm's pattern.
+    js::statement_lists(body, &mut |stmts| {
+        for stmt in stmts.iter_mut() {
+            match &stmt.kind {
+                StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,
+                StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,
+                _ => {}
+            }
+        }
+    });
 }
 
 /// A `for` loop as MIR has it, `const iter = $iter(xs); while (true) {
@@ -3207,6 +3219,44 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
             }
         });
     }
+}
+
+/// An arrow's parameter its function's names made unique, `(value$1) =>
+/// f(value$1)`, is the name it was made of where the arrow names nothing
+/// else so, `(value) => f(value)`, as JS's arrows shadow, and THIR names
+/// them: once nothing's left to name. Not a name of the module's, which
+/// THIR's closures keep apart.
+pub(super) fn unsuffixed_params(body: &mut [Stmt], module: &HashSet<String>) {
+    js::each_expr_mut(body, &mut |e| {
+        let (ExprKind::Arrow(params, inner) | ExprKind::AsyncArrow(params, inner)) = &mut e.kind else {
+            return;
+        };
+        for i in 0..params.len() {
+            for k in 0..params[i].names().len() {
+                let name = params[i].names()[k].to_string();
+                let Some((base, n)) = name.rsplit_once('$') else {
+                    continue;
+                };
+                if base.is_empty() || n.is_empty() || !n.bytes().all(|b| b.is_ascii_digit()) {
+                    continue;
+                }
+                let mut named = HashSet::new();
+                names_in(inner, &mut named);
+                named.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+                if named.contains(base) || module.contains(base) {
+                    continue;
+                }
+                js::each_expr_mut(inner, &mut |e| {
+                    if let ExprKind::Var(v) = &mut e.kind
+                        && *v == name
+                    {
+                        *v = base.to_string();
+                    }
+                });
+                *params[i].names_mut().swap_remove(k) = base.to_string();
+            }
+        }
+    });
 }
 
 /// Each name `stmts` read or declare, their closures' and parameters' too.

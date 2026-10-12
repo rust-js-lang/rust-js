@@ -5465,6 +5465,60 @@ test("a string's part changed in place gives the string its text", async () => {
   }
 });
 
+// A loop over an iterator of the crate's own that holds a value with a
+// destructor drops, from MIR, as Rust does: each item, then the iterator
+// where the loop ends or breaks. THIR refuses it.
+test("MIR's loop over an iterator holding a value with a destructor drops as Rust does", async () => {
+  const dir = fixture("iterator-holding-drop");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+
+thread_local! {
+    static LOG: RefCell<Vec<String>> = RefCell::new(Vec::new());
+}
+
+fn note(line: String) {
+    LOG.with_borrow_mut(|log| log.push(line));
+}
+
+struct R(u32);
+
+impl Drop for R {
+    fn drop(&mut self) {
+        note(format!("drop {}", self.0));
+    }
+}
+
+struct It(R, u8);
+
+impl Iterator for It {
+    type Item = R;
+    fn next(&mut self) -> Option<R> {
+        if self.1 == 0 {
+            return None;
+        }
+        self.1 -= 1;
+        Some(R(10 + self.1 as u32))
+    }
+}
+
+pub fn run() -> Vec<String> {
+    for r in It(R(1), 2) {
+        note(format!("got {}", r.0));
+    }
+    for r in It(R(2), 3) {
+        if r.0 == 11 {
+            break;
+        }
+        note(format!("got {}", r.0));
+    }
+    LOG.with_borrow_mut(std::mem::take)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000, { RUST_JS_MIR: "1" });
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.run()).toEqual(["got 11", "drop 11", "got 10", "drop 10", "drop 1", "got 12", "drop 12", "drop 11", "drop 2"]);
+});
+
 // MIR's `rest.split_off_mut(..n)` gives `rest` what's left; through `r`,
 // which holds a `&mut` to `rest`, JS would give `r` it, so it's refused.
 test("MIR's split_off through a held `&mut` is refused", () => {

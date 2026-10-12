@@ -2846,4 +2846,28 @@ export const mutations: Mutation[] = [
     replace: "                    Some(value) if false => value.span,\n",
     tests: ["test/modules.test.ts","-t","methods across modules"],
   },
+  {
+    name: "mir-params-suffixed",
+    breaks: "MIR's closure parameter keeps the suffix its function's names gave it",
+    file: "src/lower/mir.rs",
+    find: "        tidy::unsuffixed_params(&mut out, self.module_names);\n",
+    replace: "",
+    tests: ["test/link.test.ts","-t","module-load statements"],
+  },
+  {
+    name: "mir-if-span-of-condition",
+    breaks: "MIR's `if` maps to its condition, not `if c`",
+    file: "src/lower/mir.rs",
+    find: "                        span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),\n",
+    replace: "                        span: self.js_span(arm.unwrap_or(span)),\n",
+    tests: ["test/emission.test.ts","-t","fib-mir"],
+  },
+  {
+    name: "mir-match-test-span-of-match",
+    breaks: "MIR's test of a `match` arm maps to its `match`, not the arm's pattern",
+    file: "src/lower/mir.rs",
+    find: "                    let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));\n",
+    replace: "                    let arm: Option<Span> = None;\n",
+    tests: ["test/emission.test.ts","-t","fib-mir"],
+  },
 ];

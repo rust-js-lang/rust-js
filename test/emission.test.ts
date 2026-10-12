@@ -29,13 +29,15 @@ test("copied trait defaults map to their original source file", async () => {
 beforeAll(() => {
   buildReact();
   run([compiler, "examples/fib.rs", "-o", join(target, "fib.js")]);
+  run([compiler, "examples/fib.rs", "-o", join(target, "fib-mir.js")], 600_000, { RUST_JS_MIR: "1" });
 }, 600_000);
 
 // Source map: generated JS positions must point at the Rust that produced them.
-test("source map points from fib.js back into fib.rs", async () => {
+// From THIR and from MIR.
+test.each(["fib.js", "fib-mir.js"])("source map points from %s back into fib.rs", async (out) => {
   const { decodeMappings, lookup } = await import("./sourcemap.ts");
-  const js = (await Bun.file(join(target, "fib.js")).text()).split("\n");
-  const map = await Bun.file(join(target, "fib.js.map")).json();
+  const js = (await Bun.file(join(target, out)).text()).split("\n");
+  const map = await Bun.file(join(target, `${out}.map`)).json();
   const rustSource = await Bun.file(join(root, "examples/fib.rs")).text();
   const rs = rustSource.split("\n");
   const segments = decodeMappings(map.mappings);

@@ -304,6 +304,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .copied()
             .collect();
         self.place_written(written, &mut out);
+        tidy::unsuffixed_params(&mut out, self.module_names);
         out.splice(0..0, self.directives(body.def_id));
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
@@ -1676,6 +1677,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for (test, target) in cases.into_iter().rev() {
                     let then = self.mir_branch(state, block, target)?;
                     let branches_panic = [panics(state.body, target), chain_panics];
+                    // Its test where its arm's pattern is, a `match`'s, or its
+                    // `if`, as THIR's, which its `if` takes once it's tidied
+                    // (`tidy`): till then, as tidying reads it, where it's tested.
+                    let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));
+                    let test = Expr {
+                        span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),
+                        ..test
+                    };
                     chain = Some(early_exit(test, then, chain, branches_panic, self.js_span(span)));
                     chain_panics = false;
                 }
@@ -1716,7 +1725,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let js_span = self.js_span(span);
                 // The panic drops what's there as it unwinds, then is thrown.
-                let mut panic = self.mir_unwind(state, *unwind, span)?;
+                let mut panic = self.mir_unwind(state, *unwind)?;
                 panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
                 out.push(StmtKind::If(failed, panic, None).at(js_span));
                 out.extend(self.mir_branch(state, block, *target)?);
@@ -1729,7 +1738,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.mir_drop(state, block, *place, false, span, &mut dropped)?;
                 if !dropped.is_empty() {
                     self.flush(state, &mut out)?;
-                    let cleanup = self.mir_unwind(state, *unwind, span)?;
+                    let cleanup = self.mir_unwind(state, *unwind)?;
                     match cleanup.is_empty() {
                         true => out.extend(dropped),
                         false => self.unwinding(dropped, cleanup, self.js_span(span), &mut out),
@@ -1887,12 +1896,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<()> {
         match unwind {
             Some(cleanup) if !made.is_empty() => {
-                let cleanup = self.mir_unwind(state, mir::UnwindAction::Cleanup(cleanup), Span::default())?;
+                let cleanup = self.mir_unwind(state, mir::UnwindAction::Cleanup(cleanup))?;
                 self.unwinding(made, cleanup, js::Span::NONE, out);
             }
             _ => out.extend(made),
         }
         Ok(())
+    }
+
+    /// Where the `if` whose condition MIR's switch is was written, `if c`,
+    /// its `if` first, for the source map, as THIR's: the switch is where
+    /// its condition is.
+    fn if_span(&self, span: Span) -> Span {
+        (self.thir.exprs.iter())
+            .find_map(|e| match e.kind {
+                thir::ExprKind::If { cond, .. } if self.thir[self.strip(cond)].span == span => {
+                    Some(e.span.with_hi(span.hi()))
+                }
+                _ => None,
+            })
+            .unwrap_or(span)
+    }
+
+    /// The pattern of the arm written at `at` of the `match` whose switch
+    /// MIR's at `span`, its `match x`, is, for the source map, as THIR's
+    /// tests are.
+    fn arm_span(&self, span: Span, at: rustc_span::BytePos) -> Option<Span> {
+        let arms = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
+            thir::ExprKind::Match { arms, .. } if e.span.lo() == span.lo() && e.span.contains(span) => Some(arms),
+            _ => None,
+        })?;
+        let arm = arms
+            .iter()
+            .map(|&arm| &self.thir[arm])
+            .find(|arm| arm.span.lo() <= at && at < arm.span.hi())?;
+        Some(arm.pattern.span)
     }
 
     /// The temporaries made and not yet used that do something.

@@ -1986,4 +1986,28 @@ export const mutations: Mutation[] = [
     replace: "    if !matches!(step, \"$next\" | \"$rangeNext\")\n",
     tests: ["test/bindings.test.ts","-t","a defined value is an unknown"],
   },
+  {
+    name: "mir-tidy-param-module-name-reused",
+    breaks: "MIR's closure parameter takes a name of the module's, as THIR's never does",
+    file: "src/lower/mir/tidy.rs",
+    find: "                if named.contains(base) || module.contains(base) {\n",
+    replace: "                if named.contains(base) {\n",
+    tests: ["test/link.test.ts","-t","module-load statements"],
+  },
+  {
+    name: "mir-tidy-return-span-none",
+    breaks: "MIR's `return` of a value put in it maps to no Rust",
+    file: "src/lower/mir/tidy.rs",
+    find: "                StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,\n",
+    replace: "",
+    tests: ["test/emission.test.ts","-t","fib-mir"],
+  },
+  {
+    name: "mir-tidy-if-span-of-test-kept",
+    breaks: "MIR's `if` maps to its condition or its `match`, not `if c` or its arm's pattern",
+    file: "src/lower/mir/tidy.rs",
+    find: "                StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,\n",
+    replace: "",
+    tests: ["test/emission.test.ts","-t","fib-mir"],
+  },
 ];
