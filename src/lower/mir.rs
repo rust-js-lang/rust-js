@@ -32,7 +32,7 @@ use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
-use super::combinators::StepOp;
+use super::combinators::{IterComb, StepOp};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{Std, StdItem, TraitCall, std_item, trait_method};
@@ -4900,7 +4900,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A value with a destructor taken, refused as THIR refuses it; a chain
         // that owns its items is `mir_iter_call`'s, so none here does.
-        self.check_takes_drops(known, def_id, arg_tys, false, span)?;
+        // `skip_while` drops what it skips (below), and what's left of it,
+        // undrained, is refused where it's dropped.
+        let drained = known == Std::IterComb(IterComb::SkipWhile);
+        self.check_takes_drops(known, def_id, arg_tys, drained, span)?;
         // `v[i]` THIR knows is in bounds, `v[0]` after `v.is_empty()`'s test
         // fails, or of an array long enough: unchecked, as THIR writes it.
         if known == Std::Index
@@ -5280,11 +5283,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // one a `&mut` lends, stepped through what can't close it.
             Std::IterComb(comb) => {
                 let iter_ty = arg_tys[0].peel_refs();
-                // Items with a destructor a combinator may leave undropped.
-                if self
+                // Items with a destructor a combinator may leave undropped; not
+                // `skip_while`'s, each dropped as it's skipped, THIR's.
+                let dropping = self
                     .iterator_item(iter_ty)
-                    .is_some_and(|item| self.drops(item) != super::drops::Drops::Nothing)
-                {
+                    .filter(|&item| self.drops(item) != super::drops::Drops::Nothing);
+                if dropping.is_some() && comb != IterComb::SkipWhile {
                     return Err(self.unsupported(
                         span,
                         "an iterator's combinator of items with a destructor, from its MIR",
@@ -5305,12 +5309,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 // Another iterator it's given, `chain(Counter(0))`'s, the
                 // crate's: stepped by its own `next`, not its fields.
-                let exprs = (exprs.into_iter().zip(&arg_tys[1..]))
+                let mut exprs = (exprs.into_iter().zip(&arg_tys[1..]))
                     .map(|(e, &ty)| match self.is_user_iterator(ty) {
                         true => self.as_js_iterator(e, ty.peel_refs(), span),
                         false => Ok(e),
                     })
                     .collect::<R<Vec<_>>>()?;
+                if let Some(item) = dropping {
+                    let test = exprs.remove(0);
+                    self.flush(state, out)?;
+                    exprs.insert(0, self.dropping_discarded(test, item, true, span, out)?);
+                }
                 self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
             }
             // `v.sort()`, `v.sort_by_key(key)`: in place, THIR's.

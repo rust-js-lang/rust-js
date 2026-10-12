@@ -12,7 +12,7 @@ use crate::lower::traits::{EvidenceQuery, may_have_destructors};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::{FieldPat, LocalVarId, Pat, PatKind};
-use rustc_middle::ty::{self, Ty};
+use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 
 use super::Path;
@@ -407,7 +407,10 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                     // `Rc` when its last clone goes, a map its entries. A `Cell`
                     // drops the old value when it's set. A `RefCell` is its fields',
                     // its value's, and a write through `borrow_mut()` a place's (ADR 0320).
+                    // And an iterator adapter, a JS iterator, of what has one;
+                    // a generic one's is its iterator's, whatever that is.
                     _ if own.is_some()
+                        || (self.recognition.is_iter_adapter(ty) && !ty.has_non_region_param())
                         || [StdItem::Cell, StdItem::OnceCell, StdItem::LazyCell]
                             .into_iter()
                             .any(std) =>

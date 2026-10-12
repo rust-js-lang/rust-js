@@ -155,4 +155,12 @@ export const mutations: Mutation[] = [
     replace: "                    && false =>\n",
     tests: ["test/mir.test.ts", "-t", "loop_drops"],
   },
+  {
+    name: "adapter-drops-as-struct",
+    breaks: "a `Map` of a `vec::IntoIter` of what has a destructor is dropped as a struct of fields JS doesn't have",
+    file: "src/lower/drops/types.rs",
+    find: "                        || (self.recognition.is_iter_adapter(ty) && !ty.has_non_region_param())\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "adapter of items with a destructor"],
+  },
 ];

@@ -2869,6 +2869,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter).then_some(true)
     }
 
+    /// std's iterator adapter, `iter::Map` and the like: a JS iterator's,
+    /// whose fields JS doesn't have.
+    pub(super) fn is_iter_adapter(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()).starts_with("std::iter::"))
+    }
+
     /// An iterator that owns the one item it may give, `Some(x).into_iter()`
     /// or `iter::once(x)`: the array of none or one (ADR 0128).
     pub(super) fn owns_one_item(&self, ty: Ty<'tcx>) -> bool {

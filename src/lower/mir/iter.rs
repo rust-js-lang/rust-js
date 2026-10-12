@@ -334,7 +334,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | "product"
                 | "count"
         );
-        if !keeps_each && item.is_some_and(|item| self.drops(item) != crate::lower::drops::Drops::Nothing) {
+        let dropping = item.filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
+        // `filter` and `skip_while` drop each they discard, below and THIR's.
+        if !keeps_each && !matches!(name, "filter" | "skip_while") && dropping.is_some() {
             return Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")));
         }
         let mut arg = || values.next().expect("rustc checked the arguments");
@@ -344,7 +346,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match name {
             "map" => method("map", it, vec![self.unary_callback(arg(), own)]),
-            "filter" => method("filter", it, vec![self.unary_callback(arg(), own)]),
+            // Of items with a destructor: each it doesn't keep dropped as it
+            // discards it, THIR's (ADR 0098).
+            "filter" => {
+                let test = self.unary_callback(arg(), own);
+                let test = match dropping {
+                    Some(item) => self.dropping_discarded(test, item, false, span, made)?,
+                    None => test,
+                };
+                method("filter", it, vec![test])
+            }
             "flat_map" => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
             "take" => method("take", it, vec![arg()]),
             "skip" => method("drop", it, vec![arg()]),

@@ -526,4 +526,12 @@ export const mutations: Mutation[] = [
     replace: "                        && false\n",
     tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
   },
+  {
+    name: "mir-filter-discarded-undropped",
+    breaks: "MIR's `filter` of items with a destructor leaves those it discards undropped",
+    file: "src/lower/mir/iter.rs",
+    find: "                    Some(item) => self.dropping_discarded(test, item, false, span, made)?,\n",
+    replace: "                    Some(_) => test,\n",
+    tests: ["test/mir.test.ts", "-t", "collect_drops"],
+  },
 ];

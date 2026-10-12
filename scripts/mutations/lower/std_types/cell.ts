@@ -104,4 +104,12 @@ export const mutations: Mutation[] = [
       "only borrowed for a moment"
     ]
   },
+  {
+    name: "drop-unsupported-silent",
+    breaks: "`drop(x)` of what drops as JS can't drop it drops nothing, unrefused",
+    file: "src/lower/std_types/cell.rs",
+    find: "                self.check_held_drops(ty, span)?;\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "adapter of items with a destructor"],
+  },
 ];

@@ -44,6 +44,7 @@ closure_clone_cell.rs
 closure_clone_shared.rs
 closure_mut_ref.rs
 code_point_order.rs
+collect_drops.rs
 collect_fallible.rs
 collection_methods.rs
 combinators_owned_drops.rs
@@ -89,6 +90,7 @@ drop_params.rs
 drop_partial.rs
 drop_replace_panics.rs
 drop_scopes.rs
+drop_skipped_items.rs
 drop_temporaries.rs
 drop_temporary_operands.rs
 duration.rs

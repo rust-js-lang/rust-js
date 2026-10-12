@@ -5353,6 +5353,32 @@ pub fn run(again: bool) -> Vec<i32> {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
 });
 
+// An iterator adapter over items with a destructor, \`v.into_iter().map(f)\`
+// dropped before it's stepped, is refused: a JS iterator has no fields to
+// drop them through, and its items would be left undropped.
+test("an adapter of items with a destructor dropped unstepped is refused", () => {
+  const dir = fixture("adapter-drops");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Noisy(pub &'static str);
+impl Drop for Noisy {
+    fn drop(&mut self) {
+        println!("drop {}", self.0);
+    }
+}
+pub fn run() {
+    let v = vec![Noisy("a"), Noisy("b")];
+    drop(v.into_iter().map(|n| n));
+}
+`);
+  for (const env of [{}, { RUST_JS_MIR: "1" }]) {
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+      cwd: root,
+      stderr: "pipe",
+      env: { ...process.env, ...env },
+    });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("with a destructor")]);
+  }
+});
+
 // MIR's cell only its function uses is a plain variable (tidy's
 // \`plain_cells\`), but not where a callback's parameter of its name reads
 // a \`value\` of its own, \`{:?}\`'s of a \`Vec<&mut str>\`.

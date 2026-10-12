@@ -805,7 +805,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `test`, a stage's predicate, as one that drops the `item` it
     /// discards: one `filter` doesn't keep, or one `skip_while` skips.
-    fn dropping_discarded(
+    pub(in crate::lower) fn dropping_discarded(
         &mut self,
         test: Expr,
         item: ty::Ty<'tcx>,
