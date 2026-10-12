@@ -310,4 +310,16 @@ export const mutations: Mutation[] = [
       "a range made where it's stepped"
     ]
   },
+  {
+    "name": "mir-mapped-range-end-unfolded",
+    "breaks": "`(1..=3).map(f).collect()` from MIR is `$range(1, 3 + 1).map(f)`, not `$range(1, 4)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                Some(n) => Expr::int(n + 1),\n                None => Expr::bin(js::Op::Add, end.clone(), Expr::int(1)),\n",
+    "replace": "                Some(_) | None => Expr::bin(js::Op::Add, end.clone(), Expr::int(1)),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
 ];

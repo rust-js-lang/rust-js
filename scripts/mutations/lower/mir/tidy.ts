@@ -1962,4 +1962,16 @@ export const mutations: Mutation[] = [
       "a range made where it's stepped"
     ]
   },
+  {
+    "name": "mir-tidy-lazy-range-end-unfolded",
+    "breaks": "`(1..=5).filter(f)` from MIR is `$lazyRange(1, 5 + 1)`, not `$lazyRange(1, 6)`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            Some(n) => Expr::int(n + 1),\n            None => Expr::bin(Op::Add, end.clone(), Expr::int(1)),\n",
+    "replace": "            Some(_) | None => Expr::bin(Op::Add, end.clone(), Expr::int(1)),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
 ];

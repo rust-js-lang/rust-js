@@ -9379,6 +9379,13 @@ pub fn upto(n: u32) -> Vec<u32> {
 pub fn odd_squares(n: u32) -> Vec<u32> {
     (0..n).filter(|i| i % 2 == 1).map(|i| i * i).collect()
 }
+// To a constant, included: its end the next, \`$range(1, 4)\`.
+pub fn doubled() -> Vec<u32> {
+    (1..=3).map(|i| i * 2).collect()
+}
+pub fn odd_to_five() -> Vec<u32> {
+    (1..=5).filter(|i| i % 2 == 1).collect()
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
@@ -9388,10 +9395,13 @@ pub fn odd_squares(n: u32) -> Vec<u32> {
     if (out === "mir.js") expect(js).toContain("return $range(0, n).toReversed();");
     if (out === "mir.js") expect(js).toContain("return $range(1, n + 1);");
     if (out === "mir.js") expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
+    if (out === "mir.js") expect(js).toContain("return $range(1, 4).map(");
+    if (out === "mir.js") expect(js).toContain("return $lazyRange(1, 6)\n");
     const lib = await import(join(dir, out));
     expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
     expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
     expect(lib.odd_squares(6)).toEqual([1, 9, 25]);
+    expect([lib.doubled(), lib.odd_to_five()]).toEqual([[2, 4, 6], [1, 3, 5]]);
     if (out === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
   }
 });

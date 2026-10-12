@@ -4097,7 +4097,10 @@ fn lazy_range(e: &Expr) -> Option<Expr> {
         return None;
     }
     let end = match inclusive {
-        true => Expr::bin(Op::Add, end.clone(), Expr::int(1)),
+        true => match end.as_int() {
+            Some(n) => Expr::int(n + 1),
+            None => Expr::bin(Op::Add, end.clone(), Expr::int(1)),
+        },
         false => end.clone(),
     };
     Some(Expr::call(Expr::var("$lazyRange"), vec![start.clone(), end]))
