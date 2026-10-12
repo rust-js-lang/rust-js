@@ -365,6 +365,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (size, recursive)
     }
 
+    /// A variable's of `ty`, refused where what it holds drops as JS can't
+    /// drop it, as THIR's facts refuse the binding (ADR 0321).
+    pub(in crate::lower) fn check_held_drops(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
+        match self.drops(self.reveal(ty)) {
+            Drops::Unsupported(t, what) => Err(self.unsupported(span, &describe(t, what))),
+            Drops::Nothing | Drops::Runs => Ok(()),
+        }
+    }
+
     fn drop_in(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, made: &mut Made<'tcx>, out: &mut Vec<Stmt>) -> R<()> {
         let ty = self.reveal(ty);
         match self.drops(ty) {

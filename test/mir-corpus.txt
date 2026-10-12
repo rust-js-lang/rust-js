@@ -185,6 +185,7 @@ map_collect_drops.rs
 map_drops.rs
 map_entry_match.rs
 map_index_missing.rs
+map_key_drops.rs
 map_set_methods.rs
 marker_traits.rs
 match_index.rs

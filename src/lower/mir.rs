@@ -545,10 +545,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !state.locals.names[local].is_empty()
                 && (state.locals.writes[local] > 1 || flagged[local.as_usize()])
             {
-                let ty = mir_body.local_decls[local].ty;
-                if state.locals.user[local] && !inlined(mir_body, local) && !self.implements_iterator(ty) {
-                    self.check_value_ty(ty, def_span)?;
-                }
+                self.check_variable(&state, local, def_span)?;
                 out.push(StmtKind::Let(state.locals.names[local].clone(), None).at(js::Span::NONE));
                 state.locals.declared[local] = true;
             }
@@ -2350,10 +2347,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if place.projection.is_empty() && !state.locals.declared[local] {
             // A variable of a type JS can't hold, refused as THIR's binding.
-            let ty = state.body.local_decls[local].ty;
-            if state.locals.user[local] && !inlined(state.body, local) && !self.implements_iterator(ty) {
-                self.check_value_ty(ty, span)?;
-            }
+            self.check_variable(state, local, span)?;
             self.flush(state, out)?;
             state.locals.declared[local] = true;
             let name = state.locals.names[local].clone();
@@ -2511,6 +2505,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             exprs.push(Expr::var(&name));
         }
         Ok(exprs)
+    }
+
+    /// A variable the program declares, refused as THIR refuses its
+    /// binding: of what drops as JS can't drop it, or of a type JS can't
+    /// hold. Not std's MIR put in the body, nor a JS iterator.
+    fn check_variable(&self, state: &State<'_, 'tcx>, local: Local, span: Span) -> R<()> {
+        let ty = state.body.local_decls[local].ty;
+        if !state.locals.user[local] || inlined(state.body, local) || self.implements_iterator(ty) {
+            return Ok(());
+        }
+        self.check_held_drops(ty, span)?;
+        self.check_value_ty(ty, span)
     }
 
     /// `place`, a `&mut` a variable keeps, fixed: the object it's in held
