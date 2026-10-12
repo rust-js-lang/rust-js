@@ -2,7 +2,12 @@
 // once before all of them one after another.
 import { setDefaultTimeout } from "bun:test";
 
+import { asNode } from "./node-surface";
 import { buildCompiler } from "./support";
+
+// The code rust-js writes runs in Node and browsers, not Bun: Bun's own
+// built-ins, an iterator's `join` say, taken away (`node-surface.ts`).
+asNode();
 
 // A test here runs compilers, browsers and bundlers, which take longer than
 // Bun's five seconds when the files run side by side. One after another,
