@@ -2902,4 +2902,12 @@ export const mutations: Mutation[] = [
     replace: "matches!(e.kind, thir::ExprKind::Loop { .. })",
     tests: ["test/lowering.test.ts"],
   },
+  {
+    name: "mir-untagged-into-through-trait-call",
+    breaks: "MIR's `into()` an untagged enum calls the crate's `from`, as the trait's call it resolves to",
+    file: "src/lower/mir.rs",
+    find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
+    replace: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) && values.is_empty() {\n",
+    tests: ["test/lowering.test.ts","-t","into an untagged enum is the value"],
+  },
 ];

@@ -2026,4 +2026,20 @@ export const mutations: Mutation[] = [
     replace: "        && (returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi))\n",
     tests: ["test/lowering.test.ts","-t","a tail loop's break"],
   },
+  {
+    name: "mir-tidy-plain-cells-not-in-closures",
+    breaks: "MIR's cell cloned in a closure stays a `{ value }`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::each_block_mut(&mut body.clone(), &mut |stmts| {\n",
+    replace: "    let mut clones: HashMap<String, String> = HashMap::new();\n    js::statement_lists(&mut body.clone(), &mut |stmts| {\n",
+    tests: ["test/lowering.test.ts","-t","a cell cloned in a closure"],
+  },
+  {
+    name: "mir-tidy-unread-count-underscore",
+    breaks: "MIR's range count the body doesn't read is `_`, `_++`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                \"_\" => std::iter::once(\"i\".to_string())\n",
+    replace: "                \"$never\" => std::iter::once(\"i\".to_string())\n",
+    tests: ["test/lowering.test.ts","-t","an unread count of a range"],
+  },
 ];

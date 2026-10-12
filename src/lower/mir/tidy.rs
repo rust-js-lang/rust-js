@@ -462,6 +462,14 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
             if start_key != "start" || end_key != "end" || mutable {
                 return None;
             }
+            // A count the body doesn't read, Rust's `_`: `i`, as THIR names it.
+            let name = match name.as_str() {
+                "_" => std::iter::once("i".to_string())
+                    .chain((1..).map(|k| format!("i${k}")))
+                    .find(|n| !mentions.contains_key(n))
+                    .expect("a name"),
+                _ => name,
+            };
             let held = (!same).then(|| {
                 let unused = |n: &String| !mentions.contains_key(n);
                 let name = std::iter::once("end".to_string())
@@ -4398,11 +4406,12 @@ fn read_handles(body: &mut Vec<Stmt>) {
 /// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose
 /// `value` alone is read and set, by those names: `let n = x`, `n` where
 /// each reads its `value`, as THIR keeps a cell only its function uses
-/// (ADR 0287). Nothing else has it, so nothing else sees it change.
+/// (ADR 0287). Nothing else has it, so nothing else sees it change; its
+/// closures, which share the `let`, too.
 fn plain_cells(body: &mut Vec<Stmt>) {
     let mut cells: Vec<String> = Vec::new();
     let mut clones: HashMap<String, String> = HashMap::new();
-    js::statement_lists(&mut body.clone(), &mut |stmts| {
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
         for stmt in stmts.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, value)
@@ -4421,7 +4430,7 @@ fn plain_cells(body: &mut Vec<Stmt>) {
     // Not one a closure's parameter or another declaration shadows, whose
     // `value` isn't the cell's.
     let mut bound: HashMap<String, usize> = HashMap::new();
-    js::statement_lists(&mut body.clone(), &mut |stmts| {
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &stmt.kind {
                 *bound.entry(name.clone()).or_default() += 1;
@@ -4472,7 +4481,7 @@ fn plain_cells(body: &mut Vec<Stmt>) {
             *kept.entry(cell.clone()).or_default() += 1;
         }
     });
-    js::statement_lists(&mut each, &mut |stmts| {
+    js::each_block_mut(&mut each, &mut |stmts| {
         for stmt in stmts.iter() {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Var(of) = &value.kind
@@ -4488,7 +4497,7 @@ fn plain_cells(body: &mut Vec<Stmt>) {
         return;
     }
     let of_plain = |v: &str| named.get(v).filter(|c| plain.contains(c)).cloned();
-    js::statement_lists(body, &mut |stmts| {
+    js::each_block_mut(body, &mut |stmts| {
         stmts.retain(|stmt| {
             !matches!(&stmt.kind, StmtKind::Const(name, value)
             if matches!(value.kind, ExprKind::Var(_)) && !plain.contains(name) && of_plain(name).is_some())

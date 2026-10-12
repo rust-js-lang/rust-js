@@ -4656,6 +4656,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(call));
             }
         }
+        // A `From` into an untagged enum, or `into()` to one, which the
+        // crate's `from` it resolves to would be: the value (ADR 0214).
+        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {
+            return Ok(values.into_iter().next().expect("one"));
+        }
         // A trait's method: its impl's, a dictionary's, or what rust-js
         // writes itself, `==` of a struct say (ADRs 0049, 0052).
         let known = self.recognition().classify(def_id, generic_args);
@@ -4713,10 +4718,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Prop::Field("value".into(), value),
                 Prop::Field("impl".into(), dictionary),
             ])));
-        }
-        // A `From` into an untagged enum, or `into()` to one: the value (ADR 0214).
-        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {
-            return Ok(values.into_iter().next().expect("one"));
         }
         // A prop `jsx!` isn't given: none, which JSX leaves out (ADR 0213).
         if bindings::is_omitted(tcx, def_id) {

@@ -5539,6 +5539,93 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
+// `into()` an untagged enum, whose `from` is the variant of its argument,
+// is the value (ADR 0214), from MIR as from THIR.
+test("into an untagged enum is the value", async () => {
+  const dir = fixture("into-untagged");
+  writeFileSync(join(dir, "lib.rs"), `#[rust_js::untagged]
+pub enum Src<'a> {
+    Text(&'a str),
+    Number(f64),
+}
+
+impl<'a> From<&'a str> for Src<'a> {
+    fn from(text: &'a str) -> Self {
+        Src::Text(text)
+    }
+}
+
+pub fn text(s: &str) -> Src<'_> {
+    s.into()
+}
+
+pub fn from(s: &str) -> Src<'_> {
+    Src::from(s)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("export function text(s) {\n  return s;\n}");
+    expect(js).toContain("export function from(s) {\n  return s;\n}");
+  }
+});
+
+// A range's count the body doesn't read, `for _ in 0..n`: `i`, as THIR
+// names it.
+test("an unread count of a range is i", async () => {
+  const dir = fixture("unread-count");
+  writeFileSync(join(dir, "lib.rs"), `pub fn repeat(s: &str, times: u32) -> String {
+    let mut out = String::new();
+    for _ in 0..times {
+        out.push_str(s);
+    }
+    out
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("for (let i = 0; i < times; i++) {");
+    const lib = await import(join(dir, out));
+    expect([lib.repeat("ab", 3), lib.repeat("x", 0)]).toEqual(["ababab", ""]);
+  }
+});
+
+// A shared cell, `Rc<Cell<bool>>`, cloned in a closure that sets it: its
+// function's `let`, which the closures share, as THIR keeps it (ADR 0287).
+test("a cell cloned in a closure is its function's let", async () => {
+  const dir = fixture("cell-cloned-in-closure");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+use std::rc::Rc;
+
+pub fn toggles() -> (bool, bool) {
+    let running = Rc::new(Cell::new(false));
+    let start = {
+        let running = running.clone();
+        move || {
+            if running.get() {
+                return false;
+            }
+            running.set(true);
+            let running = running.clone();
+            let stop = move || running.set(false);
+            stop();
+            true
+        }
+    };
+    (start(), running.get())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("let running = false;");
+    expect(js).not.toContain(".value");
+    const lib = await import(join(dir, out));
+    expect(lib.toggles()).toEqual([true, false]);
+  }
+});
+
 // A function's tail `loop` that `break a` gives its value: `return a` where
 // it breaks, from MIR as from THIR.
 test("a tail loop's break with a value returns it", async () => {
