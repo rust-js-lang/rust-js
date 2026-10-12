@@ -1994,8 +1994,8 @@ export const mutations: Mutation[] = [
     "name": "mir-tree-range-refused",
     "breaks": "a B-tree's `range` from MIR is refused",
     "file": "src/lower/mir.rs",
-    "find": "            Std::Map(MapOp::TreeRange { mutable: false }) => {",
-    "replace": "            Std::Map(MapOp::TreeRange { mutable: false }) if false => {",
+    "find": "            Std::Map(MapOp::TreeRange { mutable }) => {",
+    "replace": "            Std::Map(MapOp::TreeRange { mutable }) if mutable => {",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -2192,6 +2192,54 @@ export const mutations: Mutation[] = [
       "test/mir.test.ts",
       "-t",
       "slice_disjoint"
+    ]
+  },
+  {
+    "name": "mir-push-str-place-made-twice",
+    "breaks": "`v.push_mut(s).push('b')` from MIR reads and writes `$pushMut(v, s, true).value`, pushing twice",
+    "file": "src/lower/mir.rs",
+    "find": "                    js::ExprKind::Member(object, field) if !object.reads_same() => {\n",
+    "replace": "                    js::ExprKind::Member(object, field) if false && !object.reads_same() => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "vec_push_mut"
+    ]
+  },
+  {
+    "name": "mir-deque-range-mut-refused",
+    "breaks": "a deque's `range_mut(a..b)` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Slice(SliceOp::DequeRangeMut) => {\n",
+    "replace": "            Std::Slice(SliceOp::DequeRangeMut) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "deque_range_mut"
+    ]
+  },
+  {
+    "name": "mir-deque-range-mut-unboxed",
+    "breaks": "a deque's `range_mut` of numbers from MIR gives the numbers, not boxes on them, so writing one changes nothing",
+    "file": "src/lower/mir.rs",
+    "find": "                match self.is_boxable(generic_args.type_at(0)) {\n                    true => self.helper(Helper::MutItems, \"$mutItems\", vec![view]),\n",
+    "replace": "                match false {\n                    true => self.helper(Helper::MutItems, \"$mutItems\", vec![view]),\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "deque_range_mut"
+    ]
+  },
+  {
+    "name": "mir-tree-range-mut-refused",
+    "breaks": "a B-tree's `range_mut` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Map(MapOp::TreeRange { mutable }) => {\n",
+    "replace": "            Std::Map(MapOp::TreeRange { mutable }) if !mutable => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "btree_range_mut"
     ]
   },
 ];

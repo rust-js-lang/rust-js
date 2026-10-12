@@ -108,7 +108,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A string's `chars()`, a `$iter` of its array (`std_iterator`).
             let array = self.array_source(iter_ty).is_some()
                 || self.recognition().is_str_chars(iter_ty)
-                || self.recognition().is_str_bytes(iter_ty);
+                || self.recognition().is_str_bytes(iter_ty)
+                || self.recognition().is_tree_range(iter_ty);
             return Ok(Some(match (name, self.range_kind(iter_ty)) {
                 ("next_back", Some(RangeKind::Exclusive)) => {
                     self.helper(Helper::RangeNextBack, "$rangeNextBack", vec![it])
@@ -473,7 +474,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // of it, as of an array's.
             None if made_array(&value)
                 || self.recognition().is_deque_iter(ty)
-                || self.recognition().is_slice_iter_mut(ty) =>
+                || self.recognition().is_slice_iter_mut(ty)
+                || self.recognition().is_tree_range(ty) =>
             {
                 self.stepped_items(value)
             }

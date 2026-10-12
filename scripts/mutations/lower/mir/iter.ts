@@ -290,8 +290,8 @@ export const mutations: Mutation[] = [
     "name": "mir-iter-mut-a-js-iterator",
     "breaks": "a slice's `iter_mut()` from MIR is `Iterator.from(v)`, its chain lazy, `$lent(Iterator.from(v)).find(f)`, not `v.find(f)`",
     "file": "src/lower/mir/iter.rs",
-    "find": "                || self.recognition().is_slice_iter_mut(ty) =>\n",
-    "replace": "                || false =>\n",
+    "find": "                || self.recognition().is_slice_iter_mut(ty)\n",
+    "replace": "                || false\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -386,8 +386,8 @@ export const mutations: Mutation[] = [
     "name": "mir-bytes-len-refused",
     "breaks": "`s.bytes().len()` from MIR is refused",
     "file": "src/lower/mir/iter.rs",
-    "find": "                || self.recognition().is_str_bytes(iter_ty);\n",
-    "replace": ";\n",
+    "find": "                || self.recognition().is_str_bytes(iter_ty)\n",
+    "replace": "",
     "tests": [
       "test/mir.test.ts",
       "-t",
@@ -404,6 +404,30 @@ export const mutations: Mutation[] = [
       "test/mir.test.ts",
       "-t",
       "str_bytes"
+    ]
+  },
+  {
+    "name": "mir-tree-range-a-js-iterator",
+    "breaks": "a B-tree's range from MIR is `Iterator.from(..)`, which can't step from its end",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                || self.recognition().is_slice_iter_mut(ty)\n                || self.recognition().is_tree_range(ty) =>\n",
+    "replace": "                || self.recognition().is_slice_iter_mut(ty) =>\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "btree_range_mut"
+    ]
+  },
+  {
+    "name": "mir-tree-range-next-back-refused",
+    "breaks": "`next_back()` of a B-tree's range from MIR is refused as a lazy iterator's",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                || self.recognition().is_tree_range(iter_ty);\n",
+    "replace": ";\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "btree_range_mut"
     ]
   },
 ];

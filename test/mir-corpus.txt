@@ -24,6 +24,7 @@ box_uninit.rs
 box_zeroed_struct.rs
 boxed_str.rs
 btree_end_entries.rs
+btree_range_mut.rs
 btree_range_panic.rs
 by_ref_chains.rs
 byte_ascii.rs
@@ -65,6 +66,9 @@ declarations_assigned_later.rs
 default_method_clones.rs
 default_method_drops.rs
 deque_insert_past_len.rs
+deque_push_mut.rs
+deque_range_mut.rs
+deque_range_mut_panic.rs
 deque_rotate_past_end.rs
 destructuring_assignment.rs
 double_ended_iterators.rs
@@ -316,6 +320,7 @@ user_from_str.rs
 user_hash.rs
 utf8_unwrap_panic.rs
 value_keys.rs
+vec_push_mut.rs
 wrapping.rs
 wrapping_rem_zero.rs
 wrapping_unary.rs

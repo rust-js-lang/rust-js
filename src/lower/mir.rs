@@ -4843,6 +4843,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let value = self.value_expr(values.next().expect("what's pushed"), span)?;
                 self.flush(state, out)?;
+                // Read and written: a place whose object is made here, a
+                // handle `push_mut` gives, `$pushMut(v, x).value`, held first,
+                // so it's made once.
+                let place = match place.kind {
+                    js::ExprKind::Member(object, field) if !object.reads_same() => {
+                        Expr::member(self.spill("value", *object, out), &field)
+                    }
+                    kind => Expr { reads: false, kind, span: place.span },
+                };
                 super::display::append_written(&place, value, false, self.js_span(span), out);
                 Expr::undefined()
             }
@@ -4866,11 +4875,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?
             }
             // A B-tree's range of its keys, THIR's (ADR 0325).
-            Std::Map(MapOp::TreeRange { mutable: false }) => {
+            Std::Map(MapOp::TreeRange { mutable }) => {
                 let [m, range]: [Value<'tcx>; 2] =
                     values.collect::<Vec<_>>().try_into().ok().expect("a tree and a range");
                 let (m, range) = (self.value_expr(m, span)?, self.value_expr(range, span)?);
-                self.tree_range_values((m, arg_tys[0]), (range, arg_tys[1]), false, span, out)?
+                self.tree_range_values((m, arg_tys[0]), (range, arg_tys[1]), mutable, span, out)?
+            }
+            // A deque's `range_mut(a..b)`: a view of those items, each a box
+            // where it's one JS can't change in place, THIR's.
+            Std::Slice(SliceOp::DequeRangeMut) => {
+                let items = self.value_expr(values.next().expect("the items"), span)?;
+                let range = self.value_expr(values.next().expect("the range"), span)?;
+                let (start, end) = self.range_value_bounds(range, arg_tys[1], span, out)?;
+                let mut list = vec![items, start];
+                list.extend(end);
+                let view = self.view_call("$view", list);
+                match self.is_boxable(generic_args.type_at(0)) {
+                    true => self.helper(Helper::MutItems, "$mutItems", vec![view]),
+                    false => view,
+                }
             }
             // A map's or a set's `extract_if`, a B-tree's of a range, THIR's.
             Std::Map(MapOp::ExtractIf) => {
