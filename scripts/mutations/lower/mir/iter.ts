@@ -454,4 +454,28 @@ export const mutations: Mutation[] = [
       "the crate's iterator from MIR"
     ]
   },
+  {
+    "name": "mir-user-by-ref-wrapped",
+    "breaks": "`by_ref()` of the crate's iterator from MIR is a JS iterator over it, which its own `next` doesn't step",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        if name == \"by_ref\" && self.is_user_iterator(iter_ty) {\n",
+    "replace": "        if false && name == \"by_ref\" && self.is_user_iterator(iter_ty) {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "stepped through by_ref from MIR"
+    ]
+  },
+  {
+    "name": "mir-next-through-mut-refused",
+    "breaks": "`next` of a `&mut` to the crate's iterator from MIR is refused, not its own",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            && through.is_ref()\n",
+    "replace": "            && through.is_ref() && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "stepped through by_ref from MIR"
+    ]
+  },
 ];

@@ -10023,3 +10023,32 @@ pub fn run() -> (usize, Vec<u32>, Vec<u32>) {
     expect((await import(join(dir, out))).run()).toEqual([99, [10, 20, 30], [7, 2, 3]]);
   }
 });
+
+// The crate's iterator stepped through a `&mut` to it, `by_ref()`, from MIR
+// as from THIR: std's `next` of a `&mut I` is `I`'s own, and what's left is
+// still there after.
+test("the crate's iterator stepped through by_ref from MIR", async () => {
+  const dir = fixture("user-iterator-by-ref");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Counter(pub u32);
+impl Iterator for Counter {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        if self.0 < 5 { self.0 += 1; Some(self.0) } else { None }
+    }
+}
+pub fn run() -> (Vec<u32>, Vec<u32>) {
+    let mut all = Counter(0);
+    let mut first = Vec::new();
+    for n in all.by_ref() {
+        first.push(n);
+        if n == 2 { break; }
+    }
+    let rest: Vec<u32> = all.collect();
+    (first, rest)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect((await import(join(dir, out))).run()).toEqual([[1, 2], [3, 4, 5]]);
+  }
+});

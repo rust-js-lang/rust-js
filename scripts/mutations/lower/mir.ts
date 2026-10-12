@@ -2266,4 +2266,16 @@ export const mutations: Mutation[] = [
       "the crate's iterator from MIR"
     ]
   },
+  {
+    "name": "mir-option-place-refused",
+    "breaks": "`o.get_or_insert(x)` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::OptionPlace(op) => {\n",
+    "replace": "            Std::OptionPlace(op) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "option_result_methods"
+    ]
+  },
 ];

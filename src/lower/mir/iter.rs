@@ -236,6 +236,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Some(self.helper(Helper::SizeHint, "$sizeHint", vec![it])));
         }
+        // `by_ref()` of the crate's iterator: a `&mut` to it, it itself, which
+        // its own `next` steps.
+        if name == "by_ref" && self.is_user_iterator(iter_ty) {
+            return Ok(values.into_iter().next());
+        }
+        // `next` of a `&mut` to the crate's iterator, `by_ref()`'s: std's of a
+        // `&mut I`, which is `I`'s own, of what the `&mut` is to.
+        if name == "next"
+            && self.is_user_iterator(iter_ty)
+            && let ty::Ref(_, through, _) = receiver_ty.kind()
+            && through.is_ref()
+        {
+            let next = def_id;
+            let args = self.args_of(trait_id, iter_ty);
+            let mut made = Vec::new();
+            let value = values.into_iter().next().expect("the receiver");
+            let call = self.trait_call(next, args, vec![value], span, &mut made)?;
+            return match call {
+                Some(call) if made.is_empty() => Ok(Some(call)),
+                _ => Err(self.unsupported(span, "`next` of this `&mut`, from its MIR")),
+            };
+        }
         // Of the crate's iterator, its own `next` and what its impl writes
         // itself are its trait's; the rest, `map`, `fuse`, `collect`, std's
         // of a JS iterator its `next` steps (`as_js_iterator`), as THIR's.

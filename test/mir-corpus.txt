@@ -157,6 +157,7 @@ int_error_kind.rs
 integer_bits.rs
 integer_families.rs
 integers_128.rs
+iter_by_ref.rs
 iter_flatten.rs
 iterator_back_ends.rs
 iterator_clones.rs
@@ -210,6 +211,7 @@ operands_before_replace.rs
 option_as_deref.rs
 option_map_drops.rs
 option_rest_pattern.rs
+option_result_methods.rs
 option_result_mut.rs
 options_handed_on.rs
 or_bindings.rs

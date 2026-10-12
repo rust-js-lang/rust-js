@@ -5168,6 +5168,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
                 self.range_edit(op, range, rest)
             }
+            // `o.get_or_insert(x)` and the like: the `Option`'s place given its
+            // value where it has none, and a `&mut` to what it holds, THIR's.
+            Std::OptionPlace(op) => {
+                let place = match values.next().expect("the `Option`") {
+                    Value::Ref(place) if fixed_place(&place) => place,
+                    _ => return Err(self.unsupported(span, "changing this `Option`, from its MIR")),
+                };
+                let item = self.option_of(arg_tys[0].peel_refs()).expect("an `Option`");
+                if self.boxed_payload(item) {
+                    return Err(self.unsupported(span, &format!("changing an `Option<{item}>` in place")));
+                }
+                let given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.flush(state, out)?;
+                self.option_place_values(op, place, item, given, span, out)?
+            }
             Std::StringEdit(edit) => {
                 let place = match values.next().expect("the string") {
                     Value::Ref(place) if fixed_place(&place) => place,

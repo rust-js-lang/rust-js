@@ -659,11 +659,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.boxed_payload(item) {
             return Err(self.unsupported(span, &format!("changing an `Option<{item}>` in place")));
         }
-        let mut given = self.operands(&args[1..], out)?.into_iter();
+        let given = self.operands(&args[1..], out)?.into_iter();
         let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
         let PreparedPlace::Direct(place) = target else {
             return Err(self.unsupported(span, "changing an `Option` in a map in place"));
         };
+        self.option_place_values(op, place, item, given.collect(), span, out)
+    }
+
+    /// `option_place`'s, of the `Option`'s place, a variable or a field, its
+    /// item's type and what's given: THIR's and MIR's.
+    pub(in crate::lower) fn option_place_values(
+        &mut self,
+        op: OptionPlaceOp,
+        place: Expr,
+        item: Ty<'tcx>,
+        given: Vec<Expr>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let mut given = given.into_iter();
         let js_span = self.js_span(span);
         let through = match self.is_boxable(item) {
             true => Expr::handle(place.clone()),
