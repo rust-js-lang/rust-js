@@ -2734,4 +2734,20 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a new closure assigned"],
   },
+  {
+    name: "mir-closure-drops-unchecked",
+    breaks: "MIR's closure holding a destructor, given away uncalled, is never dropped",
+    file: "src/lower/mir.rs",
+    find: "        self.check_closure_drops()?;\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses a Fn closure holding"],
+  },
+  {
+    name: "mir-pretty-dyn-debug-plain",
+    breaks: "MIR's `{:#?}` of a `&dyn Debug` made elsewhere shows it plain",
+    file: "src/lower/mir.rs",
+    find: "                            if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {\n",
+    replace: "                            if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "MIR refuses .....? of a kept"],
+  },
 ];

@@ -323,6 +323,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         captures: Option<Vec<(Expr, bool)>>,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
+        // What THIR refuses of its closures holding what has a destructor.
+        self.check_closure_drops()?;
         let outer_falsy = std::mem::take(&mut self.locals.falsy);
         let outer_tested = std::mem::take(&mut self.locals.tested);
         let outer_captured = std::mem::take(&mut self.locals.captured);
@@ -5144,6 +5146,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 _ => None,
                             };
                             let (kind, ty, value) = item(i).ok_or_else(bad)?;
+                            // `{:#?}` of a `&dyn Debug` made elsewhere, the string it
+                            // showed there, not pretty, THIR's (ADR 0137).
+                            if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {
+                                return Err(self.unsupported(span, "`{:#?}` of a `&dyn Debug` made elsewhere"));
+                            }
                             // `{:1$}`'s width, or `{:.*}`'s precision, another argument.
                             let width = match spec.width_from {
                                 Some(from) => Some(item(from).ok_or_else(bad)?.2),

@@ -5388,6 +5388,8 @@ for (const [name, source, message] of [
   ["an untagged enum's variants of one kind, matched", "#[rust_js::untagged] pub enum E { A(&'static str), B(char) }\npub fn f(e: E) -> u32 { match e { E::A(_) => 1, E::B(_) => 2 } }", "which JS can't tell apart"],
   ["a Box<dyn Send> of a value with a destructor", "pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let _: Box<dyn Send> = Box::new(D); }", "a `dyn` of a value with a destructor"],
   ["a new closure assigned through a &mut to one", "pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }", "assigning a whole value through a `&mut`"],
+  ["a Fn closure holding a destructor given away", "pub struct R; impl Drop for R { fn drop(&mut self) {} } fn g<F: FnOnce()>(f: F) { f() } pub fn f() { let r = R; let c = move || { let _r = &r; }; c(); g(c); }", "given away without being called once"],
+  ["{:#?} of a kept &dyn Debug", "pub fn f(x: &[u8]) -> String { let d: &dyn std::fmt::Debug = &x; format!(\"{:#?}\", d) }", "`{:#?}` of a `&dyn Debug` made elsewhere"],
 ] as [string, string, string][]) {
   test(`MIR refuses ${name}, as THIR does`, () => {
     const dir = fixture("mir-refused");

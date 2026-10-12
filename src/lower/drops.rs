@@ -906,6 +906,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// What THIR's facts refuse of the closures of the body being lowered
+    /// that hold a value with a destructor, refused from MIR too: one made
+    /// where JS can't see what it took, given away uncalled, or assigned.
+    pub(in crate::lower) fn check_closure_drops(&self) -> R<()> {
+        let facts = find_facts(&self.drop_query(), self.thir, self.body_owner);
+        let mut failed = None;
+        for (span, what) in &facts.problems {
+            if what.starts_with("a closure that holds a value with a destructor")
+                || what.starts_with("assigning a closure that holds")
+            {
+                failed = Some(self.unsupported(*span, what));
+            }
+        }
+        match failed {
+            Some(guar) => Err(guar),
+            None => Ok(()),
+        }
+    }
+
     /// `var`, just bound to `value` in `out`, owns a value with a
     /// destructor: its scope drops it. One that's moved gets a flag.
     pub(super) fn own(&mut self, var: LocalVarId, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
