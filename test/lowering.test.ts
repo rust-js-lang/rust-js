@@ -79,7 +79,7 @@ pub fn parsed(xs: &[String]) -> Vec<f64> {
     xs.iter().map(|x| parse_float(x)).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return xs.map(double);");
@@ -209,7 +209,7 @@ test("a string written across lines keeps its lines", async () => {
     "}",
     "",
   ].join("\n"));
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  return `<div>\n  \\`\\${x}\\` \\\\ \"q\"\n</div>`;");
@@ -893,7 +893,7 @@ pub fn made() -> (bool, bool) {
     (core::ptr::eq(a, a), std::ptr::eq(a as *const Date, b))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("return a === b;");
     const lib = await import(join(dir, out));
@@ -1050,7 +1050,7 @@ pub fn guard(a: u32, s: &str) -> bool {
     if a > 1 { s == "x" } else { false }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return a > 1 && b > 2;");
@@ -1112,7 +1112,7 @@ pub fn stops(items: &[u32]) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      n = ");
@@ -1161,7 +1161,7 @@ pub fn label(q: &Q) -> String {
     join(q.name.as_deref(), matches!(dir, Some(1)).then_some("one"))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const [a, b] = pair(n);\n");
@@ -1198,7 +1198,7 @@ pub fn small(n: u32) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  return `${TName} ${TSize}`;\n");
@@ -1336,7 +1336,7 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     (kept, items)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  return items.map((c, i) => `${i}:${c.title}`);\n");
@@ -1504,7 +1504,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`  for (const route of routes) {
@@ -1583,7 +1583,7 @@ pub fn zero(a: u64, b: u64) -> bool {
     if let Some(x) = d { x.as_secs() == 0 } else { false }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     if (out === "mir.js") expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
@@ -1624,7 +1624,7 @@ pub fn one(n: u32, v: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function explicit(x, v) {
@@ -1705,7 +1705,7 @@ pub fn pick(c: bool, n: u32) -> u32 {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  return group\n    .split(",")\n    .map((g) => $trim(g))\n    .filter(Boolean);\n');
@@ -1738,7 +1738,7 @@ pub fn describe(props: &CodeProps) -> String {
     format!("{class_name}:{}:{}", code.len(), meta.unwrap_or("-"))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  const { class_name: className = "language-js", children: code = "", meta } = props;\n');
@@ -1771,7 +1771,7 @@ pub fn first_over(items: &[u32], k: u32, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const found = find(items, k);\n  if (found != null) {\n    out.push(found);\n");
@@ -1832,7 +1832,7 @@ pub fn first_id(items: &[Title]) -> u32 {
     first.id + first.id
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).not.toMatch(/bb\d+:/);
@@ -1873,7 +1873,7 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
     (highlighted.len() + starts.len()) as u32
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function decorate(lines, inline) {
@@ -1919,7 +1919,7 @@ pub fn joined(args: &[String], mut formatted: String) -> String {
     formatted
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (message === "warn") {\n    return "warning";\n  }\n  return "error";\n');
@@ -1950,7 +1950,7 @@ pub fn reread<'a>(link: &Link<'a>, title: &'a str) -> Attrs<'a> {
     Attrs { title: Some(title), ..link.attrs }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return { ...attrs, title };");
@@ -1978,7 +1978,7 @@ test("a function written in a body is declared in it", async () => {
     apply(twice)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.doubled(3), lib.doubled(11)]).toEqual([6, 1000]);
@@ -2002,7 +2002,7 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
     Files { template, files }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const lib = await import(join(dir, out));
     expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
@@ -2027,7 +2027,7 @@ pub fn first(o: &js::Unknown) -> Option<String> {
     keys.next()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.listed({ a: 1, b: 2 }), lib.listed({})]).toEqual([2, 0]);
@@ -2060,7 +2060,7 @@ pub fn ready() -> u32 {
   const globals = globalThis as typeof globalThis & { onLoadLooped?: (n: number) => void };
   globals.onLoadLooped = (n) => seen.push(n);
   try {
-    for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+    for (const [out, env] of [["mir.js", {}]] as const) {
       run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
       seen.length = 0;
       expect((await import(join(dir, out))).ready()).toBe(1);
@@ -2161,7 +2161,7 @@ pub fn plain() -> String {
     )
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return `<p>\n${code}\n</p>`;");
@@ -2791,7 +2791,7 @@ pub fn moved(p: Props) -> Props {
     Props { code: p.code, message: Some(p.title.unwrap_or_default()), title: None }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return { code: null, message: "m" };');
@@ -3142,7 +3142,7 @@ pub fn handler() -> Box<dyn Fn()> {
 }
 `);
   const { copied } = await import(join(dir, "copy.js"));
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
@@ -3837,7 +3837,7 @@ pub fn all_made(objects: Vec<&'static js::JsObject>) -> Vec<Message> {
 }
 `);
   // From MIR too (ADR 0364).
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const lib = await import(join(dir, out));
     const done = { type: "done", compilatonError: false };
@@ -5133,7 +5133,7 @@ pub fn popped(mut items: Vec<Option<u32>>) -> Option<u32> {
 }
 `);
   // From MIR too (ADR 0364).
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("const first = args.shift();");
@@ -5311,7 +5311,7 @@ test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
     *s = other;
 }
 `);
-  for (const env of [{ RUST_JS_MIR: "0" }, {}]) {
+  for (const env of [{}]) {
     const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
       cwd: root,
       stderr: "pipe",
@@ -5339,7 +5339,7 @@ pub fn run() -> Vec<i32> {
     xs
 }
 `);
-  for (const env of [{ RUST_JS_MIR: "0" }, {}]) {
+  for (const env of [{}]) {
     const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
       cwd: root,
       stderr: "pipe",
@@ -5367,7 +5367,7 @@ pub fn run(again: bool) -> Vec<i32> {
   const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
     cwd: root,
     stderr: "pipe",
-    env: { ...process.env, RUST_JS_MIR: "1" },
+    env: process.env,
   });
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
 });
@@ -5388,7 +5388,7 @@ pub fn run() {
     drop(v.into_iter().map(|n| n));
 }
 `);
-  for (const env of [{ RUST_JS_MIR: "0" }, {}]) {
+  for (const env of [{}]) {
     const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
       cwd: root,
       stderr: "pipe",
@@ -5416,7 +5416,7 @@ for (const [name, source, message] of [
     const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
       cwd: root,
       stderr: "pipe",
-      env: { ...process.env, RUST_JS_MIR: "1" },
+      env: process.env,
     });
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(message)]);
   });
@@ -5434,7 +5434,7 @@ test("a cell a callback's parameter shadows stays a cell", async () => {
     format!("{item} {v:?}")
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect(lib.show()).toBe('6 ["a"]');
@@ -5455,7 +5455,7 @@ test("MIR's next_back of a map runs its closure once", async () => {
     (last, calls)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000, { RUST_JS_MIR: "1" });
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).not.toContain(".map(");
   const lib = await import(join(dir, "mir.js"));
@@ -5473,7 +5473,7 @@ test("a string's part changed in place gives the string its text", async () => {
     name
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("name = $asciiCase(name, true, 2, 4);");
@@ -5533,7 +5533,7 @@ pub fn run() -> Vec<String> {
     LOG.with_borrow_mut(std::mem::take)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000, { RUST_JS_MIR: "1" });
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
   const lib = await import(join(dir, "mir.js"));
   expect(lib.run()).toEqual(["got 11", "drop 11", "got 10", "drop 10", "drop 1", "got 12", "drop 12", "drop 11", "drop 2"]);
 });
@@ -5550,7 +5550,7 @@ pub fn sum(v: Vec<i32>) -> i32 {
     v.iter().fold(0, add)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("return v.reduce(add, 0);");
     const lib = await import(join(dir, out));
@@ -5570,7 +5570,7 @@ pub fn both(a: u8, b: u8) -> bool {
     a > 1 && b > 1
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (op === "+" || op === "-") {\n    return 1;\n  }\n  return 2;');
@@ -5601,7 +5601,7 @@ pub fn each(pairs: Vec<(i32, i32)>) -> i32 {
     total
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.both([3, 4]), lib.each([[2, 0], [3, 1]])]).toEqual([6, 13]);
@@ -5834,7 +5834,7 @@ pub fn email(s: String) -> Result<Email, String> {
     if s.contains('@') { Ok(Email(s)) } else { Err(format!("{s} is not an email")) }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain('  if (s.includes("@")) {\n    return { TAG: "Ok", _0: [s] };\n  }\n  return');
     const lib = await import(join(dir, out));
@@ -5857,7 +5857,7 @@ test("branches that each add to a variable stay branches", async () => {
     out
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("out += `ok ${");
@@ -5942,7 +5942,7 @@ pub fn scan(v: &[u32]) -> u32 {
     0
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     const numbers = js.slice(0, js.indexOf("function tokens"));
@@ -5989,7 +5989,7 @@ pub fn from(s: &str) -> Src<'_> {
     Src::from(s)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("export function text(s) {\n  return s;\n}");
@@ -6009,7 +6009,7 @@ test("an unread count of a range is i", async () => {
     out
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("for (let i = 0; i < times; i++) {");
     const lib = await import(join(dir, out));
@@ -6042,7 +6042,7 @@ pub fn toggles() -> (bool, bool) {
     (start(), running.get())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("let running = false;");
@@ -6071,7 +6071,7 @@ test("a tail loop's break with a value returns it", async () => {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("    if (i === n) {\n      return a;\n    }");
     const lib = await import(join(dir, out));
@@ -6094,7 +6094,7 @@ pub fn negated(x: i32) -> i32 {
     x / NEGATIVE
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return (x / HALVES) >>> 0;");
@@ -6141,7 +6141,7 @@ pub fn mapped(n: u32) -> u32 {
     countdown(n).map(|x| x + 1).sum()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("return Iterator.from(items).drop(1).take(k).toArray();");
     const lib = await import(join(dir, out));
@@ -6157,7 +6157,7 @@ test("rev of skipped and taken items is the slice reversed", async () => {
     v.iter().skip(1).take(2).rev().copied().collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("return v.slice(1).slice(0, 2).toReversed();");
     const lib = await import(join(dir, out));
@@ -6171,7 +6171,7 @@ test("a long function is lowered from MIR as from THIR", async () => {
   const dir = fixture("long-function");
   const pushes = Array.from({ length: 3000 }, (_, i) => `    v.push(n + ${i});`).join("\n");
   writeFileSync(join(dir, "lib.rs"), `pub fn long(n: u32) -> Vec<u32> {\n    let mut v = Vec::new();\n${pushes}\n    v\n}\n`);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     const items = lib.long(1);
@@ -6197,7 +6197,7 @@ pub fn removed(mut d: VecDeque<Option<u32>>) -> Option<Option<u32>> {
     d.remove(0)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.removed([1, 2, 3], 1), lib.removed([1], 5)]).toEqual([[2, [1, 3]], [undefined, [1]]]);
@@ -6224,7 +6224,7 @@ test("MIR's split_off through a held `&mut` is refused", () => {
   const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
     cwd: root,
     stderr: "pipe",
-    env: { ...process.env, RUST_JS_MIR: "1" },
+    env: process.env,
   });
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support splitting this slice yet")]);
 });
@@ -6568,7 +6568,7 @@ pub fn dropped(n: u32) -> u32 {
     h(Loud(3))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`const f = () => (n + 1) >>> 0;`);
@@ -6595,7 +6595,7 @@ test("a value returned after a loop, the function returning early before it, is 
     args
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function parse(search) {
@@ -6665,7 +6665,7 @@ pub fn colors(message: &str) -> &'static str {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function two(s) {
@@ -6727,7 +6727,7 @@ pub fn either(active: bool) -> u32 {
     if !active { 1 } else { 2 }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function guard(active, v) {
@@ -6775,7 +6775,7 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function flagged(flag, arg) {
@@ -6827,7 +6827,7 @@ test("a let-else of what `filter` keeps from MIR tests the value, as THIR does",
     if h.starts_with("x") { "a".to_string() } else { h.to_string() }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function filtered(href) {
@@ -6865,7 +6865,7 @@ pub fn page_title(meta: &Meta, route: Option<&Route>) -> &'static str {
     meta.title.filter(|t| !t.is_empty()).or(route.and_then(|r| r.title).filter(|t| !t.is_empty())).unwrap_or("")
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (section === "learn" || (section === "blog" && !isBlogIndex)) {\n');
@@ -6884,7 +6884,7 @@ test("a closure from MIR names its `&x` parameter and knows the `bool`s it captu
     items.iter().map(|&n| force || n > 2).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  return items.map((n) => force || n > 2);\n");
@@ -6910,7 +6910,7 @@ test("a `let` from MIR is declared where it's first named, as THIR declares it",
     item
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function label(path, crumbs, force) {
@@ -6943,7 +6943,7 @@ pub fn set(xs: &mut [u32], i: usize) {
     xs[i] = 3;
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  return crumbs.length > 1 && $index(crumbs, (crumbs.length - 1) >>> 0).path == path;\n");
@@ -6969,7 +6969,7 @@ pub fn field(n: u32) -> u32 {
     get_props + 1
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const { get_props: getProps } = use_collapse(n);\n");
@@ -6992,7 +6992,7 @@ test("an `if … else if` given as a value from MIR is the conditional THIR writ
     )
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  return `[${href.startsWith("https://") ? "ext" : href.startsWith("#") ? "hash" : href}]`;\n');
@@ -7008,7 +7008,7 @@ test("a let-else from MIR whose rest is long, and drops what it owns, is a guard
     format!("[{}{}]", if href.starts_with("x") { "a" } else { href }, items.len())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function named(href, items) {
@@ -7033,7 +7033,7 @@ test("a function's value from MIR that branches assign is returned from each, it
     format!("<next {href} {classes}>")
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function footer(href, children) {
@@ -7070,7 +7070,7 @@ pub fn sliced(code: &str) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const end = $byteLen(code);\n  for (let i = 0; i < end; i++) {\n");
@@ -7099,7 +7099,7 @@ test("a `format!`'s arguments read out of order, and a string's `chars()` iterat
     final_output
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  for (const c of code) {\n");
@@ -7133,7 +7133,7 @@ pub fn lent() -> u32 {
     c.get()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`export function counter(f) {
@@ -7208,7 +7208,7 @@ pub fn halved(mut n: u32, out: &mut Vec<u32>) {
     out.push(0);
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  while (messages.length > max) {\n    $removeAt(messages, 0);\n  }\n  return messages;\n");
@@ -7236,7 +7236,7 @@ pub fn capped(prev: &VecDeque<u32>, more: Vec<u32>) -> VecDeque<u32> {
     messages
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const messages = [...prev, ...more];\n");
@@ -7264,7 +7264,7 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`  for (const route of routes) {
@@ -7292,7 +7292,7 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
     Some(f * 10)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return Math.imul(f, 10);\n");
@@ -7316,7 +7316,7 @@ pub fn third(mut v: Vec<u32>) -> u32 {
     *v.select_nth_unstable(2).1
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.down([3, 1, 2]), lib.by_len(["ccc", "a", "bb"]), lib.third([5, 1, 4, 2, 3])]).toEqual([[3, 2, 1], ["a", "bb", "ccc"], 3]);
@@ -7338,7 +7338,7 @@ pub fn facts(v: &[i32]) -> (bool, usize, usize) {
     (v.is_sorted(), v.partition_point(|&x| x < 3), v.chunks_exact(2).count())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.parts([3, -1, 4, 5, -2, 6]), lib.zeroed([1, 2]), lib.facts([1, 2, 3, 4, 5])]).toEqual([[1, 2, 1], [0, 0], [true, 2, 2]]);
@@ -7359,7 +7359,7 @@ pub fn differ(a: Vec<String>, b: Vec<String>) -> bool {
     a.into_iter().ne(b)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000, { RUST_JS_MIR: "1" });
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
   const lib = await import(join(dir, "mir.js"));
   expect(["civic", "bob", "dog", ""].map(lib.palindrome)).toEqual([true, true, false, true]);
   expect([lib.same([1, 2], [1, 2]), lib.same([1, 2], [1]), lib.differ(["a"], ["a"]), lib.differ(["a"], ["b"])]).toEqual([true, false, false, true]);
@@ -7376,7 +7376,7 @@ pub fn upto(m: &BTreeMap<u32, &'static str>) -> Vec<&'static str> {
     m.range(..=2).map(|(_, v)| *v).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     const m = new Map([[3, "c"], [1, "a"], [2, "b"]]);
@@ -7401,7 +7401,7 @@ pub fn order(a: &Scaled, b: &Scaled) -> Option<std::cmp::Ordering> {
     a.partial_cmp(b)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     const rect = (a: number, b: number) => ({ TAG: "Rect", _0: a, _1: b });
@@ -7426,7 +7426,7 @@ pub fn empty(s: &str) -> String {
     s.replacen("", "-", 2)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.two("hello world"), lib.many("ababab", 0), lib.many("ababab", 2), lib.many("ababab", 9), lib.empty("héé")]).toEqual(["he__o world", "ababab", "XXab", "XXX", "-h-éé"]);
@@ -7446,7 +7446,7 @@ pub fn code(c: Color) -> i32 {
     c as i32
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.order("abc", "abd"), lib.order("b", "a"), lib.code("Red"), lib.code("Green"), lib.code("Blue")]).toEqual([-1, 1, 0, 5, 6]);
@@ -7464,7 +7464,7 @@ pub fn owned(xs: Vec<f64>) -> f64 {
     xs.into_iter().sum()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([Object.is(lib.total([]), -0), Object.is(lib.total([-0]), -0), Object.is(lib.owned([-0, -0]), -0), lib.total([1, 2])]).toEqual([true, true, true, 3]);
@@ -7493,7 +7493,7 @@ pub fn first(errors: &'static Vec<Lint>) -> impl Fn() -> Option<String> {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("const { line, column, message } = errors[0]");
@@ -7518,7 +7518,7 @@ pub fn keys(m: &BTreeMap<String, u32>) -> Vec<String> {
     m.iter().map(|(k, v)| format!("{k}{v}")).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const a = new Set([1, 2, 3]);\n");
@@ -7543,7 +7543,7 @@ test("a string's or-pattern from MIR is an or of its tests", async () => {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (s === "a" || s === "e" || s === "i") {\n    return "vowel";\n  }\n');
@@ -7564,7 +7564,7 @@ pub fn mid(k: u8) -> bool { matches!(k, 2..=5) }
 pub fn grade(k: u8) -> &'static str { match k { 0..=4 => "low", 5..10 => "mid", _ => "high" } }
 pub fn written(k: u8) -> bool { 2 <= k }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("export function big(k) {\n  return k >= 2;\n}");
@@ -7618,7 +7618,7 @@ pub fn root(n: u32) -> u32 {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    if (i > 7) {\n      break;\n    }\n");
@@ -7754,7 +7754,7 @@ pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Sectio
     sections
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    } else if (route.title != null && route.path != null) {\n");
@@ -7787,7 +7787,7 @@ pub fn view(s: Status) -> String {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     const at = (s: string) => js.indexOf(s);
@@ -7814,7 +7814,7 @@ pub fn opt2(a: Option<i32>, b: Option<i32>) -> Option<i32> {
     Some(x + y)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`  const result = $parseInt(a, -2147483648, 2147483647);
@@ -7844,7 +7844,7 @@ pub fn bump(m: &mut Money) {
     m.cents += 1;
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("export function bump(m) {\n  m.cents = BigInt.asIntN(64, m.cents + 1n);\n}");
@@ -7876,7 +7876,7 @@ pub fn whole(w: &str) -> String {
     w.chars().as_str().to_string()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("$restStr(c)");
@@ -7915,7 +7915,7 @@ pub fn pick(x: i32) -> String {
     shown.to_string()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (k === "Note") {\n    cls = "note";\n  } else if (k.TAG === "Warn") {\n    cls = "warn";\n  } else {\n    cls = "tip";\n  }\n');
@@ -7945,7 +7945,7 @@ pub fn bumped(mut m: HashMap<&'static str, u32>) -> u32 {
     m["a"]
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    const current = $orInsert(counts, w, 0);\n    counts.set(w, (current + 1) >>> 0);\n");
@@ -7996,7 +7996,7 @@ pub fn first(grid: &[Vec<u32>]) -> Option<u32> {
     found
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  for (const [r, row] of grid.entries()) {\n    for (const [c, v] of row.entries()) {\n");
@@ -8037,7 +8037,7 @@ pub fn by(a: i32, b: i32) -> i32 {
     a % b
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`    if (i % 2 === 0) {
@@ -8091,7 +8091,7 @@ pub fn logs(message: &Message, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).not.toContain("!= null &&");
@@ -8136,7 +8136,7 @@ pub fn doubled(k: Kind) -> u8 {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('export function titled(errorCode) {\n  if (errorCode) {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
@@ -8167,7 +8167,7 @@ pub fn each(n: u32) -> Vec<u32> {
     made.iter().map(|f| f()).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  hover(() => index);\n");
@@ -8192,7 +8192,7 @@ test("a `let` a loop's body makes, from MIR, is declared in the body, as THIR's"
     out
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  for (const end of ends) {\n    let start = 0;\n");
@@ -8223,7 +8223,7 @@ pub fn remember(f: &dyn Fn(&dyn Fn(u32))) -> u32 {
     LAST.get()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("let COUNT = 0;\nconst SEEN = false;\n");
@@ -8257,7 +8257,7 @@ pub fn count(node: &Node) -> usize {
     node.children.borrow().len()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    const node = { item: i, children: [] };\n    root.children.push(node);\n");
@@ -8281,7 +8281,7 @@ pub fn scroll(pos: usize, navs: &[Nav], out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(`  if (pos < navs.length) {
@@ -8309,7 +8309,7 @@ pub fn theme() -> Theme {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('    font: { body: unquoted(joined(["a", "b"])), mono: unquoted(joined(["c"])), size: "14px" },\n');
@@ -8335,7 +8335,7 @@ pub fn tail(message: &Message, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     const test = '  if ((message.TAG === "Start" && message.first_load) || message === "Refresh") {\n    out.push(1);\n  }\n';
@@ -8362,7 +8362,7 @@ test("a guarded binding of an Option's string is its truth", async () => {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     // MIR's one value, as react.dev's original writes it.
@@ -8394,7 +8394,7 @@ pub fn upper(s: &str) -> Option<String> {
     upper
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).not.toContain("?.toUpperCase()");
@@ -8432,7 +8432,7 @@ pub fn later(code: Option<&str>) -> Props {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return { message: code ? code.toUpperCase() : null };");
@@ -8459,7 +8459,7 @@ pub fn revive(val: Option<&'static Unknown>) -> Option<&'static Unknown> {
     val
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('export function revive(val) {\n  if (Array.isArray(val) && val[0] === "$r") {\n    return val[1];\n  }\n  return val;\n}');
@@ -8481,7 +8481,7 @@ pub async fn props(Ctx { params, .. }: Ctx) -> String {
     params.unwrap_or_default()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('export async function props({ params }) {\n  return params ?? "";\n}');
@@ -8508,7 +8508,7 @@ pub fn crumbs(cs: &[Crumb]) -> Vec<Option<String>> {
         .collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    if (c.path != null && !(c.skip ?? false)) {\n      return c.path + c.title;\n    }\n");
@@ -8526,7 +8526,7 @@ test("a position of an array's own iterator from MIR is of the array", async () 
     ids.iter().position(|id| Some(id.as_str()) == path.split('#').nth(1))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return $position(ids, (id) => id == path.split("#")[1]);');
@@ -8558,7 +8558,7 @@ pub fn handle(ev: &Ev, open: bool, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (\n    (ev.key_code === 27 && open) ||\n    (ev.key === "k" && (ev.meta || ev.ctrl)) ||\n    (!editing(ev) && ev.key === "/" && !open)\n  ) {\n    out.push(1);\n');
@@ -8585,7 +8585,7 @@ pub fn update(f: &dyn Fn(&dyn Fn(&VecDeque<u32>) -> VecDeque<u32>)) {
     });
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    const messages = prev.slice();\n");
@@ -8619,7 +8619,7 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
     all.len()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => Math.imul(x, 2) >>> 0);\n");
@@ -8653,7 +8653,7 @@ pub fn run() -> Vec<u32> {
     })
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     // Incremental, as an app's build is: spans of a closure's body hold it.
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "-C", `incremental=${join(dir, "incremental")}`], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
@@ -8677,7 +8677,7 @@ pub fn files(code: String, other: String) -> &'static js::Dict<String> {
     ])
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  return { "/index.js": code.toUpperCase(), "/other.js": other };\n');
@@ -8752,7 +8752,7 @@ pub fn tag(kind: Kind) -> String {
     format!("{name} {classes}")
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const variant = MAP[kind];\n");
@@ -8798,7 +8798,7 @@ test("an early-stopping consumer leaves the rest of the iterator", async () => {
     out
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect(lib.after([1, 2, 3])).toEqual([1, 3, 1, 3, 2, 3, undefined, 3, 20, 3, 2, 3, 1, 1, 3]);
@@ -8836,7 +8836,7 @@ pub fn or_none() -> bool {
   const globals = globalThis as typeof globalThis & { maybeSupports?: object; supportsIt?: (what: string) => boolean };
   globals.supportsIt = () => true;
   try {
-    for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+    for (const [out, env] of [["mir.js", {}]] as const) {
       run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
       const js = readFileSync(join(dir, out), "utf8");
       expect(js).toContain('  SUPPORTED = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
@@ -8872,7 +8872,7 @@ pub fn button(Props { provided_files }: Props, supported: bool) -> Option<u32> {
     Some(n)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  if (providedFiles.some((file) => !SUPPORTED.includes(file))) {\n");
@@ -8899,7 +8899,7 @@ pub fn hidden(tokens: &[String]) -> bool {
     tokens.iter().any(|token| token == "hidden")
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (t !== "pre" && u !== "pre") {\n');
@@ -8925,7 +8925,7 @@ pub fn long(words: &[String]) -> usize {
     words.iter().filter(|w| w.len() > 2).count()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  return code.split("\\n").length;\n');
@@ -8954,7 +8954,7 @@ pub fn written(error: &E) -> String {
     message.clone()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("export function one(error) {\n  const { message } = error;\n");
@@ -8985,7 +8985,7 @@ pub fn retitle(error: &E) -> String {
     format!("{}: {message}", title.get().unwrap_or("Error"))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("export function show(error) {\n  const { message, title } = error;\n");
@@ -9004,7 +9004,7 @@ test("flattened options collected from MIR are the array's filter", async () => 
     parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  return parts.filter((item) => item != null).join(" ");\n');
@@ -9039,7 +9039,7 @@ pub fn crumbs<'a>(path: &str, current: &'a Route, crumbs_so_far: Vec<&'a Route>)
     Vec::new()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    if (child.length !== 0) {\n      return child;\n    }\n  }\n  return [];\n}");
@@ -9072,7 +9072,7 @@ pub fn label(section: Section) -> String {
     format!("og-{}", section.as_str())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  as_str(section) {\n    return section;\n  },\n");
@@ -9105,7 +9105,7 @@ pub fn image(section: Option<Section>) -> String {
     format!("/images/og-{}.png", section.unwrap_or(Section::Unknown).as_str())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  return `/images/og-${section ?? "unknown"}.png`;\n');
@@ -9136,7 +9136,7 @@ pub fn flagged(heading: bool, crumb: bool, expanded: bool) -> Option<&'static st
     (!heading && crumb && !expanded).then_some("on")
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    home || !meta.title\n      ? `/images/og-${meta.path}.png`\n");
@@ -9162,7 +9162,7 @@ test("a chain is read in place past a closure's mutable borrow", async () => {
     list
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  array.forEach((item, index) => {\n");
@@ -9186,7 +9186,7 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
     args[i] = made();
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('    args[$at(args, 0)] = "HTML";\n');
@@ -9220,7 +9220,7 @@ pub fn diags(msgs: Vec<&Msg>) -> Vec<Diag> {
     msgs.iter().map(|m| Diag { rule_id: m.rule_id.clone(), line: m.line }).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("({ rule_id: m.rule_id, line: m.line })");
@@ -9257,7 +9257,7 @@ pub fn kept(errors: Vec<&'static LintError>, diags: Vec<&'static Diagnostic>) ->
     (n, diags.into_iter().filter(|d| isReactRuleError(*d)).collect())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return error.ruleId != null;");
@@ -9282,7 +9282,7 @@ pub fn moved(hit: Hit) -> Hit {
     Hit { url: hit.url.replace("#x", ""), ..hit }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('({ ...item, url: item.url.replaceAll("#x", "") })');
@@ -9310,7 +9310,7 @@ pub fn copied(a: &Props) -> Props {
     Props { title: "y".to_string(), level: a.level }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return { ...props, title: "x" };');
@@ -9341,7 +9341,7 @@ pub fn heading(names: Vec<String>) -> Vec<String> {
     names.into_iter().filter(|n| n.as_str() == "H1" || n.as_str() == "H2" || n.as_str() == "H3").collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return element.editable || tagName === "INPUT" || tagName === "SELECT" || tagName === "TEXTAREA";');
@@ -9388,7 +9388,7 @@ pub fn tag(variant: RouteTag, text: Option<&'static str>) -> String {
     format!("{} {classes}", text.unwrap_or(name))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('variant === "foundation"');
@@ -9411,7 +9411,7 @@ pub fn first(keys: Vec<String>) -> Option<String> {
     keys.into_iter().next()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return $splitBy(path, (c) => ["?", "#"].includes(c))[0] ?? "";');
@@ -9440,7 +9440,7 @@ pub fn shown(caption_position: Option<CaptionPosition>, text: &'static str) -> O
     matches!(caption_position, None | Some(CaptionPosition::Bottom)).then_some(text)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return captionPosition == null || captionPosition === "bottom";');
@@ -9474,7 +9474,7 @@ pub fn message(kind: Kind) -> String {
     message
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (kind.TAG === "Text") {\n    message = kind._0;\n  } else if (kind.TAG === "Element" && kind._0 != null) {\n    message = kind._0;\n  } else {\n    throw');
@@ -9500,7 +9500,7 @@ test("a typeof test after a null check is the typeof test from MIR", async () =>
     }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, { RUST_JS_MIR: "1" });
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('if (ok && typeof given === "string") {');
   const lib = await import(join(dir, "mir.js"));
@@ -9524,7 +9524,7 @@ pub fn kept(error: Option<&Err>, height: Option<f64>, ready: bool) -> String {
     if hide { "a".to_string() } else { "b".to_string() }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return !!error || height == null || height === 0 || !ready;");
@@ -9553,7 +9553,7 @@ test("an else-if chain's arm before a panic stays an else if", async () => {
     file_path
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  } else if (className === "language-css") {\n    filePath = "/styles.css";\n  } else {\n    throw');
@@ -9599,7 +9599,7 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (message.TAG === "resize") {');
@@ -9640,7 +9640,7 @@ pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Opt
     error.and_then(|e| e.title.get())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (raw && raw.title === "Runtime Exception") {\n    raw.title = "Runtime Error";\n  }');
@@ -9678,7 +9678,7 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  } else if (message === "done") {\n    log.push("done");\n  }\n}');
@@ -9705,7 +9705,7 @@ pub fn lines(meta: &str) -> String {
     lines.to_uppercase()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const value = globalThis.find(meta);\n  if (!value) {");
@@ -9726,7 +9726,7 @@ pub fn editing(element: &HTMLElement) -> bool {
     element.is_content_editable() || tag_name == "INPUT" || tag_name == "SELECT" || tag_name == "TEXTAREA"
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  return (\n    element.isContentEditable ||\n");
@@ -9751,7 +9751,7 @@ pub fn images(items: Vec<&Item>) -> Vec<&Item> {
     items.into_iter().filter(|item| is_item(item) && item.kind == "img").collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('items.filter((item) => globalThis.isItem(item) && item.kind === "img")');
@@ -9789,7 +9789,7 @@ pub fn parsed(v: Vec<&str>) -> Vec<f64> {
     v.into_iter().map(parse_float).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain(".filter(is_rule)");
@@ -9822,7 +9822,7 @@ test("a function written in a closure is declared where it's written", async () 
     if small(k) { 0 } else { f() }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toMatch(/const k = .*\n  function small\(x\)/);
@@ -9844,7 +9844,7 @@ pub async fn made() -> u32 {
     run(async move |_| 1).await + run(async move |x| x).await
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("run(async () => 1)");
@@ -9886,7 +9886,7 @@ pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("      const contentBoxSize = Array.isArray(size) ? size[0] : size;");
@@ -9913,7 +9913,7 @@ pub fn all(first: Vec<&'static Unknown>) -> Vec<&'static Unknown> {
     children
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('const children = [...first, globalThis.made("a"), globalThis.made("b")];');
@@ -9958,7 +9958,7 @@ test("continues a loop's ifs end with are kept", async () => {
     tokens
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('      depth = (depth + 1) | 0;\n      continue;\n    }\n    if (c === "}") {');
@@ -10000,7 +10000,7 @@ pub fn grouped(items: &[u32]) -> Vec<Section> {
     sections
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    current.pages.push(item);");
@@ -10031,7 +10031,7 @@ pub fn named(challenges: &[(u32, Challenge)]) -> Vec<String> {
     challenges.iter().map(|(n, Challenge { name, .. })| format!("{n} {name}")).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("challenges.map(({ name, id, order }, index) => `${index}:${id}:${order}. ${name}`)");
@@ -10060,7 +10060,7 @@ pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
         .count()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return s !== "en" && (t ? !s : u);');
@@ -10087,7 +10087,7 @@ pub fn shown(infos: &[Info]) -> Vec<String> {
         .collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("const caption = info.caption ? info.caption : undefined;");
@@ -10111,7 +10111,7 @@ pub fn column(line: &str, substr: &str) -> u32 {
     index as u32 + string::length(substr)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return (index + substr.length) >>> 0;");
@@ -10171,7 +10171,7 @@ pub fn kept(items: &[u32]) -> (Vec<Vec<u32>>, Vec<u32>) {
     (all, current)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).not.toContain("$take(");
@@ -10207,7 +10207,7 @@ pub fn shown(msg: Option<&Unknown>, tagged: bool) -> Option<String> {
     children
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    try {\n      children = JSON.stringify(msg, null, 2);");
@@ -10227,7 +10227,7 @@ test("an adapter of a JS iterator is not made one again", async () => {
     (0..n).filter_map(|i| if i % 2 == 0 { Some(i * 10) } else { None }).filter(|x| *x > 5).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).not.toContain("Iterator.from(");
@@ -10252,7 +10252,7 @@ pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
     prev.iter().cloned().chain(new_logs).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("const newLogs = log\n    .values()\n    .filter(");
@@ -10285,7 +10285,7 @@ pub fn named(name: String, size: u32) -> String {
     format!("{} {} {}", o.name, o.size, o.tags.len())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return { name: "", size, tags: [] };');
@@ -10333,7 +10333,7 @@ pub fn odd_to_five() -> Vec<u32> {
     (1..=5).filter(|i| i % 2 == 1).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
@@ -10376,7 +10376,7 @@ pub fn a_names(names: Vec<String>) -> usize {
     w.len()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     const logs: string[] = [];
@@ -10409,7 +10409,7 @@ pub fn run() -> u32 {
     t.bump()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("  bump(t) {\n    t.n = (t.n + 1) >>> 0;\n    return t.n;\n  },");
     expect((await import(join(dir, out))).run()).toBe(2);
@@ -10434,7 +10434,7 @@ test("a let each turn assigns from MIR is the loop body's", async () => {
     out
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("  for (const x of v) {\n    let y;\n");
     expect((await import(join(dir, out))).named([0, 1, 7])).toEqual(["one", "7"]);
@@ -10450,7 +10450,7 @@ test("a slice to a computed end from MIR is THIR's", async () => {
     segments[..segments.len().saturating_sub(1)].to_vec()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("$slice(segments, 0, Math.max(segments.length - 1, 0))");
     const lib = await import(join(dir, out));
@@ -10474,7 +10474,7 @@ pub fn big(v: &mut [u32]) -> usize {
     v.iter_mut().filter(|x| **x > 2).count()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("const e = v.find(([k]) => k === w);");
@@ -10517,7 +10517,7 @@ pub fn labeled(label: Option<Label>) -> bool {
     label.is_some()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  if (size) {\n");
@@ -10559,7 +10559,7 @@ pub fn sections(items: &[u32]) -> Vec<Section> {
     out
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("    if (!current) {\n      continue;\n    }\n    if (item > 10) {\n");
     expect((await import(join(dir, out))).sections([5, 0, 30, 2, 0, 7])).toEqual([{ pages: [3, 2] }, { pages: [7] }]);
@@ -10723,7 +10723,7 @@ pub fn getSyntaxHighlight(theme: &Theme) -> &'static HighlightStyle {
     ])
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain('    { tag: tags.keyword, class: classNameToken("keyword") },\n');
   }
@@ -10750,7 +10750,7 @@ pub fn evens(n: u32) -> Vec<u32> {
     (0..n).filter(|i| i % 2 == 0).collect()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.first(5, (i: number) => i > 2), lib.first(2, () => false), lib.picked([3, undefined, 2])]).toEqual([3, undefined, [3, 2]]);
@@ -10800,7 +10800,7 @@ pub fn run() -> f64 {
     p.expr().unwrap()
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js.split("P.next(p);").length - 1).toBe(1);
@@ -10825,7 +10825,7 @@ pub fn counted(n: u32) -> String {
     of((0..n).map(|i| char::from_digit(i, 10).unwrap()))
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return ["h", "é", "!"].join("");');
@@ -10852,7 +10852,7 @@ pub fn summed(a: i32, z: i32) -> String {
     format!("{s} {:?}", r)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.counted(1, 4), lib.summed(1, 3)]).toEqual(["3 1..4", "6 1..=3"]);
@@ -10890,7 +10890,7 @@ pub fn lens() -> (usize, usize) {
     (s.len(), Own.len())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect((await import(join(dir, out))).lens()).toEqual([4, 42]);
   }
@@ -10910,7 +10910,7 @@ pub fn stepped(v: &[u32]) -> (Vec<u32>, Vec<u32>) {
     (first, c.remainder().to_vec())
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("$chunksExact(v, 2).remainder");
     const lib = await import(join(dir, out));
@@ -10936,7 +10936,7 @@ pub fn replaced(mut v: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     (v, old)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.doubled([1, 2]), lib.tail_again([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
@@ -10964,7 +10964,7 @@ pub fn run() -> (usize, Vec<u32>, Vec<u32>) {
     (own, mapped, chained)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect((await import(join(dir, out))).run()).toEqual([99, [10, 20, 30], [7, 2, 3]]);
   }
@@ -10993,7 +10993,7 @@ pub fn run() -> (Vec<u32>, Vec<u32>) {
     (first, rest)
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect((await import(join(dir, out))).run()).toEqual([[1, 2], [3, 4, 5]]);
   }

@@ -116,6 +116,7 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
                 | DefKind::AssocFn
                 | DefKind::Closure
                 | DefKind::Const { .. }
+                | DefKind::AssocConst { .. }
                 | DefKind::Static { .. }
                 | DefKind::AnonConst
         ) {
@@ -399,20 +400,14 @@ pub(super) fn analyze_crate<'a, 'tcx>(
             recognition.asks_no_borrows(&body.thir)
         })
     };
-    // What THIR shows of cells, made plain: MIR, which reads borrows its
-    // own way, keeps every one a cell, its module's own made plain after
+    // A thread-local is a cell, its module's own made plain after
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     let thread_locals =
         plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
-    let (plain_locals, quiet_locals) = match super::mir_mode() {
-        true => (HashMap::new(), thread_locals.into_keys().collect()),
-        false => (thread_locals, HashSet::new()),
-    };
+    let (plain_locals, quiet_locals): (HashMap<_, _>, HashSet<_>) =
+        (HashMap::new(), thread_locals.into_keys().collect());
     let counted = counted_rcs(tcx, all_bodies);
-    let plain_cells = match super::mir_mode() {
-        true => HashMap::new(),
-        false => plain_locals::plain_cells(tcx, all_bodies, &counted),
-    };
+    let plain_cells = HashMap::new();
     let read_at_once = plain_locals::read_at_once(tcx, all_bodies);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,

@@ -315,22 +315,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// What a cell that's its function's variable starts as: `x` of
-    /// `Cell::new(x)` or `Rc::new(Cell::new(x))` (ADR 0287).
-    pub(in crate::lower) fn cell_start(&self, init: ExprId) -> Option<ExprId> {
-        let mut e = self.strip(init);
-        loop {
-            let ExprKind::Call { fun, ref args, .. } = self.thir[e].kind else {
-                return None;
-            };
-            match fn_def(self.thir[fun].ty).and_then(|(id, a)| cell_use(self.tcx, id, a)) {
-                Some(CellUse::Shared) => e = self.strip(args[0]),
-                Some(CellUse::New) => return Some(args[0]),
-                _ => return None,
-            }
-        }
-    }
-
     /// Is `key`, `&KEY`, a thread-local that's its module's `let` (ADR 0270)?
     fn plain_local(&self, key: ExprId) -> bool {
         let ExprKind::Borrow { arg, .. } = self.thir[self.strip(key)].kind else {

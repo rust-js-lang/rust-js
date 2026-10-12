@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::OptionIter\n                    | Std::IterSource(IterSource::Once)\n",
     replace: "                    | Std::IterSource(IterSource::Once)\n",
-    tests: ["test/mir.test.ts", "-t", "loop_drops"],
+    tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
   {
     name: "once-takes-drops-refused",
@@ -128,6 +128,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/values.rs",
     find: "                    | Std::OptionIter\n                    | Std::IterSource(IterSource::Once)\n",
     replace: "                    | Std::OptionIter\n",
-    tests: ["test/mir.test.ts", "-t", "loop_drops"],
+    tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
 ];

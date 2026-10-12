@@ -14,8 +14,7 @@ use crate::lower::std_types::any::AnyOp;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::mir::{AssignOp, BinOp, UnOp};
-use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 
@@ -234,38 +233,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => unreachable!("one of the ops above"),
         }))
-    }
-
-    /// `std::num::Wrapping`'s operator (ADR 0175): its number's, in its `[x]`,
-    /// as release Rust wraps it; a shift's amount masked to the width, as
-    /// `wrapping_shl` masks it; `a += b` a new `[x]` for `a`'s place.
-    pub(in crate::lower) fn wrapping_op(
-        &mut self,
-        op: Result<BinOp, UnOp>,
-        assign: bool,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let wrapping = self.thir[args[0]].ty.peel_refs();
-        let target = match (op, assign) {
-            (Ok(_), true) => {
-                let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
-                    return Err(self.unsupported(span, "this assignment"));
-                };
-                self.assignee(place)?
-            }
-            _ => self.expr(args[0], out)?,
-        };
-        let target = match op.is_ok() && !target.reads_same() {
-            true => self.spill("wrapping", target, out),
-            false => target,
-        };
-        let rhs = match op {
-            Ok(_) => Some(self.expr(args[1], out)?),
-            Err(_) => None,
-        };
-        self.wrapping_values(op, assign, wrapping, target, rhs, span, out)
     }
 
     /// `wrapping_op`'s, of its `Wrapping`'s type, its value, or its place
@@ -1069,13 +1036,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// A shift of a narrower integer by an `i64` or a `u64`: the amount a
-    /// number, `Number(n & 63n)`, as JS won't shift a number by a BigInt.
-    /// 63 keeps every width's own mask, which the shift then applies.
-    pub(in crate::lower) fn shift_amount(&self, op: BinOp, r: Expr, lhs: ExprId, rhs: ExprId) -> Expr {
-        shift_amount_of(op, r, self.thir[lhs].ty, self.thir[rhs].ty)
-    }
-
     /// `NonZero::new(n)`: `n`, or `None` of zero.
     pub(in crate::lower) fn non_zero_new(&mut self, n: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let num = self.num(ty, span)?;
@@ -1312,21 +1272,6 @@ pub(in crate::lower) fn masked(e: &Expr) -> Option<i128> {
     match &e.kind {
         js::ExprKind::Binary(Op::BitAnd, a, b) => b.as_bigint().or_else(|| a.as_bigint()),
         _ => None,
-    }
-}
-
-pub(in crate::lower) fn assign_op(op: AssignOp) -> BinOp {
-    match op {
-        AssignOp::AddAssign => BinOp::Add,
-        AssignOp::SubAssign => BinOp::Sub,
-        AssignOp::MulAssign => BinOp::Mul,
-        AssignOp::DivAssign => BinOp::Div,
-        AssignOp::RemAssign => BinOp::Rem,
-        AssignOp::BitXorAssign => BinOp::BitXor,
-        AssignOp::BitAndAssign => BinOp::BitAnd,
-        AssignOp::BitOrAssign => BinOp::BitOr,
-        AssignOp::ShlAssign => BinOp::Shl,
-        AssignOp::ShrAssign => BinOp::Shr,
     }
 }
 

@@ -70,21 +70,9 @@ export const mutations: Mutation[] = [
     name: "cargo-app-untracked",
     breaks: "Cargo isn't told what `RUST_JS_APP` was, so the app compiled as a program is fresh when another crate uses it",
     file: "src/main.rs",
-    find: "for name in [cargo::APP, lower::MIR] {",
-    replace: "for name in [lower::MIR] {",
+    find: "            compiler\n                .sess\n                .env_depinfo\n                .lock()\n                .insert((Symbol::intern(cargo::APP), value));\n",
+    replace: "            let _ = value;\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
-  },
-  {
-    "name": "mir-env-untracked",
-    "breaks": "a Cargo build of the other lowering, `RUST_JS_MIR=1`, keeps the first lowering's JS, Cargo told nothing changed",
-    "file": "src/main.rs",
-    "find": "for name in [cargo::APP, lower::MIR] {",
-    "replace": "for name in [cargo::APP] {",
-    "tests": [
-      "test/cargo-workspace.test.ts",
-      "-t",
-      "Cargo builds a crate again for the other lowering"
-    ]
   },
   {
     name: "main-stack-default",

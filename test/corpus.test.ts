@@ -5,8 +5,6 @@
 //   //@ run-pass                   main returns (the default)
 //   //@ run-fail: <message>        main panics with exactly this message (\n for a newline)
 //   //@ compile-fail: <text>       rust-js rejects it, with this in its first error
-//   //@ thir-compile-fail: <text>  rust-js rejects it so from THIR, `RUST_JS_MIR=0`; from
-//                                  MIR, the default, it runs as Rust does (ADR 0364)
 //   //@ ignore-rust-js: <reason>   rust-js gets it wrong for now; passing is an error; beside
 //                                  run-fail, of one that panics
 //   //@ edition: <year>            compiled at this edition, 2024 if it says none; beside one of those
@@ -57,9 +55,6 @@ function directives(source: string): (Expect & { edition: string; native: "host"
     else if (name === "run-pass" && value === undefined) found.push({ kind: "run-pass" });
     else if (name === "run-fail" && value) found.push({ kind: "run-fail", message: value.replaceAll("\\n", "\n") });
     else if (name === "compile-fail" && value) found.push({ kind: "compile-fail", text: value });
-    else if (name === "thir-compile-fail" && value) {
-      if (process.env.RUST_JS_MIR === "0") found.push({ kind: "compile-fail", text: value });
-    }
     else if (name === "ignore-rust-js" && value) found.push({ kind: "ignore-rust-js", reason: value });
     else return `unknown or malformed directive \`//@${line}\``;
   }

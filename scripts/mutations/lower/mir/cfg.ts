@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/cfg.rs",
     find: "        self.headers.contains(&to) && self.dominates(to, from)\n",
     replace: "        false\n",
-    tests: ["test/mir.test.ts", "-t", "loop_values"],
+    tests: ["test/corpus.test.ts", "-t", "loop_values"],
   },
   {
     name: "mir-merges-innermost-first",
@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/cfg.rs",
     find: "        children.sort_by_key(|c| std::cmp::Reverse(self.order[c.as_usize()]));\n",
     replace: "        children.sort_by_key(|c| self.order[c.as_usize()]);\n",
-    tests: ["test/mir.test.ts", "-t", "labeled_blocks"],
+    tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
 ];

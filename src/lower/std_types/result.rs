@@ -1,10 +1,9 @@
 //! `?` of an `Option` or a `Result`, and the `From` that converts its error
 //! (ADRs 0052, 0141).
 
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::lower::recognition::{StdItem, std_item};
-use crate::lower::{Dest, FnCx, R};
-use rustc_middle::thir::{ExprId, ExprKind};
+use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 
 /// How `?` makes an error the function's: a `From` of the crate's own,
@@ -28,58 +27,6 @@ impl Conversion {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `e?`: the value inside, after returning early with an `Err` or `None`.
-    /// Only when the `Err` is returned as it is: a `From` conversion isn't
-    /// supported yet.
-    pub(in crate::lower) fn question(
-        &mut self,
-        question: ExprId,
-        tried: ExprId,
-        base: Option<&str>,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let span = self.thir[question].span;
-        let ty = self.thir[tried].ty;
-        // A `fmt::Error` is thrown, and `?` passes it on (ADR 0187).
-        if self.is_fmt_result(ty) && self.krate.any_failing {
-            let value = self.expr(tried, out)?;
-            self.fmt_check(value, self.js_span(span), out);
-            return Ok(Expr::undefined());
-        }
-        // A write never fails (ADR 0054, ADR 0132).
-        if self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty) {
-            self.stmt(tried, &Dest::Discard, out)?;
-            return Ok(Expr::undefined());
-        }
-        let is_option = self.option_of(ty).is_some();
-        if !is_option && !self.is_std_type(ty, StdItem::Result) {
-            return Err(self.unsupported(span, &format!("`?` on a `{ty}`")));
-        }
-        // The function's return type, which a returned `Err` is converted to.
-        let returned = match is_option {
-            true => None,
-            false => {
-                let ExprKind::Match { ref arms, .. } = self.thir[self.strip(question)].kind else {
-                    unreachable!("checked")
-                };
-                arms.iter()
-                    .find_map(|&arm| match self.thir[self.strip(self.thir[arm].body)].kind {
-                        ExprKind::Return { value: Some(v) } => Some(self.thir[v].ty),
-                        _ => None,
-                    })
-            }
-        };
-        let converted = self.tried_conversion(ty, returned, span)?;
-        let (subject, _) = self.subject(tried, base.unwrap_or(if is_option { "value" } else { "result" }), out)?;
-        let js_span = self.js_span(span);
-        let failed = self.tried_failed(subject.clone(), ty);
-        let converted = converted.map(|conversion| conversion.of(Expr::member(subject.clone(), "_0")));
-        let ret = self.tried_returned(subject.clone(), ty, converted);
-        let value = self.tried_value(subject, ty);
-        out.push(StmtKind::If(failed, vec![StmtKind::Return(Some(ret)).at(js_span)], None).at(js_span));
-        Ok(value)
-    }
-
     /// Whether `?` of `subject`, an `Option` or a `Result`, returns early:
     /// it's `None`, of a value never falsy `!o` (ADR 0298), or an `Err`.
     pub(in crate::lower) fn tried_failed(&self, subject: Expr, ty: Ty<'tcx>) -> Expr {

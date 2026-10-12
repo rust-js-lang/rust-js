@@ -152,21 +152,20 @@ impl Callbacks for RustJs {
         register_tool(config);
         // Integers wrap, as the release profile has them: MIR read for what
         // runs says so, where it would check each operation (ADR 0364).
-        if lower::mir_mode() {
-            config.opts.cg.overflow_checks = Some(false);
-        }
+        config.opts.cg.overflow_checks = Some(false);
     }
 
     fn after_crate_root_parsing(&mut self, compiler: &Compiler, krate: &mut rustc_ast::Crate) -> Compilation {
         // Whether the crate is the app is `RUST_JS_APP`'s, which Cargo
         // reads of the dep-info, as of an `env!`: another value is another
-        // build (ADR 0360). Which lowering, `RUST_JS_MIR`'s, too (ADR 0364).
+        // build (ADR 0360).
         if self.cargo {
-            let mut read = compiler.sess.env_depinfo.lock();
-            for name in [cargo::APP, lower::MIR] {
-                let value = std::env::var(name).ok().map(|value| Symbol::intern(&value));
-                read.insert((Symbol::intern(name), value));
-            }
+            let value = std::env::var(cargo::APP).ok().map(|value| Symbol::intern(&value));
+            compiler
+                .sess
+                .env_depinfo
+                .lock()
+                .insert((Symbol::intern(cargo::APP), value));
         }
         Syntax.after_crate_root_parsing(compiler, krate)
     }
@@ -180,10 +179,8 @@ impl Callbacks for RustJs {
         let mut initializers = lower::collect_initializers(tcx);
         // Then, read from their MIR, what runs (ADR 0364): the initializers
         // lowered as code too.
-        if lower::mir_mode() {
-            lower::collect_mir(tcx, &mut bodies);
-            lower::collect_mir(tcx, &mut initializers);
-        }
+        lower::collect_mir(tcx, &mut bodies);
+        lower::collect_mir(tcx, &mut initializers);
 
         // 2. Run rustc's full analysis: type check, borrow check, lints.
         tcx.ensure_ok().analysis(());

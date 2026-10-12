@@ -11,7 +11,7 @@ use super::std_types::text::TextOp;
 use super::{FnCx, R, camel_case, global};
 use crate::js;
 use crate::js::{Expr, Op, StmtKind};
-use rustc_middle::thir::{ExprId, ExprKind};
+use rustc_middle::thir::ExprId;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -130,20 +130,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             params.into_iter().map(Into::into).collect(),
             vec![StmtKind::Return(Some(body)).at(self.js_span(span))],
         ))
-    }
-
-    /// A binding that's a JSX component, `<Toaster />` of `sonner#Toaster`:
-    /// what it's imported as, or `None` for a Rust function's.
-    pub(super) fn binding_component(&self, component: ExprId) -> Option<Expr> {
-        let mut at = self.strip(component);
-        while let ExprKind::Borrow { arg, .. } = self.thir[at].kind {
-            at = self.strip(arg);
-        }
-        let (ExprKind::ZstLiteral { .. }, &ty::FnDef(def_id, _)) = (&self.thir[at].kind, self.thir[at].ty.kind())
-        else {
-            return None;
-        };
-        self.binding_component_of(def_id)
     }
 
     /// The JS component binding `def_id` names, if it names one.

@@ -27,7 +27,7 @@ fn main() { println!("{}", serde_json::to_string(&report()).unwrap()); }
 /** The case's JS, from THIR and from MIR (ADR 0364), each loaded. */
 async function compiled(dir: string) {
   const modules = [];
-  for (const [out, env] of [["cases.js", {}], ["cases.mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["cases.js", {}]] as const) {
     run([compiler, join(dir, "cases.rs"), "-o", join(dir, out), "--", ...buildSerde()], 600_000, env);
     modules.push(await import(join(dir, out)));
   }
@@ -276,7 +276,7 @@ pub fn report() -> String {
 `);
   const expected = JSON.parse(run([native(dir)]));
   for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
-  for (const out of ["cases.js", "cases.mir.js"]) {
+  for (const out of ["cases.js"]) {
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('${$jsonValueText($jsonIndex(v, "name"), false)} ${$jsonValueText($jsonIndex($jsonIndex(v, "list"), 1), false)}');
     expect(js).not.toContain("))($jsonGet(");

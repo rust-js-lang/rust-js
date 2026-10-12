@@ -29,8 +29,7 @@ function logStore() {
       put: (arg0, arg1, TDebug, dropT) => logStore_put(arg0.value, arg1, TDebug, dropT),
       put_all: (arg0, arg1, dropI) => logStore_put_all(arg0.value, arg1, dropI),
       keep: (self, item, TDebug) => {
-        const arg = `kept ${TDebug.fmt(item)}`;
-        logStore_put(self.value, arg, { fmt: (value) => $debugStr(value) });
+        logStore_put(self.value, `kept ${TDebug.fmt(item)}`, { fmt: (value) => $debugStr(value) });
         return item;
       },
     };

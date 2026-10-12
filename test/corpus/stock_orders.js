@@ -87,8 +87,10 @@ function linePriced() {
     $linePriced = {
       unit_cents: linePriced_unit_cents,
       quantity: linePriced_quantity,
-      total_cents: (self) =>
-        BigInt.asUintN(64, BigInt(linePriced_unit_cents(self)) * BigInt(linePriced_quantity(self))),
+      total_cents: (self) => {
+        const value = BigInt(linePriced_unit_cents(self));
+        return BigInt.asUintN(64, value * BigInt(linePriced_quantity(self)));
+      },
     };
   }
   return $linePriced;

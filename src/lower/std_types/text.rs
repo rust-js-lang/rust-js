@@ -12,7 +12,6 @@ use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -211,63 +210,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var(name), vec![s])
     }
 
-    /// A `String` changed in place (ADR 0149): its place given the new
-    /// string, `s = $insertStr(s, 0, "[")`, and what `pop` and `remove` take
-    /// out, `popped[1]`. A JS string doesn't change; its place does.
-    pub(in crate::lower) fn string_edit(
-        &mut self,
-        edit: StringEdit,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
-            return Err(self.unsupported(span, "changing this string"));
-        };
-        // `s[a..b].make_ascii_uppercase()`: `s` given its new text, that
-        // part changed, `s = $asciiCase(s, true, a, b)` (ADR 0334).
-        if let StringEdit::AsciiCase { upper } = edit
-            && let ExprKind::Deref { arg: part } = self.thir[self.strip(place)].kind
-            && let ExprKind::Call {
-                fun, args: ref given, ..
-            } = self.thir[self.strip(part)].kind
-            && let Some(Std::Text(TextOp::StrPart { bounds })) = self.std_fn(fun)
-            && let Some(whole) = self.mut_borrowed(given[0])
-            && !self.returned(whole)
-        {
-            let (target, _) = self.prepare_assignment_target(whole, true, Expr::undefined(), span, out)?;
-            let (start, end) = match bounds {
-                true => {
-                    let [start, end]: [Expr; 2] = self.operands(&given[1..], out)?.try_into().ok().expect("two bounds");
-                    (start, Some(end))
-                }
-                false => self.range_bounds(given[1], span, out)?,
-            };
-            let mut list = vec![target.read(), Expr::bool(upper)];
-            if start.as_int() != Some(0) || end.is_some() {
-                list.push(start);
-                list.extend(end);
-            }
-            self.runtime.insert(Helper::AsciiCase);
-            target.write(Expr::call(Expr::var("$asciiCase"), list), self.js_span(span), out);
-            return Ok(Expr::undefined());
-        }
-        // A byte range's bounds, and `replace_range`'s text (ADR 0323).
-        let given = match edit {
-            StringEdit::Drain | StringEdit::ReplaceRange | StringEdit::ExtendFromWithin => {
-                let (start, end) = self.range_bounds(args[1], span, out)?;
-                let mut given = vec![start, end.unwrap_or_else(Expr::undefined)];
-                given.extend(self.operands(&args[2..], out)?);
-                given
-            }
-            _ => self.operands(&args[1..], out)?,
-        };
-        let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
-        let (edited, taken) = self.string_edit_values(edit, target.read(), given, out);
-        target.write(edited, self.js_span(span), out);
-        Ok(taken.unwrap_or_else(Expr::undefined))
-    }
-
     /// `edit` of a string whose text is `current`, of what it's `given`:
     /// its new text, and what it took out, if it takes anything (ADR 0364).
     pub(in crate::lower) fn string_edit_values(
@@ -317,39 +259,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
         }
-    }
-
-    pub(in crate::lower) fn text_call(
-        &mut self,
-        op: TextOp,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        if matches!(
-            op,
-            TextOp::Slice | TextOp::StrSlice | TextOp::StrGet | TextOp::SliceGet | TextOp::Drain
-        ) {
-            return self.slice_range(op, args, span, out);
-        }
-        // A range of a `Vec`'s, checked as `drain`'s and `&v[..]`'s are:
-        // replaced, `$splice(v, a, b, items)`, or pushed again,
-        // `v.push(...$slice(v, a, b))` (ADR 0315).
-        if matches!(op, TextOp::Splice | TextOp::ExtendFromWithin) {
-            let range = self.slice_range(range_read(op), &args[..2], span, out)?;
-            let rest = self.operands(&args[2..], out)?;
-            return Ok(self.range_edit(op, range, rest));
-        }
-        if matches!(
-            op,
-            TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. }
-        ) {
-            return self.str_part(op, args, span, out);
-        }
-        let values = self.operands(args, out)?;
-        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
-        self.text_values(op, values, &tys, generic_args, span, out)
     }
 
     /// A string's or a slice's method of its arguments' values, `tys`
@@ -726,16 +635,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var("$splice"), list)
     }
 
-    /// `&v[a..b]`, `&v[a..]`, `&v[..b]`: a copy, which a shared slice can
-    /// be, since nothing changes `v` while it's borrowed; `&v[..]`, all of
-    /// it, `v` itself, as `&s[..]` of a string is. Out of bounds, it panics,
-    /// as Rust does.
-    fn slice_range(&mut self, op: TextOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let items = self.operands(&[args[0]], out)?.remove(0);
-        let (start, end) = self.range_bounds(args[1], span, out)?;
-        Ok(self.sliced(op, items, start, end))
-    }
-
     /// `slice_range`'s, of its operands' values (ADR 0364): `items`, and
     /// `range`, a `range_ty`.
     pub(in crate::lower) fn slice_range_values(
@@ -774,20 +673,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var(name), list)
     }
 
-    /// A part of a string as a `&mut str` (ADR 0334): `$strPart(cell, a, b)`
-    /// of the cell its `&mut` is, `$strGetMut` and `$strSplitAtMut`.
-    fn str_part(&mut self, op: TextOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let cell = self.str_cell(args[0], span, out)?;
-        let given = match op {
-            TextOp::StrSplitAtMut { .. } | TextOp::StrPart { bounds: true } => self.operands(&args[1..], out)?,
-            _ => {
-                let (start, end) = self.range_bounds(args[1], span, out)?;
-                std::iter::once(start).chain(end).collect()
-            }
-        };
-        Ok(self.str_part_values(op, cell, given))
-    }
-
     /// Of `cell`, a `&mut str`'s, and what's `given`, a range's bounds or a
     /// `split_at_mut`'s index: the part, THIR's and MIR's.
     pub(in crate::lower) fn str_part_values(&mut self, op: TextOp, cell: Expr, given: Vec<Expr>) -> Expr {
@@ -805,69 +690,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         self.runtime.insert(Helper::StrPart);
         Expr::call(Expr::var(name), list)
-    }
-
-    /// What a `&mut str` is written through (ADR 0334): a box or a part it
-    /// already is, or a handle on the place it borrows, `s` of `&mut s`.
-    fn str_cell(&mut self, arg: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let Some(place) = self.mut_borrowed(arg) else {
-            return self.expr(arg, out);
-        };
-        if let ExprKind::Deref { arg: inner } = self.thir[self.strip(place)].kind
-            && self.is_cell_value(inner)
-        {
-            return self.expr(inner, out);
-        }
-        Ok(Expr::handle(self.fixed_place(place, "cell", span, out)?))
-    }
-
-    /// Is `e` a call making a part of a string, `&mut s[a..b]`?
-    pub(in crate::lower) fn is_str_part(&self, e: ExprId) -> bool {
-        matches!(self.thir[self.strip(e)].kind, ExprKind::Call { fun, .. }
-            if matches!(self.std_fn(fun), Some(Std::Text(TextOp::StrPart { .. }))))
-    }
-
-    /// A range argument's bounds, in order: its start, `0` where it has none,
-    /// and its end past what it holds, `a..=b`'s `b + 1`, or `None` where it
-    /// runs to the end.
-    pub(in crate::lower) fn range_bounds(
-        &mut self,
-        range: ExprId,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<(Expr, Option<Expr>)> {
-        let range = self.strip(range);
-        let range_ty = self.thir[range].ty;
-        let kind = self.range_kind(range_ty);
-        let fields: Vec<(usize, ExprId)> = match self.thir[range].kind {
-            ExprKind::Adt(ref adt) if kind != Some(RangeKind::ToInclusive) => {
-                adt.fields.iter().map(|f| (f.name.as_usize(), f.expr)).collect()
-            }
-            // A range kept as a value, or `a..=b` or `..=b` (ADR 0129): its bounds.
-            _ => {
-                let value = self.operands(&[range], out)?.remove(0);
-                return self.range_value_bounds(value, range_ty, span, out);
-            }
-        };
-        let bound = |i: usize| fields.iter().find(|&&(n, _)| n == i).map(|&(_, e)| e);
-        let (start, end) = if self.is_lang_adt(range_ty, LangItem::Range) {
-            (bound(0), bound(1))
-        } else if self.is_lang_adt(range_ty, LangItem::RangeFrom) {
-            (bound(0), None)
-        } else if self.is_lang_adt(range_ty, LangItem::RangeTo) {
-            (None, bound(0))
-        } else if self.is_lang_adt(range_ty, LangItem::RangeFull) {
-            (None, None)
-        } else {
-            return Err(self.unsupported(span, "slicing by this range"));
-        };
-        let list: Vec<ExprId> = start.into_iter().chain(end).collect();
-        let mut values = self.operands(&list, out)?.into_iter();
-        let start = match start {
-            Some(_) => values.next().expect("a start"),
-            None => Expr::int(0),
-        };
-        Ok((start, end.map(|_| values.next().expect("an end"))))
     }
 
     /// `range_bounds`'s, of a range's value, a `range_ty`.

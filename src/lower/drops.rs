@@ -12,9 +12,8 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 
 use rustc_hir::def::DefKind;
-use rustc_hir::{self as hir, HirId, Node};
-use rustc_middle::middle::region;
-use rustc_middle::thir::{BlockId, ExprId, ExprKind, LocalVarId, Pat, StmtKind as ThirStmt};
+
+use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Pat, StmtKind as ThirStmt};
 use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -29,8 +28,7 @@ use crate::runtime::Helper;
 mod facts;
 mod types;
 
-pub(super) use facts::is_place;
-use facts::{Facts, TempKind, binds_any, find_facts};
+use facts::{Facts, find_facts};
 pub(super) use types::Drops;
 use types::{DropQuery, TypeDrops, describe};
 
@@ -40,16 +38,6 @@ use types::{DropQuery, TypeDrops, describe};
 struct Made<'tcx> {
     functions: Vec<(Ty<'tcx>, String)>,
     defs: Vec<Stmt>,
-}
-
-/// A variable that owns a value with a destructor, dropped when its scope
-/// ends: its JS value, and the flag that says it's still owned, if it moves.
-struct Owned<'tcx> {
-    value: Expr,
-    ty: Ty<'tcx>,
-    flag: Option<String>,
-    /// Each part moved somewhere, and its flag.
-    parts: Vec<(Path, Option<String>)>,
 }
 
 /// A part of a value, field by field: each step the variant it's in, by
@@ -84,26 +72,6 @@ impl<'b, 'tcx> rustc_middle::thir::visit::Visitor<'b, 'tcx> for BoundRefCells<'_
     }
 }
 
-/// A temporary that ends with the statement being lowered.
-pub(super) struct Temp<'tcx> {
-    name: String,
-    ty: Ty<'tcx>,
-    flag: Option<String>,
-    /// The operand it is, which must have been moved by the statement's end.
-    operand: Option<ExprId>,
-    /// The parts a pattern moves out of it: on every path, or with a flag.
-    parts: Vec<(Path, Option<String>)>,
-}
-
-/// The statement being lowered, which a statement inside it saves and puts
-/// back: the scopes its temporaries end in, its own and, for a `let`, the
-/// rest of the block's, and the temporaries that end with it.
-#[derive(Default)]
-pub(super) struct Statement<'tcx> {
-    scopes: Option<(region::Scope, Option<region::Scope>)>,
-    temps: Vec<Temp<'tcx>>,
-}
-
 /// A copied default's drops: the drop functions of its trait's type
 /// parameters, by index, and those it can't make, with why (ADR 0098).
 pub(super) type DefaultDrops<'tcx> = (HashMap<u32, String>, HashMap<u32, (Ty<'tcx>, &'static str)>);
@@ -112,17 +80,9 @@ pub(super) type DefaultDrops<'tcx> = (HashMap<u32, String>, HashMap<u32, (Ty<'tc
 /// from the drops of the one it's in while it's lowered, given back as it
 /// ends: its statement and scopes, and a default's, the item's drops.
 pub(super) struct EnclosingDrops<'tcx> {
-    scopes: BodyScopes<'tcx>,
     swapped: Option<SwappedDrops<'tcx>>,
     /// The enclosing body's drop functions, where this body declares its own.
     hoisted: Option<Option<Hoisted<'tcx>>>,
-}
-
-/// The statement and the expressions being lowered, whose temporaries a
-/// body inside them, a closure's, has none of: it has its own.
-struct BodyScopes<'tcx> {
-    statement: Statement<'tcx>,
-    open: Vec<(region::Scope, Vec<Temp<'tcx>>)>,
 }
 
 /// A function's drops while a copied default body has its own.
@@ -143,37 +103,18 @@ pub(super) struct DropState<'tcx> {
     sizes: RefCell<HashMap<Ty<'tcx>, (usize, bool)>>,
     /// Each body's facts, by the address of its THIR: a closure's is its own.
     facts: HashMap<usize, Rc<Facts>>,
-    /// The owners in scope, innermost last.
-    owned: Vec<Owned<'tcx>>,
     /// Every owner given a scope, and each move lowered, which a body's
     /// facts must all be once it's lowered.
     registered: HashSet<LocalVarId>,
     lowered_moves: HashSet<(usize, ExprId)>,
-    flags: HashMap<LocalVarId, String>,
-    /// Moves that are a call's operands, and the statements that clear
-    /// their flags, which wait until every operand is evaluated.
-    deferred: HashMap<(usize, ExprId), Option<Stmt>>,
-    statement: Statement<'tcx>,
-    /// An operand temporary's flag, and whether its move was lowered.
-    temp_flags: HashMap<(usize, ExprId), String>,
-    temps_moved: HashSet<(usize, ExprId)>,
     /// The function being lowered's drop functions, by the index of the
     /// type parameter each drops.
     param_drops: HashMap<u32, String>,
     /// The type parameters whose drops the body has used.
     used_drops: HashSet<u32>,
-    /// The variables declared by `let`s that can't leave (ADR 0301): what
-    /// a scope moves after them it moves before anything can leave.
-    quiet: HashSet<String>,
-    part_flags: HashMap<(LocalVarId, Path), String>,
     /// Each closure made here that holds a value with a destructor: the body
     /// it's made in, and the variables it holds, which its drop drops.
     closures: HashMap<DefId, (DefId, Vec<(Expr, Ty<'tcx>)>)>,
-    /// The flags of each temporary's parts that a pattern moves on some paths.
-    temp_part_flags: HashMap<(usize, ExprId), Vec<(Path, String)>>,
-    /// The scopes of the expressions being lowered, innermost last, and the
-    /// temporaries that end with each: a condition's, a block's tail's.
-    open: Vec<(region::Scope, Vec<Temp<'tcx>>)>,
     /// The drop functions of the function or closure being lowered, each
     /// declared once at its top; `None` where each drop declares its own.
     hoisted: Option<Hoisted<'tcx>>,
@@ -200,12 +141,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What dropping a `ty` runs.
+    /// Of a copied default's type, the impl's (ADR 0176).
     pub(in crate::lower) fn drops(&self, ty: Ty<'tcx>) -> Drops<'tcx> {
-        self.drop_query().drops(ty)
+        self.drop_query().drops(self.impl_type(ty))
     }
 
     pub(in crate::lower) fn has_drops(&self, ty: Ty<'tcx>) -> bool {
-        self.drop_query().has_drops(ty)
+        self.drop_query().has_drops(self.impl_type(ty))
     }
 
     /// A call of `callee` of `args`: the type parameters it takes no
@@ -280,29 +222,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.drop_query().runs_drop(drop)
     }
 
-    /// The parts a pattern moves out of what it's matched against, by value.
-    pub(super) fn pattern_paths(&self, pat: &Pat<'tcx>) -> Option<Vec<Path>> {
-        self.drop_query().pattern_paths(pat)
-    }
-
     /// A closure, at `closure`, made here: the places its drop drops.
     pub(super) fn closure_made(&mut self, closure: DefId, places: Vec<(Expr, Ty<'tcx>)>) {
         self.drop_state.closures.insert(closure, (self.body_owner, places));
-    }
-
-    /// The variables of the body being lowered that a closure flags as its
-    /// own as it's lowered, given back once it is.
-    pub(super) fn take_flags(&mut self, vars: &[LocalVarId]) -> Vec<(LocalVarId, Option<String>)> {
-        vars.iter().map(|&v| (v, self.drop_state.flags.remove(&v))).collect()
-    }
-
-    pub(super) fn give_flags(&mut self, flags: Vec<(LocalVarId, Option<String>)>) {
-        for (var, flag) in flags {
-            match flag {
-                Some(flag) => self.drop_state.flags.insert(var, flag),
-                None => self.drop_state.flags.remove(&var),
-            };
-        }
     }
 
     /// Drop `value`, a `ty`: its own `drop`, then each part's, in Rust's
@@ -662,103 +584,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// Drop `value`, a `ty` some of whose parts may have moved: a part with
-    /// a flag only if it's still owned, the rest as `drop_value` would. Rust
-    /// forbids moving out of a type with a `Drop` of its own (E0509), so
-    /// what's around a moved part has no `drop` to call.
-    fn drop_owned(
-        &mut self,
-        value: Expr,
-        ty: Ty<'tcx>,
-        parts: &[(Path, Option<String>)],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<()> {
-        if parts.is_empty() {
-            return self.drop_value(value, ty, span, out);
-        }
-        let js_span = self.js_span(span);
-        // This part itself moved on every path: nothing of it is left.
-        if parts.iter().any(|(p, flag)| p.is_empty() && flag.is_none()) {
-            return Ok(());
-        }
-        // This part itself moved, on some path: all of it only if it's owned.
-        if let Some((_, Some(flag))) = parts.iter().find(|(p, _)| p.is_empty()) {
-            let rest: Vec<(Path, Option<String>)> = parts.iter().filter(|(p, _)| !p.is_empty()).cloned().collect();
-            let mut owned = Vec::new();
-            self.drop_owned(value, ty, &rest, span, &mut owned)?;
-            if !owned.is_empty() {
-                out.push(StmtKind::If(Expr::var(flag), owned, None).at(js_span));
-            }
-            return Ok(());
-        }
-        let under = |step: (Option<u32>, usize)| -> Vec<(Path, Option<String>)> {
-            parts
-                .iter()
-                .filter(|(p, _)| p[0] == step)
-                .map(|(p, f)| (p[1..].to_vec(), f.clone()))
-                .collect()
-        };
-        match ty.kind() {
-            ty::Tuple(items) => {
-                for (i, item) in items.iter().enumerate() {
-                    let part = self.project(value.clone(), ty, i);
-                    self.drop_owned(part, item, &under((None, i)), span, out)?;
-                }
-            }
-            ty::Adt(adt, args) if adt.is_struct() => {
-                for (i, field) in adt.non_enum_variant().fields.iter().enumerate() {
-                    let part = self.project(value.clone(), ty, i);
-                    self.drop_owned(part, self.field_ty(field, args), &under((None, i)), span, out)?;
-                }
-            }
-            // `Some(x)` is `x` itself (ADR 0030).
-            ty::Adt(adt, _) if let Some(inner) = self.option_of(ty) => {
-                let some = adt.variants().iter().position(|v| !v.fields.is_empty()).unwrap_or(1) as u32;
-                let mut body = Vec::new();
-                self.drop_owned(value.clone(), inner, &under((Some(some), 0)), span, &mut body)?;
-                if !body.is_empty() {
-                    out.push(StmtKind::If(Expr::bin(Op::LooseNe, value, Expr::null()), body, None).at(js_span));
-                }
-            }
-            ty::Adt(adt, args) if adt.is_enum() => {
-                // An untagged enum's variant is its payload (ADR 0214).
-                let untagged = self.untagged(ty).is_some();
-                for (index, variant) in adt.variants().iter().enumerate() {
-                    let mut fields = Vec::new();
-                    for (i, field) in variant.fields.iter().enumerate() {
-                        let part = match untagged {
-                            true => value.clone(),
-                            false => Expr::member(value.clone(), variant_field(self.tcx, variant, i)),
-                        };
-                        self.drop_owned(
-                            part,
-                            self.field_ty(field, args),
-                            &under((Some(index as u32), i)),
-                            span,
-                            &mut fields,
-                        )?;
-                    }
-                    if fields.is_empty() {
-                        continue;
-                    }
-                    let test = match adt.variants().len() {
-                        1 => Expr::bool(true),
-                        _ if untagged => self.untagged_variant_test(ty, variant, &value),
-                        _ => Expr::bin(
-                            Op::Eq,
-                            Expr::member(value.clone(), super::bindings::tag_key(self.tcx, adt.did())),
-                            super::bindings::variant_tag(self.tcx, variant),
-                        ),
-                    };
-                    out.push(StmtKind::If(test, fields, None).at(js_span));
-                }
-            }
-            _ => return Err(self.unsupported(span, &format!("dropping what's left of a `{ty}`"))),
-        }
-        Ok(())
-    }
-
     /// Each item of an array, in order: `for (const item of v) { .. }`.
     fn drop_items(
         &mut self,
@@ -925,273 +750,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `var`, just bound to `value` in `out`, owns a value with a
-    /// destructor: its scope drops it. One that's moved gets a flag.
-    pub(super) fn own(&mut self, var: LocalVarId, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
-        let js_span = self.js_span(span);
-        self.own_at(var, value, ty, js_span, out)
-    }
-
-    /// `own`, with the flags' statements at `js_span`. A part that's moved
-    /// somewhere, `pair.a`, gets a flag of its own, `pair$a$live`.
-    pub(super) fn own_at(
-        &mut self,
-        var: LocalVarId,
-        value: Expr,
-        ty: Ty<'tcx>,
-        js_span: js::Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<()> {
-        let facts = self.drop_facts()?;
-        let base = match &value.kind {
-            js::ExprKind::Var(name) => name.clone(),
-            _ => "value".into(),
-        };
-        let flag = facts.moved.contains(&var).then(|| {
-            let flag = self.fresh(&format!("{base}$live"));
-            out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(true))).at(js_span));
-            self.drop_state.flags.insert(var, flag.clone());
-            flag
-        });
-        let mut parts: Vec<(Path, Option<String>)> = Vec::new();
-        for path in facts.parts.get(&var).into_iter().flatten() {
-            if parts.iter().any(|(p, _)| p == path) {
-                continue;
-            }
-            let named = self.path_name(ty, path);
-            let flag = self.fresh(&format!("{base}${named}$live"));
-            out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(true))).at(js_span));
-            self.drop_state.part_flags.insert((var, path.clone()), flag.clone());
-            parts.push((path.clone(), Some(flag)));
-        }
-        self.drop_state.registered.insert(var);
-        self.drop_state.owned.push(Owned { value, ty, flag, parts });
-        Ok(())
-    }
-
-    /// A part's path as a name, its fields' and variants': `a`, `0$1`, `Some$0`.
-    fn path_name(&self, ty: Ty<'tcx>, path: &Path) -> String {
-        let mut names = Vec::new();
-        let mut at = ty;
-        for &(variant, field) in path {
-            match at.kind() {
-                ty::Adt(adt, args) => {
-                    let def = match variant {
-                        Some(v) => {
-                            let def = adt.variants().iter().nth(v as usize).expect("the variant");
-                            names.push(def.name.to_string());
-                            def
-                        }
-                        None => adt.non_enum_variant(),
-                    };
-                    let f = def.fields.iter().nth(field).expect("the field");
-                    names.push(f.name.to_string());
-                    at = self.field_ty(f, args);
-                }
-                ty::Tuple(items) => {
-                    names.push(field.to_string());
-                    at = items[field];
-                }
-                _ => names.push(field.to_string()),
-            }
-        }
-        names.join("$")
-    }
-
-    /// What `pat`, matched against `scrutinee`, a variable whose parts have
-    /// flags, moves out of it: those parts' flags are cleared.
-    pub(super) fn clear_parts(&mut self, scrutinee: ExprId, pat: &Pat<'tcx>, out: &mut Vec<Stmt>) {
-        let js_span = self.js_span(pat.span);
-        // A temporary's, taken apart (ADR 0131).
-        let key = std::ptr::from_ref(self.thir) as usize;
-        if let Some(flags) = self.drop_state.temp_part_flags.get(&(key, self.strip(scrutinee))) {
-            let flags = flags.clone();
-            for path in self.pattern_paths(pat).unwrap_or_default() {
-                if let Some((_, flag)) = flags.iter().find(|(p, _)| *p == path) {
-                    out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js_span));
-                }
-            }
-            return;
-        }
-        let ExprKind::VarRef { id } = self.thir[self.strip(scrutinee)].kind else {
-            return;
-        };
-        for path in self.pattern_paths(pat).unwrap_or_default() {
-            if let Some(flag) = self.drop_state.part_flags.get(&(id, path)) {
-                out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js_span));
-            }
-        }
-    }
-
-    /// Whether `var` owns a value with a destructor.
-    pub(super) fn is_owner(&mut self, var: LocalVarId) -> R<bool> {
-        Ok(self.drop_facts()?.owners.contains_key(&var))
-    }
-
-    /// Whether `e` is a temporary that a pattern takes apart (ADR 0131).
-    pub(super) fn takes_apart_temporary(&mut self, e: ExprId) -> R<bool> {
-        Ok(self.drop_facts()?.temp_parts.contains_key(&self.strip(e)))
-    }
-
-    /// Whether `e` is a temporary, and why.
-    pub(super) fn temp_kind(&mut self, e: ExprId) -> R<Option<TempKind>> {
-        Ok(self.drop_facts()?.temps.get(&e).copied())
-    }
-
-    /// `e`, a value with a destructor that's a temporary: in a `const` of its
-    /// own, dropped where rustc's scope tree ends it. One that ends with the
-    /// statement is dropped by its `finally`; one a `let` extends is owned
-    /// by the rest of the block, as a variable is.
-    pub(super) fn temporary(&mut self, e: ExprId, kind: TempKind, value: Expr, out: &mut Vec<Stmt>) -> R<Expr> {
-        let span = self.thir[e].span;
-        let ty = self.thir[e].ty;
-        let js_span = self.js_span(span);
-        let base = match ty.peel_refs().kind() {
-            ty::Adt(adt, _) => lower_first(self.tcx.item_name(adt.did()).as_str()),
-            _ => "temporary".to_string(),
-        };
-        let name = self.fresh(&base);
-        out.push(StmtKind::Const(name.clone(), value).at(js_span));
-        let (statement, rest) = match self.drop_state.statement.scopes {
-            Some((statement, rest)) => (Some(statement), rest),
-            None => (None, None),
-        };
-        let key = std::ptr::from_ref(self.thir) as usize;
-        // The expression whose scope it ends with, if not the statement's.
-        let mut open = None;
-        let flag = match kind {
-            TempKind::Operand => {
-                // Outside any statement, a function body's tail's: the scope
-                // of what moves it, the innermost that isn't its own.
-                if statement.is_none() {
-                    let own = self.thir[e].temp_scope_id;
-                    match self.drop_state.open.iter().rposition(|(s, _)| s.local_id != own) {
-                        Some(at) => open = Some(at),
-                        None => return Err(self.unsupported(span, "a temporary with a destructor here")),
-                    }
-                }
-                let flag = self.fresh(&format!("{name}$live"));
-                out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(true))).at(js_span));
-                self.drop_state.temp_flags.insert((key, e), flag.clone());
-                Some(flag)
-            }
-            TempKind::Place => {
-                let tree = self.tcx.region_scope_tree(self.body_owner.expect_local());
-                match tree.temporary_scope(self.thir[e].temp_scope_id).temp_lifetime {
-                    // Never dropped, as a promoted constant isn't.
-                    None => return Ok(Expr::var(&name)),
-                    Some(scope) if statement.is_some_and(|st| scope == st || self.ends_with_statement(scope, st)) => {
-                        None
-                    }
-                    // `let r = &f();`: it lives as long as `r` does, less what a
-                    // `let` moves out of it, `let (a, ref b) = (f(), g());` (ADR 0131).
-                    Some(scope) if Some(scope) == rest => {
-                        let parts = match self.drop_facts()?.temp_parts.get(&e) {
-                            Some((_, true)) => return Err(self.unsupported(span, "a temporary with a destructor here")),
-                            Some((paths, false)) => paths.iter().map(|p| (p.clone(), None)).collect(),
-                            None => Vec::new(),
-                        };
-                        self.drop_state.owned.push(Owned {
-                            value: Expr::var(&name),
-                            ty,
-                            flag: None,
-                            parts,
-                        });
-                        return Ok(Expr::var(&name));
-                    }
-                    // A condition's, a block's tail's: its expression's.
-                    Some(scope) => match self.drop_state.open.iter().rposition(|(s, _)| *s == scope) {
-                        Some(at) => {
-                            open = Some(at);
-                            None
-                        }
-                        None => return Err(self.unsupported(span, "a temporary with a destructor here")),
-                    },
-                }
-            }
-        };
-        let operand = (kind == TempKind::Operand).then_some(e);
-        // What a pattern moves out of it (ADR 0131): a part moved on only
-        // some paths gets a flag, `tuple$0$live`, as a variable's does.
-        let mut parts: Vec<(Path, Option<String>)> = Vec::new();
-        if let Some((paths, flagged)) = self.drop_facts()?.temp_parts.get(&e) {
-            let mut flags = Vec::new();
-            for path in paths {
-                if parts.iter().any(|(p, _)| p == path) {
-                    continue;
-                }
-                let flag = flagged.then(|| {
-                    let flag = match self.path_name(ty, path) {
-                        named if named.is_empty() => self.fresh(&format!("{name}$live")),
-                        named => self.fresh(&format!("{name}${named}$live")),
-                    };
-                    out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(true))).at(js_span));
-                    flags.push((path.clone(), flag.clone()));
-                    flag
-                });
-                parts.push((path.clone(), flag));
-            }
-            self.drop_state.temp_part_flags.insert((key, e), flags);
-        }
-        let temp = Temp {
-            name: name.clone(),
-            ty,
-            flag,
-            operand,
-            parts,
-        };
-        match open {
-            Some(at) => self.drop_state.open[at].1.push(temp),
-            None => self.drop_state.statement.temps.push(temp),
-        }
-        Ok(Expr::var(&name))
-    }
-
-    /// Whether `scope` ends as `statement` does: an `if let`'s, whose
-    /// scrutinee's temporaries end with the `if` in Rust 2024, where the
-    /// `if` is the whole statement and has no `else` to run after them.
-    fn ends_with_statement(&self, scope: region::Scope, statement: region::Scope) -> bool {
-        if scope.data != region::ScopeData::IfThenRescope {
-            return false;
-        }
-        // The scope is the `then` block's, inside the `if`.
-        let owner = self.tcx.local_def_id_to_hir_id(self.body_owner.expect_local()).owner;
-        let then = HirId {
-            owner,
-            local_id: scope.local_id,
-        };
-        let id = self.tcx.parent_hir_id(then);
-        matches!(self.tcx.hir_node(id), Node::Expr(e) if matches!(e.kind, hir::ExprKind::If(_, _, None)))
-            && self.tcx.parent_hir_id(id).local_id == statement.local_id
-    }
-
-    /// Start lowering a statement whose temporaries end in `scopes`: its own,
-    /// and for a `let`, the rest of the block's. What it replaces, a
-    /// statement it's inside, `end_statement` puts back.
-    pub(super) fn begin_statement(&mut self, scopes: (region::Scope, Option<region::Scope>)) -> Statement<'tcx> {
-        std::mem::replace(
-            &mut self.drop_state.statement,
-            Statement {
-                scopes: Some(scopes),
-                temps: Vec::new(),
-            },
-        )
-    }
-
-    /// Finish the statement `begin_statement` started: `lowered`, its JS,
-    /// goes in `out`, each of its temporaries dropped by a `finally` after
-    /// the `const` that holds it, last first.
-    pub(super) fn end_statement(
-        &mut self,
-        outer: Statement<'tcx>,
-        lowered: Vec<Stmt>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<()> {
-        let statement = std::mem::replace(&mut self.drop_state.statement, outer);
-        self.place_temps(statement.temps, lowered, span, out)
-    }
-
     /// Start lowering a body inside the one being lowered: its own facts, and
     /// none of the enclosing one's statement and scopes. A copied default's,
     /// `default`, is given its trait's type parameters' drops and those it
@@ -1206,7 +764,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let swapped = default.map(|(drops, unsupported)| self.swap_drops(drops, unsupported));
         self.drop_facts()?;
         Ok(EnclosingDrops {
-            scopes: self.take_scopes(),
             swapped,
             hoisted: frame.then(|| self.begin_hoisting()),
         })
@@ -1226,9 +783,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Finish the body `enter_body_drops` started: every owner it has had a
     /// scope, and every move its flag cleared, and the enclosing body's back.
-    pub(super) fn leave_body_drops(&mut self, enclosing: EnclosingDrops<'tcx>) -> R<Vec<Stmt>> {
-        self.check_drops()?;
-        self.give_scopes(enclosing.scopes);
+    pub(super) fn leave_body_drops(&mut self, enclosing: EnclosingDrops<'tcx>, from_mir: bool) -> R<Vec<Stmt>> {
+        if !from_mir {
+            self.check_drops()?;
+        }
         if let Some(swapped) = enclosing.swapped {
             self.restore_drops(swapped);
         }
@@ -1236,187 +794,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(outer) => self.end_hoisting(outer),
             None => Vec::new(),
         })
-    }
-
-    /// The enclosing body's statement and expressions, while a body inside
-    /// it is lowered.
-    fn take_scopes(&mut self) -> BodyScopes<'tcx> {
-        BodyScopes {
-            statement: std::mem::take(&mut self.drop_state.statement),
-            open: std::mem::take(&mut self.drop_state.open),
-        }
-    }
-
-    fn give_scopes(&mut self, scopes: BodyScopes<'tcx>) {
-        self.drop_state.statement = scopes.statement;
-        self.drop_state.open = scopes.open;
-    }
-
-    /// Start lowering the expression whose scope is `scope`, which a
-    /// temporary may end with, as a condition's does.
-    pub(super) fn begin_scope(&mut self, scope: region::Scope) {
-        self.drop_state.open.push((scope, Vec::new()));
-    }
-
-    /// Finish the expression `begin_scope` started, whose JS is `out` from
-    /// `mark` on: each of the temporaries that end with it is dropped by a
-    /// `finally` after it.
-    pub(super) fn end_scope(&mut self, mark: usize, span: Span, out: &mut Vec<Stmt>) -> R<()> {
-        let (_, temps) = self.drop_state.open.pop().expect("a scope begun");
-        if temps.is_empty() {
-            return Ok(());
-        }
-        let lowered = out.split_off(mark);
-        self.place_temps(temps, lowered, span, out)
-    }
-
-    /// Whether the innermost scope begun has temporaries that end with it.
-    pub(super) fn scope_has_temps(&self) -> bool {
-        self.drop_state.open.last().is_some_and(|(_, temps)| !temps.is_empty())
-    }
-
-    /// `lowered`, in `out`, with `temps` dropped after it, last first.
-    fn place_temps(&mut self, temps: Vec<Temp<'tcx>>, lowered: Vec<Stmt>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
-        let key = std::ptr::from_ref(self.thir) as usize;
-        // An operand temporary must have been moved where it's an operand.
-        for t in &temps {
-            if let Some(e) = t.operand
-                && !self.drop_state.temps_moved.contains(&(key, e))
-            {
-                return Err(self.unsupported(
-                    self.thir[e].span,
-                    "a value with a destructor made before what may panic or leave early, here",
-                ));
-            }
-        }
-        if temps.is_empty() {
-            out.extend(lowered);
-            return Ok(());
-        }
-        // Each is declared in the scope's own JS, not in a branch of it. An
-        // operand may be, `B::from_name(flag).ok_or_else(f)?` in an `else`: it's
-        // moved where it's made, so its branch's `finally` is the scope's.
-        let mut lowered = lowered;
-        let mut placed = Vec::new();
-        let mut in_branches = Vec::new();
-        for t in temps {
-            match lowered
-                .iter()
-                .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if *n == t.name))
-                .or_else(|| assigned_in_try(&lowered, &t.name))
-            {
-                Some(at) if placed.iter().any(|&(other, _)| other == at) => {
-                    return Err(self.unsupported(span, "a temporary with a destructor in a branch"));
-                }
-                Some(at) => placed.push((at, t)),
-                None if t.operand.is_some() && t.parts.is_empty() => in_branches.push(t),
-                None => return Err(self.unsupported(span, "a temporary with a destructor in a branch")),
-            }
-        }
-        // Last first: wrapping one makes the `const`s after it assignments,
-        // where a later one's wouldn't be found.
-        for t in in_branches.into_iter().rev() {
-            if self.place_in_branch(&mut lowered, t, span)?.is_some() {
-                return Err(self.unsupported(span, "a temporary with a destructor in a branch"));
-            }
-        }
-        placed.sort_by_key(|(at, _)| *at);
-        self.wrap_temps(lowered, placed, span, out)
-    }
-
-    /// `temp` dropped after the rest of the branch of `stmts` that declares
-    /// it, or given back if none does.
-    fn place_in_branch(&mut self, stmts: &mut Vec<Stmt>, temp: Temp<'tcx>, span: Span) -> R<Option<Temp<'tcx>>> {
-        if let Some(at) = stmts
-            .iter()
-            .position(|s| matches!(&s.kind, StmtKind::Const(n, _) if *n == temp.name))
-        {
-            let mut wrapped = Vec::new();
-            self.wrap_temps(std::mem::take(stmts), vec![(at, temp)], span, &mut wrapped)?;
-            *stmts = wrapped;
-            return Ok(None);
-        }
-        let mut temp = temp;
-        for s in stmts.iter_mut() {
-            let branches: Vec<&mut Vec<Stmt>> = match &mut s.kind {
-                StmtKind::If(_, then, els) => std::iter::once(then).chain(els.as_mut()).collect(),
-                StmtKind::Labeled(_, body) | StmtKind::Try(body, _) => vec![body],
-                _ => Vec::new(),
-            };
-            for branch in branches {
-                match self.place_in_branch(branch, temp, span)? {
-                    Some(back) => temp = back,
-                    None => return Ok(None),
-                }
-            }
-        }
-        Ok(Some(temp))
-    }
-
-    fn wrap_temps(
-        &mut self,
-        mut lowered: Vec<Stmt>,
-        mut placed: Vec<(usize, Temp<'tcx>)>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<()> {
-        if placed.is_empty() {
-            out.extend(lowered);
-            return Ok(());
-        }
-        let (at, temp) = placed.remove(0);
-        // Through its declaration, and its flags'.
-        let mut end = at + 1;
-        let flags: Vec<&String> = temp
-            .flag
-            .iter()
-            .chain(temp.parts.iter().filter_map(|(_, f)| f.as_ref()))
-            .collect();
-        while matches!(lowered.get(end).map(|s| &s.kind), Some(StmtKind::Let(n, _)) if flags.contains(&n)) {
-            end += 1;
-        }
-        let rest = lowered.split_off(end);
-        out.extend(lowered);
-        let placed = placed.into_iter().map(|(i, t)| (i - end, t)).collect();
-        let mut inner = Vec::new();
-        self.wrap_temps(rest, placed, span, &mut inner)?;
-        // What the rest declares is used after it: declared before the `try`.
-        let mut body = Vec::new();
-        for s in inner {
-            let js_span = s.span;
-            match s.kind {
-                StmtKind::Const(name, value) | StmtKind::Let(name, Some(value)) => {
-                    out.push(StmtKind::Let(name.clone(), None).at(js_span));
-                    body.push(StmtKind::Assign(Expr::var(&name), value).at(js_span));
-                }
-                StmtKind::Let(name, None) => out.push(StmtKind::Let(name, None).at(js_span)),
-                StmtKind::Destructure { .. } => {
-                    return Err(self.unsupported(
-                        span,
-                        "taking a value apart in a statement with a temporary that has a destructor",
-                    ));
-                }
-                kind => body.push(kind.at(js_span)),
-            }
-        }
-        let mut drop = Vec::new();
-        self.drop_owned(Expr::var(&temp.name), temp.ty, &temp.parts, span, &mut drop)?;
-        let js_span = self.js_span(span);
-        let finally = match temp.flag {
-            Some(flag) => vec![StmtKind::If(Expr::var(&flag), drop, None).at(js_span)],
-            None => drop,
-        };
-        // Nothing to leave by, as `x = temporary[0];`: the drops come after.
-        let cannot_leave = body
-            .iter()
-            .all(|s| matches!(&s.kind, StmtKind::Assign(Expr { kind: js::ExprKind::Var(_), .. }, value) if value.reads_same()));
-        if body.is_empty() || cannot_leave {
-            out.extend(body);
-            out.extend(finally);
-        } else {
-            out.push(StmtKind::Try(body, finally).at(js_span));
-        }
-        Ok(())
     }
 
     /// The function being lowered is given a drop for its type parameter
@@ -1544,16 +921,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::arrow(vec![param.into()], body)))
     }
 
-    /// Note the variables `stmts`, a `let` that can't leave, declare: none
-    /// is where a scope can be left (ADR 0301).
-    pub(super) fn note_quiet(&mut self, stmts: &[Stmt]) {
-        for s in stmts {
-            if let StmtKind::Const(name, _) | StmtKind::Let(name, _) = &s.kind {
-                self.drop_state.quiet.insert(name.clone());
-            }
-        }
-    }
-
     /// The drop function for a `ty` that `callee`, which takes only the
     /// drops it uses, is given for its type parameter `index`: an argument
     /// the pipeline keeps where `callee` uses it (ADR 0300). The drops of
@@ -1591,107 +958,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         uses.names.insert(id, names.collect());
     }
 
-    /// A value its scope drops that no variable names, as a `_` parameter.
-    pub(super) fn own_value(&mut self, value: Expr, ty: Ty<'tcx>) {
-        self.drop_state.owned.push(Owned {
-            value,
-            ty,
-            flag: None,
-            parts: Vec::new(),
-        });
-    }
-
-    /// `value`, a parameter `pat` takes apart, owned by the scope, less
-    /// what `pat` moves out of it, which is moved on every path (ADR 0131).
-    pub(super) fn own_rest(&mut self, value: Expr, ty: Ty<'tcx>, pat: &Pat<'tcx>) -> R<()> {
-        let paths = self
-            .pattern_paths(pat)
-            .ok_or_else(|| self.unsupported(pat.span, "moving part of a value with a destructor"))?;
-        self.drop_state.owned.push(Owned {
-            value,
-            ty,
-            flag: None,
-            parts: paths.into_iter().map(|p| (p, None)).collect(),
-        });
-        Ok(())
-    }
-
-    /// How many owners are in scope: where a new scope's start.
-    pub(super) fn owned_mark(&self) -> usize {
-        self.drop_state.owned.len()
-    }
-
-    /// End the scope that began at `mark`: `body`, then the drops of what
-    /// it owns, last first, in a `finally`.
-    pub(super) fn close_scope(&mut self, mark: usize, body: Vec<Stmt>, span: Span, out: &mut Vec<Stmt>) -> R<()> {
-        let mut owned: Vec<Owned<'tcx>> = self.drop_state.owned.drain(mark..).collect();
-        let mut body = body;
-        // What's moved before anything in the scope can leave, its flag
-        // cleared first and never set again, `children$live = false;`, is
-        // never the scope's to drop: no flag, and no `try` for it (ADR 0197).
-        // A `let` that can't leave may come first (ADR 0301).
-        let quiet = |s: &&Stmt| match &s.kind {
-            StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.drop_state.quiet.contains(name),
-            _ => false,
-        };
-        let cleared: Vec<String> = body
-            .iter()
-            .filter(|s| !quiet(s))
-            .map_while(|s| match &s.kind {
-                StmtKind::Assign(target, value) if matches!(value.kind, js::ExprKind::Bool(false)) => {
-                    match &target.kind {
-                        js::ExprKind::Var(flag) => Some(flag.clone()),
-                        _ => None,
-                    }
-                }
-                _ => None,
-            })
-            .collect();
-        let declared = |out: &[Stmt], flag: &str| {
-            out.iter().any(|s| {
-                matches!(&s.kind, StmtKind::Let(name, Some(value))
-                    if name == flag && matches!(value.kind, js::ExprKind::Bool(true)))
-            })
-        };
-        let never: Vec<String> = owned
-            .iter()
-            .filter_map(|o| o.flag.as_ref().filter(|_| o.parts.is_empty()))
-            .filter(|flag| cleared.contains(flag) && js::mentions_in(&body, flag) == 1 && declared(out, flag))
-            .cloned()
-            .collect();
-        if !never.is_empty() {
-            owned.retain(|o| o.flag.as_ref().is_none_or(|flag| !never.contains(flag)));
-            let named = |s: &Stmt| match &s.kind {
-                StmtKind::Assign(target, _) => matches!(&target.kind, js::ExprKind::Var(flag) if never.contains(flag)),
-                StmtKind::Let(flag, _) => never.contains(flag),
-                _ => false,
-            };
-            body.retain(|s| !named(s));
-            out.retain(|s| !named(s));
-        }
-        if owned.is_empty() {
-            out.extend(body);
-            return Ok(());
-        }
-        let js_span = self.js_span(span);
-        let mut finally = Vec::new();
-        for o in owned.into_iter().rev() {
-            let mut drop = Vec::new();
-            self.drop_owned(o.value, o.ty, &o.parts, span, &mut drop)?;
-            match o.flag {
-                Some(flag) => finally.push(StmtKind::If(Expr::var(&flag), drop, None).at(js_span)),
-                None => finally.extend(drop),
-            }
-        }
-        // Nothing between the declaration and the drops: nothing to leave by.
-        if body.is_empty() {
-            out.extend(finally);
-        } else {
-            out.push(StmtKind::Try(body, finally).at(js_span));
-        }
-        Ok(())
-    }
-
     /// Whether dropping a `ty` reads it once, so a value that isn't a
     /// variable can be dropped where it's made: `noisyDrop_drop(["x"])`.
     pub(super) fn drops_once(&self, ty: Ty<'tcx>) -> bool {
@@ -1722,184 +988,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Whether computing `e` can't panic, or leave early any other way: a
-    /// literal, a variable, and what's built of them. A `let` of one needs
-    /// no `try` of its own after one before it: nothing can leave between.
-    pub(super) fn cannot_leave(&self, e: ExprId) -> bool {
-        super::effects::cannot_leave_in(self.tcx, self.thir, e)
-    }
-
-    /// `e` moves a variable that owns a value with a destructor: it's not
-    /// owned from here, so its flag is cleared first.
-    pub(super) fn moved(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<()> {
-        let e = self.strip(e);
-        let facts = self.drop_facts()?;
-        // `*b` of a box: what it holds is moved out, which is all the box owns.
-        let e = match self.thir[e].kind {
-            ExprKind::Deref { arg } if facts.moves.contains(&self.strip(arg)) => self.strip(arg),
-            _ => e,
-        };
-        let key = std::ptr::from_ref(self.thir) as usize;
-        // A part moved out, `pair.a`: its flag.
-        let flag = if let Some((var, path)) = facts.part_moves.get(&e) {
-            self.drop_state.part_flags.get(&(*var, path.clone())).cloned()
-        } else if let ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } = self.thir[e].kind
-            && facts.moves.contains(&e)
-        {
-            self.drop_state.flags.get(&id).cloned()
-        } else {
-            return Ok(());
-        };
-        self.drop_state.lowered_moves.insert((key, e));
-        if let Some(flag) = &flag {
-            let js_span = self.js_span(self.thir[e].span);
-            let clear = StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js_span);
-            match self.drop_state.deferred.get_mut(&(key, e)) {
-                Some(slot) => *slot = Some(clear),
-                None => out.push(clear),
-            }
-        }
-        Ok(())
-    }
-
-    /// Whether `base`, a struct update's, is an owner it moves parts of.
-    pub(super) fn update_moves(&mut self, base: ExprId) -> R<bool> {
-        let base = self.strip(base);
-        Ok(self.drop_facts()?.updates.contains_key(&base))
-    }
-
-    /// A struct update, `..base`, once every field's value is made: the
-    /// parts it moves out of `base`, an owner, are no longer its own.
-    pub(super) fn update_moved(&mut self, base: ExprId, out: &mut Vec<Stmt>) -> R<()> {
-        let base = self.strip(base);
-        let facts = self.drop_facts()?;
-        let Some((var, paths)) = facts.updates.get(&base) else {
-            return Ok(());
-        };
-        let key = std::ptr::from_ref(self.thir) as usize;
-        self.drop_state.lowered_moves.insert((key, base));
-        let js_span = self.js_span(self.thir[base].span);
-        for path in paths {
-            if let Some(flag) = self.drop_state.part_flags.get(&(*var, path.clone())) {
-                out.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js_span));
-            }
-        }
-        Ok(())
-    }
-
-    /// Before `list`, a call's operands, is evaluated: the variables it
-    /// moves. Rust moves them as the call's made, after all of them are, so
-    /// a later one that panics leaves them owned, and dropped.
-    pub(super) fn defer_moves(&mut self, list: &[ExprId]) -> R<Vec<ExprId>> {
-        let facts = self.drop_facts()?;
-        let key = std::ptr::from_ref(self.thir) as usize;
-        let moves: Vec<ExprId> = list
-            .iter()
-            .map(|&e| self.strip(e))
-            .filter(|e| {
-                facts.moves.contains(e)
-                    || facts.part_moves.contains_key(e)
-                    || facts.temps.get(e) == Some(&TempKind::Operand)
-            })
-            .collect();
-        for &e in &moves {
-            if facts.moves.contains(&e) || facts.part_moves.contains_key(&e) {
-                self.drop_state.deferred.insert((key, e), None);
-            }
-        }
-        Ok(moves)
-    }
-
-    /// Once `values`, the operands, are evaluated: what has effects goes in
-    /// a `const`, in order, then the moves' flags are cleared.
-    pub(super) fn end_moves(&mut self, moves: &[ExprId], values: &mut [Expr], out: &mut Vec<Stmt>) {
-        let key = std::ptr::from_ref(self.thir) as usize;
-        let mut clears: Vec<Stmt> = Vec::new();
-        for &e in moves {
-            if let Some(clear) = self.drop_state.deferred.remove(&(key, e)).flatten() {
-                clears.push(clear);
-            } else if let Some(flag) = self.drop_state.temp_flags.get(&(key, e)) {
-                // A temporary operand, moved now.
-                let js_span = self.js_span(self.thir[e].span);
-                clears.push(StmtKind::Assign(Expr::var(flag), Expr::bool(false)).at(js_span));
-                self.drop_state.temps_moved.insert((key, e));
-            }
-        }
-        if clears.is_empty() {
-            return;
-        }
-        for value in values.iter_mut() {
-            if value.has_effects() {
-                let original = std::mem::replace(value, Expr::undefined());
-                *value = self.spill("arg", original, out);
-            }
-        }
-        out.extend(clears);
-    }
-
-    /// `lhs = rhs` of a value with a destructor: the new value, then the
-    /// old one's drop, if it's still owned, then the write, as Rust does it.
-    pub(super) fn assign_dropping(&mut self, lhs: ExprId, rhs: ExprId, span: js::Span, out: &mut Vec<Stmt>) -> R<()> {
-        let ty = self.thir[lhs].ty;
-        let rust_span = self.thir[lhs].span;
-        let value = self.expr(rhs, out)?;
-        let value = if value.has_effects() {
-            self.spill("next", value, out)
-        } else {
-            value
-        };
-        let target = match self.place(lhs) {
-            Some((target, _)) => target,
-            // Dropped, then written: a guard's cell is read twice.
-            None => match self.deref_target(lhs, out)?.map(|t| t.kind) {
-                Some(js::ExprKind::Member(guard, name)) => {
-                    let guard = if guard.reads_same() {
-                        *guard
-                    } else {
-                        self.spill("cell", *guard, out)
-                    };
-                    Expr::member(guard, &name)
-                }
-                _ => return Err(self.unsupported(rust_span, "assigning a value with a destructor here")),
-            },
-        };
-        let flag = match self.thir[self.strip(lhs)].kind {
-            ExprKind::VarRef { id } => self.drop_state.flags.get(&id).cloned(),
-            // A box's value that may have moved, `*b = ..` after `consume(*b)`:
-            // the box's own flag, as it was cleared by the move.
-            ExprKind::Deref { arg } if self.thir[arg].ty.is_box() => match self.thir[self.strip(arg)].kind {
-                ExprKind::VarRef { id } => self.drop_state.flags.get(&id).cloned(),
-                _ => None,
-            },
-            // A part that may have moved, `pair.a = ..` after `consume(pair.a)`.
-            _ => self.body_query().place_path(lhs).and_then(|(var, fields)| {
-                let path: Path = fields.into_iter().map(|f| (None, f)).collect();
-                self.drop_state.part_flags.get(&(var, path)).cloned()
-            }),
-        };
-        let mut drop = Vec::new();
-        self.drop_value(target.clone(), ty, rust_span, &mut drop)?;
-        match &flag {
-            Some(flag) => out.push(StmtKind::If(Expr::var(flag), drop, None).at(span)),
-            None => out.extend(drop),
-        }
-        out.push(StmtKind::Assign(target, value).at(span));
-        if let Some(flag) = flag {
-            out.push(StmtKind::Assign(Expr::var(&flag), Expr::bool(true)).at(span));
-        }
-        Ok(())
-    }
-
-    /// Whether `block` binds a variable that owns a value with a destructor.
-    pub(super) fn block_owns(&mut self, block: BlockId) -> R<bool> {
-        let facts = self.drop_facts()?;
-        let thir = self.thir;
-        Ok(thir[block].stmts.iter().any(|&s| match &thir[s].kind {
-            ThirStmt::Let { pattern, .. } => binds_any(pattern, &facts.owners),
-            ThirStmt::Expr { .. } => false,
-        }))
-    }
-
     /// Once a body is lowered: every owner it has must have had a scope, and
     /// every move its flag cleared. One that didn't went a way this doesn't
     /// know, so it's an error, not JS that forgets a drop.
@@ -1927,25 +1015,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             None => Ok(()),
         }
     }
-}
-
-/// Where a temporary declared before an earlier one's `try`, `let tuple;
-/// try { arg = f(b); tuple = [option, arg]; } finally { .. }`, is owned
-/// from: that `try`, if nothing after the assignment in it can leave early.
-/// Should `f(b)` panic, the temporary was never made, so isn't dropped
-/// (ADR 0191).
-fn assigned_in_try(lowered: &[Stmt], name: &str) -> Option<usize> {
-    let assigns = |s: &Stmt, name: Option<&str>| {
-        matches!(&s.kind, StmtKind::Assign(Expr { kind: js::ExprKind::Var(n), .. }, value)
-            if name.is_none_or(|name| n == name) && (name.is_some() || value.reads_same()))
-    };
-    lowered.iter().position(|s| match &s.kind {
-        StmtKind::Try(body, _) => body
-            .iter()
-            .position(|s| assigns(s, Some(name)))
-            .is_some_and(|at| body[at + 1..].iter().all(|s| assigns(s, None))),
-        _ => false,
-    })
 }
 
 /// The type parameters a value of `ty` holds, not behind a reference: what

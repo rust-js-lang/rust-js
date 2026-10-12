@@ -321,6 +321,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
         js::statement_lists(body, &mut unlabeled);
     }
+    // An `if` of `false`, a check that can't fail once what it reads is
+    // in place: its `else`, if any.
+    js::statement_lists(body, &mut never_taken);
     // For the source map: a `return` given the value it returns, at MIR's
     // end of the body, which the map has nothing of, where that value was
     // written; an `if`, where its test says, `if c` or its arm's pattern.
@@ -5573,6 +5576,23 @@ fn returned_unwritten(stmts: &mut Vec<Stmt>, name: &str) {
             }
             _ if mentioned => return,
             _ => {}
+        }
+        i += 1;
+    }
+}
+
+/// `if (false) { .. } else { rest }`: `rest`, what's always run.
+fn never_taken(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::If(test, _, els) = &mut stmts[i].kind
+            && matches!(test.kind, ExprKind::Bool(false))
+        {
+            let rest = els.take().unwrap_or_default();
+            let count = rest.len();
+            stmts.splice(i..=i, rest);
+            i += count;
+            continue;
         }
         i += 1;
     }

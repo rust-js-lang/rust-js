@@ -376,8 +376,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             // early drops them (ADR 0098). From MIR, which drops it as a
             // value; THIR takes a chain's apart itself.
             ty::Adt(_, args)
-                if crate::lower::mir::mir_mode()
-                    && (self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty)) =>
+                if self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty) =>
             {
                 self.drops_in(args.type_at(0), walk)
             }

@@ -56,11 +56,7 @@ pub(in crate::lower) struct Facts {
     pub(in crate::lower) momentary: HashSet<ExprId>,
 }
 
-impl Facts {
-    pub(in crate::lower) fn has_owners(&self) -> bool {
-        !self.owners.is_empty()
-    }
-}
+impl Facts {}
 
 /// Why a value with a destructor is a temporary.
 #[derive(Clone, Copy, PartialEq)]
@@ -81,16 +77,6 @@ fn updated_paths<'tcx>(cx: &DropQuery<'_, 'tcx>, adt: &AdtExpr<'tcx>, field_type
         .filter(|&(i, &ty)| !adt.fields.iter().any(|f| f.name.as_usize() == i) && cx.has_drops(ty))
         .map(|(i, _)| vec![(None, i)])
         .collect()
-}
-
-pub(super) fn binds_any(pat: &Pat<'_>, owners: &HashMap<LocalVarId, Span>) -> bool {
-    let mut found = false;
-    pat.walk_always(|p| {
-        if let PatKind::Binding { var, .. } = p.kind {
-            found |= owners.contains_key(&var);
-        }
-    });
-    found
 }
 
 /// What a pattern takes of a value it's matched against.

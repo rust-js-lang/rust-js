@@ -87,14 +87,22 @@ function wrapTakeNoisy(TDefault, dropT) {
       let a$live = true;
       try {
         console.log("default");
-        a$live = false;
-        noisyDrop_drop?.(a);
-        return 0;
-      } finally {
+      } catch (error) {
         if (a$live) {
           noisyDrop_drop?.(a);
         }
+        throw error;
       }
+      a$live = false;
+      try {
+        noisyDrop_drop?.(a);
+      } catch (error) {
+        if (a$live) {
+          noisyDrop_drop?.(a);
+        }
+        throw error;
+      }
+      return 0;
     },
     make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),
     $drop: (wrap) => {

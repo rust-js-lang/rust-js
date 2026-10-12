@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/runtime/range_inclusive_next_back.js",
     find: "range.end--",
     replace: "--range.end",
-    tests: ["test/mir.test.ts","-t","range_inclusive_next_back"],
+    tests: ["test/corpus.test.ts","-t","range_inclusive_next_back"],
   },
   {
     name: "range-inclusive-back-char-as-number",
@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/range_inclusive_next_back.js",
     find: "  if (typeof range.start === \"string\") {\n",
     replace: "  if (false) {\n",
-    tests: ["test/mir.test.ts","-t","char_ranges_stepped"],
+    tests: ["test/corpus.test.ts","-t","char_ranges_stepped"],
   },
 ];

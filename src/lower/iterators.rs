@@ -4,41 +4,20 @@
 
 use super::calls::Call;
 use super::combinators::IterComb;
-use super::combinators::{IterSource, StepOp};
+use super::combinators::IterSource;
 use super::fn_def;
-use super::recognition::{StdItem, is_std_def, std_item, trait_method};
+use super::recognition::{StdItem, std_item, trait_method};
 use super::representation::Num;
 use super::{FnCx, R, Std};
 use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
-use rustc_hir::attrs::lang_items::LangItem;
+
 use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 use std::collections::HashSet;
-
-/// Whether `known` takes an iterator and iterates it, through
-/// `iterator_call`: a stage or a consumer.
-fn iterates(known: Std) -> bool {
-    is_adapter(known)
-        || matches!(
-            known,
-            Std::Collect
-                | Std::CollectString
-                | Std::CollectFallible
-                | Std::Sum
-                | Std::Fold
-                | Std::Last
-                | Std::Position
-                | Std::Extreme(_)
-                | Std::ArrayMethod(_)
-                | Std::IterComb(_)
-                | Std::Len
-                | Std::Step(StepOp::Next | StepOp::NextBack)
-        )
-}
 
 /// What a function's iterator chains are, beyond their types, each stage by
 /// its body's THIR and its expression.
@@ -47,24 +26,8 @@ pub(super) struct Chains {
     /// The stages that are JS iterators, though their types aren't lazy
     /// (ADR 0139), and the receivers that start one.
     pub(super) lazy: HashSet<(usize, ExprId)>,
-    pub(super) starts: HashSet<(usize, ExprId)>,
-    /// The stages of chains that `collect` drains of owned items (ADR 0098),
-    /// which std calls' check of what they take lets through.
-    pub(super) drains: HashSet<(usize, ExprId)>,
     /// The variables that hold a lazy chain, which every use iterates.
     pub(super) locals: HashSet<LocalVarId>,
-}
-
-/// A stage of a chain, as `mark_lazy_chain` weighs it.
-struct Stage {
-    at: ExprId,
-    /// Whether its own closure, or what it discards, does what can be seen.
-    own: bool,
-    impure: bool,
-    tells: bool,
-    zips: bool,
-    receiver: ExprId,
-    other: Option<ExprId>,
 }
 
 /// Whether `known` is an adapter, which makes an iterator of an iterator,
@@ -124,31 +87,6 @@ fn sought(test: &Expr) -> Option<Expr> {
     (value.reads_same() && !value.mentions_var(param)).then(|| (**value).clone())
 }
 
-/// Whether `known`, a consumer, may stop before its iterator ends,
-/// leaving the rest.
-fn stops_early(known: Std) -> bool {
-    matches!(
-        known,
-        Std::Position | Std::ArrayMethod("find" | "some" | "every") | Std::IterComb(IterComb::FindMap | IterComb::Nth)
-    )
-}
-
-/// Whether `known` stops before its iterator ends, so a stage before it
-/// that does what can be seen runs fewer times in Rust than over an array,
-/// or, as `rev` does, runs it from the other end.
-fn sensitive(known: Std) -> bool {
-    matches!(
-        known,
-        Std::Take
-            | Std::Rev
-            | Std::Position
-            // It stops at the first `Err` or `None`.
-            | Std::CollectFallible
-            | Std::ArrayMethod("find" | "some" | "every")
-            | Std::IterComb(IterComb::TakeWhile | IterComb::Zip | IterComb::FindMap | IterComb::Nth)
-    )
-}
-
 /// The locals stepped through, each a `$iter` that knows where it is (ADR
 /// 0071): those `next()` is called on, or that are lent as a `&mut dyn
 /// Iterator`, in the bodies being lowered, and those bound as one.
@@ -198,16 +136,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(bound) = enclosing.bound {
             self.stepping.bound = bound;
         }
-    }
-
-    /// Is `var` stepped through, so it's bound as a `$iter`?
-    pub(super) fn steps_through(&self, var: LocalVarId) -> bool {
-        self.stepping.stepped.contains(&var)
-    }
-
-    /// `var` is bound as a `$iter`.
-    pub(super) fn bound_as_iter(&mut self, var: LocalVarId) {
-        self.stepping.bound.insert(var);
     }
 
     /// `Iterator.from(value)`: a JS iterator of an array or of one, which
@@ -261,68 +189,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var("$iter"), vec![items])
     }
 
-    /// What `var`, a local that `it.next()` steps through (ADR 0071), is
-    /// bound to, of `init` of type `ty`: `$iter(v)` of an array's iterator,
-    /// `Iterator.from(it)` of a generic one. None of one that isn't stepped
-    /// through, or that knows where it is already, a JS iterator's.
-    pub(super) fn stepped_value(
-        &mut self,
-        var: LocalVarId,
-        (init, ty): (ExprId, Ty<'tcx>),
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Option<Expr>> {
-        if !self.steps_through(var) {
-            return Ok(None);
-        }
-        let value = if self.is_generic_iter(ty) {
-            let value = self.expr(init, out)?;
-            self.js_iterator(value)
-        } else if self.is_array_iter(ty) && !self.is_lazy_value(init) && !self.is_peekable(ty) && !self.has_drops(ty) {
-            let items = self.iter_value(init, out)?;
-            let items = self.iter_source(items, ty, span, out)?;
-            self.stepped_items(items)
-        } else {
-            return Ok(None);
-        };
-        self.bound_as_iter(var);
-        Ok(Some(value))
-    }
-
-    /// `it.clone()` of a local stepped through, a `$iter` of std's iterator
-    /// over an array (ADR 0071): what's left of its items, `it.items.slice(it.at, it.end)`,
-    /// as std's iterator over an array is the array (ADR 0061), copies of
-    /// those it owns that need one (ADR 0181). None of anything else.
-    pub(super) fn cloned_stepping(
-        &mut self,
-        def_id: DefId,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Option<Expr>> {
-        if !self
-            .tcx
-            .trait_of_assoc(def_id)
-            .is_some_and(|t| self.tcx.is_lang_item(t, LangItem::Clone))
-        {
-            return Ok(None);
-        }
-        let [receiver] = args else { return Ok(None) };
-        let mut e = self.strip(*receiver);
-        while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = self.thir[e].kind {
-            e = self.strip(arg);
-        }
-        let ExprKind::VarRef { id } = self.thir[e].kind else {
-            return Ok(None);
-        };
-        let ty = self.thir[e].ty;
-        let Some(owns) = self.array_source(ty).filter(|_| self.stepping.bound.contains(&id)) else {
-            return Ok(None);
-        };
-        let it = self.expr(e, out)?;
-        self.stepped_left(it, ty, owns, span).map(Some)
-    }
-
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
     /// type `ty`: `it.items.slice(it.at, it.end)`, copies of the items it
     /// `owns` that need one (ADR 0181).
@@ -369,42 +235,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// An argument given where `callee` takes a generic iterator, `input`,
-    /// by value or lent as `&mut`: an iterator of the crate's own, or a
-    /// range, as a JS iterator, a wrapper of what it steps (ADRs 0061, 0071).
-    /// Anything else is `value` itself.
-    pub(super) fn iterator_arg(
-        &mut self,
-        (callee, input): (DefId, ty::Ty<'tcx>),
-        (arg, value): (ExprId, Expr),
-        given: ty::Ty<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let (input, given, lent) = match *input.kind() {
-            ty::Ref(_, inner, rustc_ast::Mutability::Mut) => (inner, given.peel_refs(), true),
-            _ => (input, given, false),
-        };
-        if !matches!(input.kind(), ty::Param(_)) {
-            return Ok(value);
-        }
-        if self.given_as_iterator(callee, input, given) {
-            return self.iter_source(value, given, span, out);
-        }
-        // Lent, it must know where it is: a local stepped through does, and a
-        // lazy one, a JS iterator, but an array kept anywhere else doesn't
-        // (ADR 0071).
-        let lent_place = self.boxed_or_lent(arg);
-        if lent
-            && !self.is_stepping(arg)
-            && !self.is_lazy_value(lent_place)
-            && (self.is_array_iter(given) || self.is_generic_iter(given))
-        {
-            return Err(self.unsupported(span, "lending an iterator that isn't a local"));
-        }
-        Ok(value)
-    }
-
     /// An iterator of the crate's own as a JS one, `$iterator(it,
     /// countdownIterator_next)`, and a range as its items (ADR 0129).
     /// Anything else is `value` itself.
@@ -448,31 +278,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .resolve_instance(next_back, args)?
             .is_some_and(|i| self.is_rust_fn(i.def_id()));
         Ok(own.then_some(double_ended))
-    }
-
-    /// `it.size_hint()` (ADR 0170): std's `(0, None)` of an iterator of the
-    /// crate's that keeps it, or `(n, Some(n))` of std's of length `n`.
-    pub(super) fn size_hint(&mut self, exact: bool, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        if exact {
-            let mut len = self.iter_len(receiver, span, out)?;
-            if !len.reads_same() {
-                len = self.spill("len", len, out);
-            }
-            return Ok(Expr::array(vec![len.clone(), len]));
-        }
-        let value = self.expr(receiver, out)?;
-        if value.has_effects() {
-            out.push(StmtKind::Expr(value).at(self.js_span(span)));
-        }
-        Ok(Expr::array(vec![Expr::int(0), Expr::undefined()]))
-    }
-
-    /// `it.len()` of an iterator of the crate's that keeps std's `len`: its
-    /// `size_hint()`, its own or std's `(0, None)`, checked as std checks it.
-    pub(super) fn exact_len(&mut self, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let ty = self.reveal(self.thir[receiver].ty.peel_refs());
-        let value = self.expr(receiver, out)?;
-        self.exact_len_of(value, ty, span, out)
     }
 
     /// `exact_len`'s, of the iterator's value and its type `ty`.
@@ -550,42 +355,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::call(Expr::var("$iterator"), list))
     }
 
-    /// A value given where a `dyn Iterator` goes, `Box::new(it)` or `&mut it`:
-    /// a JS iterator, with JS's lazy helpers. One already is itself: a lazy
-    /// chain, another `dyn`, one of the crate's own as `$iterator` makes it.
-    /// Anything else, an array or a stepped local's `$iter`, is
-    /// `Iterator.from` of it, which shares a `$iter`'s place. Its chain runs
-    /// item by item, as what it's given to takes them (ADR 0139).
-    pub(super) fn dyn_iterator(&mut self, source: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let inner = self.boxed_or_lent(source);
-        self.mark_lazy_chain(inner, true);
-        let value = self.expr(source, out)?;
-        let ty = self.reveal(self.thir[inner].ty);
-        if self.is_user_iterator(ty) || self.is_generic_iter(ty) {
-            return self.iter_source(value, ty, span, out);
-        }
-        let value = self.iter_source(value, ty, span, out)?;
-        if self.recognition().is_dyn_iter(ty) || self.is_lazy_value(inner) {
-            return Ok(value);
-        }
-        Ok(self.js_iterator(value))
-    }
-
-    /// What `Box::new(it)` boxes, or `&mut it` lends, reborrowed or not: `it`.
-    fn boxed_or_lent(&self, e: ExprId) -> ExprId {
-        let e = self.strip(e);
-        match self.thir[e].kind {
-            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.boxed_or_lent(arg),
-            ExprKind::Call { fun, ref args, .. }
-                if let Some((id, _)) = fn_def(self.thir[fun].ty)
-                    && is_std_def(self.tcx, id, StdItem::BoxNew) =>
-            {
-                self.boxed_or_lent(args[0])
-            }
-            _ => e,
-        }
-    }
-
     /// What an iterator of type `iterator` yields: its `Item`.
     pub(super) fn iterator_item(&self, iterator: ty::Ty<'tcx>) -> Option<ty::Ty<'tcx>> {
         let trait_id = std_item(self.tcx, StdItem::Iterator);
@@ -607,16 +376,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ExprKind::Borrow { arg, .. } => self.strip(arg),
             _ => self.strip(e),
         }
-    }
-
-    /// Whether a closure or function given to a stage may do what can be
-    /// seen, or panic.
-    fn impure(&self, f: Option<ExprId>) -> bool {
-        f.is_some_and(|f| {
-            let ty = self.thir[f].ty.peel_refs();
-            let callable = ty.is_fn() || matches!(ty.kind(), ty::Closure(..) | ty::Param(_));
-            callable && !super::effects::is_pure_fn(self.tcx, self.krate.closures, ty)
-        })
     }
 
     /// Whether `e`'s value is a JS iterator: a lazy type's, or a stage a
@@ -649,160 +408,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// A chain kept in `var`, made by `init`: lazy if a stage does what can be
-    /// seen, when every use of `var` iterates it (ADR 0139).
-    pub(super) fn keep_chain(&mut self, var: LocalVarId, init: ExprId) {
-        if !self.iterated_only(var) {
-            return;
-        }
-        self.mark_lazy_chain(init, true);
-        if self.chains.lazy.contains(&self.chain_key(init)) {
-            self.chains.locals.insert(var);
-        }
-    }
-
-    /// Whether `e` is a stage of a chain `collect()` drains of owned items
-    /// (ADR 0098).
-    pub(super) fn is_drained(&self, e: ExprId) -> bool {
-        self.chains.drains.contains(&self.chain_key(e))
-    }
-
-    /// Whether every use of `var` iterates it: a loop over it, or a stage or
-    /// a consumer of it.
-    fn iterated_only(&self, var: LocalVarId) -> bool {
-        let named = |e: ExprId| matches!(self.thir[self.chain_stage(e)].kind, ExprKind::VarRef { id } if id == var);
-        let uses = self
-            .thir
-            .exprs
-            .iter()
-            .filter(
-                |e| matches!(e.kind, ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } if id == var),
-            )
-            .count();
-        let iterating = self
-            .thir
-            .exprs
-            .iter()
-            .filter(|e| match e.kind {
-                ExprKind::Call { fun, ref args, .. } => {
-                    args.first().is_some_and(|&a| named(a))
-                        && (self.std_fn(fun).is_some_and(iterates)
-                            || matches!(*self.thir[fun].ty.kind(), ty::FnDef(id, _) if self.tcx.is_lang_item(id, LangItem::IntoIterIntoIter)))
-                }
-                _ => false,
-            })
-            .count();
-        uses > 0 && uses == iterating
-    }
-
-    /// Rust runs each item of a chain through every stage before the next,
-    /// and a JS array runs every item through each stage before the next:
-    /// the same, unless a stage that does what can be seen is followed by
-    /// one that can tell, one that does too, or stops early. Then the chain
-    /// from that stage on is a JS iterator, whose helpers are Rust's order
-    /// (ADR 0139). `seen`: whether what ends the chain at `receiver`, a
-    /// consumer or a loop, can tell.
-    pub(super) fn mark_lazy_chain(&mut self, receiver: ExprId, seen: bool) {
-        let stages = self.chain_stages(receiver);
-        let Some(first) = stages.iter().rposition(|stage| stage.impure) else {
-            return;
-        };
-        // `zip` takes from its other side only when this one gives an item:
-        // that side's stages run as often as Rust's only lazily.
-        let zips = stages[first].zips;
-        if !seen && !zips && !stages[..first].iter().any(|stage| stage.tells) {
-            return;
-        }
-        for stage in &stages[..=first] {
-            self.chains.lazy.insert(self.chain_key(stage.at));
-            // What's chained or zipped on runs in its turn too.
-            if let Some(other) = stage.other {
-                self.mark_lazy_chain(other, true);
-            }
-        }
-        // A `chain` or a `zip` that does what can be seen only by its other
-        // side takes this side as it is.
-        if stages[first].own {
-            let start = self.chain_key(stages[first].receiver);
-            self.chains.starts.insert(start);
-        }
-    }
-
-    /// A chain's stages, the last first: each, whether it does what can be
-    /// seen, whether it can tell, and its receiver; and for `chain` and `zip`,
-    /// the other side, which makes it do what can be seen if it does.
-    fn chain_stages(&self, receiver: ExprId) -> Vec<Stage> {
-        let mut stages = Vec::new();
-        let mut at = self.chain_stage(receiver);
-        while let ExprKind::Call { fun, ref args, .. } = self.thir[at].kind
-            && let Some(known) = self.std_fn(fun)
-            && is_adapter(known)
-            && let Some(&inner) = args.first()
-        {
-            let other = matches!(known, Std::IterComb(IterComb::Chain | IterComb::Zip))
-                .then(|| args.get(1).copied())
-                .flatten();
-            let other_impure = other.is_some_and(|o| self.chain_stages(o).iter().any(|stage| stage.impure));
-            let own =
-                (other.is_none() && self.impure(args.get(1).copied())) || self.discards_owned(known, inner).is_some();
-            let impure = own || other_impure;
-            stages.push(Stage {
-                at,
-                own,
-                impure,
-                tells: impure || sensitive(known),
-                zips: other_impure && known == Std::IterComb(IterComb::Zip),
-                receiver: inner,
-                other: other.filter(|_| other_impure),
-            });
-            at = self.chain_stage(inner);
-        }
-        stages
-    }
-
-    /// `collect()` of a chain that owns its items (ADR 0098): `map`, `filter`
-    /// and `skip_while` over the `into_iter()` of a `Vec` or an array, which
-    /// it drains. A stage drops what it discards, and `collect` keeps the
-    /// rest. Its stages are let through std calls' check of what they take:
-    /// a chain nothing drains would never drop its items.
-    pub(super) fn mark_owned_drain(&mut self, receiver: ExprId) {
-        let mut stages = Vec::new();
-        let mut at = self.chain_stage(receiver);
-        loop {
-            let ExprKind::Call { fun, ref args, .. } = self.thir[at].kind else {
-                return;
-            };
-            let Some(&inner) = args.first() else { return };
-            stages.push(self.chain_key(at));
-            match self.std_fn(fun) {
-                Some(Std::ArrayMethod("map" | "filter") | Std::IterComb(IterComb::SkipWhile)) => {
-                    at = self.chain_stage(inner);
-                }
-                Some(Std::Same) => {
-                    let source = self.reveal(self.thir[inner].ty);
-                    if !(source.is_array() || self.is_vec_like(source)) {
-                        return;
-                    }
-                    break;
-                }
-                _ => return,
-            }
-        }
-        self.chains.drains.extend(stages);
-    }
-
-    /// Whether `known`, at `receiver`, a stage of a drained chain, discards
-    /// items it owns, which it then drops: `filter`'s and `skip_while`'s.
-    fn discards_owned(&self, known: Std, receiver: ExprId) -> Option<ty::Ty<'tcx>> {
-        if !matches!(known, Std::ArrayMethod("filter") | Std::IterComb(IterComb::SkipWhile))
-            || !self.chains.drains.contains(&self.chain_key(receiver))
-        {
-            return None;
-        }
-        self.iterator_item(self.reveal(self.thir[receiver].ty))
-            .filter(|&item| self.has_drops(item))
-    }
-
     /// `test`, a stage's predicate, as one that drops the `item` it
     /// discards: one `filter` doesn't keep, or one `skip_while` skips.
     pub(in crate::lower) fn dropping_discarded(
@@ -833,315 +438,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             rest
         };
         Ok(Expr::arrow(vec!["item".into()], body))
-    }
-
-    /// An iterator's method (ADR 0036). The iterator is a JS array: a range
-    /// becomes one, `$range(a, b)`, and the rest already are.
-    /// `find(f)` of what its `Option` boxes: `items.find(f)` can't tell a
-    /// found `None` from none found. Over an array, `$someAt` of its index;
-    /// over a lazy iterator, which has no index, `$nextSome` of its lazy
-    /// `filter`, which stops at the first found as `find` does.
-    fn find_boxed(&mut self, items: Expr, test: Expr, lazy: bool, out: &mut Vec<Stmt>) -> Expr {
-        if lazy {
-            self.runtime.insert(Helper::NextSome);
-            let found = Expr::call(Expr::member(items, "filter"), vec![test]);
-            return Expr::call(Expr::var("$nextSome"), vec![found]);
-        }
-        let items = if items.has_effects() {
-            self.spill("items", items, out)
-        } else {
-            items
-        };
-        let index = Expr::call(Expr::member(items.clone(), "findIndex"), vec![test]);
-        self.some_at(items, index)
-    }
-
-    /// `boxed`: the call's `Option` boxes a `Some` that looks like `None`
-    /// (ADR 0051), so a search gives its own.
-    pub(super) fn iterator_call(
-        &mut self,
-        known: Std,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        boxed: bool,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        // A search, `(0..n).all(f)`, takes its iterator by `&mut`: a range
-        // it's called on is the one borrowed.
-        let receiver = match self.thir[self.strip(args[0])].kind {
-            ExprKind::Borrow {
-                borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
-                arg,
-            } if (self.is_lang_adt(self.reveal(self.thir[arg].ty), LangItem::Range)
-                && matches!(self.thir[self.strip(arg)].kind, ExprKind::Adt(_)))
-                || self.inclusive_range(arg).is_some() =>
-            {
-                arg
-            }
-            _ => args[0],
-        };
-        let receiver_ty = self.reveal(self.thir[receiver].ty);
-        // A consumer, which ends a chain, says which of its stages run lazily.
-        if !is_adapter(known) {
-            let closure = args.get(1).copied();
-            self.mark_lazy_chain(receiver, sensitive(known) || self.impure(closure));
-            // `find_map(f)` is a `map` that stops at the first `Some`.
-            if known == Std::IterComb(IterComb::FindMap) && self.impure(closure) {
-                let key = self.chain_key(receiver);
-                self.chains.starts.insert(key);
-            }
-        }
-        // `rev()` of an iterator of the crate's that runs from both ends: its
-        // own `next_back`, stepped lazily as Rust steps it (ADR 0164).
-        if known == Std::Rev
-            && let Some(double_ended) = self.own_next_back(receiver_ty)?
-        {
-            let value = self.iter_value(receiver, out)?;
-            return self.user_iterator(value, receiver_ty, double_ended, "next_back", span);
-        }
-        let mut lent = false;
-        let items = match self.thir[self.strip(receiver)].kind {
-            ExprKind::Adt(ref range)
-                if self.is_lang_adt(receiver_ty, LangItem::Range)
-                    && self.range_index(receiver_ty).and_then(Num::of).is_some() =>
-            {
-                let bound = |i: usize| range.fields.iter().find(|f| f.name.as_usize() == i).map(|f| f.expr);
-                let (Some(start), Some(end)) = (bound(0), bound(1)) else {
-                    unreachable!("a range has a start and an end")
-                };
-                let big = Num::of(self.thir[start].ty).is_some_and(Num::big);
-                let (helper, name) = if big {
-                    (Helper::BigRange, "$bigRange")
-                } else {
-                    (Helper::Range, "$range")
-                };
-                self.runtime.insert(helper);
-                let bounds = self.operands(&[start, end], out)?;
-                Expr::call(Expr::var(name), bounds)
-            }
-            // `a..=b`: `$range(a, b + 1)`, exact, and past the type's end.
-            _ if let Some((start_id, end_id)) = self.inclusive_range(receiver)
-                && Num::of(self.thir[start_id].ty).is_some() =>
-            {
-                let num = Num::of(self.thir[start_id].ty);
-                let big = num.is_some_and(Num::big);
-                let (helper, name) = if big {
-                    (Helper::BigRange, "$bigRange")
-                } else {
-                    (Helper::Range, "$range")
-                };
-                self.runtime.insert(helper);
-                let [start, end]: [Expr; 2] = self.operands(&[start_id, end_id], out)?.try_into().ok().unwrap();
-                let one = if big { Expr::bigint(1) } else { Expr::int(1) };
-                Expr::call(Expr::var(name), vec![start, Expr::bin(Op::Add, end, one)])
-            }
-            // Of one that knows where it is, stepped again after, by what
-            // stops early, `it.position(f)`: through `$lent`, so it's stepped
-            // only as far as Rust steps it, the rest left for its `next()`.
-            _ if self.is_stepping(receiver) && stops_early(known) => {
-                let value = self.expr(receiver, out)?;
-                lent = true;
-                self.lent_iterator(value)
-            }
-            _ => {
-                let value = self.iter_value(receiver, out)?;
-                self.iter_source(value, receiver_ty, span, out)?
-            }
-        };
-        // A JS iterator's helpers are lazy: `map`, `filter`, `take`, `drop`,
-        // and those that stop early, like `find`. Anything else takes all of
-        // it, as an array (ADR 0055).
-        // A stage of a chain its consumer found must be lazy too (ADR 0139).
-        let lazy = lent || self.is_lazy_value(receiver);
-        let starts = !lazy && self.chains.starts.contains(&self.chain_key(receiver));
-        let (items, lazy) = if starts {
-            (Expr::call(Expr::member(items, "values"), vec![]), true)
-        } else {
-            (items, lazy)
-        };
-        if lazy && known == Std::Rev {
-            return Err(self.unsupported(
-                span,
-                "`rev` of a lazy iterator: one of the crate's own, or after a closure whose effects can be seen",
-            ));
-        }
-        let discarded = self.discards_owned(known, receiver);
-        // A lazy side of a `chain` or a `zip` makes it lazy (ADR 0128): its
-        // helpers take either side as it is.
-        let lazy = lazy
-            || matches!(known, Std::IterComb(IterComb::Chain | IterComb::Zip))
-                && args.get(1).is_some_and(|&o| self.is_lazy_value(o));
-        if let Std::IterComb(comb) = known {
-            let mut rest = self.operands(&args[1..], out)?;
-            if let Some(item) = discarded {
-                let test = std::mem::replace(&mut rest[0], Expr::undefined());
-                rest[0] = self.dropping_discarded(test, item, true, span, out)?;
-            }
-            // What's chained or zipped on: one of the crate's own as a JS iterator.
-            if matches!(comb, IterComb::Chain | IterComb::Zip) {
-                let other = std::mem::replace(&mut rest[0], Expr::undefined());
-                rest[0] = self.iter_source(other, self.thir[args[1]].ty, span, out)?;
-            }
-            return self.iter_comb(
-                comb,
-                items,
-                rest.into_iter(),
-                generic_args,
-                receiver_ty,
-                lazy,
-                span,
-                out,
-            );
-        }
-        let items = match known {
-            _ if !lazy => items,
-            Std::ArrayMethod(_)
-            | Std::Enumerate
-            | Std::Fold
-            | Std::Sum
-            | Std::Skip
-            | Std::Take
-            | Std::Cloned
-            | Std::Fuse
-            | Std::Position
-            // Steps it, and stops at the first `Err` or `None`.
-            | Std::CollectFallible => items,
-            _ => Expr::call(Expr::member(items, "toArray"), vec![]),
-        };
-        let mut rest = self.operands(&args[1..], out)?.into_iter();
-        let mut next = || rest.next().expect("rustc checked the arguments");
-        let method = |items: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(items, name), list);
-        let (a, b) = (Expr::var("a"), Expr::var("b"));
-        Ok(match known {
-            Std::ArrayMethod(name) => {
-                let (items, test) = match discarded {
-                    Some(item) => {
-                        let test = next();
-                        (items, self.dropping_discarded(test, item, false, span, out)?)
-                    }
-                    None => match indexed_callback(&items, name, next()) {
-                        Ok((source, f)) => (source, self.passed_on(args[1], f)),
-                        Err(f) => (items, self.passed_on(args[1], f)),
-                    },
-                };
-                if boxed && name == "find" {
-                    return Ok(self.find_boxed(items, test, lazy, out));
-                }
-                // Whether any item is one value is whether the array includes
-                // it, where `===` and `includes` agree: not of floats, whose
-                // NaN `includes` finds. The value is read once, not per item,
-                // so it must read the same however often it's read.
-                if name == "some"
-                    && !lazy
-                    && self
-                        .iterator_item(receiver_ty)
-                        .is_some_and(|item| self.eq_is_identity(item))
-                    && let Some(value) = sought(&test)
-                {
-                    return Ok(method(items, "includes", vec![value]));
-                }
-                method(items, name, vec![test])
-            }
-            Std::Enumerate => {
-                let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
-                let js_span = self.js_span(span);
-                method(
-                    items,
-                    "map",
-                    vec![Expr::arrow(
-                        vec!["x".into(), "i".into()],
-                        vec![StmtKind::Return(Some(pair)).at(js_span)],
-                    )],
-                )
-            }
-            Std::Rev => method(items, "toReversed", vec![]),
-            Std::Skip if lazy => method(items, "drop", vec![next()]),
-            Std::Take if lazy => method(items, "take", vec![next()]),
-            Std::Skip => method(items, "slice", vec![next()]),
-            Std::Take => method(items, "slice", vec![Expr::int(0), next()]),
-            Std::Fold => {
-                let (init, f) = (next(), next());
-                method(items, "reduce", vec![f, init])
-            }
-            Std::Sum => {
-                let ty = generic_args.types().nth(1).expect("`sum` names what it sums to");
-                let num = self.num(ty, span)?;
-                let js_span = self.js_span(span);
-                let add = num.wrap(Expr::bin(Op::Add, a, b));
-                let f = Expr::arrow(
-                    vec!["a".into(), "b".into()],
-                    vec![StmtKind::Return(Some(add)).at(js_span)],
-                );
-                // Rust's floating Sum starts at -0.0, preserving the sign of
-                // an empty sum and of a sequence containing only negative zero.
-                let zero = if num.float() { Expr::num(-0.0) } else { num.literal(0) };
-                method(items, "reduce", vec![f, zero])
-            }
-            // `Array.from(s).join("")` is `s`.
-            Std::CollectString => match items.kind {
-                js::ExprKind::Call(ref callee, ref args)
-                    if matches!(&callee.kind, js::ExprKind::Member(object, name)
-                        if name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Array"))
-                        && args.len() == 1 =>
-                {
-                    args[0].clone()
-                }
-                _ => method(items, "join", vec![Expr::str("")]),
-            },
-            // A new `Vec`: an adapter's result is a new array already, and the
-            // array an iterator started from is copied, so changing one of
-            // them doesn't change the other.
-            Std::Collect => {
-                let items = if fresh(&items) {
-                    items
-                } else {
-                    method(items, "slice", vec![])
-                };
-                // Into a `BinaryHeap`: put in heap order, as `BinaryHeap::from` does.
-                match generic_args.types().nth(1) {
-                    Some(target) if self.is_std_type(target, StdItem::BinaryHeap) => {
-                        let item = target.walk().nth(1).and_then(|a| a.as_type()).expect("a heap's item");
-                        self.heap_of(item, span)?;
-                        let compare = self.cmp_fn(item, false, span)?;
-                        self.runtime.insert(Helper::HeapFrom);
-                        Expr::call(Expr::var("$heapFrom"), vec![items, compare])
-                    }
-                    _ => items,
-                }
-            }
-            // Into a `Result` or an `Option` of an array: the first `Err` or
-            // `None`, which ends it, or `Ok` of all the values, or the values.
-            Std::CollectFallible => {
-                let target = generic_args.types().nth(1).expect("a collection's type");
-                let item = generic_args.types().next().and_then(|i| self.iterator_item(i));
-                self.collect_fallible(items, target, item, span)?
-            }
-            Std::Position => {
-                self.runtime.insert(Helper::Position);
-                Expr::call(Expr::var("$position"), vec![items, next()])
-            }
-            Std::Extreme(max) => {
-                let item = generic_args.types().next().and_then(|i| self.iterator_item(i));
-                self.extreme_of(max, items, item, span)?
-            }
-            Std::Last => {
-                let item = generic_args.types().next().and_then(|i| self.iterator_item(i));
-                self.last_of(items, item, out)
-            }
-            Std::Cloned => {
-                let item = generic_args.types().nth(1).expect("`cloned` names its item");
-                if self.needs_clone(item) {
-                    method(items, "map", vec![self.clone_fn("item", item, span)?])
-                } else {
-                    items
-                }
-            }
-            Std::Fuse => items,
-            Std::Sort => self.sort_values(None, items, receiver_ty, generic_args, span, out)?,
-            Std::SortByKey => self.sort_values(Some(next()), items, receiver_ty, generic_args, span, out)?,
-            _ => unreachable!("not an iterator's method"),
-        })
     }
 }
 
@@ -1305,41 +601,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
-    }
-
-    /// `it.len()`: the items `it` has left, without taking them. Rust runs
-    /// none of its closures, so a chain whose closures do what can be seen
-    /// isn't counted; one stepped through is a `$iter`, its items from `at` to `end`.
-    pub(super) fn iter_len(&mut self, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        self.mark_lazy_chain(receiver, true);
-        if self.is_lazy_value(receiver) {
-            return Err(self.unsupported(span, "`len()` of an iterator whose closures do what can be seen"));
-        }
-        if self.is_stepping(receiver) {
-            if self.is_peekable(self.thir[receiver].ty.peel_refs()) {
-                return Err(self.unsupported(span, "`len()` of a `Peekable`"));
-            }
-            let it = self.expr(receiver, out)?;
-            return Ok(Expr::bin(
-                Op::Sub,
-                Expr::member(it.clone(), "end"),
-                Expr::member(it, "at"),
-            ));
-        }
-        let items = self.expr(receiver, out)?;
-        Ok(Expr::member(items, "length"))
-    }
-
-    /// `f`, the JS of closure `e` given to an array method, `(x, i) => g(x,
-    /// i)`, which passes on what it's given, in order: `g` itself, where `g`
-    /// is Rust's, a function of the crate or a closure, which takes no more
-    /// than it's given, so the index and the array the method gives it too
-    /// change nothing (ADR 0279). A JS function's, `parseFloat`'s, might.
-    fn passed_on(&self, e: ExprId, f: Expr) -> Expr {
-        match self.calls_rust(e, false) {
-            true => passed_on(&f).unwrap_or(f),
-            false => f,
-        }
     }
 
     /// Does closure `e` call a function of the crate, or a closure, a generic

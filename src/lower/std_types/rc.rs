@@ -2,14 +2,13 @@
 //! clones and `Weak`s share, where the crate reads its counts. Every other
 //! is the value it points at (ADR 0023).
 
-use rustc_middle::thir::ExprId;
 use rustc_middle::ty::{self, GenericArgsRef, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::recognition::{rc_pointee, weak_pointee};
-use crate::lower::{FnCx, R, fn_def};
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 
 /// What only a counted `Rc` or its `Weak` answers.
@@ -49,27 +48,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Prop::Field("strong".into(), Expr::int(1)),
             Prop::Field("weak".into(), Expr::int(0)),
         ])
-    }
-
-    /// One of `RcOp`'s, of a counted `Rc` or a `Weak`.
-    pub(in crate::lower) fn rc_call(&mut self, op: RcOp, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let first = args.first().map(|&first| self.thir[first].ty);
-        // `make_mut` changes which `Rc` its place holds: the place is
-        // given the one `$makeMut` gives.
-        if op == RcOp::MakeMut {
-            let item = first
-                .and_then(|first| self.counted_rc(first.peel_refs()))
-                .expect("a counted `Rc`");
-            self.counted_here(item, span)?;
-            self.runtime.insert(Helper::Rc);
-            let Some((place, _)) = self.ref_place(args[0]) else {
-                return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
-            };
-            return self.make_mut_values(place, item, span, out);
-        }
-        let values = self.operands(args, out)?;
-        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
-        self.rc_values(op, (values, &tys), span, out)
     }
 
     /// `Rc::make_mut(&mut place)` of an `Rc` of `item`: the place given the
@@ -192,13 +170,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Self::new_rc(value),
             false => Expr::member(value, "value"),
         })
-    }
-
-    /// Is `fun` `Rc::new`, `Some(true)`, or an `Rc`'s deref, `Some(false)`, of a
-    /// counted one?
-    pub(in crate::lower) fn counted_same_of(&self, fun: ExprId) -> Option<bool> {
-        let (def_id, generic_args) = fn_def(self.thir[self.strip(fun)].ty)?;
-        self.counted_same_by(def_id, generic_args)
     }
 
     /// `counted_same_of`, of the function `def_id` of `generic_args`.

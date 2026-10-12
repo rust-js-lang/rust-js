@@ -5,13 +5,12 @@ use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 use crate::lower::patterns::same_place;
-use crate::lower::places::PreparedPlace;
+
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def_id::DefId;
-use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -642,31 +641,6 @@ pub(in crate::lower) enum OptionPlaceOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// One of `OptionPlaceOp`'s: its place given what it holds next, and
-    /// the `&mut` to what it holds, the object itself, or for a number or
-    /// text a handle on the place (ADR 0099); `take_if`'s what it took.
-    pub(in crate::lower) fn option_place(
-        &mut self,
-        op: OptionPlaceOp,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
-            return Err(self.unsupported(span, "changing this `Option`"));
-        };
-        let item = self.option_of(self.thir[place].ty).expect("an `Option`");
-        if self.boxed_payload(item) {
-            return Err(self.unsupported(span, &format!("changing an `Option<{item}>` in place")));
-        }
-        let given = self.operands(&args[1..], out)?.into_iter();
-        let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
-        let PreparedPlace::Direct(place) = target else {
-            return Err(self.unsupported(span, "changing an `Option` in a map in place"));
-        };
-        self.option_place_values(op, place, item, given.collect(), span, out)
-    }
-
     /// `option_place`'s, of the `Option`'s place, a variable or a field, its
     /// item's type and what's given: THIR's and MIR's.
     pub(in crate::lower) fn option_place_values(

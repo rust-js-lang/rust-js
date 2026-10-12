@@ -7,7 +7,7 @@ use super::recognition::{Json, StdItem};
 use super::std_types::range::RangeKind;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
-use rustc_span::Symbol;
+
 use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -197,11 +197,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `impl Iterator` as a parameter's type (ADR 0061).
     pub(super) fn is_generic_iter(&self, ty: ty::Ty<'tcx>) -> bool {
         self.recognition().is_generic_iter(ty)
-    }
-
-    /// A type parameter with a bound of the std trait `name`.
-    pub(super) fn bounded_by(&self, ty: ty::Ty<'tcx>, name: Symbol) -> bool {
-        self.recognition().bounded_by(ty, name)
     }
 
     /// `serde_json::Value`, `Number` or `Map`.

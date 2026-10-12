@@ -76,14 +76,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","generic_mut_ref_kept"],
   },
   {
-    name: "made-cell-of-generic-self",
-    breaks: "`&mut self` of a default copied into an object's impl is a handle on the local, which `set_to` writes a field of",
-    file: "src/lower/representation.rs",
-    find: "        self.is_cell_pointee(self.in_impl_terms(pointee))",
-    replace: "        self.is_cell_pointee(pointee)",
-    tests: ["test/diagnostics.test.ts","-t","default method"],
-  },
-  {
     name: "dyn-not-object",
     breaks: "a `&mut dyn Counter` is taken for a cell, and its pair read as `pair.value`",
     file: "src/lower/representation.rs",
@@ -289,7 +281,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "                Prop::Field(\"start\".into(), start?),\n",
     replace: "                Prop::Field(\"start\".into(), end.clone()?),\n",
-    tests: ["test/mir.test.ts","-t","pretty_debug"],
+    tests: ["test/corpus.test.ts","-t","pretty_debug"],
   },
   {
     "name": "const-range-from-refused",
@@ -298,7 +290,7 @@ export const mutations: Mutation[] = [
     "find": "        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
     "replace": "        ty::Adt(adt, _) if false && tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "range_values"
     ]
@@ -310,7 +302,7 @@ export const mutations: Mutation[] = [
     "find": "            if tcx.is_lang_item(adt.did(), LangItem::RangeTo)\n                || tcx.is_lang_item(adt.did(), LangItem::RangeToInclusive) =>\n",
     "replace": "            if false =>\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "range_values"
     ]

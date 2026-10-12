@@ -6,7 +6,6 @@ use crate::lower::calls::Call;
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
-use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
 
 /// Whether `known` reads an item, which `flatten` makes the JS read itself.
@@ -35,33 +34,6 @@ pub(in crate::lower) fn flattened_read_values(known: Std, values: Vec<Expr>) -> 
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `.flatten()` of a read of items that may be `None`, through a
-    /// `copied()` or `cloned()`: the JS read itself, `items.shift()` or
-    /// `items[0]`, whose `undefined` is both no item and a `None` one, as
-    /// `flatten` makes them one (ADR 0311).
-    pub(in crate::lower) fn flattened_read(&mut self, read: ExprId, out: &mut Vec<Stmt>) -> R<Option<Expr>> {
-        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(read)].kind else {
-            return Ok(None);
-        };
-        let args = args.clone();
-        match self.std_fn(fun) {
-            // A copy that's the item itself: of a reference, a number or text.
-            Some(Std::OptionCloned)
-                if self
-                    .option_of(self.thir[self.strip(read)].ty)
-                    .and_then(|inner| self.option_of(inner))
-                    .is_some_and(|item| item.is_ref() || item.is_primitive() || self.is_string_like(item)) =>
-            {
-                self.flattened_read(args[0], out)
-            }
-            Some(known) if reads_flattened(known) => {
-                let values = args.iter().map(|&arg| self.expr(arg, out)).collect::<R<Vec<_>>>()?;
-                Ok(Some(flattened_read_values(known, values)))
-            }
-            _ => Ok(None),
-        }
-    }
-
     /// A `Vec`'s or a slice's method (ADRs 0025, 0036): `None` if `known` is another.
     pub(in crate::lower) fn vec_call(
         &mut self,

@@ -1390,7 +1390,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "        || tcx.is_diagnostic_item(Symbol::intern(\"Wrapping\"), id)\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","trait_default_bounds"],
+    tests: ["test/corpus.test.ts","-t","trait_default_bounds"],
   },
   {
     name: "non-zero-fields-read",
@@ -1398,7 +1398,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "            || matches!(ty.kind(), ty::Adt(adt, _) if is_non_zero(adt.did())\n",
     replace: "            || matches!(ty.kind(), ty::Adt(adt, _) if false\n",
-    tests: ["test/mir.test.ts","-t","nonzero"],
+    tests: ["test/corpus.test.ts","-t","nonzero"],
   },
   {
     name: "cmp-max-unknown",

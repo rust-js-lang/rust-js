@@ -738,6 +738,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// `ty` of a copied default's body in the impl's terms, normalized there
+    /// where it can be: its `Self::Item<'a>` the impl's `&String`.
+    pub(super) fn impl_type(&self, ty: Ty<'tcx>) -> Ty<'tcx> {
+        if self.given.self_args.is_none() {
+            return ty;
+        }
+        let ty = self.in_impl_terms(ty);
+        let typing_env = self.given.self_env.unwrap_or(self.typing_env);
+        self.tcx
+            .try_normalize_erasing_regions(typing_env, ty::Unnormalized::new_wip(ty))
+            .unwrap_or(ty)
+    }
+
     /// `resolve_instance` of a call whose arguments a copied default's
     /// `Self` was replaced in (ADR 0049): they're the impl's, which resolve in
     /// the impl's typing environment, as its own body's types don't.
@@ -1476,11 +1489,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 names: self.names.clone(),
             },
         )?;
+        // From its MIR (ADR 0364), its value given back.
         let mut stmts = Vec::new();
-        let value = self.expr(body.expr, &mut stmts);
-        let hoisted = self.leave_body(enclosing)?;
+        let lowered = match &body.mir {
+            Some(mir) => self.mir_signature(body, mir, &mut stmts),
+            None => Err(self.unsupported(span, "this constant, without its MIR")),
+        };
+        let hoisted = self.leave_body(enclosing, true)?;
+        lowered?;
         stmts.splice(0..0, hoisted);
-        stmts.push(StmtKind::Return(Some(value?)).at(js::Span::NONE));
         Ok(Expr::arrow(Vec::new(), stmts))
     }
 
@@ -2430,13 +2447,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let enclosing = self.enter_body(body, id, nested)?;
         let mut rest = Vec::new();
-        let signature = match self.tcx.def_kind(id) {
-            // A constant's initializer: of nothing, its value given back.
-            DefKind::AssocConst { .. } => self.expr(body.expr, &mut rest).map(|value| {
-                rest.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
-                (Vec::new(), false)
-            }),
-            _ => self.lower_signature(id, &body.thir.params.raw, body.expr, &mut rest),
+        // From its MIR (ADR 0364), a constant's initializer of nothing, its
+        // value given back.
+        // From its MIR, as the trait has it, `Self` the impl's type where
+        // it's asked (ADR 0364).
+        let signature = match &body.mir {
+            Some(mir) => self.mir_signature(body, mir, &mut rest),
+            None => Err(self.unsupported(span, "this default, without its MIR")),
         };
         self.given.const_params = outer_consts;
         let (mut params, is_async) = signature?;
@@ -2444,7 +2461,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         params.extend(own_params.into_iter().map(Into::into));
         // Only the drops it uses: most defaults drop nothing of their `Self`.
         let used = self.used_drops();
-        rest.splice(0..0, self.leave_body(enclosing)?);
+        rest.splice(0..0, self.leave_body(enclosing, true)?);
         let mut out: Vec<_> = made
             .into_iter()
             .filter(|(index, _)| used.contains(index))

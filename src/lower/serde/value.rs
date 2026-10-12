@@ -4,38 +4,19 @@
 //! it wraps is, and its `Number` is `{ kind, value }`, a `"u"`nsigned,
 //! `"i"`nteger or `"f"`loat, as serde_json keeps one.
 
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::lower::display::Pretty;
 use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
-use rustc_middle::thir::ExprId;
-use rustc_middle::ty::{self, Ty};
+
+use rustc_middle::ty::Ty;
 use rustc_span::Span;
-use rustc_span::def_id::DefId;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn is_json_number(&self, ty: Ty<'tcx>) -> bool {
         self.json_type(ty) == Some(Json::Number)
-    }
-
-    /// A call of serde_json's that rust-js writes itself: `to_value`, a
-    /// `Value`'s or a `Number`'s method, `value[key]`, `==` of a `Value`
-    /// and a string, a number or a `bool`, `Value::from`, and `into()` one.
-    pub(in crate::lower) fn json_call(
-        &mut self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Option<Expr>> {
-        let Some(operation) = self.recognition().json_call(def_id, generic_args) else {
-            return Ok(None);
-        };
-        let values = self.operands(args, out)?;
-        self.json_call_values(operation, values, span).map(Some)
     }
 
     /// `operation`, a serde_json call, of its arguments' `values`: THIR's

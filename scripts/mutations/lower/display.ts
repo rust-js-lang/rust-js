@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","std_odds"],
   },
   {
-    name: "debug-struct-unknown",
-    breaks: "`f.debug_struct(..).finish()` is refused",
-    file: "src/lower/display.rs",
-    find: "            \"std::fmt::DebugStruct\" => \"DebugStruct\",",
-    replace: "            \"std::fmt::DebugStruct\" => return Ok(None),",
-    tests: ["test/corpus.test.ts","-t","std_methods"],
-  },
-  {
     name: "debug-non-exhaustive-closed",
     breaks: "`finish_non_exhaustive()` leaves out its `..`",
     file: "src/lower/display.rs",
@@ -96,14 +88,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/display.rs",
     find: "                self.debug_string_with(values.remove(0), ty, span, &pretty)?",
     replace: "                self.debug_string_with(values.remove(0), ty, span, &Pretty::Plain)?",
-    tests: ["test/corpus.test.ts","-t","pretty_debug"],
-  },
-  {
-    name: "derived-fields-plain",
-    breaks: "a derived `Debug`'s fields show plain in a pretty `fmt`",
-    file: "src/lower/display.rs",
-    find: "        let outer = std::mem::replace(&mut self.writing.dyn_debug, pretty.clone());\n        let values = self.operands(&others, out);",
-    replace: "        let outer = std::mem::replace(&mut self.writing.dyn_debug, Pretty::Plain);\n        let values = self.operands(&others, out);",
     tests: ["test/corpus.test.ts","-t","pretty_debug"],
   },
   {
@@ -212,14 +196,6 @@ export const mutations: Mutation[] = [
     tests: ["test/crates.test.ts", "-t", "no_std"],
   },
   {
-    name: "fmt-write-path-call-refused",
-    breaks: "`Write::write_str(f, s)` of a `Formatter` is an error, where `f.write_str(s)` isn't",
-    file: "src/lower/display.rs",
-    find: "            None if self.recognition().fmt_write_on_formatter(def_id, generic_args) => 0,\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "user_fmt_traits"],
-  },
-  {
     name: "fieldless-std-enum-debug-refused",
     breaks: "`{:?}` of std's `IntErrorKind`, a name, is an error",
     file: "src/lower/display.rs",
@@ -268,14 +244,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
   },
   {
-    name: "failing-writer-loses-written",
-    breaks: "a writer that fails doesn't give what it wrote before to its consumer",
-    file: "src/lower/display.rs",
-    find: "        if self.writer_fails() {\n            self.runtime.insert(Helper::FmtError);",
-    replace: "        if false && self.writer_fails() {\n            self.runtime.insert(Helper::FmtError);",
-    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
-  },
-  {
     name: "failing-write-whole",
     breaks: "a `write!` of what fails writes nothing of its pieces before the one that fails",
     file: "src/lower/display.rs",
@@ -322,14 +290,6 @@ export const mutations: Mutation[] = [
     find: "                || self.recognition().is_js_error(ty)\n",
     replace: "",
     tests: ["test/diagnostics.test.ts", "-t", "a width for a JsError"],
-  },
-  {
-    name: "fmt-branches-build-string",
-    breaks: "a `fmt` that writes once each way through builds a string up, `let f = \"\"; if (..) { f += \"a dot\" } ..`, not a `return` each way",
-    file: "src/lower/display.rs",
-    find: "        StmtKind::If(test, then, Some(els)) => {\n            StmtKind::If(test.clone(), as_returns(then, name)?, Some(as_returns(els, name)?))",
-    replace: "        StmtKind::If(test, then, Some(els)) if false => {\n            StmtKind::If(test.clone(), as_returns(then, name)?, Some(as_returns(els, name)?))",
-    tests: ["test/compiler.test.ts", "-t", "a Display impl's fmt returns the string it writes"],
   },
   {
     name: "char-debug-double-quoted",

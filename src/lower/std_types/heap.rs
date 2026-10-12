@@ -1,11 +1,10 @@
 //! `BinaryHeap` (ADR 0068): a JS array kept in the order Rust's heap
 //! keeps it, by the runtime's `$heapPush` and `$heapPop`.
 
-use rustc_middle::thir::ExprId;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
-use crate::js::{Expr, Stmt};
+use crate::js::Expr;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 
@@ -33,19 +32,6 @@ pub(in crate::lower) enum HeapOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// One of `HeapOp`'s, with the items' `cmp` (ADR 0057).
-    pub(in crate::lower) fn heap_call(
-        &mut self,
-        op: HeapOp,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let heap_ty = self.thir[args[0]].ty;
-        let values = self.operands(args, out)?;
-        self.heap_values(op, values, heap_ty, span)
-    }
-
     /// `heap_call`'s, of its arguments' values, the heap's type `heap_ty`
     /// as it's given: THIR's and MIR's.
     pub(in crate::lower) fn heap_values(

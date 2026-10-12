@@ -90,16 +90,6 @@ impl<'tcx> Mir<'tcx> {
     }
 }
 
-/// Whether bodies are lowered from their MIR, as they are unless
-/// `RUST_JS_MIR=0` says THIR's, till THIR's lowering of bodies is retired
-/// (ADR 0364).
-pub fn mir_mode() -> bool {
-    std::env::var_os(MIR).is_none_or(|v| v != "0")
-}
-
-/// The variable that says which lowering: `0`, THIR's; else MIR's.
-pub const MIR: &str = "RUST_JS_MIR";
-
 /// What a temporary holds until it's used: a value, or a part of a
 /// `format_args!` that only its `Arguments` shows.
 #[derive(Clone)]
@@ -286,8 +276,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Its dictionaries, for its bounds, after its parameters (ADR 0049).
         let evidence = self.evidence_params(def_id);
-        let (mut params, mut out) = self.mir_function(mir, None)?;
+        let mut out = Vec::new();
+        let (mut params, is_async) = self.mir_signature(body, mir, &mut out)?;
         params.extend(evidence);
+        // The drops it used, which its callers give it (ADR 0300).
+        self.note_drop_uses(def_id);
+        Ok(LoweredFn {
+            function: js::Function {
+                name: self.krate.fns[&def_id].name.clone(),
+                params,
+                body: out,
+                // A constant's initializer, its module's `const`'s value, isn't
+                // a function anyone calls.
+                export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+                    && self.tcx.visibility(def_id).is_public()
+                    && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
+                        || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
+                is_async,
+                span: self.js_span(
+                    self.tcx
+                        .hir_span_with_body(self.tcx.local_def_id_to_hir_id(body.def_id)),
+                ),
+                name_span: self
+                    .tcx
+                    .def_ident_span(def_id)
+                    .map_or(js::Span::NONE, |s| self.js_span(s)),
+            },
+            runtime: std::mem::take(&mut self.runtime),
+            jsx: self.jsx,
+            dependencies: self.dependencies.take(),
+        })
+    }
+
+    /// A body's parameters and, in `out`, its statements, from its MIR, and
+    /// whether it's `async`: a function's, or a trait's default copied into
+    /// an impl (ADR 0176), whose dictionaries its caller gives.
+    pub(super) fn mir_signature(
+        &mut self,
+        body: &Body<'tcx>,
+        mir: &Mir<'tcx>,
+        into: &mut Vec<Stmt>,
+    ) -> R<(Vec<js::Pattern>, bool)> {
+        let def_id = body.def_id.to_def_id();
+        let span = self.tcx.def_span(def_id);
+        let (mut params, mut out) = self.mir_function(mir, None)?;
         // An `async fn`'s body is its coroutine's, an async arrow called
         // at once: the async function's own (ADR 0029).
         // An `on_load!` body is its module's top, where JS has no `return`:
@@ -338,33 +370,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.place_written(written, &mut out);
         tidy::unsuffixed_params(&mut out, self.module_names);
         out.splice(0..0, self.directives(body.def_id));
-        // The drops it used, which its callers give it (ADR 0300).
-        self.note_drop_uses(def_id);
-        Ok(LoweredFn {
-            function: js::Function {
-                name: self.krate.fns[&def_id].name.clone(),
-                params,
-                body: out,
-                // A constant's initializer, its module's `const`'s value, isn't
-                // a function anyone calls.
-                export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
-                    && self.tcx.visibility(def_id).is_public()
-                    && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
-                        || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
-                is_async,
-                span: self.js_span(
-                    self.tcx
-                        .hir_span_with_body(self.tcx.local_def_id_to_hir_id(body.def_id)),
-                ),
-                name_span: self
-                    .tcx
-                    .def_ident_span(def_id)
-                    .map_or(js::Span::NONE, |s| self.js_span(s)),
-            },
-            runtime: std::mem::take(&mut self.runtime),
-            jsx: self.jsx,
-            dependencies: self.dependencies.take(),
-        })
+        into.extend(out);
+        Ok((params, is_async))
     }
 
     /// A body's parameters and statements. A closure's, given what it
@@ -1854,10 +1861,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => cond,
                 };
                 let js_span = self.js_span(span);
-                // The panic drops what's there as it unwinds, then is thrown.
-                let mut panic = self.mir_unwind(state, *unwind)?;
-                panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
-                out.push(StmtKind::If(failed, panic, None).at(js_span));
+                // The panic drops what's there as it unwinds, then is thrown;
+                // none where it can't fail, a constant's operation rustc evaluates.
+                if !matches!(failed.kind, js::ExprKind::Bool(false)) {
+                    let mut panic = self.mir_unwind(state, *unwind)?;
+                    panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
+                    out.push(StmtKind::If(failed, panic, None).at(js_span));
+                }
                 out.extend(self.mir_branch(state, block, *target)?);
             }
             TerminatorKind::Drop {
@@ -2742,6 +2752,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     continue;
                 }
             };
+            // Where what's called, an impl's method resolved, takes an object
+            // by its own `&mut`, a copied default's `&mut self` given to its
+            // impl's method of an object `Self`: the object, which it changes
+            // in place, a box's `value` or a generic `self` boxed for none.
+            let holds = fn_id.is_some_and(|fn_id| {
+                let param = (self.tcx.fn_sig(fn_id).instantiate_identity().skip_normalization().skip_binder().inputs())
+                    .get(i)
+                    .copied();
+                !self.param_is_box(fn_id, i)
+                    && matches!(param.map(|p| *p.kind()), Some(ty::Ref(_, inner, ty::Mutability::Mut)) if self.is_object(inner))
+            });
+            if holds {
+                exprs.push(place);
+                continue;
+            }
             // A box this function was given, given on as it is.
             if let js::ExprKind::Member(boxed, field) = &place.kind
                 && field == "value"
@@ -3783,6 +3808,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A shift's amount of another type: a number, `Number(n & 63n)`.
                 let r = super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty);
                 match op {
+                    // A constant's, whose MIR checks as rustc's evaluation does:
+                    // rustc evaluates it, so it never overflows; the operation,
+                    // and that it didn't.
+                    BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow
+                        if matches!(
+                            tcx.def_kind(state.body.source.def_id()),
+                            DefKind::Const { .. }
+                                | DefKind::AssocConst { .. }
+                                | DefKind::AnonConst
+                                | DefKind::Static { .. }
+                        ) =>
+                    {
+                        let wrapping = op.overflowing_to_wrapping().expect("an overflowing operation");
+                        let value = self.binary(wrapping, l, r, known, ty, span)?;
+                        return Ok(Value::List(vec![Value::Expr(value), Value::Expr(Expr::bool(false))]));
+                    }
                     BinOp::AddWithOverflow | BinOp::SubWithOverflow | BinOp::MulWithOverflow => {
                         return Err(self.unsupported(span, "arithmetic checked for overflow, from its MIR"));
                     }
@@ -5328,7 +5369,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             generic_args,
             args: &[],
             tys: arg_tys,
-            discarded: false,
             span,
         };
         self.std_values(known, call, values, boxed, output, out)

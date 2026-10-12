@@ -1,7 +1,6 @@
 //! `Cow` (ADR 0319): its enum, `{ TAG, _0 }` (ADR 0033), what it borrowed
 //! or owns, made owned by a clone of what it borrowed.
 
-use rustc_middle::thir::ExprId;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -19,20 +18,6 @@ pub(in crate::lower) enum CowOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `into_owned()`: what it owns, or a clone of what it borrowed; and
-    /// `to_mut()`: made owned so, the `&mut` to what it owns.
-    pub(in crate::lower) fn cow_call(
-        &mut self,
-        op: CowOp,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let cow_ty = self.thir[args[0]].ty.peel_refs();
-        let cow = self.expr(args[0], out)?;
-        self.cow_values(op, cow, cow_ty, span, out)
-    }
-
     /// `cow_call`'s, of the `Cow`'s value, its place for `to_mut()`, and its
     /// type: THIR's and MIR's.
     pub(in crate::lower) fn cow_values(

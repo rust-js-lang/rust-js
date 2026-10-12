@@ -1,5 +1,4 @@
 // What THIR refuses, MIR lowers as Rust runs it (ADR 0364).
-//@ thir-compile-fail: lending an iterator that isn't a local
 pub struct P { pub v: std::vec::IntoIter<u32> }
 fn first<I: Iterator<Item = u32>>(it: &mut I) -> Option<u32> { it.next() }
 pub fn f(p: &mut P) -> Option<u32> { first(&mut p.v) }

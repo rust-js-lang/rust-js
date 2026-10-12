@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                let pair = Expr::array(vec![Expr::var(\"i\"), Expr::var(\"x\")]);\n",
     replace: "                let pair = Expr::array(vec![Expr::var(\"x\"), Expr::var(\"i\")]);\n",
-    tests: ["test/mir.test.ts", "-t", "labeled_blocks"],
+    tests: ["test/corpus.test.ts", "-t", "labeled_blocks"],
   },
   {
     name: "mir-sum-from-one",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                    \"sum\" => (Op::Add, 0),\n",
     replace: "                    \"sum\" => (Op::Add, 1),\n",
-    tests: ["test/mir.test.ts", "-t", "assert_failure"],
+    tests: ["test/corpus.test.ts", "-t", "assert_failure"],
   },
   {
     name: "mir-max-is-min",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                self.extreme_of(name == \"max\", items, item, span)?\n",
     replace: "                self.extreme_of(name == \"min\", items, item, span)?\n",
-    tests: ["test/mir.test.ts","-t","enum_order|opaque_iterators|generic_as_ref|returned_references"],
+    tests: ["test/corpus.test.ts","-t","enum_order|opaque_iterators|generic_as_ref|returned_references"],
   },
   {
     name: "mir-mut-loop-items-unhandled",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "            if handles {\n",
     replace: "            if false && handles {\n",
-    tests: ["test/mir.test.ts","-t","mut_ref_loop"],
+    tests: ["test/corpus.test.ts","-t","mut_ref_loop"],
   },
   {
     name: "mir-array-iterator-not-stepped-items",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "        match self.array_source(ty) {\n            Some(_) => match from_iterator(value) {\n",
     replace: "        match self.array_source(ty).filter(|_| false) {\n            Some(_) => match from_iterator(value) {\n",
-    tests: ["test/mir.test.ts","-t","iterator_clones"],
+    tests: ["test/corpus.test.ts","-t","iterator_clones"],
   },
   {
     name: "mir-generic-into-iter-unwrapped",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                        \"rev\" => Expr::call(Expr::member(items, \"toReversed\"), Vec::new()),\n",
     replace: "                        \"rev\" => items,\n",
-    tests: ["test/mir.test.ts","-t","linked_lists"],
+    tests: ["test/corpus.test.ts","-t","linked_lists"],
   },
   {
     name: "mir-rev-range-forward",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                        vec![receiver, Expr::var(\"$rangeNextBack\")],\n",
     replace: "                        vec![receiver, Expr::var(\"$rangeNext\")],\n",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-rev-inclusive-refused",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                (\"rev\", Some(RangeKind::Inclusive)) => {\n",
     replace: "                (\"rev\", Some(RangeKind::Inclusive)) if false => {\n",
-    tests: ["test/mir.test.ts","-t","byte_ascii"],
+    tests: ["test/corpus.test.ts","-t","byte_ascii"],
   },
   {
     name: "mir-rev-own-next-back-unused",
@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                    Some(double_ended) if name == \"rev\" => self\n",
     replace: "                    Some(double_ended) if false && name == \"rev\" => self\n",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-next-back-front",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                (\"next_back\", None) if array => self.helper(Helper::NextBack, \"$nextBack\", vec![it]),\n",
     replace: "                (\"next_back\", None) if array => self.helper(Helper::Next, \"$next\", vec![it]),\n",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-range-next-back-front",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                    self.helper(Helper::RangeNextBack, \"$rangeNextBack\", vec![it])\n",
     replace: "                    self.helper(Helper::RangeNext, \"$rangeNext\", vec![it])\n",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-inclusive-next-back-refused",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                (\"next_back\", Some(RangeKind::Inclusive)) => {\n",
     replace: "                (\"next_back\", Some(RangeKind::Inclusive)) if false => {\n",
-    tests: ["test/mir.test.ts","-t","range_inclusive_next_back"],
+    tests: ["test/corpus.test.ts","-t","range_inclusive_next_back"],
   },
   {
     name: "mir-len-whole",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                (\"len\", None) if array => Expr::bin(Op::Sub, Expr::member(it.clone(), \"end\"), Expr::member(it, \"at\")),\n",
     replace: "                (\"len\", None) if array => Expr::member(Expr::member(it, \"items\"), \"length\"),\n",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-size-hint-map-unseen",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                && method == \"map\"\n",
     replace: "                && method == \"map\" && false\n",
-    tests: ["test/mir.test.ts","-t","size_hint"],
+    tests: ["test/corpus.test.ts","-t","size_hint"],
   },
   {
     name: "mir-collect-map-refused",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                } else if self.is_map(output) {\n",
     replace: "                } else if false && self.is_map(output) {\n",
-    tests: ["test/mir.test.ts","-t","value_keys|user_hash|range_into_set"],
+    tests: ["test/corpus.test.ts","-t","value_keys|user_hash|range_into_set"],
   },
   {
     name: "mir-object-keys-iterated",
@@ -377,7 +377,7 @@ export const mutations: Mutation[] = [
     "find": "                    if let Some((start, end)) = range_bounds(&it)\n",
     "replace": "                    if let Some((start, end)) = range_bounds(&it).filter(|_| false)\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "range_values"
     ]
@@ -389,7 +389,7 @@ export const mutations: Mutation[] = [
     "find": "                || self.recognition().is_str_bytes(iter_ty)\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "str_bytes"
     ]
@@ -401,7 +401,7 @@ export const mutations: Mutation[] = [
     "find": "                (\"len\", None) if counted_chain(&it) => {\n",
     "replace": "                (\"len\", None) if false && counted_chain(&it) => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "str_bytes"
     ]
@@ -413,7 +413,7 @@ export const mutations: Mutation[] = [
     "find": "                || self.recognition().is_slice_iter_mut(ty)\n                || self.recognition().is_tree_range(ty) =>\n",
     "replace": "                || self.recognition().is_slice_iter_mut(ty) =>\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "btree_range_mut"
     ]
@@ -473,7 +473,7 @@ export const mutations: Mutation[] = [
     "find": "                if self.is_std_type(output, StdItem::BinaryHeap) {\n",
     "replace": "                if false && self.is_std_type(output, StdItem::BinaryHeap) {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "heap_peek_mut"
     ]
@@ -484,7 +484,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                    true => self.helper(Helper::NextSome, \"$nextSome\", vec![method(\"filter\", it, vec![test])]),\n",
     replace: "                    true => method(\"find\", it, vec![test]),\n",
-    tests: ["test/mir.test.ts", "-t", "lazy_chains"],
+    tests: ["test/corpus.test.ts", "-t", "lazy_chains"],
   },
   {
     name: "mir-next-back-iter-mut",
@@ -492,7 +492,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                || self.recognition().is_slice_iter_mut(iter_ty)\n                || self.recognition().is_tree_iter(iter_ty)\n",
     replace: "                || self.recognition().is_tree_iter(iter_ty)\n",
-    tests: ["test/mir.test.ts", "-t", "iter_mut_kept"],
+    tests: ["test/corpus.test.ts", "-t", "iter_mut_kept"],
   },
   {
     name: "mir-next-back-tree",
@@ -500,7 +500,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                || self.recognition().is_tree_iter(iter_ty)\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "iter_next_back"],
+    tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
   },
   {
     name: "mir-next-back-split",
@@ -508,7 +508,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                || self.is_str_split(iter_ty)\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "iter_next_back"],
+    tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
   },
   {
     name: "mir-next-back-peekable",
@@ -516,7 +516,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                || (self.recognition().is_peekable(iter_ty)\n",
     replace: "                || (false\n",
-    tests: ["test/mir.test.ts", "-t", "iter_next_back"],
+    tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
   },
   {
     name: "mir-next-back-map-all",
@@ -532,7 +532,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/iter.rs",
     find: "                    Some(item) => self.dropping_discarded(test, item, false, span, made)?,\n",
     replace: "                    Some(_) => test,\n",
-    tests: ["test/mir.test.ts", "-t", "collect_drops"],
+    tests: ["test/corpus.test.ts", "-t", "collect_drops"],
   },
   {
     name: "mir-fold-drops-unrequired",

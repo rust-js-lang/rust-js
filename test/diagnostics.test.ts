@@ -125,7 +125,6 @@ for (const [name, source, message, crate] of [
   ["generic &mut Ts to objects returned in a Vec", "pub struct C { pub n: i32 }\nfn to_vec<T>(a: &mut T) -> Vec<&mut T> { vec![a] }\npub fn f(c: &mut C) -> usize { to_vec(c).len() }", "a `&mut C` inside a generic function's parameters or result"],
   ["a generic &mut T to an object in an Option", "pub struct C { pub n: i32 }\nfn set<T>(o: Option<&mut T>, v: T) { if let Some(r) = o { *r = v; } }\npub fn f(c: &mut C) { set(Some(c), C { n: 7 }); }", "a `&mut C` inside a generic function's parameters or result"],
   ["a generic &mut T to an object given to a closure", "pub struct C { pub n: i32 }\nfn apply<T, F: FnMut(&mut T)>(t: &mut T, mut f: F) { f(t); }\npub fn f() -> i32 { let mut c = C { n: 1 }; apply(&mut c, |x| x.n += 1); c.n }", "a `&mut C` inside a generic function's parameters or result"],
-  ["a default method's &mut self of an object Self", "pub trait Ch: Sized { fn change(mut self) -> Self { self.set(5); self } fn set(&mut self, a: i32); }\npub struct X { pub a: i32 }\nimpl Ch for X { fn set(&mut self, a: i32) { self.a = a; } }\npub fn f() -> i32 { X { a: 1 }.change().a }", "`&mut` to a `Self`"],
   // A generic associated type of lifetimes is an associated type (ADR 0146); one of a type with a bound isn't.
   ["a generic associated type of a type with a bound", "pub trait Wrap { type Of<T>: Clone; fn wrap<T: Clone>(t: T) -> Self::Of<T>; }", "generic associated types with bounds"],
   ["a std trait's associated type's value, where a type has a destructor", "pub struct Guard;\nimpl Drop for Guard { fn drop(&mut self) {} }\npub fn first<I: Iterator>(mut i: I) -> usize { let _x = i.next(); 0 }", "a value of an associated type, where a type may have a destructor"],
@@ -179,7 +178,7 @@ for (const [name, source, message, crate] of [
     writeFileSync(input, source);
     const crates = crate === "js" ? (buildWebapi(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
     const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crates.length ? ["--", ...crates] : [])];
-    for (const [expected, mode] of [[message, { RUST_JS_MIR: "0" }], [name in fromMir ? fromMir[name] : message, { RUST_JS_MIR: "1" }]] as const) {
+    for (const [expected, mode] of [[name in fromMir ? fromMir[name] : message, {}]] as const) {
       const env = { ...process.env, ...mode };
       rmSync(output, { force: true });
       rmSync(output + ".map", { force: true });

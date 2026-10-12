@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        let ordered = acting.windows(2).all(|w| w[0] < w[1]);\n",
     replace: "        let ordered = true;\n",
-    tests: ["test/mir.test.ts", "-t", "order"],
+    tests: ["test/corpus.test.ts", "-t", "order"],
   },
   {
     name: "mir-assert-inverted",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    true => Expr::unary(js::UnaryOp::Not, cond),\n",
     replace: "                    true => cond,\n",
-    tests: ["test/mir.test.ts", "-t", "bitwise_operators"],
+    tests: ["test/corpus.test.ts", "-t", "bitwise_operators"],
   },
   {
     name: "mir-folded-call-uncaught",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            self.unwinding_to(state, unwind.filter(|_| ran), made, &mut out)?;\n",
     replace: "            self.unwinding_to(state, None, made, &mut out)?;\n",
-    tests: ["test/mir.test.ts","-t","drop|refcell_"],
+    tests: ["test/corpus.test.ts","-t","drop|refcell_"],
   },
   {
     name: "mir-const-param-unread",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                ty::ConstKind::Param(_) => return self.const_arg(ct, c.span),\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","const_generic_values"],
+    tests: ["test/corpus.test.ts","-t","const_generic_values"],
   },
   {
     name: "mir-static-mut-not-a-place",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                Ok(Value::Ref(Expr::member(self.fn_ref(def_id), \"value\")))\n",
     replace: "                Ok(Value::Expr(self.fn_ref(def_id)))\n",
-    tests: ["test/mir.test.ts","-t","static_mut_shared"],
+    tests: ["test/corpus.test.ts","-t","static_mut_shared"],
   },
   {
     name: "mir-promoted-const-unseen",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "    (Some(local) == referred).then_some(c)\n",
     replace: "    (Some(local) == referred).then_some(c).filter(|_| false)\n",
-    tests: ["test/mir.test.ts","-t","thread_local"],
+    tests: ["test/corpus.test.ts","-t","thread_local"],
   },
   {
     name: "mir-box-not-copied-back",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                                    false => StmtKind::Assign(place, back).at(js_span),\n",
     replace: "                                    false => StmtKind::Expr(Expr::undefined()).at(js_span),\n",
-    tests: ["test/mir.test.ts","-t","mut_number_args"],
+    tests: ["test/corpus.test.ts","-t","mut_number_args"],
   },
   {
     name: "mir-branch-continue-is-break",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    0 => negate(failed),\n                    _ => failed,\n",
     replace: "                    0 => failed,\n                    _ => negate(failed),\n",
-    tests: ["test/mir.test.ts","-t","question_early_returns"],
+    tests: ["test/corpus.test.ts","-t","question_early_returns"],
   },
   {
     name: "mir-residual-err-lost",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    Some(_) => Expr::undefined(),\n                    None => tried,\n",
     replace: "                    Some(_) => Expr::undefined(),\n                    None => Expr::undefined(),\n",
-    tests: ["test/mir.test.ts","-t","question_early_returns"],
+    tests: ["test/corpus.test.ts","-t","question_early_returns"],
   },
   {
     name: "mir-early-exit-not-negated",
@@ -88,7 +88,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                super::display::append_written(&place, value, false, self.js_span(span), out);\n",
     replace: "                let _ = (place, value);\n",
-    tests: ["test/mir.test.ts", "-t", "string_pushes"],
+    tests: ["test/corpus.test.ts", "-t", "string_pushes"],
   },
   {
     name: "mir-fmt-result-unwrapped",
@@ -96,7 +96,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))\n",
     replace: "        if false && arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))\n",
-    tests: ["test/mir.test.ts","-t","string_pushes"],
+    tests: ["test/corpus.test.ts","-t","string_pushes"],
   },
   {
     name: "mir-comb-subject-dropped",
@@ -104,7 +104,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?\n",
     replace: "                self.comb_values(comb, (exprs[1..].to_vec(), &arg_tys[1..]), made, generic_args, span, out)?\n",
-    tests: ["test/mir.test.ts","-t","option_as_deref|combinators_owned_drops"],
+    tests: ["test/corpus.test.ts","-t","option_as_deref|combinators_owned_drops"],
   },
   {
     name: "mir-map-call-refused",
@@ -112,7 +112,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?\n",
     replace: "                return Err(self.unsupported(span, \"a map's method\"));\n",
-    tests: ["test/mir.test.ts","-t","map_index_missing"],
+    tests: ["test/corpus.test.ts","-t","map_index_missing"],
   },
   {
     name: "mir-handle-deref-unread",
@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if !std::mem::take(&mut placed) {\n                    value = Expr::member(value, \"value\");\n                }\n",
     replace: "                let _ = std::mem::take(&mut placed);\n",
-    tests: ["test/mir.test.ts","-t","mut_number_handles"],
+    tests: ["test/corpus.test.ts","-t","mut_number_handles"],
   },
   {
     name: "mir-borrowed-result-given-value",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                exprs.push(Expr::handle(place));\n                continue;\n",
     replace: "                exprs.push(place);\n                continue;\n",
-    tests: ["test/mir.test.ts","-t","mut_number_handles"],
+    tests: ["test/corpus.test.ts","-t","mut_number_handles"],
   },
   {
     name: "mir-iter-comb-not-lazy",
@@ -136,7 +136,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?\n",
     replace: "                self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, false, span, out)?\n",
-    tests: ["test/mir.test.ts","-t","iter_flatten"],
+    tests: ["test/corpus.test.ts","-t","iter_flatten"],
   },
   {
     name: "mir-radix-argument-unseen",
@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::FmtDisplay | Std::FmtDebug | Std::FmtRadix(_) | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
     replace: "            Std::FmtDisplay | Std::FmtDebug | Std::FmtExp(_) | Std::FmtPointer | Std::FmtUsize => {\n",
-    tests: ["test/mir.test.ts","-t","radix_negative"],
+    tests: ["test/corpus.test.ts","-t","radix_negative"],
   },
   {
     name: "mir-sort-unsorted",
@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.sort_values(key, items, arg_tys[0], generic_args, span, out)?\n",
     replace: "                items\n",
-    tests: ["test/mir.test.ts","-t","generic_borrow"],
+    tests: ["test/corpus.test.ts","-t","generic_borrow"],
   },
   {
     name: "mir-swap-one-way",
@@ -160,7 +160,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                out.push(StmtKind::Assign(b, old).at(js_span));\n",
     replace: "                let _ = (b, old);\n",
-    tests: ["test/mir.test.ts","-t","swap_replace"],
+    tests: ["test/corpus.test.ts","-t","swap_replace"],
   },
   {
     name: "mir-view-whole",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    self.view_call(if checked { \"$viewGet\" } else { \"$view\" }, list)\n",
     replace: "                    list.remove(0)\n",
-    tests: ["test/mir.test.ts","-t","mut_ref_loop_bounds"],
+    tests: ["test/corpus.test.ts","-t","mut_ref_loop_bounds"],
   },
   {
     name: "mir-fn-value-undefined",
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    Some(f) => Ok(Value::Expr(f)),\n",
     replace: "                    Some(_) => Ok(Value::Expr(Expr::undefined())),\n",
-    tests: ["test/mir.test.ts", "-t", "fn_items_as_values"],
+    tests: ["test/corpus.test.ts", "-t", "fn_items_as_values"],
   },
   {
     name: "mir-called-value-returns-nothing",
@@ -184,7 +184,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        body.push(StmtKind::Return(Some(value)).at(self.js_span(span)));\n        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))\n",
     replace: "        let _ = value;\n        Ok(Expr::arrow(params.into_iter().map(Into::into).collect(), body))\n",
-    tests: ["test/mir.test.ts","-t","as_deref|str_circumfix|std_function_value_panic"],
+    tests: ["test/corpus.test.ts","-t","as_deref|str_circumfix|std_function_value_panic"],
   },
   {
     name: "mir-fn-pointer-call-refused",
@@ -192,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            return Ok(Value::Expr(Expr::call(callee, exprs)));\n        };\n",
     replace: "            let _ = (callee, exprs);\n            return Err(self.unsupported(span, \"a call\"));\n        };\n",
-    tests: ["test/mir.test.ts","-t","static_fns"],
+    tests: ["test/corpus.test.ts","-t","static_fns"],
   },
   {
     name: "mir-ctor-call-unapplied",
@@ -200,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            return Ok(Value::Expr(super::calls::apply(made, exprs)));\n",
     replace: "            let _ = exprs;\n            return Ok(Value::Expr(made));\n",
-    tests: ["test/mir.test.ts","-t","function_values"],
+    tests: ["test/corpus.test.ts","-t","function_values"],
   },
   {
     name: "mir-rc-call-refused",
@@ -208,7 +208,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.rc_values(op, (exprs, arg_tys), span, out)?\n",
     replace: "                return Err(self.unsupported(span, \"an Rc's\"));\n",
-    tests: ["test/mir.test.ts","-t","as_deref_counted"],
+    tests: ["test/corpus.test.ts","-t","as_deref_counted"],
   },
   {
     name: "mir-copy-shared",
@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Value::Expr(e) if copied => {\n",
     replace: "            Value::Expr(e) if false && copied => {\n",
-    tests: ["test/mir.test.ts","-t","array_map"],
+    tests: ["test/corpus.test.ts","-t","array_map"],
   },
   {
     name: "mir-drop-uses-unnoted",
@@ -224,7 +224,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        self.note_drop_uses(def_id);\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","arm_temporaries"],
+    tests: ["test/corpus.test.ts","-t","arm_temporaries"],
   },
   {
     name: "mir-object-unboxed",
@@ -232,7 +232,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                Value::Expr(object) if fn_id.is_some_and(|fn_id| self.param_is_box(fn_id, i)) => object,\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","generic_traits|mut_ref_as_generic|generic_mut_ref"],
+    tests: ["test/corpus.test.ts","-t","generic_traits|mut_ref_as_generic|generic_mut_ref"],
   },
   {
     name: "mir-static-read-movable",
@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);\n",
     replace: "                stable &= !state.borrowed_names.contains(name);\n",
-    tests: ["test/mir.test.ts", "-t", "JSX tests|atomics|operands_before_replace"],
+    tests: ["test/corpus.test.ts", "-t", "JSX tests|atomics|operands_before_replace"],
   },
   {
     name: "mir-shared-temporary-a-place",
@@ -256,7 +256,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            return Ok(Value::Ref(Expr::index(items, index)));\n",
     replace: "            return Ok(Value::Expr(Expr::index(items, index)));\n",
-    tests: ["test/mir.test.ts","-t","compound_assignment_order"],
+    tests: ["test/corpus.test.ts","-t","compound_assignment_order"],
   },
   {
     name: "mir-item-handles-skipped",
@@ -264,7 +264,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if let Some(handles) = self.item_handles_of(known, exprs, receiver, span, out)? {\n",
     replace: "            if let Some(handles) = self.item_handles_of(known, exprs, receiver, span, out)?.filter(|_| false) {\n",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_std_items"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_std_items"],
   },
   {
     name: "mir-cell-deref-skipped",
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            && !matches!(ty.ty.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell_pointee(*inner)))\n",
     replace: "                            && true)\n",
-    tests: ["test/mir.test.ts","-t","dyn_mut"],
+    tests: ["test/corpus.test.ts","-t","dyn_mut"],
   },
   {
     name: "mir-union-field-read",
@@ -280,7 +280,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            (ty::Adt(adt, _), _) if adt.is_union() => Err(self.unsupported(span, \"unions\")),\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","union_const"],
+    tests: ["test/corpus.test.ts","-t","union_const"],
   },
   {
     name: "mir-copied-closure-shared",
@@ -288,7 +288,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && state.locals.reads[place.local] > 1\n",
     replace: "            && false\n",
-    tests: ["test/mir.test.ts","-t","copied_closure"],
+    tests: ["test/corpus.test.ts","-t","copied_closure"],
   },
   {
     name: "mir-unsize-unchecked",
@@ -296,7 +296,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            self.check_unsize(*to, span)?;\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","unsized_struct_dyn"],
+    tests: ["test/corpus.test.ts","-t","unsized_struct_dyn"],
   },
   {
     name: "mir-boxed-option-unrefused",
@@ -304,7 +304,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if self.refuses_boxed_option(known, output) {\n",
     replace: "        if false && self.refuses_boxed_option(known, output) {\n",
-    tests: ["test/mir.test.ts","-t","as_deref_none_like"],
+    tests: ["test/corpus.test.ts","-t","as_deref_none_like"],
   },
   {
     name: "mir-takes-drops-unchecked",
@@ -312,7 +312,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        self.check_takes_drops(known, def_id, arg_tys, drained, span)?;\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","drop_impl_clear"],
+    tests: ["test/corpus.test.ts","-t","drop_impl_clear"],
   },
   {
     name: "mir-mut-borrowed-unchanged",
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            locals.changed[borrowed.local] = true;\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","assignment_order"],
+    tests: ["test/corpus.test.ts","-t","assignment_order"],
   },
   {
     name: "mir-changed-operand-stable",
@@ -328,7 +328,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                place.projection.is_empty() && !state.locals.borrowed[place.local] && !state.locals.changed[place.local]\n",
     replace: "                place.projection.is_empty() && !state.locals.borrowed[place.local]\n",
-    tests: ["test/mir.test.ts","-t","assignment_order"],
+    tests: ["test/corpus.test.ts","-t","assignment_order"],
   },
   {
     name: "mir-whole-mut-borrow-unwritten",
@@ -336,7 +336,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            locals.writes[borrowed.local] += 1;\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","box_uninit"],
+    tests: ["test/corpus.test.ts","-t","box_uninit"],
   },
   {
     name: "mir-iterator-ref-refused",
@@ -344,7 +344,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    Value::Ref(iterator) => Ok(iterator),\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","generic_associated_types"],
+    tests: ["test/corpus.test.ts","-t","generic_associated_types"],
   },
   {
     name: "mir-format-width-dropped",
@@ -352,7 +352,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                                None => spec.width.map(|w| Expr::int(w.into())),\n",
     replace: "                                None => None,\n",
-    tests: ["test/mir.test.ts","-t","debug_options"],
+    tests: ["test/corpus.test.ts","-t","debug_options"],
   },
   {
     name: "mir-format-precision-dropped",
@@ -360,7 +360,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                                None => spec.precision.map(|p| Expr::int(p.into())),\n",
     replace: "                                None => None,\n",
-    tests: ["test/mir.test.ts","-t","debug_options"],
+    tests: ["test/corpus.test.ts","-t","debug_options"],
   },
   {
     name: "mir-format-width-argument-dropped",
@@ -368,7 +368,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            let width = match spec.width_from {\n                                Some(from) => Some(item(from).ok_or_else(bad)?.2),\n",
     replace: "                            let width = match spec.width_from {\n                                Some(_) => None,\n",
-    tests: ["test/mir.test.ts","-t","format_width_arguments"],
+    tests: ["test/corpus.test.ts","-t","format_width_arguments"],
   },
   {
     name: "mir-shift-amount-bigint",
@@ -376,7 +376,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "super::std_types::number::shift_amount_of(*op, self.value_expr(r, span)?, ty, r_ty)",
     replace: "{ let _ = r_ty; self.value_expr(r, span)? }",
-    tests: ["test/mir.test.ts","-t","wrapping"],
+    tests: ["test/corpus.test.ts","-t","wrapping"],
   },
   {
     name: "mir-assign-shift-amount-bigint",
@@ -384,7 +384,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            let rhs = super::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","generic_bitwise_operators"],
+    tests: ["test/corpus.test.ts","-t","generic_bitwise_operators"],
   },
   {
     name: "mir-std-iterator-array",
@@ -400,7 +400,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::Number(NumOp::ToIntUnchecked) => {\n",
     replace: "            Std::Number(NumOp::ToIntUnchecked) if false => {\n",
-    tests: ["test/mir.test.ts","-t","integers_128"],
+    tests: ["test/corpus.test.ts","-t","integers_128"],
   },
   {
     name: "mir-static-copy-shared",
@@ -408,7 +408,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "if place.is_indirect() || !state.pending",
     replace: "if !state.pending",
-    tests: ["test/mir.test.ts","-t","statics"],
+    tests: ["test/corpus.test.ts","-t","statics"],
   },
   {
     name: "mir-object-replace-rebinds",
@@ -416,7 +416,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && self.is_object(pointee)\n",
     replace: "            && false && self.is_object(pointee)\n",
-    tests: ["test/mir.test.ts","-t","replace_through_mut"],
+    tests: ["test/corpus.test.ts","-t","replace_through_mut"],
   },
   {
     name: "mir-handle-boxed-by-value",
@@ -424,7 +424,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {\n",
     replace: "            if false && !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {\n",
-    tests: ["test/mir.test.ts","-t","std_mut_items"],
+    tests: ["test/corpus.test.ts","-t","std_mut_items"],
   },
   {
     name: "mir-unit-place-refused",
@@ -432,7 +432,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if !fixed_place(&place) && !matches!(place.kind, js::ExprKind::Undefined) {\n",
     replace: "            if !fixed_place(&place) {\n",
-    tests: ["test/mir.test.ts","-t","mut_ref_as_generic"],
+    tests: ["test/corpus.test.ts","-t","mut_ref_as_generic"],
   },
   {
     name: "mir-format-failing-unmarked",
@@ -440,7 +440,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if fails {\n                    return Ok(Value::Fmt(Std::FmtNew, output, joined));\n",
     replace: "                if false && fails {\n                    return Ok(Value::Fmt(Std::FmtNew, output, joined));\n",
-    tests: ["test/mir.test.ts","-t","fmt_error_format"],
+    tests: ["test/corpus.test.ts","-t","fmt_error_format"],
   },
   {
     name: "mir-print-failing-unwrapped",
@@ -448,7 +448,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::Format | Std::Print { .. } => matches!(values.first(), Some(Value::Fmt(Std::FmtNew, ..))),\n",
     replace: "            Std::Format => matches!(values.first(), Some(Value::Fmt(Std::FmtNew, ..))),\n",
-    tests: ["test/mir.test.ts","-t","fmt_error_println"],
+    tests: ["test/corpus.test.ts","-t","fmt_error_println"],
   },
   {
     name: "mir-to-string-failing-unwrapped",
@@ -456,7 +456,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::ToString => first_ty().is_some_and(|ty| self.fmt_may_fail(self.display_trait(), ty)),\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","fmt_error_to_string"],
+    tests: ["test/corpus.test.ts","-t","fmt_error_to_string"],
   },
   {
     name: "mir-user-iterator-arg-unwrapped",
@@ -464,7 +464,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {\n",
     replace: "                if false && matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {\n",
-    tests: ["test/mir.test.ts","-t","generic_iterator_rest_lazy"],
+    tests: ["test/corpus.test.ts","-t","generic_iterator_rest_lazy"],
   },
   {
     name: "mir-escape-iterator-wrapped",
@@ -472,7 +472,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        && !super::recognition::is_text_escape(tcx, output) =>\n",
     replace: "                        && (true || !super::recognition::is_text_escape(tcx, output)) =>\n",
-    tests: ["test/mir.test.ts","-t","slice_bytes_text"],
+    tests: ["test/corpus.test.ts","-t","slice_bytes_text"],
   },
   {
     name: "mir-made-before-block-scoped",
@@ -480,7 +480,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
     replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests|matrix_floats"],
+    tests: ["test/corpus.test.ts","-t","JSX tests|matrix_floats"],
   },
   {
     name: "mir-object-copied-back-rebound",
@@ -488,7 +488,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            let object = !matches!(value, Value::Ref(_));\n",
     replace: "            let object = false && !matches!(value, Value::Ref(_));\n",
-    tests: ["test/mir.test.ts","-t","evidence_paths"],
+    tests: ["test/corpus.test.ts","-t","evidence_paths"],
   },
   {
     name: "mir-boxed-iterator-wrapped",
@@ -496,7 +496,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        && !output.is_box()\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","dyn_iterators"],
+    tests: ["test/corpus.test.ts","-t","dyn_iterators"],
   },
   {
     name: "mir-rc-dyn-unpaired",
@@ -504,7 +504,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..));\n",
     replace: "                let to_dyn = to.builtin_deref(true).is_some_and(|p| matches!(p.kind(), ty::Dynamic(..)));\n",
-    tests: ["test/mir.test.ts","-t","dyn_any_generic"],
+    tests: ["test/corpus.test.ts","-t","dyn_any_generic"],
   },
   {
     name: "mir-peek-steps",
@@ -512,7 +512,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "StepOp::Peek => self.helper(Helper::Peek, \"$peek\", vec![it]),",
     replace: "StepOp::Peek => self.helper(Helper::Next, \"$next\", vec![it]),",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-next-if-eq-unequal",
@@ -520,7 +520,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "Expr::bin(Op::Eq, Expr::var(\"item\"), x)",
     replace: "Expr::bin(Op::Ne, Expr::var(\"item\"), x)",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-as-slice-whole",
@@ -528,7 +528,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "vec![Expr::member(it.clone(), \"at\"), Expr::member(it, \"end\")],",
     replace: "vec![Expr::int(0), Expr::member(it, \"end\")],",
-    tests: ["test/mir.test.ts","-t","iterator_back_ends"],
+    tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
     name: "mir-default-size-hint-one",
@@ -536,7 +536,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "Expr::array(vec![Expr::int(0), Expr::undefined()])",
     replace: "Expr::array(vec![Expr::int(1), Expr::undefined()])",
-    tests: ["test/mir.test.ts","-t","size_hint"],
+    tests: ["test/corpus.test.ts","-t","size_hint"],
   },
   {
     name: "mir-entry-number-unhandled",
@@ -544,7 +544,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if !self.is_cell(output) {\n",
     replace: "            if true || !self.is_cell(output) {\n",
-    tests: ["test/mir.test.ts","-t","entry_counts"],
+    tests: ["test/corpus.test.ts","-t","entry_counts"],
   },
   {
     name: "mir-kept-entry-parts",
@@ -552,7 +552,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    let parts = Expr::member(entry, \"_0\");\n",
     replace: "                    let parts = entry;\n",
-    tests: ["test/mir.test.ts","-t","entry_kept"],
+    tests: ["test/corpus.test.ts","-t","entry_kept"],
   },
   {
     name: "mir-zero-sized-const-refused",
@@ -560,7 +560,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if let mir::ConstValue::ZeroSized = value {\n",
     replace: "                if false && let mir::ConstValue::ZeroSized = value {\n",
-    tests: ["test/mir.test.ts","-t","expression_values"],
+    tests: ["test/corpus.test.ts","-t","expression_values"],
   },
   {
     name: "mir-promoted-variant-refused",
@@ -568,7 +568,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && let Some((made, variant)) = referred_variant(tcx, &state.promoted[promoted])\n",
     replace: "            && let Some((made, variant)) = referred_variant(tcx, &state.promoted[promoted]).filter(|_| false)\n",
-    tests: ["test/mir.test.ts","-t","mut_ref_box_parts"],
+    tests: ["test/corpus.test.ts","-t","mut_ref_box_parts"],
   },
   {
     name: "mir-dyn-debug-made-early",
@@ -576,7 +576,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        if self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {\n",
     replace: "                        if false && self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {\n",
-    tests: ["test/mir.test.ts","-t","pretty_debug"],
+    tests: ["test/corpus.test.ts","-t","pretty_debug"],
   },
   {
     name: "mir-take-field-reordered",
@@ -584,7 +584,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));\n",
     replace: "            && true;\n",
-    tests: ["test/mir.test.ts","-t","byte_strings|statics"],
+    tests: ["test/corpus.test.ts","-t","byte_strings|statics"],
   },
   {
     name: "mir-out-of-order-fields-undeclared",
@@ -592,7 +592,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                let rest = state.pending.split_off(at + 1);\n                self.flush(state, out)?;\n                state.pending = rest;\n",
     replace: "                let _ = at;\n",
-    tests: ["test/mir.test.ts","-t","range_inclusive_next_back"],
+    tests: ["test/corpus.test.ts","-t","range_inclusive_next_back"],
   },
   {
     name: "mir-copies-shared",
@@ -600,7 +600,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "self.copies_values((item, arg_tys[0]), n, false, span, out)?",
     replace: "self.copies_values((item, tcx.types.unit), n, false, span, out)?",
-    tests: ["test/mir.test.ts","-t","copy_mutation"],
+    tests: ["test/corpus.test.ts","-t","copy_mutation"],
   },
   {
     name: "mir-non-zero-new-refused",
@@ -608,7 +608,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::NonZeroNew => {\n",
     replace: "            Std::NonZeroNew if false => {\n",
-    tests: ["test/mir.test.ts","-t","nonzero"],
+    tests: ["test/corpus.test.ts","-t","nonzero"],
   },
   {
     name: "mir-string-edit-refused",
@@ -616,7 +616,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::StringEdit(edit) => {\n",
     replace: "            Std::StringEdit(edit) if false => {\n",
-    tests: ["test/mir.test.ts","-t","text_edits|string_editing"],
+    tests: ["test/corpus.test.ts","-t","text_edits|string_editing"],
   },
   {
     name: "mir-string-range-swapped",
@@ -624,7 +624,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    given.splice(0..0, [start, end.unwrap_or_else(Expr::undefined)]);\n",
     replace: "                    given.splice(0..0, [end.unwrap_or_else(Expr::undefined), start]);\n",
-    tests: ["test/mir.test.ts","-t","text_edits|string_editing|replace_range_panic|string_drain_from_past_len"],
+    tests: ["test/corpus.test.ts","-t","text_edits|string_editing|replace_range_panic|string_drain_from_past_len"],
   },
   {
     name: "mir-with-capacity-refused",
@@ -632,7 +632,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::StringWithCapacity => {\n",
     replace: "            Std::StringWithCapacity if false => {\n",
-    tests: ["test/mir.test.ts","-t","text_edits|string_editing|text_aliases|string_insert_boundary"],
+    tests: ["test/corpus.test.ts","-t","text_edits|string_editing|text_aliases|string_insert_boundary"],
   },
   {
     name: "mir-make-mut-refused",
@@ -640,7 +640,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::Rc(RcOp::MakeMut) => {\n",
     replace: "            Std::Rc(RcOp::MakeMut) if false => {\n",
-    tests: ["test/mir.test.ts","-t","rc_clone_sees_owners|rc_make_mut_clone_panics"],
+    tests: ["test/corpus.test.ts","-t","rc_clone_sees_owners|rc_make_mut_clone_panics"],
   },
   {
     name: "mir-promoted-call-refused",
@@ -648,7 +648,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted])\n",
     replace: "            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted]).filter(|_| false)\n",
-    tests: ["test/mir.test.ts","-t","type_facts"],
+    tests: ["test/corpus.test.ts","-t","type_facts"],
   },
   {
     name: "mir-type-name-refused",
@@ -656,7 +656,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Std::TypeName { .. } => {\n",
     replace: "            Std::TypeName { .. } if false => {\n",
-    tests: ["test/mir.test.ts","-t","type_facts"],
+    tests: ["test/corpus.test.ts","-t","type_facts"],
   },
   {
     name: "mir-index-from-end-front",
@@ -664,7 +664,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    None => Expr::bin(Op::Sub, Expr::member(base.clone(), \"length\"), Expr::int(offset.into())),\n",
     replace: "                    None => Expr::int(offset.into()),\n",
-    tests: ["test/mir.test.ts","-t","slice_patterns"],
+    tests: ["test/corpus.test.ts","-t","slice_patterns"],
   },
   {
     name: "mir-subslice-whole",
@@ -672,7 +672,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                Expr::call(Expr::member(base, \"slice\"), range)\n",
     replace: "                { let _ = range; base }\n",
-    tests: ["test/mir.test.ts","-t","slice_patterns"],
+    tests: ["test/corpus.test.ts","-t","slice_patterns"],
   },
   {
     name: "mir-fake-raw-refused",
@@ -680,7 +680,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,\n",
     replace: "            Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) if false => self.mir_place(state, *place, span, out)?,\n",
-    tests: ["test/mir.test.ts","-t","slice_patterns"],
+    tests: ["test/corpus.test.ts","-t","slice_patterns"],
   },
   {
     name: "mir-mut-subslice-unrefused",
@@ -688,7 +688,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        .any(|elem| matches!(elem, PlaceElem::Subslice { .. }))\n",
     replace: "                        .any(|elem| false && matches!(elem, PlaceElem::Subslice { .. }))\n",
-    tests: ["test/mir.test.ts","-t","slice_pattern_mut_rest"],
+    tests: ["test/corpus.test.ts","-t","slice_pattern_mut_rest"],
   },
   {
     name: "mir-untagged-variant-tagged",
@@ -696,7 +696,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            let test = self.untagged_variant_test(ty, def, &subject);\n",
     replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            let test = self.untagged_variant_test(ty, def, &subject);\n",
-    tests: ["test/mir.test.ts","-t","untagged_enums"],
+    tests: ["test/corpus.test.ts","-t","untagged_enums"],
   },
   {
     name: "mir-element-made-as-const",
@@ -704,7 +704,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {\n",
     replace: "            if !named && self.capture_object(&mut expr, &mut made) {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-element-unread",
@@ -712,7 +712,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if let Some(value) = state.in_place.get(&local) {\n",
     replace: "        if let Some(value) = state.in_place.get(&local).filter(|_| false) {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-omitted-prop-called",
@@ -720,7 +720,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if bindings::is_omitted(tcx, def_id) {\n",
     replace: "        if false && bindings::is_omitted(tcx, def_id) {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-jsx-shapeless",
@@ -728,7 +728,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        calls.next().is_none().then_some(call)\n",
     replace: "        calls.next().is_none().then_some(call).filter(|_| false)\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-alike-reassigned",
@@ -736,7 +736,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-binding-component-called",
@@ -744,7 +744,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            ty::FnDef(id, _) => cx.binding_component_of(id),\n",
     replace: "                            ty::FnDef(..) => None,\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-props-taken-whole",
@@ -752,7 +752,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            params[i] = pattern;\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-param-part-moved-again",
@@ -760,7 +760,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if let Some(&arg) = state.parts.get(&place.local)\n",
     replace: "        if let Some(&arg) = state.parts.get(&place.local).filter(|_| false)\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-pattern-names-renamed",
@@ -768,7 +768,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if let Some((_, name)) = named.iter().find(|(l, _)| *l == local) {\n",
     replace: "            if let Some((_, name)) = named.iter().find(|(l, _)| *l == local).filter(|_| false) {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-constant-made-as-const",
@@ -776,7 +776,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            _ => e.is_constant(),\n",
     replace: "            _ => false,\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-plain-of-bound-vars",
@@ -784,7 +784,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        && !t.has_escaping_bound_vars()\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","fn_pointer_of_borrowed_struct"],
+    tests: ["test/corpus.test.ts","-t","fn_pointer_of_borrowed_struct"],
   },
   {
     name: "mir-foreign-static-by-pointer",
@@ -792,7 +792,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if let ty::Ref(_, _, ty::Mutability::Not) | ty::RawPtr(_, ty::Mutability::Not) = ty.kind()\n",
     replace: "        if let ty::Ref(_, _, ty::Mutability::Not) = ty.kind()\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-fn-item-referenced-undefined",
@@ -800,7 +800,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    && fn_def(referred.ty()).is_some() =>\n",
     replace: "                    && fn_def(referred.ty()).is_some() && false =>\n",
-    tests: ["test/mir.test.ts","-t","fn_item_referenced"],
+    tests: ["test/corpus.test.ts","-t","fn_item_referenced"],
   },
   {
     name: "mir-module-name-made-as-const",
@@ -808,7 +808,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),\n",
     replace: "            js::ExprKind::Var(name) => self.locals.alike.contains(name),\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-untagged-into-called",
@@ -816,7 +816,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
     replace: "        if false && values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-alike-variable-made-as-const",
@@ -824,7 +824,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),\n",
     replace: "            js::ExprKind::Var(name) => self.module_names.contains(name),\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-shared-capture-changes",
@@ -832,7 +832,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                && self.locals.alike.insert(name.clone())\n",
     replace: "                && false\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-object-made-as-const",
@@ -840,7 +840,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if !named && (self.capture_jsx(&mut expr, &mut made) || self.capture_object(&mut expr, &mut made)) {\n",
     replace: "            if !named && self.capture_jsx(&mut expr, &mut made) {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-named-local-in-place",
@@ -848,7 +848,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    state.named.insert(place.local);\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","nested_type_chain"],
+    tests: ["test/corpus.test.ts","-t","nested_type_chain"],
   },
   {
     name: "mir-otherwise-tag-of-its-own",
@@ -952,7 +952,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && !state.jsx_props.contains(&place.local)\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-local-functions-undeclared",
@@ -992,7 +992,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && (!state.locals.user[local] || (state.payloads.contains(&local) && !of_temporary))\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
     replace: "            && !state.locals.user[local]\n            && state.locals.writes[local] == 1\n            && !state.locals.borrowed[local]\n            && !state.named",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-payload-of-for-loop",
@@ -1184,7 +1184,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                && let [only] = preds[block].as_slice()\n",
     replace: "                && let [only] = preds[block].as_slice().get(..0).unwrap_or_default()\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-format-args-array",
@@ -1365,7 +1365,7 @@ export const mutations: Mutation[] = [
     "find": "            while let thir::PatKind::Deref { subpattern, .. } = &pattern.kind {\n                pattern = subpattern;\n            }\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1377,7 +1377,7 @@ export const mutations: Mutation[] = [
     "find": "                    | Rvalue::Ref(_, BorrowKind::Shared, from),\n",
     "replace": ",\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1389,7 +1389,7 @@ export const mutations: Mutation[] = [
     "find": "                && derefs.iter().all(|p| matches!(p, PlaceElem::Deref))\n",
     "replace": "                && derefs.is_empty()\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1437,7 +1437,7 @@ export const mutations: Mutation[] = [
     "find": "            js::ExprKind::Member(..) if context_member => true,\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1509,7 +1509,7 @@ export const mutations: Mutation[] = [
     "find": "                        StmtKind::Let(name, None) => {\n",
     "replace": "                        StmtKind::Let(name, None) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1521,7 +1521,7 @@ export const mutations: Mutation[] = [
     "find": "                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1533,7 +1533,7 @@ export const mutations: Mutation[] = [
     "find": "                .flat_map(|imports| imports.values().cloned()),\n",
     "replace": "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1564,7 +1564,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "        let concise = self.closure_calls_for_nothing(body);\n",
     "replace": "        let concise = false;\n",
-    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-call-paths-unrecorded",
@@ -1580,7 +1580,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "                    self.locals.paths.entry(path).or_insert(true);\n",
     "replace": "",
-    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-written-fn-in-closure-at-top",
@@ -1685,7 +1685,7 @@ export const mutations: Mutation[] = [
     "find": "if called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
     "replace": "if false && called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1697,7 +1697,7 @@ export const mutations: Mutation[] = [
     "find": "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1709,7 +1709,7 @@ export const mutations: Mutation[] = [
     "find": "            && let Some(fields) = self.default_base_at(span)?\n",
     "replace": "            && false\n            && let Some(fields) = self.default_base_at(span)?\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1733,7 +1733,7 @@ export const mutations: Mutation[] = [
     "find": "if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
     "replace": "if false && !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1745,7 +1745,7 @@ export const mutations: Mutation[] = [
     "find": "            self.locals.plain.extend(fields);\n",
     "replace": "            drop(fields);\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1757,7 +1757,7 @@ export const mutations: Mutation[] = [
     "find": "            let through_mut = matches!(\n",
     "replace": "            let through_mut = false && matches!(\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1769,7 +1769,7 @@ export const mutations: Mutation[] = [
     "find": "            if self.has_drops(pat.ty) && !self.binds_dropped_fields(pat) {",
     "replace": "            if self.has_drops(pat.ty) {",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1781,7 +1781,7 @@ export const mutations: Mutation[] = [
     "find": "            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();",
     "replace": "            let drops = 0 * dropped.iter().filter(|&&local| local == arg).count();",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1793,7 +1793,7 @@ export const mutations: Mutation[] = [
     "find": "            PlaceElem::Field(_, field_ty) if bindings::is_rest(self.tcx, field_ty) => {",
     "replace": "            PlaceElem::Field(_, field_ty) if false && bindings::is_rest(self.tcx, field_ty) => {",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1805,7 +1805,7 @@ export const mutations: Mutation[] = [
     "find": "            .filter(|&(i, _)| !bindings::is_rest_field(tcx, ty, i))\n",
     "replace": "            .filter(|&(i, _)| false && !bindings::is_rest_field(tcx, ty, i))\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1817,7 +1817,7 @@ export const mutations: Mutation[] = [
     "find": "        if state.binding_var\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
     "replace": "        if false\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1997,7 +1997,7 @@ export const mutations: Mutation[] = [
     "find": "                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))\n",
     "replace": "                || state.locals.writes[local] > 1\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -2033,7 +2033,7 @@ export const mutations: Mutation[] = [
     "find": "                        && !matches!(output.kind(), ty::Param(_))\n                        && !output.is_box()",
     "replace": "                        && !output.is_box()",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "generic_from_str"
     ]
@@ -2045,7 +2045,7 @@ export const mutations: Mutation[] = [
     "find": "        if known.is_none()\n            && let Some(name) = self.recognition().cmp_extreme(def_id)\n",
     "replace": "        if false\n            && let Some(name) = self.recognition().cmp_extreme(def_id)\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "std_methods"
     ]
@@ -2057,7 +2057,7 @@ export const mutations: Mutation[] = [
     "find": "            && let Some(dictionary) = self.dyn_error_from(to, from, span)?\n            && let [value] = &values[..]\n",
     "replace": "            && let Some(dictionary) = self.dyn_error_from(to, from, span)?\n            && let [value] = &values[..0]\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "dyn_display"
     ]
@@ -2069,7 +2069,7 @@ export const mutations: Mutation[] = [
     "find": "&format!(\"calling `{}`\", self.tcx.def_path_str(def_id))",
     "replace": "&format!(\"calling `{}`, from its MIR\", self.tcx.def_path_str(def_id))",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "str_circumfix_closure"
     ]
@@ -2081,7 +2081,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Slice(SliceOp::CopyWithin) => {\n",
     "replace": "            Std::Slice(SliceOp::CopyWithin) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "slice_methods"
     ]
@@ -2093,7 +2093,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Slice(SliceOp::ExtractIf { range }) => {\n",
     "replace": "            Std::Slice(SliceOp::ExtractIf { range }) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "extract_if"
     ]
@@ -2105,7 +2105,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Map(MapOp::ExtractIf) => {\n",
     "replace": "            Std::Map(MapOp::ExtractIf) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "extract_if"
     ]
@@ -2141,7 +2141,7 @@ export const mutations: Mutation[] = [
     "find": "if !inner.is_slice() && !inner.is_array())",
     "replace": ")",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "split_at_mut_past_len"
     ]
@@ -2153,7 +2153,7 @@ export const mutations: Mutation[] = [
     "find": "                ) && (known.gives_its_cell() || !output.walk().any(|arg| {\n",
     "replace": "                ) && (false || !output.walk().any(|arg| {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "slice_disjoint"
     ]
@@ -2165,7 +2165,7 @@ export const mutations: Mutation[] = [
     "find": "                    js::ExprKind::Member(object, field) if !object.reads_same() => {\n",
     "replace": "                    js::ExprKind::Member(object, field) if false && !object.reads_same() => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "vec_push_mut"
     ]
@@ -2177,7 +2177,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Slice(SliceOp::DequeRangeMut) => {\n",
     "replace": "            Std::Slice(SliceOp::DequeRangeMut) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "deque_range_mut"
     ]
@@ -2189,7 +2189,7 @@ export const mutations: Mutation[] = [
     "find": "                match self.is_boxable(generic_args.type_at(0)) {\n                    true => self.helper(Helper::MutItems, \"$mutItems\", vec![view]),\n",
     "replace": "                match false {\n                    true => self.helper(Helper::MutItems, \"$mutItems\", vec![view]),\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "deque_range_mut"
     ]
@@ -2201,7 +2201,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Map(MapOp::TreeRange { mutable }) => {\n",
     "replace": "            Std::Map(MapOp::TreeRange { mutable }) if !mutable => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "btree_range_mut"
     ]
@@ -2237,7 +2237,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::OptionPlace(op) => {\n",
     "replace": "            Std::OptionPlace(op) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "option_result_methods"
     ]
@@ -2249,7 +2249,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Cow(op) => {\n",
     "replace": "            Std::Cow(op) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "cows"
     ]
@@ -2261,7 +2261,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Heap(op) => {\n",
     "replace": "            Std::Heap(op) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "heap_methods|heap_peek_mut"
     ]
@@ -2273,7 +2273,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::WrappingOp(op, assign) => {\n",
     "replace": "            Std::WrappingOp(op, assign) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "wrapping_type"
     ]
@@ -2285,7 +2285,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::Stream(op) => {\n",
     "replace": "            Std::Stream(op) if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "std_odds"
     ]
@@ -2297,7 +2297,7 @@ export const mutations: Mutation[] = [
     "find": "            Std::UserWrite => {\n",
     "replace": "            Std::UserWrite if false => {\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "user_fmt_write"
     ]
@@ -2309,7 +2309,7 @@ export const mutations: Mutation[] = [
     "find": "                        || generic_args.types().next().is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_))))))\n",
     "replace": "                        || false)))\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "generic_writers"
     ]
@@ -2320,7 +2320,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                out.push(StmtKind::Assign(place, left).at(self.js_span(span)));\n                Expr::index(split, Expr::int(1))\n",
     replace: "                Expr::index(split, Expr::int(1))\n",
-    tests: ["test/mir.test.ts", "-t", "slice_split_off"],
+    tests: ["test/corpus.test.ts", "-t", "slice_split_off"],
   },
   {
     name: "mir-split-off-held",
@@ -2336,7 +2336,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.flush(state, out)?;\n                self.drop_value(slots, ty, span, out)?;\n",
     replace: "                self.flush(state, out)?;\n",
-    tests: ["test/mir.test.ts", "-t", "slice_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
   },
   {
     name: "mir-uninit-write-clone-copies",
@@ -2344,7 +2344,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.uninit_write_values(clone, values, generic_args.type_at(0), span, out)?\n",
     replace: "                self.uninit_write_values(false, values, generic_args.type_at(0), span, out)?\n",
-    tests: ["test/mir.test.ts", "-t", "slice_uninit"],
+    tests: ["test/corpus.test.ts", "-t", "slice_uninit"],
   },
   {
     name: "mir-str-deref-mut-refused",
@@ -2352,7 +2352,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if known == Std::Same\n            && self.is_cell(output)\n",
     replace: "        if false\n            && self.is_cell(output)\n",
-    tests: ["test/mir.test.ts", "-t", "str_mut"],
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
     name: "mir-str-part-range-unread",
@@ -2360,7 +2360,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if matches!(op, TextOp::StrPart { bounds: false } | TextOp::StrGetMut) {\n",
     replace: "                if matches!(op, TextOp::StrGetMut) {\n",
-    tests: ["test/mir.test.ts", "-t", "str_mut"],
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
     name: "mir-str-part-case-handle",
@@ -2376,7 +2376,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        let cell = self.spill(\"part\", (**cell).clone(), out);\n                        Expr::member(cell, \"value\")\n",
     replace: "                        return Err(self.unsupported(span, \"changing this string, from its MIR\"));\n",
-    tests: ["test/mir.test.ts", "-t", "str_mut"],
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
     name: "mir-call-cell-refused",
@@ -2384,7 +2384,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,\n",
     replace: "                        js::ExprKind::Object(_) => true,\n",
-    tests: ["test/mir.test.ts", "-t", "str_mut"],
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
     name: "mir-str-box-not-copied-back",
@@ -2392,7 +2392,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "!pointee.is_sized(self.tcx, self.typing_env) && !pointee.is_str())",
     replace: "!pointee.is_sized(self.tcx, self.typing_env))",
-    tests: ["test/mir.test.ts", "-t", "str_mut"],
+    tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },
   {
     name: "mir-reborrow-cell-folded",
@@ -2400,7 +2400,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                                    let kind = js::ExprKind::Member(Box::new(cell), \"value\".into());\n                                    Expr {\n                                        kind,\n                                        ..Expr::undefined()\n                                    }\n",
     replace: "                                    Expr::member(cell, \"value\")\n",
-    tests: ["test/mir.test.ts", "-t", "leaked_string_written"],
+    tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
   },
   {
     name: "mir-object-cell-refused",
@@ -2408,7 +2408,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,\n",
     replace: "                        js::ExprKind::Call(..) => true,\n",
-    tests: ["test/mir.test.ts", "-t", "leaked_string_written"],
+    tests: ["test/corpus.test.ts", "-t", "leaked_string_written"],
   },
   {
     name: "mir-box-items-of-handle",
@@ -2416,7 +2416,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    Value::Ref(place) if known == Std::Pointee => Ok(place),\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "boxed_array_iter"],
+    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"],
   },
   {
     name: "mir-kept-ref-unfixed",
@@ -2424,7 +2424,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                Value::Ref(self.fixed_kept(state, target, out)?)\n",
     replace: "                Value::Ref(target)\n",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_local"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
   },
   {
     name: "mir-ref-of-ref-unaliased",
@@ -2432,7 +2432,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                state.refs.insert(place.local, list);\n                return Ok(());\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_local"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
   },
   {
     name: "mir-through-alias-handle",
@@ -2440,7 +2440,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            if !place.projection.is_empty()\n",
     replace: "                            if false\n",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_local"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
   },
   {
     name: "mir-kept-ref-var-unheld",
@@ -2448,7 +2448,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                .is_none_or(|(l, _)| state.locals.writes[l] <= 1 || !state.body.local_decls[l].ty.is_ref()),\n",
     replace: "                .is_none_or(|_| true),\n",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_local"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_local"],
   },
   {
     name: "mir-option-as-mut-refused",
@@ -2456,7 +2456,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if known == Std::Pointee\n                && let Some(item) = self.option_of(receiver)\n",
     replace: "            if false\n                && let Some(item) = self.option_of(receiver)\n",
-    tests: ["test/mir.test.ts", "-t", "generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "mir-field-value-collapsed",
@@ -2464,7 +2464,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        js::ExprKind::Var(name) => self.locals.cells.contains(name),\n",
     replace: "                        js::ExprKind::Var(_) => true,\n",
-    tests: ["test/mir.test.ts", "-t", "generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "mir-borrow-root-unheld",
@@ -2472,7 +2472,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        && state.body.local_decls[place.local].ty.is_ref();\n                    let target = match root {\n",
     replace: "                        && false;\n                    let target = match root {\n",
-    tests: ["test/mir.test.ts", "-t", "generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "mir-generic-result-boxed",
@@ -2480,7 +2480,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            let called = self.generic_result_values((def_id, generic_args), called, span)?;\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "mir-generic-method-result-boxed",
@@ -2488,7 +2488,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                let call = self.generic_result_values(self.callee(def_id, generic_args), call, span)?;\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "generic_mut_ref_kept"],
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },
   {
     name: "mir-param-type-unchecked",
@@ -2504,7 +2504,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && generic_args.types().any(|t| self.is_cell(t))\n",
     replace: "            && false\n",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_compare"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
     name: "mir-through-cell-ref-unwrapped",
@@ -2512,7 +2512,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                                && !self.is_cell(pointee) =>\n",
     replace: "                                =>\n",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_compare"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
     name: "mir-borrowed-const",
@@ -2520,7 +2520,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                match state.locals.borrowed[local] {\n",
     replace: "                match false {\n",
-    tests: ["test/mir.test.ts", "-t", "mut_ref_compare"],
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
   },
   {
     name: "mir-assign-op-handle-refused",
@@ -2528,7 +2528,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))\n",
     replace: "            && matches!(place, Value::Ref(_))\n",
-    tests: ["test/mir.test.ts", "-t", "prepared_places"],
+    tests: ["test/corpus.test.ts", "-t", "prepared_places"],
   },
   {
     name: "mir-variable-type-unchecked",
@@ -2544,7 +2544,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        self.check_held_drops(ty, span)?;\n        self.check_value_ty(ty, span)\n",
     replace: "        self.check_value_ty(ty, span)\n",
-    tests: ["test/mir.test.ts", "-t", "map_key_drops"],
+    tests: ["test/corpus.test.ts", "-t", "map_key_drops"],
   },
   {
     name: "mir-flush-discriminant",
@@ -2552,7 +2552,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            if let Value::Discriminant(subject, _) = &value\n                && subject.reads_same()\n",
     replace: "            if let Value::Discriminant(subject, _) = &value\n                && false\n",
-    tests: ["test/mir.test.ts", "-t", "refcell_borrows"],
+    tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },
   {
     name: "mir-mut-temp-place-held",
@@ -2560,7 +2560,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            state.in_place.insert(local, target.clone());\n            return Ok(());\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "rc_counts"],
+    tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
     name: "mir-guard-rc-assign-refused",
@@ -2568,7 +2568,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if matches!(&target.kind, js::ExprKind::Member(_, field) if field == \"value\") {\n",
     replace: "                if false {\n",
-    tests: ["test/mir.test.ts", "-t", "rc_counts"],
+    tests: ["test/corpus.test.ts", "-t", "rc_counts"],
   },
   {
     name: "mir-make-mut-field-refused",
@@ -2576,7 +2576,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    Some(name) if fixed_place(&place) => state",
     replace: "                    Some(name) if matches!(place.kind, js::ExprKind::Var(_)) => state",
-    tests: ["test/mir.test.ts", "-t", "rc_counted_uses"],
+    tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
   },
   {
     name: "mir-mut-temp-expr-spilled",
@@ -2584,7 +2584,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && let Value::Place(target) | Value::Expr(target) = &value\n",
     replace: "            && let Value::Place(target) = &value\n",
-    tests: ["test/mir.test.ts", "-t", "rc_counted_uses"],
+    tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
   },
   {
     name: "mir-counted-rc-plain",
@@ -2592,7 +2592,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                            && self.counted_rc(t).is_none()\n                            && self.weak_of(t).is_none()\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "rc_counted_uses"],
+    tests: ["test/corpus.test.ts", "-t", "rc_counted_uses"],
   },
   {
     name: "mir-iter-made-dropped",
@@ -2600,7 +2600,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    out.extend(made);\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "nested_options"],
+    tests: ["test/corpus.test.ts", "-t", "nested_options"],
   },
   {
     name: "mir-map-unrecorded",
@@ -2616,7 +2616,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    if tuple.reads_same()\n",
     replace: "                    if false && tuple.reads_same()\n",
-    tests: ["test/mir.test.ts", "-t", "generic_trait_methods"],
+    tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
   },
   {
     name: "mir-failing-write-whole",
@@ -2624,7 +2624,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                if matches!(given, Value::Fmt(Std::FmtNew, ..)) && fixed_place(&place) {\n",
     replace: "                if false && fixed_place(&place) {\n",
-    tests: ["test/mir.test.ts", "-t", "fmt_error_write"],
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "mir-failing-result-methods-refused",
@@ -2632,7 +2632,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                return Ok(Value::Expr(self.fmt_result_values(answer, result, message, span, out)));\n",
     replace: "                return Err(self.unsupported(span, \"methods of a `fmt::Result` that may fail, from its MIR\"));\n",
-    tests: ["test/mir.test.ts", "-t", "fmt_error_write"],
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "mir-failing-question-refused",
@@ -2640,7 +2640,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                self.fmt_check(tried, self.js_span(span), out);\n",
     replace: "                return Err(self.unsupported(span, \"`?` of a `fmt::Result` that may fail, from its MIR\"));\n",
-    tests: ["test/mir.test.ts", "-t", "fmt_error_write"],
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "mir-fmt-result-arguments",
@@ -2648,7 +2648,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            && tcx\n                .impl_of_assoc(def_id)\n",
     replace: "            && true || tcx\n                .impl_of_assoc(def_id)\n",
-    tests: ["test/mir.test.ts", "-t", "fmt_error_write"],
+    tests: ["test/corpus.test.ts", "-t", "fmt_error_write"],
   },
   {
     name: "mir-same-trait-dispatched",
@@ -2656,7 +2656,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if !matches!(known, Some(Std::Any(_) | Std::Same))\n",
     replace: "        if !matches!(known, Some(Std::Any(_)))\n",
-    tests: ["test/mir.test.ts", "-t", "dyn_any"],
+    tests: ["test/corpus.test.ts", "-t", "dyn_any"],
   },
   {
     name: "mir-async-captured-refused",
@@ -2664,7 +2664,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars() || copy(value)))\n",
     replace: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars()))\n",
-    tests: ["test/mir.test.ts", "-t", "future_sizes"],
+    tests: ["test/corpus.test.ts", "-t", "future_sizes"],
   },
   {
     name: "mir-skip-while-skipped-undropped",
@@ -2672,7 +2672,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    exprs.insert(0, self.dropping_discarded(test, item, true, span, out)?);\n",
     replace: "                    exprs.insert(0, test);\n",
-    tests: ["test/mir.test.ts", "-t", "drop_skipped_items"],
+    tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
   },
   {
     name: "mir-skip-while-takes-refused",
@@ -2680,7 +2680,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        let drained = known == Std::IterComb(IterComb::SkipWhile);\n",
     replace: "        let drained = false;\n",
-    tests: ["test/mir.test.ts", "-t", "drop_skipped_items"],
+    tests: ["test/corpus.test.ts", "-t", "drop_skipped_items"],
   },
   {
     name: "mir-closure-unmade",
@@ -2688,7 +2688,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        self.closure_made(def_id, held);\n",
     replace: "        self.closure_made(def_id, Vec::new());\n",
-    tests: ["test/mir.test.ts", "-t", "closure_drops"],
+    tests: ["test/corpus.test.ts", "-t", "closure_drops"],
   },
   {
     name: "mir-call-takes-unchecked",
@@ -3097,5 +3097,13 @@ export const mutations: Mutation[] = [
     find: "                export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)\n",
     replace: "                export: true\n",
     tests: ["test/corpus.test.ts","-t","const_block_values"],
+  },
+  {
+    name: "mir-fn-directives-dropped",
+    breaks: "a function's `js::directive!` is written nowhere",
+    file: "src/lower/mir.rs",
+    find: "        out.splice(0..0, self.directives(body.def_id));\n",
+    replace: "        out.splice(0..0, Vec::new());\n",
+    tests: ["test/modules.test.ts","-t","in a body is the body"],
   },
 ];

@@ -1,12 +1,12 @@
 // What a change is checked by before it's committed, all at once, in a
-// minute or so: lint, the MIR corpus and the JSX tests MIR lists in parts,
-// the suites that check JS from MIR as from THIR, what only THIR's reads
-// where the change touches it, and the mutations it adds or changes. CI
-// runs the whole suite and every mutation of what the change touched after
-// each push (DEVELOPMENT.md).
+// minute or so: lint, the corpus in parts, the suites that check the JS
+// bodies are lowered to from their MIR (ADR 0364), the snapshots and the
+// diagnostics where the change touches what they read, and the mutations it
+// adds or changes. CI runs the whole suite and every mutation of what the
+// change touched after each push (DEVELOPMENT.md).
 //
 //   bun run check:fast                 the change's checks
-//   bun run check:fast --all           THIR's suites too
+//   bun run check:fast --all           every suite it can touch
 //   bun run check:fast test/x.test.ts  and these files
 import { readFileSync } from "node:fs";
 import { availableParallelism } from "node:os";
@@ -20,11 +20,8 @@ const extra = args.filter((arg) => !arg.startsWith("--"));
 
 const git = (gitArgs: string[]) => Bun.spawnSync(["git", ...gitArgs], { cwd: root }).stdout.toString().split("\n").filter(Boolean);
 const changed = [...git(["diff", "--name-only", "HEAD"]), ...git(["ls-files", "--others", "--exclude-standard"])];
-// What THIR's lowering, or what both share, reads: all of the compiler but
-// MIR's own lowering, and the runtime.
-const mirOnly = (file: string) => file === "src/lower/mir.rs" || file.startsWith("src/lower/mir/");
-const shared = all || changed.some((file) => (file.startsWith("src/") && !mirOnly(file)) || file.startsWith("runtime/"));
-const corpus = shared || changed.some((file) => file.startsWith("test/corpus") || ["test/support.ts", "test/programs.ts"].includes(file));
+// What the snapshots and the diagnostics read: the compiler and the runtime.
+const shared = all || changed.some((file) => file.startsWith("src/") || file.startsWith("runtime/"));
 const jsx = all || changed.some((file) => /^src\/(lower\/jsx|jsx_syntax)|^react\//.test(file));
 
 // The mutations the change adds or changes: each `name` its lists' diff adds.
@@ -51,14 +48,13 @@ const jobs: [string, string[], Record<string, string>][] = [
   ["typecheck", ["bun", "run", "typecheck"], {}],
   ["clippy", ["cargo", "clippy", "--locked", "--quiet", "--", "-D", "warnings"], {}],
   ["architecture, mutation lists", ["bun", "test", "test/architecture.test.ts", "test/mutations.test.ts"], {}],
-  ...inParts("MIR corpus", "test/mir.test.ts"),
-  ...(corpus ? inParts("corpus", "test/corpus.test.ts") : []),
-  // What checks the JS MIR writes as THIR's, each of its tests in both.
+  ...inParts("corpus", "test/corpus.test.ts"),
+  // What checks the JS bodies are lowered to.
   ...["lowering", "compiler", "bindings"].map(
     (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],
   ),
   ...(jsx ? [["JSX", ["bun", "test", "test/jsx.test.ts"], {}] as [string, string[], Record<string, string>]] : []),
-  // What pins the JS THIR writes, the names it gives and what it refuses.
+  // What pins the JS written, the names it gives and what it refuses.
   ...(shared
     ? ["snapshots", "diagnostics"].map(
         (name): [string, string[], Record<string, string>] => [name, ["bun", "test", `test/${name}.test.ts`], {}],

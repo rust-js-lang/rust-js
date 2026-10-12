@@ -332,21 +332,6 @@ test("a JS form of a concept is written by the concept's owner", () => {
   expect(strays).toEqual([]);
 });
 
-// calls.rs lowers calls, and nothing else asks it anything: what a function
-// is in JS is items.rs's, a `&mut` given to one mut_refs.rs's. Sixteen
-// modules called it once (the architecture audit).
-test("calls.rs is a dispatcher only lower.rs calls", () => {
-  const defined = (file: string) => new Set([...read(file).matchAll(/^ {4}(?:pub\([^)]*\) )?fn (\w+)/gm)].map(m => m[1]));
-  const others = ["src/lower.rs", ...files("src/lower")].filter(f => f !== "src/lower/calls.rs");
-  const elsewhere = new Set(others.flatMap(f => [...defined(f)]));
-  const own = [...defined("src/lower/calls.rs")].filter(name => !elsewhere.has(name));
-  expect(own.length).toBeGreaterThan(0);
-  for (const file of others.filter(f => f !== "src/lower.rs")) {
-    const called = own.filter(name => new RegExp(`\\bself\\.${name}\\(`).test(read(file)));
-    expect([file, called]).toEqual([file, []]);
-  }
-});
-
 // A question recognition answers is asked of it, or through shortcuts.rs,
 // where each shortcut is one line, so where it's answered is plain. They
 // were in ten modules once, each looking like that module's own.
@@ -362,19 +347,17 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
   expect([...shortcuts.matchAll(forward)].length).toBe(functions);
 });
 
-// A call is lowered by a dispatcher that hands it to what knows it: the
-// crate's own functions, bindings and closures to `special_call`, a std
-// function to `std_call` and its domain's function (vecs.rs, options.rs,
-// cells.rs, ..). Each was a function of a thousand lines once: what's new
-// goes where its kind is, not in the dispatcher.
-test("the dispatchers of calls and of what's called stay short", () => {
+// What's called is told by a dispatcher that hands it to what knows it, a
+// std function to its domain's (vecs.rs, options.rs, cells.rs, ..). It was
+// a function of a thousand lines once: what's new goes where its kind is,
+// not in the dispatcher.
+test("the dispatcher of what's called stays short", () => {
   const length = (file: string, signature: string) => {
     const lines = read(file).split("\n");
     const start = lines.findIndex(line => line.startsWith(signature));
     expect(start, signature).toBeGreaterThanOrEqual(0);
     return lines.findIndex((line, k) => k > start && line === "    }") - start;
   };
-  expect(length("src/lower/calls.rs", "    pub(super) fn call(")).toBeLessThanOrEqual(60);
   expect(length("src/lower/recognition.rs", "    pub(super) fn classify(")).toBeLessThanOrEqual(15);
 });
 

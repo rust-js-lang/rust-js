@@ -110,14 +110,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_boxable(ty) || self.is_generic_boxed(ty, self.typing_env.param_env)
     }
 
-    /// Is a `&mut` made here, to a place of type `pointee`, a cell? In a trait's
-    /// default copied into an impl, `Self` is the impl's type: `&mut self` of
-    /// an object `Self` is the object, though a `&mut Self` parameter is the
-    /// dictionary's box (ADR 0099).
-    pub(super) fn makes_cell(&self, pointee: Ty<'tcx>) -> bool {
-        self.is_cell_pointee(self.in_impl_terms(pointee))
-    }
-
     /// A `&mut` to a value JS can't change in place, as a value: a cell, a box
     /// or a handle, whose `value` is the place it points at (ADR 0099).
     pub(super) fn is_cell(&self, ty: Ty<'tcx>) -> bool {

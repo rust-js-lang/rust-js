@@ -1,5 +1,4 @@
 // What THIR refuses, MIR lowers as Rust runs it (ADR 0364).
-//@ thir-compile-fail: moving part of a value with a destructor
 pub struct D(u32);
 impl Drop for D { fn drop(&mut self) { println!("drop {}", self.0); } }
 pub fn f(p: (Option<D>, Option<D>)) -> Option<D> { match p { (Some(t), _) | (_, Some(t)) => Some(t), _ => None } }

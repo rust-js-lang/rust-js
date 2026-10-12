@@ -7,7 +7,6 @@ use super::{FnCx, R, Shape};
 use rustc_ast::Mutability;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
@@ -218,16 +217,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.walks().representable.borrow_mut().insert(ty, found);
         }
         found
-    }
-
-    /// A binding by value, or by `ref`: a reference is the value itself
-    /// (ADR 0023), which rustc keeps from changing while it's borrowed. A `ref
-    /// mut` works where `&mut` does, to an object (ADR 0025).
-    pub(super) fn check_by_value(&self, mode: BindingMode, ty: Ty<'tcx>, span: Span) -> R<()> {
-        match mode.0 {
-            ByRef::No | ByRef::Yes(_, Mutability::Not) => Ok(()),
-            ByRef::Yes(_, Mutability::Mut) if self.is_object(ty.peel_refs()) => Ok(()),
-            ByRef::Yes(_, Mutability::Mut) => Err(self.unsupported(span, "`ref mut` bindings to this type")),
-        }
     }
 }

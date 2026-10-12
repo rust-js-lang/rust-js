@@ -4,17 +4,15 @@
 //! formatting returns, is thrown, with what was written before it (ADR 0187).
 
 use super::bindings;
-use super::fn_def;
+
 use super::format_spec::{Options, Radix};
 use super::recognition::{ChannelError, FmtResultAnswer, FormatterQuery, Std};
-use super::recognition::{StdItem, WriteCall, fmt_trait_called, opt_std_item, std_item, trait_method};
+use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
-use super::{Dest, FnCx, R};
+use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::thir::visit::{self, Visitor};
-use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, PatKind};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -22,9 +20,6 @@ use rustc_span::def_id::DefId;
 /// What writing to a `Formatter` knows (ADRs 0054, 0137).
 #[derive(Default)]
 pub(super) struct Writing {
-    /// In a function that writes to a `Formatter` (ADR 0054): its variable,
-    /// and the JS string that stands for it.
-    writer: Option<(Option<LocalVarId>, String)>,
     /// In such a function of a crate that gives a `Formatter` options (ADRs
     /// 0058, 0137): the parameter that has them, `{ alternate: true }`.
     given: Option<Expr>,
@@ -116,23 +111,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty.walk()
             .filter_map(|part| part.as_type())
             .any(|part| self.call_may_fail(fmt, self.tcx.mk_args(&[part.into()])))
-    }
-
-    /// May what `e` formats fail: a `format_args!`'s arguments, or a
-    /// `to_string()`'s value, by their traits (ADR 0187)?
-    pub(super) fn formats_may_fail(&self, e: ExprId) -> bool {
-        if !self.krate.any_failing {
-            return false;
-        }
-        let mut found = Called {
-            thir: self.thir,
-            calls: Vec::new(),
-        };
-        found.visit_expr(&self.thir[e]);
-        found.calls.into_iter().any(|(id, args)| {
-            fmt_trait_called(self.tcx, id)
-                .is_some_and(|fmt_trait| args.types().next().is_some_and(|ty| self.fmt_may_fail(fmt_trait, ty)))
-        })
     }
 
     /// A call's value, of a function that returns a `fmt::Result` and may
@@ -241,12 +219,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.failing.contains(&self.item)
     }
 
-    /// In a function that writes to a `Formatter` (ADR 0054): the JS string
-    /// it's written, which a `return` gives back.
-    pub(super) fn written(&self) -> Option<String> {
-        self.writing.writer.as_ref().map(|(_, name)| name.clone())
-    }
-
     /// In a writer given options (ADRs 0137, 0143): what `f.alternate()`,
     /// `f.width()` and the like answer, `options?.alternate === true` and
     /// `options?.width`, which is `None` where it's not given.
@@ -278,15 +250,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer = std::mem::replace(&mut self.writing.given, given);
         let made = lower(self);
         self.writing.given = outer;
-        made
-    }
-
-    /// `lower`, during which a `&dyn Debug` made shows its value as `pretty`
-    /// says: a derived `Debug`'s or a builder's arguments (ADR 0137).
-    pub(super) fn with_dyn_debug<T>(&mut self, pretty: Pretty, lower: impl FnOnce(&mut Self) -> T) -> T {
-        let outer = std::mem::replace(&mut self.writing.dyn_debug, pretty);
-        let made = lower(self);
-        self.writing.dyn_debug = outer;
         made
     }
 
@@ -363,139 +326,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn dyn_debug_string(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let pretty = self.writing.dyn_debug.clone();
         self.debug_string_with(value, ty, span, &pretty)
-    }
-
-    /// The JS parameters of a function that writes to a formatter, and its
-    /// body in `out`: `let f = ""`, the writes, and `return f`. Just
-    /// `return s` if it writes once.
-    pub(super) fn lower_writer(
-        &mut self,
-        params: &[thir::Param<'tcx>],
-        formatter: usize,
-        body: ExprId,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Vec<js::Pattern>> {
-        let mut rest = params.to_vec();
-        let param = rest.remove(formatter);
-        let js_params = self.lower_params(&rest, span, out)?;
-        let (var, name) = match param.pat.as_deref().map(|p| &p.kind) {
-            Some(PatKind::Binding { name, var, .. }) => (Some(*var), self.bind(*var, name.as_str(), true)),
-            // `_: &mut Formatter`: nothing is written.
-            Some(PatKind::Wild) => (None, self.fresh("f")),
-            _ => return Err(self.unsupported(span, "this `Formatter` parameter")),
-        };
-        // Its `Formatter`'s options, where the crate gives any (ADRs 0058, 0137).
-        let mut js_params = js_params;
-        let given = self.writers_take_options().then(|| {
-            let options = self.fresh("options");
-            js_params.push(options.as_str().into());
-            Expr::var(&options)
-        });
-        let mut body_out = Vec::new();
-        let previous = self.writing.writer.replace((var, name.clone()));
-        let previous_given = std::mem::replace(&mut self.writing.given, given);
-        let lowered = self.stmt(body, &Dest::Discard, &mut body_out);
-        self.writing.writer = previous;
-        self.writing.given = previous_given;
-        lowered?;
-        // One that may fail gives what it wrote before, in front of what
-        // what it called did, to the writer or the consumer it fails to
-        // (ADR 0187): `let f = ""; try { .. } catch (error) { .. } return f;`.
-        if self.writer_fails() {
-            self.runtime.insert(Helper::FmtError);
-            let error = self.fresh("error");
-            let written = Expr::call(Expr::var("$fmtWritten"), vec![Expr::var(&error), Expr::var(&name)]);
-            out.push(StmtKind::Let(name.clone(), Some(Expr::str(""))).at(js::Span::NONE));
-            out.push(
-                StmtKind::TryCatch(body_out, Some(error), vec![StmtKind::Throw(written).at(js::Span::NONE)])
-                    .at(js::Span::NONE),
-            );
-            out.push(StmtKind::Return(Some(Expr::var(&name))).at(js::Span::NONE));
-            return Ok(js_params);
-        }
-        // Each way through writes once: each is a `return` of what it writes.
-        if let Some(returns) = as_returns(&body_out, &name) {
-            out.extend(returns);
-            return Ok(js_params);
-        }
-        // Declarations, then one write: they, then `return` of what it writes.
-        if let Some((last, before)) = body_out.split_last()
-            && before
-                .iter()
-                .all(|s| matches!(s.kind, StmtKind::Const(..) | StmtKind::Let(..)))
-            && let Some(returns) = as_returns(std::slice::from_ref(last), &name)
-        {
-            out.extend(before.iter().cloned());
-            out.extend(returns);
-            return Ok(js_params);
-        }
-        body_out.push(StmtKind::Return(Some(Expr::var(&name))).at(js::Span::NONE));
-        // A first write starts the string: `let f = s;`.
-        let first = match body_out.first().map(|s| &s.kind) {
-            Some(StmtKind::Assign(target, value)) if is_var(target, &name) => match &value.kind {
-                js::ExprKind::Binary(Op::Add, lhs, rhs) if is_var(lhs, &name) => Some((**rhs).clone()),
-                _ => None,
-            },
-            _ => None,
-        };
-        match first {
-            Some(s) => {
-                out.push(StmtKind::Let(name, Some(s)).at(js::Span::NONE));
-                out.extend(body_out.into_iter().skip(1));
-            }
-            None => {
-                out.push(StmtKind::Let(name, Some(Expr::str(""))).at(js::Span::NONE));
-                out.extend(body_out);
-            }
-        }
-        Ok(js_params)
-    }
-
-    /// A call that writes to this function's formatter: `write!(f, ..)`,
-    /// `f.write_str(s)`, `x.fmt(f)`, or a function of ours that writes. It's
-    /// `f += s`, with `s` the string it writes. `None` if it isn't one.
-    pub(super) fn write_call(
-        &mut self,
-        def_id: DefId,
-        generic_args: ty::GenericArgsRef<'tcx>,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Option<Expr>> {
-        let i = match self.formatter_param(def_id) {
-            Some(i) => i,
-            // `Write::write_str(f, s)` of a `Formatter`: `f` is the first.
-            None if self.recognition().fmt_write_on_formatter(def_id, generic_args) => 0,
-            None => return Ok(None),
-        };
-        let Some((var, name)) = self.writing.writer.clone() else {
-            return Err(self.unsupported(span, "a `Formatter` outside a `fmt`"));
-        };
-        if var.is_none() || self.formatter_var(args[i]) != var {
-            return Err(self.unsupported(self.thir[args[i]].span, "this `Formatter`"));
-        }
-        let others: Vec<ExprId> = args
-            .iter()
-            .enumerate()
-            .filter(|&(j, _)| j != i)
-            .map(|(_, &a)| a)
-            .collect();
-        let operation = self
-            .recognition()
-            .write_call(def_id, self.krate.fns.contains_key(&def_id));
-        // Its `&dyn Debug` arguments show as pretty as this writer is (ADR 0137).
-        let pretty = self.writer_pretty();
-        let outer = std::mem::replace(&mut self.writing.dyn_debug, pretty.clone());
-        let values = self.operands(&others, out);
-        self.writing.dyn_debug = outer;
-        let values = values?;
-        let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
-        let target = Expr::var(&name);
-        let js_span = self.js_span(span);
-        let pieces = others.iter().any(|&other| self.formats_may_fail(other));
-        append_written(&target, written, pieces, js_span, out);
-        Ok(Some(Expr::undefined()))
     }
 
     /// What a call that writes to a formatter, `operation` of `def_id`,
@@ -623,99 +453,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &what));
             }
         })
-    }
-
-    /// `f.debug_struct("P").field("x", &self.x).finish()`, and the other
-    /// builders' `finish` (ADR 0136): what the chain writes, as one string,
-    /// as a derived `Debug`'s is: `P { x: 1 }`. A builder kept in a variable,
-    /// which its calls write to in turn, is an error.
-    pub(super) fn debug_builder(
-        &mut self,
-        def_id: DefId,
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Option<Expr>> {
-        let finish = self.tcx.item_name(def_id);
-        let non_exhaustive = match finish.as_str() {
-            "finish" => false,
-            "finish_non_exhaustive" => true,
-            _ => return Ok(None),
-        };
-        let Some(owner) = self.tcx.inherent_impl_of_assoc(def_id) else {
-            return Ok(None);
-        };
-        let owner = self.tcx.type_of(owner).instantiate_identity().skip_normalization();
-        let ty::Adt(owner, _) = owner.kind() else {
-            return Ok(None);
-        };
-        let kind = match self.tcx.def_path_str(owner.did()).as_str() {
-            "std::fmt::DebugStruct" => "DebugStruct",
-            "std::fmt::DebugTuple" => "DebugTuple",
-            "std::fmt::DebugList" => "DebugList",
-            "std::fmt::DebugSet" => "DebugSet",
-            "std::fmt::DebugMap" => "DebugMap",
-            _ => return Ok(None),
-        };
-        // From `finish`'s receiver back to the `Formatter`'s method that made it.
-        let mut steps: Vec<(String, Vec<ExprId>, ty::GenericArgsRef<'tcx>)> = Vec::new();
-        let mut at = args[0];
-        let start = loop {
-            let mut e = self.strip(at);
-            while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = self.thir[e].kind {
-                e = self.strip(arg);
-            }
-            let ExprKind::Call { fun, ref args, .. } = self.thir[e].kind else {
-                return Err(self.unsupported(span, "a `Debug` builder kept in a variable"));
-            };
-            let Some((id, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
-                return Err(self.unsupported(span, "this `Debug` builder"));
-            };
-            let name = self.tcx.item_name(id).to_string();
-            if name.starts_with("debug_") {
-                break (args.to_vec(), id);
-            }
-            at = args[0];
-            steps.push((name, args.to_vec(), generic_args));
-        };
-        steps.reverse();
-        let (start_args, _) = start;
-        let Some((var, written_to)) = self.writing.writer.clone() else {
-            return Err(self.unsupported(span, "a `Formatter` outside a `fmt`"));
-        };
-        if var.is_none() || self.formatter_var(start_args[0]) != var {
-            return Err(self.unsupported(span, "this `Formatter`"));
-        }
-        // Each part, in the order Rust writes them: a name, then one string for
-        // each field or entry, or an array of them for `entries(items)`.
-        let mut list = start_args[1..].to_vec();
-        for (_, args, _) in &steps {
-            list.extend(args[1..].iter().copied());
-        }
-        // As pretty as this writer is, `&dyn Debug`s and entries too (ADR 0137).
-        let pretty = self.writer_pretty();
-        let outer = std::mem::replace(&mut self.writing.dyn_debug, pretty.clone());
-        let values = self.operands(&list, out);
-        self.writing.dyn_debug = outer;
-        let mut values = values?.into_iter();
-        let type_name = match kind {
-            "DebugStruct" | "DebugTuple" => Some(values.next().expect("a type's name")),
-            _ => None,
-        };
-        let steps = (steps.into_iter())
-            .map(|(name, args, generic_args)| {
-                let typed = args[1..]
-                    .iter()
-                    .map(|&a| (values.next().expect("a part"), self.thir[a].ty))
-                    .collect();
-                (name, typed, generic_args)
-            })
-            .collect();
-        let written = self.builder_written(kind, type_name, steps, non_exhaustive, span, out)?;
-        let target = Expr::var(&written_to);
-        let js_span = self.js_span(span);
-        out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target, written)).at(js_span));
-        Ok(Some(Expr::undefined()))
     }
 
     /// What a `Debug` builder of `kind`, `"DebugStruct"` say, writes as
@@ -910,22 +647,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(written)
     }
 
-    /// The JS string a place is, if it's the `Formatter` being written, `*f`:
-    /// given where a writer goes, it's boxed, and taken back (ADR 0180).
-    pub(super) fn formatter_text(&self, place: ExprId) -> Option<String> {
-        let (writer, text) = self.writing.writer.as_ref()?;
-        (writer.is_some() && self.formatter_var(place) == *writer).then(|| text.clone())
-    }
-
-    /// The variable a `Formatter` argument is: `f`, or `&mut *f`.
-    fn formatter_var(&self, e: ExprId) -> Option<thir::LocalVarId> {
-        match self.thir[self.strip(e)].kind {
-            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.formatter_var(arg),
-            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => Some(id),
-            _ => None,
-        }
-    }
-
     /// `{}` of a `ty` value: the string itself, `String(x)`, `$displayF64(x)`,
     /// a hand-written `fmt`'s string, or `TDisplay.fmt(x)` in generic code.
     pub(super) fn display_string(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
@@ -1077,25 +798,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         [Radix::LowerHex, Radix::UpperHex, Radix::Octal, Radix::Binary]
             .into_iter()
             .find(|&radix| self.recognition().other_fmt_trait(Std::FmtRadix(radix)) == Some(trait_id))
-    }
-
-    /// `write!(w, ..)` or `w.write_char(c)` of a writer of the crate's that
-    /// keeps std's: its own `write_str`, given the text whole, where Rust's
-    /// gives it a piece at a time (ADR 0166). Its text is Rust's; how many
-    /// calls carry it isn't.
-    pub(super) fn user_write(
-        &mut self,
-        def_id: DefId,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let trait_id = self.tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
-        let write_str = trait_method(self.tcx, trait_id, "write_str");
-        let values = self.operands(args, out)?;
-        self.trait_call(write_str, generic_args, values, span, out)?
-            .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))
     }
 
     /// The type `ty` shows: what a `Box` or an `Rc` holds, as they are it in
@@ -1676,22 +1378,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ty.is_box() || self.is_rc(ty)
     }
 
-    /// Does `{:?}` of a `ty` read the value more than once? An `Option`, a
-    /// `Result` and a tuple are shown by their parts.
-    pub(super) fn debug_reads_parts(&self, ty: Ty<'tcx>) -> bool {
-        let ty = ty.peel_refs();
-        if self.is_dyn_debug(ty) || self.is_unknown(ty) || self.has_user_impl(self.debug_trait(), ty) {
-            return false;
-        }
-        match ty.kind() {
-            ty::Tuple(tys) => !tys.is_empty(),
-            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {
-                self.debug_reads_parts(args.type_at(0))
-            }
-            _ => self.option_of(ty).is_some() || self.is_std_type(ty, StdItem::Result),
-        }
-    }
-
     /// `f(value)`, with a function that only returns written in place when
     /// `value` is a variable: `value == null ? "None" : ..`.
     pub(super) fn applied(&mut self, f: Expr, value: Expr) -> Expr {
@@ -1743,24 +1429,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
         ))
     }
-}
-
-/// `f += s`, as a `return s`, for a body that writes once whichever way
-/// it goes: `if (c) { f += a } else { f += b }` is `if (c) { return a } else
-/// { return b }`. `None` if some way writes more, or does anything else.
-fn as_returns(body: &[Stmt], name: &str) -> Option<Vec<Stmt>> {
-    let [stmt] = body else { return None };
-    let kind = match &stmt.kind {
-        StmtKind::Assign(target, value) if is_var(target, name) => match &value.kind {
-            js::ExprKind::Binary(Op::Add, lhs, rhs) if is_var(lhs, name) => StmtKind::Return(Some((**rhs).clone())),
-            _ => return None,
-        },
-        StmtKind::If(test, then, Some(els)) => {
-            StmtKind::If(test.clone(), as_returns(then, name)?, Some(as_returns(els, name)?))
-        }
-        _ => return None,
-    };
-    Some(vec![kind.at(stmt.span)])
 }
 
 /// Strings joined: text alone is a string, text and values a template
@@ -1855,31 +1523,6 @@ fn shown_number(value: Expr) -> Expr {
     match value.as_int() {
         Some(n) => Expr::str(n.to_string()),
         None => Expr::stringed(value),
-    }
-}
-
-/// The functions an expression calls, each with its arguments: not those its
-/// calls' arguments call, as a `write!` inside a `format_args!`, another
-/// consumer, which takes its own `fmt::Error` (ADR 0187).
-struct Called<'a, 'tcx> {
-    thir: &'a thir::Thir<'tcx>,
-    calls: Vec<(DefId, ty::GenericArgsRef<'tcx>)>,
-}
-
-impl<'a, 'tcx> Visitor<'a, 'tcx> for Called<'a, 'tcx> {
-    fn thir(&self) -> &'a thir::Thir<'tcx> {
-        self.thir
-    }
-
-    fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
-        match expr.kind {
-            ExprKind::Call { fun, .. } => {
-                if let Some((id, args)) = fn_def(self.thir[fun].ty) {
-                    self.calls.push((id, args));
-                }
-            }
-            _ => visit::walk_expr(self, expr),
-        }
     }
 }
 

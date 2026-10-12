@@ -6,11 +6,10 @@
 use super::calls::apply;
 use super::drops::Drops;
 use super::recognition::trait_method;
-use super::{FnCx, R, Std, representation::Num};
+use super::{FnCx, R, representation::Num};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -164,221 +163,6 @@ pub(super) enum StepOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Is `e` a place, not an iterator just made?
-    fn is_kept(&self, e: ExprId) -> bool {
-        let e = match self.thir[self.strip(e)].kind {
-            ExprKind::Borrow { arg, .. } => self.strip(arg),
-            _ => self.strip(e),
-        };
-        matches!(
-            self.thir[e].kind,
-            ExprKind::VarRef { .. } | ExprKind::UpvarRef { .. } | ExprKind::Field { .. } | ExprKind::Deref { .. }
-        )
-    }
-
-    /// An iterator as where items come from: of one that knows where it is,
-    /// the items it has left, `$rest(it)`, which it then has none of.
-    pub(super) fn iter_value(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Expr> {
-        let value = self.expr(e, out)?;
-        // A generic one is a JS iterator, which gives what it has left.
-        if self.is_stepping(e) && !self.is_generic_iter(self.thir[e].ty) {
-            self.runtime.insert(Helper::Rest);
-            return Ok(Expr::call(Expr::var("$rest"), vec![value]));
-        }
-        Ok(value)
-    }
-
-    pub(super) fn step_call(
-        &mut self,
-        op: StepOp,
-        fun: ExprId,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let receiver_ty = self.reveal(self.thir[args[0]].ty.peel_refs());
-        // What it gives, which `undefined` can't stand for if it's nullish,
-        // unless it's a generic `T`'s, boxed where it looks like `None` (ADR 0051).
-        let mut boxed = false;
-        if let &ty::FnDef(def_id, _) = self.thir[self.strip(fun)].ty.kind() {
-            let output = self
-                .tcx
-                .fn_sig(def_id)
-                .instantiate(self.tcx, generic_args)
-                .skip_normalization()
-                .skip_binder()
-                .output();
-            let output = self
-                .tcx
-                .normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output));
-            if let Some(item) = self.option_of(output) {
-                boxed = self.boxed_payload(item);
-            }
-        }
-        let stepping = self.is_stepping(args[0]);
-        // One item at a time: a chain's stages that do what can be seen run
-        // lazily, as Rust's do (ADR 0139).
-        if matches!(op, StepOp::Next | StepOp::NextBack | StepOp::Peekable) {
-            self.mark_lazy_chain(args[0], true);
-        }
-        let lazy = self.is_lazy_value(args[0]);
-        // Only a `$iter` or an array knows its back: a JS iterator, a generic
-        // one's or a lazy chain's, gives its items from the front only.
-        let has_back = match stepping {
-            true => self.is_array_iter(receiver_ty) || self.is_peekable(receiver_ty),
-            false => !lazy && !self.is_generic_iter(receiver_ty),
-        };
-        if op == StepOp::NextBack && !has_back {
-            return Err(self.unsupported(span, &format!("`next_back()` of a lazy or generic `{receiver_ty}`")));
-        }
-        let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
-            this.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
-        };
-        Ok(match op {
-            // A generic one, an array or a JS iterator, stepped where it's made,
-            // not kept: `Iterator.from` steps either (ADR 0061), the iterator
-            // itself, not the box a `&mut` to a generic value is (ADR 0099).
-            StepOp::Next if self.is_generic_iter(receiver_ty) && !self.is_kept(args[0]) => {
-                let made = match self.thir[self.strip(args[0])].kind {
-                    ExprKind::Borrow { arg, .. } => arg,
-                    _ => args[0],
-                };
-                let it = self.expr(made, out)?;
-                let it = self.js_iterator(it);
-                if boxed {
-                    self.runtime.insert(Helper::Some);
-                    helper(self, Helper::NextSome, "$nextSome", vec![it])
-                } else {
-                    helper(self, Helper::Next, "$next", vec![it])
-                }
-            }
-            StepOp::Next if (stepping || lazy) && boxed => {
-                let it = self.expr(args[0], out)?;
-                self.runtime.insert(Helper::Some);
-                helper(self, Helper::NextSome, "$nextSome", vec![it])
-            }
-            StepOp::Next if stepping || lazy => {
-                let it = self.expr(args[0], out)?;
-                helper(self, Helper::Next, "$next", vec![it])
-            }
-            StepOp::NextBack if stepping && boxed => {
-                let it = self.expr(args[0], out)?;
-                helper(self, Helper::NextBackSome, "$nextBackSome", vec![it])
-            }
-            StepOp::NextBack if stepping => {
-                let it = self.expr(args[0], out)?;
-                helper(self, Helper::NextBack, "$nextBack", vec![it])
-            }
-            // A `RangeInclusive` keeps whether it's reached its end, which
-            // its object has no field for (ADR 0129).
-            StepOp::Next if self.is_kept(args[0]) && self.range_kind(receiver_ty).is_some() => {
-                return Err(self.unsupported(span, &format!("`next()` of a `{receiver_ty}` kept as a value")));
-            }
-            // One kept elsewhere, as a field or a parameter, would have to know
-            // where it is too: a `Peekable` does.
-            StepOp::Next | StepOp::NextBack if self.is_kept(args[0]) => {
-                let name = if op == StepOp::Next { "next" } else { "next_back" };
-                let message = format!(
-                    "rust-js does not support `{name}()` of a `{receiver_ty}` kept in a field, a parameter or a closure: make it a `Peekable`"
-                );
-                return Err(self.tcx.dcx().span_err(span, message));
-            }
-            // A new one, `m.range(..3).next_back()`: its last item.
-            StepOp::NextBack => {
-                let items = self.iter_value(args[0], out)?;
-                let items = self.iter_source(items, receiver_ty, span, out)?;
-                if boxed {
-                    let items = if items.reads_same() {
-                        items
-                    } else {
-                        self.spill("items", items, out)
-                    };
-                    let last = Expr::bin(Op::Sub, Expr::member(items.clone(), "length"), Expr::int(1));
-                    self.some_at(items, last)
-                } else {
-                    Expr::call(Expr::member(items, "at"), vec![Expr::int(-1)])
-                }
-            }
-            // A new one, `v.iter().skip(2).next()`: its first item.
-            StepOp::Next => {
-                let items = self.iter_value(args[0], out)?;
-                let items = self.iter_source(items, receiver_ty, span, out)?;
-                if boxed {
-                    self.some_at(items, Expr::int(0))
-                } else {
-                    Expr::index(items, Expr::int(0))
-                }
-            }
-            StepOp::Peekable => {
-                if lazy {
-                    return Err(self.unsupported(span, "`peekable` of a lazy iterator"));
-                }
-                let items = self.iter_value(args[0], out)?;
-                let items = self.iter_source(items, receiver_ty, span, out)?;
-                self.stepped_items(items)
-            }
-            StepOp::Peek if boxed => {
-                let it = self.expr(args[0], out)?;
-                helper(self, Helper::PeekSome, "$peekSome", vec![it])
-            }
-            StepOp::Peek => {
-                let it = self.expr(args[0], out)?;
-                helper(self, Helper::Peek, "$peek", vec![it])
-            }
-            StepOp::NextIf => {
-                let [it, f]: [Expr; 2] = self
-                    .operands(args, out)?
-                    .try_into()
-                    .ok()
-                    .expect("an iterator and a test");
-                helper(self, Helper::NextIf, "$nextIf", vec![it, f])
-            }
-            StepOp::NextIfEq => {
-                let [it, x]: [Expr; 2] = self
-                    .operands(args, out)?
-                    .try_into()
-                    .ok()
-                    .expect("an iterator and a value");
-                let item = self.thir[args[1]].ty;
-                if !self.eq_is_identity(item) {
-                    return Err(self.unsupported(span, &format!("`next_if_eq` of `{}`s", item.peel_refs())));
-                }
-                let x = if x.reads_same() {
-                    x
-                } else {
-                    self.spill("expected", x, out)
-                };
-                let same = Expr::arrow(
-                    vec!["item".into()],
-                    vec![StmtKind::Return(Some(Expr::bin(Op::Eq, Expr::var("item"), x))).at(js::Span::NONE)],
-                );
-                helper(self, Helper::NextIf, "$nextIf", vec![it, same])
-            }
-            StepOp::AsStr if stepping => {
-                let it = self.expr(args[0], out)?;
-                helper(self, Helper::RestStr, "$restStr", vec![it])
-            }
-            StepOp::AsSlice if stepping => {
-                let it = self.expr(args[0], out)?;
-                let it = if it.reads_same() { it } else { self.spill("it", it, out) };
-                Expr::call(
-                    Expr::member(Expr::member(it.clone(), "items"), "slice"),
-                    vec![Expr::member(it.clone(), "at"), Expr::member(it, "end")],
-                )
-            }
-            StepOp::AsSlice => {
-                let items = self.iter_value(args[0], out)?;
-                self.iter_source(items, receiver_ty, span, out)?
-            }
-            StepOp::AsStr => {
-                let items = self.expr(args[0], out)?;
-                Expr::call(Expr::member(items, "join"), vec![Expr::str("")])
-            }
-        })
-    }
-
     /// What a `value` of `ty` points at, as `*value` reads it: a counted
     /// `Rc`'s value, or the `deref()` of a type with its own `Deref`.
     fn deref_value(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
@@ -395,17 +179,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Err(self.unsupported(span, &format!("`as_deref` of a `{ty}`")))
-    }
-
-    /// `vec![x; n]`: `new Array(n).fill(x)`, when copies of `x` can't be
-    /// told apart (ADR 0052). Otherwise each item is its own, as Rust clones
-    /// it: made again, `Array.from({ length: n }, () => new Array(m).fill(0))`,
-    /// if that makes the same value and does nothing else, or cloned.
-    pub(super) fn vec_of_copies(&mut self, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let item_ty = self.thir[args[0]].ty;
-        let rebuilt = self.rebuilt(args[0]);
-        let [item, n]: [Expr; 2] = self.operands(args, out)?.try_into().ok().expect("an item and a count");
-        self.copies_values((item, item_ty), n, rebuilt, span, out)
     }
 
     /// `vec![item; n]`, of their values: `rebuilt`, whether making `item` again
@@ -451,40 +224,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let length = Expr::object(vec![Prop::Field("length".into(), n)]);
         let from = Expr::member(Expr::var("Array"), "from");
         Ok(Expr::call(from, vec![length, Expr::arrow(Vec::new(), body)]))
-    }
-
-    /// Does evaluating `e` again make a value that's the same as a clone of
-    /// it, and do nothing else? `vec![0; m]`, `Vec::new()`, or a tuple,
-    /// array or struct of such parts and of values that need no copy.
-    fn rebuilt(&self, e: ExprId) -> bool {
-        let e = self.strip(e);
-        if !self.structural_clone(self.thir[e].ty) {
-            return false;
-        }
-        let part = |p: ExprId| self.rebuilt(p) || (!self.needs_clone(self.thir[p].ty) && self.pure(p));
-        match self.thir[e].kind {
-            ExprKind::Call { fun, ref args, .. } => match self.std_fn(fun) {
-                Some(Std::FromElem) => part(args[0]) && self.pure(args[1]),
-                Some(Std::VecNew | Std::StringNew) => true,
-                _ => false,
-            },
-            ExprKind::Tuple { ref fields } | ExprKind::Array { ref fields } => fields.iter().all(|&f| part(f)),
-            ExprKind::Adt(ref adt) => matches!(adt.base, AdtExprBase::None) && adt.fields.iter().all(|f| part(f.expr)),
-            _ => false,
-        }
-    }
-
-    /// A value read without doing anything: a literal, a variable, a constant.
-    fn pure(&self, e: ExprId) -> bool {
-        matches!(
-            self.thir[self.strip(e)].kind,
-            ExprKind::Literal { .. }
-                | ExprKind::NonHirLiteral { .. }
-                | ExprKind::ZstLiteral { .. }
-                | ExprKind::NamedConst { .. }
-                | ExprKind::VarRef { .. }
-                | ExprKind::UpvarRef { .. }
-        )
     }
 
     /// `f(args)`, with a closure that only returns written in place. One of
@@ -540,21 +279,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out.push(StmtKind::Let(name.clone(), None).at(js_span));
         out.push(StmtKind::If(test, then, Some(dropped)).at(js_span));
         Ok(Expr::var(&name))
-    }
-
-    /// One of `Comb`'s: `args[0]` the `Option`, `Result` or `Vec`.
-    pub(super) fn comb_call(
-        &mut self,
-        comb: Comb,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let values = self.operands(args, out)?;
-        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
-        let made = matches!(self.thir[self.strip(args[0])].kind, ExprKind::Call { .. });
-        self.comb_values(comb, (values, &tys), made, generic_args, span, out)
     }
 
     /// An `Option`'s or a `Result`'s combinator, of its arguments' values,

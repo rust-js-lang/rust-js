@@ -23,20 +23,16 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::Arc;
 
-use rustc_ast::{LitKind, Mutability, StrStyle};
+use rustc_ast::{LitKind, StrStyle};
 use rustc_hir::def::{CtorKind, DefKind};
-use rustc_hir::{CRATE_OWNER_ID, HirId, ItemLocalId};
-use rustc_middle::middle::region;
-use rustc_middle::mir::BorrowKind;
-use rustc_middle::thir::{
-    self as thir, AdtExprBase, BlockId, ExprId, ExprKind, LocalVarId, LogicalOp, Pat, PatKind, Thir,
-};
-use rustc_middle::ty::adjustment::PointerCoercion;
+
+use rustc_middle::thir::{ExprId, LocalVarId, Pat, PatKind, Thir};
+
 use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
 use rustc_span::{ErrorGuaranteed, SourceFile, Span};
 
-use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 
 mod aggregates;
 mod analysis;
@@ -81,14 +77,10 @@ use crate::names::{fresh_in, js_ident};
 use crate::program::TestFn;
 use crate::runtime::Helper;
 pub use analysis::{collect_bodies, collect_initializers, collect_mir};
-use bindings::{Export, JsForm, is_binding, js_form, js_name};
-pub use mir::{MIR, mir_mode};
+use bindings::{Export, is_binding};
 pub use pipeline::lower_crate;
 use recognition::{Std, TypeFact};
-use representation::{
-    Num, char_value, const_js, eval_const, f32_literal, is_fieldless_enum, num_literal, ordering_value, static_value,
-    variant_field,
-};
+use representation::{Num, const_js, eval_const, f32_literal, is_fieldless_enum, static_value};
 pub use serde::{SerdeAttributes, attributes as serde_attributes};
 
 use body_queries::strip;
@@ -169,28 +161,12 @@ pub struct LoweredFn {
     dependencies: Dependencies,
 }
 
-/// An expression's prerequisite statements stay in its evaluation region.
-struct Evaluation {
-    statements: Vec<Stmt>,
-    value: Expr,
-}
-
-/// Where the value of a statement-lowered expression goes.
-#[derive(Clone)]
-enum Dest {
-    Return,
-    Assign(String),
-    Discard,
-}
-
 struct Var {
     /// Usually the variable's JS name. An immutable binding into a pattern
     /// can instead just name the place it matched: `let (q, r) = t` makes
     /// `q` mean `t[0]`, with no JS variable at all.
     place: Expr,
     mutable: bool,
-    /// How many loops enclose its declaration (ADR 0022).
-    depth: usize,
 }
 
 /// What a body knows of its variables: what each is in JS, and what its
@@ -201,9 +177,6 @@ struct Var {
 #[derive(Default)]
 struct Locals {
     vars: HashMap<LocalVarId, Var>,
-    /// What the `&mut`s to values JS can't change in place are (ADRs 0059,
-    /// 0072, 0099).
-    mut_refs: mut_refs::MutRefs,
     /// A props pattern's rest, JS's `...props`, by its name: the keys the
     /// pattern names, which it never holds (ADRs 0195, 0205).
     rests: HashMap<String, Vec<String>>,
@@ -241,24 +214,6 @@ struct Locals {
     paths: HashMap<String, bool>,
 }
 
-/// A variable bound by a pattern, and the place in the subject it matched.
-#[derive(Clone)]
-struct Binding<'tcx> {
-    var: LocalVarId,
-    name: String,
-    mutable: bool,
-    /// `ref mut`, or bound through a `&mut` subject: writes through it
-    /// write the place it matched.
-    by_ref_mut: bool,
-    /// `x @ ..`: it binds the whole value its subpattern binds parts of.
-    whole: bool,
-    place: Expr,
-    /// Its place is a choice of an `|` pattern's alternatives, `p[0] === 0 ?
-    /// p[1] : p[0]`, the first that matched (ADR 0124).
-    chosen: bool,
-    ty: Ty<'tcx>,
-}
-
 /// How a Rust struct or tuple type is represented in JS (ADR 0020).
 enum Shape<'tcx> {
     /// A struct with named fields: `{ x: 1, y: 2 }`.
@@ -269,18 +224,7 @@ enum Shape<'tcx> {
     Other,
 }
 
-struct Loop {
-    scope: region::Scope,
-    /// Rust's label (`'outer`), or `loop`.
-    label_base: String,
-    /// Assigned on first use by a `break`/`continue` from an inner loop.
-    label: Option<String>,
-    /// Where `break value` delivers its value.
-    dest: Dest,
-    /// A labeled block, `'name: { .. }`, which only `break 'name` leaves:
-    /// JS's `break` needs its label even from inside it.
-    block: bool,
-}
+struct Loop {}
 
 /// A body lowered inside the one being lowered, and what it starts from
 /// (`enter_body`). Each has its own THIR, owner and stepped locals; what
@@ -289,9 +233,6 @@ enum Nested<'tcx> {
     /// A closure's, an arrow: the enclosing `Locals` and captures, loops
     /// of its own, and these names to start from.
     Closure { names: HashSet<String> },
-    /// An `async fn`'s coroutine, which in JS is its function's own body:
-    /// everything else is the function's.
-    Coroutine,
     /// A trait's default body, copied into an impl (ADR 0049): `Locals` of
     /// its own, a copy of the names, and the impl's evidence, arguments,
     /// typing environment and drops.
@@ -322,7 +263,6 @@ struct Enclosing<'a, 'tcx> {
 /// What each kind of nested body took, by `Nested`'s kinds.
 enum EnclosingKind<'tcx> {
     Closure { loops: Vec<Loop>, names: HashSet<String> },
-    Coroutine,
     Default(Box<ItemScope<'tcx>>),
 }
 
@@ -376,8 +316,6 @@ struct CrateFacts<'a, 'tcx> {
     serde_attrs: &'a serde::SerdeAttributes,
     /// Do its `Debug` functions take whether to be pretty (ADR 0137)?
     pretty_debug: bool,
-    /// Bodies with a call added, each the arrow a function taken as a value is.
-    called_bodies: &'a rustc_arena::TypedArena<Thir<'tcx>>,
     /// Does it give a placeholder's options to its writers and dictionaries
     /// (ADR 0058)?
     format_options: bool,
@@ -419,8 +357,6 @@ struct FnCx<'a, 'tcx> {
     /// In a generic type's derived `serialize` or `deserialize` (ADR
     /// 0080): each type parameter, and the parameter that writes or reads it.
     codecs: Vec<(Ty<'tcx>, String)>,
-    /// While lowering a closure: the places it captured into snapshots.
-    captures: HashMap<(LocalVarId, Vec<usize>), Var>,
     thir: &'a Thir<'tcx>,
     body_facts: &'a body_queries::BodyFacts,
     /// The module receiving this function and its recorded dependencies.
@@ -431,7 +367,6 @@ struct FnCx<'a, 'tcx> {
     names: HashSet<String>,
     /// Those taken by the module: its functions, imports and globals.
     module_names: &'a HashSet<String>,
-    labels: HashSet<String>,
     loops: Vec<Loop>,
     runtime: HashSet<Helper>,
     /// Whether this function makes JSX.
@@ -510,968 +445,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Statement mode ──────────────────────────────────────────────────
 
-    /// Emit statements that compute `e` and deliver its value to `dest`.
-    fn stmt(&mut self, e: ExprId, dest: &Dest, out: &mut Vec<Stmt>) -> R<()> {
-        let expr = &self.thir[e];
-        // A unit value carries no information, and a never value never
-        // arrives. Either way, there is nothing to deliver.
-        let dest = if expr.ty.is_unit() || expr.ty.is_never() {
-            &Dest::Discard
-        } else {
-            dest
-        };
-        let span = self.js_span(expr.span);
-
-        match expr.kind {
-            ExprKind::Scope {
-                value,
-                hir_id,
-                region_scope,
-            } => {
-                if let Some(body) = self.body_query().scoped_loop(value) {
-                    self.lower_loop(region_scope, hir_id, body, dest, span, out)
-                } else if let ExprKind::Block { block } = self.thir[value].kind
-                    && self.thir[block].targeted_by_break
-                {
-                    self.labeled_block(region_scope, hir_id, block, dest, span, out)
-                } else {
-                    // What ends with it is dropped once it's delivered (ADR 0098).
-                    // One that fails fails its whole item, open scopes and all.
-                    let mark = out.len();
-                    self.begin_scope(region_scope);
-                    self.stmt(value, dest, out)?;
-                    self.end_scope(mark, expr.span, out)
-                }
-            }
-            ExprKind::Use { source }
-            | ExprKind::NeverToAny { source }
-            | ExprKind::ValueTypeAscription { source, .. }
-            | ExprKind::PlaceTypeAscription { source, .. } => self.stmt(source, dest, out),
-            ExprKind::Block { block } => self.block(block, dest, out),
-            ExprKind::If {
-                cond, then, else_opt, ..
-            } if let Some(parts) = self.let_chain(cond) => self.lower_let_chain(parts, then, else_opt, dest, span, out),
-            ExprKind::If {
-                cond, then, else_opt, ..
-            } => {
-                let mut then_out = Vec::new();
-                // What an `if let` binds is its `then`'s, dropped as it ends.
-                let mark = self.owned_mark();
-                let cond = match self.thir[self.strip(cond)].kind {
-                    ExprKind::Let {
-                        expr: scrutinee,
-                        ref pat,
-                    } => self.if_let(scrutinee, pat, &mut then_out, out)?,
-                    _ => self.expr(cond, out)?,
-                };
-                // Its bindings first, then the body their `finally` drops them after.
-                let mut body = Vec::new();
-                self.stmt(then, dest, &mut body)?;
-                self.close_scope(mark, body, self.thir[then].span, &mut then_out)?;
-                let else_out = match else_opt {
-                    Some(els) => {
-                        let mut else_out = Vec::new();
-                        self.stmt(els, dest, &mut else_out)?;
-                        Some(else_out)
-                    }
-                    None => None,
-                };
-                out.push(StmtKind::If(cond, then_out, else_out).at(span));
-                Ok(())
-            }
-            ExprKind::Match { .. } if let Some(for_loop) = self.body_query().as_for(e) => {
-                self.lower_for(for_loop, span, out)
-            }
-            // A table read by what's matched, or what's matched itself, as a
-            // value it gives or returns (ADRs 0233, 0264).
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if !matches!(dest, Dest::Discard)
-                && self.body_query().as_await(e).is_none()
-                && self.body_query().as_question(e).is_none()
-                && !self.is_matches(arms)
-                && let Some(value) = self.match_index(scrutinee, arms, out)? =>
-            {
-                match dest {
-                    Dest::Return => out.push(StmtKind::Return(Some(value)).at(span)),
-                    Dest::Assign(name) => out.push(StmtKind::Assign(Expr::var(name), value).at(span)),
-                    Dest::Discard => unreachable!("a value is wanted"),
-                }
-                Ok(())
-            }
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if self.body_query().as_await(e).is_none()
-                && self.body_query().as_question(e).is_none()
-                && !self.is_matches(arms) =>
-            {
-                self.lower_match(scrutinee, arms, dest, out)
-            }
-            // A function that writes to a `Formatter` returns what it wrote (ADR 0054).
-            ExprKind::Return { value } if let Some(name) = self.written() => {
-                if let Some(v) = value {
-                    self.stmt(v, &Dest::Discard, out)?;
-                }
-                out.push(StmtKind::Return(Some(Expr::var(&name))).at(span));
-                Ok(())
-            }
-            ExprKind::Return { value } => {
-                match value {
-                    Some(v) if !self.thir[v].ty.is_unit() => self.stmt(v, &Dest::Return, out)?,
-                    Some(v) => {
-                        self.stmt(v, &Dest::Discard, out)?;
-                        out.push(StmtKind::Return(None).at(span));
-                    }
-                    None => out.push(StmtKind::Return(None).at(span)),
-                }
-                Ok(())
-            }
-            ExprKind::Break { label, value } => {
-                let i = self.loop_index(label, expr.span)?;
-                if let Some(v) = value {
-                    let loop_dest = self.loops[i].dest.clone();
-                    self.stmt(v, &loop_dest, out)?;
-                    if matches!(loop_dest, Dest::Return) {
-                        return Ok(()); // `return` already left the loop.
-                    }
-                }
-                let label = self.jump_label(i);
-                out.push(StmtKind::Break(label).at(span));
-                Ok(())
-            }
-            ExprKind::Continue { label } => {
-                let i = self.loop_index(label, expr.span)?;
-                let label = self.jump_label(i);
-                out.push(StmtKind::Continue(label).at(span));
-                Ok(())
-            }
-            // Rust evaluates the right side of an assignment first. The target
-            // is a variable or its fields, which reading can't change.
-            // A value in a map: `m.set(k, v)` (ADR 0059).
-            ExprKind::Assign { lhs, rhs } if self.has_drops(self.thir[lhs].ty) => {
-                self.assign_dropping(lhs, rhs, span, out)
-            }
-            ExprKind::Assign { lhs, rhs } => self.assign(lhs, rhs, expr.span, out),
-            ExprKind::AssignOp { op, lhs, rhs } => self.assign_op(op, lhs, rhs, expr.span, out),
-            _ => {
-                let value = match (dest, self.place(e)) {
-                    // Only this call's value goes nowhere, not its arguments'
-                    // values, so a map's `insert` is `m.set(k, v)` (ADR 0059).
-                    (Dest::Discard, _) if let ExprKind::Call { fun, ref args, .. } = expr.kind => {
-                        let value = self.call(fun, args, true, expr.span, out)?;
-                        self.generic_result(fun, value, expr.span)?.or_at(span)
-                    }
-                    // Returning a place of this function's own hands its value
-                    // over without a copy: every local dies here, so nothing is
-                    // left to share it. One reached through a reference, or a
-                    // closure's capture, outlives the call, so it's copied.
-                    (Dest::Return, Some((place, _))) if self.is_local_place(e) => {
-                        self.moved(e, out)?;
-                        place.or_at(span)
-                    }
-                    _ => self.expr(e, out)?,
-                };
-                match dest {
-                    Dest::Return => out.push(StmtKind::Return(Some(value)).at(span)),
-                    Dest::Assign(name) => out.push(StmtKind::Assign(Expr::var(name), value).at(span)),
-                    Dest::Discard if value.has_effects() => out.push(StmtKind::Expr(value).at(span)),
-                    Dest::Discard => {}
-                }
-                Ok(())
-            }
-        }
-    }
-
-    fn block(&mut self, block: BlockId, dest: &Dest, out: &mut Vec<Stmt>) -> R<()> {
-        self.block_rest(block, 0, Some(dest), out)
-    }
-
-    /// A block's statements, without its tail expression.
-    fn block_stmts(&mut self, block: BlockId, out: &mut Vec<Stmt>) -> R<()> {
-        self.block_rest(block, 0, None, out)
-    }
-
-    /// A block's statements from `from` on, then its tail, to `tail` if
-    /// that's given. Once a `let` binds what has a destructor, the rest is
-    /// a `try` whose `finally` drops it (ADR 0098).
-    fn block_rest(&mut self, block_id: BlockId, from: usize, tail: Option<&Dest>, out: &mut Vec<Stmt>) -> R<()> {
-        let block = &self.thir[block_id];
-        // The functions written in it, each before what follows it, before
-        // the `try` of a destructor too, as its block may call it before
-        // (ADR 0308).
-        let mut written: Vec<(rustc_span::BytePos, DefId)> = (self.krate.local_functions.iter())
-            .filter(|&(_, &span)| from == 0 && span == block.span)
-            .map(|(&def_id, _)| (self.tcx.def_span(def_id).lo(), def_id))
-            .collect();
-        written.sort_by_key(|&(at, _)| at);
-        let mut written = written.into_iter().peekable();
-        let mut write = |before: Option<rustc_span::BytePos>, out: &mut Vec<Stmt>| {
-            while let Some(&(at, def_id)) = written.peek()
-                && before.is_none_or(|before| at < before)
-            {
-                written.next();
-                let hole = js::ExprKind::FunctionHole(def_id.index.as_u32());
-                out.push(
-                    StmtKind::Expr(Expr {
-                        reads: false,
-                        kind: hole,
-                        span: js::Span::NONE,
-                    })
-                    .at(js::Span::NONE),
-                );
-            }
-        };
-        // Every local gets a unique JS name, so a Rust block needs no JS
-        // block of its own: its statements go straight into `out`.
-        for (i, &stmt) in block.stmts.iter().enumerate().skip(from) {
-            let at = match &self.thir[stmt].kind {
-                thir::StmtKind::Expr { expr, .. } => self.thir[*expr].span,
-                thir::StmtKind::Let { span, .. } => *span,
-            };
-            write(Some(at.lo()), out);
-            let mark = self.owned_mark();
-            self.statement(stmt, out)?;
-            if self.owned_mark() > mark {
-                write(None, out);
-                // The `let`s after it that can't leave early share its `try`.
-                let mut next = i + 1;
-                while let Some(&stmt) = block.stmts.get(next)
-                    && let thir::StmtKind::Let {
-                        initializer: Some(init),
-                        else_block: None,
-                        ..
-                    } = &self.thir[stmt].kind
-                    && self.cannot_leave(*init)
-                {
-                    self.statement(stmt, out)?;
-                    next += 1;
-                }
-                let mut rest = Vec::new();
-                self.block_rest(block_id, next, tail, &mut rest)?;
-                return self.close_scope(mark, rest, block.span, out);
-            }
-        }
-        write(None, out);
-        if let Some(dest) = tail
-            && let Some(value) = block.expr
-        {
-            self.stmt(value, dest, out)?;
-        }
-        Ok(())
-    }
-
-    /// One statement, whose temporaries end with it (ADR 0098).
-    fn statement(&mut self, stmt: thir::StmtId, out: &mut Vec<Stmt>) -> R<()> {
-        let (scopes, span) = match &self.thir[stmt].kind {
-            thir::StmtKind::Expr { scope, expr } => ((*scope, None), self.thir[*expr].span),
-            thir::StmtKind::Let {
-                init_scope,
-                remainder_scope,
-                span,
-                ..
-            } => ((*init_scope, Some(*remainder_scope)), *span),
-        };
-        let outer = self.begin_statement(scopes);
-        let mut lowered = Vec::new();
-        self.statement_body(stmt, &mut lowered)?;
-        // What a `let` that can't leave declares, where nothing can leave
-        // before a move after it (ADR 0301).
-        let quiet = matches!(&self.thir[stmt].kind, thir::StmtKind::Let {
-            initializer: Some(init),
-            else_block: None,
-            ..
-        } if self.cannot_leave(*init));
-        let start = out.len();
-        self.end_statement(outer, lowered, span, out)?;
-        if quiet {
-            self.note_quiet(&out[start..]);
-        }
-        Ok(())
-    }
-
-    fn statement_body(&mut self, stmt: thir::StmtId, out: &mut Vec<Stmt>) -> R<()> {
-        {
-            match &self.thir[stmt].kind {
-                // A statement's value that has a destructor is dropped at once.
-                thir::StmtKind::Expr { expr, .. } if self.has_drops(self.thir[*expr].ty) => {
-                    let ty = self.thir[*expr].ty;
-                    let span = self.thir[*expr].span;
-                    let value = self.expr(*expr, out)?;
-                    let value = self.droppable(value, ty, out);
-                    self.drop_value(value, ty, span, out)?;
-                }
-                thir::StmtKind::Expr { expr, .. } => self.stmt(*expr, &Dest::Discard, out)?,
-                thir::StmtKind::Let {
-                    pattern,
-                    initializer,
-                    else_block,
-                    span,
-                    ..
-                } => {
-                    // `let Some(x) = e else { return .. };`: the test, the
-                    // `else` that leaves when it fails, then the bindings.
-                    if let Some(else_block) = *else_block {
-                        let init = initializer.ok_or_else(|| self.unsupported(*span, "`let ... else`"))?;
-                        let mut bindings = Vec::new();
-                        let test = self.if_let(init, pattern, &mut bindings, out)?;
-                        let mut failed = Vec::new();
-                        self.block(else_block, &Dest::Discard, &mut failed)?;
-                        let js_span = self.js_span(*span);
-                        out.push(StmtKind::If(std_impls::negate(test), failed, None).at(js_span));
-                        out.extend(bindings);
-                        return Ok(());
-                    }
-                    self.lower_let(pattern, *initializer, *span, out)?;
-                }
-            }
-        }
-        Ok(())
-    }
-
     // ── Expression mode ─────────────────────────────────────────────────
-
-    /// Lower `e` to a JS expression. Any statements it needs first (a
-    /// block's `let`s, a `match` computing a temporary) are pushed to `out`.
-    ///
-    /// The result carries `e`'s span, unless a more precise one was set
-    /// deeper down (a `Scope` passes its inner expression through, say).
-    fn expr(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Expr> {
-        let span = self.js_span(self.thir[e].span);
-        let value = self.expr_inner(e, out)?.or_at(span);
-        // A value with a destructor in a temporary is in a `const` its
-        // scope drops (ADR 0098).
-        match self.temp_kind(e)? {
-            Some(kind) => self.temporary(e, kind, value, out),
-            None => Ok(value),
-        }
-    }
-
-    fn expr_inner(&mut self, e: ExprId, out: &mut Vec<Stmt>) -> R<Expr> {
-        let expr = &self.thir[e];
-        let span = expr.span;
-        let js_span = self.js_span(span);
-        let ty = expr.ty;
-        match expr.kind {
-            // A labeled block's value: what it delivers to a variable.
-            ExprKind::Scope { value, .. }
-                if let ExprKind::Block { block } = self.thir[value].kind
-                    && self.thir[block].targeted_by_break =>
-            {
-                let name = self.fresh("value");
-                out.push(StmtKind::Let(name.clone(), None).at(js_span));
-                self.stmt(e, &Dest::Assign(name.clone()), out)?;
-                Ok(Expr::var(&name))
-            }
-            ExprKind::Scope {
-                value, region_scope, ..
-            } if self.body_query().scoped_loop(value).is_none() => {
-                let mark = out.len();
-                self.begin_scope(region_scope);
-                let value = self.expr(value, out)?;
-                // Its value is computed before what ends with it is dropped (ADR 0098).
-                let value = match self.scope_has_temps() && !value.is_constant() {
-                    true if ty.is_unit() => {
-                        out.push(StmtKind::Expr(value).at(js_span));
-                        Expr::undefined()
-                    }
-                    true => self.spill("value", value, out),
-                    false => value,
-                };
-                self.end_scope(mark, span, out)?;
-                Ok(value)
-            }
-            ExprKind::Use { source }
-            | ExprKind::ValueTypeAscription { source, .. }
-            | ExprKind::PlaceTypeAscription { source, .. } => self.expr(source, out),
-            ExprKind::Block { .. } if let Some(f) = self.as_format_args(e) => self.lower_format_args(f, span, out),
-            // One that owns what it drops computes its value before the drops.
-            ExprKind::Block { block } if !self.thir[block].targeted_by_break && self.block_owns(block)? => {
-                let name = self.fresh("value");
-                out.push(StmtKind::Let(name.clone(), None).at(js_span));
-                self.block(block, &Dest::Assign(name.clone()), out)?;
-                Ok(Expr::var(&name))
-            }
-            ExprKind::Block { block } if !self.thir[block].targeted_by_break => {
-                self.block_stmts(block, out)?;
-                match self.thir[block].expr {
-                    Some(tail) => self.expr(tail, out),
-                    None => Ok(Expr::undefined()),
-                }
-            }
-            ExprKind::Literal { lit, neg } => self.literal(&lit.node, neg, ty, span),
-            ExprKind::NonHirLiteral { lit, .. } => {
-                if ty.is_bool() {
-                    return Ok(Expr::bool(lit.to_bits_unchecked() != 0));
-                }
-                let num = self.num(ty, span)?;
-                Ok(num_literal(lit.to_bits_unchecked(), num))
-            }
-            // JS's props have no `rest`: what's left of them is taken apart
-            // from the rest, `{ href, ...rest }` (ADR 0195).
-            ExprKind::Field { .. } if bindings::is_rest(self.tcx, ty) => Err(self.unsupported(
-                span,
-                "reading a `Rest` of props: take it apart from them, `LinkProps { href, rest }: LinkProps`",
-            )),
-            ExprKind::VarRef { .. }
-            | ExprKind::UpvarRef { .. }
-            | ExprKind::Field { .. }
-            | ExprKind::Deref { .. }
-            | ExprKind::StaticRef { .. } => self.read(e, out),
-            // A shared reference is the value it points to (ADR 0023): JS
-            // shares objects anyway, and nothing can change through it.
-            // `&y` of a `&mut` to a number that `y` names the place of: as `y`
-            // is, a handle on it (ADR 0099). Also `&*&y`, how `contains(&y)`
-            // is reborrowed.
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Shared,
-                arg,
-            } if self.is_cell(self.thir[arg].ty)
-                && self.thir[self.strip_refs(arg)].ty == self.thir[arg].ty
-                && matches!(self.thir[self.strip_refs(arg)].kind, ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } if !self.is_boxed(id)) =>
-            {
-                self.read(self.strip_refs(arg), out)
-            }
-            // `&XS` of a constant of ours: the one there is, as nothing can
-            // change it through a shared reference, in this crate or another
-            // (ADR 0031): `XS.includes(x)`, not a copy of it first.
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Shared,
-                arg,
-            } if let ExprKind::NamedConst { def_id, .. } = self.thir[self.strip(arg)].kind
-                && self.krate.fns.contains_key(&def_id)
-                && self.thir[arg].ty.is_freeze(self.tcx, self.typing_env) =>
-            {
-                Ok(self.fn_ref(def_id))
-            }
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Shared,
-                arg,
-            } => match self.place(arg) {
-                Some((place, _)) => Ok(place),
-                None => self.referent(arg, out),
-            },
-            // `&mut *out` of a box, handed on: the box (ADR 0072).
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Mut { .. },
-                arg,
-            } if let ExprKind::Deref { arg: inner } = self.thir[self.strip(arg)].kind
-                && let ExprKind::VarRef { id } = self.thir[self.strip(inner)].kind
-                && self.is_boxed(id) =>
-            {
-                Ok(self.locals.vars[&id].place.clone())
-            }
-            // `&mut` to a JS object is the object (ADR 0025), to a closure the
-            // closure (ADR 0099), and to an iterator stepped through the one
-            // that knows where it is (ADR 0071).
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Mut { .. },
-                arg,
-            } if self.is_object(self.thir[arg].ty) || self.is_callable(self.thir[arg].ty) || self.is_stepping(arg) => {
-                match self.place(arg) {
-                    Some((place, _)) => Ok(place),
-                    None => self.referent(arg, out),
-                }
-            }
-            // `&mut *e` of a `&mut` that isn't a variable's: `e`'s own, a cell
-            // kept in a field or given back by a block, a branch or a call of
-            // the crate's (ADR 0099). Not a std call's, as `v[i]`'s `index_mut`
-            // is: that's the item, whose `&mut` is a handle on it.
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Mut { .. },
-                arg,
-            } if let ExprKind::Deref { arg: inner } = self.thir[self.strip(arg)].kind
-                && self.is_cell(self.thir[inner].ty)
-                && match self.thir[self.strip(inner)].kind {
-                    ExprKind::VarRef { .. } | ExprKind::UpvarRef { .. } => false,
-                    ExprKind::Call { .. } => self.is_cell_value(inner),
-                    _ => true,
-                } =>
-            {
-                self.expr(inner, out)
-            }
-            // `&mut x` kept, of a value JS can't change in place: a handle on
-            // `x`, fixed where it's borrowed (ADR 0099).
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Mut { .. },
-                arg,
-            } if self.makes_cell(self.thir[arg].ty) => {
-                // `&mut *&mut v[0]`, a reborrow: of `v[0]`.
-                let place = self.mut_borrowed(e).unwrap_or(arg);
-                // `&mut 42`: a box of it, which nothing else sees.
-                if self.is_temporary(place) {
-                    let value = self.expr(place, out)?;
-                    return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
-                }
-                Ok(Expr::handle(self.fixed_place(
-                    place,
-                    "cell",
-                    self.thir[place].span,
-                    out,
-                )?))
-            }
-            // `&mut` to a `Pin` of a reference is the pin, which only what it
-            // points at is changed through (ADR 0329).
-            ExprKind::Borrow {
-                borrow_kind: BorrowKind::Mut { .. },
-                arg,
-            } if self
-                .recognition()
-                .pinned(self.thir[arg].ty)
-                .is_some_and(|pointer| pointer.is_ref()) =>
-            {
-                match self.place(arg) {
-                    Some((place, _)) => Ok(place),
-                    None => self.referent(arg, out),
-                }
-            }
-            ExprKind::Borrow { arg, .. } => {
-                Err(self.unsupported(span, &format!("`&mut` to a `{}`", self.thir[arg].ty)))
-            }
-            ExprKind::Array { ref fields } => Ok(Expr::array(self.operands(fields, out)?)),
-            // `[x; N]`: `x` runs once, even for none, and the array is `N`
-            // copies of it: `Array(N).fill(x)` where copies can't be told
-            // apart, else each its own, `Array.from({ length: N }, () => ..)`.
-            ExprKind::Repeat { value, count } => {
-                let item_ty = self.thir[value].ty;
-                let item = self.expr(value, out)?;
-                // A constant's value, made again for each, as each use of one is.
-                let constant = matches!(
-                    self.thir[self.strip(value)].kind,
-                    ExprKind::NamedConst { .. } | ExprKind::ConstBlock { .. }
-                );
-                self.repeat((item, item_ty), count, constant, span, out)
-            }
-            ExprKind::Index { lhs, index } => {
-                let values = self.indexed(lhs, index, out)?;
-                let item = self.checked_index(e, lhs, values);
-                Ok(self.copy_if_needed(item, ty))
-            }
-            // A `dyn Iterator` is a JS iterator.
-            ExprKind::PointerCoercion {
-                cast: PointerCoercion::Unsize,
-                source,
-                ..
-            } if self.recognition().is_dyn_iter(ty) => self.dyn_iterator(source, span, out),
-            // `Box<closure>` to `Box<dyn FnMut()>`: the same JS function.
-            ExprKind::PointerCoercion {
-                cast: PointerCoercion::Unsize,
-                source,
-                ..
-            } => {
-                let value = self.expr(source, out)?;
-                self.unsize_trait(self.thir[source].ty, ty, value, span, out)
-            }
-            ExprKind::PointerCoercion {
-                cast: PointerCoercion::ReifyFnPointer(_),
-                source,
-                ..
-            } => self.expr(source, out),
-            // A closure that captures nothing, as a `fn`: a JS function already
-            // (ADR 0125).
-            ExprKind::PointerCoercion {
-                cast: PointerCoercion::ClosureFnPointer(_),
-                source,
-                ..
-            } => self.expr(source, out),
-            // `Self` of a `struct Marker;`, which holds nothing, like `()`.
-            ExprKind::ZstLiteral { .. }
-                if let ty::Adt(adt, _) = ty.kind()
-                    && adt.is_struct()
-                    && adt.non_enum_variant().ctor_kind() == Some(CtorKind::Const) =>
-            {
-                Ok(Expr::undefined())
-            }
-            // A function as a value (`fn_item_value`), or any other, `.map(str::len)`
-            // or `unwrap_or_else(Vec::new)`: the arrow that calls it.
-            ExprKind::ZstLiteral { .. } if let Some((def_id, args)) = fn_def(ty) => {
-                match self.fn_item_value(def_id, args, ty, span, out)? {
-                    Some(value) => Ok(value),
-                    None => self.called_value(e, span),
-                }
-            }
-            ExprKind::Closure(ref closure) => self.closure(closure, out),
-            ExprKind::Tuple { ref fields } if fields.is_empty() => Ok(Expr::undefined()),
-            ExprKind::Tuple { ref fields } => Ok(Expr::array(self.operands(fields, out)?)),
-            // One with a flattened field, made outside JSX, an object of its
-            // fields and the flattened one's (ADR 0204).
-            ExprKind::Adt(ref adt)
-                if bindings::has_flatten(self.tcx, ty) && !self.body_facts.jsx_props.contains(&e) =>
-            {
-                let made = self.adt(adt, ty, span, out)?;
-                Ok(self.flattened_object(made, ty))
-            }
-            ExprKind::Adt(ref adt) => self.adt(adt, ty, span, out),
-            ExprKind::Binary { op, lhs, rhs } => {
-                let [l, r] = self.operands(&[lhs, rhs], out)?.try_into().ok().unwrap();
-                let r = self.shift_amount(op, r, lhs, rhs);
-                self.binary(op, l, r, self.known_int(rhs), self.thir[lhs].ty, span)
-            }
-            ExprKind::LogicalOp { op, lhs, rhs } => {
-                let l = self.expr(lhs, out)?;
-                let js_op = match op {
-                    LogicalOp::And => Op::And,
-                    LogicalOp::Or => Op::Or,
-                };
-                // `a && { .. }`: only run the right side's statements if needed,
-                // as its JS has them, not as Rust looks: `f(&mut y)` of a
-                // number has its write-back.
-                let mut rhs_out = Vec::new();
-                let simple = if self.is_simple(rhs) {
-                    let r = self.expr(rhs, &mut rhs_out)?;
-                    if rhs_out.is_empty() {
-                        return Ok(Expr::bin(js_op, l, r));
-                    }
-                    Some(r)
-                } else {
-                    None
-                };
-                let tmp = self.fresh("tmp");
-                out.push(StmtKind::Let(tmp.clone(), Some(l)).at(js_span));
-                match simple {
-                    Some(r) => rhs_out.push(StmtKind::Assign(Expr::var(&tmp), r).at(js_span)),
-                    None => self.stmt(rhs, &Dest::Assign(tmp.clone()), &mut rhs_out)?,
-                }
-                let test = match op {
-                    LogicalOp::And => Expr::var(&tmp),
-                    LogicalOp::Or => Expr::unary(UnaryOp::Not, Expr::var(&tmp)),
-                };
-                out.push(StmtKind::If(test, rhs_out, None).at(js_span));
-                Ok(Expr::var(&tmp))
-            }
-            ExprKind::Unary { op, arg } => {
-                let a = self.expr(arg, out)?;
-                self.unary(op, a, ty, span)
-            }
-            // `n as char`, of a `u8` (ADR 0063).
-            ExprKind::Cast { source } if ty.is_char() => {
-                let v = self.expr(source, out)?;
-                Ok(Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![v]))
-            }
-            // An `f64` known to be a whole number in range (ADR 0302).
-            ExprKind::Cast { source } if self.body_facts.whole_casts.contains(&e) => self.expr(source, out),
-            ExprKind::Cast { source } => {
-                let v = self.expr(source, out)?;
-                self.cast(v, self.thir[source].ty, ty, span)
-            }
-            ExprKind::Call {
-                fun,
-                ref args,
-                from_hir_call,
-                ..
-            } => {
-                // An operator's, `v[i]`'s `*index_mut(&mut v, i)`: its `&mut` is the
-                // item, read or written where it is and never kept (ADR 0099).
-                if !from_hir_call {
-                    self.mark_item_call(fun);
-                }
-                let value = self.call(fun, args, false, span, out)?;
-                self.generic_result(fun, value, span)
-            }
-            ExprKind::NamedConst { def_id, args, .. } => self.named_const(def_id, args, ty, span),
-            // `const { square(7) + 1 }`: its value, as rustc computes it, as a
-            // named constant's is (ADR 0127).
-            ExprKind::ConstBlock { did, args } => match eval_const(self.tcx, self.typing_env, did, args, span)
-                .and_then(|value| const_js(self.tcx, value))
-            {
-                Some(value) => Ok(value),
-                None => self.named_const(did, args, ty, span),
-            },
-            ExprKind::ConstParam { param, .. } => self.const_arg(ty::Const::new_param(self.tcx, param), span),
-            ExprKind::Match { .. } if let Some(awaited) = self.body_query().as_await(e) => {
-                Ok(Expr::await_(self.expr(awaited, out)?))
-            }
-            ExprKind::Match { .. } if let Some(tried) = self.body_query().as_question(e) => {
-                self.question(e, tried, None, out)
-            }
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if let Some(test) = self.as_matches(scrutinee, arms, out)? => Ok(test),
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if let Some(value) = self.match_index(scrutinee, arms, out)? => Ok(value),
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if self.body_query().as_for(e).is_none()
-                && let Some(value) = self.match_conditional(scrutinee, arms, js_span, out)? =>
-            {
-                Ok(value)
-            }
-            // One arm, which rustc has checked always matches, as `jsx!`
-            // captures props in written order, `match (a, b) { (x, y) => .. }`:
-            // its variables bound as a `let` would, and its body the value,
-            // with no variable to hold it (ADR 0252).
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if let [arm] = arms[..]
-                && self.thir[arm].guard.is_none()
-                && self.body_query().as_for(e).is_none() =>
-            {
-                let items = self.item_subject(scrutinee);
-                let (subject, stable) = self.subject(scrutinee, "match", out)?;
-                self.destructure(&self.thir[arm].pattern, subject, stable, items, out)?;
-                self.expr(self.thir[arm].body, out)
-            }
-            ExprKind::If {
-                cond,
-                then,
-                else_opt: Some(els),
-                ..
-            } if self.is_simple(then)
-                && self.is_simple(els)
-                && self.let_chain(cond).is_none()
-                && !matches!(self.thir[self.strip(cond)].kind, ExprKind::Let { .. }) =>
-            {
-                let c = self.expr(cond, out)?;
-                let t = self.evaluated(then)?;
-                let f = self.evaluated(els)?;
-                Ok(self.conditional(c, t, f, js_span, out))
-            }
-            // `if let` as a value: `test ? then : else`, where the pattern
-            // names its variables' places and needs no `const`s for them;
-            // `{ true } else { false }` is the test itself, and a pattern that
-            // always matches is its `then`.
-            ExprKind::If {
-                cond,
-                then,
-                else_opt: Some(els),
-                ..
-            } if self.is_simple(then)
-                && self.is_simple(els)
-                && let ExprKind::Let {
-                    expr: scrutinee,
-                    ref pat,
-                } = self.thir[self.strip(cond)].kind =>
-            {
-                let (mut bound, mut before) = (Vec::new(), Vec::new());
-                let test = self.if_let(scrutinee, pat, &mut bound, &mut before)?;
-                if !bound.is_empty() {
-                    let tmp = self.fresh("tmp");
-                    out.push(StmtKind::Let(tmp.clone(), None).at(js_span));
-                    self.stmt(e, &Dest::Assign(tmp.clone()), out)?;
-                    return Ok(Expr::var(&tmp));
-                }
-                out.extend(before);
-                let (yes, no) = (self.evaluated(then)?, self.evaluated(els)?);
-                let plain = yes.statements.is_empty() && no.statements.is_empty();
-                Ok(match (&yes.value.kind, &no.value.kind) {
-                    _ if matches!(test.kind, js::ExprKind::Bool(true)) && yes.statements.is_empty() => yes.value,
-                    (js::ExprKind::Bool(true), js::ExprKind::Bool(false)) if plain => test,
-                    (js::ExprKind::Bool(false), js::ExprKind::Bool(true)) if plain => Expr::unary(UnaryOp::Not, test),
-                    _ => self.conditional(test, yes, no, js_span, out),
-                })
-            }
-            // Control flow: run it as statements, then read the result.
-            ExprKind::Scope { .. }
-            | ExprKind::If { .. }
-            | ExprKind::Match { .. }
-            | ExprKind::Block { .. }
-            | ExprKind::NeverToAny { .. }
-            | ExprKind::Return { .. }
-            | ExprKind::Break { .. }
-            | ExprKind::Continue { .. }
-            | ExprKind::Assign { .. }
-            | ExprKind::AssignOp { .. } => {
-                if ty.is_unit() || ty.is_never() {
-                    self.stmt(e, &Dest::Discard, out)?;
-                    return Ok(Expr::undefined());
-                }
-                let tmp = self.fresh("tmp");
-                out.push(StmtKind::Let(tmp.clone(), None).at(js_span));
-                self.stmt(e, &Dest::Assign(tmp.clone()), out)?;
-                Ok(Expr::var(&tmp))
-            }
-            _ => Err(self.unsupported(span, "this expression")),
-        }
-    }
-
-    fn evaluated(&mut self, e: ExprId) -> R<Evaluation> {
-        let mut statements = Vec::new();
-        let value = self.expr(e, &mut statements)?;
-        Ok(Evaluation { statements, value })
-    }
-
-    /// Branch prerequisites belong to the selected branch. `is_simple` is
-    /// only a readability heuristic: even a call can need setup and copy-back.
-    fn conditional(
-        &mut self,
-        cond: Expr,
-        mut yes: Evaluation,
-        mut no: Evaluation,
-        span: js::Span,
-        out: &mut Vec<Stmt>,
-    ) -> Expr {
-        if yes.statements.is_empty() && no.statements.is_empty() {
-            return Expr::cond(cond, yes.value, no.value);
-        }
-        let name = self.fresh("tmp");
-        out.push(StmtKind::Let(name.clone(), None).at(span));
-        yes.statements
-            .push(StmtKind::Assign(Expr::var(&name), yes.value).at(span));
-        no.statements
-            .push(StmtKind::Assign(Expr::var(&name), no.value).at(span));
-        out.push(StmtKind::If(cond, yes.statements, Some(no.statements)).at(span));
-        Expr::var(&name)
-    }
-
-    /// Sequence actual lowering results, not a prediction of their effects.
-    /// Earlier operands are captured before a later operand's prerequisites.
-    fn operands(&mut self, list: &[ExprId], out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
-        self.operands_named(list, &[], out)
-    }
-
-    /// `operands`, one read first named as `names` says, a struct's field
-    /// as the field is, `href`, where another is `tmp`.
-    fn operands_named(&mut self, list: &[ExprId], names: &[String], out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
-        let moves = self.defer_moves(list)?;
-        let mut values = self.operands_in_order(list, names, out)?;
-        self.end_moves(&moves, &mut values, out);
-        Ok(values)
-    }
-
-    fn operands_in_order(&mut self, list: &[ExprId], names: &[String], out: &mut Vec<Stmt>) -> R<Vec<Expr>> {
-        let mut values: Vec<(Expr, bool)> = Vec::new();
-        for &e in list {
-            let evaluated = self.evaluated(e)?;
-            if !evaluated.statements.is_empty() {
-                for (i, (value, settled)) in values.iter_mut().enumerate() {
-                    if !*settled {
-                        if !self.capture_jsx(value, out) {
-                            let original = std::mem::replace(value, Expr::undefined());
-                            let name = names.get(i).map_or("tmp", String::as_str);
-                            *value = self.spill(name, original, out);
-                        }
-                        *settled = true;
-                    }
-                }
-            }
-            out.extend(evaluated.statements);
-            // Borrowed or immutable places cannot change before the call. A
-            // reference they're reached through can: `&mut *cur` of
-            // `index_mut(&mut *cur, { cur = &mut b; 0 })` is the `Vec` `cur`
-            // held then (ADR 0099).
-            let borrowed = matches!(self.thir[self.strip(e)].kind, ExprKind::Borrow { arg, .. }
-                if self.place(arg).is_some() && !self.through_rebound(arg, false));
-            // An object made here of constants, a struct's default, is the
-            // same made before or after what follows.
-            let settled = evaluated.value.is_made_of_constants()
-                || borrowed
-                || self.stable_place(self.strip_refs(e)).is_some()
-                || self.ref_place(e).is_some_and(|(_, mutable)| !mutable);
-            values.push((evaluated.value, settled));
-        }
-        Ok(values.into_iter().map(|(value, _)| value).collect())
-    }
-
-    /// Does calling `fun` become an assignment statement?
-    fn is_assignment_call(&self, fun: ExprId) -> bool {
-        if matches!(
-            self.std_fn(fun),
-            Some(
-                Std::CellSet
-                    | Std::Clear
-                    | Std::Panic
-                    | Std::PanicFmt
-                    | Std::BeginPanic
-                    | Std::PushStr
-                    | Std::AssignOperator(_)
-            )
-        ) {
-            return true;
-        }
-        let Some((def_id, _)) = fn_def(self.thir[self.strip(fun)].ty) else {
-            return false;
-        };
-        is_binding(self.tcx, def_id) && matches!(js_form(self.tcx, def_id), JsForm::Set(_))
-    }
-
-    /// Is `e` a Rust expression that JS can only write as statements?
-    fn is_control_flow(&self, e: ExprId) -> bool {
-        match self.thir[self.strip(e)].kind {
-            ExprKind::Match { ref arms, .. } => {
-                self.body_query().as_await(e).is_none()
-                    && self.body_query().as_question(e).is_none()
-                    && !self.is_matches(arms)
-            }
-            ExprKind::If { .. } | ExprKind::Block { .. } | ExprKind::Loop { .. } => true,
-            _ => false,
-        }
-    }
-
-    /// Prefer expression-shaped output for `e`? This is a syntax heuristic,
-    /// not proof that lowering emits no prerequisites. Inspect `Evaluation`
-    /// before moving a value across an evaluation region.
-    fn is_simple(&self, e: ExprId) -> bool {
-        match self.thir[e].kind {
-            ExprKind::Scope { value, .. } => {
-                !matches!(self.thir[value].kind, ExprKind::Loop { .. }) && self.is_simple(value)
-            }
-            ExprKind::Use { source }
-            | ExprKind::ValueTypeAscription { source, .. }
-            | ExprKind::PlaceTypeAscription { source, .. }
-            | ExprKind::Cast { source }
-            | ExprKind::PointerCoercion { source, .. }
-            | ExprKind::Borrow { arg: source, .. }
-            | ExprKind::Deref { arg: source }
-            | ExprKind::Unary { arg: source, .. } => self.is_simple(source),
-            ExprKind::Literal { .. }
-            | ExprKind::NonHirLiteral { .. }
-            | ExprKind::VarRef { .. }
-            | ExprKind::UpvarRef { .. }
-            | ExprKind::StaticRef { .. }
-            | ExprKind::NamedConst { .. }
-            | ExprKind::ZstLiteral { .. } => true,
-            ExprKind::Field { lhs, .. } => self.is_simple(lhs),
-            ExprKind::Index { lhs, index } => self.is_simple(lhs) && self.is_simple(index),
-            ExprKind::Match { .. } if let Some(awaited) = self.body_query().as_await(e) => self.is_simple(awaited),
-            // Its body's statements go inside the arrow; only snapshots come first.
-            ExprKind::Closure(ref closure) => {
-                let facts = &self.krate.closures[&closure.closure_id].facts;
-                closure.upvars.iter().all(|&u| !self.needs_snapshot(u, facts))
-            }
-            ExprKind::Tuple { ref fields } | ExprKind::Array { ref fields } => {
-                fields.iter().all(|&f| self.is_simple(f))
-            }
-            ExprKind::Adt(ref adt) => {
-                let base_simple = match &adt.base {
-                    AdtExprBase::Base(fru) => self.is_simple(fru.base),
-                    _ => true,
-                };
-                // Fields written out of declaration order may need temporaries.
-                base_simple
-                    && adt.fields.is_sorted_by_key(|f| f.name)
-                    && adt.fields.iter().all(|f| self.is_simple(f.expr))
-            }
-            ExprKind::Binary { lhs, rhs, .. } | ExprKind::LogicalOp { lhs, rhs, .. } => {
-                self.is_simple(lhs) && self.is_simple(rhs)
-            }
-            // `cell.set(v)` and JS property setters are assignment statements.
-            ExprKind::Call { fun, ref args, .. } => {
-                !self.is_assignment_call(fun) && self.is_simple(fun) && args.iter().all(|&a| self.is_simple(a))
-            }
-            ExprKind::If {
-                cond,
-                then,
-                else_opt: Some(els),
-                ..
-            } => self.is_simple(cond) && self.is_simple(then) && self.is_simple(els),
-            // A two-arm `match` that's a conditional (ADR 0209).
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if self.body_query().as_for(e).is_none() && self.is_conditional_match(scrutinee, arms) => {
-                self.is_simple(scrutinee)
-            }
-            // `format_args!`, whose arguments are written in place if they can be.
-            // Out of order, its arguments may need `const`s (`lower_format_args`).
-            ExprKind::Block { .. } if let Some(f) = self.as_format_args(e) => {
-                self.in_order(&f, self.thir[e].span) && f.values.iter().all(|&v| self.is_simple(v))
-            }
-            ExprKind::Block { block } => {
-                let block = &self.thir[block];
-                !block.targeted_by_break && block.stmts.is_empty() && block.expr.is_none_or(|t| self.is_simple(t))
-            }
-            _ => false,
-        }
-    }
 
     // ── Leaves ──────────────────────────────────────────────────────────
 
@@ -1520,31 +494,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn const_value(&self, value: ty::Value<'tcx>, span: Span) -> R<Expr> {
-        if let Some(b) = value.try_to_bool() {
-            return Ok(Expr::bool(b));
-        }
-        if let Some(c) = char_value(value) {
-            return Ok(Expr::str(c.to_string()));
-        }
-        // A string literal pattern is a `str` constant under a `Deref`. A
-        // reference's valtree is its pointee's, so rustc reads the bytes as a
-        // `&str`'s. It's a JS string (ADR 0034): `===` compares the contents.
-        if value.ty.is_str() {
-            let as_ref = ty::Value {
-                ty: Ty::new_imm_ref(self.tcx, self.tcx.lifetimes.re_static, value.ty),
-                valtree: value.valtree,
-            };
-            if let Some(bytes) = as_ref.try_to_raw_bytes(self.tcx) {
-                return Ok(Expr::str(str::from_utf8(bytes).expect("a `str` constant is UTF-8")));
-            }
-        }
-        let (Some(num), Some(leaf)) = (Num::of(value.ty), value.try_to_leaf()) else {
-            return Err(self.unsupported(span, "this constant pattern"));
-        };
-        Ok(num_literal(leaf.to_bits_unchecked(), num))
-    }
-
     // ── Structs and tuples (ADR 0020) ───────────────────────────────────
 
     // ── Helpers ─────────────────────────────────────────────────────────
@@ -1554,94 +503,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.sources.span(span)
     }
 
-    fn body_query(&self) -> body_queries::BodyQuery<'a, 'tcx> {
-        body_queries::BodyQuery {
-            tcx: self.tcx,
-            thir: self.thir,
-        }
-    }
-
     fn strip(&self, e: ExprId) -> ExprId {
         strip(self.thir, e)
-    }
-
-    /// Also skip borrows and derefs: `&*x` to `x`.
-    fn strip_refs(&self, e: ExprId) -> ExprId {
-        match self.thir[self.strip(e)].kind {
-            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.strip_refs(arg),
-            _ => self.strip(e),
-        }
-    }
-
-    /// A function taken as a value that no other form fits, `Vec::new` or
-    /// `i32::max`: the arrow of its parameters that calls it, `(a, b) =>
-    /// Math.max(a, b)`, lowered as the call is, so it does what a call does.
-    /// The call is lowered in a copy of the body given its arguments, each a
-    /// variable that's a parameter.
-    pub(super) fn called_value(&mut self, fun: ExprId, span: Span) -> R<Expr> {
-        let Some((def_id, args)) = fn_def(self.thir[fun].ty) else {
-            return Err(self.unsupported(span, "this expression"));
-        };
-        let sig = self.tcx.fn_sig(def_id).instantiate(self.tcx, args).skip_normalization();
-        let inputs: Vec<Ty<'tcx>> = self
-            .tcx
-            .instantiate_bound_regions_with_erased(sig)
-            .inputs()
-            .iter()
-            .map(|&input| {
-                self.tcx
-                    .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(input))
-                    .unwrap_or(input)
-            })
-            .collect();
-        // A `&mut` to a number is its place, which a parameter isn't (ADR 0099).
-        if inputs
-            .iter()
-            .any(|input| matches!(input.kind(), ty::Ref(_, _, Mutability::Mut)))
-        {
-            let path = self.tcx.def_path_str(def_id);
-            return Err(self.unsupported(span, &format!("`{path}`, which takes a `&mut`, as a value")));
-        }
-        let mut called = self.thir.clone();
-        let temp_scope_id = self.thir[fun].temp_scope_id;
-        let mut params = Vec::new();
-        let mut arguments = Vec::new();
-        for (i, &input) in inputs.iter().enumerate() {
-            // An id no variable of rustc's has: the crate root's, which has
-            // none, counted down from the last there can be.
-            let local_id = ItemLocalId::from_u32(ItemLocalId::MAX_AS_U32 - i as u32);
-            let id = LocalVarId(HirId {
-                owner: CRATE_OWNER_ID,
-                local_id,
-            });
-            let base = match inputs.len() {
-                1 => self.parameter_name(input),
-                _ => ["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg"),
-            };
-            params.push((id, self.bind(id, base, false)));
-            arguments.push(called.exprs.push(thir::Expr {
-                kind: ExprKind::VarRef { id },
-                ty: input,
-                temp_scope_id,
-                span,
-            }));
-        }
-        let called: &'a Thir<'tcx> = self.krate.called_bodies.alloc(called);
-        let body_thir = std::mem::replace(&mut self.thir, called);
-        let mut body = Vec::new();
-        let value = self.call(fun, &arguments, false, span, &mut body);
-        self.thir = body_thir;
-        // Each parameter is the arrow's alone, and its body is written: the
-        // next arrow's can be `s` too.
-        for (id, name) in &params {
-            self.locals.vars.remove(id);
-            self.names.remove(name);
-        }
-        body.push(StmtKind::Return(Some(value?)).at(self.js_span(span)));
-        Ok(Expr::arrow(
-            params.into_iter().map(|(_, name)| name.into()).collect(),
-            body,
-        ))
     }
 
     fn fresh(&mut self, base: &str) -> String {
@@ -1655,7 +518,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Var {
                 place: Expr::var(&name),
                 mutable,
-                depth: self.loops.len(),
             },
         );
         name
@@ -1840,15 +702,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         ))
     }
 
-    /// An integer `const`'s value: `x / SIZE` can't divide by zero.
-    fn known_int(&self, e: ExprId) -> Option<i128> {
-        let ExprKind::NamedConst { def_id, args, .. } = self.thir[self.strip(e)].kind else {
-            return None;
-        };
-        let value = eval_const(self.tcx, self.typing_env, def_id, args, self.thir[e].span)?;
-        const_js(self.tcx, value)?.as_int()
-    }
-
     /// `const <base> = value;`, so it's evaluated here, then its name.
     fn spill(&mut self, base: &str, value: Expr, out: &mut Vec<Stmt>) -> Expr {
         let name = self.fresh(&unhyphenated(base));
@@ -1874,15 +727,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             self.unsupported(span, &format!("implementation evidence for `{tr}`"))
         }
-    }
-}
-
-/// The variable a place starts from: `p` for `p.x[0]`.
-fn root_var(place: &Expr) -> Option<&str> {
-    match &place.kind {
-        js::ExprKind::Var(name) => Some(name),
-        js::ExprKind::Member(object, _) | js::ExprKind::Index(object, _) => root_var(object),
-        _ => None,
     }
 }
 
@@ -1922,10 +766,6 @@ fn assembled(shape: Shape<'_>, tag: Option<(String, Expr)>, items: Vec<Expr>) ->
         }
         _ => Expr::array(items),
     }
-}
-
-fn is_union(ty: Ty<'_>) -> bool {
-    ty.ty_adt_def().is_some_and(|adt| adt.is_union())
 }
 
 /// `name` without its hyphens, each next letter capitalized: a hyphenated
@@ -1977,29 +817,6 @@ pub(super) fn lower_first(name: &str) -> String {
         .next()
         .map(|c| c.to_lowercase().chain(chars).collect())
         .unwrap_or_default()
-}
-
-/// `(x, i) => [i, x]`, what `enumerate()` maps with.
-fn is_enumerate_pair(f: &Expr) -> bool {
-    let js::ExprKind::Arrow(params, body) = &f.kind else {
-        return false;
-    };
-    let [js::Pattern::Name(x), js::Pattern::Name(i)] = params.as_slice() else {
-        return false;
-    };
-    let [
-        Stmt {
-            kind: StmtKind::Return(Some(pair)),
-            ..
-        },
-    ] = body.as_slice()
-    else {
-        return false;
-    };
-    let js::ExprKind::Array(items) = &pair.kind else {
-        return false;
-    };
-    matches!(items.as_slice(), [a, b] if matches!(&a.kind, js::ExprKind::Var(n) if n == i) && matches!(&b.kind, js::ExprKind::Var(n) if n == x))
 }
 
 /// `&x` is `x`: a reference is the value (ADR 0023).

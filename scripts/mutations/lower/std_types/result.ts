@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_display"],
   },
   {
-    name: "question-fmt-error-dropped",
-    breaks: "`?` of a `write!` that fails drops the `fmt::Error`",
-    file: "src/lower/std_types/result.rs",
-    find: "        if self.is_fmt_result(ty) && self.krate.any_failing {",
-    replace: "        if false && self.is_fmt_result(ty) && self.krate.any_failing {",
-    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
-  },
-  {
     name: "question-null-test",
     breaks: "`?` of an Option never falsy tests `item == null`, not `!item`",
     file: "src/lower/std_types/result.rs",

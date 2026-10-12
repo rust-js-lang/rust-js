@@ -7,16 +7,12 @@
 use super::bindings;
 use super::fn_def;
 use super::recognition::{PureStd, pure_std};
-use std::collections::HashMap;
 
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::def::DefKind;
+
 use rustc_middle::mir::BinOp;
 use rustc_middle::thir::{AdtExprBase, ExprId, ExprKind, PatKind, StmtKind as ThirStmt, Thir};
 use rustc_middle::ty::{self, Ty, TyCtxt};
-use rustc_span::def_id::LocalDefId;
-
-use super::Body;
 
 /// Whether `e`, of `thir`, can neither leave early, by a panic, a `return`
 /// or a `break`, nor change anything: what it does can't be seen.
@@ -125,20 +121,6 @@ pub(super) fn cannot_leave_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: Exp
                 _ => false,
             }) && block.expr.is_none_or(pure)
         }
-        _ => false,
-    }
-}
-
-/// Whether calling a `ty`, a closure or a function, does nothing that
-/// can be seen and can't panic: a closure whose body can't (as
-/// `cannot_leave` says), or a struct's or a variant's constructor.
-pub(super) fn is_pure_fn<'tcx>(tcx: TyCtxt<'tcx>, closures: &HashMap<LocalDefId, &Body<'tcx>>, ty: Ty<'tcx>) -> bool {
-    match *ty.peel_refs().kind() {
-        ty::Closure(def_id, _) => def_id
-            .as_local()
-            .and_then(|id| closures.get(&id))
-            .is_some_and(|body| cannot_leave_in(tcx, &body.thir, body.expr)),
-        ty::FnDef(def_id, _) => matches!(tcx.def_kind(def_id), DefKind::Ctor(..)),
         _ => false,
     }
 }

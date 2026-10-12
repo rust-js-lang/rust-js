@@ -194,10 +194,8 @@ pub fn lower_crate<'tcx>(
     let no_drops = RefCell::new(HashMap::new());
     let drop_checks = RefCell::new(Vec::new());
     let drop_uses = RefCell::new(super::drops::DropUses::new(tcx, &drop_params));
-    let called_bodies = rustc_arena::TypedArena::default();
     let plain_ref_cells = std::cell::OnceCell::new();
     let crate_facts = CrateFacts {
-        called_bodies: &called_bodies,
         foreign: &foreign,
         library: export_library,
         sources: &sources,
@@ -283,14 +281,12 @@ pub fn lower_crate<'tcx>(
             codecs: Vec::new(),
             krate: &crate_facts,
             dependencies: Default::default(),
-            captures: HashMap::new(),
             thir: body.map_or(&no_body, |body| &body.thir),
             body_facts: body.map_or(&no_facts, |body| &body.facts),
             module,
             locals: Locals::default(),
             names,
             module_names: &taken[&module],
-            labels: HashSet::new(),
             loops: Vec::new(),
             runtime: HashSet::new(),
             jsx: false,
@@ -305,15 +301,10 @@ pub fn lower_crate<'tcx>(
             drop_state: Default::default(),
             body_owner: def_id,
         };
-        let initializer = initialized.iter().any(|body| body.def_id.to_def_id() == def_id);
         let result = match body {
-            Some(body) if initializer => match &body.mir {
-                Some(mir) => cx.lower_fn_mir(body, mir),
-                None => cx.lower_initializer(body),
-            },
+            // Each body, a function's or an initializer's, from its MIR (ADR 0364).
             Some(body) if let Some(mir) = &body.mir => cx.lower_fn_mir(body, mir),
-
-            Some(body) => cx.lower_fn(body),
+            Some(_) => Err(cx.unsupported(tcx.def_span(def_id), "this body, without its MIR")),
             None if codecs.contains(&def_id) => cx.lower_codec(def_id).map(|function| super::LoweredFn {
                 function,
                 runtime: std::mem::take(&mut cx.runtime),
@@ -678,13 +669,11 @@ pub fn lower_crate<'tcx>(
                 jsx: pass.jsx.contains(&module),
                 located: located(tcx, module),
             };
-            if super::mir_mode() {
-                let quiet: HashSet<&str> = (quiet_locals.iter())
-                    .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
-                    .map(|key| fns[&key.to_def_id()].name.as_str())
-                    .collect();
-                super::mir::plain_statics(&mut lowered.items, &quiet);
-            }
+            let quiet: HashSet<&str> = (quiet_locals.iter())
+                .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
+                .map(|key| fns[&key.to_def_id()].name.as_str())
+                .collect();
+            super::mir::plain_statics(&mut lowered.items, &quiet);
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));
             let candidates: Vec<_> = imports

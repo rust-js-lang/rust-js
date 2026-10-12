@@ -1,5 +1,4 @@
 // What THIR refuses, MIR lowers as Rust runs it (ADR 0364).
-//@ thir-compile-fail: does not support a temporary with a destructor
 pub struct D(u32);
 impl Drop for D { fn drop(&mut self) { println!("drop {}", self.0); } }
 impl D { pub fn n(&self) -> u32 { println!("n {}", self.0); 1 } }

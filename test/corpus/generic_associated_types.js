@@ -23,7 +23,7 @@ function shelfContainer() {
       ItemDebug: () => ({ fmt: (value) => $debugStr(value) }),
       items: shelfContainer_items,
       last: (self) => {
-        const items = Iterator.from(shelfContainer_items(self)).toArray();
+        const items = shelfContainer_items(self).toArray();
         return $someAt(items, items.length - 1);
       },
     };
@@ -41,7 +41,7 @@ function countsContainer() {
       ItemDebug: () => ({ fmt: (value) => String(value) }),
       items: countsContainer_items,
       last: (self) => {
-        const items = Iterator.from(countsContainer_items(self)).toArray();
+        const items = countsContainer_items(self).toArray();
         return $someAt(items, items.length - 1);
       },
     };
@@ -59,7 +59,7 @@ function countdownContainer() {
       ItemDebug: () => ({ fmt: (value) => String(value) }),
       items: countdownContainer_items,
       last: (self) => {
-        const items = Iterator.from(countdownContainer_items(self)).toArray();
+        const items = countdownContainer_items(self).toArray();
         return $someAt(items, items.length - 1);
       },
     };

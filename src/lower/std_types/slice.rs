@@ -1,7 +1,6 @@
 //! A slice's fills, copies, order checks, chunks and splits (ADR 0324): its
 //! JS array, changed in place where std's is.
 
-use rustc_middle::thir::ExprId;
 use rustc_middle::ty;
 use rustc_middle::ty::TypeVisitableExt;
 use rustc_span::Span;
@@ -445,92 +444,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::var("$copyWithin"),
             vec![items, start, end.unwrap_or_else(Expr::undefined), dest],
         )
-    }
-
-    /// One of `SliceOp`'s, of `args`, with the call's `generic_args`.
-    pub(in crate::lower) fn slice_call(
-        &mut self,
-        op: SliceOp,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let item = || generic_args.type_at(0);
-        Ok(match op {
-            // `s.split_off(..n)`: `s` given what's left, `s = split[0]`, and what
-            // it takes, `split[1]` (ADR 0338), as a `String`'s `pop` is.
-            SliceOp::SplitOff { end, mutable } => {
-                let Some(place) = self.mut_borrowed(args[0]) else {
-                    return Err(self.unsupported(span, "splitting this slice"));
-                };
-                let (target, _) = self.prepare_assignment_target(place, true, Expr::undefined(), span, out)?;
-                let bounds = match end {
-                    None => Some(self.range_bounds(args[1], span, out)?),
-                    Some(_) => None,
-                };
-                let split = self.split_off_values((end, mutable), target.read(), bounds, item(), out);
-                target.write(Expr::index(split.clone(), Expr::int(0)), self.js_span(span), out);
-                Expr::index(split, Expr::int(1))
-            }
-            // `$copyFromSlice(slots, src)`, then `slots`; a clone of each from
-            // `$writeCloneOfSlice`, whose `assert_eq!` says why it panics.
-            SliceOp::UninitWrite { clone } => {
-                let values = self.operands(args, out)?;
-                self.uninit_write_values(clone, values, item(), span, out)?
-            }
-            SliceOp::UninitDrop => {
-                let slots = self.operands(args, out)?.remove(0);
-                let ty = ty::Ty::new_slice(self.tcx, generic_args.type_at(0));
-                self.drop_value(slots, ty, span, out)?;
-                Expr::undefined()
-            }
-            // `$sortUnstable(v, isLess, kind)`: std's `is_less` and what std
-            // picks by the item's type (ADR 0342).
-            SliceOp::SortUnstable { with } | SliceOp::SelectNth { with } => {
-                let values = self.operands(args, out)?;
-                self.unstable_sort_values(op, with, values, generic_args, span, out)?
-            }
-            SliceOp::ExtractIf { range } => {
-                let items = self.operands(&args[..1], out)?.remove(0);
-                let bounds = match range {
-                    true => self.range_bounds(args[1], span, out)?,
-                    false => (Expr::int(0), None),
-                };
-                let f = self.operands(&args[args.len() - 1..], out)?.remove(0);
-                self.extract_if_values(items, bounds, f, generic_args.type_at(0))
-            }
-            SliceOp::View { checked } => {
-                let items = self.operands(&args[..1], out)?.remove(0);
-                let (start, end) = self.range_bounds(args[1], span, out)?;
-                // `&mut v[..]`: all of it, which is `v`.
-                if !checked && start.as_int() == Some(0) && end.is_none() {
-                    return Ok(items);
-                }
-                let mut list = vec![items, start];
-                list.extend(end);
-                self.view_call(if checked { "$viewGet" } else { "$view" }, list)
-            }
-            SliceOp::DequeRangeMut => {
-                let view = self.slice_call(SliceOp::View { checked: false }, args, generic_args, span, out)?;
-                if !self.is_boxable(item()) {
-                    return Ok(view);
-                }
-                self.runtime.insert(Helper::MutItems);
-                Expr::call(Expr::var("$mutItems"), vec![view])
-            }
-            SliceOp::CopyWithin => {
-                let items = self.operands(&args[..1], out)?.remove(0);
-                let bounds = self.range_bounds(args[1], span, out)?;
-                let dest = self.operands(&args[2..], out)?.remove(0);
-                self.copy_within_values(items, bounds, dest)
-            }
-            _ => {
-                let stepping = matches!(op, SliceOp::Remainder) && self.is_stepping(args[0]);
-                let values = self.operands(args, out)?;
-                self.slice_values(op, values, stepping, generic_args, span, out)?
-            }
-        })
     }
 
     /// One of `SliceOp`'s that its operands, as JS, say all of, `values`:

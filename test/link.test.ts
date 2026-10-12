@@ -25,8 +25,8 @@ test("late import aliases avoid locals, nested parameters and generated bindings
   const js = await import(join(dir, "lib.js"));
   expect([String(js.run()), js.text()]).toEqual(run([join(dir, "native")]).trim().split("\n"));
   const code = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(code).toContain('import { add as add$2 } from "./util.js";');
-  expect(code).toContain('import { add as add$3 } from "./value.js";');
+  expect(code).toContain('import { add as add$1 } from "./util.js";');
+  expect(code).toContain('import { add as add$2 } from "./value.js";');
   expect(code).not.toContain("\0");
 });
 
@@ -137,7 +137,7 @@ test("module-load statements resolve imports around their local bindings", async
     }
     pub fn ready() -> u32 { util::value(1) }
   `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out),
       "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const code = readFileSync(join(dir, out), "utf8");

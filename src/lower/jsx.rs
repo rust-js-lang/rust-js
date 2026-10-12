@@ -4,7 +4,7 @@ use super::recognition::Std;
 use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
 use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
-use rustc_ast::LitKind;
+
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{self, ExprId, ExprKind};
@@ -202,30 +202,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     // ── JSX (ADR 0040) ──────────────────────────────────────────────────
-
-    /// A JSX element, from a binding whose `link_name` is its tag: `<div>`
-    /// takes nothing, `<>` and an imported component (`<react#StrictMode>`)
-    /// take their children, and `<*>` takes a component and its props.
-    pub(super) fn jsx(&mut self, tag: &str, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let mut given = Vec::new();
-        for (i, &arg) in args.iter().enumerate() {
-            let value = match (tag, i) {
-                // A JS module's component is its import, as a tag must be.
-                ("*", 0) => match self.binding_component(arg) {
-                    Some(tag) => tag,
-                    None => self.expr(arg, out)?,
-                },
-                _ => self.expr(arg, out)?,
-            };
-            given.push(JsxArg {
-                value,
-                ty: self.thir[arg].ty,
-                expr: Some(arg),
-                span: self.thir[arg].span,
-            });
-        }
-        self.jsx_values(tag, given, span, out)
-    }
 
     /// A JSX element, of what its binding is given.
     pub(super) fn jsx_values(
@@ -779,97 +755,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn one_expression(&self, span: Span) -> rustc_span::ErrorGuaranteed {
         let message = "rust-js makes JSX from one expression: set an element's props in the chain that makes it";
         self.tcx.dcx().span_err(span, message)
-    }
-
-    /// `{}` or `{__html}`: an object literal, its fields the arguments.
-    pub(super) fn object_binding(
-        &mut self,
-        keys: &[String],
-        args: &[ExprId],
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        if keys.len() != args.len() {
-            return Err(self.unsupported(span, "an object binding whose fields don't match its arguments"));
-        }
-        let values = self.operands(args, out)?;
-        Ok(Expr::object(
-            keys.iter()
-                .cloned()
-                .zip(values)
-                .map(|(k, v)| Prop::Field(k, v))
-                .collect(),
-        ))
-    }
-
-    /// `style.color("red")` on an object being built: one more field. Its
-    /// earlier fields go in `const`s first when this one's value needs
-    /// statements, so they're still evaluated first.
-    fn object_field(&mut self, mut object: Expr, name: String, value: ExprId, out: &mut Vec<Stmt>) -> R<Expr> {
-        let js::ExprKind::Object(fields) = &mut object.kind else {
-            unreachable!("checked by the caller")
-        };
-        if !self.is_simple(value) {
-            for prop in fields.iter_mut() {
-                let (base, value) = match prop {
-                    Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
-                    Prop::Spread(value) => ("props", value),
-                };
-                if !value.is_constant() {
-                    let old = std::mem::replace(value, Expr::undefined());
-                    *value = self.spill(&camel_case(&js_ident(base)), old, out);
-                }
-            }
-        }
-        let value = self.expr(value, out)?;
-        let js::ExprKind::Object(fields) = &mut object.kind else {
-            unreachable!("checked by the caller")
-        };
-        // `prop ...`: another object spread over what's set so far.
-        fields.push(match name.as_str() {
-            "..." => Prop::Spread(value),
-            _ => Prop::Field(name, value),
-        });
-        Ok(object)
-    }
-
-    /// `element.class_name("hero")`, a binding like `#[rust_js::link_name =
-    /// "prop className"]`: the attribute, on the element being built.
-    pub(super) fn jsx_prop(&mut self, name: Option<&str>, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let (name, value) = match (name, args) {
-            (Some(name), &[_, value]) => (name.to_string(), value),
-            (None, &[_, name, value]) => match self.thir[self.strip_refs(name)].kind {
-                ExprKind::Literal { lit, neg: false } if let LitKind::Str(s, _) = lit.node => (s.to_string(), value),
-                _ => {
-                    let message = "rust-js: an attribute's name is a string literal";
-                    return Err(self.tcx.dcx().span_err(self.thir[name].span, message));
-                }
-            },
-            _ => return Err(self.unsupported(span, "this JSX attribute binding's signature")),
-        };
-        let element = self.expr(args[0], out)?;
-        if let js::ExprKind::Object(_) = element.kind {
-            return self.object_field(element, name, value, out);
-        }
-        let element_span = self.thir[args[0]].span;
-        if !matches!(element.kind, js::ExprKind::Jsx(_)) {
-            return Err(self.one_expression(element_span));
-        }
-        self.jsx_spread_checked(&name, self.thir[value].ty, self.thir[value].span)?;
-        // The value, and what it needs done first, its statements, aside: JSX
-        // reads its attributes in order, then its children, as Rust does, so
-        // only those statements, which run before the whole element, would
-        // jump ahead of what's read already, and only matter where the
-        // value does more than read.
-        let mut first = Vec::new();
-        let given = JsxArg {
-            value: self.expr(value, &mut first)?,
-            ty: self.thir[value].ty,
-            expr: Some(value),
-            span: self.thir[value].span,
-        };
-        let simple = self.is_simple(value);
-        self.jsx_prop_values(name, element, given, (first, simple), out)
     }
 
     /// An element's attribute, `name`, given: the element made, its value,

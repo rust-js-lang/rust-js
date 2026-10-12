@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/char_step.js",
     find: "  if (code >= 0xd800 && code <= 0xdfff) code = by > 0 ? 0xe000 : 0xd7ff;\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","char_ranges_stepped"],
+    tests: ["test/corpus.test.ts","-t","char_ranges_stepped"],
   },
 ];

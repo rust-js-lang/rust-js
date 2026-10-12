@@ -324,7 +324,7 @@ async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
 test("async code becomes async functions and await", async () => {
   // Its bodies lowered from their MIR (ADR 0364).
   const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
-  run([compiler, "test/async.rs", "-o", join(target, "mir-async", "async.js"), ...withWeb], 600_000, { RUST_JS_MIR: "1" });
+  run([compiler, "test/async.rs", "-o", join(target, "mir-async", "async.js"), ...withWeb], 600_000);
   const mirAsyncs = await import(join(target, "mir-async", "async.js"));
   for (const lib of [asyncs, mirAsyncs]) await asyncsRun(lib);
 

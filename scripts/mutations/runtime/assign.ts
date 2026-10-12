@@ -16,6 +16,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/assign.js",
     find: "  if (target === value) return;\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","generic_mut_map"],
+    tests: ["test/corpus.test.ts","-t","generic_mut_map"],
   },
 ];

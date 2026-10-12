@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "is_none_or(|e| !e.has_effects())",
     replace: "is_none_or(|e| true || !e.has_effects())",
-    tests: ["test/mir.test.ts","-t","declarations_assigned_later"],
+    tests: ["test/corpus.test.ts","-t","declarations_assigned_later"],
   },
   {
     name: "tidy-declaration-past-read",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                    .find(|&j| js::mentions_in(&stmts[j..=j], name) > 0)\n",
     replace: "                    .find(|&j| matches!(stmts[j].kind, StmtKind::Assign(..)) && js::mentions_in(&stmts[j..=j], name) > 0)\n",
-    tests: ["test/mir.test.ts","-t","declarations_assigned_later"],
+    tests: ["test/corpus.test.ts","-t","declarations_assigned_later"],
   },
   {
     name: "tidy-closure-assign-unseen",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "            {\n                assigned.insert(name.clone());\n            }\n        }\n",
     replace: "            {\n                let _ = name;\n            }\n        }\n",
-    tests: ["test/mir.test.ts","-t","declarations_assigned_later"],
+    tests: ["test/corpus.test.ts","-t","declarations_assigned_later"],
   },
   {
     name: "tidy-handle-assign-unseen",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind\n",
     replace: "        if false && let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind\n",
-    tests: ["test/mir.test.ts","-t","mut_ref_handle"],
+    tests: ["test/corpus.test.ts","-t","mut_ref_handle"],
   },
   {
     name: "mir-tidy-alias-kept",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "            matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v))\n",
     replace: "            true\n",
-    tests: ["test/mir.test.ts","-t","assignment_order"],
+    tests: ["test/corpus.test.ts","-t","assignment_order"],
   },
   {
     name: "mir-tidy-returned-chain-kept",
@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                    && matches!(&value.kind, ExprKind::Var(of) if !changing.contains(of)) =>\n",
     replace: "                    && false =>\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-destructured-kept",
@@ -272,7 +272,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                    && ((small(yes) && small(no)) || is_temporary(x))\n",
     replace: "                    && small(yes) && small(no)\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-tail-guard-kept",
@@ -320,7 +320,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        let temporary = is_temporary(name) || captured.contains(name);\n",
     replace: "        let temporary = is_temporary(name);\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-guarded-off",
@@ -520,7 +520,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "            true if element => {\n",
     replace: "            true if false && element => {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-late-consts-kept",
@@ -536,7 +536,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                otherwise.as_deref().is_none_or(|o| js::mentions_in(o, h) == 0)\n                    && js::mentions_in(&stmts[i + 1..], h) == 0\n",
     replace: "                false\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-else-after-return-kept",
@@ -560,7 +560,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        i = i.saturating_sub(1);\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-range-end-unheld",
@@ -600,7 +600,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        let past = |at: usize| {\n",
     replace: "        let past = |at: usize| at == 0 && {\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-loop-unrotated",
@@ -640,7 +640,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-tidy-loop-let-outside",
@@ -781,7 +781,7 @@ export const mutations: Mutation[] = [
     "find": "                    && matches!(none.kind, ExprKind::Undefined)\n                {\n                    let test = match is_boolean(test, booleans) {",
     "replace": "                    && false\n                {\n                    let test = match is_boolean(test, booleans) {",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -901,7 +901,7 @@ export const mutations: Mutation[] = [
     "find": "                    (true, true) => Some(target),\n",
     "replace": "                    (true, true) => None,\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -985,7 +985,7 @@ export const mutations: Mutation[] = [
     "find": "            matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v))\n",
     "replace": "            false\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -997,7 +997,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Symbol(_) => true,\n        ExprKind::Arrow(..)",
     "replace": "        ExprKind::Arrow(..)",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1008,7 +1008,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        let past = |at: usize| {\n",
     "replace": "        let past = |at: usize| (!acts || at == 0) && {\n",
-    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-tidy-passed-on-unread",
@@ -1029,7 +1029,7 @@ export const mutations: Mutation[] = [
     "find": "    js::each_expr_mut(body, &mut spread_spreads);\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1149,7 +1149,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Jsx(_) => inert_element(e, set),\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1173,7 +1173,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1185,7 +1185,7 @@ export const mutations: Mutation[] = [
     "find": "    js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1197,7 +1197,7 @@ export const mutations: Mutation[] = [
     "find": "            if guard.is_some_and(|g| same_test(a, g))",
     "replace": "            if false && guard.is_some_and(|g| same_test(a, g))",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1221,7 +1221,7 @@ export const mutations: Mutation[] = [
     "find": "    let (a, b) = (truth(a), truth(b));\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1233,7 +1233,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| tuple_reads(stmts, &changing, captured));\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1245,7 +1245,7 @@ export const mutations: Mutation[] = [
     "find": "if sets_through(&stmts[i + 1..], &t) || indexed == 0",
     "replace": "if indexed == 0",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "mut_ref_temporary"
     ]
@@ -1257,7 +1257,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1268,7 +1268,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,\n        ExprKind::Member(of, _) => {\n",
     "replace": "        ExprKind::Member(of, _) => {\n",
-    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-tidy-choice-blocks",
@@ -1276,7 +1276,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n",
     "replace": "",
-    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-tidy-lets-block",
@@ -1284,7 +1284,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    let set = closures_set(body);\n",
     "replace": "    let set = changed.clone();\n",
-    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-tidy-returned-consts-kept",
@@ -1300,7 +1300,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "                    && concise.contains(&value.span)\n",
     "replace": "                    && false\n",
-    "tests": ["test/mir.test.ts", "-t", "JSX tests"]
+    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
   },
   {
     "name": "mir-tidy-bool-call-unknown",
@@ -1317,7 +1317,7 @@ export const mutations: Mutation[] = [
     "find": "unchanged_by_calls || !e.has_effects()",
     "replace": "!e.has_effects()",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1329,7 +1329,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1425,7 +1425,7 @@ export const mutations: Mutation[] = [
     "find": "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
     "replace": "                if false {",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1461,7 +1461,7 @@ export const mutations: Mutation[] = [
     "find": "                        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),",
     "replace": "                        false => continue,",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1473,7 +1473,7 @@ export const mutations: Mutation[] = [
     "find": "                || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)))\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1485,7 +1485,7 @@ export const mutations: Mutation[] = [
     "find": "                        (Some(prop), _) => prop.clone(),\n",
     "replace": "                        (Some(_), _) => \"value\".to_string(),\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1497,7 +1497,7 @@ export const mutations: Mutation[] = [
     "find": "                && let Some(found) = leads(key, name, guard, passes)\n",
     "replace": "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1521,7 +1521,7 @@ export const mutations: Mutation[] = [
     "find": "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
     "replace": "if !is_temporary(a) && captured.contains(&b) {",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1533,7 +1533,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Jsx(_) => levels(e) <= 2,\n",
     "replace": "        ExprKind::Jsx(_) => false,\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1545,7 +1545,7 @@ export const mutations: Mutation[] = [
     "find": "    // what it's given to reads it in place.\n    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));\n",
     "replace": "    // what it's given to reads it in place.\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1557,7 +1557,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| plain_reads(stmts, plain, captured));\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1569,7 +1569,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut rest_parts);\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -1581,7 +1581,7 @@ export const mutations: Mutation[] = [
     "find": "            !reads\n",
     "replace": "            true\n",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]

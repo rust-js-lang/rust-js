@@ -487,29 +487,6 @@ impl Std {
                 )
         )
     }
-
-    /// Does it take an iterator, and so a range as an array?
-    pub(super) fn takes_iterator(self) -> bool {
-        matches!(
-            self,
-            Std::ArrayMethod(_)
-                | Std::Enumerate
-                | Std::Rev
-                | Std::Skip
-                | Std::Take
-                | Std::Fold
-                | Std::Sum
-                | Std::CollectString
-                | Std::CollectFallible
-                | Std::Collect
-                | Std::Position
-                | Std::Extreme(_)
-                | Std::Last
-                | Std::Cloned
-                | Std::Fuse
-                | Std::IterComb(_)
-        )
-    }
 }
 
 /// serde_json's own types, by name.
@@ -4097,11 +4074,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     }
 }
 
-impl<'a, 'tcx> Recognition<'a, 'tcx> {
-    pub(super) fn is_mutable_map_get(&self, id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
-        self.classify(id, args) == Some(Std::Map(MapOp::Get)) && self.tcx.item_name(id).as_str() == "get_mut"
-    }
-}
+impl<'a, 'tcx> Recognition<'a, 'tcx> {}
 
 /// Is a struct's value its fields? The crate's own are, and std's
 /// `PhantomData` and `Reverse(x)`, `[x]`; any other of std's has fields of

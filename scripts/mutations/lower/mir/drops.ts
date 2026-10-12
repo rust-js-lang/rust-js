@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "            (true, true, false) => Style::Conditional,\n",
     replace: "            (true, true, false) => Style::Static,\n",
-    tests: ["test/mir.test.ts", "-t", "drop|refcell_"],
+    tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
   },
   {
     name: "mir-unwind-drops-nothing",
@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                    self.mir_drop(state, block, place, true, span, &mut out)?;\n",
     replace: "",
-    tests: ["test/mir.test.ts", "-t", "drop|refcell_"],
+    tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
   },
   {
     name: "mir-unwind-never-caught",
@@ -24,7 +24,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "        if !body.iter().any(may_throw) {\n",
     replace: "        if true {\n",
-    tests: ["test/mir.test.ts", "-t", "drop|refcell_"],
+    tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
   },
   {
     name: "mir-flags-never-set",
@@ -32,7 +32,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "            if flagged[path] {\n",
     replace: "            if false {\n",
-    tests: ["test/mir.test.ts", "-t", "drop|refcell_"],
+    tests: ["test/corpus.test.ts", "-t", "drop|refcell_"],
   },
   {
     name: "mir-open-drop-other-variant",
@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                None => self.variant_test(subject.clone(), ty, adt, variant),\n",
     replace: "                None => Expr::unary(js::UnaryOp::Not, self.variant_test(subject.clone(), ty, adt, variant)),\n",
-    tests: ["test/mir.test.ts","-t","drop_partial|struct_update_drops|temporaries_taken_apart"],
+    tests: ["test/corpus.test.ts","-t","drop_partial|struct_update_drops|temporaries_taken_apart"],
   },
   {
     name: "mir-drop-behind-pointer-skipped",
@@ -48,7 +48,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                    behind.insert(block);\n",
     replace: "",
-    tests: ["test/mir.test.ts","-t","drop_generic"],
+    tests: ["test/corpus.test.ts","-t","drop_generic"],
   },
   {
     name: "mir-cleanup-write-dropped",
@@ -56,7 +56,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out));\n",
     replace: "                            .and_then(|()| Ok(()));\n",
-    tests: ["test/mir.test.ts","-t","drop_replace_panics"],
+    tests: ["test/corpus.test.ts","-t","drop_replace_panics"],
   },
   {
     name: "mir-drop-branch-unmapped",
@@ -64,7 +64,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "            Some((tried, _)) => tried.clone(),\n            None => self.mir_place(state, place, span, out)?,\n",
     replace: "            _ => self.mir_place(state, place, span, out)?,\n",
-    tests: ["test/mir.test.ts", "-t", "question_drops"],
+    tests: ["test/corpus.test.ts", "-t", "question_drops"],
   },
   {
     name: "mir-drop-param-items-refused",
@@ -72,7 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/drops.rs",
     find: "        if matches!(self.drops(ty), Drops::Unsupported(..)) && self.require_no_drops(ty) {\n",
     replace: "        if false {\n",
-    tests: ["test/mir.test.ts", "-t", "generic_iterator_items"],
+    tests: ["test/corpus.test.ts", "-t", "generic_iterator_items"],
   },
   {
     name: "mir-cleanup-spanless",

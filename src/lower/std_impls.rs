@@ -74,15 +74,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false
             }
             ty::Adt(..) if self.has_user_impl(self.clone_trait(), ty) => true,
-            // From its MIR, a range is stepped in place, `$rangeNext(r)`
-            // moving its start (ADR 0364): a clone of one is its own.
-            ty::Adt(..) if self.range_kind(ty).is_some() && super::mir::mir_mode() => true,
-            // A range is its bounds (ADR 0129), changed in place only if
-            // `contains_mutated` says so.
-            ty::Adt(_, args) if self.range_kind(ty).is_some() => args
-                .types()
-                .next()
-                .is_some_and(|index| self.needs_clone_in(index, seen)),
+            // A range is stepped in place, `$rangeNext(r)` moving its start
+            // (ADR 0364): a clone of one is its own.
+            ty::Adt(..) if self.range_kind(ty).is_some() => true,
             ty::Adt(adt, args)
                 if ty.is_box()
                     || self.recognition().pinned(ty).is_some()
@@ -396,24 +390,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 Ok(value)
             }
-            // std's iterator over an array is the array (ADR 0061), which iterating
-            // doesn't change: a clone of one that borrows its items is the array
-            // itself, of one that owns them, a copy of each that needs one (ADR 0181).
-            // From its MIR, it's a `$iter` that knows where it is (ADR 0364): a
-            // `$iter` of what it has left.
-            ty::Adt(..)
-                if let Some(owns) = self.array_source(ty)
-                    && super::mir::mir_mode() =>
-            {
+            // std's iterator over an array is a `$iter` that knows where it is
+            // (ADR 0364): a clone, a `$iter` of what it has left.
+            ty::Adt(..) if let Some(owns) = self.array_source(ty) => {
                 let left = self.stepped_left(place, ty, owns, span)?;
                 Ok(self.stepped_items(left))
-            }
-            ty::Adt(_, args) if let Some(owns) = self.array_source(ty) => {
-                let item = args.types().next().expect("an iterator's item");
-                match owns && self.needs_clone(item) {
-                    true => self.clone_items(place, item, span),
-                    false => Ok(place),
-                }
             }
             _ if !matches!(ty.kind(), ty::Adt(adt, _) if self.is_std(adt.did())) => match self.shape(ty) {
                 Shape::Object(fields) => self.clone_fields(place, fields, span, out),

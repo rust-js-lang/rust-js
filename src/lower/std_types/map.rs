@@ -3,14 +3,13 @@
 //! fieldless enums.
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::fn_def;
-use crate::lower::recognition::{Std, StdItem};
+
+use crate::lower::recognition::StdItem;
 use crate::lower::representation::{Num, is_fieldless_enum};
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -161,35 +160,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => generic_args.types().next(),
         };
         self.map_class(set, key)
-    }
-
-    /// A call of one of `op`'s kind. `discarded`: its result isn't used, so
-    /// `insert` is plain `m.set(k, v)`.
-    pub(in crate::lower) fn map_call(
-        &mut self,
-        op: MapOp,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        discarded: bool,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        // `or_insert` and the rest take the entry apart: `[m, k]`.
-        if matches!(op, MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault) {
-            let (map, key) = self.entry_parts(args[0], out)?;
-            let value = self.entry_value(op, args, generic_args, (map, key), span, out)?;
-            return Ok(value);
-        }
-        // A B-tree's range of its keys (ADR 0325).
-        if let MapOp::TreeRange { mutable } = op {
-            return self.tree_range(args, mutable, span, out);
-        }
-        if op == MapOp::ExtractIf {
-            return self.map_extract_if(args, span, out);
-        }
-        let values = self.operands(args, out)?;
-        let tys: Vec<Ty<'tcx>> = args.iter().map(|&a| self.thir[a].ty).collect();
-        self.map_values(op, (values, &tys), generic_args, discarded, span, out)
     }
 
     /// A map's or a set's method, of its arguments' values, `tys` their
@@ -427,23 +397,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `m.extract_if(f)`: `$mapExtractIf(m, f, entries, handles, set)`, of a
-    /// B-tree's entries in order and in its range, which isn't checked as
-    /// `range`'s is: one that ends before it starts takes nothing (ADR 0344).
-    fn map_extract_if(&mut self, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let receiver = self.thir[args[0]].ty;
-        let m = self.operands(&args[..1], out)?.remove(0);
-        let range = match self.is_sorted(receiver.peel_refs()) {
-            true => {
-                let bounds = self.thir[self.strip(args[1])].ty;
-                Some((self.operands(&args[1..2], out)?.remove(0), bounds))
-            }
-            false => None,
-        };
-        let f = self.operands(&args[args.len() - 1..], out)?.remove(0);
-        self.map_extract_if_values((m, receiver), range, f, span, out)
-    }
-
     /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's
     /// value and type, the range's, and the test's: THIR's and MIR's.
     pub(in crate::lower) fn map_extract_if_values(
@@ -473,14 +426,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Expr::var("$mapExtractIf"),
             vec![m, f, entries, Expr::bool(handles), Expr::bool(set)],
         ))
-    }
-
-    /// `m.range(a..b)` of a B-tree: its entries, or items, in the bounds, in
-    /// order, by its keys' `cmp` (ADR 0325).
-    fn tree_range(&mut self, args: &[ExprId], mutable: bool, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let (receiver, bounds) = (self.thir[args[0]].ty, self.thir[self.strip(args[1])].ty);
-        let [m, range]: [Expr; 2] = self.operands(&[args[0], args[1]], out)?.try_into().ok().unwrap();
-        self.tree_range_values((m, receiver), (range, bounds), mutable, span, out)
     }
 
     /// A B-tree's range of its keys (ADR 0325), of the tree's value and
@@ -540,129 +485,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         self.runtime.insert(Helper::MutEntries);
         Ok(Expr::call(Expr::var("$mutEntries"), vec![m, range]))
-    }
-
-    /// The map and the key of `m.entry(k)`, each read more than once.
-    fn entry_parts(&mut self, entry: ExprId, out: &mut Vec<Stmt>) -> R<(Expr, Expr)> {
-        let (map, key) = match self.thir[self.strip(entry)].kind {
-            ExprKind::Call { fun, ref args, .. } if self.std_fn(fun) == Some(Std::Map(MapOp::Entry)) => {
-                (args[0], args[1])
-            }
-            _ => return Err(self.unsupported(self.thir[entry].span, "an entry that isn't `m.entry(k)` itself")),
-        };
-        let [map, key]: [Expr; 2] = self.operands(&[map, key], out)?.try_into().ok().unwrap();
-        let map = if map.reads_same() {
-            map
-        } else {
-            self.spill("map", map, out)
-        };
-        let key = if key.reads_same() {
-            key
-        } else {
-            self.spill("key", key, out)
-        };
-        Ok((map, key))
-    }
-
-    /// `*m.entry(k).or_insert(0) += 1`, or `*m.get_mut(&k).unwrap() = v`: a
-    /// value in a map, written. `None` if `e` isn't one.
-    pub(in crate::lower) fn map_slot(&self, e: ExprId) -> Option<ExprId> {
-        let ExprKind::Deref { arg } = self.thir[self.strip(e)].kind else {
-            return None;
-        };
-        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(arg)].kind else {
-            return None;
-        };
-        match self.std_fn(fun)? {
-            Std::Map(MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault) => Some(arg),
-            // `get_mut(&k).unwrap()`.
-            Std::Unwrap => match self.thir[self.strip(args[0])].kind {
-                ExprKind::Call { fun, .. } if self.std_fn(fun) == Some(Std::Map(MapOp::Get)) => Some(arg),
-                _ => None,
-            },
-            _ => None,
-        }
-    }
-
-    /// Resolve a map target before writing it. Checks and entry initialization
-    /// are statements, so overwriting the value cannot discard their effects.
-    pub(in crate::lower) fn prepare_map_place(
-        &mut self,
-        slot: ExprId,
-        read: bool,
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<MapPlace> {
-        let ExprKind::Call { fun, ref args, .. } = self.thir[self.strip(slot)].kind else {
-            unreachable!("checked by map_slot")
-        };
-        let op = self.std_fn(fun);
-        let args = args.clone();
-        let (map, key, checked) = match op {
-            Some(Std::Map(op)) => {
-                let (map, key) = self.entry_parts(args[0], out)?;
-                let Some((_, generic_args)) = fn_def(self.thir[self.strip(fun)].ty) else {
-                    unreachable!("an entry method")
-                };
-                let checked = self.entry_value(op, &args, generic_args, (map.clone(), key.clone()), span, out)?;
-                (map, key, checked)
-            }
-            _ => {
-                let ExprKind::Call { args: ref get, .. } = self.thir[self.strip(args[0])].kind else {
-                    unreachable!("checked by map_slot")
-                };
-                let [map, key]: [Expr; 2] = self.operands(&get.clone(), out)?.try_into().ok().unwrap();
-                let map = if map.reads_same() {
-                    map
-                } else {
-                    self.spill("map", map, out)
-                };
-                let key = if key.reads_same() {
-                    key
-                } else {
-                    self.spill("key", key, out)
-                };
-                self.runtime.insert(Helper::Unwrap);
-                let there = Expr::call(Expr::member(map.clone(), "get"), vec![key.clone()]);
-                (map, key, Expr::call(Expr::var("$unwrap"), vec![there]))
-            }
-        };
-        let current = if read {
-            Some(self.spill("current", checked, out))
-        } else {
-            out.push(StmtKind::Expr(checked).at(self.js_span(span)));
-            None
-        };
-        Ok(MapPlace { map, key, current })
-    }
-
-    /// Eager arguments stay eager; only the default factory runs lazily.
-    fn entry_value(
-        &mut self,
-        op: MapOp,
-        args: &[ExprId],
-        generic_args: ty::GenericArgsRef<'tcx>,
-        (map, key): (Expr, Expr),
-        span: Span,
-        out: &mut Vec<Stmt>,
-    ) -> R<Expr> {
-        let default = match op {
-            MapOp::OrDefault => {
-                let value = generic_args
-                    .types()
-                    .nth(1)
-                    .ok_or_else(|| self.unsupported(span, "this entry"))?;
-                let value = self.default_value(value, span)?;
-                Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(js::Span::NONE)])
-            }
-            _ => self.expr(args[1], out)?,
-        };
-        let (helper, name) = match op {
-            MapOp::OrInsert => (Helper::OrInsert, "$orInsert"),
-            _ => (Helper::OrInsertWith, "$orInsertWith"),
-        };
-        self.runtime.insert(helper);
-        Ok(Expr::call(Expr::var(name), vec![map, key, default]))
     }
 
     /// Eligibility for JS Map/Set equality. A string-shaped enum alone is
@@ -729,23 +551,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => false,
         }
-    }
-}
-
-/// An already evaluated target. Its checks have run even when no old value
-/// is needed. Emission of the write never evaluates the Rust target again.
-pub(in crate::lower) struct MapPlace {
-    map: Expr,
-    key: Expr,
-    current: Option<Expr>,
-}
-
-impl MapPlace {
-    pub(in crate::lower) fn read(&self) -> Expr {
-        self.current.clone().expect("prepared for a read")
-    }
-
-    pub(in crate::lower) fn write(self, value: Expr, span: js::Span, out: &mut Vec<Stmt>) {
-        out.push(StmtKind::Expr(Expr::call(Expr::member(self.map, "set"), vec![self.key, value])).at(span));
     }
 }

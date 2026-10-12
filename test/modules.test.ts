@@ -71,7 +71,7 @@ pub fn tick() {
     TICKS.set(TICKS.get() + 1);
 }
 `);
-  for (const [out, env] of [[dir, { RUST_JS_MIR: "0" }], [join(dir, "mir"), {}]] as const) {
+  for (const [out, env] of [[join(dir, "mir"), {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(out, "lib.js")], 600_000, env);
     expect(readFileSync(join(out, "counter.js"), "utf8")).toContain("export const TICKS = { value: 0 };");
     const js = readFileSync(join(out, "lib.js"), "utf8");
@@ -111,7 +111,7 @@ pub fn bump() -> u32 {
     N.with_borrow(|n| *n)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000, { RUST_JS_MIR: "1" });
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000);
   expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("const N = { value: 0 };");
   const { bump } = await import(join(dir, "mir.js"));
   expect([bump(), bump()]).toEqual([1, 2]);
@@ -239,7 +239,7 @@ pub fn tally_of_four() -> u32 {
     Tally(4).doubled()
 }
 `);
-  for (const [out, env] of [[dir, { RUST_JS_MIR: "0" }], [join(dir, "mir"), {}]] as const) {
+  for (const [out, env] of [[join(dir, "mir"), {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(out, "lib.js")], 600_000, env);
     const lib = await Bun.file(join(out, "lib.js")).text();
     const shapes = await Bun.file(join(out, "shapes.js")).text();
@@ -386,7 +386,7 @@ pub fn spawned() -> impl Fn() {
     .await
 }
 `);
-  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
+  for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...extern], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     const statements = js.split("\n").filter((line) => line && !line.startsWith("//"));

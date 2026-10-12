@@ -51,8 +51,8 @@ pub fn float_display(value: f64) -> String { format!("{}", value) }
 pub fn float_label(r: f64) -> String { Circle { r }.label() }
 `;
 
-// The example, from THIR and from MIR.
-describe.each([["THIR", {}], ["MIR", { RUST_JS_MIR: "1" }]] as const)("from %s", (_, env) => {
+// The example, from MIR (ADR 0364).
+describe.each([["MIR", {}]] as const)("from %s", (_, env) => {
   let output: string;
   let module: any;
   let directory: string;
@@ -275,7 +275,7 @@ for (const [name, source, diagnostic, mirDiagnostic] of [
   test(`${name} produces a diagnostic instead of incomplete JS`, () => {
     const dir = fixture("trait-rejection");
     writeFileSync(join(dir, "lib.rs"), source);
-    for (const [expected, env] of [[diagnostic, { RUST_JS_MIR: "0" }], [mirDiagnostic === undefined ? diagnostic : mirDiagnostic, { RUST_JS_MIR: "1" }]] as const) {
+    for (const [expected, env] of [[mirDiagnostic === undefined ? diagnostic : mirDiagnostic, {}]] as const) {
       const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { env: { ...process.env, ...env } });
       expect(result.stderr.toString()).not.toContain("panicked");
       if (expected === null) {

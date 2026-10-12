@@ -33,7 +33,7 @@ function restore() {
 
 /** MIR's compile of it, or what stopped it. */
 function compile() {
-  const { code, out } = run(["node", join(root, "next-plugin", "bin.js"), "compile"], { RUST_JS_MIR: "1" });
+  const { code, out } = run(["node", join(root, "next-plugin", "bin.js"), "compile"]);
   const errors = out.split("\n").filter((line) => line.startsWith("error"));
   if (code !== 0 || errors.length > 0) {
     restore();
@@ -68,7 +68,7 @@ if (command === "measure") {
   console.log(timed("port measure", elapsed()));
 } else if (command === "compare") {
   restore();
-  const build = run(["bun", "run", "build"], { RUST_JS_MIR: "1" });
+  const build = run(["bun", "run", "build"]);
   if (build.code !== 0) {
     restore();
     throw new Error(`MIR's build of the port failed:\n${build.out.slice(-4000)}`);

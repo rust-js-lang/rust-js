@@ -3,14 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "binding-component-as-value",
-    breaks: "a JS module's component is lowered as a value, an arrow, which isn't a JSX tag",
-    file: "src/lower/jsx.rs",
-    find: "                (\"*\", 0) => match self.binding_component(arg) {\n",
-    replace: "                (\"*\", 0) => match self.binding_component(arg).filter(|_| false) {\n",
-    tests: ["test/jsx.test.ts", "-t", "a binding is a value"],
-  },
-  {
     name: "undefined-children-written",
     breaks: "\`<Frame {..Default::default()} />\` is \`<Frame>{undefined}</Frame>\`",
     file: "src/lower/jsx.rs",
@@ -185,14 +177,6 @@ export const mutations: Mutation[] = [
     find: "                (value.has_effects() && !self.reads_unchanging(children, out))\n",
     replace: "                value.has_effects()\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
-  },
-  {
-    name: "style-spread-a-field",
-    breaks: "`Style::spread(custom)` sets a property named `...`, `{ width, \"...\": customStyles }`, where it spreads them",
-    file: "src/lower/jsx.rs",
-    find: "            \"...\" => Prop::Spread(value),\n",
-    replace: "",
-    tests: ["test/jsx.test.ts", "-t", "spread another style"],
   },
   {
     name: "field-read-hoisted",
@@ -512,7 +496,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "                self.locals.alike.contains(name)\n",
     replace: "                false\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     "name": "jsx-mir-field-unplaced",
@@ -521,7 +505,7 @@ export const mutations: Mutation[] = [
     "find": "                        value.span = self.js_span(self.thir[f.expr].span);\n",
     "replace": "",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]
@@ -533,7 +517,7 @@ export const mutations: Mutation[] = [
     "find": "let mut value = value.or_at(self.js_span(value_span));",
     "replace": "let mut value = value;",
     "tests": [
-      "test/mir.test.ts",
+      "test/corpus.test.ts",
       "-t",
       "JSX tests"
     ]

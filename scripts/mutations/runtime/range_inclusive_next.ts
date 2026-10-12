@@ -8,6 +8,6 @@ export const mutations: Mutation[] = [
     file: "src/runtime/range_inclusive_next.js",
     find: "  if (typeof range.start === \"string\") {\n",
     replace: "  if (false) {\n",
-    tests: ["test/mir.test.ts","-t","range_into_set"],
+    tests: ["test/corpus.test.ts","-t","range_into_set"],
   },
 ];

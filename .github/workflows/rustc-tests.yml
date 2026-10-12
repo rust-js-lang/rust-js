@@ -19,10 +19,6 @@ on:
         description: 'With all of them: write the known failures anew, as an artifact to commit.'
         type: boolean
         default: false
-      mir:
-        description: 'Lower bodies from their MIR (RUST_JS_MIR=1, ADR 0364), as the default will.'
-        type: boolean
-        default: false
       fuzz_seeds:
         description: 'Instead: how many generated programs to run, like "600". Empty: none.'
         required: false
@@ -56,10 +52,6 @@ on:
         default: ''
       bless:
         description: 'With all of them: write the known failures anew, as an artifact to commit.'
-        type: boolean
-        default: false
-      mir:
-        description: 'Lower bodies from their MIR (RUST_JS_MIR=1, ADR 0364), as the default will.'
         type: boolean
         default: false
       fuzz_seeds:
@@ -110,7 +102,6 @@ jobs:
       - name: Run the tests named
         env:
           TESTS: ${{ inputs.tests }}
-          RUST_JS_MIR: ${{ inputs.mir && '1' || '' }}
         # Split on spaces, with no globbing: each word is a test or a directory.
         run: |
           set -f
@@ -153,8 +144,6 @@ jobs:
       # An artifact keeps a file's contents, not its permissions.
       - run: chmod +x bin/rust-js
       - name: Run shard ${{ matrix.shard }} of 6
-        env:
-          RUST_JS_MIR: ${{ inputs.mir && '1' || '' }}
         run: bun scripts/rustc-suite.ts --compiler=bin/rust-js --shard=${{ matrix.shard }}/6 --out=results-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v7
         with:

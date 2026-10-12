@@ -5,8 +5,8 @@ use super::bindings::named_callback;
 use super::fn_def;
 use super::recognition::{SliceLength, StdItem, is_std_def, is_std_method, slice_length};
 use rustc_hir::attrs::lang_items::LangItem;
-use rustc_hir::{BindingMode, ByRef, HirId, Mutability};
-use rustc_middle::middle::region;
+use rustc_hir::{BindingMode, ByRef, Mutability};
+
 use rustc_middle::mir::{BinOp, BorrowKind, UnOp};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, LogicalOp, Pat, PatKind, Thir};
 use rustc_middle::ty::adjustment::PointerCoercion;
@@ -20,9 +20,6 @@ pub(super) struct ForLoop<'a, 'tcx> {
     pub(super) head: ExprId,
     pub(super) pat: &'a Pat<'tcx>,
     pub(super) body: ExprId,
-    /// The `loop` inside, which `break` and `continue` refer to.
-    pub(super) scope: region::Scope,
-    pub(super) hir_id: HirId,
 }
 
 pub(super) struct BodyQuery<'a, 'tcx> {
@@ -33,19 +30,6 @@ pub(super) struct BodyQuery<'a, 'tcx> {
 impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
     fn strip(&self, e: ExprId) -> ExprId {
         strip(self.thir, e)
-    }
-
-    /// The body of the `loop` a scope holds: its value, or, for one that
-    /// never ends used as a value of another type, what `NeverToAny` holds.
-    pub(super) fn scoped_loop(&self, value: ExprId) -> Option<ExprId> {
-        match self.thir[value].kind {
-            ExprKind::Loop { body } => Some(body),
-            ExprKind::NeverToAny { source } => match self.thir[source].kind {
-                ExprKind::Loop { body } => Some(body),
-                _ => None,
-            },
-            _ => None,
-        }
     }
 
     /// Recognize the `for` desugaring (ADR 0025):
@@ -74,12 +58,7 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
         };
         let head = is_call_to(scrutinee, LangItem::IntoIterIntoIter)?;
         let [arm] = &arms[..] else { return None };
-        let ExprKind::Scope {
-            value,
-            region_scope,
-            hir_id,
-        } = thir[thir[*arm].body].kind
-        else {
+        let ExprKind::Scope { value, .. } = thir[thir[*arm].body].kind else {
             return None;
         };
         let ExprKind::Loop { body } = thir[value].kind else {
@@ -113,41 +92,7 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
             head,
             pat: some.0,
             body: some.1,
-            scope: region_scope,
-            hir_id,
         })
-    }
-
-    /// Recognize `.await`'s desugaring, and return what's awaited (ADR 0029):
-    ///
-    /// ```text
-    /// match IntoFuture::into_future(e) {
-    ///     mut __awaitee => loop { match Future::poll(..) { Ready(r) => break r, Pending => {} } yield }
-    /// }
-    /// ```
-    pub(super) fn as_await(&self, e: ExprId) -> Option<ExprId> {
-        let thir = self.thir;
-        let ExprKind::Match {
-            scrutinee, ref arms, ..
-        } = thir[strip(thir, e)].kind
-        else {
-            return None;
-        };
-        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, scrutinee)].kind else {
-            return None;
-        };
-        let (into_future, _) = fn_def(thir[strip(thir, fun)].ty)?;
-        let [arm] = &arms[..] else { return None };
-        let mut body = strip(thir, thir[*arm].body);
-        // Given to a generic `&T`, what's awaited is reborrowed, `&*loop {..}`:
-        // rustc adjusts the arm, not the match.
-        if let ExprKind::Borrow { arg, .. } = thir[body].kind
-            && let ExprKind::Deref { arg } = thir[strip(thir, arg)].kind
-        {
-            body = strip(thir, arg);
-        }
-        let is_loop = matches!(thir[body].kind, ExprKind::Loop { .. });
-        (self.tcx.is_lang_item(into_future, LangItem::IntoFutureIntoFuture) && is_loop).then(|| args[0])
     }
 
     /// Recognize `?`'s desugaring (ADR 0035), and return what's tried:
@@ -175,19 +120,6 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
             _ => None,
         }
     }
-
-    /// A place as a variable and a path of fields, like `p.x` as `(p, [0])`.
-    pub(super) fn place_path(&self, e: ExprId) -> Option<(LocalVarId, Vec<usize>)> {
-        match self.thir[self.strip(e)].kind {
-            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => Some((id, Vec::new())),
-            ExprKind::Field { lhs, name, .. } => {
-                let (id, mut path) = self.place_path(lhs)?;
-                path.push(name.as_usize());
-                Some((id, path))
-            }
-            _ => None,
-        }
-    }
 }
 
 /// Context-independent facts collected once, before borrowck steals the body.
@@ -200,9 +132,6 @@ pub(super) struct BodyFacts {
     /// What a borrow lends, `g` of `&mut g`, as a closure's call does: read
     /// there, it's not copied.
     pub(super) lent: HashSet<ExprId>,
-    /// The variables set again that a pattern takes apart in place
-    /// (`steady_subjects`), by their reads there.
-    pub(super) steady: HashSet<ExprId>,
     /// The items of a `Vec` or a slice read where a condition shows their
     /// index in bounds (`known_in_bounds`): each `a[i]`, and the function
     /// of each `Index::index(&v, i)`.
@@ -213,52 +142,15 @@ pub(super) struct BodyFacts {
     /// The casts of an `f64` known to be a whole number in the integer's
     /// range, each the value as it is (`whole_casts`).
     pub(super) whole_casts: HashSet<ExprId>,
-    /// The structs JSX gives a component as its props (`jsx_given_props`).
-    pub(super) jsx_props: HashSet<ExprId>,
-    /// Where each variable is changed (`changes`), and where each loop is.
-    changed: HashMap<LocalVarId, Vec<Span>>,
-    loops: Vec<Span>,
 }
 
 impl BodyFacts {
-    /// Whether `var` may be changed after `at`: by a change written after
-    /// it, or one in a loop around it, which runs again after it.
-    /// Whether the body changes `var`, its own or what it captures.
-    pub(super) fn changes(&self, var: LocalVarId) -> bool {
-        self.changed.contains_key(&var)
-    }
-
-    /// Whether anything in `region` changes `var`: a loop's body, which
-    /// Rust's borrows let nothing outside it change while it reads it (ADR 0313).
-    pub(super) fn changed_in(&self, var: LocalVarId, region: Span) -> bool {
-        let region = region.source_callsite();
-        (self.changed.get(&var)).is_some_and(|changes| changes.iter().any(|change| region.contains(*change)))
-    }
-
-    pub(super) fn changed_after(&self, var: LocalVarId, at: Span) -> bool {
-        let at = at.source_callsite();
-        let changes = self.changed.get(&var).map_or(&[][..], Vec::as_slice);
-        changes.iter().any(|change| change.lo() > at.lo())
-            || (self.loops.iter())
-                .filter(|l| l.contains(at))
-                .any(|l| changes.iter().any(|change| l.contains(*change)))
-    }
-
     pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
         let query = BodyQuery { tcx, thir };
         let mut facts = Self {
             stepped: stepped_locals(tcx, thir),
-            steady: steady_subjects(tcx, thir),
             in_bounds: known_in_bounds(tcx, thir),
             whole_casts: whole_casts(tcx, thir),
-            jsx_props: jsx_given_props(tcx, thir).0,
-            changed: changes(thir),
-            loops: thir
-                .exprs
-                .iter()
-                .filter(|e| matches!(e.kind, ExprKind::Loop { .. }))
-                .map(|e| e.span.source_callsite())
-                .collect(),
             ..Self::default()
         };
         for expr in thir.exprs.iter() {
@@ -393,121 +285,6 @@ fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
         });
     }
     changes
-}
-
-/// The reads of a variable set again that an `if let` or a `match` takes
-/// apart, `raw` of `if let Some(e) = raw`, where nothing changes it while what the pattern
-/// binds is read, so that names it in place (ADR 0290). A change counts once
-/// it may come after the pattern's test and before a read of what it bound:
-/// not one earlier in the body, nor one in a loop the pattern is in too, but
-/// any after a closure's read or a `Cell` lent, which read the variable
-/// when they're called.
-pub(super) fn steady_subjects<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<ExprId> {
-    let at = |span: Span| span.source_callsite();
-    let query = BodyQuery { tcx, thir };
-    // The variable a place is in, `e` of `e.message`.
-    let root = |mut e: ExprId| loop {
-        match thir[strip(thir, e)].kind {
-            ExprKind::Field { lhs, .. } | ExprKind::Deref { arg: lhs } => e = lhs,
-            _ => break strip(thir, e),
-        }
-    };
-    let changes = changes(thir);
-    let mut later: HashSet<ExprId> = HashSet::new();
-    let mut loops = Vec::new();
-    let mut subjects: Vec<(ExprId, LocalVarId, Span, Vec<&Pat<'tcx>>)> = Vec::new();
-    // A variable, or a field of one, whose test comes where it's read.
-    let subject = |scrutinee: ExprId| {
-        let scrutinee = strip(thir, scrutinee);
-        let mut root = scrutinee;
-        while let ExprKind::Field { lhs, .. } = thir[root].kind {
-            root = strip(thir, lhs);
-        }
-        match thir[root].kind {
-            ExprKind::VarRef { id } => Some((scrutinee, id, at(thir[scrutinee].span))),
-            _ => None,
-        }
-    };
-    for (id, expr) in thir.exprs.iter_enumerated() {
-        match expr.kind {
-            ExprKind::Borrow { arg, .. } => {
-                // A `Cell` lent of a field is a handle on the field, which
-                // reads its place when it's read (ADR 0288).
-                if matches!(thir[arg].ty.kind(), ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell)) {
-                    later.insert(root(arg));
-                }
-            }
-            ExprKind::Closure(ref closure) => {
-                for &upvar in &closure.upvars {
-                    let upvar = match thir[strip(thir, upvar)].kind {
-                        ExprKind::Borrow { arg, .. } => arg,
-                        _ => upvar,
-                    };
-                    later.insert(root(upvar));
-                }
-            }
-            ExprKind::Loop { .. } => loops.push(at(expr.span)),
-            ExprKind::Let {
-                expr: scrutinee,
-                ref pat,
-            } => {
-                if let Some((scrutinee, var, site)) = subject(scrutinee) {
-                    subjects.push((scrutinee, var, site, vec![&**pat]));
-                }
-            }
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } if query.as_for(id).is_none() => {
-                if let Some((scrutinee, var, site)) = subject(scrutinee) {
-                    subjects.push((
-                        scrutinee,
-                        var,
-                        site,
-                        arms.iter().map(|&arm| &*thir[arm].pattern).collect(),
-                    ));
-                }
-            }
-            _ => {}
-        }
-    }
-    // Where each variable is read, and whether it's read later too.
-    let mut reads: HashMap<LocalVarId, Vec<(Span, bool)>> = HashMap::new();
-    for (id, expr) in thir.exprs.iter_enumerated() {
-        if let ExprKind::VarRef { id: var } = expr.kind {
-            reads.entry(var).or_default().push((at(expr.span), later.contains(&id)));
-        }
-    }
-    let mut steady = HashSet::new();
-    for (scrutinee, var, site, pats) in subjects {
-        let changes: Vec<Span> = changes
-            .get(&var)
-            .into_iter()
-            .flatten()
-            .copied()
-            .filter(|change| change.lo() >= site.hi())
-            .collect();
-        let mut uses: Vec<(Span, bool)> = Vec::new();
-        for pat in &pats {
-            pat.walk_always(|p| {
-                if let PatKind::Binding { var, .. } = p.kind {
-                    uses.extend(reads.get(&var).into_iter().flatten().copied());
-                }
-            });
-        }
-        let changed_while_read = changes.iter().any(|change| {
-            uses.iter().any(|&(read, later)| {
-                later
-                    || change.lo() < read.hi()
-                    || loops
-                        .iter()
-                        .any(|l: &Span| l.contains(*change) && l.contains(read) && !l.contains(site))
-            })
-        });
-        if !changed_while_read {
-            steady.insert(scrutinee);
-        }
-    }
-    steady
 }
 
 /// A `Vec` or a slice, by the variable it's in and the fields to it, and
@@ -736,49 +513,6 @@ pub(super) fn known_in_bounds<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Has
         }
     }
     in_bounds
-}
-
-/// The locals a `#[rust_js::nullable]` field is bound to, by value and not
-/// set again: `T | null` already, as JS has the field (ADR 0275).
-pub(super) fn nullable_bindings<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalVarId> {
-    let mut found = HashSet::new();
-    let mut bound = |pat: &Pat<'tcx>| {
-        let (variant, subpatterns) = match (&pat.kind, pat.ty.kind()) {
-            (PatKind::Leaf { subpatterns }, ty::Adt(adt, _)) => (adt.non_enum_variant(), subpatterns),
-            (
-                PatKind::Variant {
-                    adt_def,
-                    variant_index,
-                    subpatterns,
-                    ..
-                },
-                _,
-            ) => (adt_def.variant(*variant_index), subpatterns),
-            _ => return,
-        };
-        for field in subpatterns {
-            if super::bindings::is_nullable(tcx, &variant.fields[field.field])
-                && let PatKind::Binding {
-                    var,
-                    mode: BindingMode(ByRef::No, Mutability::Not),
-                    subpattern: None,
-                    ..
-                } = field.pattern.kind
-            {
-                found.insert(var);
-            }
-        }
-    };
-    let params = thir.params.iter().filter_map(|param| param.pat.as_deref());
-    let lets = thir.stmts.iter().filter_map(|stmt| match &stmt.kind {
-        thir::StmtKind::Let { pattern, .. } => Some(&**pattern),
-        thir::StmtKind::Expr { .. } => None,
-    });
-    let arms = thir.arms.iter().map(|arm| &*arm.pattern);
-    for pat in params.chain(lets).chain(arms) {
-        pat.walk_always(&mut bound);
-    }
-    found
 }
 
 /// Skip THIR's wrapper nodes that don't change meaning.
