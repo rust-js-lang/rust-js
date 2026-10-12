@@ -183,6 +183,9 @@ struct State<'m, 'tcx> {
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
     in_place: std::collections::HashMap<Local, Expr>,
+    /// Each temporary a map of an array's items is made in, `$iter(v).map(f)`:
+    /// that, which `next_back` steps from its source's end.
+    maps: std::collections::HashMap<Local, Expr>,
     /// Each local read by its name already, a subject a branch tests: made
     /// as a variable, never written where it's read.
     named: std::collections::HashSet<Local>,
@@ -361,6 +364,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             binding_var: false,
             flattened: Default::default(),
             in_place: Default::default(),
+            maps: Default::default(),
             named: Default::default(),
             parts: Default::default(),
             places: Default::default(),
@@ -2393,6 +2397,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .at(js_span),
             );
             return Ok(());
+        }
+        if place.projection.is_empty() && !state.locals.user[local] && super::iterators::is_items_map(&expr) {
+            state.maps.insert(local, expr.clone());
         }
         // The value is made before the place is reached, as Rust makes them.
         let mut value = expr;
@@ -4460,7 +4467,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std iterator's method: a JS iterator's, lazy as Rust's. A `&mut`
         // to one is it, an object its helpers step in place.
         if tcx.trait_of_assoc(def_id).is_some() {
-            let exprs = values
+            let mut exprs = values
                 .clone()
                 .into_iter()
                 .map(|v| match v {
@@ -4468,6 +4475,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     v => self.value_expr(v, span),
                 })
                 .collect::<R<Vec<_>>>()?;
+            // `v.iter().map(f).next_back()`: the map its temporary holds, which
+            // nothing else reads, there, `next_back` stepping its source from
+            // its end; tidy drops the temporary nothing reads then.
+            if let Some(js::ExprKind::Var(name)) = exprs.first().map(|e| &e.kind)
+                && let Some((local, _)) = state.locals.names.iter_enumerated().find(|(_, n)| *n == name)
+                && state.locals.reads[local] == 1
+                && let Some(map) = state.maps.get(&local)
+            {
+                exprs[0] = map.clone();
+            }
             let mut made = Vec::new();
             if let Some(call) = self.mir_iter_call(def_id, &arg_tys, exprs, output, span, &mut made)? {
                 // What it holds first, `last()`'s items: after what's made before.

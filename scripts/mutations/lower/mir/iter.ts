@@ -419,18 +419,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-tree-range-next-back-refused",
-    "breaks": "`next_back()` of a B-tree's range from MIR is refused as a lazy iterator's",
-    "file": "src/lower/mir/iter.rs",
-    "find": "                || self.recognition().is_tree_range(iter_ty);\n",
-    "replace": ";\n",
-    "tests": [
-      "test/mir.test.ts",
-      "-t",
-      "btree_range_mut"
-    ]
-  },
-  {
     "name": "mir-user-iterator-std-methods-refused",
     "breaks": "`map`, `fuse` or `collect` of the crate's iterator from MIR, which its impl takes from `Iterator`, is refused",
     "file": "src/lower/mir/iter.rs",
@@ -497,5 +485,45 @@ export const mutations: Mutation[] = [
     find: "                    true => self.helper(Helper::NextSome, \"$nextSome\", vec![method(\"filter\", it, vec![test])]),\n",
     replace: "                    true => method(\"find\", it, vec![test]),\n",
     tests: ["test/mir.test.ts", "-t", "lazy_chains"],
+  },
+  {
+    name: "mir-next-back-iter-mut",
+    breaks: "MIR's `next_back()` of a slice's `iter_mut()` kept is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                || self.recognition().is_slice_iter_mut(iter_ty)\n                || self.recognition().is_tree_iter(iter_ty)\n",
+    replace: "                || self.recognition().is_tree_iter(iter_ty)\n",
+    tests: ["test/mir.test.ts", "-t", "iter_mut_kept"],
+  },
+  {
+    name: "mir-next-back-tree",
+    breaks: "MIR's `next_back()` of a B-tree's `iter()` is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                || self.recognition().is_tree_iter(iter_ty)\n",
+    replace: "",
+    tests: ["test/mir.test.ts", "-t", "iter_next_back"],
+  },
+  {
+    name: "mir-next-back-split",
+    breaks: "MIR's `next_back()` of a `str::split` is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                || self.is_str_split(iter_ty)\n",
+    replace: "",
+    tests: ["test/mir.test.ts", "-t", "iter_next_back"],
+  },
+  {
+    name: "mir-next-back-peekable",
+    breaks: "MIR's `next_back()` of a `Peekable` of an array's is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                || (self.recognition().is_peekable(iter_ty)\n",
+    replace: "                || (false\n",
+    tests: ["test/mir.test.ts", "-t", "iter_next_back"],
+  },
+  {
+    name: "mir-next-back-map-all",
+    breaks: "MIR's `v.iter().map(f).next_back()` is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                        && crate::lower::iterators::is_items_map(&it)\n",
+    replace: "                        && false\n",
+    tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
   },
 ];

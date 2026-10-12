@@ -165,6 +165,8 @@ integer_families.rs
 integers_128.rs
 iter_by_ref.rs
 iter_flatten.rs
+iter_mut_kept.rs
+iter_next_back.rs
 iterator_back_ends.rs
 iterator_clones.rs
 iterator_sources.rs

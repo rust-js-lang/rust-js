@@ -111,13 +111,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let array = self.array_source(iter_ty).is_some()
                 || self.recognition().is_str_chars(iter_ty)
                 || self.recognition().is_str_bytes(iter_ty)
-                || self.recognition().is_tree_range(iter_ty);
+                || self.recognition().is_slice_iter_mut(iter_ty)
+                || self.recognition().is_tree_iter(iter_ty)
+                || self.is_str_split(iter_ty)
+                // A `Peekable` of an array's, the same `$iter`.
+                || (self.recognition().is_peekable(iter_ty)
+                    && matches!(iter_ty.kind(), ty::Adt(_, args)
+                        if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())));
             return Ok(Some(match (name, self.range_kind(iter_ty)) {
                 ("next_back", Some(RangeKind::Exclusive)) => {
                     self.helper(Helper::RangeNextBack, "$rangeNextBack", vec![it])
                 }
                 ("next_back", Some(RangeKind::Inclusive)) => {
                     self.helper(Helper::RangeInclusiveNextBack, "$rangeInclusiveNextBack", vec![it])
+                }
+                // A map of an array's items, `v.iter().map(f)`: its source's
+                // last item, mapped, as Rust's `Map::next_back` maps that one
+                // alone.
+                ("next_back", None)
+                    if !boxed
+                        && crate::lower::iterators::is_items_map(&it)
+                        && let js::ExprKind::Call(callee, args) = &it.kind
+                        && let js::ExprKind::Member(source, _) = &callee.kind =>
+                {
+                    let last = self.helper(Helper::NextBack, "$nextBack", vec![(**source).clone()]);
+                    let last = self.spill("last", last, made);
+                    let none = Expr::bin(Op::Eq, last.clone(), Expr::undefined());
+                    Expr::cond(
+                        none,
+                        Expr::undefined(),
+                        crate::lower::calls::apply(args[0].clone(), vec![last]),
+                    )
                 }
                 ("next_back", None) if array && boxed => self.helper(Helper::NextBackSome, "$nextBackSome", vec![it]),
                 ("next_back", None) if array => self.helper(Helper::NextBack, "$nextBack", vec![it]),

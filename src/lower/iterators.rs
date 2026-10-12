@@ -1948,6 +1948,23 @@ pub(super) fn made_array(e: &Expr) -> bool {
 }
 
 /// Whether `e` is `$iter(items)`, `stepped_items`'s.
+/// `$iter(v).map(f)`, a map of an array's items, made and not yet stepped:
+/// nothing runs till it is.
+pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
+    if let js::ExprKind::Call(callee, args) = &e.kind
+        && let [f] = args.as_slice()
+        && let js::ExprKind::Member(source, method) = &callee.kind
+        && let js::ExprKind::Call(iter, items) = &source.kind
+    {
+        method == "map"
+            && f.reads_only_vars()
+            && matches!(&iter.kind, js::ExprKind::Var(name) if name == "$iter")
+            && items.iter().all(Expr::reads_only_vars)
+    } else {
+        false
+    }
+}
+
 pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$iter"))
 }

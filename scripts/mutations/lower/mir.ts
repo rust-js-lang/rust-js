@@ -2646,4 +2646,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts", "-t", "nested_options"],
   },
+  {
+    name: "mir-map-unrecorded",
+    breaks: "MIR's map temporary isn't recorded, so `next_back` of it is refused",
+    file: "src/lower/mir.rs",
+    find: "            state.maps.insert(local, expr.clone());\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
+  },
 ];

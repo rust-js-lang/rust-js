@@ -1982,4 +1982,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "callback's parameter shadows"],
   },
+  {
+    name: "mir-tidy-unread-map-kept",
+    breaks: "a map `next_back` stepped the source of instead is a `const` nothing reads",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut forwarded_values);\n    unread_maps(body);\n",
+    replace: "    js::statement_lists(body, &mut forwarded_values);\n",
+    tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
+  },
 ];

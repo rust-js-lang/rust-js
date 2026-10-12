@@ -5372,6 +5372,27 @@ test("a cell a callback's parameter shadows stays a cell", async () => {
   }
 });
 
+// \`v.iter().map(f).next_back()\` maps the last item alone, as Rust's
+// \`Map::next_back\` does, from MIR: \`f\` runs once, and the map nothing
+// steps is no statement.
+test("MIR's next_back of a map runs its closure once", async () => {
+  const dir = fixture("map-next-back");
+  writeFileSync(join(dir, "lib.rs"), `pub fn last(v: Vec<i32>) -> (Option<i32>, u32) {
+    let mut calls = 0;
+    let last = v.iter().map(|x| {
+        calls += 1;
+        x * 10
+    }).next_back();
+    (last, calls)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000, { RUST_JS_MIR: "1" });
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).not.toContain(".map(");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.last([1, 2, 3]), lib.last([])]).toEqual([[30, 1], [undefined, 0]]);
+});
+
 // `s[a..b].make_ascii_uppercase()` gives `s` its text with that part
 // changed (ADR 0334), from MIR as from THIR, not a handle on a part.
 test("a string's part changed in place gives the string its text", async () => {

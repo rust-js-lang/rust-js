@@ -288,6 +288,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     js::statement_lists(body, &mut forwarded_values);
+    unread_maps(body);
     // An array's `$iter` an adapter alone steps, left lazy, as what its
     // closures do is in Rust's order: the array's own iterator.
     // A closure's, by the function it's in, which sees what takes what it
@@ -4104,6 +4105,20 @@ fn lazy_range(e: &Expr) -> Option<Expr> {
         false => end.clone(),
     };
     Some(Expr::call(Expr::var("$lazyRange"), vec![start.clone(), end]))
+}
+
+/// A map of an array's items nothing reads, `next_back` having stepped its
+/// source instead: no statement, as making it does nothing.
+fn unread_maps(body: &mut Vec<Stmt>) {
+    let mut read = HashSet::new();
+    js::visit_stmts(body, &mut |name| {
+        read.insert(name.to_string());
+    });
+    js::statement_lists(body, &mut |stmts| {
+        stmts.retain(
+            |s| !matches!(&s.kind, StmtKind::Const(name, value) if !read.contains(name) && iterators::is_items_map(value)),
+        );
+    });
 }
 
 /// A handle made only to read or write its value there, `Cell::set` of

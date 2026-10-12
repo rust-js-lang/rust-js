@@ -3,6 +3,9 @@
 // iterator, stepped from the front, can't: refused.
 fn main() {
     let v = vec![1, 2, 3];
-    let last = v.iter().inspect(|x| println!("saw {x}")).next_back();
+    let last = v.iter().filter(|x| {
+        println!("saw {x}");
+        **x > 1
+    }).next_back();
     println!("{last:?}");
 }

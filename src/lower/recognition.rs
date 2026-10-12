@@ -2877,6 +2877,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "std::collections::btree_map::Range" | "std::collections::btree_map::RangeMut"))
     }
 
+    /// A B-tree's `iter()`, `keys()` and the like: its items in order, an
+    /// array's (ADR 0059).
+    pub(super) fn is_tree_iter(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        matches!(ty.kind(), ty::Adt(adt, _) if {
+            let path = std_path(self.tcx, adt.did());
+            path.starts_with("std::collections::btree_map::") || path.starts_with("std::collections::btree_set::")
+        })
+    }
+
     /// A slice's `iter_mut()`'s, over its array's items, or handles on
     /// them (ADR 0099).
     pub(super) fn is_slice_iter_mut(&self, ty: Ty<'tcx>) -> bool {
