@@ -1024,7 +1024,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    if !p.span.is_desugaring(rustc_span::DesugaringKind::ForLoop) =>\n",
     replace: "                    if true =>\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering.test.ts","-t","loops from MIR read as a person writes them"],
   },
   {
     name: "mir-shared-ref-as-const",
