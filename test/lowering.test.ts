@@ -9409,3 +9409,26 @@ pub fn a_names(names: Vec<String>) -> usize {
     if (out === "mir.js") expect(readFileSync(join(dir, out), "utf8")).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
   }
 });
+
+// A handle's value read or written in place, `Cell::set` of `&self.n`, is
+// its place's, `t.n = ..`, as THIR's: no object of a getter and a setter
+// made to be used once.
+test("a handle used in place from MIR is its place", async () => {
+  const dir = fixture("handle-in-place");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+pub struct T { n: Cell<u32> }
+impl T {
+    pub fn bump(&self) -> u32 { self.n.set(self.n.get() + 1); self.n.get() }
+}
+pub fn run() -> u32 {
+    let t = T { n: Cell::new(0) };
+    t.bump();
+    t.bump()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("  bump(t) {\n    t.n = (t.n + 1) >>> 0;\n    return t.n;\n  },");
+    expect((await import(join(dir, out))).run()).toBe(2);
+  }
+});

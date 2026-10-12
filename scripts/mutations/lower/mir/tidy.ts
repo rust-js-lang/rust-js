@@ -1874,4 +1874,16 @@ export const mutations: Mutation[] = [
       "an else-if at a loop's end from MIR"
     ]
   },
+  {
+    "name": "mir-tidy-handle-in-place-kept",
+    "breaks": "`Cell::set` of `&self.n` stays a getter and setter object made to be written once, not `t.n = v`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    handles_in_place(body);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a handle used in place"
+    ]
+  },
 ];

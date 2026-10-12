@@ -292,6 +292,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     if !closure {
         js::each_expr_mut(body, &mut array_values);
     }
+    handles_in_place(body);
     // A `let` declared first that nothing's left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
@@ -4027,6 +4028,26 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
         }
         i += 1;
     }
+}
+
+/// A handle made only to read or write its value there, `Cell::set` of
+/// `&self.n`'s `({ get value() { .. }, set value(value) { .. } }).value =
+/// v`: its place, `t.n = v`, as THIR's. Of a place that reads the same
+/// alone: of one that computes, `a[f()]`, the setter would compute it after
+/// `v`, where the place itself is computed before.
+fn handles_in_place(body: &mut [Stmt]) {
+    js::each_expr_mut(body, &mut |e| {
+        if let ExprKind::Member(of, key) = &e.kind
+            && key == "value"
+            && let ExprKind::Handle(place) = &of.kind
+            && place.reads_same()
+        {
+            *e = Expr {
+                span: e.span,
+                ..(**place).clone()
+            };
+        }
+    });
 }
 
 /// `const g = $borrow(h, true)` of a handle `h` made there, a plain
