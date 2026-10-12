@@ -785,8 +785,8 @@ export const mutations: Mutation[] = [
     "name": "does-reading-helper",
     "breaks": "a closure reading a string with `$find` counts as doing something, its chain lazy",
     "file": "src/lower/iterators.rs",
-    "find": "matches!(helper.as_str(), \"$find\" | \"$rfind\" | \"$byteLen\")",
-    "replace": "false",
+    "find": "js::ExprKind::Var(helper) => HELPERS.contains(&helper.as_str()),",
+    "replace": "js::ExprKind::Var(helper) => helper.is_empty(),",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -828,5 +828,13 @@ export const mutations: Mutation[] = [
       "-t",
       "slice_views"
     ]
+  },
+  {
+    name: "does-f64-max-given-acts",
+    breaks: "`$f64Max` given as it is acts, so a chain it folds stays lazy",
+    file: "src/lower/iterators.rs",
+    find: "        js::ExprKind::Var(helper) => !HELPERS.contains(&helper.as_str()),\n",
+    replace: "",
+    tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
   },
 ];

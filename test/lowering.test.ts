@@ -5519,6 +5519,26 @@ pub fn run() -> Vec<String> {
   expect(lib.run()).toEqual(["got 11", "drop 11", "got 10", "drop 10", "drop 1", "got 12", "drop 12", "drop 11", "drop 2"]);
 });
 
+// `fold` given a function of the crate's is `reduce` given it as it is,
+// which takes no more than it's given (ADR 0279), as THIR's.
+test("a fold given a function of the crate's gives it as it is", async () => {
+  const dir = fixture("fold-crate-fn");
+  writeFileSync(join(dir, "lib.rs"), `fn add(total: i32, x: &i32) -> i32 {
+    total + x
+}
+
+pub fn sum(v: Vec<i32>) -> i32 {
+    v.iter().fold(0, add)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("return v.reduce(add, 0);");
+    const lib = await import(join(dir, out));
+    expect([lib.sum([1, 2, 3]), lib.sum([])]).toEqual([6, 0]);
+  }
+});
+
 // MIR's `rest.split_off_mut(..n)` gives `rest` what's left; through `r`,
 // which holds a `&mut` to `rest`, JS would give `r` it, so it's refused.
 test("MIR's split_off through a held `&mut` is refused", () => {

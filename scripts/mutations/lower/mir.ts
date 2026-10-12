@@ -2870,4 +2870,12 @@ export const mutations: Mutation[] = [
     replace: "                    let arm: Option<Span> = None;\n",
     tests: ["test/emission.test.ts","-t","fib-mir"],
   },
+  {
+    name: "mir-array-constant-index-checked",
+    breaks: "MIR's constant index within an array is checked, `$index(items, 0)`",
+    file: "src/lower/mir.rs",
+    find: "                    _ if within => Expr::index(items, index),\n",
+    replace: "",
+    tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
+  },
 ];

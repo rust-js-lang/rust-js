@@ -3153,9 +3153,10 @@ fn unwrapped_values(stmts: &mut [Stmt]) {
 }
 
 /// `_4`, a temporary MIR holds still, read more than once: named as THIR
-/// names one, after the field it reads, `routes` of `tree.routes`, else
-/// `value`, or `tmp` of a `let` its branches set, a name no other in the
-/// function has, its parameters' and closures' too.
+/// names one, after the field it reads, `routes` of `tree.routes`, a
+/// trait object's whose method is called, `receiver`, else `value`, or
+/// `tmp` of a `let` its branches set, a name no other in the function
+/// has, its parameters' and closures' too.
 pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
     let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     names_in(body, &mut taken);
@@ -3163,6 +3164,16 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
     // prop's name, `href`, or `children`, as THIR names one it holds.
     let mut given: HashMap<String, String> = HashMap::new();
     js::each_expr_mut(&mut body.clone(), &mut |e| {
+        // A trait object's, `_5.impl.add(_5.value)`: its `receiver`.
+        if let ExprKind::Call(callee, _) = &e.kind
+            && let ExprKind::Member(of, _) = &callee.kind
+            && let ExprKind::Member(object, key) = &of.kind
+            && key == "impl"
+            && let ExprKind::Var(v) = &object.kind
+            && is_temporary(v)
+        {
+            given.entry(v.clone()).or_insert_with(|| "receiver".to_string());
+        }
         if let ExprKind::Jsx(jsx) = &e.kind {
             for prop in &jsx.props {
                 if let js::Prop::Field(key, value) = prop

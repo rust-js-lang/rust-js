@@ -170,8 +170,8 @@ export const mutations: Mutation[] = [
     "name": "mir-crate-fn-item-callback-wrapped",
     "breaks": "a crate function given as a callback from MIR is `(item) => is_rule(item)`, not `is_rule` as THIR has it",
     "file": "src/lower/mir/iter.rs",
-    "find": "            js::ExprKind::Var(_) if own => f,\n",
-    "replace": "",
+    "find": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n            js::ExprKind::Var(_) if own => f,\n",
+    "replace": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -541,5 +541,21 @@ export const mutations: Mutation[] = [
     find: "                self.require_no_drops(receiver_ty);\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic fold"],
+  },
+  {
+    name: "mir-f64-max-wrapped",
+    breaks: "MIR's `fold(0.0, f64::max)` gives `reduce` an arrow calling `$f64Max`",
+    file: "src/lower/mir/iter.rs",
+    find: "            js::ExprKind::Var(name) if name == \"$f64Max\" || name == \"$f64Min\" => f,\n",
+    replace: "",
+    tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
+  },
+  {
+    name: "mir-fold-own-of-init",
+    breaks: "MIR's `fold` asks whether what it starts from is the crate's function, not its callback",
+    file: "src/lower/mir/iter.rs",
+    find: "                let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));\n",
+    replace: "                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n",
+    tests: ["test/lowering.test.ts","-t","a fold given a function of the crate's"],
   },
 ];

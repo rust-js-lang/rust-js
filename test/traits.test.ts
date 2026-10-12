@@ -1,4 +1,4 @@
-import { beforeAll, expect, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, buildReact, target, compiler, fixture, root, run } from "./support";
@@ -51,66 +51,86 @@ pub fn float_display(value: f64) -> String { format!("{}", value) }
 pub fn float_label(r: f64) -> String { Circle { r }.label() }
 `;
 
-let output: string;
-let module: any;
-let directory: string;
-beforeAll(async () => {
-  directory = fixture("traits");
-  const source = readFileSync(join(root, "examples/traits.rs"), "utf8") + extra;
-  writeFileSync(join(directory, "lib.rs"), source);
-  run([compiler, join(directory, "lib.rs"), "-o", join(directory, "lib.js")]);
-  output = readFileSync(join(directory, "lib.js"), "utf8");
-  module = await import(join(directory, "lib.js"));
-}, 600_000);
+// The example, from THIR and from MIR.
+describe.each([["THIR", {}], ["MIR", { RUST_JS_MIR: "1" }]] as const)("from %s", (_, env) => {
+  let output: string;
+  let module: any;
+  let directory: string;
+  beforeAll(async () => {
+    directory = fixture("traits");
+    const source = readFileSync(join(root, "examples/traits.rs"), "utf8") + extra;
+    writeFileSync(join(directory, "lib.rs"), source);
+    run([compiler, join(directory, "lib.rs"), "-o", join(directory, "lib.js")], 600_000, env);
+    output = readFileSync(join(directory, "lib.js"), "utf8");
+    module = await import(join(directory, "lib.js"));
+  }, 600_000);
 
-test("concrete, generic and dyn calls match native Rust", () => {
-  const names = ["demo", "fresh_circle", "fresh_number", "label", "default_label", "super_bound", "two_bounds", "upcast_square", "function_value", "default_function_value", "nested", "copies", "identity_value", "evaluation_order", "primitive_dyn", "enum_dyn", "nan_max", "factory_bounds", "captured_evidence", "lifetime_dyn"];
-  writeFileSync(join(directory, "native.rs"), `#[path="lib.rs"] mod cases; fn main() { ${names.map(name => `println!("{}", cases::${name}());`).join("\n")} }`);
-  run(["rustc", "--edition=2024", "-Coverflow-checks=off", "-Awarnings", join(directory, "native.rs"), "-o", join(directory, "native")]);
-  const expected = run([join(directory, "native")]).trim().split("\n");
-  expect(names.map(name => String(module[name]()))).toEqual(expected);
-  expect(module.demo()).toBe(13.14);
-  expect(module.dyn_argument_name(7)).toBe(9);
-});
+  test("concrete, generic and dyn calls match native Rust", () => {
+    const names = ["demo", "fresh_circle", "fresh_number", "label", "default_label", "super_bound", "two_bounds", "upcast_square", "function_value", "default_function_value", "nested", "copies", "identity_value", "evaluation_order", "primitive_dyn", "enum_dyn", "nan_max", "factory_bounds", "captured_evidence", "lifetime_dyn"];
+    writeFileSync(join(directory, "native.rs"), `#[path="lib.rs"] mod cases; fn main() { ${names.map(name => `println!("{}", cases::${name}());`).join("\n")} }`);
+    run(["rustc", "--edition=2024", "-Coverflow-checks=off", "-Awarnings", join(directory, "native.rs"), "-o", join(directory, "native")]);
+    const expected = run([join(directory, "native")]).trim().split("\n");
+    expect(names.map(name => String(module[name]()))).toEqual(expected);
+    expect(module.demo()).toBe(13.14);
+    expect(module.dyn_argument_name(7)).toBe(9);
+  });
 
-test("dictionaries are explicit, cached and usable from JavaScript", () => {
-  expect(module.total([[1], [2]], module.squareShape())).toBe(5);
-  expect(module.total([], module.squareShape())).toBe(-0);
-  expect(module.total([-0], module.f64Shape())).toBe(-0);
-  expect(module.fresh({ default: () => 3 }, module.f64Shape())).toBe(3);
-  expect(module.squareShape()).toBe(module.squareShape());
-  expect(module.vecShape(module.squareShape())).toBe(module.vecShape(module.squareShape()));
-  expect(module.vecShape(module.vecShape(module.squareShape())).area([[[2]], [[3]]])).toBe(13);
-  expect(module.circleLabeled().Shape()).toBe(module.circleShape());
-  expect(module.largest([{ value: NaN, impl: module.f64Shape() }])).toBe(0);
-  // An impl for a reference, `impl<'a> Named<'a> for &'a str`, is named by
-  // it, `refStrNamed`, and not by the lifetime, which isn't in the JS.
-  expect(module.refStrNamed().get("hi")).toBe("hi");
-  expect(output).toContain("circleShape_area(c)");
-  // Its dictionary, and no drop for `T`: nothing in a crate with no
-  // destructor has one to drop (ADR 0098).
-  expect(output).toMatch(/function total\(shapes, TShape\)/);
-  expect(output).not.toContain("function shape_name"); // defaults are copied into dictionaries
-  // No IIFEs: an upcast of a variable reads it twice, a conversion to the same
-  // trait is the pair itself, and a receiver with effects is one `const`.
-  expect(output).toContain("  const s = { value: x.value, impl: x.impl.Shape() };");
-  expect(output).toContain("function make(c) {\n  return { value: bump(c), impl: i32Compute() };");
-  expect(output).toContain("  const receiver = make(c);\n  return (receiver.impl.add(receiver.value, (bump(c) + shape) | 0) + Math.imul(c.value, 100)) | 0;");
-  // A copied default knows its Self: Circle's `name` and `area` are called directly.
-  expect(output).toContain("label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`");
-  expect(() => module.first([], { copy: (x: unknown) => x })).toThrow("index out of bounds");
-});
+  test("dictionaries are explicit, cached and usable from JavaScript", () => {
+    expect(module.total([[1], [2]], module.squareShape())).toBe(5);
+    expect(module.total([], module.squareShape())).toBe(-0);
+    expect(module.total([-0], module.f64Shape())).toBe(-0);
+    expect(module.fresh({ default: () => 3 }, module.f64Shape())).toBe(3);
+    expect(module.squareShape()).toBe(module.squareShape());
+    expect(module.vecShape(module.squareShape())).toBe(module.vecShape(module.squareShape()));
+    expect(module.vecShape(module.vecShape(module.squareShape())).area([[[2]], [[3]]])).toBe(13);
+    expect(module.circleLabeled().Shape()).toBe(module.circleShape());
+    expect(module.largest([{ value: NaN, impl: module.f64Shape() }])).toBe(0);
+    // An impl for a reference, `impl<'a> Named<'a> for &'a str`, is named by
+    // it, `refStrNamed`, and not by the lifetime, which isn't in the JS.
+    expect(module.refStrNamed().get("hi")).toBe("hi");
+    expect(output).toContain("circleShape_area(c)");
+    // Its dictionary, and no drop for `T`: nothing in a crate with no
+    // destructor has one to drop (ADR 0098).
+    expect(output).toMatch(/function total\(shapes, TShape\)/);
+    // `fold(0.0, f64::max)` of what a stage makes: the array's `reduce`,
+    // given `$f64Max` as it is; a constant index within an array, unchecked.
+    expect(output).toContain("return shapes.map((s) => s.impl.area(s.value)).reduce($f64Max, 0);");
+    expect(output).toContain("return (p.x + items[0].x) | 0;");
+    expect(output).not.toContain("function shape_name"); // defaults are copied into dictionaries
+    // No IIFEs: an upcast of a variable reads it twice, a conversion to the same
+    // trait is the pair itself, and a receiver with effects is one `const`.
+    expect(output).toContain("  const s = { value: x.value, impl: x.impl.Shape() };");
+    expect(output).toContain("function make(c) {\n  return { value: bump(c), impl: i32Compute() };");
+    expect(output).toContain("  const receiver = make(c);\n  return (receiver.impl.add(receiver.value, (bump(c) + shape) | 0) + Math.imul(c.value, 100)) | 0;");
+    // A copied default knows its Self: Circle's `name` and `area` are called directly.
+    expect(output).toContain("label: (self) => `${circleShape_name(self)} of area ${$displayF64(circleShape_area(self))}`");
+    expect(() => module.first([], { copy: (x: unknown) => x })).toThrow("index out of bounds");
+  });
 
-test("Rust f64 Display agrees with native output, including special values", () => {
-  writeFileSync(join(directory, "format.rs"), `fn main() { let mut bits = 1_u64; for _ in 0..2048 { bits = bits.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); let r = f64::from_bits(bits); println!("{:016x}\\t{}\\t{}", bits, r, 3.14 * r * r); } for r in [0.0, -0.0, f64::MAX, f64::MIN_POSITIVE, f64::from_bits(1), f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 1e-150, 1e150, 1e21, 1e-7] { println!("{:016x}\\t{}\\t{}", r.to_bits(), r, 3.14 * r * r); } }`);
-  run(["rustc", "--edition=2024", "-O", join(directory, "format.rs"), "-o", join(directory, "format")]);
-  const view = new DataView(new ArrayBuffer(8));
-  for (const line of run([join(directory, "format")]).trim().split("\n")) {
-    const [bits, expected, area] = line.split("\t");
-    view.setBigUint64(0, BigInt("0x" + bits));
-    expect(module.float_display(view.getFloat64(0))).toBe(expected);
-    expect(module.float_label(view.getFloat64(0))).toBe("circle of area " + area);
-  }
+  test("Rust f64 Display agrees with native output, including special values", () => {
+    writeFileSync(join(directory, "format.rs"), `fn main() { let mut bits = 1_u64; for _ in 0..2048 { bits = bits.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407); let r = f64::from_bits(bits); println!("{:016x}\\t{}\\t{}", bits, r, 3.14 * r * r); } for r in [0.0, -0.0, f64::MAX, f64::MIN_POSITIVE, f64::from_bits(1), f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 1e-150, 1e150, 1e21, 1e-7] { println!("{:016x}\\t{}\\t{}", r.to_bits(), r, 3.14 * r * r); } }`);
+    run(["rustc", "--edition=2024", "-O", join(directory, "format.rs"), "-o", join(directory, "format")]);
+    const view = new DataView(new ArrayBuffer(8));
+    for (const line of run([join(directory, "format")]).trim().split("\n")) {
+      const [bits, expected, area] = line.split("\t");
+      view.setBigUint64(0, BigInt("0x" + bits));
+      expect(module.float_display(view.getFloat64(0))).toBe(expected);
+      expect(module.float_label(view.getFloat64(0))).toBe("circle of area " + area);
+    }
+  });
+
+  test("trait method expressions keep their Rust source locations", async () => {
+    const { decodeMappings, lookup } = await import("./sourcemap");
+    const map = JSON.parse(readFileSync(join(directory, "lib.js.map"), "utf8"));
+    const segments = decodeMappings(map.mappings);
+    const lines = output.split("\n");
+    const text = "3.14 * circle.r * circle.r";
+    const line = lines.findIndex(value => value.includes(text));
+    expect(line).toBeGreaterThanOrEqual(0);
+    const hit = lookup(segments, line, lines[line].indexOf(text));
+    const source = readFileSync(join(directory, "lib.rs"), "utf8").split("\n");
+    expect(hit && source[hit.srcLine].slice(hit.srcCol).startsWith("3.14 * self.r * self.r")).toBe(true);
+  });
 });
 
 // Its dictionary, empty, is written only where a `dyn` of it reads it
@@ -180,19 +200,6 @@ pub fn dropped() -> u32 {
   run([compiler, join(drops, "lib.rs"), "-o", join(drops, "lib.js")]);
   expect(readFileSync(join(drops, "lib.js"), "utf8")).toContain("export function boxed(value, dropT) {\n  return { value, impl: { $drop: dropT } };");
   expect((await import(join(drops, "lib.js"))).dropped()).toBe(2);
-});
-
-test("trait method expressions keep their Rust source locations", async () => {
-  const { decodeMappings, lookup } = await import("./sourcemap");
-  const map = JSON.parse(readFileSync(join(directory, "lib.js.map"), "utf8"));
-  const segments = decodeMappings(map.mappings);
-  const lines = output.split("\n");
-  const text = "3.14 * circle.r * circle.r";
-  const line = lines.findIndex(value => value.includes(text));
-  expect(line).toBeGreaterThanOrEqual(0);
-  const hit = lookup(segments, line, lines[line].indexOf(text));
-  const source = readFileSync(join(directory, "lib.rs"), "utf8").split("\n");
-  expect(hit && source[hit.srcLine].slice(hit.srcCol).startsWith("3.14 * self.r * self.r")).toBe(true);
 });
 
 test("impls and default bodies retain their defining modules across cycles", async () => {

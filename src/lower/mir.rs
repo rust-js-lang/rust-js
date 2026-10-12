@@ -2769,7 +2769,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => self.spill("items", value, out),
                 };
                 let index = self.read_local(state, local, out)?;
+                // A constant index of an array as long as that: nothing to
+                // check, `items[0]`, as THIR's.
+                let within = match (&index.kind, ty.ty.kind()) {
+                    (js::ExprKind::Num(k), ty::Array(_, len)) => len
+                        .try_to_target_usize(self.tcx)
+                        .is_some_and(|n| *k >= 0.0 && k.fract() == 0.0 && (*k as u64) < n),
+                    _ => false,
+                };
                 value = match write && at + 1 == last {
+                    _ if within => Expr::index(items, index),
                     true => {
                         self.runtime.insert(Helper::At);
                         Expr::index(items.clone(), Expr::call(Expr::var("$at"), vec![items, index]))

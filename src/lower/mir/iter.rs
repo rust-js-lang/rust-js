@@ -416,7 +416,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             "fold" => {
                 let init = arg();
-                let f = self.binary_callback(arg());
+                // Given after what it starts from.
+                let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));
+                let f = self.binary_callback(arg(), own);
                 method("reduce", it, vec![f, init])
             }
             // Each item counted, and dropped as `count` drops it.
@@ -665,10 +667,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// As `unary_callback`, of a function of two: `reduce`'s, given an index too.
-    fn binary_callback(&mut self, f: Expr) -> Expr {
+    /// As `unary_callback`, of a function of two: `reduce`'s, given an index
+    /// too. `f64::max`'s and `f64::min`'s helpers take two alone, as THIR
+    /// gives them.
+    fn binary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,
+            js::ExprKind::Var(_) if own => f,
+            js::ExprKind::Var(name) if name == "$f64Max" || name == "$f64Min" => f,
             _ => {
                 let (a, b) = (self.fresh("a"), self.fresh("b"));
                 let call = Expr::call(f, vec![Expr::var(&a), Expr::var(&b)]);

@@ -2010,4 +2010,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/emission.test.ts","-t","fib-mir"],
   },
+  {
+    name: "mir-tidy-receiver-named-value",
+    breaks: "MIR's trait object a method is called on is named `value`, not `receiver`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            given.entry(v.clone()).or_insert_with(|| \"receiver\".to_string());\n",
+    replace: "",
+    tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
+  },
 ];
