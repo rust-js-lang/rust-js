@@ -258,6 +258,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     js::statement_lists(body, &mut |stmts| named_labels(stmts, written));
+    loop_exits(body, returns, written);
     js::statement_lists(body, &mut map_counts);
     // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
     // `Expr::unary` makes it, `t !== "pre"`.
@@ -4732,6 +4733,75 @@ fn relabeled(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
             }
         }
     });
+}
+
+/// A function that ends in a loop it leaves by one `return` MIR moved into
+/// it, the value after the loop, `while (true) { if (c) { return out; } … }`:
+/// the loop's `break`, the `return` after it, as a `break` is written; not
+/// a `return` the program wrote, in a loop it wrote one in.
+fn loop_exits(body: &mut Vec<Stmt>, returns: &[js::Span], loops: &[(js::Span, bool, Option<String>)]) {
+    fn take(stmts: &mut [Stmt]) -> Option<Stmt> {
+        for stmt in stmts.iter_mut() {
+            let taken = match &mut stmt.kind {
+                StmtKind::Return(Some(_)) => {
+                    let jump = StmtKind::Break(None).at(stmt.span);
+                    Some(std::mem::replace(stmt, jump))
+                }
+                StmtKind::If(_, then, otherwise) => take(then).or_else(|| otherwise.as_deref_mut().and_then(take)),
+                StmtKind::Labeled(_, inner) => take(inner),
+                _ => None,
+            };
+            if taken.is_some() {
+                return taken;
+            }
+        }
+        None
+    }
+    let Some(Stmt { kind, span }) = body.last() else { return };
+    // Nor of a loop the program wrote a `return` in, which MIR may not span.
+    if let Some((written, ..)) = written_loop(loops, *span)
+        && returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi)
+    {
+        return;
+    }
+    let (StmtKind::While { body: inner, .. } | StmtKind::ForOf { body: inner, .. } | StmtKind::For { body: inner, .. }) =
+        kind
+    else {
+        return;
+    };
+    // Its one `return`, anywhere in it.
+    let mut all = 0;
+    js::statement_lists(&mut inner.clone(), &mut |list| {
+        all += list.iter().filter(|s| matches!(s.kind, StmtKind::Return(_))).count();
+    });
+    let mut inner = inner.clone();
+    let Some(ret) = take(&mut inner).filter(|_| all == 1) else {
+        return;
+    };
+    // Of what's there after it: nothing the loop declares.
+    let mut own: Vec<String> = Vec::new();
+    js::statement_lists(&mut inner.clone(), &mut |list| {
+        own.extend(declared(list).map(str::to_string))
+    });
+    match &body.last().expect("a loop").kind {
+        StmtKind::ForOf { pattern, .. } => own.extend(pattern.names().into_iter().map(str::to_string)),
+        StmtKind::For { name, .. } => own.push(name.clone()),
+        _ => {}
+    }
+    if own
+        .iter()
+        .any(|name| js::mentions_in(std::slice::from_ref(&ret), name) > 0)
+    {
+        return;
+    }
+    if let Some(Stmt {
+        kind: StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. },
+        ..
+    }) = body.last_mut()
+    {
+        *body = inner;
+    }
+    body.push(ret);
 }
 
 /// The loop the program wrote that starts where `span` does, innermost.

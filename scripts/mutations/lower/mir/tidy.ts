@@ -1806,4 +1806,28 @@ export const mutations: Mutation[] = [
       "iterator chains from MIR are array methods"
     ]
   },
+  {
+    "name": "mir-loop-exit-returned-inside",
+    "breaks": "a loop left by `break` before the function's value from MIR returns the value inside the loop",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    loop_exits(body, returns, written);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a loop's break from MIR is a break"
+    ]
+  },
+  {
+    "name": "mir-loop-exit-written-return",
+    "breaks": "a `return` the program wrote in a function's last loop becomes a `break`, the `return` after the loop",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        && returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi)\n",
+    "replace": "        && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a loop's break from MIR is a break"
+    ]
+  },
 ];

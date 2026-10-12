@@ -6308,6 +6308,62 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
+// A loop the program leaves with \`break\`, its function's value after it,
+// from MIR, breaks, the value returned after it, as written and as THIR's:
+// not the function's \`return\` moved into the loop.
+test("a loop's break from MIR is a break, the return after it", async () => {
+  const dir = fixture("mir-loop-break-return");
+  writeFileSync(join(dir, "lib.rs"), `pub fn odds() -> Vec<i32> {
+    let mut out = Vec::new();
+    let mut i = 0;
+    loop {
+        i += 1;
+        if i > 7 {
+            break;
+        }
+        out.push(i);
+    }
+    out
+}
+pub fn drained(mut stack: Vec<u32>) -> String {
+    let mut out = String::new();
+    while let Some(top) = stack.pop() {
+        out.push_str(&top.to_string());
+    }
+    out
+}
+pub fn early(xs: &[i32]) -> i32 {
+    for &x in xs {
+        if x > 2 {
+            return x;
+        }
+    }
+    0
+}
+pub fn root(n: u32) -> u32 {
+    let mut i = 0;
+    loop {
+        i += 1;
+        if i * i > n {
+            return i;
+        }
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    if (i > 7) {\n      break;\n    }\n");
+    expect(js).toContain("  }\n  return out;\n}\n\nexport function drained");
+    expect(js).toMatch(/\n  }\n  return out;\n}\n\nexport function early/);
+    // A \`return\` the program wrote stays.
+    expect(js).toContain("      return x;\n");
+    expect(js).toContain("      return i;\n");
+    const lib = await import(join(dir, out));
+    expect([lib.odds(), lib.drained([1, 2]), lib.early([1, 5]), lib.early([]), lib.root(10)]).toEqual([[1, 2, 3, 4, 5, 6, 7], "21", 5, 0, 4]);
+  }
+});
+
 // A \`match\`'s arms from MIR are tested in the order they're written, an
 // arm that tests a field first, \`Done { ok: true }\`, where it's written,
 // not where its test is spanned, the \`match\`.
