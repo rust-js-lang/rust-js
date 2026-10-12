@@ -244,4 +244,16 @@ export const mutations: Mutation[] = [
     replace: "            (RangeKind::From, [_]) => (Expr::int(0), None),\n",
     tests: ["test/mir.test.ts","-t","slice_|string_slice"],
   },
+  {
+    "name": "replacen-first-only",
+    "breaks": "`replacen(p, r, n)` replaces only the first, whatever `n`",
+    "file": "src/lower/std_types/text.rs",
+    "find": "return Ok(Some(Expr::call(Expr::var(\"$replacen\"), [vec![this], rest].concat())));",
+    "replace": "return Ok(Some(Expr::call(Expr::member(this, \"replace\"), rest[..2].to_vec())));",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "replacen replaces as many"
+    ]
+  },
 ];

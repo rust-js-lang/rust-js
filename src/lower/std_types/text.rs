@@ -902,13 +902,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Method(name) => {
                 let this = arg();
                 let mut rest: Vec<Expr> = (1..tys.len()).map(|_| arg()).collect();
-                // `replacen`'s count: of one, the first, JS's `replace`.
+                // `replacen`'s count: of one, the first, JS's `replace`; of
+                // another, `$replacen`'s first that many.
                 if name == "replace" {
                     if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {
-                        return Err(self.tcx.dcx().span_err(
-                            span,
-                            "rust-js does not support `replacen` of a count other than 1 yet: `replace` replaces each, `replacen(p, r, 1)` the first",
-                        ));
+                        self.runtime.insert(Helper::EmptyPattern);
+                        return Ok(Some(Expr::call(Expr::var("$replacen"), [vec![this], rest].concat())));
                     }
                     rest.truncate(2);
                 }
