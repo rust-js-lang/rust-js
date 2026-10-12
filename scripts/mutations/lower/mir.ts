@@ -2014,4 +2014,16 @@ export const mutations: Mutation[] = [
       "iter_mut chains from MIR"
     ]
   },
+  {
+    "name": "mir-let-else-continue-unwritten",
+    "breaks": "a `let \u2026 else { continue; }` from MIR isn't one the program wrote: `if (current) { .. }` around the rest, not the guard",
+    "file": "src/lower/mir.rs",
+    "find": "            .chain(self.let_else_continues())\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let-else's written continue"
+    ]
+  },
 ];

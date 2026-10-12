@@ -7743,6 +7743,7 @@ pub fn files(code: String, other: String) -> &'static js::Dict<String> {
 // ADR 0233: a `match` whose arms each give the field of their variant's
 // name of one table is the table read by what's matched, from MIR as from
 // THIR, as react.dev's ExpandableCallout picks its variant: `MAP[kind]`.
+const lib_tags = (lib: { tag: (k: string) => string }) => ["note", "pitfall", "wip"].map((k) => lib.tag(k));
 test("a match reading a table from MIR is the table read by its key", async () => {
   const dir = fixture("match-table");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
@@ -7782,11 +7783,36 @@ pub fn mixed(kind: Kind) -> &'static str {
         Kind::Wip => "wip",
     }
 }
+pub struct Look {
+    pub name: &'static str,
+    pub classes: &'static str,
+}
+pub struct Looks {
+    pub note: Look,
+    pub pitfall: Look,
+    pub wip: Look,
+}
+static LOOKS: Looks = Looks {
+    note: Look { name: "Note", classes: "green" },
+    pitfall: Look { name: "Pitfall", classes: "yellow" },
+    wip: Look { name: "WIP", classes: "gray" },
+};
+pub fn tag(kind: Kind) -> String {
+    let Look { name, classes } = match kind {
+        Kind::Note => &LOOKS.note,
+        Kind::Pitfall => &LOOKS.pitfall,
+        Kind::Wip => &LOOKS.wip,
+    };
+    format!("{name} {classes}")
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("  const variant = MAP[kind];\n");
+    // Taken apart, as react.dev's Tag takes its variant's name and classes.
+    expect(js).toContain("  const { name, classes } = LOOKS[kind];\n");
+    expect(lib_tags(await import(join(dir, out)))).toEqual(["Note green", "Pitfall yellow", "WIP gray"]);
     expect(js).toContain("export function name(kind) {\n  return kind;\n}");
     const lib = await import(join(dir, out));
     expect(["note", "pitfall", "wip"].map((k) => lib.label(k))).toEqual(["n!", "p!", "w!"]);
@@ -9501,5 +9527,84 @@ pub fn big(v: &mut [u32]) -> usize {
     lib.count(v, 1);
     lib.count(v, 2);
     expect([v, lib.big([1, 3, 5])]).toEqual([[[1, 2], [2, 1]], 2]);
+  }
+});
+
+// An untagged enum is its payload (ADR 0214): an `Option` of one whose every
+// payload is never falsy, an array or a JS object, as react.dev's
+// NavigationBar's `contentBoxSize` is, is there where it's truthy, `if
+// (size)`; of one that may be text, `""`, it's `size != null`.
+test("an option of an untagged enum never falsy is tested by its truth", async () => {
+  const dir = fixture("untagged-never-falsy");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Size { pub w: u32 }
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Boxes<'a> {
+    Many(&'a [Size]),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    One(&'a Size),
+}
+#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Label<'a> {
+    Text(&'a str),
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    At(&'a Size),
+}
+pub fn width(size: Option<Boxes>) -> u32 {
+    if let Some(size) = size {
+        match size { Boxes::Many(all) => all[0].w, Boxes::One(one) => one.w }
+    } else {
+        0
+    }
+}
+pub fn labeled(label: Option<Label>) -> bool {
+    label.is_some()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  if (size) {\n");
+    expect(js).toContain("return label != null;");
+    const lib = await import(join(dir, out));
+    expect([lib.width([{ w: 3 }]), lib.width({ w: 4 }), lib.width(undefined), lib.labeled(""), lib.labeled(undefined)]).toEqual([3, 4, 0, true, false]);
+  }
+});
+
+// A `let … else { continue; }` the program wrote, as react.dev's llmsTxt
+// has of its current section, stays the guard it is from MIR, `if (!s) {
+// continue; }` and what follows, whatever its test.
+test("a let-else's written continue from MIR stays a guard", async () => {
+  const dir = fixture("let-else-continue");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Section { pub pages: Vec<u32> }
+pub fn sections(items: &[u32]) -> Vec<Section> {
+    let mut out = Vec::new();
+    let mut current: Option<Section> = None;
+    for &item in items {
+        if item == 0 {
+            if let Some(section) = current {
+                out.push(section);
+            }
+            current = Some(Section { pages: Vec::new() });
+            continue;
+        }
+        let Some(current) = &mut current else {
+            continue;
+        };
+        if item > 10 {
+            current.pages.push(item / 10);
+        } else {
+            current.pages.push(item);
+        }
+    }
+    if let Some(section) = current {
+        out.push(section);
+    }
+    out
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("    if (!current) {\n      continue;\n    }\n    if (item > 10) {\n");
+    expect((await import(join(dir, out))).sections([5, 0, 30, 2, 0, 7])).toEqual([{ pages: [3, 2] }, { pages: [7] }]);
   }
 });

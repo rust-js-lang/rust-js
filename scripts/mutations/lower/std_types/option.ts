@@ -233,14 +233,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","option_result_mut"],
   },
   {
-    name: "never-falsy-untagged",
-    breaks: "`None` of an untagged enum is tested `!o`, which its `false` passes",
-    file: "src/lower/std_types/option.rs",
-    find: "            && self.untagged(ty).is_none()\n",
-    replace: "",
-    tests: ["test/mir.test.ts","-t","untagged_enums"],
-  },
-  {
     name: "never-falsy-duration",
     breaks: "`None` of a `Duration` is tested `!o`, which `ZERO` passes",
     file: "src/lower/std_types/option.rs",
@@ -258,6 +250,30 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "an option's method call ends where it's None"
+    ]
+  },
+  {
+    "name": "never-falsy-untagged",
+    "breaks": "`None` of an untagged enum whose payload may be text is tested `!o`, which its `\"\"` passes",
+    "file": "src/lower/std_types/option.rs",
+    "find": "                matches!(&variant.fields.raw[..], [field] if self.never_falsy_within(self.field_ty(field, args), within))\n",
+    "replace": "                !variant.fields.is_empty()\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an option of an untagged enum never falsy|untagged"
+    ]
+  },
+  {
+    "name": "never-falsy-untagged-objects-tested",
+    "breaks": "an `Option` of an untagged enum of arrays and objects is `size != null`, not `if (size)` as react.dev's NavigationBar writes it",
+    "file": "src/lower/std_types/option.rs",
+    "find": "            return each;\n",
+    "replace": "            return false && each;\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an option of an untagged enum never falsy"
     ]
   },
 ];

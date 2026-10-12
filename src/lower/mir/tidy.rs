@@ -828,7 +828,12 @@ fn table_reads(stmts: &mut Vec<Stmt>, tables: &[js::Span]) {
         let mut arms = Vec::new();
         let target = match &stmt.kind {
             StmtKind::If(..) => assigned_arms(stmt, &mut arms),
-            StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) => {
+            // Taken apart too, `const { name, classes } = ..`, as react.dev's
+            // Tag takes its variant.
+            StmtKind::Const(_, e)
+            | StmtKind::Let(_, Some(e))
+            | StmtKind::Return(Some(e))
+            | StmtKind::Destructure { value: e, .. } => {
                 value_arms(e, &mut arms);
                 None
             }
@@ -842,7 +847,11 @@ fn table_reads(stmts: &mut Vec<Stmt>, tables: &[js::Span]) {
         match (&mut stmt.kind, target) {
             (StmtKind::If(..), Some(target)) => stmt.kind = StmtKind::Assign(target, read),
             (
-                StmtKind::Const(_, e) | StmtKind::Let(_, Some(e)) | StmtKind::Return(Some(e)) | StmtKind::Assign(_, e),
+                StmtKind::Const(_, e)
+                | StmtKind::Let(_, Some(e))
+                | StmtKind::Return(Some(e))
+                | StmtKind::Assign(_, e)
+                | StmtKind::Destructure { value: e, .. },
                 _,
             ) => *e = read,
             _ => {}
@@ -2459,10 +2468,10 @@ fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
 }
 
 /// Whether `test` is `!c`, or `!(a && b)` as `not` writes it, `!a || b ==
-/// null`.
+/// null`. Not `!!c`, `c`'s truth, an `Option` never falsy's presence.
 fn negated(test: &Expr) -> bool {
     match &test.kind {
-        ExprKind::Unary(UnaryOp::Not, _) => true,
+        ExprKind::Unary(UnaryOp::Not, c) => !matches!(c.kind, ExprKind::Unary(UnaryOp::Not, _)),
         ExprKind::Binary(Op::Or, a, b) => {
             let part = |e: &Expr| {
                 negated(e)

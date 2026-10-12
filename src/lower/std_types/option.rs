@@ -10,6 +10,7 @@ use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
+use rustc_hir::def_id::DefId;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -580,13 +581,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// array or a function, so its truth is whether it's there (ADR 0298).
     /// Not a binding's `unknown` or `any`, which may be `0` or `""`.
     pub(in crate::lower) fn never_falsy(&self, ty: Ty<'tcx>) -> bool {
+        self.never_falsy_within(ty, &mut Vec::new())
+    }
+
+    /// `never_falsy`, of untagged enums `within` one another: one that holds
+    /// itself, through a reference, may be.
+    fn never_falsy_within(&self, ty: Ty<'tcx>, within: &mut Vec<DefId>) -> bool {
         let ty = ty.peel_refs();
         let any = matches!(ty.kind(), ty::Adt(adt, _)
             if matches!(crate::lower::declarations::written_types(self.tcx, adt.did()).as_deref(), Some("unknown" | "any")));
-        // An untagged enum is its payload, which may be falsy (ADR 0214).
+        // An untagged enum is its payload (ADR 0214): never falsy where each
+        // variant's is, an array's or a JS object's; not where one may be
+        // text, `""`.
+        if let Some((adt, args)) = self.untagged(ty) {
+            if within.contains(&adt.did()) {
+                return false;
+            }
+            within.push(adt.did());
+            let each = adt.variants().iter().all(|variant| {
+                matches!(&variant.fields.raw[..], [field] if self.never_falsy_within(self.field_ty(field, args), within))
+            });
+            within.pop();
+            return each;
+        }
         self.option_of(ty).is_none()
             && !any
-            && self.untagged(ty).is_none()
             // A `Duration` is its nanoseconds (ADR 0188), `0n` of `ZERO`.
             && !crate::lower::recognition::is_duration_ty(ty)
             && (self.is_object(ty) || matches!(ty.kind(), ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..)))

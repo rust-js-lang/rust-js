@@ -633,6 +633,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => None,
             })
+            .chain(self.let_else_continues())
             .collect();
         // The closures a `let` names that a hook's function alone is, by
         // their names (ADR 0297).
@@ -5120,6 +5121,39 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("`{name}`, from its MIR")));
             }
         }))
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Where each `let … else { continue; }` the program wrote is, which MIR
+    /// tests as an `if` of the `continue` in its place.
+    fn let_else_continues(&self) -> Vec<js::Span> {
+        (self.thir.stmts.iter())
+            .filter_map(|stmt| match stmt.kind {
+                thir::StmtKind::Let {
+                    else_block: Some(block),
+                    span,
+                    ..
+                } => {
+                    let block = &self.thir[block];
+                    let mut only = match (block.stmts.last(), block.expr) {
+                        (_, Some(e)) => e,
+                        (Some(s), None) => match self.thir[*s].kind {
+                            thir::StmtKind::Expr { expr, .. } => expr,
+                            _ => return None,
+                        },
+                        _ => return None,
+                    };
+                    while let thir::ExprKind::Scope { value: inner, .. }
+                    | thir::ExprKind::NeverToAny { source: inner } = self.thir[only].kind
+                    {
+                        only = inner;
+                    }
+                    matches!(self.thir[only].kind, thir::ExprKind::Continue { .. }).then(|| self.js_span(span))
+                }
+                _ => None,
+            })
+            .collect()
     }
 }
 
