@@ -1663,6 +1663,29 @@ impl Expr {
             {
                 args.iter().any(Expr::has_effects)
             }
+            // The runtime's that only read what they're given, make a value
+            // of it, or its text, `$jsonIndex(v, "a")`, `$debugStr(s)`: what
+            // their arguments do.
+            ExprKind::Call(callee, args)
+                if matches!(&callee.kind, ExprKind::Var(helper) if [
+                    "$jsonInt",
+                    "$jsonFloat",
+                    "$jsonNumberOfF64",
+                    "$jsonValueText",
+                    "$jsonNumberText",
+                    "$debugJsonValue",
+                    "$debugJsonNumber",
+                    "$jsonValueAs",
+                    "$jsonGet",
+                    "$jsonIndex",
+                    "$debugStr",
+                    "$debugF64",
+                    "$displayF64",
+                ]
+                .contains(&helper.as_str())) =>
+            {
+                args.iter().any(Expr::has_effects)
+            }
             ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,
             // Making an element runs nothing: a component runs when React renders it.
             ExprKind::Jsx(jsx) => {

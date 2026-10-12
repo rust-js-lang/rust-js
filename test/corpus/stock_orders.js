@@ -189,8 +189,10 @@ function parse_order(text) {
       .filter(Boolean)
       .map((part) => {
         const option = $splitOnce(part, "x");
-        const fallback = `${$debugStr(part)} has no x`;
-        const result = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: fallback };
+        const result =
+          option != null
+            ? { TAG: "Ok", _0: option }
+            : { TAG: "Err", _0: `${$debugStr(part)} has no x` };
         if (result.TAG === "Err") {
           return result;
         }

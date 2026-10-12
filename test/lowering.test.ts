@@ -5677,7 +5677,9 @@ pub fn scan(v: &[u32]) -> u32 {
     const lib = await import(join(dir, out));
     expect([lib.numbers("12 3"), lib.numbers("1x")]).toEqual([{ TAG: "Ok", _0: [12, 3] }, { TAG: "Err", _0: "unexpected x" }]);
     expect([lib.tokens("12+3"), lib.tokens("1-")]).toEqual([{ TAG: "Ok", _0: [12, 0, 3] }, { TAG: "Err", _0: "unexpected -" }]);
-    // A loop whose rest jumps to it, from a loop of its own, stays one.
+    // A loop whose rest jumps to it, from a loop of its own, stays one, by
+    // the label the program gave it.
+    expect(js).toContain("inner: while (true) {");
     expect([lib.scan([3]), lib.scan([])]).toEqual([33, 0]);
   }
 });

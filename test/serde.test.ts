@@ -264,6 +264,25 @@ test("serde: a string beginning with U+FEFF keeps it", async () => {
   for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
 });
 
+// A `Value`'s reads, which only read, written where they're used, and an
+// `Option` of one shown held first, `const value = ..`, from MIR as from THIR.
+test("serde: a Value's reads are written in place", async () => {
+  const dir = fixture("serde-reads");
+  writeFileSync(join(dir, "cases.rs"), `use serde_json::json;
+pub fn report() -> String {
+    let v = json!({"name": "a", "list": [1, 2]});
+    format!("{} {} {:?}", v["name"], v["list"][1], v["list"].get(0))
+}
+`);
+  const expected = JSON.parse(run([native(dir)]));
+  for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
+  for (const out of ["cases.js", "cases.mir.js"]) {
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('${$jsonValueText($jsonIndex(v, "name"), false)} ${$jsonValueText($jsonIndex($jsonIndex(v, "list"), 1), false)}');
+    expect(js).not.toContain("))($jsonGet(");
+  }
+});
+
 // A set of structs, an array in JSON, found by value as it's read (ADR
 // 0121): two equal items are one, as serde_json's `HashSet` has them.
 test("serde: a set of structs read from JSON has each value once", async () => {

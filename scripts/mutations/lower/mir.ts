@@ -2898,4 +2898,20 @@ export const mutations: Mutation[] = [
     replace: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) && values.is_empty() {\n",
     tests: ["test/lowering.test.ts","-t","into an untagged enum is the value"],
   },
+  {
+    name: "mir-label-of-scope",
+    breaks: "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
+    file: "src/lower/mir.rs",
+    find: "                        self.strip(value),\n",
+    replace: "                        value,\n",
+    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+  },
+  {
+    name: "mir-shown-option-applied",
+    breaks: "MIR's `Option` shown is an arrow called with it, not held first",
+    file: "src/lower/mir.rs",
+    find: "                    true => self.spill(\"value\", value, out),\n",
+    replace: "                    true => value,\n",
+    tests: ["test/serde.test.ts","-t","a Value's reads"],
+  },
 ];

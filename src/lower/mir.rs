@@ -710,9 +710,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let labels: std::collections::HashMap<thir::ExprId, String> = (self.thir.exprs.iter())
             .filter_map(|e| match e.kind {
                 thir::ExprKind::Scope { value, hir_id, .. } => match self.tcx.hir_expect_expr(hir_id).kind {
-                    rustc_hir::ExprKind::Loop(_, Some(label), ..) => {
-                        Some((value, label.ident.name.as_str().trim_start_matches('\'').to_string()))
-                    }
+                    // The loop it scopes, in scopes of its own too.
+                    rustc_hir::ExprKind::Loop(_, Some(label), ..) => Some((
+                        self.strip(value),
+                        label.ident.name.as_str().trim_start_matches('\'').to_string(),
+                    )),
                     _ => None,
                 },
                 _ => None,
@@ -5225,6 +5227,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Ok(Value::Fmt(known, made, value));
                     }
                     value => self.value_expr(value, span)?,
+                };
+                // An `Option` shown, read twice, `v == null ? "None" : ..`: held
+                // first, as THIR's argument is, where nothing it does moves.
+                let value = match known == Std::FmtDebug
+                    && self.option_of(ty.peel_refs()).is_some()
+                    && !value.reads_same()
+                    && !value.has_effects()
+                {
+                    true => self.spill("value", value, out),
+                    false => value,
                 };
                 return Ok(Value::Fmt(known, ty, value));
             }
