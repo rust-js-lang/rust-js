@@ -4531,8 +4531,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
         // Not one that's a binding, a default method's `get ruleId` called
         // through a generic's bound: the binding, below, as THIR's.
-        // Nor `BinaryHeap::from(items)`, which std's own lowering heaps.
-        if !matches!(known, Some(Std::Any(_)))
+        // Nor `BinaryHeap::from(items)`, which std's own lowering heaps; nor
+        // std's that's the same JS value, a `Box`'s `as_ref()` (ADR 0331).
+        if !matches!(known, Some(Std::Any(_) | Std::Same))
             && !bindings::is_binding(tcx, def_id)
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && (rust_impl
@@ -5839,13 +5840,26 @@ fn once_each_way(body: &mir::Body<'_>, local: Local) -> bool {
 
 /// The body of the async arrow `stmts` only call and return, `return (async
 /// () => { .. })()`, an `async` body made: the async function's own.
-fn called_async_body(stmts: &mut [Stmt]) -> Option<Vec<Stmt>> {
-    let [
-        Stmt {
-            kind: StmtKind::Return(Some(called)),
-            ..
-        },
-    ] = stmts
+fn called_async_body(stmts: &mut Vec<Stmt>) -> Option<Vec<Stmt>> {
+    // What it captures first, `const captured = arg`, or a copy of an
+    // array it's given, `arg.slice()`: made as it starts, which an async
+    // function's body runs till its first `await`, and none can throw.
+    let copy = |value: &Expr| {
+        matches!(&value.kind, js::ExprKind::Call(callee, args)
+            if args.is_empty()
+                && matches!(&callee.kind, js::ExprKind::Member(of, method) if method == "slice" && of.reads_only_vars()))
+    };
+    let (last, captured) = stmts.split_last_mut()?;
+    if !captured
+        .iter()
+        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars() || copy(value)))
+    {
+        return None;
+    }
+    let Stmt {
+        kind: StmtKind::Return(Some(called)),
+        ..
+    } = last
     else {
         return None;
     };
@@ -5855,7 +5869,14 @@ fn called_async_body(stmts: &mut [Stmt]) -> Option<Vec<Stmt>> {
     let js::ExprKind::AsyncArrow(params, body) = &mut callee.kind else {
         return None;
     };
-    (args.is_empty() && params.is_empty()).then(|| std::mem::take(body))
+    if !args.is_empty() || !params.is_empty() {
+        return None;
+    }
+    let body = std::mem::take(body);
+    stmts.pop();
+    let mut all = std::mem::take(stmts);
+    all.extend(body);
+    Some(all)
 }
 
 /// Whether a value moves freely among those made around it: it does

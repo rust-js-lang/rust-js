@@ -93,6 +93,7 @@ drop_temporaries.rs
 drop_temporary_operands.rs
 duration.rs
 duration_overflow.rs
+dyn_any.rs
 dyn_any_closure.rs
 dyn_any_counted_rc.rs
 dyn_any_generic.rs
@@ -134,6 +135,7 @@ formatter_asked.rs
 formatter_queries.rs
 function_values.rs
 fused_iterator.rs
+future_sizes.rs
 generic_as_ref.rs
 generic_associated_types.rs
 generic_bitwise_operators.rs

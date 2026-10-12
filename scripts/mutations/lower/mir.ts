@@ -2686,4 +2686,20 @@ export const mutations: Mutation[] = [
     replace: "            && true || tcx\n                .impl_of_assoc(def_id)\n",
     tests: ["test/mir.test.ts", "-t", "fmt_error_write"],
   },
+  {
+    name: "mir-same-trait-dispatched",
+    breaks: "MIR's `b.as_ref()` of a `Box<dyn Any>` asks for `AsRef`'s evidence, not the same JS value",
+    file: "src/lower/mir.rs",
+    find: "        if !matches!(known, Some(Std::Any(_) | Std::Same))\n",
+    replace: "        if !matches!(known, Some(Std::Any(_)))\n",
+    tests: ["test/mir.test.ts", "-t", "dyn_any"],
+  },
+  {
+    name: "mir-async-captured-refused",
+    breaks: "MIR's `async fn` that captures its array parameter first is refused",
+    file: "src/lower/mir.rs",
+    find: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars() || copy(value)))\n",
+    replace: "        .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_only_vars()))\n",
+    tests: ["test/mir.test.ts", "-t", "future_sizes"],
+  },
 ];
