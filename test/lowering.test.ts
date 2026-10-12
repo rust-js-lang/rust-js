@@ -5539,6 +5539,28 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
+// A function's `if` of an `||` as its value: each branch returned, as THIR
+// writes it; an `&&` written as the value, one value returned.
+test("an if of a logical returns each branch", async () => {
+  const dir = fixture("if-logical-returns");
+  writeFileSync(join(dir, "lib.rs"), `pub fn prec(op: char) -> u8 {
+    if op == '+' || op == '-' { 1 } else { 2 }
+}
+
+pub fn both(a: u8, b: u8) -> bool {
+    a > 1 && b > 1
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (op === "+" || op === "-") {\n    return 1;\n  }\n  return 2;');
+    expect(js).toContain("return a > 1 && b > 1;");
+    const lib = await import(join(dir, out));
+    expect([lib.prec("+"), lib.prec("*"), lib.both(2, 2), lib.both(2, 0)]).toEqual([1, 2, true, false]);
+  }
+});
+
 // Each branch adding to a variable, `out += a`: the branches, as written,
 // from MIR as from THIR, not `out = c ? out + a : out + b`.
 test("branches that each add to a variable stay branches", async () => {
@@ -5593,6 +5615,30 @@ test("returns in a loop are where they're written", async () => {
     Ok(out)
 }
 
+pub fn tokens(src: &str) -> Result<Vec<u32>, String> {
+    let chars: Vec<char> = src.chars().collect();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        if c.is_ascii_digit() || c == '_' {
+            let start = i;
+            while i < chars.len() && chars[i].is_ascii_digit() {
+                i += 1;
+            }
+            let text: String = chars[start..i].iter().collect();
+            out.push(text.parse::<u32>().map_err(|_| format!("bad {text}"))?);
+            continue;
+        }
+        match c {
+            '+' => out.push(0),
+            _ => return Err(format!("unexpected {c}")),
+        }
+        i += 1;
+    }
+    Ok(out)
+}
+
 pub fn scan(v: &[u32]) -> u32 {
     let mut i = 0;
     let mut again = true;
@@ -5618,12 +5664,19 @@ pub fn scan(v: &[u32]) -> u32 {
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
-    const numbers = js.slice(0, js.indexOf("function scan"));
+    const numbers = js.slice(0, js.indexOf("function tokens"));
+    // What the program wrote first, first.
+    const tokens = js.slice(js.indexOf("function tokens"), js.indexOf("function scan"));
+    expect(tokens).toContain('if (/^[0-9]$/.test(c) || c === "_") {\n      const start = i;');
     expect(numbers).not.toMatch(/\bbb\d+\b/);
     expect(numbers).not.toContain("while (true)");
+    // In the program's order, its `?` a guard.
+    expect(numbers).toContain('if (/^[0-9]$/.test(c)) {\n      const start = i;');
+    expect(numbers).toContain('      if (result$1.TAG === "Err") {\n        return result$1;\n      }\n      out.push(result$1._0);\n');
     expect(js).toContain("while (i < chars.length && /^[0-9]$/.test($index(chars, i))) {");
     const lib = await import(join(dir, out));
     expect([lib.numbers("12 3"), lib.numbers("1x")]).toEqual([{ TAG: "Ok", _0: [12, 3] }, { TAG: "Err", _0: "unexpected x" }]);
+    expect([lib.tokens("12+3"), lib.tokens("1-")]).toEqual([{ TAG: "Ok", _0: [12, 0, 3] }, { TAG: "Err", _0: "unexpected -" }]);
     // A loop whose rest jumps to it, from a loop of its own, stays one.
     expect([lib.scan([3]), lib.scan([])]).toEqual([33, 0]);
   }

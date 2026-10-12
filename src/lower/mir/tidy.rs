@@ -128,7 +128,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain of tests a loop ended, its body now ending where the chain's does.
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     js::statement_lists(body, &mut unlabeled);
-    js::statement_lists(body, &mut |stmts| logical_returns(stmts, logicals, returns, booleans));
+    js::statement_lists(body, &mut |stmts| {
+        logical_returns(stmts, logicals, conditions, returns, booleans)
+    });
     // What's given where `false` is skipped as `undefined` is, `test &&
     // value`, as THIR gives it there: one read there alone, which nothing
     // else tells from `undefined`.
@@ -166,8 +168,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
     returned_in_branches(body, result);
-    // A block a loop's body ends in, the function's value made in it, `?`'s.
-    js::statement_lists(body, &mut |stmts| returned_from_block(stmts, result));
+    // A block, or branches, a loop's body ends in, the function's value made
+    // in them, `?`'s.
+    js::statement_lists(body, &mut |stmts| returned_in_branches(stmts, result));
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
     declarations(body);
@@ -308,6 +311,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // Its jumps then, of the loop they're now in, unnamed.
     let mut headed = false;
     js::statement_lists(body, &mut |stmts| headed |= while_heads(stmts));
+    js::statement_lists(body, &mut |stmts| written_order_steps(stmts));
+    js::statement_lists(body, &mut tried_first);
     if headed {
         js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
@@ -1323,6 +1328,75 @@ fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
     })
 }
 
+/// `?` of a `Result`, `if (r.TAG !== "Err") { s } else { return r; }`: its
+/// `return` first, `if (r.TAG === "Err") { return r; } s`, as THIR writes it.
+fn tried_first(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::If(test, _, Some(otherwise)) = &stmts[i].kind
+            && let [
+                Stmt {
+                    kind: StmtKind::Return(Some(returned)),
+                    ..
+                },
+            ] = otherwise.as_slice()
+            && let ExprKind::Var(r) = &returned.kind
+            && let ExprKind::Binary(Op::Ne, tag, err) = &test.kind
+            && matches!(&tag.kind, ExprKind::Member(of, key) if key == "TAG" && matches!(&of.kind, ExprKind::Var(v) if v == r))
+            && matches!(&err.kind, ExprKind::Str(s) if s == "Err")
+        {
+            let span = stmts[i].span;
+            let StmtKind::If(test, then, Some(otherwise)) =
+                std::mem::replace(&mut stmts[i].kind, StmtKind::Break(None))
+            else {
+                unreachable!("matched")
+            };
+            let count = then.len();
+            stmts.splice(
+                i..=i,
+                std::iter::once(StmtKind::If(not(test), otherwise, None).at(span)).chain(then),
+            );
+            i += count;
+        }
+        i += 1;
+    }
+}
+
+/// A loop's body `if (t) { a; continue; } rest`, `a` written after `rest`,
+/// each of which always leaves: `if (!t) { rest } a`, in the order the
+/// program wrote them, as THIR's; `a`'s last `continue` goes on anyway.
+fn written_order_steps(stmts: &mut [Stmt]) {
+    for stmt in stmts {
+        let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) = &mut stmt.kind
+        else {
+            continue;
+        };
+        let found = (0..body.len()).find(|&i| {
+            let StmtKind::If(_, then, None) = &body[i].kind else {
+                return false;
+            };
+            let rest = &body[i + 1..];
+            then.last().is_some_and(ends)
+                && rest.last().is_some_and(ends)
+                && matches!((first_written(rest), first_written(then)), (Some(r), Some(a)) if r < a)
+        });
+        let Some(i) = found else { continue };
+        let rest = body.split_off(i + 1);
+        let Some(Stmt {
+            kind: StmtKind::If(test, mut then, None),
+            span,
+        }) = body.pop()
+        else {
+            unreachable!("found")
+        };
+        if matches!(then.last().map(|l| &l.kind), Some(StmtKind::Continue(None))) {
+            then.pop();
+        }
+        body.push(StmtKind::If(not(test), rest, None).at(span));
+        body.extend(then);
+    }
+}
+
 /// `while (true) { if (c) { body; continue; } rest }`, a loop MIR tests at
 /// its head whose `rest`, what's after it, always leaves elsewhere: `while
 /// (c) { body } rest`, as THIR writes it, where nothing else jumps in it
@@ -1779,9 +1853,18 @@ pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stm
 /// `if (t) { return a; } return b;`, MIR's of a value the program wrote
 /// with `&&` or `||` where `t` is tested: one value returned, `t ? a : b`,
 /// as the program wrote it, each test before it folded in, `s !== "en" &&
-/// (t ? a : b)`; not where it wrote a `return`.
-fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::Span], booleans: &HashSet<String>) {
-    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi);
+/// (t ? a : b)`; not where it wrote a `return`, nor of an `if`'s condition,
+/// whose branches it returns, as THIR's.
+fn logical_returns(
+    stmts: &mut Vec<Stmt>,
+    logicals: &[js::Span],
+    conditions: &[(js::Span, js::Span)],
+    returns: &[js::Span],
+    booleans: &HashSet<String>,
+) {
+    // A logical that's no `if`'s condition, which the `if` is written of.
+    let condition = |l: &js::Span| conditions.iter().any(|(c, g)| c == g && c.lo <= l.lo && l.hi <= c.hi);
+    let within = |s: js::Span| !s.is_none() && logicals.iter().any(|l| l.lo <= s.lo && s.hi <= l.hi && !condition(l));
     while let [.., last_if, last] = stmts.as_slice()
         && let StmtKind::Return(Some(no)) = &last.kind
         && let StmtKind::If(test, then, None) = &last_if.kind
