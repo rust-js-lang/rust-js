@@ -1,6 +1,6 @@
 # 0051. `Option<T>` in generic code: boxed only when it looks like `None`
 
-Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own.
+Status: Accepted. Extends [0030](0030-option.md) and [0049](0049-traits-and-generics.md). Amended: concrete code boxes too; a lazy iterator's `find` boxes its own; a box keeps the `null` it holds.
 
 Case: C, D ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -28,11 +28,18 @@ for nested options (`Caml_option.some`):
 
 ```js
 function $some(x) {
-  if (x == null) return { $someNone: 0 };                  // Some(None), Some(())
-  if (typeof x === "object" && "$someNone" in x) return { $someNone: x.$someNone + 1 };
+  if (x === null) return { $someNone: 0, $value: null };   // Some(None) of JS's null
+  if (x === undefined) return { $someNone: 0 };            // Some(None), Some(())
+  if (typeof x === "object" && "$someNone" in x) return { ...x, $someNone: x.$someNone + 1 };
   return x;                                                // every other value
 }
 ```
+
+- **A box keeps the `null` it holds** (amended): a JS value's `None`,
+  `Option<&js::Unknown>`'s, is `null` or `undefined`, which JS tells
+  apart, `String(null)` being `"null"`; `$someValue` gives back which. To
+  `$eq` and `$key` a `$value` that's nullish is one left out (ADR 0280),
+  so `Some(None)` is `Some(None)`, whichever it holds.
 
 - **`None` is still `undefined`**, so "is it `Some`" is still `o != null`:
   a box is an object.

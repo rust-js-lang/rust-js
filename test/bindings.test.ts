@@ -1362,6 +1362,55 @@ pub fn counted(n: u32) -> String {
   }
 });
 
+// ADR 0051: an item that may be `None` is boxed by `$some` where it looks
+// like one, and taken out by `$someValue`: JS's `null` comes out `null`,
+// as `String(null)` tells it from `undefined`, stepped by `next()`, matched
+// or the last; and it's still `Some(None)`.
+test("an Option's box keeps the null it holds", async () => {
+  const withWeb = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
+  const dir = fixture("some-null");
+  writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, string};
+pub fn stepped(parts: Vec<Option<&Unknown>>) -> String {
+    let mut it = parts.into_iter();
+    let mut result = String::new();
+    while let Some(part) = it.next() {
+        result.push_str(&string(part));
+    }
+    result
+}
+pub fn first(parts: Vec<Option<&Unknown>>) -> String {
+    let mut it = parts.into_iter();
+    match it.next() {
+        Some(part) => string(part),
+        None => String::new(),
+    }
+}
+pub fn last(parts: Vec<Option<&Unknown>>) -> String {
+    match parts.into_iter().last() {
+        Some(part) => string(part),
+        None => String::new(),
+    }
+}
+pub fn none_first(parts: Vec<Option<&Unknown>>) -> bool {
+    matches!(parts.into_iter().next(), Some(None))
+}
+pub fn nested(parts: Vec<Option<&Unknown>>) -> String {
+    let boxed: Vec<Option<Option<&Unknown>>> = parts.into_iter().map(Some).collect();
+    match boxed.into_iter().next() {
+        Some(Some(part)) => string(part),
+        _ => String::new(),
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.stepped([null, 1, undefined]), lib.first([null]), lib.last([1, null])]).toEqual(["null1undefined", "null", "null"]);
+    expect([lib.none_first([null]), lib.none_first([undefined]), lib.none_first([1]), lib.none_first([])]).toEqual([true, true, false, false]);
+    expect([lib.nested([null]), lib.nested([undefined]), lib.nested([1])]).toEqual(["null", "undefined", "1"]);
+  }
+});
+
 // ADR 0225: a WebIDL parameter typed `any` takes a value as JS has it, and
 // one the browser copies, `postMessage`'s, `pushState`'s and
 // `structuredClone`'s, only a value it copies as it is: `js::StructuredClone`.
