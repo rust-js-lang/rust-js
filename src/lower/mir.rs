@@ -4330,12 +4330,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))
             && tcx.def_kind(def_id) == DefKind::AssocFn
             && !tcx.is_lang_item(def_id, LangItem::TryTraitBranch)
+            // `Result`'s own, not `Argument::new_debug(&r)`'s.
+            && tcx
+                .impl_of_assoc(def_id)
+                .is_some_and(|imp| self.recognition().is_result(tcx.type_of(imp).skip_binder()))
         {
             let Some(answer) = super::recognition::fmt_result_answer(tcx, def_id) else {
                 return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR"));
             };
+            // In a crate where one may be an `Err`: of what `$fmtTry` caught,
+            // tested, THIR's (ADR 0187).
             if self.krate.any_failing {
-                return Err(self.unsupported(span, "methods of a `fmt::Result` that may fail, from its MIR"));
+                let mut values = values.into_iter();
+                let result = self.value_expr(values.next().expect("the result"), span)?;
+                let message = values.next().map(|v| self.value_expr(v, span)).transpose()?;
+                self.flush(state, out)?;
+                return Ok(Value::Expr(self.fmt_result_values(answer, result, message, span, out)));
             }
             for value in values {
                 let value = self.value_expr(value, span)?;
@@ -4355,8 +4365,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // returns, `FromResidual::from_residual(r)`, THIR's (ADR 0052).
         if tcx.is_lang_item(def_id, LangItem::TryTraitBranch) {
             let ty = arg_tys[0];
+            // Of one that may be an `Err`: its error thrown on, THIR's
+            // `fmt_check` (ADR 0187), and what's left never breaks.
             if self.is_fmt_result(ty) && self.krate.any_failing {
-                return Err(self.unsupported(span, "`?` of a `fmt::Result` that may fail, from its MIR"));
+                let tried = self.value_expr(values.into_iter().next().expect("what's tried"), span)?;
+                self.flush(state, out)?;
+                self.fmt_check(tried, self.js_span(span), out);
+                return Ok(Value::Branch(Expr::undefined(), ty));
             }
             if !self.never_fails(ty) && self.option_of(ty).is_none() && !self.is_std_type(ty, StdItem::Result) {
                 return Err(self.unsupported(span, &format!("`?` on a `{ty}`, from its MIR")));
@@ -5162,10 +5177,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => return Err(self.unsupported(span, "`push_str` on this, from its MIR")),
                 };
-                if self.krate.any_failing {
-                    return Err(self.unsupported(span, "a `write!` here of what may fail, from its MIR"));
+                let given = values.next().expect("what's pushed");
+                // A `write!` of what may fail: piece by piece, what came before
+                // written, its `fmt::Result` the error, if any, THIR's (ADR 0187).
+                if matches!(given, Value::Fmt(Std::FmtNew, ..)) && fixed_place(&place) {
+                    let value = self.value_expr(given, span)?;
+                    self.flush(state, out)?;
+                    let js_span = self.js_span(span);
+                    let mut written = Vec::new();
+                    super::display::append_written(&place, value, true, js_span, &mut written);
+                    let caught = self.fresh("error");
+                    let partial = Expr::call(Expr::var("$fmtPartial"), vec![Expr::var(&caught)]);
+                    let handler = vec![
+                        StmtKind::Assign(place.clone(), Expr::bin(Op::Add, place.clone(), partial)).at(js_span),
+                        StmtKind::Throw(Expr::var(&caught)).at(js_span),
+                    ];
+                    let tried = vec![StmtKind::TryCatch(written, Some(caught), handler).at(js_span)];
+                    return Ok(Value::Expr(self.fmt_try(tried)));
                 }
-                let value = self.value_expr(values.next().expect("what's pushed"), span)?;
+                let value = self.value_expr(given, span)?;
                 self.flush(state, out)?;
                 // Read and written: a place whose object is made here, a
                 // handle `push_mut` gives, `$pushMut(v, x).value`, held first,

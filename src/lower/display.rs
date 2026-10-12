@@ -6,7 +6,7 @@
 use super::bindings;
 use super::fn_def;
 use super::format_spec::{Options, Radix};
-use super::recognition::{ChannelError, FormatterQuery, Std};
+use super::recognition::{ChannelError, FmtResultAnswer, FormatterQuery, Std};
 use super::recognition::{StdItem, WriteCall, fmt_trait_called, opt_std_item, std_item, trait_method};
 use super::representation::{self, Num};
 use super::{Dest, FnCx, R};
@@ -177,6 +177,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match stmt.kind {
                 StmtKind::Return(Some(returned)) => out.push(StmtKind::Expr(returned).at(stmt.span)),
                 kind => out.push(kind.at(stmt.span)),
+            }
+        }
+    }
+
+    /// A method of a `fmt::Result`, `result`, in a crate where one may be
+    /// an `Err` (ADR 0187): of what `$fmtTry` caught, or a variable it's in,
+    /// tested against `undefined`; another's, its constant answer. THIR's
+    /// and MIR's.
+    pub(in crate::lower) fn fmt_result_values(
+        &mut self,
+        answer: FmtResultAnswer,
+        result: Expr,
+        message: Option<Expr>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let constant = match answer {
+            FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => Expr::undefined(),
+            FmtResultAnswer::Is(ok) => Expr::bool(ok),
+        };
+        // Only what `$fmtTry` caught may be an `Err`, or a variable it's in.
+        let may_be_err = match &result.kind {
+            js::ExprKind::Call(callee, _) => matches!(&callee.kind, js::ExprKind::Var(name) if name == "$fmtTry"),
+            js::ExprKind::Var(_) => true,
+            _ => false,
+        };
+        if !may_be_err {
+            for value in std::iter::once(result).chain(message) {
+                if value.has_effects() {
+                    out.push(StmtKind::Expr(value).at(self.js_span(span)));
+                }
+            }
+            return constant;
+        }
+        let result = if result.reads_same() {
+            result
+        } else {
+            self.spill("result", result, out)
+        };
+        let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
+        match answer {
+            FmtResultAnswer::Is(true) => ok,
+            FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
+            FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
+                let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Err` value"));
+                self.runtime.insert(Helper::FmtError);
+                Expr::call(Expr::var("$fmtExpect"), vec![result, message])
             }
         }
     }

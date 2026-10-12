@@ -381,35 +381,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Some(&message) => Some(self.expr(message, out)?),
                 None => None,
             };
-            // Only what `$fmtTry` caught may be an `Err`, or a variable it's in.
-            let may_be_err = match &result.kind {
-                js::ExprKind::Call(callee, _) => matches!(&callee.kind, js::ExprKind::Var(name) if name == "$fmtTry"),
-                js::ExprKind::Var(_) => true,
-                _ => false,
-            };
-            if !may_be_err {
-                for value in std::iter::once(result).chain(message) {
-                    if value.has_effects() {
-                        out.push(StmtKind::Expr(value).at(self.js_span(span)));
-                    }
-                }
-                return Ok(Some(constant));
-            }
-            let result = if result.reads_same() {
-                result
-            } else {
-                self.spill("result", result, out)
-            };
-            let ok = Expr::bin(Op::Eq, result.clone(), Expr::undefined());
-            return Ok(Some(match answer {
-                FmtResultAnswer::Is(true) => ok,
-                FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
-                FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
-                    let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Err` value"));
-                    self.runtime.insert(Helper::FmtError);
-                    Expr::call(Expr::var("$fmtExpect"), vec![result, message])
-                }
-            }));
+            return Ok(Some(self.fmt_result_values(answer, result, message, span, out)));
         }
         // `f.alternate()`, `f.width()` and the like: what this writer's
         // `Formatter` was given (ADRs 0137, 0143).

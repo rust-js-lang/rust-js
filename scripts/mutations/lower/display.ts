@@ -436,4 +436,12 @@ export const mutations: Mutation[] = [
     replace: "                Expr::str(\"WouldBlock\"),",
     tests: ["test/corpus.test.ts","-t","try_lock"],
   },
+  {
+    name: "fmt-result-err-is-ok",
+    breaks: "`is_err()` of a `fmt::Result` that may be an `Err` is `false`",
+    file: "src/lower/display.rs",
+    find: "            FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),",
+    replace: "            FmtResultAnswer::Is(false) => Expr::bool(false),",
+    tests: ["test/corpus.test.ts","-t","fmt_error_write"],
+  },
 ];
