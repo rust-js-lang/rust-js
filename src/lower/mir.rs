@@ -733,6 +733,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => None,
             })
             .collect();
+        let valued: Vec<js::Span> = (self.thir.exprs.iter())
+            .filter(|e| matches!(e.kind, thir::ExprKind::Loop { .. }) && !e.ty.is_unit() && !e.ty.is_never())
+            .map(|e| self.js_span(e.span.source_callsite()))
+            .collect();
         let captured = std::mem::replace(&mut self.locals.captured, outer_captured);
         // A name each of whose locals is a `bool`.
         let mut booleans = std::collections::HashSet::new();
@@ -789,6 +793,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 tested: &tested,
                 conditions: &conditions,
                 loops: &loops,
+                valued: &valued,
                 continues: &continues,
                 logicals: &logicals,
                 callbacks: &callbacks,
@@ -3523,6 +3528,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let (r, l) = (self.value_expr(r, span)?, self.value_expr(l, span)?);
                     return Ok(Value::Expr(self.binary(flipped, r, l, None, ty, span)?));
                 }
+                // A constant's value, a named one's too, as THIR knows it: a
+                // division by it that can't panic is JS's.
+                let known = match r {
+                    Operand::Constant(c) => {
+                        (c.const_.try_eval_scalar_int(tcx, self.typing_env)).map(|n| match r_ty.is_signed() {
+                            true => n.to_int(n.size()),
+                            false => n.to_uint(n.size()) as i128,
+                        })
+                    }
+                    _ => None,
+                };
                 let [l, r]: [Value<'tcx>; 2] = self.take_operands(state, &[l, r], out)?.try_into().ok().expect("two");
                 let l = self.value_expr(l, span)?;
                 // A shift's amount of another type: a number, `Number(n & 63n)`.
@@ -3532,7 +3548,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         return Err(self.unsupported(span, "arithmetic checked for overflow, from its MIR"));
                     }
                     BinOp::Cmp => return Err(self.unsupported(span, "`cmp`, from its MIR")),
-                    _ => self.binary(*op, l, r, None, ty, span)?,
+                    _ => self.binary(*op, l, r, known, ty, span)?,
                 }
             }
             Rvalue::UnaryOp(op, operand) => {

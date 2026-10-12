@@ -2886,4 +2886,20 @@ export const mutations: Mutation[] = [
     replace: "                return Err(self.unsupported(span, &format!(\"`remove` of {}, from its MIR\", exprs.len())));\n",
     tests: ["test/lowering.test.ts","-t","a deque's remove"],
   },
+  {
+    name: "mir-named-divisor-unknown",
+    breaks: "MIR's division by a named constant that can't panic is `$div`",
+    file: "src/lower/mir.rs",
+    find: "                    _ => self.binary(*op, l, r, known, ty, span)?,\n",
+    replace: "                    _ => self.binary(*op, l, r, None.or(known.filter(|_| false)), ty, span)?,\n",
+    tests: ["test/lowering.test.ts","-t","a division by a named constant"],
+  },
+  {
+    name: "mir-every-loop-valued",
+    breaks: "every MIR loop counts as one a `break` gives a value",
+    file: "src/lower/mir.rs",
+    find: "matches!(e.kind, thir::ExprKind::Loop { .. }) && !e.ty.is_unit() && !e.ty.is_never()",
+    replace: "matches!(e.kind, thir::ExprKind::Loop { .. })",
+    tests: ["test/lowering.test.ts"],
+  },
 ];

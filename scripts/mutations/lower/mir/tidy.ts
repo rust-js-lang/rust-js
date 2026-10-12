@@ -1750,7 +1750,7 @@ export const mutations: Mutation[] = [
     "name": "mir-loop-exit-returned-inside",
     "breaks": "a loop left by `break` before the function's value from MIR returns the value inside the loop",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    loop_exits(body, returns, written);\n",
+    "find": "    loop_exits(body, returns, written, valued);\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
@@ -1762,8 +1762,8 @@ export const mutations: Mutation[] = [
     "name": "mir-loop-exit-written-return",
     "breaks": "a `return` the program wrote in a function's last loop becomes a `break`, the `return` after the loop",
     "file": "src/lower/mir/tidy.rs",
-    "find": "        && returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi)\n",
-    "replace": "        && false\n",
+    "find": "        && (returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi) || valued.contains(written))\n",
+    "replace": "        && valued.contains(written)\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -2017,5 +2017,13 @@ export const mutations: Mutation[] = [
     find: "            given.entry(v.clone()).or_insert_with(|| \"receiver\".to_string());\n",
     replace: "",
     tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
+  },
+  {
+    name: "mir-tidy-valued-loop-exits",
+    breaks: "MIR's tail `loop` that `break a` gives its value breaks, then returns",
+    file: "src/lower/mir/tidy.rs",
+    find: "        && (returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi) || valued.contains(written))\n",
+    replace: "        && (returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi))\n",
+    tests: ["test/lowering.test.ts","-t","a tail loop's break"],
   },
 ];

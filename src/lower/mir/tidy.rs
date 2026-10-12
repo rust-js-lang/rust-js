@@ -23,6 +23,8 @@ pub(super) struct Hints<'h> {
     pub(super) conditions: &'h [(js::Span, js::Span)],
     /// Where each loop is written, whether as a `while`, and its label.
     pub(super) loops: &'h [(js::Span, bool, Option<String>)],
+    /// Where each `loop` a `break` gives a value is written, `break a`.
+    pub(super) valued: &'h [js::Span],
     /// Where each `if` the program wrote of a `continue` tests: one alone,
     /// or one that ends what it does.
     pub(super) continues: &'h [js::Span],
@@ -62,6 +64,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         tested,
         conditions,
         loops: written,
+        valued,
         continues,
         logicals,
         callbacks,
@@ -263,7 +266,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     js::statement_lists(body, &mut |stmts| named_labels(stmts, written));
-    loop_exits(body, returns, written);
+    loop_exits(body, returns, written, valued);
     js::statement_lists(body, &mut map_counts);
     // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
     // `Expr::unary` makes it, `t !== "pre"`.
@@ -4971,7 +4974,12 @@ fn relabeled(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
 /// it, the value after the loop, `while (true) { if (c) { return out; } … }`:
 /// the loop's `break`, the `return` after it, as a `break` is written; not
 /// a `return` the program wrote, in a loop it wrote one in.
-fn loop_exits(body: &mut Vec<Stmt>, returns: &[js::Span], loops: &[(js::Span, bool, Option<String>)]) {
+fn loop_exits(
+    body: &mut Vec<Stmt>,
+    returns: &[js::Span],
+    loops: &[(js::Span, bool, Option<String>)],
+    valued: &[js::Span],
+) {
     fn take(stmts: &mut [Stmt]) -> Option<Stmt> {
         for stmt in stmts.iter_mut() {
             let taken = match &mut stmt.kind {
@@ -4990,9 +4998,11 @@ fn loop_exits(body: &mut Vec<Stmt>, returns: &[js::Span], loops: &[(js::Span, bo
         None
     }
     let Some(Stmt { kind, span }) = body.last() else { return };
-    // Nor of a loop the program wrote a `return` in, which MIR may not span.
+    // Nor of a loop the program wrote a `return` in, which MIR may not span,
+    // nor a `loop` whose `break a` gives the function's value, which THIR
+    // returns where it breaks.
     if let Some((written, ..)) = written_loop(loops, *span)
-        && returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi)
+        && (returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi) || valued.contains(written))
     {
         return;
     }

@@ -5539,6 +5539,59 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
+// A function's tail `loop` that `break a` gives its value: `return a` where
+// it breaks, from MIR as from THIR.
+test("a tail loop's break with a value returns it", async () => {
+  const dir = fixture("loop-break-value");
+  writeFileSync(join(dir, "lib.rs"), `pub fn fib_loop(n: u32) -> u32 {
+    let mut a = 0;
+    let mut b = 1;
+    let mut i = 0;
+    loop {
+        if i == n {
+            break a;
+        }
+        let next = a + b;
+        a = b;
+        b = next;
+        i += 1;
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("    if (i === n) {\n      return a;\n    }");
+    const lib = await import(join(dir, out));
+    expect([lib.fib_loop(0), lib.fib_loop(10)]).toEqual([0, 55]);
+  }
+});
+
+// A division by a named constant that isn't zero, nor a signed -1, can't
+// panic: JS's `/`, from MIR as from THIR.
+test("a division by a named constant is JS's", async () => {
+  const dir = fixture("named-divisor");
+  writeFileSync(join(dir, "lib.rs"), `const HALVES: u32 = 2;
+const NEGATIVE: i32 = -1;
+
+pub fn half(x: u32) -> u32 {
+    x / HALVES
+}
+
+pub fn negated(x: i32) -> i32 {
+    x / NEGATIVE
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return (x / HALVES) >>> 0;");
+    expect(js).toContain("$div(x, NEGATIVE, -2147483648)");
+    const lib = await import(join(dir, out));
+    expect([lib.half(7), lib.negated(6)]).toEqual([3, -6]);
+    expect(() => lib.negated(-2147483648)).toThrow("attempt to divide with overflow");
+  }
+});
+
 // A generic iterator is stepped as JS's, `Iterator.from(items)`, as an
 // array may be given (ADR 0061); the crate's own given from behind an
 // `impl Iterator` is a JS iterator of it, from MIR as from THIR.
