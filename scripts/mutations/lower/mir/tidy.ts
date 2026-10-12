@@ -911,7 +911,7 @@ export const mutations: Mutation[] = [
     "breaks": "`!matches!(t, \"pre\")` read in place stays `!(t === \"pre\")`",
     "file": "src/lower/mir/tidy.rs",
     "find": "                ..Expr::unary(*op, (**arg).clone())\n",
-    "replace": "                kind: ExprKind::Unary(*op, arg.clone()),\n",
+    "replace": "                kind: ExprKind::Unary(*op, arg.clone()),\n                reads: false,\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
