@@ -2446,4 +2446,12 @@ export const mutations: Mutation[] = [
     replace: "                        js::ExprKind::Var(_) | js::ExprKind::Call(..)\n",
     tests: ["test/mir.test.ts", "-t", "leaked_string_written"],
   },
+  {
+    name: "mir-box-items-of-handle",
+    breaks: "MIR's `for n in &mut boxed` steps a handle on the box, not its array",
+    file: "src/lower/mir.rs",
+    find: "                    Value::Ref(place) if known == Std::Pointee => Ok(place),\n",
+    replace: "",
+    tests: ["test/mir.test.ts", "-t", "boxed_array_iter"],
+  },
 ];

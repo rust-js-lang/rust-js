@@ -252,10 +252,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `handle_helper`, of the receiver's type.
     fn handle_helper_of(&self, known: Std, receiver: Ty<'tcx>) -> Option<(Helper, &'static str)> {
+        // A `Box<[T; N]>` is its array.
+        let receiver = receiver.boxed_ty().unwrap_or(receiver);
         let sequence = receiver.is_array() || receiver.is_slice() || self.is_vec_like(receiver);
         let map = self.is_map(receiver) && !self.is_set(receiver);
         Some(match known {
-            Std::Same if sequence => (Helper::MutItems, "$mutItems"),
+            Std::Same | Std::Pointee if sequence => (Helper::MutItems, "$mutItems"),
             Std::First | Std::SliceGet | Std::SliceLast if sequence => (Helper::MutAt, "$mutAt"),
             Std::Map(MapOp::Get) if map => (Helper::MutGet, "$mutGet"),
             Std::Map(MapOp::Iter(Part::Entries)) if map => (Helper::MutEntries, "$mutEntries"),

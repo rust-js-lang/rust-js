@@ -4760,7 +4760,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let exprs = values
                 .iter()
                 .cloned()
-                .map(|v| self.value_expr(v, span))
+                .map(|v| match v {
+                    // A `Box<[T; N]>`'s, through a `&mut`: the array in its place.
+                    Value::Ref(place) if known == Std::Pointee => Ok(place),
+                    v => self.value_expr(v, span),
+                })
                 .collect::<R<Vec<_>>>()?;
             let receiver = arg_tys.first().map_or(tcx.types.unit, |t| t.peel_refs());
             if let Some(handles) = self.item_handles_of(known, exprs, receiver, span, out)? {

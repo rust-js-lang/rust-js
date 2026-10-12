@@ -22,6 +22,7 @@ bitwise_operators.rs
 block_modules.rs
 box_uninit.rs
 box_zeroed_struct.rs
+boxed_array_iter.rs
 boxed_str.rs
 btree_end_entries.rs
 btree_range_mut.rs

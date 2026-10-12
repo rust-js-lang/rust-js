@@ -189,4 +189,20 @@ export const mutations: Mutation[] = [
     replace: "            None if false => self\n",
     tests: ["test/corpus.test.ts","-t","iter_mut_kept"],
   },
+  {
+    name: "mut-items-box-unseen",
+    breaks: "a `Box<[T; N]>`'s `&mut` items, `for n in &mut boxed`, aren't a sequence's",
+    file: "src/lower/mut_refs.rs",
+    find: "        let receiver = receiver.boxed_ty().unwrap_or(receiver);\n",
+    replace: "",
+    tests: ["test/mir.test.ts", "-t", "boxed_array_iter"],
+  },
+  {
+    name: "mut-items-pointee-unseen",
+    breaks: "a `Box<[T; N]>`'s `into_iter()` through a `&mut` makes no handles",
+    file: "src/lower/mut_refs.rs",
+    find: "            Std::Same | Std::Pointee if sequence => (Helper::MutItems, \"$mutItems\"),\n",
+    replace: "            Std::Same if sequence => (Helper::MutItems, \"$mutItems\"),\n",
+    tests: ["test/mir.test.ts", "-t", "boxed_array_iter"],
+  },
 ];
