@@ -1953,8 +1953,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Whether `e` reads the same wherever it's read, so it's written there:
     /// a constant, what the module names, a function or a static, a variable
-    /// nothing changes, a field of plain data in one, or a tuple of them, of
-    /// type `ty`: not an array, which a slice pattern takes apart.
+    /// nothing changes or a field of plain data in one, of type `ty`.
     fn reads_same_anywhere(&self, e: &Expr, ty: Ty<'tcx>) -> bool {
         let alike = |e: &Expr| match &e.kind {
             js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),
@@ -1972,7 +1971,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // React never changes.
         let context_member = super::recognition::is_context_member(self.tcx, ty);
         match &e.kind {
-            js::ExprKind::Array(items) => matches!(ty.kind(), ty::Tuple(_)) && items.iter().all(alike),
             js::ExprKind::Member(..) if context_member => true,
             _ => alike(e),
         }
@@ -3327,15 +3325,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        // `P { x, ..base }`: its other fields each read of `base`, where it
-        // is, of the same type, which nothing changes meanwhile, nor needs
-        // copying, `{ ...base, x }`, as THIR writes it (ADR 0250).
-        // Or one THIR says is, of a field or none (`written_base`).
+        // `P { x, ..base }`, where THIR says it is (`written_base`): its
+        // other fields `base`'s, `{ ...base, x }`, as THIR writes it (ADR 0250).
         if let AggregateKind::Adt(did, VariantIdx::ZERO, args, None, None) = *kind
             && self.tcx.adt_def(did).is_struct()
             && let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(did), args)
-            && let Some(spread) =
-                (self.struct_update(state, ty, operands)).or_else(|| self.written_base(state, ty, operands, span))
+            && let Some(spread) = self.written_base(state, ty, operands, span)
         {
             let Shape::Object(names) = self.shape(ty) else {
                 unreachable!("a struct of named fields")
@@ -3829,65 +3824,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => false,
                 }
         })
-    }
-
-    /// The base of a struct update, `P { x, ..base }`, of type `ty`: where
-    /// each of the fields not given is read, at its own index, a place of
-    /// `ty` read through a shared reference or a variable nothing changes,
-    /// whose fields need no copy of their own (ADR 0250).
-    fn struct_update(
-        &self,
-        state: &State<'_, 'tcx>,
-        ty: Ty<'tcx>,
-        operands: &IndexVec<FieldIdx, Operand<'tcx>>,
-    ) -> Option<Place<'tcx>> {
-        let Shape::Object(fields) = self.shape(ty) else {
-            return None;
-        };
-        let decls = &state.body.local_decls;
-        let mut base: Option<Place<'tcx>> = None;
-        let mut read = 0;
-        for (i, operand) in operands.iter_enumerated() {
-            let Some(place) = operand.place() else { continue };
-            let Some((PlaceElem::Field(field, _), rest)) = place.projection.split_last() else {
-                continue;
-            };
-            let parent = Place {
-                local: place.local,
-                projection: self.tcx.mk_place_elems(rest),
-            };
-            if *field != i || parent.ty(decls, self.tcx).ty != ty {
-                continue;
-            }
-            if base.is_some_and(|b| b != parent) {
-                return None;
-            }
-            base = Some(parent);
-            read += 1;
-            let t = fields[i.as_usize()].1;
-            if self.contains_mutated(t) && self.is_copy(t) {
-                return None;
-            }
-        }
-        let base = base?;
-        // Unchanged, and its fields: read through a shared reference, or of
-        // a variable assigned once and never borrowed.
-        let (deref, fields) = match base.projection.as_slice() {
-            [PlaceElem::Deref, fields @ ..] => (true, fields),
-            fields => (false, fields),
-        };
-        let unchanged = fields.iter().all(|elem| matches!(elem, PlaceElem::Field(..)))
-            && match deref {
-                true => matches!(decls[base.local].ty.kind(), ty::Ref(_, _, ty::Mutability::Not)),
-                // A variable's, not a temporary's, `..Default::default()`'s,
-                // whose fields are each its default.
-                false => {
-                    (state.locals.user[base.local] || state.body.local_kind(base.local) == LocalKind::Arg)
-                        && state.locals.writes[base.local] <= 1
-                        && !state.locals.borrowed[base.local]
-                }
-            };
-        (unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)
     }
 
     /// The base of a struct update, THIR's at `span`, which THIR spreads

@@ -146,13 +146,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // value is plain Rust data. A JS object's getter, `n.textContent`,
             // can, and so can what's reached through a `Cell` or a `&mut`.
             // So can't a props pattern's rest's, a JS object of what it was
-            // given (ADR 0195), nor a namespace import's, `ContextMenu.Trigger`,
-            // whose module's exports JS never lets another change.
+            // given (ADR 0195).
             js::ExprKind::Member(object, _) => {
                 matches!(&object.kind, js::ExprKind::Var(name)
-                    if self.plain_value(name)
-                        || self.locals.rests.contains_key(name)
-                        || self.krate.imports[&self.module].values().any(|alias| alias == name))
+                    if self.plain_value(name) || self.locals.rests.contains_key(name))
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {

@@ -694,23 +694,17 @@ fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     while stmts.last().is_some_and(unwritten) {
         stmts.pop();
     }
-    // Of `if (a) { if (b) { return; } }`, `a && b`'s.
     if let Some(at) = (stmts.iter())
-        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if ands(then).1.last().is_some_and(unwritten)))
+        .position(|s| matches!(&s.kind, StmtKind::If(_, then, None) if then.last().is_some_and(unwritten)))
     {
         let rest = stmts.split_off(at + 1);
         let Some(Stmt {
-            kind: StmtKind::If(test, then, None),
+            kind: StmtKind::If(test, mut then, None),
             span,
         }) = stmts.pop()
         else {
             unreachable!("found")
         };
-        let (tests, mut then) = ands(&then);
-        let test = (std::iter::once(test).chain(tests))
-            .rev()
-            .reduce(|b, a| Expr::bin(Op::And, a, b))
-            .expect("one");
         then.pop();
         match (then.is_empty(), rest.is_empty()) {
             (true, true) => {}
@@ -1323,8 +1317,8 @@ fn is_temporary(name: &str) -> bool {
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
 }
 
-/// `const _5 = children;`, a temporary of a variable nothing changes, nor it,
-/// or of a constant: `children`, or the constant, wherever it's read.
+/// `const _5 = children;`, a temporary of a variable nothing changes, nor it:
+/// `children` wherever it's read.
 fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
     let mut aliases: Vec<(String, Expr)> = Vec::new();
     js::statement_lists(body, &mut |stmts| {
@@ -1332,7 +1326,7 @@ fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
             StmtKind::Const(name, value)
                 if is_temporary(name)
                     && !changing.contains(name)
-                    && (value.is_constant() || matches!(&value.kind, ExprKind::Var(of) if !changing.contains(of))) =>
+                    && matches!(&value.kind, ExprKind::Var(of) if !changing.contains(of)) =>
             {
                 aliases.push((name.clone(), value.clone()));
                 false
@@ -4021,21 +4015,8 @@ fn assigned(body: &mut Vec<Stmt>) -> HashSet<String> {
 fn returned(stmts: &mut Vec<Stmt>, result: &str) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        // `t = e; t = f;`, `e` doing nothing and `f` not reading `t`: `t = f;`,
-        // a `vec!`'s box made, then filled.
-        if let (StmtKind::Assign(first, made), StmtKind::Assign(second, filled)) = (&stmts[i].kind, &stmts[i + 1].kind)
-            && let (ExprKind::Var(a), ExprKind::Var(b)) = (&first.kind, &second.kind)
-            && a == b
-            && !made.has_effects()
-            && !filled.mentions_var(a)
-        {
-            stmts.remove(i);
-            continue;
-        }
-        // `result = e; return result;`, or a temporary's.
-        let returned_var = |name: &str| name == result || is_temporary(name);
         let assigns = matches!(&stmts[i].kind, StmtKind::Assign(target, _)
-            if matches!(&target.kind, ExprKind::Var(name) if returned_var(name)));
+            if matches!(&target.kind, ExprKind::Var(name) if name == result));
         let returns = matches!((&stmts[i].kind, &stmts[i + 1].kind), (StmtKind::Assign(target, _), StmtKind::Return(Some(value)))
             if matches!((&target.kind, &value.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b));
         if assigns && returns {
@@ -4634,28 +4615,16 @@ fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
             Op::LooseEq => Expr::unary(UnaryOp::Not, Expr::var(x)),
             _ => Expr::var(x),
         };
-        // `h`, and a binding of it nothing changes, read as `x`: they go.
+        // `h`, read as `x`: it goes.
         let (h, x) = (h.clone(), x.clone());
         stmts.remove(i - 1);
-        let mut read: Vec<String> = vec![h];
         let mut rest = stmts.split_off(i - 1);
-        js::statement_lists(&mut rest, &mut |list| {
-            list.retain(|stmt| match &stmt.kind {
-                StmtKind::Const(name, value)
-                    if matches!(&value.kind, ExprKind::Var(of) if read.contains(of)) && !changing.contains(name) =>
-                {
-                    read.push(name.clone());
-                    false
-                }
-                _ => true,
-            });
-        });
         let StmtKind::If(guard, ..) = &mut rest[0].kind else {
             unreachable!("the test, where the `const` was")
         };
         *guard = truth;
         js::each_expr_mut(&mut rest, &mut |e| {
-            if matches!(&e.kind, ExprKind::Var(v) if read.contains(v)) {
+            if matches!(&e.kind, ExprKind::Var(v) if *v == h) {
                 *e = Expr {
                     span: e.span,
                     ..Expr::var(&x)

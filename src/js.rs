@@ -1031,12 +1031,6 @@ impl Expr {
         while let ExprKind::Binary(Op::And, a, _) = &first.kind {
             first = a;
         }
-        // Read for its truth, `!!Array.isArray(a)`, the same.
-        if let ExprKind::Unary(UnaryOp::Not, not) = &first.kind
-            && let ExprKind::Unary(UnaryOp::Not, value) = &not.kind
-        {
-            first = value;
-        }
         if op == Op::And
             && let Some(tested) = presence_of(&lhs)
             && let ExprKind::Call(callee, args) = &first.kind

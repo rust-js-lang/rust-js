@@ -4661,6 +4661,9 @@ use react::{JSX, jsx};
 pub fn App(step: u32, open: bool) -> JSX::Element {
     jsx! { <div data-step={step.to_string()}>{if open { "a" } else { "b" }}</div> }
 }
+pub fn Repeated(step: u32) -> JSX::Element {
+    jsx! { <div data-step={step.to_string()}>{ let mut s = String::new(); for _ in 0..step { s.push('x'); } s }</div> }
+}
 `);
   run(args);
   const lib = await import(join(dir, "lib.jsx"));
@@ -4668,6 +4671,7 @@ pub fn App(step: u32, open: bool) -> JSX::Element {
     '<div data-step="2">a</div>',
     '<div data-step="3">b</div>',
   ]);
+  expect(renderToStaticMarkup(lib.Repeated(2))).toBe('<div data-step="2">xx</div>');
 });
 
 // ADR 0235: a child shown only where a test holds, `if shown { hint } else

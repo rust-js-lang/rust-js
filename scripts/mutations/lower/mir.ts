@@ -971,14 +971,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","a function written in a body is declared"],
   },
   {
-    name: "mir-struct-update-field-by-field",
-    breaks: "a struct update is each field read of its base, `{ title, rel: attrs.rel, id: attrs.id }`, so what the base doesn't hold is given `undefined`",
-    file: "src/lower/mir.rs",
-    find: "        (unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)\n",
-    replace: "        (false && unchanged && read > 1 && !bindings::has_flatten(self.tcx, ty)).then_some(base)\n",
-    tests: ["test/lowering.test.ts","-t","a struct update of a base nothing changes"],
-  },
-  {
     name: "mir-early-exit-panic-last",
     breaks: "a check that panics is written after what goes on, `if (n === 6) { return n; } fail()`, not `if (n !== 6) { fail() } return n;`",
     file: "src/lower/mir.rs",
@@ -1000,15 +992,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.plain.contains(name))\n",
     replace: "                false\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
-  },
-  {
-    name: "mir-tuple-as-const",
-    breaks: "a tuple of what reads the same, `(&a, &b)` a match takes apart, is a `const _42 = [a, b];` read by index",
-    file: "src/lower/mir.rs",
-    find: "            js::ExprKind::Array(items) => matches!(ty.kind(), ty::Tuple(_)) && items.iter().all(alike),\n",
-    replace: "            js::ExprKind::Array(items) => false && items.iter().all(alike),\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+    tests: ["test/lowering.test.ts","-t","a match guard.s binding from MIR is what it binds"],
   },
   {
     name: "mir-payload-as-const",
@@ -1522,8 +1506,8 @@ export const mutations: Mutation[] = [
     "name": "mir-unread-base-dropped",
     "breaks": "a struct update giving every field from MIR drops its base, `{ url }`, losing what JS's object held besides",
     "file": "src/lower/mir.rs",
-    "find": ".or_else(|| self.written_base(state, ty, operands, span))",
-    "replace": ".or(None)",
+    "find": "            && let Some(spread) = self.written_base(state, ty, operands, span)\n",
+    "replace": "            && let Some(spread) = None::<Place<'tcx>>\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",

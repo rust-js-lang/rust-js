@@ -515,14 +515,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
-    name: "jsx-namespace-member-unstable",
-    breaks: "a namespace import's component read ahead of what's made before it is held in a `Component`",
-    file: "src/lower/jsx.rs",
-    find: "                        || self.krate.imports[&self.module].values().any(|alias| alias == name))\n",
-    replace: "                        || false)\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
-  },
-  {
     "name": "jsx-alike-spread-copied",
     "breaks": "a props rest spread in an element made ahead of a branch is copied, `{...props} {...{ ...props }}`, react.dev's Link",
     "file": "src/lower/jsx.rs",
