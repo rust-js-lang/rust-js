@@ -1227,7 +1227,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             false => place,
                         };
                         count_place(&mut locals, place, true);
-                        count_rvalue(&mut locals, rvalue);
+                        // A shared borrow of a part nothing inside can change, a
+                        // match guard's `&(k as Warn).level`: the value it is.
+                        let frozen = matches!(rvalue, Rvalue::Ref(_, BorrowKind::Shared | BorrowKind::Fake(_), borrowed)
+                            if borrowed.ty(body, self.tcx).ty.is_freeze(self.tcx, self.typing_env));
+                        count_rvalue(&mut locals, rvalue, frozen);
                         // The whole through its box or `MaybeUninit` borrowed mutably,
                         // `Box::new_uninit()`'s written by `write`: as the local.
                         if let Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) = rvalue
@@ -5441,7 +5445,7 @@ fn count_place(locals: &mut Locals, place: &Place<'_>, written: bool) {
     }
 }
 
-fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>) {
+fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>, frozen: bool) {
     match rvalue {
         Rvalue::Use(o, _) | Rvalue::Repeat(o, _) | Rvalue::Cast(_, o, _) | Rvalue::UnaryOp(_, o) => {
             count_operand(locals, o)
@@ -5463,7 +5467,7 @@ fn count_rvalue(locals: &mut Locals, rvalue: &Rvalue<'_>) {
             if matches!(kind, BorrowKind::Mut { .. }) && place.projection.is_empty() {
                 locals.writes[place.local] += 1;
             }
-            if !place.projection.is_empty() && !place.is_indirect() {
+            if !place.projection.is_empty() && !place.is_indirect() && !frozen {
                 locals.borrowed[place.local] = true;
             }
         }

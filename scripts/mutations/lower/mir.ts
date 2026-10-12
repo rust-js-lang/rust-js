@@ -1894,4 +1894,16 @@ export const mutations: Mutation[] = [
       "division by a constant from MIR"
     ]
   },
+  {
+    "name": "mir-frozen-borrow-a-variable",
+    "breaks": "a match guard's shared borrow of `k.level` makes `k` a variable, its payloads held, `const t = k._0; return t;`",
+    "file": "src/lower/mir.rs",
+    "find": "&& !place.is_indirect() && !frozen {",
+    "replace": "&& !place.is_indirect() {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a match guard's binding from MIR"
+    ]
+  },
 ];

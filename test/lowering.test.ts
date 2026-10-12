@@ -6401,11 +6401,34 @@ test("a match guard's binding from MIR is what it binds, as THIR's", async () =>
         _ => "none".to_string(),
     }
 }
+// A variant's field the guard reads, and the arms after: each read where
+// it is, \`k.level\`, as nothing changes \`k\`.
+#[derive(Clone, Copy)]
+pub enum Kind { Note, Warn { level: u8 }, Tip(&'static str) }
+pub fn icon(k: Kind) -> &'static str {
+    match k {
+        Kind::Note => "i",
+        Kind::Warn { level } if level > 1 => "!!",
+        Kind::Warn { .. } => "!",
+        Kind::Tip(t) => t,
+    }
+}
+pub fn doubled(k: Kind) -> u8 {
+    match k {
+        Kind::Warn { level } if level > 1 => level * 2,
+        _ => 0,
+    }
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('export function titled(errorCode) {\n  if (errorCode) {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
+    expect(js).toContain("  return k._0;\n");
+    expect(js).toContain("    return (k.level * 2) & 255;\n");
+    expect(js).not.toContain("const level");
+    const lib = await import(join(dir, out));
+    expect([lib.icon({ TAG: "Warn", level: 2 }), lib.icon({ TAG: "Warn", level: 1 }), lib.icon({ TAG: "Tip", _0: "t" }), lib.doubled({ TAG: "Warn", level: 3 })]).toEqual(["!!", "!", "t", 6]);
   }
 });
 
@@ -6626,7 +6649,12 @@ test("a guarded binding of an Option's string is its truth", async () => {
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('export function title(errorCode) {\n  if (errorCode) {\n    return `Minified React error #${errorCode}`;\n  }\n');
+    // MIR's one value, as react.dev's original writes it.
+    expect(js).toContain(
+      out === "mir.js"
+        ? 'export function title(errorCode) {\n  return errorCode ? `Minified React error #${errorCode}` : "Minified Error Decoder";\n}'
+        : 'export function title(errorCode) {\n  if (errorCode) {\n    return `Minified React error #${errorCode}`;\n  }\n',
+    );
     const lib = await import(join(dir, out));
     expect([lib.title("1"), lib.title(""), lib.title(undefined)]).toEqual(["Minified React error #1", "Minified Error Decoder", "Minified Error Decoder"]);
   }
