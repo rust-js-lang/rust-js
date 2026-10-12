@@ -1101,6 +1101,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             });
         }
+        // What its drop drops, where it's made: what it holds, THIR's
+        // `closure_made` (ADR 0098); a reference it holds drops nothing.
+        let held: Vec<(Expr, Ty<'tcx>)> = (captures.iter().zip(&upvars))
+            .map(|((e, _), &ty)| (e.clone(), ty))
+            .collect();
+        self.closure_made(def_id, held);
         // Its own THIR's shape hints, and what's known of it, where its body
         // is written.
         let outer = std::mem::replace(&mut self.thir, &body.thir);

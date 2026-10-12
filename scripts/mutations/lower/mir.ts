@@ -2718,4 +2718,12 @@ export const mutations: Mutation[] = [
     replace: "        let drained = false;\n",
     tests: ["test/mir.test.ts", "-t", "drop_skipped_items"],
   },
+  {
+    name: "mir-closure-unmade",
+    breaks: "MIR's closure holding a value with a destructor can't be dropped: where it's made isn't known",
+    file: "src/lower/mir.rs",
+    find: "        self.closure_made(def_id, held);\n",
+    replace: "        self.closure_made(def_id, Vec::new());\n",
+    tests: ["test/mir.test.ts", "-t", "closure_drops"],
+  },
 ];

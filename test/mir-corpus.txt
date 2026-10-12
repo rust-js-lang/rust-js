@@ -33,6 +33,7 @@ byte_strings.rs
 calculator.rs
 cell_const.rs
 cell_deque_char_methods.rs
+channels.rs
 char_from_code.rs
 char_ranges_stepped.rs
 clamp_reversed.rs
@@ -42,6 +43,7 @@ closure_capture.rs
 closure_clone.rs
 closure_clone_cell.rs
 closure_clone_shared.rs
+closure_drops.rs
 closure_mut_ref.rs
 code_point_order.rs
 collect_drops.rs
