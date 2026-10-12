@@ -245,6 +245,7 @@ range_values.rs
 rc_clone_sees_owners.rs
 rc_make_mut_clone_panics.rs
 refcell_borrow_while_mut.rs
+refcell_borrows.rs
 refcell_clone_while_mut.rs
 refcell_double_borrow.rs
 refcell_eq_while_mut.rs

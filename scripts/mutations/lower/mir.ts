@@ -2582,4 +2582,12 @@ export const mutations: Mutation[] = [
     replace: "        self.check_value_ty(ty, span)\n",
     tests: ["test/mir.test.ts", "-t", "map_key_drops"],
   },
+  {
+    name: "mir-flush-discriminant",
+    breaks: "a discriminant pending when MIR flushes, a loop's `next()` under a drop flag's unwind, is read as a value and refused",
+    file: "src/lower/mir.rs",
+    find: "            if let Value::Discriminant(subject, _) = &value\n                && subject.reads_same()\n",
+    replace: "            if let Value::Discriminant(subject, _) = &value\n                && false\n",
+    tests: ["test/mir.test.ts", "-t", "refcell_borrows"],
+  },
 ];

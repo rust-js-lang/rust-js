@@ -1799,7 +1799,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn flush(&mut self, state: &mut State<'_, 'tcx>, out: &mut Vec<Stmt>) -> R<()> {
         let unwind = state.unwind.take();
         let mut made = Vec::new();
+        let mut kept = Vec::new();
         for (local, value) in std::mem::take(&mut state.pending) {
+            // A discriminant, which only a switch reads, of what reads the
+            // same anywhere: kept for it.
+            if let Value::Discriminant(subject, _) = &value
+                && subject.reads_same()
+            {
+                kept.push((local, value));
+                continue;
+            }
             let mut expr = self.value_expr(value, Span::default())?;
             let named = state.named.contains(&local);
             if self.reads_same_anywhere(&expr, state.body.local_decls[local].ty) && !named {
@@ -1833,6 +1842,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.locals.declared[local] = true;
             made.push(StmtKind::Const(name, expr).at(js::Span::NONE));
         }
+        state.pending = kept;
         self.unwinding_to(state, unwind, made, out)
     }
 
