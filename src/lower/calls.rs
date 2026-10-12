@@ -423,11 +423,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `cmp::max(a, b)` of what isn't a number: `Ord::max(a, b)`'s (ADR 0136).
         if self.std_fn(fun).is_none()
-            && let Some(name) = match self.tcx.def_path_str(def_id).as_str() {
-                "std::cmp::max" | "core::cmp::max" => Some("max"),
-                "std::cmp::min" | "core::cmp::min" => Some("min"),
-                _ => None,
-            }
+            && let Some(name) = self.recognition().cmp_extreme(def_id)
         {
             let ord = std_item(self.tcx, StdItem::Ord);
             let method = trait_method(self.tcx, ord, name);
@@ -819,20 +815,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let values = self.operands(args, out)?;
         self.std_values(known, call, values, boxed, output, out)
-    }
-
-    /// What `From::from` or `Into::into` makes, and from what.
-    fn converted(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
-        let tr = self.tcx.trait_of_assoc(def_id)?;
-        let mut types = args.types();
-        let (first, second) = (types.next()?, types.next()?);
-        if is_std_def(self.tcx, tr, StdItem::From) {
-            Some((first, second))
-        } else if is_std_def(self.tcx, tr, StdItem::Into) {
-            Some((second, first))
-        } else {
-            None
-        }
     }
 
     /// A JS call that says, in Rust, that it may throw (ADR 0035): one

@@ -1400,4 +1400,12 @@ export const mutations: Mutation[] = [
     replace: "            || matches!(ty.kind(), ty::Adt(adt, _) if false\n",
     tests: ["test/mir.test.ts","-t","nonzero"],
   },
+  {
+    name: "cmp-max-unknown",
+    breaks: "`cmp::max(a, b)` of what isn't a number is refused",
+    file: "src/lower/recognition.rs",
+    find: "            \"std::cmp::max\" | \"core::cmp::max\" => Some(\"max\"),",
+    replace: "            \"std::cmp::max\" | \"core::cmp::max\" => None,",
+    tests: ["test/corpus.test.ts","-t","std_methods"],
+  },
 ];

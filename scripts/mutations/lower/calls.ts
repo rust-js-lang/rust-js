@@ -53,14 +53,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "std_mut_items"],
   },
   {
-    name: "cmp-max-unknown",
-    breaks: "`cmp::max(a, b)` of what isn't a number is refused",
-    file: "src/lower/calls.rs",
-    find: "                \"std::cmp::max\" | \"core::cmp::max\" => Some(\"max\"),",
-    replace: "                \"std::cmp::max\" | \"core::cmp::max\" => None,",
-    tests: ["test/corpus.test.ts","-t","std_methods"],
-  },
-  {
     name: "drain-unmarked",
     breaks: "`collect()` of a chain of owned items doesn't let its stages through",
     file: "src/lower/calls.rs",

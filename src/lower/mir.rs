@@ -34,7 +34,7 @@ use rustc_span::Span;
 
 use super::combinators::StepOp;
 use super::jsx::JsxArg;
-use super::recognition::{Std, StdItem};
+use super::recognition::{Std, StdItem, std_item, trait_method};
 use super::representation::{const_js, variant_field};
 use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
@@ -4240,6 +4240,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(call));
             }
         }
+        // `cmp::max(a, b)` of what isn't a number: `Ord::max(a, b)`'s, as
+        // THIR's (ADR 0136).
+        if known.is_none()
+            && let Some(name) = self.recognition().cmp_extreme(def_id)
+        {
+            let method = trait_method(tcx, std_item(tcx, StdItem::Ord), name);
+            let exprs = (values.iter().cloned())
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            if let Some(call) = self.trait_call(method, generic_args, exprs, span, out)? {
+                return Ok(Value::Expr(call));
+            }
+        }
+        // `Box<dyn Error>` from an error or a message, by std's `From`, or the
+        // `Into` it gives, as THIR's (ADR 0141): `{ value, impl }`.
+        if let Some((to, from)) = self.converted(def_id, generic_args)
+            && let Some(dictionary) = self.dyn_error_from(to, from, span)?
+            && let [value] = &values[..]
+        {
+            let value = self.value_expr(value.clone(), span)?;
+            return Ok(Value::Expr(Expr::object(vec![
+                Prop::Field("value".into(), value),
+                Prop::Field("impl".into(), dictionary),
+            ])));
+        }
         // A `From` into an untagged enum, or `into()` to one: the value (ADR 0214).
         if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {
             return Ok(values.into_iter().next().expect("one"));
@@ -4400,10 +4425,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value => value,
             });
         }
-        Err(self.unsupported(
-            span,
-            &format!("calling `{}`, from its MIR", self.tcx.def_path_str(def_id)),
-        ))
+        Err(self.unsupported(span, &format!("calling `{}`", self.tcx.def_path_str(def_id))))
     }
 
     /// `mem::swap`, `mem::replace`, `mem::take`, `Option::take` and

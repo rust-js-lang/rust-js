@@ -2074,4 +2074,40 @@ export const mutations: Mutation[] = [
       "generic_from_str"
     ]
   },
+  {
+    "name": "mir-cmp-max-refused",
+    "breaks": "`cmp::max(a, b)` of what isn't a number is refused from MIR, not `Ord::max(a, b)`'s",
+    "file": "src/lower/mir.rs",
+    "find": "        if known.is_none()\n            && let Some(name) = self.recognition().cmp_extreme(def_id)\n",
+    "replace": "        if false\n            && let Some(name) = self.recognition().cmp_extreme(def_id)\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "std_methods"
+    ]
+  },
+  {
+    "name": "mir-dyn-error-from-refused",
+    "breaks": "`\"too big\".into()` into a `Box<dyn Error>` is refused from MIR, not `{ value, impl: $stringError() }`",
+    "file": "src/lower/mir.rs",
+    "find": "            && let Some(dictionary) = self.dyn_error_from(to, from, span)?\n            && let [value] = &values[..]\n",
+    "replace": "            && let Some(dictionary) = self.dyn_error_from(to, from, span)?\n            && let [value] = &values[..0]\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "dyn_display"
+    ]
+  },
+  {
+    "name": "mir-call-refusal-own-words",
+    "breaks": "MIR's refusal of a call it can't lower says so in its own words, not the one a `compile-fail` case expects of rust-js",
+    "file": "src/lower/mir.rs",
+    "find": "&format!(\"calling `{}`\", self.tcx.def_path_str(def_id))",
+    "replace": "&format!(\"calling `{}`, from its MIR\", self.tcx.def_path_str(def_id))",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "str_circumfix_closure"
+    ]
+  },
 ];

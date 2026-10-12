@@ -89,6 +89,7 @@ duration_overflow.rs
 dyn_any_closure.rs
 dyn_any_counted_rc.rs
 dyn_any_generic.rs
+dyn_display.rs
 dyn_drops.rs
 dyn_generic.rs
 dyn_iterators.rs
@@ -257,11 +258,13 @@ statics.rs
 std_errors_boxed.rs
 std_function_value_panic.rs
 std_function_values.rs
+std_methods.rs
 std_mut_items.rs
 std_struct_const.rs
 stepped_nested.rs
 stock_orders.rs
 str_circumfix.rs
+str_circumfix_closure.rs
 string_bytes.rs
 string_drain_from_past_len.rs
 string_editing.rs

@@ -1711,6 +1711,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(Expr::call(Expr::member(dictionary, "fmt"), values)))
     }
 
+    /// What `From::from` or `Into::into` makes, and from what.
+    pub(super) fn converted(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<(Ty<'tcx>, Ty<'tcx>)> {
+        let tr = self.tcx.trait_of_assoc(def_id)?;
+        let mut types = args.types();
+        let (first, second) = (types.next()?, types.next()?);
+        if is_std_def(self.tcx, tr, StdItem::From) {
+            Some((first, second))
+        } else if is_std_def(self.tcx, tr, StdItem::Into) {
+            Some((second, first))
+        } else {
+            None
+        }
+    }
+
     /// The dictionary of a `Box<dyn Error>`, `to`, made from a `from` by std's
     /// `From` (ADR 0141): the error's own `Error`, or a message's,
     /// `$stringError()`. None if `to` isn't one.

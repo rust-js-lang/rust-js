@@ -2858,6 +2858,16 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::slice::IterMut")
     }
 
+    /// `cmp::max`'s name, `"max"`, or `cmp::min`'s, `"min"`: of what isn't a
+    /// number, `Ord`'s method of that name's call (ADR 0136).
+    pub(super) fn cmp_extreme(&self, def_id: DefId) -> Option<&'static str> {
+        match self.tcx.def_path_str(def_id).as_str() {
+            "std::cmp::max" | "core::cmp::max" => Some("max"),
+            "std::cmp::min" | "core::cmp::min" => Some("min"),
+            _ => None,
+        }
+    }
+
     /// A `Result`.
     pub(super) fn is_result(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_adt(ty, sym::Result)
