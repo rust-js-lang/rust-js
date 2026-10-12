@@ -109,8 +109,6 @@ derives/debug/derive-debug.rs	error: rust-js does not support values of type `*c
 derives/derive-hash-on-unit-struct.rs	error: rust-js does not support calling `std::hash::SipHasher::new` yet
 derives/deriving-hash.rs	error: rust-js does not support user implementations of `std::hash::Hasher` yet
 derives/deriving-with-repr-packed-3.rs	error: rust-js does not support values of type `*const Aligned` yet
-derives/eq-ord/deriving-cmp-generic-enum.rs	error: rust-js does not support comparing `E<i32>`s yet
-derives/eq-ord/deriving-cmp-generic-struct-enum.rs	error: rust-js does not support comparing `ES<i32>`s yet
 destructuring-assignment/drop-order.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support values of type `*const u8` yet
 drop/drop-on-untaken-arm-raw-ptr.rs	error: rust-js does not support values of type `*mut std::boxed::Box<(dyn std::ops::Fn() + 'static)>` yet
