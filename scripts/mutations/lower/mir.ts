@@ -2614,4 +2614,28 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/mir.test.ts", "-t", "rc_counts"],
   },
+  {
+    name: "mir-make-mut-field-refused",
+    breaks: "MIR's `Rc::make_mut(&mut copy.pages)`, of a field, is refused",
+    file: "src/lower/mir.rs",
+    find: "                    Some(name) if fixed_place(&place) => state",
+    replace: "                    Some(name) if matches!(place.kind, js::ExprKind::Var(_)) => state",
+    tests: ["test/mir.test.ts", "-t", "rc_counted_uses"],
+  },
+  {
+    name: "mir-mut-temp-expr-spilled",
+    breaks: "MIR's `&mut copy.pages` temporary is a `const` of the `Rc`, which `make_mut` can't give another",
+    file: "src/lower/mir.rs",
+    find: "            && let Value::Place(target) | Value::Expr(target) = &value\n",
+    replace: "            && let Value::Place(target) = &value\n",
+    tests: ["test/mir.test.ts", "-t", "rc_counted_uses"],
+  },
+  {
+    name: "mir-counted-rc-plain",
+    breaks: "MIR's `Arc::strong_count(&owner)` is read where it's shown, after a later `upgrade()` counted another",
+    file: "src/lower/mir.rs",
+    find: "                            && self.counted_rc(t).is_none()\n                            && self.weak_of(t).is_none()\n",
+    replace: "",
+    tests: ["test/mir.test.ts", "-t", "rc_counted_uses"],
+  },
 ];

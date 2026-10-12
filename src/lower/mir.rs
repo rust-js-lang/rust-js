@@ -477,6 +477,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && !t.has_escaping_bound_vars()
                             && t.is_freeze(self.tcx, self.typing_env)
                             && !self.is_js_object(t)
+                            // A counted `Rc`'s or `Weak`'s counts change through
+                            // what shares it (ADR 0320).
+                            && self.counted_rc(t).is_none()
+                            && self.weak_of(t).is_none()
                     }
                     _ => true,
                 })
@@ -2270,17 +2274,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         // A `&mut` a temporary holds to a place, a guard's `value` its
-        // `deref_mut` gives: that place, where it's used and written.
+        // `deref_mut` gives, `&mut copy.pages`: that place, where it's used
+        // and written, which nothing else changes while it's borrowed.
         if place.projection.is_empty()
             && !state.locals.user[local]
             && state.locals.writes[local] == 1
-            && let Value::Place(target) = &value
+            && let Value::Place(target) | Value::Expr(target) = &value
             && matches!(
                 state.body.local_decls[local].ty.kind(),
                 ty::Ref(_, _, ty::Mutability::Mut)
             )
-            && let js::ExprKind::Member(holder, _) = &target.kind
-            && holder.reads_same()
+            && matches!(target.kind, js::ExprKind::Member(..) | js::ExprKind::Index(..))
+            && fixed_place(target)
         {
             state.in_place.insert(local, target.clone());
             return Ok(());
@@ -5411,8 +5416,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Rc(RcOp::MakeMut) => {
                 let place = self.value_expr(values.next().expect("the `Rc`"), span)?;
                 let item = self.counted_rc(arg_tys[0].peel_refs());
-                let local = match &place.kind {
-                    js::ExprKind::Var(name) => state.locals.names.iter_enumerated().find(|(_, n)| *n == name),
+                // Of a variable of this body or a field of one, `copy.pages`.
+                let local = match root_var(&place) {
+                    Some(name) if fixed_place(&place) => state.locals.names.iter_enumerated().find(|(_, n)| *n == name),
                     _ => None,
                 };
                 let (Some(item), Some((local, _))) = (item, local) else {

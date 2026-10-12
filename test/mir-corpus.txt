@@ -243,6 +243,7 @@ range_into_set.rs
 range_searches.rs
 range_values.rs
 rc_clone_sees_owners.rs
+rc_counted_uses.rs
 rc_counts.rs
 rc_make_mut_clone_panics.rs
 refcell_borrow_while_mut.rs
