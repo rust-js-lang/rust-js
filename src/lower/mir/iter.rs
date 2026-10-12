@@ -517,6 +517,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
     /// by its `next`, the crate's by its impl's, a JS one as it is.
     pub(super) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+        // The crate's own behind an `impl Iterator` too.
+        let ty = self.reveal(ty);
         match self.range_kind(ty) {
             Some(RangeKind::Exclusive) => {
                 self.runtime.insert(Helper::RangeNext);
@@ -539,6 +541,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let trait_id = std_item(self.tcx, StdItem::Iterator);
                 self.user_iterator(value, ty, trait_id, "next", span)
             }
+            // A generic one, which may be given an array (ADR 0061): JS's
+            // iterator of it, as THIR's.
+            None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),
             None => Ok(value),
         }
     }

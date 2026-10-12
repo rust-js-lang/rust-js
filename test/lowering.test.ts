@@ -5539,6 +5539,50 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
+// A generic iterator is stepped as JS's, `Iterator.from(items)`, as an
+// array may be given (ADR 0061); the crate's own given from behind an
+// `impl Iterator` is a JS iterator of it, from MIR as from THIR.
+test("a generic iterator takes the crate's own from behind impl Iterator", async () => {
+  const dir = fixture("generic-iterator-opaque");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Countdown {
+    n: u32,
+}
+
+impl Iterator for Countdown {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        if self.n == 0 {
+            return None;
+        }
+        self.n -= 1;
+        Some(self.n)
+    }
+}
+
+pub fn countdown(n: u32) -> impl Iterator<Item = u32> {
+    Countdown { n }
+}
+
+pub fn middle(items: impl Iterator<Item = u32>, k: usize) -> Vec<u32> {
+    items.skip(1).take(k).collect()
+}
+
+pub fn of_countdown(n: u32) -> Vec<u32> {
+    middle(countdown(n), 2)
+}
+
+pub fn mapped(n: u32) -> u32 {
+    countdown(n).map(|x| x + 1).sum()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("return Iterator.from(items).drop(1).take(k).toArray();");
+    const lib = await import(join(dir, out));
+    expect([lib.of_countdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
+  }
+});
+
 // `rev()` of an array's items skipped and taken from, which no closure
 // runs over: the array sliced, reversed, from MIR as from THIR.
 test("rev of skipped and taken items is the slice reversed", async () => {

@@ -566,4 +566,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","rev of skipped and taken"],
   },
+  {
+    name: "mir-generic-iterator-unwrapped",
+    breaks: "MIR's generic iterator is stepped as given, an array's `drop` missing",
+    file: "src/lower/mir/iter.rs",
+    find: "            None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","takes the crate's own from behind"],
+  },
+  {
+    name: "mir-opaque-iterator-unrevealed",
+    breaks: "MIR's iterator of the crate's behind `impl Iterator` is given as the struct, not a JS iterator",
+    file: "src/lower/mir/iter.rs",
+    find: "        let ty = self.reveal(ty);\n        match self.range_kind(ty) {\n",
+    replace: "        match self.range_kind(ty) {\n",
+    tests: ["test/lowering.test.ts","-t","takes the crate's own from behind"],
+  },
 ];
