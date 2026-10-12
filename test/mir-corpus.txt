@@ -147,6 +147,7 @@ generic_mut_map.rs
 generic_mut_ref.rs
 generic_mut_ref_kept.rs
 generic_operators.rs
+generic_trait_methods.rs
 generic_traits.rs
 generic_writers.rs
 guard_statements.rs
@@ -278,8 +279,8 @@ slice_patterns.rs
 slice_prefix_eq.rs
 slice_prefixes.rs
 slice_split.rs
-slice_split_off.rs
 slice_split_at_panic.rs
+slice_split_off.rs
 slice_start_past_len.rs
 slice_to_array.rs
 slice_uninit.rs

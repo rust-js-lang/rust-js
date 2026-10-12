@@ -4407,6 +4407,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let list = match values.next() {
                 Some(Value::List(items)) => items,
                 Some(Value::Expr(e)) if matches!(e.kind, js::ExprKind::Undefined) => Vec::new(),
+                // The arguments' tuple, made before: each of its items.
+                Some(Value::Expr(tuple) | Value::Place(tuple))
+                    if tuple.reads_same()
+                        && let ty::Tuple(tys) = arg_tys[1].kind() =>
+                {
+                    (0..tys.len())
+                        .map(|i| Value::Expr(Expr::index(tuple.clone(), Expr::int(i as i128))))
+                        .collect()
+                }
                 _ => return Err(self.unsupported(span, "this closure call, from its MIR")),
             };
             let mut exprs = list

@@ -2646,4 +2646,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
   },
+  {
+    name: "mir-closure-tuple-refused",
+    breaks: "MIR's `f(x)` of a generic `F: Fn`, its arguments a tuple made before, is refused",
+    file: "src/lower/mir.rs",
+    find: "                    if tuple.reads_same()\n",
+    replace: "                    if false && tuple.reads_same()\n",
+    tests: ["test/mir.test.ts", "-t", "generic_trait_methods"],
+  },
 ];
