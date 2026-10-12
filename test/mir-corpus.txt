@@ -197,6 +197,7 @@ mut_number_args.rs
 mut_number_handles.rs
 mut_ref_as_generic.rs
 mut_ref_box_parts.rs
+mut_ref_compare.rs
 mut_ref_handle.rs
 mut_ref_kept.rs
 mut_ref_local.rs

@@ -35,7 +35,7 @@ use rustc_span::Span;
 use super::combinators::StepOp;
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
-use super::recognition::{Std, StdItem, std_item, trait_method};
+use super::recognition::{Std, StdItem, TraitCall, std_item, trait_method};
 use super::representation::{const_js, variant_field};
 use super::std_types::cow::CowOp;
 use super::std_types::map::MapOp;
@@ -386,6 +386,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, false) => 1,
             (false, false) => 0,
         };
+        // A parameter or a result of a type JS can't hold, a `&mut` to a
+        // `&mut [i32]` whose place it can't share: refused, as THIR's.
+        let def_span = self.tcx.def_span(mir_body.source.def_id());
+        for local in mir_body.args_iter().skip(skip) {
+            self.check_value_ty(mir_body.local_decls[local].ty, def_span)?;
+        }
+        if mir_body.coroutine.is_none() {
+            self.check_value_ty(mir_body.return_ty(), def_span)?;
+        }
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
@@ -2338,7 +2347,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if place.projection.is_empty() && !state.locals.declared[local] {
             self.flush(state, out)?;
             state.locals.declared[local] = true;
-            out.push(StmtKind::Const(state.locals.names[local].clone(), expr).at(js_span));
+            let name = state.locals.names[local].clone();
+            // A part borrowed mutably, `ref mut n` of an `Option<i32>`, may be
+            // the variable itself in JS, written through the borrow: a `let`,
+            // which tidy makes a `const` where nothing assigns it.
+            out.push(
+                match state.locals.borrowed[local] {
+                    true => StmtKind::Let(name, Some(expr)),
+                    false => StmtKind::Const(name, expr),
+                }
+                .at(js_span),
+            );
             return Ok(());
         }
         // The value is made before the place is reached, as Rust makes them.
@@ -3311,7 +3330,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         // Through `outer`, a `&mut` to `list`, a `&mut` to what
                         // isn't a cell: what `list` is.
-                        (_, Value::Ref(e)) if !place.projection.is_empty() && !self.is_cell_pointee(pointee) => {
+                        (_, Value::Ref(e))
+                            if !place.projection.is_empty()
+                                && !self.is_cell_pointee(pointee)
+                                && !self.is_cell(pointee) =>
+                        {
                             Value::Expr(e)
                         }
                         (_, value) => value,
@@ -4195,6 +4218,44 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let arg_tys = arg_tys.to_vec();
         let tcx = self.tcx;
+        // `x == &mut 1`, `p > q`, of `&mut`s to what JS can't change in place:
+        // of what they point at, as THIR's (ADR 0099), not the handles.
+        if let Some(trait_id) = tcx.trait_of_assoc(def_id)
+            && matches!(
+                self.recognition().trait_call(def_id, trait_id),
+                Some(TraitCall::Equality { .. } | TraitCall::Ordering)
+            )
+            && generic_args.types().any(|t| self.is_cell(t))
+        {
+            let pointee = |t: Ty<'tcx>| match *t.kind() {
+                ty::Ref(_, inner, ty::Mutability::Mut) if self.is_cell(t) => inner,
+                _ => t,
+            };
+            let peeled = tcx.mk_args_from_iter(generic_args.iter().map(|a| match a.as_type() {
+                Some(t) => pointee(t).into(),
+                None => a,
+            }));
+            let mut tys = Vec::new();
+            let mut given = Vec::new();
+            for (value, &ty) in values.into_iter().zip(&arg_tys) {
+                let (value, ty) = match *ty.kind() {
+                    ty::Ref(region, inner, m)
+                        if let ty::Ref(_, target, _) = *inner.kind()
+                            && self.is_cell(inner) =>
+                    {
+                        let value = match value {
+                            Value::Ref(place) => Value::Expr(place),
+                            value => Value::Expr(Expr::member(self.value_expr(value, span)?, "value")),
+                        };
+                        (value, Ty::new_ref(tcx, region, target, m))
+                    }
+                    _ => (value, ty),
+                };
+                given.push(value);
+                tys.push(ty);
+            }
+            return self.mir_call_values(state, (def_id, peeled), (given, &tys), output, span, out);
+        }
         // A constructor called, `f(Shape::Rect)`'s: the arrow making what it
         // makes (ADR 0125), applied.
         if matches!(tcx.def_kind(def_id), DefKind::Ctor(_, rustc_hir::def::CtorKind::Fn)) {

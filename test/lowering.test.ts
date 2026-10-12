@@ -5283,6 +5283,25 @@ pub fn og() -> OpenGraph<'static> {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support flattening an enum variant's field yet")]);
 });
 
+// A parameter of a \`&mut\` to a \`&mut [i32]\`, whose place JS can't share,
+// is refused from MIR as from THIR: given a copy, \`*s = other\` would
+// leave the caller's \`rest\` as it was.
+test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
+  const dir = fixture("mut-slice-ref-param");
+  writeFileSync(join(dir, "lib.rs"), `pub fn reset<'a>(s: &mut &'a mut [i32], other: &'a mut [i32]) {
+    *s = other;
+}
+`);
+  for (const env of [{}, { RUST_JS_MIR: "1" }]) {
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+      cwd: root,
+      stderr: "pipe",
+      env: { ...process.env, ...env },
+    });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
+  }
+});
+
 // MIR's cell only its function uses is a plain variable (tidy's
 // \`plain_cells\`), but not where a callback's parameter of its name reads
 // a \`value\` of its own, \`{:?}\`'s of a \`Vec<&mut str>\`.
