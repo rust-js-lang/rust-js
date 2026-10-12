@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "mir-open-drop-other-variant",
     breaks: "an enum some of which has moved drops what's left of a variant when it's another",
     file: "src/lower/mir/drops.rs",
-    find: "            let test = self.variant_test(subject.clone(), ty, adt, variant);\n",
-    replace: "            let test = Expr::unary(js::UnaryOp::Not, self.variant_test(subject.clone(), ty, adt, variant));\n",
+    find: "                None => self.variant_test(subject.clone(), ty, adt, variant),\n",
+    replace: "                None => Expr::unary(js::UnaryOp::Not, self.variant_test(subject.clone(), ty, adt, variant)),\n",
     tests: ["test/mir.test.ts","-t","drop_partial|struct_update_drops|temporaries_taken_apart"],
   },
   {
@@ -57,5 +57,13 @@ export const mutations: Mutation[] = [
     find: "                            .and_then(|()| self.mir_assign(state, place, rvalue, span, &mut out));\n",
     replace: "                            .and_then(|()| Ok(()));\n",
     tests: ["test/mir.test.ts","-t","drop_replace_panics"],
+  },
+  {
+    name: "mir-drop-branch-unmapped",
+    breaks: "MIR's drop of what `?` made, a part still there, reads `ControlFlow` as a place and is refused",
+    file: "src/lower/mir/drops.rs",
+    find: "            Some((tried, _)) => tried.clone(),\n            None => self.mir_place(state, place, span, out)?,\n",
+    replace: "            _ => self.mir_place(state, place, span, out)?,\n",
+    tests: ["test/mir.test.ts", "-t", "question_drops"],
   },
 ];

@@ -227,6 +227,7 @@ once_cells.rs
 opaque_iterators.rs
 operands_before_replace.rs
 option_as_deref.rs
+option_combinator_drops.rs
 option_map_drops.rs
 option_rest_pattern.rs
 option_result_methods.rs
@@ -243,6 +244,7 @@ prepared_places.rs
 pretty_debug.rs
 pretty_debug_derived.rs
 print.rs
+question_drops.rs
 question_early_returns.rs
 radix_negative.rs
 radix_out_of_range.rs

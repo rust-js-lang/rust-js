@@ -410,7 +410,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<()> {
         let ty = place.ty(&state.body.local_decls, self.tcx).ty;
-        let subject = self.mir_place(state, place, span, out)?;
         let mut arms = Vec::new();
         let (mut otherwise, mut glue) = (false, false);
         for (variant, def) in adt.variants().iter_enumerated() {
@@ -434,11 +433,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
+        // What `?` made, `Try::branch(r)`: `r`, whose `Err` or `None` is its
+        // `Break`, its value its `Continue`.
+        let branch = match place.projection.is_empty() {
+            true => state.branches.get(&place.local).cloned(),
+            false => None,
+        };
+        let subject = match &branch {
+            Some((tried, _)) => tried.clone(),
+            None => self.mir_place(state, place, span, out)?,
+        };
         // The variants not taken apart: all of it, or nothing.
         let mut chain: Option<Vec<Stmt>> = match (otherwise, glue) {
             (true, true) => {
                 let mut whole = Vec::new();
-                self.drop_value(subject.clone(), ty, span, &mut whole)?;
+                let whole_ty = branch.as_ref().map_or(ty, |(_, tried_ty)| *tried_ty);
+                self.drop_value(subject.clone(), whole_ty, span, &mut whole)?;
                 Some(whole)
             }
             (true, false) => Some(Vec::new()),
@@ -447,7 +457,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let js_span = self.js_span(span);
         for (variant, dropped) in arms.into_iter().rev() {
-            let test = self.variant_test(subject.clone(), ty, adt, variant);
+            let test = match &branch {
+                Some((_, tried_ty)) => {
+                    let failed = self.tried_failed(subject.clone(), *tried_ty);
+                    match variant.as_u32() {
+                        0 => Expr::unary(js::UnaryOp::Not, failed),
+                        _ => failed,
+                    }
+                }
+                None => self.variant_test(subject.clone(), ty, adt, variant),
+            };
             chain = Some(match (dropped.is_empty(), chain) {
                 (true, Some(rest)) if !rest.is_empty() => {
                     vec![StmtKind::If(Expr::unary(js::UnaryOp::Not, test), rest, None).at(js_span)]
