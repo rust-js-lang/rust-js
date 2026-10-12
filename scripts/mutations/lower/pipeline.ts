@@ -298,7 +298,7 @@ export const mutations: Mutation[] = [
     name: "mir-statics-boxed",
     breaks: "a thread-local only its module reads and sets stays `{ value }`",
     file: "src/lower/pipeline.rs",
-    find: "                super::mir::plain_statics(&mut lowered.items);\n",
+    find: "                super::mir::plain_statics(&mut lowered.items, &quiet);\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","thread-local only its module"],
   },

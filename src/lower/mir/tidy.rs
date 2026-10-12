@@ -359,7 +359,7 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
         ) if it == iter => f.as_str(),
         _ => return None,
     };
-    if !matches!(step, "$next" | "$rangeNext")
+    if !matches!(step, "$next" | "$nextSome" | "$rangeNext")
         || js::mentions_in(std::slice::from_ref(looped), iter) != 1
         || js::mentions_in(after, iter) != 0
     {
@@ -398,13 +398,30 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
         (label, block) => label.clone().or(block),
     };
     let label = &label;
+    // An item that may itself be `None` was boxed by `$nextSome` for the
+    // test, and `$someValue` takes it out: JS's `for` binds it as it is.
+    if step == "$nextSome" {
+        let unboxed = |value: &Expr| match &value.kind {
+            ExprKind::Call(f, args) if matches!(&f.kind, ExprKind::Var(f) if f == "$someValue") => {
+                matches!(args.as_slice(), [Expr { kind: ExprKind::Var(v), .. }] if v == item)
+            }
+            _ => false,
+        };
+        let first = inner.first_mut()?;
+        match &mut first.kind {
+            StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) if unboxed(value) => {
+                *value = Expr::var(item);
+            }
+            _ => return None,
+        }
+    }
     let (pattern, mutable, taken) = binding(&inner, item)?;
     let body = inner[taken..].to_vec();
     if js::mentions_in(&body, item) > 0 || js::mentions_in(&exit, item) > 0 {
         return None;
     }
     let looped = match step {
-        "$next" => StmtKind::ForOf {
+        "$next" | "$nextSome" => StmtKind::ForOf {
             label: label.clone(),
             pattern,
             mutable,

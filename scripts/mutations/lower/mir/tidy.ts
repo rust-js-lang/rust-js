@@ -1978,4 +1978,12 @@ export const mutations: Mutation[] = [
     replace: "    js::statement_lists(body, &mut forwarded_values);\n",
     tests: ["test/lowering.test.ts", "-t", "next_back of a map"],
   },
+  {
+    name: "mir-tidy-next-some-loop-kept",
+    breaks: "MIR's loop over items that may be `None` stays a `$nextSome` loop, a `null` item read as `undefined`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    if !matches!(step, \"$next\" | \"$nextSome\" | \"$rangeNext\")\n",
+    replace: "    if !matches!(step, \"$next\" | \"$rangeNext\")\n",
+    tests: ["test/bindings.test.ts","-t","a defined value is an unknown"],
+  },
 ];

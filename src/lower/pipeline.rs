@@ -77,6 +77,7 @@ pub fn lower_crate<'tcx>(
         pretty_debug,
         format_options,
         plain_locals,
+        quiet_locals,
         plain_cells,
         read_at_once,
         named_expressions,
@@ -681,7 +682,11 @@ pub fn lower_crate<'tcx>(
                 located: located(tcx, module),
             };
             if super::mir_mode() {
-                super::mir::plain_statics(&mut lowered.items);
+                let quiet: HashSet<&str> = (quiet_locals.iter())
+                    .filter(|&&key| tcx.parent_module_from_def_id(key) == module)
+                    .map(|key| fns[&key.to_def_id()].name.as_str())
+                    .collect();
+                super::mir::plain_statics(&mut lowered.items, &quiet);
             }
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));

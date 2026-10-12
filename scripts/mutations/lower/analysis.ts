@@ -111,4 +111,12 @@ export const mutations: Mutation[] = [
       "defaulting to each other"
     ]
   },
+  {
+    name: "mir-quiet-locals-none",
+    breaks: "MIR knows no quiet thread-local, each borrowed through `$withBorrow`",
+    file: "src/lower/analysis.rs",
+    find: "        true => (HashMap::new(), thread_locals.into_keys().collect()),\n",
+    replace: "        true => (HashMap::new(), HashSet::new()),\n",
+    tests: ["test/modules.test.ts","-t","thread-local only read and set"],
+  },
 ];

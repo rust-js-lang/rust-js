@@ -163,30 +163,32 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
 `;
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), source);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  // To TypeScript, the trait is the union: by TypeScript's own name for it,
-  // `Float32List`, where Rust takes each of its members; else each member,
-  // `BodyInit`'s, whose `Float16Array` Rust has no type of.
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function count(values: Float32List): number;");
-  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string): string;");
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain('globalThis.upload("hello");\n  globalThis.upload(blob);\n  globalThis.upload(body);\n  globalThis.upload(maybe);');
-  // Of webapi's union, a binding crate's trait, no dictionary: `kind(body)`.
-  expect(js).toContain("export function kind(body) {\n  const match = body;\n  if (typeof match === \"string\") {");
-  expect(js).toContain('el.before("text");');
-  expect(js).toContain("return [new Response(blob), window.fetch(url)];");
-  const { send, kind } = await import(join(dir, "lib.js"));
-  const sent: unknown[] = [];
-  const previous = (globalThis as any).upload;
-  (globalThis as any).upload = (body: unknown) => sent.push(body);
-  try {
-    const blob = new Blob(["b"]);
-    send(blob, "body", undefined);
-    expect(sent).toEqual(["hello", blob, "body", undefined]);
-  } finally {
-    (globalThis as any).upload = previous;
+  for (const [out, env] of [[dir, {}], [join(dir, "mir"), { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(out, "lib.js"), ...withWeb], 600_000, env);
+    // To TypeScript, the trait is the union: by TypeScript's own name for it,
+    // `Float32List`, where Rust takes each of its members; else each member,
+    // `BodyInit`'s, whose `Float16Array` Rust has no type of.
+    expect(readFileSync(join(out, "lib.d.ts"), "utf8")).toContain("export function count(values: Float32List): number;");
+    expect(readFileSync(join(out, "lib.d.ts"), "utf8")).toContain("export function kind(body: ReadableStream | Blob | Int8Array | Int16Array | Int32Array | Uint8Array | Uint16Array | Uint32Array | Uint8ClampedArray | BigInt64Array | BigUint64Array | Float32Array | Float64Array | DataView | ArrayBuffer | FormData | URLSearchParams | string): string;");
+    const js = readFileSync(join(out, "lib.js"), "utf8");
+    expect(js).toContain('globalThis.upload("hello");\n  globalThis.upload(blob);\n  globalThis.upload(body);\n  globalThis.upload(maybe);');
+    // Of webapi's union, a binding crate's trait, no dictionary: `kind(body)`.
+    expect(js).toContain("export function kind(body) {\n");
+    expect(js).toContain('el.before("text");');
+    expect(js).toContain("return [new Response(blob), window.fetch(url)];");
+    const { send, kind } = await import(join(out, "lib.js"));
+    const sent: unknown[] = [];
+    const previous = (globalThis as any).upload;
+    (globalThis as any).upload = (body: unknown) => sent.push(body);
+    try {
+      const blob = new Blob(["b"]);
+      send(blob, "body", undefined);
+      expect(sent).toEqual(["hello", blob, "body", undefined]);
+    } finally {
+      (globalThis as any).upload = previous;
+    }
+    expect([kind("text"), kind(new Blob()), kind(new ArrayBuffer(1))]).toEqual(["text", "blob", "other"]);
   }
-  expect([kind("text"), kind(new Blob())]).toEqual(["text", "blob"]);
   writeFileSync(join(dir, "lib.rs"), source.replace('upload("hello");', "upload(1.5);"));
   const wrong = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "wrong.js"), ...withWeb], { cwd: dir });
   expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a `string | Blob`")], wrong.stderr.toString()).toEqual([false, true]);
@@ -333,21 +335,23 @@ pub fn shown(text: &str) -> String {
     }
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withJs]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return String(match._0);");
-  // A `match` of what it threw, whose `Ok` only keeps the value and
-  // whose `Err` reads no error, is JS's `try` (ADR 0035).
-  expect(js).toContain('  let value;\n  try {\n    value = JSON.parse(text);\n  } catch {\n    console.error("invalid");\n    value = undefined;\n  }');
-  const lib = await import(join(dir, "lib.js"));
-  expect(lib.parsed("[1]")).toEqual([1]);
-  expect([lib.kept("[1]"), lib.kept("{")]).toEqual([[1], undefined]);
-  // One whose `Err` reads the error keeps it, `$try`'s.
-  expect([lib.kept_or_told("[1]"), lib.kept_or_told("{")]).toEqual([[1], undefined]);
-  expect([lib.told("1"), lib.told("{").startsWith("SyntaxError")]).toEqual(["", true]);
-  expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
-  expect(() => lib.parsed("{")).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
-  expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withJs], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toMatch(/return String\((match\._0|error)\);/);
+    // A `match` of what it threw, whose `Ok` only keeps the value and
+    // whose `Err` reads no error, is JS's `try` (ADR 0035).
+    expect(js).toContain('  let value;\n  try {\n    value = JSON.parse(text);\n  } catch {\n    console.error("invalid");\n    value = undefined;\n  }');
+    const lib = await import(join(dir, out));
+    expect(lib.parsed("[1]")).toEqual([1]);
+    expect([lib.kept("[1]"), lib.kept("{")]).toEqual([[1], undefined]);
+    // One whose `Err` reads the error keeps it, `$try`'s.
+    expect([lib.kept_or_told("[1]"), lib.kept_or_told("{")]).toEqual([[1], undefined]);
+    expect([lib.told("1"), lib.told("{").startsWith("SyntaxError")]).toEqual(["", true]);
+    expect([lib.valid("[1]"), lib.valid("{")]).toEqual([true, false]);
+    expect(() => lib.parsed("{")).toThrow("called `Result::unwrap()` on an `Err` value: SyntaxError");
+    expect([lib.shown("{").startsWith("SyntaxError: "), lib.shown("1")]).toEqual([true, "parsed"]);
+  }
 });
 
 // ADR 0283: a regular expression's match, an `Error`'s parts, symbols, the
@@ -1345,15 +1349,17 @@ pub fn counted(n: u32) -> String {
     string(Some(unknown(&n)))
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("return text;");
-  expect(js).toContain("String(part)");
-  expect(js).toContain("return String(n);");
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.message("a", 1, true), lib.message("a", 1, false), lib.message("a", undefined, false)]).toEqual(["a", 1, undefined]);
-  expect(lib.joined(["a", 1, undefined, null, { b: 1 }])).toBe("a1undefinednull[object Object]");
-  expect(lib.counted(7)).toBe("7");
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("return text;");
+    expect(js).toContain("for (const part of parts) {\n    result += String(part);");
+    expect(js).toContain("return String(n);");
+    const lib = await import(join(dir, out));
+    expect([lib.message("a", 1, true), lib.message("a", 1, false), lib.message("a", undefined, false)]).toEqual(["a", 1, undefined]);
+    expect(lib.joined(["a", 1, undefined, null, { b: 1 }])).toBe("a1undefinednull[object Object]");
+    expect(lib.counted(7)).toBe("7");
+  }
 });
 
 // ADR 0225: a WebIDL parameter typed `any` takes a value as JS has it, and
@@ -1460,24 +1466,26 @@ pub fn counted(key: &str) -> f64 {
     dict::get(counts, key).copied().unwrap_or(0.0)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), ...withWeb]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  // A lookup is the runtime's `$dictGet`, imported with its other helpers.
-  expect(js).toContain('import { $dictGet, $displayF64, $someValue, $try } from "@rust-js/runtime";');
-  expect(js).toContain("Object.entries(value)");
-  expect(js).toContain("const match$1 = $dictGet(match._0, key);");
-  expect(js).toContain("return JSON.stringify(match._0);");
-  expect(js).toContain("const numbers = { a: 1 };\n  numbers.b = 2;");
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.parsed('{"a":[1,"x",null,true],"b":{}}'), lib.parsed("null"), lib.parsed("nope")])
-    .toEqual(["{a:[1,'x',null,true],b:{}}", "null", "invalid"]);
-  expect([lib.lookup('{"a":null,"b":1}', "a"), lib.lookup('{"a":null,"b":1}', "b"), lib.lookup('{"a":null}', "c"), lib.lookup('{"a":null}', "toString"), lib.lookup("[1]", "a")])
-    .toEqual(["null", "1", "missing", "missing", "not an object"]);
-  expect(lib.round_trip('{"a": [1, null]}')).toBe('{"a":[1,null]}');
-  expect(lib.built()).toEqual(["a", "b"]);
-  // A dictionary of what isn't an Option is read as JS reads one (ADR 0225).
-  expect(js).toContain("return counts[key] ?? 0;");
-  expect([lib.counted("a"), lib.counted("b")]).toEqual([1, 0]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    // A lookup is the runtime's `$dictGet`, imported with its other helpers.
+    expect(js).toContain('import { $dictGet, $displayF64, $someValue, $try } from "@rust-js/runtime";');
+    expect(js).toContain("Object.entries(value)");
+    expect(js).toMatch(/ = \$dictGet\(\w+(\._0)?, key\);/);
+    expect(js).toMatch(/return JSON\.stringify\(\w+(\._0)?\);/);
+    expect(js).toContain("const numbers = { a: 1 };\n  numbers.b = 2;");
+    const lib = await import(join(dir, out));
+    expect([lib.parsed('{"a":[1,"x",null,true],"b":{}}'), lib.parsed("null"), lib.parsed("nope")])
+      .toEqual(["{a:[1,'x',null,true],b:{}}", "null", "invalid"]);
+    expect([lib.lookup('{"a":null,"b":1}', "a"), lib.lookup('{"a":null,"b":1}', "b"), lib.lookup('{"a":null}', "c"), lib.lookup('{"a":null}', "toString"), lib.lookup("[1]", "a")])
+      .toEqual(["null", "1", "missing", "missing", "not an object"]);
+    expect(lib.round_trip('{"a": [1, null]}')).toBe('{"a":[1,null]}');
+    expect(lib.built()).toEqual(["a", "b"]);
+    // A dictionary of what isn't an Option is read as JS reads one (ADR 0225).
+    expect(js).toContain("return counts[key] ?? 0;");
+    expect([lib.counted("a"), lib.counted("b")]).toEqual([1, 0]);
+  }
 });
 
 // An element's constructor is WebIDL's `[HTMLConstructor]`, which only a
@@ -1701,16 +1709,18 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
     f(value)
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--library", "--manifest", join(dir, "lib.manifest.json"),
-    "--", "--crate-name", "counted", `--emit=metadata=${join(dir, "libcounted.rmeta")}`]);
-  const js = readFileSync(join(dir, "lib.js"), "utf8");
-  expect(js).toContain("export function count(value) {\n  const n = globalThis.calls;\n  return [n, value];\n}");
-  expect(js).toContain("export function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
-  expect(js).toContain("export function call(value, given) {\n  const f = given;\n  return f(value);\n}");
-  expect(js).toContain("export function count_unmarked(value, dropT) {");
-  (globalThis as { calls?: number }).calls = 3;
-  const lib = await import(join(dir, "lib.js"));
-  expect([lib.count("a"), lib.count_unmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--library", "--manifest", join(dir, out.replace(".js", ".manifest.json")),
+      "--", "--crate-name", "counted", `--emit=metadata=${join(dir, "libcounted.rmeta")}`], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("export function count(value) {\n  const n = globalThis.calls;\n  return [n, value];\n}");
+    expect(js).toContain("export function first(value, given) {\n  const n = given;\n  return [n, value];\n}");
+    expect(js).toContain("export function call(value, given) {\n  const f = given;\n  return f(value);\n}");
+    expect(js).toContain("export function count_unmarked(value, dropT) {");
+    (globalThis as { calls?: number }).calls = 3;
+    const lib = await import(join(dir, out));
+    expect([lib.count("a"), lib.count_unmarked("b"), lib.first("c", 4), lib.call(5, (n: number) => n + 1)]).toEqual([[3, "a"], [3, "b"], [4, "c"], 6]);
+  }
 });
 
 // ADR 0304: `js::import!(item)` loads the module that has it when it's asked

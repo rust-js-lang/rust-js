@@ -25,7 +25,7 @@ use rustc_index::IndexVec;
 use rustc_middle::mir::interpret::GlobalId;
 use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
-    Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp,
+    Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp, UnwindAction,
 };
 use rustc_middle::thir;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -35,7 +35,7 @@ use rustc_span::Span;
 use super::combinators::{IterComb, StepOp};
 use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
-use super::recognition::{Std, StdItem, TraitCall, std_item, trait_method};
+use super::recognition::{PureStd, Std, StdItem, TraitCall, pure_std, std_item, trait_method};
 use super::representation::{const_js, variant_field};
 use super::std_types::cow::CowOp;
 use super::std_types::map::MapOp;
@@ -58,12 +58,27 @@ pub struct Mir<'tcx> {
 }
 
 impl<'tcx> Mir<'tcx> {
-    /// `body`, its `.await`s each one call.
+    /// `body`, its `.await`s each one call, and what can't throw never
+    /// unwinding.
     pub(super) fn new(
         tcx: ty::TyCtxt<'tcx>,
         mut body: mir::Body<'tcx>,
         promoted: IndexVec<Promoted, mir::Body<'tcx>>,
     ) -> Mir<'tcx> {
+        // A call that can't throw, a binding marked so or `unwrap_unchecked`,
+        // has nothing to clean up, as THIR's (ADR 0301): rustc's dataflow of
+        // what's there, which says what's dropped, follows no unwinding of it.
+        for data in body.basic_blocks.as_mut() {
+            if let TerminatorKind::Call { func, unwind, .. } = &mut data.terminator_mut().kind
+                && let Some((id, _)) = func.const_fn_def()
+                && match pure_std(tcx, id) {
+                    Some(PureStd::Question | PureStd::BoxNew | PureStd::Unchecked) => true,
+                    _ => bindings::is_binding(tcx, id) && bindings::cannot_throw(tcx, id),
+                }
+            {
+                *unwind = UnwindAction::Unreachable;
+            }
+        }
         let awaits = match body.coroutine.is_some() {
             true => awaits::awaits(tcx, &mut body),
             false => Default::default(),
@@ -289,6 +304,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .copied()
             .collect();
         self.place_written(written, &mut out);
+        out.splice(0..0, self.directives(body.def_id));
         // The drops it used, which its callers give it (ADR 0300).
         self.note_drop_uses(def_id);
         Ok(LoweredFn {
@@ -1133,6 +1149,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             params.pop();
         }
+        // Its directives, `"use server";`, its body's first statements
+        // (ADR 0349).
+        let directives = self.directives(def_id.expect_local());
         // An `async` body runs as soon as it's made: an async arrow, called
         // at once (ADR 0029).
         if self.tcx.coroutine_is_async(def_id) {
@@ -1144,6 +1163,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(mut body) = called_async_body(&mut stmts)
         {
             self.place_written(written, &mut body);
+            body.splice(0..0, directives);
             return Ok(Expr::async_arrow(params, body));
         }
         // A closure of `()` that only spawns an async block is that block's
@@ -1151,6 +1171,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // promise where nothing reads its `()` (ADR 0257).
         if let ty::Closure(_, args) = self.tcx.type_of(def_id).skip_binder().kind()
             && written.is_empty()
+            && directives.is_empty()
             && args.as_closure().sig().output().skip_binder().is_unit()
             && let [
                 Stmt {
@@ -1166,6 +1187,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::async_arrow(params, spawned.clone()));
         }
         self.place_written(written, &mut stmts);
+        stmts.splice(0..0, directives);
         let forwarding = self.closure_calls_rust(body, false);
         let concise = self.closure_calls_for_nothing(body);
         if forwarding || concise {
@@ -1562,7 +1584,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Some(self.read_local(state, ret, &mut out)?),
                 };
                 self.flush(state, &mut out)?;
-                out.push(StmtKind::Return(value).at(self.js_span(span)));
+                // Where what it gives was written, as THIR's: MIR's `return`
+                // is where the body ends, which the source map has nothing of.
+                let span = match &value {
+                    Some(value) if !value.span.is_none() => value.span,
+                    _ => self.js_span(span),
+                };
+                out.push(StmtKind::Return(value).at(span));
             }
             TerminatorKind::Unreachable => {
                 self.flush(state, &mut out)?;
@@ -2222,6 +2250,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        // What's made is where its Rust is, for the source map.
+        let value = match value {
+            Value::Expr(mut e) if e.span.is_none() => {
+                e.span = self.js_span(span);
+                Value::Expr(e)
+            }
+            value => value,
+        };
         let local = place.local;
         let place = match self.whole(state.body, &place) {
             true => Place::from(local),
@@ -6126,8 +6162,23 @@ fn deferred_check<'tcx>(
 /// A module's own `const X = { value: init }`, a thread-local's cell MIR
 /// reads by its `value`, that its module reads and sets only so, by name,
 /// and doesn't export: `let X = init`, `X` where it's read, `const` where
-/// nothing sets it, as THIR keeps such a thread-local (ADR 0270).
-pub(super) fn plain_statics(items: &mut [js::Item]) {
+/// nothing sets it, as THIR keeps such a thread-local (ADR 0270). One
+/// `quiet`, whose borrows ask nothing of borrows, gives the closure of
+/// each what it holds, an object's, which it shares (ADR 0328).
+pub(super) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::HashSet<&str>) {
+    js::each_item_expr_mut(items, &mut |e| {
+        if let js::ExprKind::Call(callee, args) = &mut e.kind
+            && matches!(&callee.kind, js::ExprKind::Var(f) if f == "$withBorrow" || f == "$withBorrowMut")
+            && let [key, _] = args.as_slice()
+            && matches!(&key.kind, js::ExprKind::Var(v) if quiet.contains(v.as_str()))
+        {
+            let (key, f) = (args.remove(0), args.remove(0));
+            *e = Expr {
+                span: e.span,
+                ..super::calls::apply(f, vec![Expr::member(key, "value")])
+            };
+        }
+    });
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c)

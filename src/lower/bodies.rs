@@ -50,7 +50,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The directives of a function's or a closure's body, `"use cache";`,
     /// its first statements (ADR 0349).
-    fn directives(&self, owner: rustc_span::def_id::LocalDefId) -> Vec<Stmt> {
+    pub(super) fn directives(&self, owner: rustc_span::def_id::LocalDefId) -> Vec<Stmt> {
         (super::bindings::directives_of(self.tcx, owner).into_iter())
             .filter_map(|(directive, span)| Some(StmtKind::Directive(directive?.to_string()).at(self.js_span(span))))
             .collect()
