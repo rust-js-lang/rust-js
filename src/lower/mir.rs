@@ -433,23 +433,46 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             self.locals.alike.insert(name.clone());
-            let plain = mir_body.local_decls[local].ty.walk().all(|arg| match arg.kind() {
-                ty::GenericArgKind::Type(t) => {
-                    !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
-                        // Inside a binder, a function pointer's parameter, unknown.
-                        && !t.has_escaping_bound_vars()
-                        && t.is_freeze(self.tcx, self.typing_env)
-                        && !self.is_js_object(t)
+            let is_plain = |ty: Ty<'tcx>| {
+                ty.walk().all(|arg| match arg.kind() {
+                    ty::GenericArgKind::Type(t) => {
+                        !matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut) | ty::RawPtr(..))
+                            // Inside a binder, a function pointer's parameter, unknown.
+                            && !t.has_escaping_bound_vars()
+                            && t.is_freeze(self.tcx, self.typing_env)
+                            && !self.is_js_object(t)
+                    }
+                    _ => true,
+                })
+            };
+            let plain = is_plain(mir_body.local_decls[local].ty);
+            // What's to through a `&mut` changes by what it's given to.
+            let through_mut = matches!(
+                mir_body.local_decls[local].ty.kind(),
+                ty::Ref(_, _, ty::Mutability::Mut)
+            );
+            // Of a struct not all plain, a `Cell` in it, each field that is,
+            // `q.title`, which nothing changes either.
+            let fields: Vec<String> = match mir_body.local_decls[local].ty.peel_refs().kind() {
+                ty::Adt(adt, _) if !plain && !through_mut && adt.is_struct() => {
+                    match self.shape(mir_body.local_decls[local].ty.peel_refs()) {
+                        Shape::Object(fields) => (fields.into_iter())
+                            .filter(|(_, ty)| is_plain(*ty))
+                            .map(|(field, _)| format!("{name}.{field}"))
+                            .collect(),
+                        _ => Vec::new(),
+                    }
                 }
-                _ => true,
-            });
+                _ => Vec::new(),
+            };
             if plain {
                 self.locals.plain.insert(name.clone());
             }
+            self.locals.plain.extend(fields);
             // Of an array, of what may be JS's, its items, which only a
             // `&mut` changes: `...items` (`read_past_calls`).
             let ty = mir_body.local_decls[local].ty.peel_refs();
-            if !plain && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty)) {
+            if !plain && !through_mut && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty)) {
                 self.locals.plain.insert(format!("...{name}"));
             }
         }

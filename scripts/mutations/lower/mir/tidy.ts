@@ -1674,4 +1674,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "plain-reads-held",
+    "breaks": "a field of plain data MIR holds, `const t = q.title`, stays held, destructured, not read in place",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| plain_reads(stmts, plain, captured));\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

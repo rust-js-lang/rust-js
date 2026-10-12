@@ -151,6 +151,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| filtered_guards(stmts, &changing));
     alias_variables(body, &changing);
     read_handles(body);
+    js::statement_lists(body, &mut |stmts| plain_reads(stmts, plain, captured));
     js::statement_lists(body, &mut |stmts| destructured(stmts, patterns));
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
@@ -1702,6 +1703,41 @@ fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
         }
         StmtKind::TryCatch(body, _, caught) => last_assigns(body, t) && last_assigns(caught, t),
         _ => false,
+    }
+}
+
+/// `const t = q.title;` of plain data, which nothing changes, held by MIR,
+/// a temporary or what an element reads: `q.title` where `t` is read, each
+/// time, as THIR reads it.
+fn plain_reads(stmts: &mut Vec<Stmt>, plain: &HashSet<String>, captured: &HashSet<String>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let read = match &stmts[i].kind {
+            StmtKind::Const(name, value) if is_temporary(name) || captured.contains(name) => {
+                let mut root = value;
+                while let ExprKind::Member(of, _) = &root.kind {
+                    root = of;
+                }
+                (matches!(value.kind, ExprKind::Member(..))
+                    && (matches!(&root.kind, ExprKind::Var(v) if plain.contains(v))
+                        || field_path(value).is_some_and(|path| plain.contains(&path))))
+                .then(|| (name.clone(), value.clone()))
+            }
+            _ => None,
+        };
+        let Some((name, value)) = read else {
+            i += 1;
+            continue;
+        };
+        stmts.remove(i);
+        js::each_expr_mut(&mut stmts[i..], &mut |e| {
+            if matches!(&e.kind, ExprKind::Var(v) if *v == name) {
+                *e = Expr {
+                    span: e.span,
+                    ..value.clone()
+                };
+            }
+        });
     }
 }
 

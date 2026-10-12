@@ -1,5 +1,5 @@
 import { beforeAll, expect, test as bunTest } from "bun:test";
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup, renderToString } from "react-dom/server";
@@ -31,10 +31,28 @@ function compile(source: string, files: Record<string, string> = {}) {
 
 // Keep the whole emitted module, including imports and formatting. Only the
 // temporary source directory varies between runs; never normalize emitted code.
+// From MIR (ADR 0364), its own where it writes otherwise, `<name>.mir`, blessed
+// there, and none where it writes the same.
 function snapshot(dir: string, name: string) {
-  expectSnapshot(dir, join(root, "test/snapshots/jsx", name), {
-    normalize: text => text.replaceAll(dir + "/", "test/jsx/"),
-  });
+  const normalize = (text: string) => text.replaceAll(dir + "/", "test/jsx/");
+  const thir = join(root, "test/snapshots/jsx", name);
+  const mir = `${thir}.mir`;
+  if (process.env.RUST_JS_MIR !== "1") {
+    expectSnapshot(dir, thir, { normalize });
+    return;
+  }
+  if (process.env.BLESS) {
+    expectSnapshot(dir, mir, { normalize });
+    let same = true;
+    try {
+      expectSnapshot(dir, thir, { normalize, bless: false });
+    } catch {
+      same = false;
+    }
+    if (same) rmSync(mir, { recursive: true, force: true });
+    return;
+  }
+  expectSnapshot(dir, existsSync(mir) ? mir : thir, { normalize });
 }
 
 test("JSX supports components across modules, fragments, lists, conditions and spreads", async () => {

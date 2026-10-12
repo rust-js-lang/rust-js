@@ -1798,4 +1798,28 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-plain-fields-unknown",
+    "breaks": "a plain field of a struct holding a `Cell`, `q.title`, isn't known to read the same",
+    "file": "src/lower/mir.rs",
+    "find": "            self.locals.plain.extend(fields);\n",
+    "replace": "            drop(fields);\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-plain-through-mut",
+    "breaks": "a field through a `&mut`, `e.n`, is taken as unchanged, read after what sets it",
+    "file": "src/lower/mir.rs",
+    "find": "            let through_mut = matches!(\n",
+    "replace": "            let through_mut = false && matches!(\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];
