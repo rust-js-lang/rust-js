@@ -270,6 +270,7 @@ slice_view_past_len.rs
 slice_views.rs
 sort_unstable_adversary.rs
 sort_unstable_ties.rs
+sort_unstable_wasm32.rs
 split_at_mut_past_len.rs
 static_fns.rs
 static_mut.rs
@@ -327,6 +328,7 @@ user_fmt_traits.rs
 user_from_str.rs
 user_hash.rs
 user_into_iter.rs
+utf8_decoding.rs
 utf8_unwrap_panic.rs
 value_keys.rs
 vec_edits.rs

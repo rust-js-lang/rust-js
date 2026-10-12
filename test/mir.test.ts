@@ -31,7 +31,10 @@ for (const name of caseShard(listed)) {
       expect(compiled.error.split("\n").find((line) => line.startsWith("error")) ?? "").toContain(refused);
       return;
     }
-    const native = runNative(file, dir, edition);
+    // `//@ native: wasm32`: native Rust is `wasm32-wasip1`'s, whose
+    // `usize` is rust-js's, as the corpus test runs it.
+    const target = /^\/\/@ native: wasm32$/m.test(source) ? "wasm32" : "host";
+    const native = runNative(file, dir, edition, target);
     if (typeof native === "string") throw new Error(native);
     const compiled = compileJs(file, dir, edition, false, { RUST_JS_MIR: "1" });
     if ("error" in compiled) throw new Error(compiled.error);
