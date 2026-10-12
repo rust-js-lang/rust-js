@@ -130,6 +130,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let items = match self.array_source(iter_ty) {
                         Some(_) => match self.std_iterator(receiver, iter_ty) {
                             it if name == "peekable" => return Ok(Some(it)),
+                            // Of one just made, the array, which `toReversed`
+                            // copies anyway.
+                            it if name == "rev" && crate::lower::iterators::is_stepped_items(&it) => {
+                                crate::lower::iterators::iterated(it)
+                            }
                             it => self.helper(Helper::Rest, "$rest", vec![it]),
                         },
                         // A `$iter` of an array THIR's lowering made, just made: the

@@ -1234,6 +1234,17 @@ pub fn any_big(items: &[u32]) -> bool {
 pub fn top(items: &[u32]) -> u32 {
     items.iter().copied().max().unwrap_or(0)
 }
+// Its last items, the array reversed, not copied first.
+pub fn last_two(items: &[u32]) -> Vec<u32> {
+    items.iter().rev().take(2).copied().collect()
+}
+// Each item's items, and the words of text, as arrays.
+pub fn flat(groups: &[Vec<u32>]) -> Vec<u32> {
+    groups.iter().flat_map(|g| g.iter().map(|x| x * 10)).collect()
+}
+pub fn words(s: &str) -> String {
+    s.split_whitespace().map(|w| w.to_uppercase()).collect::<Vec<_>>().join(" ")
+}
 pub fn order(items: &[u32]) -> Vec<String> {
     let log = RefCell::new(Vec::new());
     let _ = items
@@ -1286,8 +1297,13 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect(js).toContain("  return items.reduce((a, b) => (a + b) >>> 0, 0);\n");
     expect(js).toContain("  return items.some((x) => x > 9);\n");
     expect(js).toContain("  return $max(items) ?? 0;\n");
+    expect(js).toContain("  return items.toReversed().slice(0, 2);\n");
+    expect(js).toContain("  return groups.flatMap((g) => g.map((x) => Math.imul(x, 10) >>> 0));\n");
+    expect(js).toContain(".filter((word) => word !== \"\")\n    .map((w) => w.toUpperCase())\n    .join(\" \");");
     const lib = await import(join(dir, out));
     expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
+    expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);
+    expect([lib.flat([[1, 2], [], [3]]), lib.words(" a  b ")]).toEqual([[10, 20, 30], "A B"]);
     const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
     expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
     expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);

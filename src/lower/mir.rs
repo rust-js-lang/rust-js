@@ -741,6 +741,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 logicals: &logicals,
                 callbacks: &callbacks,
                 tables: &tables,
+                closure: matches!(env.map(|ty| ty.kind()), Some(ty::Closure(..))),
                 patterns: &(self.let_pattern_bindings(mir_body).into_iter())
                     .map(|(l, _)| state.locals.names[l].clone())
                     .collect(),

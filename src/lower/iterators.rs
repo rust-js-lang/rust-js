@@ -1690,7 +1690,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     }
     while let js::ExprKind::Call(callee, args) = &at.kind
         && let js::ExprKind::Member(source, name) = &callee.kind
-        && matches!(name.as_str(), "map" | "filter" | "take" | "drop")
+        && matches!(name.as_str(), "map" | "filter" | "take" | "drop" | "flatMap")
         && let [f] = &args[..]
     {
         stages.push((name.as_str(), f));
@@ -1709,9 +1709,39 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     let js::ExprKind::Call(_, args) = &at.kind else {
         return None;
     };
-    let ([source], true) = (&args[..], is_stepped_items(at)) else {
+    // Of an array, `$iter(xs)`'s, or one just made, `Iterator.from(xs.filter(f))`'s.
+    let ([source], true) = (
+        &args[..],
+        is_stepped_items(at) || is_iterator_from(at) && fresh(&args[0]),
+    ) else {
         return None;
     };
+    // Each item's items an array too, all of them, in turn, as Rust's
+    // `flat_map` steps each before the next: `xs.flatMap((x) => x.map(g))`.
+    let mut flattened = Vec::new();
+    for (name, f) in &stages {
+        if *name == "flatMap" {
+            let js::ExprKind::Arrow(params, body) = &f.kind else {
+                return None;
+            };
+            let [
+                Stmt {
+                    kind: StmtKind::Return(Some(inner)),
+                    span,
+                },
+            ] = body.as_slice()
+            else {
+                return None;
+            };
+            let items = match is_stepped_items(inner) {
+                true => iterated(inner.clone()),
+                false => eager_items(inner, true, None)?.0,
+            };
+            let body = vec![StmtKind::Return(Some(items)).at(*span)];
+            flattened.push(Expr::arrow(params.clone(), body));
+        }
+    }
+    let mut flattened = flattened.into_iter().rev();
     let doing = stages.iter().filter(|(name, f)| !counted(name) && does(f)).count();
     let quiet = match whole {
         true => doing + usize::from(taker.is_some_and(does)) <= 1,
@@ -1724,6 +1754,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     let items = (stages.into_iter().rev()).fold(source.clone(), |items, (name, f)| match name {
         "take" => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), f.clone()]),
         "drop" => Expr::call(Expr::member(items, "slice"), vec![f.clone()]),
+        "flatMap" => array_method(items, name, flattened.next().expect("made")),
         name => array_method(items, name, f.clone()),
     });
     Some((items, count))

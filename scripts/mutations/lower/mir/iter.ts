@@ -250,4 +250,16 @@ export const mutations: Mutation[] = [
       "the rest of a string's chars from MIR"
     ]
   },
+  {
+    "name": "mir-rev-of-fresh-copied",
+    "breaks": "`xs.iter().rev()` from MIR copies the array first, `$rest($iter(xs)).toReversed()`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "it if name == \"rev\" && crate::lower::iterators::is_stepped_items(&it) => {",
+    "replace": "it if false => {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];

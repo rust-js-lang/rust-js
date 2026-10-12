@@ -34,6 +34,8 @@ pub(super) struct Hints<'h> {
     pub(super) tables: &'h [js::Span],
     /// What a `let`'s struct pattern binds, by name.
     pub(super) patterns: &'h HashSet<String>,
+    /// Whether the body is a closure's, tidied again in its function's.
+    pub(super) closure: bool,
     pub(super) returns: &'h [js::Span],
     /// The `const`s MIR's lowering made of what an element it made ahead
     /// of a branch reads (`capture_jsx`): as its temporaries, read where
@@ -65,6 +67,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         callbacks,
         tables,
         patterns,
+        closure,
         returns,
         captured,
         booleans,
@@ -280,7 +283,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut forwarded_values);
     // An array's `$iter` an adapter alone steps, left lazy, as what its
     // closures do is in Rust's order: the array's own iterator.
-    js::each_expr_mut(body, &mut array_values);
+    // A closure's, by the function it's in, which sees what takes what it
+    // gives, `xs.flatMap((x) => $iter(x).map(f))`'s, first.
+    if !closure {
+        js::each_expr_mut(body, &mut array_values);
+    }
     // A `let` declared first that nothing's left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);

@@ -1782,4 +1782,16 @@ export const mutations: Mutation[] = [
       "the rest of a string's chars from MIR"
     ]
   },
+  {
+    "name": "mir-closure-values-first",
+    "breaks": "a closure's `$iter(g)` from MIR is `g.values()` before its function sees `flatMap` take it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    if !closure {\n",
+    "replace": "    if true {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];

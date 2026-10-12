@@ -757,4 +757,28 @@ export const mutations: Mutation[] = [
       "iterator chains from MIR are array methods"
     ]
   },
+  {
+    "name": "eager-from-fresh-lazy",
+    "breaks": "a chain of an array just made, `Iterator.from(xs.filter(f)).map(g).toArray()`, stays lazy",
+    "file": "src/lower/iterators.rs",
+    "find": "is_stepped_items(at) || is_iterator_from(at) && fresh(&args[0])",
+    "replace": "is_stepped_items(at)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
+  {
+    "name": "eager-flat-map-lazy",
+    "breaks": "`flat_map` collected from MIR stays `xs.values().flatMap(\u2026).toArray()`",
+    "file": "src/lower/iterators.rs",
+    "find": "\"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")",
+    "replace": "\"map\" | \"filter\" | \"take\" | \"drop\")",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];
