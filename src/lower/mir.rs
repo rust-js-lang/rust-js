@@ -3273,7 +3273,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Rvalue::Cast(_, operand, to) => {
                 let from = operand.ty(decls, tcx);
-                let v = self.mir_expr(state, operand, out)?;
+                // An enum's discriminant, `ordering as i32`'s: the enum made a
+                // number, as THIR's `cast` makes it.
+                let v = match self.mir_operand(state, operand, out)? {
+                    Value::Discriminant(value, enum_ty) => {
+                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));
+                    }
+                    v => self.value_expr(v, Span::default())?,
+                };
                 if from == *to {
                     v
                 } else if to.is_char() {

@@ -6399,6 +6399,47 @@ pub fn facts(v: &[i32]) -> (bool, usize, usize) {
   }
 });
 
+// \`replacen\` of any count, as Rust's: the first \`n\` matches, an empty
+// pattern's at each \`char\`'s boundary.
+test("replacen replaces as many as it's told", async () => {
+  const dir = fixture("replacen-count");
+  writeFileSync(join(dir, "lib.rs"), `pub fn two(s: &str) -> String {
+    s.replacen('l', "_", 2)
+}
+pub fn many(s: &str, n: usize) -> String {
+    s.replacen("ab", "X", n)
+}
+pub fn empty(s: &str) -> String {
+    s.replacen("", "-", 2)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.two("hello world"), lib.many("ababab", 0), lib.many("ababab", 2), lib.many("ababab", 9), lib.empty("héé")]).toEqual(["he__o world", "ababab", "XXab", "XXX", "-h-éé"]);
+  }
+});
+
+// An enum made a number, \`ordering as i32\` or a fieldless one's, from
+// MIR as from THIR: its discriminant.
+test("an enum cast to a number from MIR is its discriminant", async () => {
+  const dir = fixture("mir-enum-cast");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum Color { Red, Green = 5, Blue }
+pub fn order(a: &str, b: &str) -> i32 {
+    a.cmp(b) as i32
+}
+pub fn code(c: Color) -> i32 {
+    c as i32
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.order("abc", "abd"), lib.order("b", "a"), lib.code("Red"), lib.code("Green"), lib.code("Blue")]).toEqual([-1, 1, 0, 5, 6]);
+  }
+});
+
 // A float's sum from MIR starts at -0.0, as Rust's does: an empty sum and
 // one of negative zeros are -0.0, not 0.
 test("a float's sum from MIR keeps the sign of zero", async () => {

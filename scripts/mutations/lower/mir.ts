@@ -1994,4 +1994,16 @@ export const mutations: Mutation[] = [
       "a string's or-pattern from MIR"
     ]
   },
+  {
+    "name": "mir-enum-cast-refused",
+    "breaks": "`ordering as i32` from MIR is refused, its discriminant read as a value",
+    "file": "src/lower/mir.rs",
+    "find": "                    Value::Discriminant(value, enum_ty) => {\n                        return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));\n                    }\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an enum cast to a number from MIR"
+    ]
+  },
 ];
