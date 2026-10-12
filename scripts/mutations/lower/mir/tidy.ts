@@ -699,22 +699,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","continue.s from MIR are where"],
   },
   {
-    name: "mir-tidy-payload-alias-kept",
-    breaks: "a pattern's binding of a variable stays `const code = errorCode`",
-    file: "src/lower/mir/tidy.rs",
-    find: "    bottom_up(body, &mut |stmts| payload_aliases(stmts, payloads, &changing));\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","match guard.s binding from MIR|a guarded binding of an Option"],
-  },
-  {
-    name: "mir-tidy-truthy-not-set",
-    breaks: "`x` truthy isn't known to be set, `if (x != null) { if (x) { … } }` kept",
-    file: "src/lower/mir/tidy.rs",
-    find: "            if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, by) =>\n",
-    replace: "            if false && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, by) =>\n",
-    tests: ["test/lowering.test.ts","-t","match guard.s binding from MIR"],
-  },
-  {
     name: "mir-tidy-callback-unnamed",
     breaks: "a hook's closure a `let` names stays `const tick = () => …; useEffect(tick, …)`",
     file: "src/lower/mir/tidy.rs",

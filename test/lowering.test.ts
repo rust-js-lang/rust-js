@@ -6458,11 +6458,32 @@ pub fn titled(error_code: Option<&str>) -> String {
         _ => "none".to_string(),
     }
 }
+// A field set and true, \`props.meta\`, and one after another test.
+pub struct Props {
+    pub meta: Option<String>,
+}
+pub fn meta(props: &Props) -> usize {
+    let mut n = 0;
+    if let Some(meta) = &props.meta
+        && !meta.is_empty()
+    {
+        n = meta.len();
+    }
+    n
+}
+pub fn logs(message: &Message, out: &mut Vec<u32>) {
+    if let Message::Start { first_load } = message
+        && *first_load == Some(true)
+    {
+        out.push(2);
+    }
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).not.toContain("!= null &&");
+    expect(js).toContain("  if (props.meta) {\n");
     const lib = await import(join(dir, out));
     const pushed: number[] = [];
     lib.starts({ TAG: "Start", first_load: true }, pushed);
@@ -6470,6 +6491,9 @@ pub fn titled(error_code: Option<&str>) -> String {
     lib.starts({ TAG: "Start" }, pushed);
     lib.starts("Refresh", pushed);
     expect([pushed, lib.titled("e"), lib.titled(""), lib.titled(undefined)]).toEqual([[1, 1], "#e", "none", "none"]);
+    lib.logs({ TAG: "Start", first_load: true }, pushed);
+    lib.logs({ TAG: "Start" }, pushed);
+    expect([pushed, lib.meta({ meta: "ab" }), lib.meta({ meta: "" }), lib.meta({})]).toEqual([[1, 1, 2], 2, 0, 0]);
   }
 });
 

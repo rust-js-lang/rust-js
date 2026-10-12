@@ -744,9 +744,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 patterns: &(self.let_pattern_bindings(mir_body).into_iter())
                     .map(|(l, _)| state.locals.names[l].clone())
                     .collect(),
-                payloads: &(state.payloads.iter())
-                    .map(|&l| state.locals.names[l].clone())
-                    .collect(),
                 returns: &state.returns,
                 captured: &captured,
                 booleans: &booleans,

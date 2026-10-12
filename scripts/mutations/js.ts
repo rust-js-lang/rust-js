@@ -175,8 +175,8 @@ export const mutations: Mutation[] = [
     name: "test-parts-kept",
     breaks: "`if (a && !!text)`, not `if (a && text)`",
     file: "src/js.rs",
-    find: "            ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => Expr {\n",
-    replace: "            ExprKind::Binary(op @ (Op::And | Op::Or), a, b) if false => Expr {\n",
+    find: "                        _ => out.push(e.tested()),\n",
+    replace: "                        _ => out.push(e.clone()),\n",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
   },
   {
@@ -260,12 +260,12 @@ export const mutations: Mutation[] = [
     "name": "tested-null-check-kept",
     "breaks": "a test of `x != null && x` keeps its null check, which `x`'s truth says",
     "file": "src/js.rs",
-    "find": "                        same_path(first, x)\n",
-    "replace": "                        same_path(first, x) && false\n",
+    "find": "same_path(next, x))",
+    "replace": "same_path(next, x) && false)",
     "tests": [
       "test/lowering.test.ts",
       "-t",
-      "a guarded binding of an Option"
+      "a guarded binding of an Option|a test from MIR that .x. is set and true"
     ]
   },
   {

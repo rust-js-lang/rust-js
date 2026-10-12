@@ -1471,29 +1471,44 @@ impl Expr {
     }
 
     /// This as a test: `!!a` is `a`, in the parts of `&&` and `||` too,
-    /// whose value the test only asks the truth of. `x != null && x` is `x`:
-    /// what's truthy is set.
+    /// whose value the test only asks the truth of. `x != null && x` is `x`,
+    /// of a path, `props.meta`, too, wherever in an `&&` it is: what's
+    /// truthy is set.
     pub fn tested(&self) -> Expr {
         match &self.kind {
             ExprKind::Unary(UnaryOp::Not, inner) if let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind => {
                 value.tested()
             }
-            ExprKind::Binary(Op::And, set, rest)
-                if let ExprKind::Binary(Op::LooseNe, x, null) = &set.kind
-                    && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
-                    && matches!(x.kind, ExprKind::Var(_))
-                    && let rest = rest.tested()
-                    && {
-                        let mut first = &rest;
-                        while let ExprKind::Binary(Op::And, a, _) = &first.kind {
-                            first = a;
+            ExprKind::Binary(Op::And, ..) => {
+                fn parts(e: &Expr, out: &mut Vec<Expr>) {
+                    match &e.kind {
+                        ExprKind::Binary(Op::And, a, b) => {
+                            parts(a, out);
+                            parts(b, out);
                         }
-                        same_path(first, x)
-                    } =>
-            {
-                rest
+                        _ => out.push(e.tested()),
+                    }
+                }
+                let mut all = Vec::new();
+                parts(self, &mut all);
+                let set_and_true = |i: usize| {
+                    matches!(&all[i].kind, ExprKind::Binary(Op::LooseNe, x, null)
+                        if matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
+                            && all.get(i + 1).is_some_and(|next| same_path(next, x)))
+                };
+                let kept: Vec<Expr> = (0..all.len())
+                    .filter(|&i| !set_and_true(i))
+                    .map(|i| all[i].clone())
+                    .collect();
+                let span = self.span;
+                kept.into_iter()
+                    .reduce(|a, b| Expr {
+                        kind: ExprKind::Binary(Op::And, Box::new(a), Box::new(b)),
+                        span,
+                    })
+                    .expect("a part")
             }
-            ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => Expr {
+            ExprKind::Binary(op @ Op::Or, a, b) => Expr {
                 kind: ExprKind::Binary(*op, Box::new(a.tested()), Box::new(b.tested())),
                 span: self.span,
             },
