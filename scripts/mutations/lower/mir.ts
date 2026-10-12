@@ -2590,4 +2590,28 @@ export const mutations: Mutation[] = [
     replace: "            if let Value::Discriminant(subject, _) = &value\n                && false\n",
     tests: ["test/mir.test.ts", "-t", "refcell_borrows"],
   },
+  {
+    name: "mir-guard-rc-value",
+    breaks: "MIR's `*cell.borrow_mut() = w` of a `Weak` reads the guard's `value` into a temporary, which isn't the place",
+    file: "src/lower/mir.rs",
+    find: "            return Ok(Value::Place(Expr::member(guard.clone(), \"value\")));\n",
+    replace: "            return Ok(Value::Expr(Expr::member(guard.clone(), \"value\")));\n",
+    tests: ["test/mir.test.ts", "-t", "rc_counts"],
+  },
+  {
+    name: "mir-mut-temp-place-held",
+    breaks: "MIR's `&mut` temporary of a guard's `value` is a `const` of it, not the place",
+    file: "src/lower/mir.rs",
+    find: "            state.in_place.insert(local, target.clone());\n            return Ok(());\n",
+    replace: "",
+    tests: ["test/mir.test.ts", "-t", "rc_counts"],
+  },
+  {
+    name: "mir-guard-rc-assign-refused",
+    breaks: "MIR's write of a `Weak` to a guard's `value` is refused",
+    file: "src/lower/mir.rs",
+    find: "                if matches!(&target.kind, js::ExprKind::Member(_, field) if field == \"value\") {\n",
+    replace: "                if false {\n",
+    tests: ["test/mir.test.ts", "-t", "rc_counts"],
+  },
 ];

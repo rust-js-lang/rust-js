@@ -2269,6 +2269,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.branches.insert(local, (tried, *ty));
             return Ok(());
         }
+        // A `&mut` a temporary holds to a place, a guard's `value` its
+        // `deref_mut` gives: that place, where it's used and written.
+        if place.projection.is_empty()
+            && !state.locals.user[local]
+            && state.locals.writes[local] == 1
+            && let Value::Place(target) = &value
+            && matches!(
+                state.body.local_decls[local].ty.kind(),
+                ty::Ref(_, _, ty::Mutability::Mut)
+            )
+            && let js::ExprKind::Member(holder, _) = &target.kind
+            && holder.reads_same()
+        {
+            state.in_place.insert(local, target.clone());
+            return Ok(());
+        }
         // A `&mut` a variable keeps, `let first = &mut h.list[0]`: its place
         // fixed where it's borrowed, what it's in and where, as THIR's
         // `fixed_place`, so what changes `h.list` later changes no borrow.
@@ -2395,7 +2411,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // An `Rc` or a `Weak` is a pointer its owners share: the place
             // given another, not the one it holds changed, which every
             // owner would see.
+            // Of a guard's `value`, `*cell.borrow_mut() = w`, that place
+            // given it, as THIR's.
             if self.counted_rc(pointee).is_some() || self.weak_of(pointee).is_some() {
+                if matches!(&target.kind, js::ExprKind::Member(_, field) if field == "value") {
+                    out.push(StmtKind::Assign(target, value).at(js_span));
+                    return Ok(());
+                }
                 return Err(self.unsupported(span, "an `Rc` or a `Weak` written through a `&mut`, from its MIR"));
             }
             self.runtime.insert(Helper::Assign);
@@ -4798,6 +4820,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let first_ty = || generic_args.types().next();
         let tcx = self.tcx;
+        // `*cell.borrow_mut() = w` of an `Rc` or a `Weak` a guard holds: its
+        // `value`, a place read where it's used and given `w` there, as
+        // THIR's, not the pointer every owner shares changed in place.
+        if known == (Std::GuardValue { mutable: true })
+            && let ty::Ref(_, pointee, _) = *output.kind()
+            && (self.counted_rc(pointee).is_some() || self.weak_of(pointee).is_some())
+            && let [Value::Expr(guard) | Value::Place(guard)] = values.as_slice()
+            && guard.reads_same()
+        {
+            return Ok(Value::Place(Expr::member(guard.clone(), "value")));
+        }
         // `format!`, `print!` and `to_string()` of what may fail: in a `try`,
         // a `fmt::Error` std's panic, as THIR's `failing_consumer` (ADR 0187).
         let fails = match known {
