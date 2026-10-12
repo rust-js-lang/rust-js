@@ -1946,4 +1946,28 @@ export const mutations: Mutation[] = [
       "a match's arms from MIR are in written order"
     ]
   },
+  {
+    "name": "mir-range-bound-first",
+    "breaks": "a range pattern's test from MIR reads its bound first, `2 <= k`",
+    "file": "src/lower/mir.rs",
+    "find": "&& state.ranges.iter().any(|range| range.contains(span))",
+    "replace": "&& false",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range pattern's tests from MIR"
+    ]
+  },
+  {
+    "name": "mir-range-unsigned-floor-tested",
+    "breaks": "`0..=4` of a `u8` from MIR tests `k >= 0`, which always holds",
+    "file": "src/lower/mir.rs",
+    "find": ".is_some_and(|n| n.is_null())",
+    "replace": ".is_some_and(|n| n.is_null() && false)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range pattern's tests from MIR"
+    ]
+  },
 ];

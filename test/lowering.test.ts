@@ -6308,6 +6308,28 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
+// A range pattern's tests from MIR read as THIR's, the value first, \`k >=
+// 2\`, and a bound the type has anyway, \`0 <= k\` of a \`u8\`, none; a
+// comparison the program wrote stays as written.
+test("a range pattern's tests from MIR read the value first", async () => {
+  const dir = fixture("mir-range-tests");
+  writeFileSync(join(dir, "lib.rs"), `pub fn big(k: u8) -> bool { matches!(k, 2..) }
+pub fn mid(k: u8) -> bool { matches!(k, 2..=5) }
+pub fn grade(k: u8) -> &'static str { match k { 0..=4 => "low", 5..10 => "mid", _ => "high" } }
+pub fn written(k: u8) -> bool { 2 <= k }
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("export function big(k) {\n  return k >= 2;\n}");
+    expect(js).toContain("export function mid(k) {\n  return k >= 2 && k <= 5;\n}");
+    expect(js).toContain('  if (k <= 4) {\n    return "low";\n  }\n');
+    expect(js).toContain("export function written(k) {\n  return 2 <= k;\n}");
+    const lib = await import(join(dir, out));
+    expect([lib.big(1), lib.big(2), lib.mid(5), lib.mid(6), lib.grade(0), lib.grade(7), lib.grade(10)]).toEqual([false, true, true, false, "low", "mid", "high"]);
+  }
+});
+
 // A loop the program leaves with \`break\`, its function's value after it,
 // from MIR, breaks, the value returned after it, as written and as THIR's:
 // not the function's \`return\` moved into the loop.

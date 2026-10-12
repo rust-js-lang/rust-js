@@ -192,6 +192,9 @@ struct State<'m, 'tcx> {
     discarding: bool,
     /// Where each `return` the program wrote is, of the body THIR has.
     returns: Vec<js::Span>,
+    /// Where each range pattern is, `2..=5`, whose tests MIR writes bound
+    /// first, `2 <= k`.
+    ranges: Vec<Span>,
     /// Each shared reference to a place written where it's read, and each
     /// tuple of them: the place, read as one, which a closure captures as it
     /// is, or the tuple's list of them.
@@ -362,6 +365,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             deferred: Default::default(),
             at: BasicBlock::from_usize(0),
             discarding: false,
+            ranges: self.range_patterns(),
             returns: (self.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
                 .map(|e| self.js_span(e.span))
@@ -2679,6 +2683,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Where each range pattern of the body is, in a `match`'s arms, a
+    /// `let`'s or an `if let`'s.
+    fn range_patterns(&self) -> Vec<Span> {
+        let mut ranges = Vec::new();
+        let mut find = |pat: &thir::Pat<'tcx>| {
+            pat.walk_always(|p| {
+                if let thir::PatKind::Range(_) = p.kind {
+                    ranges.push(p.span);
+                }
+            })
+        };
+        for arm in self.thir.arms.iter() {
+            find(&arm.pattern);
+        }
+        for expr in self.thir.exprs.iter() {
+            if let thir::ExprKind::Let { pat, .. } = &expr.kind {
+                find(pat);
+            }
+        }
+        for stmt in self.thir.stmts.iter() {
+            if let thir::StmtKind::Let { pattern, .. } = &stmt.kind {
+                find(pattern);
+            }
+        }
+        ranges
+    }
+
     /// Whether `place` is its local's value, through what's the value it
     /// holds: a box's, or a `MaybeUninit`'s; and, of a read, a reference's.
     fn whole(&self, body: &mir::Body<'tcx>, place: &Place<'tcx>) -> bool {
@@ -3153,6 +3184,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::BinaryOp(op, operands) => {
                 let (l, r) = &**operands;
                 let (ty, r_ty) = (l.ty(decls, tcx), r.ty(decls, tcx));
+                // A range pattern's test, `2 <= k`: the value first, `k >= 2`,
+                // as THIR writes it; of a bound the type has anyway, `0 <= k`
+                // of a `u8`, none.
+                let flipped = match op {
+                    BinOp::Le => Some(BinOp::Ge),
+                    BinOp::Lt => Some(BinOp::Gt),
+                    _ => None,
+                };
+                if let Some(flipped) = flipped
+                    && let Operand::Constant(bound) = l
+                    && !matches!(r, Operand::Constant(_))
+                    && state.ranges.iter().any(|range| range.contains(span))
+                {
+                    if *op == BinOp::Le
+                        && ty.is_integral()
+                        && !ty.is_signed()
+                        && bound.const_.try_to_scalar_int().is_some_and(|n| n.is_null())
+                    {
+                        return Ok(Value::Expr(Expr::bool(true)));
+                    }
+                    let [r, l]: [Value<'tcx>; 2] =
+                        self.take_operands(state, &[r, l], out)?.try_into().ok().expect("two");
+                    let (r, l) = (self.value_expr(r, span)?, self.value_expr(l, span)?);
+                    return Ok(Value::Expr(self.binary(flipped, r, l, None, ty, span)?));
+                }
                 let [l, r]: [Value<'tcx>; 2] = self.take_operands(state, &[l, r], out)?.try_into().ok().expect("two");
                 let l = self.value_expr(l, span)?;
                 // A shift's amount of another type: a number, `Number(n & 63n)`.

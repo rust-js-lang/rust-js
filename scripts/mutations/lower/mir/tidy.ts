@@ -1830,4 +1830,16 @@ export const mutations: Mutation[] = [
       "a loop's break from MIR is a break"
     ]
   },
+  {
+    "name": "mir-pattern-tests-kept",
+    "breaks": "a range arm from MIR is `if (true) { \u2026 }`, or two `if`s one inside the other",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    bottom_up(body, &mut pattern_tests);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range pattern's tests from MIR"
+    ]
+  },
 ];

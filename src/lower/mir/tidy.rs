@@ -91,6 +91,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
         js::statement_lists(body, &mut unlabeled);
     }
+    bottom_up(body, &mut pattern_tests);
     bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
@@ -4802,6 +4803,39 @@ fn loop_exits(body: &mut Vec<Stmt>, returns: &[js::Span], loops: &[(js::Span, bo
         *body = inner;
     }
     body.push(ret);
+}
+
+/// A pattern's test as MIR makes it of a bound a type has anyway, a
+/// constant, `if (true) { s }`: its branch, `s`, as THIR writes a range's.
+fn pattern_tests(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        // A constant's branch, which declares nothing its neighbors do.
+        let constant = match &stmts[i].kind {
+            StmtKind::If(test, then, otherwise) if let ExprKind::Bool(holds) = test.kind => {
+                let mut neighbors = declared(&stmts[..i]).chain(declared(&stmts[i + 1..]));
+                let ours: Vec<&str> = declared(then)
+                    .chain(otherwise.iter().flat_map(|o| declared(o)))
+                    .collect();
+                (!neighbors.any(|n| ours.contains(&n))).then_some(holds)
+            }
+            _ => None,
+        };
+        if let Some(holds) = constant {
+            let StmtKind::If(_, then, otherwise) = stmts.remove(i).kind else {
+                unreachable!("matched")
+            };
+            let kept = match holds {
+                true => then,
+                false => otherwise.unwrap_or_default(),
+            };
+            let n = kept.len();
+            stmts.splice(i..i, kept);
+            i += n;
+            continue;
+        }
+        i += 1;
+    }
 }
 
 /// The loop the program wrote that starts where `span` does, innermost.
