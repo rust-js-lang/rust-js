@@ -742,8 +742,8 @@ export const mutations: Mutation[] = [
     name: "mir-alike-reassigned",
     breaks: "a variable assigned again reads alike, so JSX reads it later than Rust does",
     file: "src/lower/mir.rs",
-    find: "                || state.locals.writes[local] > 1\n                || state.locals.borrowed[local]\n",
-    replace: "                || state.locals.borrowed[local]\n",
+    find: "                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))\n",
+    replace: "",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
@@ -2024,6 +2024,30 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a let-else's written continue"
+    ]
+  },
+  {
+    "name": "mir-alike-once-each-way-unseen",
+    "breaks": "a variable each of a `match`'s arms assigns, `let variant = match ..`, isn't alike, so JSX holds `const Icon = variant.Icon` first, not `variant.Icon && <variant.Icon />`",
+    "file": "src/lower/mir.rs",
+    "find": "                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))\n",
+    "replace": "                || state.locals.writes[local] > 1\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-alike-machine-once",
+    "breaks": "a local MIR assigns twice on separate ways, a `vec!`'s box, reads alike, and what's around it is held in `const`s first",
+    "file": "src/lower/mir.rs",
+    "find": "                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))\n",
+    "replace": "                || state.locals.writes[local] > 1 && !once_each_way(mir_body, local)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a vec.s specs from MIR stay in place"
     ]
   },
 ];

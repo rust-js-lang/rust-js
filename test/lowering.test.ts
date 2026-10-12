@@ -9608,3 +9608,166 @@ pub fn sections(items: &[u32]) -> Vec<Section> {
     expect((await import(join(dir, out))).sections([5, 0, 30, 2, 0, 7])).toEqual([{ pages: [3, 2] }, { pages: [7] }]);
   }
 });
+
+
+// What MIR assigns once on each way, `classNameToken(if .. { "string" } else
+// { "static" })`'s argument, isn't a variable the program names: it doesn't
+// read alike, so what's made before it in a `vec!` stays where it's written,
+// as react.dev's CodeBlock's `getSyntaxHighlight` has its specs, not held in
+// `const`s first.
+test("a vec's specs from MIR stay in place past a branch's temporary", async () => {
+  const dir = fixture("specs-in-place");
+  writeFileSync(join(dir, "lib.rs"), `use std::any::Any; use std::marker::PhantomData; use js::JsObject;
+pub struct Syntax { pub string: String } pub struct Theme { pub syntax: Syntax }
+pub struct Tag(PhantomData<JsObject>);
+pub struct HighlightStyle(PhantomData<JsObject>);
+unsafe extern "Rust" {
+    #[link_name = "@codemirror/language#HighlightStyle.define"]
+    safe fn define(specs: Vec<&dyn Any>) -> &'static HighlightStyle;
+}
+mod tags {
+    use super::Tag;
+
+    unsafe extern "Rust" {
+        #[link_name = "@lezer/highlight#tags.link"]
+        pub safe static link: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.emphasis"]
+        pub safe static emphasis: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.strong"]
+        pub safe static strong: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.keyword"]
+        pub safe static keyword: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.atom"]
+        pub safe static atom: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.number"]
+        pub safe static number: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.bool"]
+        pub safe static bool: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.tagName"]
+        pub safe static tagName: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.variableName"]
+        pub safe static variableName: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.propertyName"]
+        pub safe static propertyName: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.literal"]
+        pub safe static literal: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.inserted"]
+        pub safe static inserted: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.punctuation"]
+        pub safe static punctuation: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.comment"]
+        pub safe static comment: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.quote"]
+        pub safe static quote: &'static Tag;
+        #[link_name = "@lezer/highlight#tags.standard"]
+        pub safe fn standard(tag: &Tag) -> &'static Tag;
+        #[link_name = "@lezer/highlight#tags.function"]
+        pub safe fn function(tag: &Tag) -> &'static Tag;
+        #[link_name = "@lezer/highlight#tags.definition"]
+        pub safe fn definition(tag: &Tag) -> &'static Tag;
+    }
+}
+
+/// A spec's tag, or several.
+#[cfg_attr(rust_js, rust_js::untagged)]
+enum Tags {
+    One(&'static Tag),
+    Many(Vec<&'static Tag>),
+}
+
+struct TextDecoratorStyle {
+    tag: Tags,
+    textdecorator: &'static str,
+}
+
+struct FontStyleStyle {
+    tag: Tags,
+    #[cfg_attr(rust_js, rust_js::name = "fontStyle")]
+    font_style: &'static str,
+}
+
+struct FontWeightStyle {
+    tag: Tags,
+    #[cfg_attr(rust_js, rust_js::name = "fontWeight")]
+    font_weight: &'static str,
+}
+
+struct ClassStyle {
+    tag: Tags,
+    class: String,
+}
+fn classNameToken(name: &str) -> String {
+    format!("sp-syntax-{name}")
+}
+
+pub fn getSyntaxHighlight(theme: &Theme) -> &'static HighlightStyle {
+    define(vec![
+        &TextDecoratorStyle {
+            tag: Tags::One(tags::link),
+            textdecorator: "underline",
+        },
+        &FontStyleStyle {
+            tag: Tags::One(tags::emphasis),
+            font_style: "italic",
+        },
+        &FontWeightStyle {
+            tag: Tags::One(tags::strong),
+            font_weight: "bold",
+        },
+        &ClassStyle {
+            tag: Tags::One(tags::keyword),
+            class: classNameToken("keyword"),
+        },
+        &ClassStyle {
+            tag: Tags::Many(vec![tags::atom, tags::number, tags::bool]),
+            class: classNameToken("static"),
+        },
+        &ClassStyle {
+            tag: Tags::One(tags::standard(tags::tagName)),
+            class: classNameToken("tag"),
+        },
+        &ClassStyle {
+            tag: Tags::One(tags::variableName),
+            class: classNameToken("plain"),
+        },
+        &ClassStyle {
+            // Highlight function call
+            tag: Tags::One(tags::function(tags::variableName)),
+            class: classNameToken("definition"),
+        },
+        &ClassStyle {
+            // Highlight function definition differently (eg: functional component def in React)
+            tag: Tags::Many(vec![
+                tags::definition(tags::function(tags::variableName)),
+                tags::tagName,
+            ]),
+            class: classNameToken("definition"),
+        },
+        &ClassStyle {
+            tag: Tags::One(tags::propertyName),
+            class: classNameToken("property"),
+        },
+        &ClassStyle {
+            tag: Tags::Many(vec![tags::literal, tags::inserted]),
+            class: classNameToken(if !theme.syntax.string.is_empty() {
+                "string"
+            } else {
+                "static"
+            }),
+        },
+        &ClassStyle {
+            tag: Tags::One(tags::punctuation),
+            class: classNameToken("punctuation"),
+        },
+        &ClassStyle {
+            tag: Tags::Many(vec![tags::comment, tags::quote]),
+            class: classNameToken("comment"),
+        },
+    ])
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain('    { tag: tags.keyword, class: classNameToken("keyword") },\n');
+  }
+});

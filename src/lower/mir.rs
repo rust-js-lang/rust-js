@@ -443,7 +443,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What reads the same wherever it's read, as THIR's variables say.
         for (local, name) in state.locals.names.iter_enumerated() {
             if name.is_empty()
-                || state.locals.writes[local] > 1
+                // A variable the program names, assigned once each way, as a
+                // `match`'s arms each assign `let variant = match ..`: not
+                // MIR's, a `vec!`'s box, say, filled through it after.
+                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))
                 || state.locals.borrowed[local]
                 || state.locals.changed[local]
             {
@@ -5155,6 +5158,53 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
             .collect()
     }
+}
+
+/// Whether `local` is assigned once each way through `body`, as a `match`'s
+/// arms each assign what it gives: no assignment goes on to another, nor to
+/// itself again, as one in a loop would.
+fn once_each_way(body: &mir::Body<'_>, local: Local) -> bool {
+    let mut at: Vec<BasicBlock> = Vec::new();
+    for (block, data) in body.basic_blocks.iter_enumerated() {
+        for statement in &data.statements {
+            if let StatementKind::Assign(assign) = &statement.kind {
+                let (place, rvalue) = &**assign;
+                if place.local == local && place.projection.is_empty() {
+                    at.push(block);
+                }
+                // Borrowed mutably whole, it may be assigned through the borrow.
+                if let Rvalue::Ref(_, BorrowKind::Mut { .. }, borrowed) = rvalue
+                    && borrowed.local == local
+                {
+                    return false;
+                }
+            }
+        }
+        if let TerminatorKind::Call { destination, .. } = &data.terminator().kind
+            && destination.local == local
+            && destination.projection.is_empty()
+        {
+            at.push(block);
+        }
+    }
+    let mut seen = std::collections::HashSet::new();
+    for (i, &block) in at.iter().enumerate() {
+        if at[i + 1..].contains(&block) {
+            return false;
+        }
+        seen.clear();
+        let mut next: Vec<BasicBlock> = body.basic_blocks[block].terminator().successors().collect();
+        while let Some(b) = next.pop() {
+            if !seen.insert(b) {
+                continue;
+            }
+            if at.contains(&b) {
+                return false;
+            }
+            next.extend(body.basic_blocks[b].terminator().successors());
+        }
+    }
+    true
 }
 
 /// The body of the async arrow `stmts` only call and return, `return (async

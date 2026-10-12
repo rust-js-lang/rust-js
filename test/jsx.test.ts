@@ -754,6 +754,35 @@ static PINNED: Variant = Variant { title: "p", icon: Some(element_type(&IconBadg
 pub fn Pinned() -> JSX::Element {
     jsx! { <h3>{PINNED.icon.map(|Icon| jsx! { <Icon className={Some("pin")} /> })}{PINNED.title}</h3> }
 }
+// Read from a table by a kind, as react.dev's ExpandableCallout reads its
+// \`variantMap\` (ADR 0233): the icon read where it's rendered.
+pub struct Variants {
+    pub note: Variant,
+    pub badge: Variant,
+}
+static VARIANTS: Variants = Variants {
+    note: Variant { title: "n", icon: Some(element_type(&IconNote)) },
+    badge: Variant { title: "b", icon: None },
+};
+#[derive(Clone, Copy)]
+pub enum Kind {
+    #[rust_js::name = "note"]
+    Note,
+    #[rust_js::name = "badge"]
+    Badge,
+}
+pub fn Tabled(kind: Kind) -> JSX::Element {
+    let variant = match kind {
+        Kind::Note => &VARIANTS.note,
+        Kind::Badge => &VARIANTS.badge,
+    };
+    jsx! {
+        <h3>
+            {variant.icon.map(|Icon| jsx! { <Icon className={Some("tabled")} /> })}
+            {variant.title}
+        </h3>
+    }
+}
 // Its own props given by name, as a component's are: still one component.
 pub fn Badged() -> JSX::Element {
     jsx! { <IconBadge className={Some("b")} size={Some("2em")} /> }
@@ -763,6 +792,7 @@ pub fn Badged() -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("icon = IconNote;");
   expect(jsx).toContain('{variant.Icon && <variant.Icon className="inline" />}');
+  expect(jsx).toContain('{variant.Icon && <variant.Icon className="tabled" />}');
   const { Callout } = await import(join(dir, "lib.jsx"));
   expect([0, 1, 2].map((which) => renderToStaticMarkup(Callout(which)))).toEqual([
     '<h3><svg class="inline"></svg>t</h3>',
@@ -772,7 +802,8 @@ pub fn Badged() -> JSX::Element {
   // A `static` of another module's components is made of them, which JS
   // imports first.
   expect(jsx).toContain('const PINNED = { title: "p", Icon: IconBadge };');
-  const { Badged, Pinned } = await import(join(dir, "lib.jsx"));
+  const { Badged, Pinned, Tabled } = await import(join(dir, "lib.jsx"));
+  expect(["note", "badge"].map((kind) => renderToStaticMarkup(Tabled(kind)))).toEqual(['<h3><svg class="tabled"></svg>n</h3>', "<h3>b</h3>"]);
   expect(renderToStaticMarkup(Pinned())).toBe('<h3><svg class="pin" width="1em"></svg>p</h3>');
   expect(renderToStaticMarkup(Badged())).toBe('<svg class="b" width="2em"></svg>');
   // Of its own module's, made after it in JS, it's refused, as a static
