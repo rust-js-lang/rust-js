@@ -9949,3 +9949,25 @@ pub fn lens() -> (usize, usize) {
     expect((await import(join(dir, out))).lens()).toEqual([4, 42]);
   }
 });
+
+// A chunks' `remainder()` from MIR: of one made there, its array's,
+// `$chunksExact(v, 2).remainder`, as THIR's; of one stepped, which MIR
+// keeps as a `$iter`, its items' still.
+test("a chunks' remainder from MIR, made there or stepped", async () => {
+  const dir = fixture("chunks-remainder");
+  writeFileSync(join(dir, "lib.rs"), `pub fn rest(v: &[u32]) -> Vec<u32> {
+    v.chunks_exact(2).remainder().to_vec()
+}
+pub fn stepped(v: &[u32]) -> (Vec<u32>, Vec<u32>) {
+    let mut c = v.chunks_exact(2);
+    let first = c.next().map(|s| s.to_vec()).unwrap_or_default();
+    (first, c.remainder().to_vec())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("$chunksExact(v, 2).remainder");
+    const lib = await import(join(dir, out));
+    expect([lib.rest([1, 2, 3]), lib.stepped([1, 2, 3, 4, 5])]).toEqual([[3], [[1, 2], [5]]]);
+  }
+});

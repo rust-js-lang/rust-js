@@ -33,6 +33,7 @@ use rustc_mir_dataflow::move_paths::MovePathIndex;
 use rustc_span::Span;
 
 use super::combinators::StepOp;
+use super::iterators::is_stepped_items;
 use super::jsx::JsxArg;
 use super::recognition::{Std, StdItem, std_item, trait_method};
 use super::representation::{const_js, variant_field};
@@ -4871,6 +4872,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (m, range) = (self.value_expr(m, span)?, self.value_expr(range, span)?);
                 self.tree_range_values((m, arg_tys[0]), (range, arg_tys[1]), false, span, out)?
             }
+            // A map's or a set's `extract_if`, a B-tree's of a range, THIR's.
+            Std::Map(MapOp::ExtractIf) => {
+                let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                let f = exprs.pop().expect("the test");
+                let m = exprs.remove(0);
+                let range = match self.is_sorted(arg_tys[0].peel_refs()) {
+                    true => Some((exprs.remove(0), arg_tys[1])),
+                    false => None,
+                };
+                self.map_extract_if_values((m, arg_tys[0]), range, f, span, out)?
+            }
             // A map's or a set's method, but an entry's value or a range, which
             // THIR takes apart from its places.
             Std::Map(op)
@@ -4954,6 +4966,42 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 let values = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.slice_values(op, values, false, generic_args, span, out)?
+            }
+            // A chunks' `remainder()`: from MIR, which steps a std iterator as
+            // a `$iter` (`std_iterator`), its items'; of one made there, the
+            // array's, as THIR's.
+            Std::Slice(SliceOp::Remainder) => {
+                let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                let made = match &exprs[0].kind {
+                    js::ExprKind::Call(_, args) if is_stepped_items(&exprs[0]) && args.len() == 1 => {
+                        Some(args[0].clone())
+                    }
+                    _ => None,
+                };
+                let stepping = made.is_none();
+                if let Some(items) = made {
+                    exprs[0] = items;
+                }
+                self.slice_values(SliceOp::Remainder, exprs, stepping, generic_args, span, out)?
+            }
+            // `v.copy_within(a..b, at)` and `v.extract_if(range, f)`: of the
+            // range's bounds, THIR's.
+            Std::Slice(SliceOp::CopyWithin) => {
+                let items = self.value_expr(values.next().expect("the items"), span)?;
+                let range = self.value_expr(values.next().expect("the range"), span)?;
+                let bounds = self.range_value_bounds(range, arg_tys[1], span, out)?;
+                let dest = self.value_expr(values.next().expect("where to"), span)?;
+                self.copy_within_values(items, bounds, dest)
+            }
+            Std::Slice(SliceOp::ExtractIf { range }) => {
+                let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                let f = exprs.pop().expect("the test");
+                let items = exprs.remove(0);
+                let bounds = match range {
+                    true => self.range_value_bounds(exprs.remove(0), arg_tys[1], span, out)?,
+                    false => (Expr::int(0), None),
+                };
+                self.extract_if_values(items, bounds, f, generic_args.type_at(0))
             }
             // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items, THIR's (ADR 0335).
             Std::Slice(SliceOp::View { checked }) => {

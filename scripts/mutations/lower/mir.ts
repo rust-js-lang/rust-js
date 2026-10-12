@@ -2110,4 +2110,64 @@ export const mutations: Mutation[] = [
       "str_circumfix_closure"
     ]
   },
+  {
+    "name": "mir-copy-within-refused",
+    "breaks": "`v.copy_within(a..b, at)` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Slice(SliceOp::CopyWithin) => {\n",
+    "replace": "            Std::Slice(SliceOp::CopyWithin) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "slice_methods"
+    ]
+  },
+  {
+    "name": "mir-vec-extract-if-refused",
+    "breaks": "`v.extract_if(.., f)` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Slice(SliceOp::ExtractIf { range }) => {\n",
+    "replace": "            Std::Slice(SliceOp::ExtractIf { range }) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "extract_if"
+    ]
+  },
+  {
+    "name": "mir-map-extract-if-refused",
+    "breaks": "a map's `extract_if(f)` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Map(MapOp::ExtractIf) => {\n",
+    "replace": "            Std::Map(MapOp::ExtractIf) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "extract_if"
+    ]
+  },
+  {
+    "name": "mir-remainder-made-stepped",
+    "breaks": "a chunks' `remainder()` of one made there from MIR is `$iter(..).items.remainder`, not the array's",
+    "file": "src/lower/mir.rs",
+    "find": "                if let Some(items) = made {\n                    exprs[0] = items;\n                }\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a chunks' remainder from MIR"
+    ]
+  },
+  {
+    "name": "mir-remainder-stepped-plain",
+    "breaks": "a stepped chunks' `remainder()` from MIR reads `.remainder` of its `$iter`, which has none",
+    "file": "src/lower/mir.rs",
+    "find": "                let stepping = made.is_none();\n",
+    "replace": "                let stepping = false;\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a chunks' remainder from MIR"
+    ]
+  },
 ];

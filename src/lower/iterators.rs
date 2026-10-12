@@ -1528,6 +1528,7 @@ fn fresh(items: &Expr) -> bool {
                 "$skipWhile",
                 "$windows",
                 "$chunks",
+                "$chunksExact",
                 "$splitBy",
                 "$lines",
                 "$slice",

@@ -81,7 +81,6 @@ function main() {
   const items = [1, 2, 3, 4, 5, 6, 7];
   console.log(
     `[${$chunksExact(items, 3)
-      .slice()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );

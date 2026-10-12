@@ -805,4 +805,16 @@ export const mutations: Mutation[] = [
       "named as a slice's reader"
     ]
   },
+  {
+    "name": "chunks-exact-not-fresh",
+    "breaks": "`$chunksExact(v, n)`'s array isn't one MIR knows is made there: `Iterator.from(..)`, whose `remainder` is gone",
+    "file": "src/lower/iterators.rs",
+    "find": "                \"$chunksExact\",\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a chunks' remainder from MIR"
+    ]
+  },
 ];

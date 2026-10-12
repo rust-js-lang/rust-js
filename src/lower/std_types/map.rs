@@ -431,25 +431,43 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// B-tree's entries in order and in its range, which isn't checked as
     /// `range`'s is: one that ends before it starts takes nothing (ADR 0344).
     fn map_extract_if(&mut self, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let receiver = self.thir[args[0]].ty.peel_refs();
-        let set = self.is_set(receiver);
-        let (m, entries) = match self.is_sorted(receiver) {
+        let receiver = self.thir[args[0]].ty;
+        let m = self.operands(&args[..1], out)?.remove(0);
+        let range = match self.is_sorted(receiver.peel_refs()) {
             true => {
-                let range = self.tree_range(&args[..2], false, span, out)?;
+                let bounds = self.thir[self.strip(args[1])].ty;
+                Some((self.operands(&args[1..2], out)?.remove(0), bounds))
+            }
+            false => None,
+        };
+        let f = self.operands(&args[args.len() - 1..], out)?.remove(0);
+        self.map_extract_if_values((m, receiver), range, f, span, out)
+    }
+
+    /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's
+    /// value and type, the range's, and the test's: THIR's and MIR's.
+    pub(in crate::lower) fn map_extract_if_values(
+        &mut self,
+        (m, receiver): (Expr, Ty<'tcx>),
+        range: Option<(Expr, Ty<'tcx>)>,
+        f: Expr,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let set = self.is_set(receiver.peel_refs());
+        let (m, entries) = match range {
+            Some(range) => {
+                let range = self.tree_range_values((m, receiver), range, false, span, out)?;
                 let js::ExprKind::Call(callee, mut list) = range.kind else {
                     unreachable!("a B-tree's range is `$treeRange`'s")
                 };
                 list.push(Expr::bool(false));
                 (list[0].clone(), Expr::call(*callee, list))
             }
-            false => {
-                let m = self.operands(&args[..1], out)?.remove(0);
-                (m.clone(), m)
-            }
+            None => (m.clone(), m),
         };
-        let f = self.operands(&args[args.len() - 1..], out)?.remove(0);
         let handles = !set
-            && matches!(receiver.kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.is_boxable(value)));
+            && matches!(receiver.peel_refs().kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.is_boxable(value)));
         self.runtime.insert(Helper::ExtractIf);
         Ok(Expr::call(
             Expr::var("$mapExtractIf"),

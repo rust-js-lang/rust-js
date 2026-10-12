@@ -106,6 +106,8 @@ evidence_paths.rs
 exact_len_unknown.rs
 exp_format.rs
 expression_values.rs
+extract_if.rs
+extract_if_past_len.rs
 f32.rs
 f32_digits.rs
 f32_parse.rs
@@ -241,6 +243,7 @@ size_hint.rs
 size_of.rs
 slice_bytes_text.rs
 slice_from_past_len.rs
+slice_methods.rs
 slice_pattern_mut_rest.rs
 slice_patterns.rs
 slice_prefix_eq.rs

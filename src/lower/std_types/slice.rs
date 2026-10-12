@@ -346,6 +346,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(self.unstable_sort_call(op, items, index, is_less, kind, item))
     }
 
+    /// `v.extract_if(range, f)`: the items `f` holds of, from `start` to `end`,
+    /// taken out (`$extractIf`), each in a box where an `Option` of it would
+    /// look like `None`, of `item`.
+    pub(in crate::lower) fn extract_if_values(
+        &mut self,
+        items: Expr,
+        (start, end): (Expr, Option<Expr>),
+        f: Expr,
+        item: ty::Ty<'tcx>,
+    ) -> Expr {
+        let mut list = vec![items, start, end.unwrap_or_else(Expr::undefined), f];
+        if self.is_boxable(item) {
+            list.push(Expr::bool(true));
+        }
+        self.runtime.insert(Helper::ExtractIf);
+        Expr::call(Expr::var("$extractIf"), list)
+    }
+
+    /// `v.copy_within(start..end, dest)`: `$copyWithin`.
+    pub(in crate::lower) fn copy_within_values(
+        &mut self,
+        items: Expr,
+        (start, end): (Expr, Option<Expr>),
+        dest: Expr,
+    ) -> Expr {
+        self.runtime.insert(Helper::SliceOps);
+        Expr::call(
+            Expr::var("$copyWithin"),
+            vec![items, start, end.unwrap_or_else(Expr::undefined), dest],
+        )
+    }
+
     /// One of `SliceOp`'s, of `args`, with the call's `generic_args`.
     pub(in crate::lower) fn slice_call(
         &mut self,
@@ -428,17 +460,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SliceOp::ExtractIf { range } => {
                 let items = self.operands(&args[..1], out)?.remove(0);
-                let (start, end) = match range {
+                let bounds = match range {
                     true => self.range_bounds(args[1], span, out)?,
                     false => (Expr::int(0), None),
                 };
                 let f = self.operands(&args[args.len() - 1..], out)?.remove(0);
-                let mut list = vec![items, start, end.unwrap_or_else(Expr::undefined), f];
-                if self.is_boxable(generic_args.type_at(0)) {
-                    list.push(Expr::bool(true));
-                }
-                self.runtime.insert(Helper::ExtractIf);
-                Expr::call(Expr::var("$extractIf"), list)
+                self.extract_if_values(items, bounds, f, generic_args.type_at(0))
             }
             SliceOp::View { checked } => {
                 let items = self.operands(&args[..1], out)?.remove(0);
@@ -461,13 +488,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SliceOp::CopyWithin => {
                 let items = self.operands(&args[..1], out)?.remove(0);
-                let (start, end) = self.range_bounds(args[1], span, out)?;
+                let bounds = self.range_bounds(args[1], span, out)?;
                 let dest = self.operands(&args[2..], out)?.remove(0);
-                helper(
-                    self,
-                    "$copyWithin",
-                    vec![items, start, end.unwrap_or_else(Expr::undefined), dest],
-                )
+                self.copy_within_values(items, bounds, dest)
             }
             _ => {
                 let stepping = matches!(op, SliceOp::Remainder) && self.is_stepping(args[0]);
