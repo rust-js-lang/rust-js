@@ -32,8 +32,8 @@ pub(super) struct Hints<'h> {
     pub(super) callbacks: &'h HashSet<String>,
     /// Where each `match` that reads a table by its key is (ADR 0233).
     pub(super) tables: &'h [js::Span],
-    /// What a `let`'s struct pattern binds, by name, and whether as the rest.
-    pub(super) patterns: &'h HashMap<String, bool>,
+    /// What a `let`'s struct pattern binds, by name.
+    pub(super) patterns: &'h HashSet<String>,
     /// What a pattern binds in an enum's variant, `Some(code)`, by name.
     pub(super) payloads: &'h HashSet<String>,
     pub(super) returns: &'h [js::Span],
@@ -153,6 +153,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     read_handles(body);
     js::statement_lists(body, &mut |stmts| plain_reads(stmts, plain, captured));
     js::statement_lists(body, &mut |stmts| destructured(stmts, patterns));
+    js::statement_lists(body, &mut rest_parts);
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
     // A pattern's binding of a variable, after those: of a temporary that
@@ -1361,7 +1362,7 @@ fn alias_variables(body: &mut Vec<Stmt>, changing: &HashSet<String>) {
 /// b: c } = e;`; `let` if one of them is. Of a variable the program names,
 /// two or more parts in a row, `let (a, b) = t;`'s: `const [a, b] = t;`;
 /// one too of a `let`'s pattern, `patterns`, `const { message } = error;`.
-fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashMap<String, bool>) {
+fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashSet<String>) {
     let mut i = 0;
     while i < stmts.len() {
         // What the parts are read of, and where they start: a temporary this
@@ -1384,19 +1385,7 @@ fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashMap<String, bool>) {
         let parts = parts(&stmts[first..], &name);
         let count = parts.len();
         let indexed = parts.iter().all(|(p, ..)| p.is_ok());
-        let bound = parts.iter().all(|(_, name, ..)| patterns.contains_key(name));
-        // The rest of what a pattern takes apart, `const rest = props;` of a
-        // flattened field: `{ alt, ...rest }`.
-        let rest = match stmts.get(first + parts.len()).map(|s| &s.kind) {
-            Some(StmtKind::Const(rest, value))
-                if !made
-                    && matches!(&value.kind, ExprKind::Var(of) if *of == name)
-                    && patterns.get(rest) == Some(&true) =>
-            {
-                Some(rest.clone())
-            }
-            _ => None,
-        };
+        let bound = parts.iter().all(|(_, name, ..)| patterns.contains(name));
         let enough = count >= if made || bound { 1 } else { 2 };
         let pattern = pattern_of(&parts);
         if !enough || pattern.is_none() || (made && js::mentions_in(&stmts[first + count..], &name) > 0) {
@@ -1430,20 +1419,7 @@ fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashMap<String, bool>) {
             continue;
         }
         let mutable = parts.iter().any(|(_, _, m, _)| *m);
-        let pattern = match (pattern.expect("checked"), &rest) {
-            (js::Pattern::Object(fields, None), Some(rest)) => js::Pattern::Object(fields, Some(rest.clone())),
-            // A `Rest` the pattern binds, read as a field of its own by MIR,
-            // `rest` of `p.rest`: what's left of the props, `...rest`.
-            (js::Pattern::Object(mut fields, None), None)
-                if let Some(at) = (fields.iter())
-                    .position(|(_, part, _)| part.name().is_some_and(|name| patterns.get(name) == Some(&true))) =>
-            {
-                let (_, part, _) = fields.remove(at);
-                js::Pattern::Object(fields, part.name().map(str::to_string))
-            }
-            (pattern, _) => pattern,
-        };
-        let count = count + usize::from(rest.is_some() && matches!(pattern, js::Pattern::Object(_, Some(_))));
+        let pattern = pattern.expect("checked");
         let value = match made {
             true => {
                 stmts.drain(first..first + count);
@@ -1463,6 +1439,64 @@ fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashMap<String, bool>) {
             mutable,
         };
         i += 1;
+    }
+}
+
+/// A `let`'s pattern's rest, which MIR's lowering takes apart with each
+/// other field named apart, `const { href: _href, ...rest } = p;`, beside
+/// what the pattern binds of the same, `const { href } = p;`: one pattern,
+/// `const { href, ...rest } = p;`, as it's written.
+fn rest_parts(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let StmtKind::Destructure {
+            pattern: js::Pattern::Object(fields, Some(_)),
+            value,
+            ..
+        } = &stmts[i].kind
+        else {
+            i += 1;
+            continue;
+        };
+        let ExprKind::Var(of) = &value.kind else {
+            i += 1;
+            continue;
+        };
+        let parts_at = |at: usize| match stmts.get(at).map(|s| &s.kind) {
+            Some(StmtKind::Destructure {
+                pattern: js::Pattern::Object(parts, None),
+                value,
+                mutable,
+            }) if matches!(&value.kind, ExprKind::Var(v) if v == of)
+                && parts.iter().all(|(key, _, _)| fields.iter().any(|(k, _, _)| k == key)) =>
+            {
+                Some((parts.clone(), *mutable))
+            }
+            _ => None,
+        };
+        let (at, (parts, mutable)) = match (i.checked_sub(1).and_then(parts_at), parts_at(i + 1)) {
+            (Some(before), _) => (i - 1, before),
+            (None, Some(after)) => (i + 1, after),
+            (None, None) => {
+                i += 1;
+                continue;
+            }
+        };
+        stmts.remove(at);
+        let i = if at < i { i - 1 } else { i };
+        if let StmtKind::Destructure {
+            pattern: js::Pattern::Object(fields, _),
+            mutable: m,
+            ..
+        } = &mut stmts[i].kind
+        {
+            for (key, part, default) in parts {
+                if let Some(field) = fields.iter_mut().find(|(k, _, _)| *k == key) {
+                    *field = (key, part, default);
+                }
+            }
+            *m |= mutable;
+        }
     }
 }
 
@@ -4154,6 +4188,13 @@ fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>) {
             && callbacks.contains(name)
             && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
             && !value.mentions_var(name)
+            // Nor one reading what it would be named, `step` of `step$1`,
+            // as THIR leaves it (ADR 0297).
+            && name.split('$').next().is_none_or(|base| {
+                let mut reads = false;
+                value.visit_vars(&mut |v| reads |= v == base);
+                !reads
+            })
             && js::mentions_in(&stmts[i + 1..], name) == 1
         {
             let span = stmts[i].span;

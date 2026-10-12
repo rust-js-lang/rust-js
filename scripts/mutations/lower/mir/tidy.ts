@@ -1019,18 +1019,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "pattern-rest-whole",
-    "breaks": "a `let` pattern's flattened field is the whole value, `const rest = props;`, its `alt` among it",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "patterns.get(rest) == Some(&true)",
-    "replace": "patterns.get(rest) == Some(&false) && false",
-    "tests": [
-      "test/mir.test.ts",
-      "-t",
-      "JSX tests"
-    ]
-  },
-  {
     "name": "read-handles-off",
     "breaks": "a cell field a pattern binds, only read, is a handle, `{ get value() { .. } }`",
     "file": "src/lower/mir/tidy.rs",
@@ -1687,11 +1675,23 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "destructured-rest-as-field",
-    "breaks": "a `let`'s rest taken apart is a field, `const { href, rest } = p`, `undefined`, not `...rest`",
+    "name": "rest-parts-apart",
+    "breaks": "a `let`'s pattern's rest and what it binds stay two patterns, `const { href: _href, ...rest } = p; const { href } = p;`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "                    .position(|(_, part, _)| part.name().is_some_and(|name| patterns.get(name) == Some(&true))) =>",
-    "replace": "                    .position(|(_, part, _)| false && part.name().is_some_and(|name| patterns.get(name) == Some(&true))) =>",
+    "find": "    js::statement_lists(body, &mut rest_parts);\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "named-callback-reads-base",
+    "breaks": "a closure reading what it would be named, `step` of `step$1`, is named it, reading itself",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            !reads\n",
+    "replace": "            true\n",
     "tests": [
       "test/mir.test.ts",
       "-t",

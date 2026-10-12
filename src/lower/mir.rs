@@ -43,6 +43,7 @@ use super::std_types::slice::SliceOp;
 use super::std_types::text::{StringEdit, TextOp};
 use super::{Body, FnCx, LoweredFn, R, Shape, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
+use crate::names::js_ident;
 use crate::runtime::Helper;
 
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
@@ -171,11 +172,11 @@ struct State<'m, 'tcx> {
     /// Each local holding an update's derived `Default` base, its fields'
     /// defaults, each read where its field is (`default_base_at`).
     defaults: std::collections::HashMap<Local, Vec<Expr>>,
-    /// The locals a `let`'s pattern binds a props' rest to, and whether one
-    /// is being given its value, `Some(true)`, where the one read of a
-    /// `Rest` there is, or another variable, `Some(false)`, a `match`'s.
+    /// The locals a `let`'s pattern binds a props' rest to, and whether a
+    /// variable is being given its value, a `match`'s binding, where a read
+    /// of a `Rest` is one taken apart there.
     rests: std::collections::HashSet<Local>,
-    binding_rest: Option<bool>,
+    binding_var: bool,
     /// Values made, each written where it's read: a constant, or what the
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
@@ -352,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             rests: (self.let_pattern_bindings(mir_body).into_iter())
                 .filter_map(|(local, rest)| rest.then_some(local))
                 .collect(),
-            binding_rest: None,
+            binding_var: false,
             flattened: Default::default(),
             in_place: Default::default(),
             named: Default::default(),
@@ -729,7 +730,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 callbacks: &callbacks,
                 tables: &tables,
                 patterns: &(self.let_pattern_bindings(mir_body).into_iter())
-                    .map(|(l, rest)| (state.locals.names[l].clone(), rest))
+                    .map(|(l, _)| state.locals.names[l].clone())
                     .collect(),
                 payloads: &(state.payloads.iter())
                     .map(|&l| state.locals.names[l].clone())
@@ -2035,16 +2036,85 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(());
         }
-        // A `let`'s pattern's rest, `let P { href, rest } = p`, which tidy
-        // takes apart as JS does, `{ href, ...rest }` (ADR 0291).
-        state.binding_rest = match place.projection.is_empty() {
-            true if state.rests.contains(&place.local) => Some(true),
-            true if state.locals.user[place.local] => Some(false),
+        // A `let`'s pattern's rest, `let P { href, rest } = p` (ADR 0291).
+        if place.projection.is_empty() && state.rests.contains(&place.local) {
+            return self.mir_let_rest(state, place.local, rvalue, span, out);
+        }
+        state.binding_var = place.projection.is_empty() && state.locals.user[place.local];
+        // A flattened struct a `match`'s pattern binds, which JS's props hold
+        // flat, among their other fields, as THIR says.
+        if state.binding_var
+            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue
+            && let Some((base, PlaceElem::Field(field, _))) = read.as_ref().last_projection()
+            && bindings::is_flatten_field(
+                self.tcx,
+                Place::ty_from(base.local, base.projection, &state.body.local_decls, self.tcx).ty,
+                field.as_usize(),
+            )
+        {
+            return Err(self.unsupported(
+                span,
+                "flattened props taken apart here: take them apart where they're given, `fn f(Props { a, anchor }: Props)`",
+            ));
+        }
+        let value = self.mir_rvalue(state, rvalue, span, out);
+        state.binding_var = false;
+        self.mir_store(state, *place, value?, span, out)
+    }
+
+    /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:
+    /// what's left of the props, each of their other fields named, as THIR
+    /// names them, `const { href: _href, title: _title, ...rest } = p;`,
+    /// whose names tidy makes the pattern's where it binds them.
+    fn mir_let_rest(
+        &mut self,
+        state: &mut State<'_, 'tcx>,
+        local: Local,
+        rvalue: &Rvalue<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<()> {
+        let decls = &state.body.local_decls;
+        let props = match rvalue {
+            Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) => match read.as_ref().last_projection() {
+                Some((base, PlaceElem::Field(field, _))) => {
+                    let ty = Place::ty_from(base.local, base.projection, decls, self.tcx).ty;
+                    let place = Place {
+                        local: base.local,
+                        projection: self.tcx.mk_place_elems(base.projection),
+                    };
+                    bindings::is_rest_field(self.tcx, ty, field.as_usize()).then_some((place, ty))
+                }
+                _ => None,
+            },
             _ => None,
         };
-        let value = self.mir_rvalue(state, rvalue, span, out);
-        state.binding_rest = None;
-        self.mir_store(state, *place, value?, span, out)
+        let Some((place, ty)) = props.filter(|_| !state.locals.declared[local]) else {
+            return Err(self.unsupported(span, "this rest of props, from its MIR"));
+        };
+        let Shape::Object(fields) = self.shape(ty) else {
+            return Err(self.unsupported(span, "this rest of props, from its MIR"));
+        };
+        let value = self.mir_place(state, place, span, out)?;
+        let tcx = self.tcx;
+        let named = (fields.iter().enumerate())
+            .filter(|&(i, _)| !bindings::is_rest_field(tcx, ty, i))
+            .map(|(_, (key, _))| {
+                let unused = self.fresh(&format!("_{}", super::camel_case(&js_ident(key))));
+                (key.clone(), js::Pattern::Name(unused), None)
+            })
+            .collect();
+        self.flush(state, out)?;
+        state.locals.declared[local] = true;
+        out.push(
+            StmtKind::Destructure {
+                pattern: js::Pattern::Object(named, Some(state.locals.names[local].clone())),
+                value,
+                mutable: false,
+            }
+            .at(self.js_span(span)),
+        );
+        Ok(())
     }
 
     /// `place = value`: a temporary's value kept for where it's used, a
@@ -2478,17 +2548,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             PlaceElem::Deref if ty.ty.is_ref() || ty.ty.is_box() || ty.ty.is_raw_ptr() => base,
             // JS's props have no `rest`: what's left of them is taken apart
             // from the rest, `{ href, ...rest }` (ADR 0195), as THIR says.
-            PlaceElem::Field(_, field_ty)
-                if bindings::is_rest(self.tcx, field_ty) && state.binding_rest != Some(true) =>
-            {
+            PlaceElem::Field(_, field_ty) if bindings::is_rest(self.tcx, field_ty) => {
                 // Bound by a pattern other than a `let`'s, a `match`'s.
                 return Err(self.unsupported(
                     span,
-                    match state.binding_rest {
-                        Some(false) => {
+                    match state.binding_var {
+                        true => {
                             "a `Rest` of props taken apart here: take them apart where they're given, `fn f(Props { a, rest }: Props)`"
                         }
-                        _ => "reading a `Rest` of props: take it apart from them, `LinkProps { href, rest }: LinkProps`",
+                        false => "reading a `Rest` of props: take it apart from them, `LinkProps { href, rest }: LinkProps`",
                     },
                 ));
             }

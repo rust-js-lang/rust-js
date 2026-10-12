@@ -2125,11 +2125,14 @@ pub fn Looped() -> JSX::Element {
   expect(logged).toEqual(["h", "t", "t", "l", "h", "big"]);
   expect(jsx).toMatch(/<ButtonLink size=\{\w+\} href=\{\w+\}>/);
   expect(jsx).toContain("<Linky label={label} target={target} />");
-  expect(jsx).toContain("<ButtonLink target={target} label={label} href={h}>");
+  // MIR's first prop read in place, made after `label` as Rust makes it.
+  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? '<ButtonLink target={note("t")} label={label} href={h}>' : "<ButtonLink target={target} label={label} href={h}>");
   // Each made first is named as its field is, as a person names it.
-  expect(jsx).toContain("<ButtonLink label={label} target={target} id={id} href={href}>");
+  // MIR names only `href`, made before the rest; THIR names each.
+  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? '<ButtonLink label={note("l")} target={note("t")} id={note("i")} href={href}>' : "<ButtonLink label={label} target={target} id={id} href={href}>");
   expect(jsx).toContain('<ButtonLink href="/t" target={t}>');
-  expect(jsx).toMatch(/<ButtonLink target=\{\w+\} href=\{\w+\}>/);
+  // MIR reads `target` in place, made after `href`.
+  expect(jsx).toMatch(process.env.RUST_JS_MIR === "1" ? /<ButtonLink target=\{note\("t"\)\} href=\{\w+\}>/ : /<ButtonLink target=\{\w+\} href=\{\w+\}>/);
   expect(renderToStaticMarkup(App())).toBe('<a href="/a" data-size="lg" target="_blank" id="x">A</a><a href="/b" data-size="md" class="c">B</a>');
   const refused = (source: string, says: string) => {
     const c = compile(source);
@@ -2767,7 +2770,17 @@ pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> JSX::Eleme
   args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain(`  if (typeof children === "string") {
+  // MIR's is the chain as it's written, one `else` for what fails it.
+  if (process.env.RUST_JS_MIR === "1") {
+    expect(jsx).toContain(`  if (typeof children === "string") {
+    message = children;
+  } else if (isValidElement(children) && typeof children.props.children === "string") {
+    const inner = children.props.children;
+    message = inner;
+  } else {
+    throw new Error("Expected plain text.");
+  }`);
+  } else expect(jsx).toContain(`  if (typeof children === "string") {
     message = children;
   } else if (isValidElement(children)) {
     const inner = children.props.children;
@@ -3861,7 +3874,8 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
-  expect(jsx).toContain("<Panel key={match} {...props} wide />");
+  // MIR's held key named as it's given, `key`, where THIR's is a `match`.
+  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? "<Panel key={key} {...props} wide />" : "<Panel key={match} {...props} wide />");
   const { Again } = await import(join(dir, "lib.jsx"));
   const tree = Again({ title: "t", wide: false, extra: 1 });
   expect(tree.props.extra).toBe(1);
@@ -3893,7 +3907,8 @@ pub fn Named(name: &'static str) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("<Panel key={match} title={name} wide />");
+  // MIR's key read in place, what's after it doing nothing (ADR 0364).
+  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? "<Panel key={described(name)} title={name} wide />" : "<Panel key={match} title={name} wide />");
   const { Named } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Named("n"))).toBe('<p title="n" data-wide="true"></p>');
 });
@@ -3932,7 +3947,8 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("return <Item {...props} key={match} />;");
+  // MIR's key where it's written, read in place, before the spread.
+  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? "return <Item key={String(i)} {...props} />;" : "return <Item {...props} key={match} />;");
   expect(jsx).not.toContain("let tmp");
   const { List } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
@@ -4718,12 +4734,37 @@ pub fn Image(props: ImageProps) -> JSX::Element {
     let ImageProps { alt, rest } = props;
     jsx! { <img alt={alt} className="pic" {...&rest} /> }
 }
+// A field the pattern leaves, \`..\`, isn't the rest's, though the rest is
+// bound first; nor is a \`Rest\`'s.
+pub struct CaptionProps<'a> {
+    pub title: Option<&'a str>,
+    pub lang: Option<&'a str>,
+    #[rust_js::flatten]
+    pub rest: ImgHTMLAttributes<'a>,
+}
+pub fn Caption(props: CaptionProps) -> JSX::Element {
+    let CaptionProps { rest, title, .. } = props;
+    jsx! { <img title={title} {...&rest} /> }
+}
+pub struct LinkProps {
+    pub href: &'static str,
+    pub title: &'static str,
+    pub rest: react::Rest,
+}
+pub fn Link(p: LinkProps) -> JSX::Element {
+    let LinkProps { href, rest, .. } = p;
+    jsx! { <a href={href} {...rest} /> }
+}
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("  const { alt, ...rest } = props;\n");
+  expect(jsx).toContain("  const { title, lang: _lang, ...rest } = props;\n");
+  expect(jsx).toContain("  const { href, title: _title, ...rest } = p;\n");
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(lib.Image, { alt: "a", src: "/s.png" }))).toContain('<img alt="a" class="pic" src="/s.png"/>');
+  expect(renderToStaticMarkup(createElement(lib.Caption, { title: "t", lang: "en", src: "/s.png" }))).toContain('<img title="t" src="/s.png"/>');
+  expect(renderToStaticMarkup(createElement(lib.Link, { href: "/h", title: "t", id: "i" }))).toBe('<a href="/h" id="i"></a>');
 });
 
 // ADR 0364: a prop MIR holds in a temporary, a `String` borrowed for it,

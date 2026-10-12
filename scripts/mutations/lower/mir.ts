@@ -1850,8 +1850,8 @@ export const mutations: Mutation[] = [
     "name": "mir-rest-field-read",
     "breaks": "a `Rest` of props read as a field of its own, `p.rest`, is `undefined`, not refused",
     "file": "src/lower/mir.rs",
-    "find": "                if bindings::is_rest(self.tcx, field_ty) && state.binding_rest != Some(true) =>",
-    "replace": "                if false && bindings::is_rest(self.tcx, field_ty) && state.binding_rest != Some(true) =>",
+    "find": "            PlaceElem::Field(_, field_ty) if bindings::is_rest(self.tcx, field_ty) => {",
+    "replace": "            PlaceElem::Field(_, field_ty) if false && bindings::is_rest(self.tcx, field_ty) => {",
     "tests": [
       "test/mir.test.ts",
       "-t",
@@ -1859,11 +1859,23 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-let-rest-refused",
-    "breaks": "a `let`'s pattern's rest, `let P { href, rest } = p`, is refused as a read of a `Rest`",
+    "name": "mir-let-rest-whole",
+    "breaks": "a `let`'s pattern's rest holds every field, `...rest` with what the pattern leaves, `..`",
     "file": "src/lower/mir.rs",
-    "find": "            true if state.rests.contains(&place.local) => Some(true),",
-    "replace": "            true if false => Some(true),",
+    "find": "            .filter(|&(i, _)| !bindings::is_rest_field(tcx, ty, i))\n",
+    "replace": "            .filter(|&(i, _)| false && !bindings::is_rest_field(tcx, ty, i))\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-match-flattened-kept",
+    "breaks": "a `match`'s binding of flattened props is the props whole, their other fields among them",
+    "file": "src/lower/mir.rs",
+    "find": "        if state.binding_var\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
+    "replace": "        if false\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
     "tests": [
       "test/mir.test.ts",
       "-t",
