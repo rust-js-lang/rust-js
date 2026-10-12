@@ -333,5 +333,6 @@ vec_edits.rs
 vec_push_mut.rs
 wrapping.rs
 wrapping_rem_zero.rs
+wrapping_type.rs
 wrapping_unary.rs
 write_to_string.rs

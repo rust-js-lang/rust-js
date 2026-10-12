@@ -2302,4 +2302,16 @@ export const mutations: Mutation[] = [
       "heap_methods|heap_peek_mut"
     ]
   },
+  {
+    "name": "mir-wrapping-op-refused",
+    "breaks": "`a * Wrapping(2)` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::WrappingOp(op, assign) => {\n",
+    "replace": "            Std::WrappingOp(op, assign) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "wrapping_type"
+    ]
+  },
 ];

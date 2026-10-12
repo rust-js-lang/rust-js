@@ -248,31 +248,50 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let wrapping = self.thir[args[0]].ty.peel_refs();
-        let inner = self.recognition().wrapping_of(wrapping).expect("a `Wrapping`");
-        self.num(inner, span)?;
-        let op = match op {
-            Err(op) => {
-                let value = self.expr(args[0], out)?;
-                let result = self.unary(op, Expr::index(value, Expr::int(0)), inner, span)?;
-                return Ok(Expr::array(vec![result]));
-            }
-            Ok(op) => op,
-        };
-        let target = match assign {
-            true => {
+        let target = match (op, assign) {
+            (Ok(_), true) => {
                 let ExprKind::Borrow { arg: place, .. } = self.thir[self.strip(args[0])].kind else {
                     return Err(self.unsupported(span, "this assignment"));
                 };
                 self.assignee(place)?
             }
-            false => self.expr(args[0], out)?,
+            _ => self.expr(args[0], out)?,
         };
-        let target = if target.reads_same() {
-            target
-        } else {
-            self.spill("wrapping", target, out)
+        let target = match op.is_ok() && !target.reads_same() {
+            true => self.spill("wrapping", target, out),
+            false => target,
         };
-        let rhs = self.expr(args[1], out)?;
+        let rhs = match op {
+            Ok(_) => Some(self.expr(args[1], out)?),
+            Err(_) => None,
+        };
+        self.wrapping_values(op, assign, wrapping, target, rhs, span, out)
+    }
+
+    /// `wrapping_op`'s, of its `Wrapping`'s type, its value, or its place
+    /// where it's assigned, `assign`, read the same each time, and the
+    /// operand: THIR's and MIR's.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::lower) fn wrapping_values(
+        &mut self,
+        op: Result<BinOp, UnOp>,
+        assign: bool,
+        wrapping: Ty<'tcx>,
+        target: Expr,
+        rhs: Option<Expr>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let inner = self.recognition().wrapping_of(wrapping).expect("a `Wrapping`");
+        self.num(inner, span)?;
+        let op = match op {
+            Err(op) => {
+                let result = self.unary(op, Expr::index(target, Expr::int(0)), inner, span)?;
+                return Ok(Expr::array(vec![result]));
+            }
+            Ok(op) => op,
+        };
+        let rhs = rhs.expect("a binary operator's operand");
         let result = self.wrapping_result(op, Expr::index(target.clone(), Expr::int(0)), rhs, inner, span)?;
         if !assign {
             return Ok(Expr::array(vec![result]));

@@ -5170,6 +5170,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
                 self.range_edit(op, range, rest)
             }
+            // A `Wrapping`'s operator, `a * Wrapping(2)`, `w += x`, THIR's.
+            Std::WrappingOp(op, assign) => {
+                let target = match (assign, values.next().expect("the `Wrapping`")) {
+                    (true, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => place,
+                    (true, _) => return Err(self.unsupported(span, "this assignment, from its MIR")),
+                    (false, value) => self.value_expr(value, span)?,
+                };
+                let target = match op.is_ok() && !target.reads_same() {
+                    true => {
+                        self.flush(state, out)?;
+                        self.spill("wrapping", target, out)
+                    }
+                    false => target,
+                };
+                let rhs = values.next().map(|v| self.value_expr(v, span)).transpose()?;
+                self.flush(state, out)?;
+                self.wrapping_values(op, assign, arg_tys[0].peel_refs(), target, rhs, span, out)?
+            }
             // A `BinaryHeap`'s, and its `peek_mut()` guard's, THIR's.
             Std::Heap(op) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
