@@ -296,12 +296,36 @@ export const mutations: Mutation[] = [
     "name": "wrap-call-an-effect",
     "breaks": "a number wrapped to its width, `BigInt.asIntN(64, n)`, is something done, held first, `const value = \u2026; m.cents = value;`",
     "file": "src/js.rs",
-    "find": "(\"BigInt\", \"asIntN\" | \"asUintN\") | (\"Math\", \"imul\")",
-    "replace": "(\"$none\", \"none\")",
+    "find": "                        \"BigInt\" => matches!(name.as_str(), \"asIntN\" | \"asUintN\"),\n",
+    "replace": "                        \"BigInt\" => false,\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
       "a wide field updated from MIR"
+    ]
+  },
+  {
+    "name": "math-call-does",
+    "breaks": "`Math`'s functions count as doing something: a stage of `Math.imul(x, 2)` keeps its chain lazy, and a range's end of `Math.max` is a `{ end }` made first",
+    "file": "src/js.rs",
+    "find": "                        \"Math\" => name != \"random\",\n",
+    "replace": "                        \"Math\" => false,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a lazy chain from MIR spread once|a slice to a computed end"
+    ]
+  },
+  {
+    "name": "math-random-pure",
+    "breaks": "`Math.random()` does nothing, so a stage of it runs where its chain is made",
+    "file": "src/js.rs",
+    "find": "                        \"Math\" => name != \"random\",\n",
+    "replace": "                        \"Math\" => true,\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a lazy chain from MIR spread once"
     ]
   },
 ];

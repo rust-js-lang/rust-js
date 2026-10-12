@@ -614,30 +614,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "math-call-does",
-    "breaks": "a stage of `Math.imul(x, 2)` does something, so its chain stays lazy",
-    "file": "src/lower/iterators.rs",
-    "find": "                    *part = Expr::array(operands);\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a lazy chain from MIR spread once|iterator chains from MIR are array methods"
-    ]
-  },
-  {
-    "name": "math-random-pure",
-    "breaks": "a stage of `Math.random()` does nothing, so it runs where its chain is made",
-    "file": "src/lower/iterators.rs",
-    "find": "                        name != \"random\"\n",
-    "replace": "                        true\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a lazy chain from MIR spread once"
-    ]
-  },
-  {
     "name": "early-stop-drains",
     "breaks": "`it.position(f)` of an iterator stepped after takes all it has left, `$rest(it)`, and its `next()` finds none",
     "file": "src/lower/iterators.rs",

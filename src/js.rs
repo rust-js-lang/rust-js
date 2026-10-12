@@ -1649,14 +1649,17 @@ impl Expr {
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
             ExprKind::Cond(a, b, c) => a.has_effects() || b.has_effects() || c.has_effects(),
             // A number wrapped to its width, `BigInt.asIntN(64, n)`, or
-            // multiplied so, `Math.imul(a, b)`: what its arguments do.
+            // computed by `Math`, `Math.max(a, 0)`, but for `Math.random()`,
+            // which steps its state: what its arguments do. Nothing the
+            // program names shadows `Math`; that one's renamed, `Math$`.
             ExprKind::Call(callee, args)
                 if let ExprKind::Member(of, name) = &callee.kind
                     && let ExprKind::Var(global) = &of.kind
-                    && matches!(
-                        (global.as_str(), name.as_str()),
-                        ("BigInt", "asIntN" | "asUintN") | ("Math", "imul")
-                    ) =>
+                    && match global.as_str() {
+                        "BigInt" => matches!(name.as_str(), "asIntN" | "asUintN"),
+                        "Math" => name != "random",
+                        _ => false,
+                    } =>
             {
                 args.iter().any(Expr::has_effects)
             }

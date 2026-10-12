@@ -9457,3 +9457,20 @@ test("a let each turn assigns from MIR is the loop body's", async () => {
     expect((await import(join(dir, out))).named([0, 1, 7])).toEqual(["one", "7"]);
   }
 });
+
+// `Math`'s functions but `random` only compute their value: a range's end
+// of one, `..len.saturating_sub(1)`, is read where it's used, from MIR as
+// from THIR, not a `{ end }` object made first.
+test("a slice to a computed end from MIR is THIR's", async () => {
+  const dir = fixture("slice-computed-end");
+  writeFileSync(join(dir, "lib.rs"), `pub fn crumbs(segments: Vec<&str>) -> Vec<&str> {
+    segments[..segments.len().saturating_sub(1)].to_vec()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("$slice(segments, 0, Math.max(segments.length - 1, 0))");
+    const lib = await import(join(dir, out));
+    expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
+  }
+});
