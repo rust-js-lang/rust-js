@@ -115,7 +115,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     // The innermost first: what a loop ends with may be another, recovered.
     bottom_up(body, &mut |stmts| loops(stmts, &mentions));
-    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
@@ -167,8 +166,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::each_expr_mut(body, &mut range_items);
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
-    returned_in_branches(body, result);
-    // A block, or branches, a loop's body ends in, the function's value made
+    // A block, or branches, a function's body or a loop's ends in, the function's value made
     // in them, `?`'s.
     js::statement_lists(body, &mut |stmts| returned_in_branches(stmts, result));
     // Each `let` where it's first named, a `const` where it's written once.

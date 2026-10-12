@@ -539,14 +539,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
-    name: "mir-tidy-result-assigned-kept",
-    breaks: "`if (c) { result = a; } else { result = b; } return result;` stays",
-    file: "src/lower/mir/tidy.rs",
-    find: "    returned_in_branches(body, result);\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","branches assign is returned from each"],
-  },
-  {
     name: "mir-tidy-else-after-return-kept",
     breaks: "`if (c) { return a; } else { s }`, its `else` kept, the let-else not a guard",
     file: "src/lower/mir/tidy.rs",
@@ -609,14 +601,6 @@ export const mutations: Mutation[] = [
     find: "        let past = |at: usize| {\n",
     replace: "        let past = |at: usize| at == 0 && {\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
-  },
-  {
-    name: "mir-tidy-while-test-kept",
-    breaks: "`while (true) { if (!c) { return x; } … }` stays, not `while (c) { … } return x;`",
-    file: "src/lower/mir/tidy.rs",
-    find: "    bottom_up(body, &mut |stmts| loops(stmts, &mentions));\n    js::statement_lists(body, &mut |stmts| while_tests(stmts, written));\n",
-    replace: "    bottom_up(body, &mut |stmts| loops(stmts, &mentions));\n",
-    tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
   },
   {
     name: "mir-tidy-loop-unrotated",
