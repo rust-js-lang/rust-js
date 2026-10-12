@@ -64,6 +64,7 @@ JSX supports components across modules, fragments, lists, conditions and spreads
 JSX tags take the attributes @types/react gives each
 JSX takes an async event handler as the async function it is
 JSX takes every attribute @types/react types
+JSX takes the props a component's struct doesn't name as ...rest
 JSX tells text children from any other node
 JSX tests an Option of an object by its truth
 JSX unknown component prop reports the original source and preserves existing output

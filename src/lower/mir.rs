@@ -171,6 +171,11 @@ struct State<'m, 'tcx> {
     /// Each local holding an update's derived `Default` base, its fields'
     /// defaults, each read where its field is (`default_base_at`).
     defaults: std::collections::HashMap<Local, Vec<Expr>>,
+    /// The locals a `let`'s pattern binds a props' rest to, and whether one
+    /// is being given its value, `Some(true)`, where the one read of a
+    /// `Rest` there is, or another variable, `Some(false)`, a `match`'s.
+    rests: std::collections::HashSet<Local>,
+    binding_rest: Option<bool>,
     /// Values made, each written where it's read: a constant, or what the
     /// module names, which reads the same anywhere, and an element, inside another or given its props,
     /// as JSX writes it, what it's made of read where it was made (ADR 0040).
@@ -320,7 +325,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let named: Vec<(Local, String)> = patterns.iter().flat_map(|(_, _, named)| named.clone()).collect();
         let mut locals = self.mir_locals(mir_body, &named);
         // A drop reads what it drops more than once, so it's a variable.
-        for local in drops.iter().flat_map(|drops| drops.read(mir_body)) {
+        let dropped: Vec<Local> = drops.iter().flat_map(|drops| drops.read(mir_body)).collect();
+        for &local in &dropped {
             locals.reads[local] += 2;
         }
         let mut state = State {
@@ -343,6 +349,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             boxes: Default::default(),
             branches: Default::default(),
             defaults: Default::default(),
+            rests: (self.let_pattern_bindings(mir_body).into_iter())
+                .filter_map(|(local, rest)| rest.then_some(local))
+                .collect(),
+            binding_rest: None,
             flattened: Default::default(),
             in_place: Default::default(),
             named: Default::default(),
@@ -409,7 +419,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && matches!(&assign.1, Rvalue::Use(Operand::Move(p) | Operand::Copy(p), _) if p.local == arg))
                 })
             });
-            if !moved_out || state.locals.reads[arg] != named.len() {
+            // Its drops, of what's moved out, as its parts', read it too.
+            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();
+            if !moved_out || state.locals.reads[arg] - drops != named.len() {
                 continue;
             }
             for (local, _) in named {
@@ -876,6 +888,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         patterned
     }
 
+    /// Whether struct pattern `pat` binds each field that has a destructor,
+    /// by value, whole: what it leaves has none to drop.
+    fn binds_dropped_fields(&self, pat: &thir::Pat<'tcx>) -> bool {
+        let (thir::PatKind::Leaf { subpatterns }, ty::Adt(adt, args)) = (&pat.kind, pat.ty.kind()) else {
+            return false;
+        };
+        adt.is_struct()
+            && (adt.non_enum_variant().fields.iter_enumerated()).all(|(i, field)| {
+                !self.has_drops(field.ty(self.tcx, args).skip_normalization())
+                    || subpatterns.iter().any(|sub| {
+                        sub.field == i
+                            && matches!(
+                                sub.pattern.kind,
+                                thir::PatKind::Binding {
+                                    mode: rustc_hir::BindingMode(rustc_hir::ByRef::No, _),
+                                    subpattern: None,
+                                    ..
+                                }
+                            )
+                    })
+            })
+    }
+
     /// Parameters taken apart where they're given, as THIR takes them: a
     /// props struct's, its fields' defaults and its rest among them (ADRs
     /// 0195, 0212). Each its index, THIR's pattern, which names what it
@@ -884,7 +919,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut patterns = Vec::new();
         for (i, param) in self.thir.params.iter().enumerate() {
             let Some(pat) = param.pat.as_deref() else { continue };
-            if !matches!(pat.kind, thir::PatKind::Leaf { .. }) || self.has_drops(pat.ty) {
+            if !matches!(pat.kind, thir::PatKind::Leaf { .. }) {
+                continue;
+            }
+            // One with a destructor, only where each part that has one is
+            // bound, moved out whole: none is left of it to drop.
+            if self.has_drops(pat.ty) && !self.binds_dropped_fields(pat) {
                 continue;
             }
             // Each binding, and the local MIR binds it to, by its span.
@@ -1995,8 +2035,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             return Ok(());
         }
-        let value = self.mir_rvalue(state, rvalue, span, out)?;
-        self.mir_store(state, *place, value, span, out)
+        // A `let`'s pattern's rest, `let P { href, rest } = p`, which tidy
+        // takes apart as JS does, `{ href, ...rest }` (ADR 0291).
+        state.binding_rest = match place.projection.is_empty() {
+            true if state.rests.contains(&place.local) => Some(true),
+            true if state.locals.user[place.local] => Some(false),
+            _ => None,
+        };
+        let value = self.mir_rvalue(state, rvalue, span, out);
+        state.binding_rest = None;
+        self.mir_store(state, *place, value?, span, out)
     }
 
     /// `place = value`: a temporary's value kept for where it's used, a
@@ -2428,6 +2476,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A reference is what it refers to (ADR 0023), and so are a box
             // and a pointer, a `static mut`'s.
             PlaceElem::Deref if ty.ty.is_ref() || ty.ty.is_box() || ty.ty.is_raw_ptr() => base,
+            // JS's props have no `rest`: what's left of them is taken apart
+            // from the rest, `{ href, ...rest }` (ADR 0195), as THIR says.
+            PlaceElem::Field(_, field_ty)
+                if bindings::is_rest(self.tcx, field_ty) && state.binding_rest != Some(true) =>
+            {
+                // Bound by a pattern other than a `let`'s, a `match`'s.
+                return Err(self.unsupported(
+                    span,
+                    match state.binding_rest {
+                        Some(false) => {
+                            "a `Rest` of props taken apart here: take them apart where they're given, `fn f(Props { a, rest }: Props)`"
+                        }
+                        _ => "reading a `Rest` of props: take it apart from them, `LinkProps { href, rest }: LinkProps`",
+                    },
+                ));
+            }
             PlaceElem::Field(field, _) => self.mir_field(base, ty, field, span)?,
             PlaceElem::Downcast(..) | PlaceElem::OpaqueCast(_) => base,
             PlaceElem::Index(local) => {

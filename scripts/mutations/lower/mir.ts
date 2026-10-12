@@ -1822,4 +1822,52 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-props-with-drops-whole",
+    "breaks": "props with a destructor are taken whole, `{ label, rest }`, their `Rest` a field of its own, not `...rest`",
+    "file": "src/lower/mir.rs",
+    "find": "            if self.has_drops(pat.ty) && !self.binds_dropped_fields(pat) {",
+    "replace": "            if self.has_drops(pat.ty) {",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-props-drop-reads-counted",
+    "breaks": "the drops of a parameter's moved-out parts count as reads of it, so its pattern isn't taken, `{ label, rest }`",
+    "file": "src/lower/mir.rs",
+    "find": "            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();",
+    "replace": "            let drops = 0 * dropped.iter().filter(|&&local| local == arg).count();",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-rest-field-read",
+    "breaks": "a `Rest` of props read as a field of its own, `p.rest`, is `undefined`, not refused",
+    "file": "src/lower/mir.rs",
+    "find": "                if bindings::is_rest(self.tcx, field_ty) && state.binding_rest != Some(true) =>",
+    "replace": "                if false && bindings::is_rest(self.tcx, field_ty) && state.binding_rest != Some(true) =>",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-let-rest-refused",
+    "breaks": "a `let`'s pattern's rest, `let P { href, rest } = p`, is refused as a read of a `Rest`",
+    "file": "src/lower/mir.rs",
+    "find": "            true if state.rests.contains(&place.local) => Some(true),",
+    "replace": "            true if false => Some(true),",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

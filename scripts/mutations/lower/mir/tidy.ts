@@ -1686,4 +1686,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "destructured-rest-as-field",
+    "breaks": "a `let`'s rest taken apart is a field, `const { href, rest } = p`, `undefined`, not `...rest`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    .position(|(_, part, _)| part.name().is_some_and(|name| patterns.get(name) == Some(&true))) =>",
+    "replace": "                    .position(|(_, part, _)| false && part.name().is_some_and(|name| patterns.get(name) == Some(&true))) =>",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "JSX tests"
+    ]
+  },
 ];

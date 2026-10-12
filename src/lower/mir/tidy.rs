@@ -1432,6 +1432,15 @@ fn destructured(stmts: &mut Vec<Stmt>, patterns: &HashMap<String, bool>) {
         let mutable = parts.iter().any(|(_, _, m, _)| *m);
         let pattern = match (pattern.expect("checked"), &rest) {
             (js::Pattern::Object(fields, None), Some(rest)) => js::Pattern::Object(fields, Some(rest.clone())),
+            // A `Rest` the pattern binds, read as a field of its own by MIR,
+            // `rest` of `p.rest`: what's left of the props, `...rest`.
+            (js::Pattern::Object(mut fields, None), None)
+                if let Some(at) = (fields.iter())
+                    .position(|(_, part, _)| part.name().is_some_and(|name| patterns.get(name) == Some(&true))) =>
+            {
+                let (_, part, _) = fields.remove(at);
+                js::Pattern::Object(fields, part.name().map(str::to_string))
+            }
             (pattern, _) => pattern,
         };
         let count = count + usize::from(rest.is_some() && matches!(pattern, js::Pattern::Object(_, Some(_))));
