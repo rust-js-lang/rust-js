@@ -286,11 +286,28 @@ pub fn Credit(author: &'static str, author_link: &'static str) -> JSX::Element {
         </cite>
     }
 }
+// Of elements more than two deep, and three ways, as react.dev's Link
+// chooses its anchor: one conditional still, not a variable each sets.
+pub fn Pick(href: &'static str) -> JSX::Element {
+    jsx! {
+        <>
+            {if href.starts_with("https://") {
+                jsx! { <p><b><i>{"out"}</i></b></p> }
+            } else if href.starts_with("#") {
+                jsx! { <p><b><u>{"here"}</u></b></p> }
+            } else {
+                jsx! { <p><b><s>{"in"}</s></b></p> }
+            }}
+        </>
+    }
+}
 `;
   const { dir, args } = compile(source);
   run(args);
   const output = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(output).toContain("{authorLink ? <a href={authorLink}>{author}</a> : author}");
+  expect(output).not.toMatch(/\blet \w+;/);
+  expect(output).toContain('{href.startsWith("https://") ? (');
   const result = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(result.Credit("R", "x"))).toBe('<cite>Illustrated by <a href="x">R</a></cite>');
   expect(renderToStaticMarkup(result.Credit("R", ""))).toBe("<cite>Illustrated by R</cite>");

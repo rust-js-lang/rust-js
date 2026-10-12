@@ -67,14 +67,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","assignment_order"],
   },
   {
-    name: "mir-tidy-impossible-check-kept",
-    breaks: "a check that can't fail, a constant divisor's `if (2 === 0)`, stays",
-    file: "src/lower/mir/tidy.rs",
-    find: "            StmtKind::If(test, _, None) if never(&test) => StmtKind::Expr(Expr::undefined()),\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
-  },
-  {
     name: "mir-tidy-returned-chain-kept",
     breaks: "`if (a) { if (b) { return t; } } return f;` stays, not `return a && b ? t : f`",
     file: "src/lower/mir/tidy.rs",

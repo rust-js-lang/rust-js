@@ -2083,9 +2083,6 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
                 StmtKind::If(or_all(a, b), then, None)
             }
             StmtKind::If(test, then, Some(otherwise)) if otherwise.is_empty() => StmtKind::If(test, then, None),
-            // A test of two numbers that fails, a check of a constant
-            // divisor's, `if (2 === 0)`: nothing.
-            StmtKind::If(test, _, None) if never(&test) => StmtKind::Expr(Expr::undefined()),
             // A chain of more arms, its last two folded first, `if (a) { x = p; }
             // else { x = b ? q : r; }`: the chain, as it's written.
             StmtKind::If(ref test, ref then, Some(ref otherwise))
@@ -2281,25 +2278,6 @@ fn returned_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Expr)> {
             Some((tests, yes))
         }
         _ => None,
-    }
-}
-
-/// Whether `test` compares two numbers it holds, and fails.
-fn never(test: &Expr) -> bool {
-    let ExprKind::Binary(op, a, b) = &test.kind else {
-        return false;
-    };
-    let (ExprKind::Num(a), ExprKind::Num(b)) = (&a.kind, &b.kind) else {
-        return false;
-    };
-    !match op {
-        Op::Eq | Op::LooseEq => a == b,
-        Op::Ne | Op::LooseNe => a != b,
-        Op::Lt => a < b,
-        Op::Le => a <= b,
-        Op::Gt => a > b,
-        Op::Ge => a >= b,
-        _ => return false,
     }
 }
 
