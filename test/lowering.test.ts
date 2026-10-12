@@ -1252,6 +1252,13 @@ pub fn mid(v: &[u32]) -> Vec<u32> {
 pub fn up(c: char) -> String {
     c.to_uppercase().collect()
 }
+// A function given as a value, its parameter named by its type, as THIR's.
+pub fn lens(groups: &[Vec<u32>]) -> Vec<usize> {
+    groups.iter().map(Vec::len).collect()
+}
+pub fn sizes(words: &[&str]) -> Vec<usize> {
+    words.iter().copied().map(str::len).collect()
+}
 pub fn order(items: &[u32]) -> Vec<String> {
     let log = RefCell::new(Vec::new());
     let _ = items
@@ -1309,6 +1316,8 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect(js).toContain(".filter((word) => word !== \"\")\n    .map((w) => w.toUpperCase())\n    .join(\" \");");
     expect(js).toContain("  return v.slice(2).slice(0, 3);\n");
     expect(js).toContain("  return c.toUpperCase();\n");
+    expect(js).toContain("  return groups.map((x) => x.length);\n");
+    expect(js).toContain("words.map((s) => $byteLen(s))");
     const lib = await import(join(dir, out));
     expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
     expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);

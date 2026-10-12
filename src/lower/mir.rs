@@ -4066,7 +4066,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let sig = tcx.instantiate_bound_regions_with_erased(sig);
         let inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
         let params: Vec<String> = match inputs.len() {
-            1 => vec![self.fresh("value")],
+            // Named by its type, as THIR's: `(s) => ..` of a string.
+            1 => vec![self.fresh(self.parameter_name(inputs[0].peel_refs()))],
             n => (0..n)
                 .map(|i| self.fresh(["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg")))
                 .collect(),

@@ -1970,4 +1970,16 @@ export const mutations: Mutation[] = [
       "a range pattern's tests from MIR"
     ]
   },
+  {
+    "name": "mir-fn-value-param-value",
+    "breaks": "`.map(Vec::len)` from MIR names its arrow's parameter `value`, not by its type, `x`",
+    "file": "src/lower/mir.rs",
+    "find": "self.fresh(self.parameter_name(inputs[0].peel_refs()))",
+    "replace": "self.fresh(\"value\")",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];
