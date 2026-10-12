@@ -2189,6 +2189,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && self.tcx.item_name(adt.did()).as_str() == "Chars")
     }
 
+    /// A string's `bytes()`, an array of its UTF-8 bytes (ADR 0034).
+    pub(super) fn is_str_bytes(&self, ty: Ty<'tcx>) -> bool {
+        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
+            && self.tcx.item_name(adt.did()).as_str() == "Bytes")
+    }
+
     /// `js::JsError`, what a JS function threw: the builtins crate's.
     pub(super) fn is_js_error(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate).as_str() == "js"

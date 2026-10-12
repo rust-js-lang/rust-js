@@ -84,13 +84,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             recognition.exact_size_iterator() == Some(trait_id),
         );
         if (double_ended && name == "next_back") || (exact && name == "len") {
+            // The crate's own `len()`, std's: its `size_hint()`, exact, as THIR's.
+            let own_len = || -> R<bool> {
+                let args = self.args_of(trait_id, iter_ty);
+                Ok(self
+                    .resolve_instance(def_id, args)?
+                    .is_some_and(|i| self.is_rust_fn(i.def_id())))
+            };
+            if self.is_user_iterator(iter_ty) && name == "len" && !own_len()? {
+                let it = values.into_iter().next().expect("the receiver");
+                let mut made = Vec::new();
+                let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
+                if !made.is_empty() {
+                    return Err(self.unsupported(span, "this `len()`, from its MIR"));
+                }
+                return Ok(Some(len));
+            }
             if self.is_user_iterator(iter_ty) {
                 return Ok(None);
             }
             let it = values.into_iter().next().expect("the receiver");
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
             // A string's `chars()`, a `$iter` of its array (`std_iterator`).
-            let array = self.array_source(iter_ty).is_some() || self.recognition().is_str_chars(iter_ty);
+            let array = self.array_source(iter_ty).is_some()
+                || self.recognition().is_str_chars(iter_ty)
+                || self.recognition().is_str_bytes(iter_ty);
             return Ok(Some(match (name, self.range_kind(iter_ty)) {
                 ("next_back", Some(RangeKind::Exclusive)) => {
                     self.helper(Helper::RangeNextBack, "$rangeNextBack", vec![it])
@@ -101,6 +119,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ("next_back", None) if array && boxed => self.helper(Helper::NextBackSome, "$nextBackSome", vec![it]),
                 ("next_back", None) if array => self.helper(Helper::NextBack, "$nextBack", vec![it]),
                 ("len", None) if array => Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at")),
+                // A chain made here of an array's items, which nothing else
+                // steps, skipped or taken from, no closure of its to run: its
+                // items' count, `$iter(xs).drop(1).toArray().length`, which is
+                // `xs.slice(1).length`, as THIR's.
+                ("len", None) if counted_chain(&it) => {
+                    Expr::member(Expr::call(Expr::member(it, "toArray"), Vec::new()), "length")
+                }
+                // A range of numbers' count, none where it ends before it starts.
+                ("len", Some(RangeKind::Exclusive))
+                    if let Some((start, end)) = range_bounds(&it)
+                        && self
+                            .range_index(iter_ty)
+                            .and_then(Num::of)
+                            .is_some_and(|num| !num.big()) =>
+                {
+                    let count = Expr::bin(Op::Sub, end, start);
+                    Expr::call(Expr::member(Expr::var("Math"), "max"), vec![count, Expr::int(0)])
+                }
                 _ => {
                     return Err(self.unsupported(
                         span,
@@ -571,6 +607,38 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
 /// `$iter` or a range's `$iterator`, a collection's `values()`, `keys()`
 /// or `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
+/// Whether `e` is an array's items made there, `$iter(xs)`, skipped or taken
+/// from, `.drop(1)`, by a count that does nothing (`len()`'s).
+fn counted_chain(e: &Expr) -> bool {
+    let mut at = e;
+    let mut stages = 0;
+    while let js::ExprKind::Call(callee, args) = &at.kind
+        && let js::ExprKind::Member(source, name) = &callee.kind
+        && matches!(name.as_str(), "drop" | "take")
+        && let [n] = &args[..]
+        && !n.has_effects()
+    {
+        stages += 1;
+        at = source;
+    }
+    stages > 0 && crate::lower::iterators::is_stepped_items(at)
+}
+
+/// A range's bounds, each read once: of `{ start: a, end: b }` made there,
+/// `a` and `b`, or of one that reads the same, `r.start` and `r.end`.
+fn range_bounds(range: &Expr) -> Option<(Expr, Expr)> {
+    match &range.kind {
+        js::ExprKind::Object(props) => match &props[..] {
+            [js::Prop::Field(s, start), js::Prop::Field(e, end)] if s == "start" && e == "end" => {
+                Some((start.clone(), end.clone()))
+            }
+            _ => None,
+        },
+        _ if range.reads_same() => Some((Expr::member(range.clone(), "start"), Expr::member(range.clone(), "end"))),
+        _ => None,
+    }
+}
+
 fn is_js_iterator(e: &Expr) -> bool {
     let js::ExprKind::Call(callee, _) = &e.kind else {
         return false;

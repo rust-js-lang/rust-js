@@ -291,4 +291,28 @@ export const mutations: Mutation[] = [
     replace: "                Prop::Field(\"start\".into(), end.clone()?),\n",
     tests: ["test/mir.test.ts","-t","pretty_debug"],
   },
+  {
+    "name": "const-range-from-refused",
+    "breaks": "a constant `(5..)` is refused, not `{ start: 5 }`",
+    "file": "src/lower/representation.rs",
+    "find": "        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
+    "replace": "        ty::Adt(adt, _) if false && tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "range_values"
+    ]
+  },
+  {
+    "name": "const-range-to-refused",
+    "breaks": "a constant `(..8)` or `(..=7)` is refused, not `{ end: 8 }`",
+    "file": "src/lower/representation.rs",
+    "find": "            if tcx.is_lang_item(adt.did(), LangItem::RangeTo)\n                || tcx.is_lang_item(adt.did(), LangItem::RangeToInclusive) =>\n",
+    "replace": "            if false =>\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "range_values"
+    ]
+  },
 ];

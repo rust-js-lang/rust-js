@@ -804,6 +804,19 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 Prop::Field("end".into(), end?),
             ]))
         }
+        // `a..`, `{ start }`, and `..b` or `..=b`, `{ end }`, as one made at
+        // run time is.
+        ty::Adt(adt, _) if tcx.is_lang_item(adt.did(), LangItem::RangeFrom) => {
+            let start = const_js(tcx, *children()?.first()?)?;
+            Some(Expr::object(vec![Prop::Field("start".into(), start)]))
+        }
+        ty::Adt(adt, _)
+            if tcx.is_lang_item(adt.did(), LangItem::RangeTo)
+                || tcx.is_lang_item(adt.did(), LangItem::RangeToInclusive) =>
+        {
+            let end = const_js(tcx, *children()?.first()?)?;
+            Some(Expr::object(vec![Prop::Field("end".into(), end)]))
+        }
         ty::Adt(adt, _) if adt.is_struct() && !super::recognition::struct_is_its_fields(tcx, adt.did()) => None,
         ty::Adt(adt, _) if adt.is_struct() => {
             let variant = adt.non_enum_variant();

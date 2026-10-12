@@ -291,4 +291,16 @@ export const mutations: Mutation[] = [
     replace: "                    && false && super::mir::mir_mode() =>\n",
     tests: ["test/mir.test.ts","-t","iterator_clones"],
   },
+  {
+    "name": "mir-range-clone-shared",
+    "breaks": "a range cloned and stepped from MIR is the range itself stepped, `$iterator(r, $rangeNext)`, which reads `4..4` after",
+    "file": "src/lower/std_impls.rs",
+    "find": "            ty::Adt(..) if self.range_kind(ty).is_some() && super::mir::mir_mode() => true,\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range cloned and stepped"
+    ]
+  },
 ];

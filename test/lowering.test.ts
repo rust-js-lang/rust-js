@@ -9889,3 +9889,63 @@ pub fn counted(n: u32) -> String {
     expect([lib.letters(), lib.backwards("axbc"), lib.counted(4)]).toEqual(["hé!", "cba", "0123"]);
   }
 });
+
+// A range cloned and stepped is the copy stepped: the range itself, read
+// after, is as it was, `1..4`, from MIR as from THIR. Found in review: MIR
+// stepped the range itself, `$iterator(r, $rangeNext)`, which `4..4` after.
+test("a range cloned and stepped leaves the range as it was", async () => {
+  const dir = fixture("range-clone-stepped");
+  writeFileSync(join(dir, "lib.rs"), `pub fn counted(a: i32, z: i32) -> String {
+    let r = a..z;
+    let c = r.clone().count();
+    format!("{c} {:?}", r)
+}
+pub fn summed(a: i32, z: i32) -> String {
+    let r = a..=z;
+    let s: i32 = r.clone().sum();
+    format!("{s} {:?}", r)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.counted(1, 4), lib.summed(1, 3)]).toEqual(["3 1..4", "6 1..=3"]);
+  }
+});
+
+// An iterator of the crate's `len()`: std's of its `size_hint()`, which
+// panics where that isn't exact, or its own where it has one, from MIR as
+// from THIR.
+test("an iterator's len from MIR is its own or its size hint's", async () => {
+  const dir = fixture("iterator-len");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Span { pub low: u32, pub high: u32 }
+impl Iterator for Span {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        if self.low < self.high { self.low += 1; Some(self.low - 1) } else { None }
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let n = (self.high - self.low) as usize;
+        (n, Some(n))
+    }
+}
+impl ExactSizeIterator for Span {}
+pub struct Own;
+impl Iterator for Own {
+    type Item = u8;
+    fn next(&mut self) -> Option<u8> { None }
+}
+impl ExactSizeIterator for Own {
+    fn len(&self) -> usize { 42 }
+}
+pub fn lens() -> (usize, usize) {
+    let mut s = Span { low: 0, high: 5 };
+    s.next();
+    (s.len(), Own.len())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect((await import(join(dir, out))).lens()).toEqual([4, 42]);
+  }
+});

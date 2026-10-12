@@ -67,6 +67,7 @@ default_method_drops.rs
 deque_insert_past_len.rs
 deque_rotate_past_end.rs
 destructuring_assignment.rs
+double_ended_iterators.rs
 drain_from_past_len.rs
 drop_deref_temporary.rs
 drop_functions.rs
@@ -102,6 +103,7 @@ enum_discriminants_wide.rs
 enum_order.rs
 evaluation_order.rs
 evidence_paths.rs
+exact_len_unknown.rs
 exp_format.rs
 expression_values.rs
 f32.rs
@@ -217,6 +219,7 @@ radix_out_of_range.rs
 range_inclusive_next_back.rs
 range_into_set.rs
 range_searches.rs
+range_values.rs
 rc_clone_sees_owners.rs
 rc_make_mut_clone_panics.rs
 refcell_borrow_while_mut.rs
@@ -263,6 +266,7 @@ std_mut_items.rs
 std_struct_const.rs
 stepped_nested.rs
 stock_orders.rs
+str_bytes.rs
 str_circumfix.rs
 str_circumfix_closure.rs
 string_bytes.rs

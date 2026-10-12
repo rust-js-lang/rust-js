@@ -242,8 +242,8 @@ export const mutations: Mutation[] = [
     "name": "mir-chars-next-back-refused",
     "breaks": "`next_back()` of a string's `chars()` from MIR is refused as a lazy iterator's",
     "file": "src/lower/mir/iter.rs",
-    "find": "self.array_source(iter_ty).is_some() || self.recognition().is_str_chars(iter_ty);",
-    "replace": "self.array_source(iter_ty).is_some();",
+    "find": "                || self.recognition().is_str_chars(iter_ty)\n",
+    "replace": "",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -344,6 +344,66 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a string from items from MIR"
+    ]
+  },
+  {
+    "name": "mir-user-len-refused",
+    "breaks": "an iterator of the crate's `len()` from MIR is refused, not its `size_hint()`'s",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            if self.is_user_iterator(iter_ty) && name == \"len\" && !own_len()? {\n",
+    "replace": "            if false && self.is_user_iterator(iter_ty) && name == \"len\" && !own_len()? {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an iterator's len from MIR"
+    ]
+  },
+  {
+    "name": "mir-user-len-own-skipped",
+    "breaks": "an iterator's own `len()` from MIR is std's of its `size_hint()`, not its own",
+    "file": "src/lower/mir/iter.rs",
+    "find": "&& name == \"len\" && !own_len()? {\n",
+    "replace": "&& name == \"len\" {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an iterator's len from MIR"
+    ]
+  },
+  {
+    "name": "mir-range-len-refused",
+    "breaks": "`r.len()` of a range of numbers from MIR is refused",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                    if let Some((start, end)) = range_bounds(&it)\n",
+    "replace": "                    if let Some((start, end)) = range_bounds(&it).filter(|_| false)\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "range_values"
+    ]
+  },
+  {
+    "name": "mir-bytes-len-refused",
+    "breaks": "`s.bytes().len()` from MIR is refused",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                || self.recognition().is_str_bytes(iter_ty);\n",
+    "replace": ";\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "str_bytes"
+    ]
+  },
+  {
+    "name": "mir-counted-chain-len-refused",
+    "breaks": "`xs.iter().skip(1).len()` from MIR is refused, not `xs.slice(1).length`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                (\"len\", None) if counted_chain(&it) => {\n",
+    "replace": "                (\"len\", None) if false && counted_chain(&it) => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "str_bytes"
     ]
   },
 ];

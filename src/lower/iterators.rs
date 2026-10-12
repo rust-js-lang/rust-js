@@ -472,6 +472,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn exact_len(&mut self, receiver: ExprId, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         let ty = self.reveal(self.thir[receiver].ty.peel_refs());
         let value = self.expr(receiver, out)?;
+        self.exact_len_of(value, ty, span, out)
+    }
+
+    /// `exact_len`'s, of the iterator's value and its type `ty`.
+    pub(in crate::lower) fn exact_len_of(
+        &mut self,
+        value: Expr,
+        ty: Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
         let iterator = std_item(self.tcx, StdItem::Iterator);
         let size_hint = trait_method(self.tcx, iterator, "size_hint");
         let args = self.args_of(iterator, ty);

@@ -74,6 +74,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false
             }
             ty::Adt(..) if self.has_user_impl(self.clone_trait(), ty) => true,
+            // From its MIR, a range is stepped in place, `$rangeNext(r)`
+            // moving its start (ADR 0364): a clone of one is its own.
+            ty::Adt(..) if self.range_kind(ty).is_some() && super::mir::mir_mode() => true,
             // A range is its bounds (ADR 0129), changed in place only if
             // `contains_mutated` says so.
             ty::Adt(_, args) if self.range_kind(ty).is_some() => args
