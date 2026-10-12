@@ -460,18 +460,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `m.range(a..b)` of a B-tree: its entries, or items, in the bounds, in
     /// order, by its keys' `cmp` (ADR 0325).
     fn tree_range(&mut self, args: &[ExprId], mutable: bool, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
-        let receiver = self.thir[args[0]].ty.peel_refs();
+        let (receiver, bounds) = (self.thir[args[0]].ty, self.thir[self.strip(args[1])].ty);
+        let [m, range]: [Expr; 2] = self.operands(&[args[0], args[1]], out)?.try_into().ok().unwrap();
+        self.tree_range_values((m, receiver), (range, bounds), mutable, span, out)
+    }
+
+    /// A B-tree's range of its keys (ADR 0325), of the tree's value and
+    /// type, and the range's: THIR's and MIR's.
+    pub(in crate::lower) fn tree_range_values(
+        &mut self,
+        (m, receiver): (Expr, Ty<'tcx>),
+        (range, bounds): (Expr, Ty<'tcx>),
+        mutable: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let receiver = receiver.peel_refs();
         let set = self.is_set(receiver);
         let ty::Adt(adt, map) = receiver.kind() else {
             unreachable!("a B-tree's `range` is of a B-tree")
         };
         let name = self.tcx.item_name(adt.did()).to_string();
-        let range = self.strip(args[1]);
-        let Some(kind) = self.range_kind(self.thir[range].ty) else {
+        let Some(kind) = self.range_kind(bounds.peel_refs()) else {
             return Err(self.unsupported(span, "a B-tree's range of bounds that aren't a range"));
         };
         let cmp = self.cmp_fn(map.type_at(0), false, span)?;
-        let [m, range]: [Expr; 2] = self.operands(&[args[0], args[1]], out)?.try_into().ok().unwrap();
         let parts = self.range_parts(range, kind, out);
         // `range_mut` of numbers or strings: each value a handle on it, as
         // `iter_mut`'s is (ADR 0152).

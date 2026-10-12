@@ -4,11 +4,13 @@
 //! parts compared in turn: `$cmp(a.x, b.x) || $cmp(a.y, b.y)`, since `Equal`
 //! is the one that's falsy.
 
+use super::bindings;
 use super::recognition::{OrderingCall, StdItem, std_item, trait_method};
-use super::representation::Num;
+use super::representation::{Num, variant_field};
 use super::{FnCx, R, Shape};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
+use rustc_abi::VariantIdx;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::traits::ImplSource;
 use rustc_middle::ty::{self, Ty};
@@ -160,6 +162,63 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let names = variants.into_iter().map(|(name, _)| Expr::str(name)).collect();
                 self.runtime.insert(Helper::CmpIn);
                 Ok(Expr::call(Expr::var("$cmpIn"), vec![Expr::array(names), a, b]))
+            }
+            // One with fields, the crate's, tagged: by its variant, as the
+            // derive orders them, then, of the same, its fields in turn.
+            ty::Adt(adt, args)
+                if adt.is_enum() && adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did()) =>
+            {
+                let mut variants: Vec<(VariantIdx, u128)> =
+                    adt.discriminants(self.tcx).map(|(v, d)| (v, d.val)).collect();
+                variants.sort_by_key(|&(_, value)| value);
+                // Where each is among them, `a.TAG === "Rect" ? 1 : ..`.
+                let place = |cx: &mut Self, x: &Expr| {
+                    let rest = &variants[..variants.len() - 1];
+                    (rest.iter().enumerate().rev()).fold(
+                        Expr::int((variants.len() - 1) as i128),
+                        |others, (i, &(v, _))| {
+                            Expr::cond(cx.variant_test(x.clone(), ty, *adt, v), Expr::int(i as i128), others)
+                        },
+                    )
+                };
+                let (at_a, at_b) = (place(self, &a), place(self, &b));
+                self.runtime.insert(Helper::Cmp);
+                let order = Expr::call(Expr::var("$cmp"), vec![at_a, at_b]);
+                // Of the same variant, its fields, each in turn.
+                let mut same = Expr::int(0);
+                for &(v, _) in variants.iter().rev() {
+                    let def = adt.variant(v);
+                    if def.fields.is_empty() {
+                        continue;
+                    }
+                    let mut orders = Vec::new();
+                    let mut total = true;
+                    for (i, field) in def.fields.iter().enumerate() {
+                        let t = self.field_ty(field, args);
+                        total &= !partial || self.is_total(t);
+                        let name = variant_field(self.tcx, def, i);
+                        orders.push(self.cmp_value(
+                            Expr::member(a.clone(), &name),
+                            Expr::member(b.clone(), &name),
+                            t,
+                            partial,
+                            span,
+                            out,
+                        )?);
+                    }
+                    let fields = match total {
+                        true => orders
+                            .into_iter()
+                            .reduce(|all, next| Expr::bin(Op::Or, all, next))
+                            .expect("a field"),
+                        false => {
+                            self.runtime.insert(Helper::ThenCmp);
+                            Expr::call(Expr::var("$thenCmp"), orders)
+                        }
+                    };
+                    same = Expr::cond(self.variant_test(a.clone(), ty, *adt, v), fields, same);
+                }
+                Ok(Expr::bin(Op::Or, order, same))
             }
             ty::Adt(adt, _) if adt.is_enum() => Err(self.unsupported(span, &format!("comparing `{ty}`s"))),
             // Another crate's struct orders as its impl says, which may not be

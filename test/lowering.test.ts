@@ -6399,6 +6399,73 @@ pub fn facts(v: &[i32]) -> (bool, usize, usize) {
   }
 });
 
+// Two iterators equal from MIR, \`a.eq(b)\`: each item in turn, as Rust
+// steps them, till one differs or either ends.
+test("iterators compared equal from MIR step both", async () => {
+  const dir = fixture("mir-iter-eq");
+  writeFileSync(join(dir, "lib.rs"), `pub fn palindrome(w: &str) -> bool {
+    w.chars().eq(w.chars().rev())
+}
+pub fn same(a: &[u32], b: &[u32]) -> bool {
+    a.iter().eq(b.iter())
+}
+pub fn differ(a: Vec<String>, b: Vec<String>) -> bool {
+    a.into_iter().ne(b)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")], 600_000, { RUST_JS_MIR: "1" });
+  const lib = await import(join(dir, "mir.js"));
+  expect(["civic", "bob", "dog", ""].map(lib.palindrome)).toEqual([true, true, false, true]);
+  expect([lib.same([1, 2], [1, 2]), lib.same([1, 2], [1]), lib.differ(["a"], ["a"]), lib.differ(["a"], ["b"])]).toEqual([true, false, false, true]);
+});
+
+// A B-tree's range of its keys from MIR as from THIR (ADR 0325).
+test("a B-tree's range from MIR is THIR's", async () => {
+  const dir = fixture("mir-tree-range");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::BTreeMap;
+pub fn from_two(m: &BTreeMap<u32, &'static str>) -> Vec<u32> {
+    m.range(2..).map(|(k, _)| *k).collect()
+}
+pub fn upto(m: &BTreeMap<u32, &'static str>) -> Vec<&'static str> {
+    m.range(..=2).map(|(_, v)| *v).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    const m = new Map([[3, "c"], [1, "a"], [2, "b"]]);
+    expect([lib.from_two(m), lib.upto(m)]).toEqual([[2, 3], ["a", "b"]]);
+  }
+});
+
+// A derived order of an enum with fields: by variant, as declared, then
+// the variant's fields in turn, as Rust's derive compares them; a float's
+// \`NaN\` among them unordered.
+test("a derived order of an enum with fields is by variant, then fields", async () => {
+  const dir = fixture("derived-enum-order");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Shape { Circle { r: u32 }, Rect(u32, u32), Dot }
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum Scaled { Dot, Scale(f64) }
+pub fn sorted(mut v: Vec<Shape>) -> Vec<Shape> {
+    v.sort();
+    v
+}
+pub fn order(a: &Scaled, b: &Scaled) -> Option<std::cmp::Ordering> {
+    a.partial_cmp(b)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    const rect = (a: number, b: number) => ({ TAG: "Rect", _0: a, _1: b });
+    const circle = (r: number) => ({ TAG: "Circle", r });
+    expect(lib.sorted([rect(2, 3), "Dot", circle(2), rect(1, 9), circle(1), rect(2, 1)])).toEqual([circle(1), circle(2), rect(1, 9), rect(2, 1), rect(2, 3), "Dot"]);
+    const scale = (x: number) => ({ TAG: "Scale", _0: x });
+    expect([lib.order(scale(NaN), scale(1)), lib.order("Dot", scale(NaN)), lib.order(scale(2), scale(1))]).toEqual([undefined, -1, 1]);
+  }
+});
+
 // \`replacen\` of any count, as Rust's: the first \`n\` matches, an empty
 // pattern's at each \`char\`'s boundary.
 test("replacen replaces as many as it's told", async () => {

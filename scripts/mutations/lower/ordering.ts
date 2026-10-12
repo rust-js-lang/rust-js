@@ -50,4 +50,28 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => {",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },
+  {
+    "name": "enum-order-refused",
+    "breaks": "a derived order of an enum with fields is refused",
+    "file": "src/lower/ordering.rs",
+    "find": "                if adt.is_enum() && adt.did().is_local() && !bindings::is_untagged(self.tcx, adt.did()) =>",
+    "replace": "                if false =>",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a derived order of an enum with fields"
+    ]
+  },
+  {
+    "name": "enum-order-variants-only",
+    "breaks": "a derived order of an enum with fields compares its variants alone, `Rect(2, 3)` equal to `Rect(1, 9)`",
+    "file": "src/lower/ordering.rs",
+    "find": "                Ok(Expr::bin(Op::Or, order, same))",
+    "replace": "                let _ = same;\n                Ok(order)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a derived order of an enum with fields"
+    ]
+  },
 ];

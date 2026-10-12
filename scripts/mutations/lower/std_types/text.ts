@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/text.rs",
     find: "                    if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {",
     replace: "                    if false {",
-    tests: ["test/diagnostics.test.ts", "-t", "replacen"],
+    tests: ["test/lowering.test.ts", "-t", "replacen replaces as many"],
   },
   {
     name: "replacen-count-given",

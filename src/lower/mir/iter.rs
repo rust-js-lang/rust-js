@@ -258,6 +258,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let found = self.unary_callback(arg(), own);
                 self.helper(Helper::Position, "$position", vec![it, found])
             }
+            // Each item of both in turn, till one differs or either ends, as
+            // Rust's `eq` steps them; `ne` its negation.
+            "eq" | "ne" => {
+                let Some(item) = item else { return Ok(None) };
+                let other = arg();
+                let mut list = vec![it, other];
+                list.extend(self.item_eq(item, span)?);
+                let same = self.helper(Helper::CmpItems, "$iterEq", list);
+                match name {
+                    "eq" => same,
+                    _ => Expr::unary(js::UnaryOp::Not, same),
+                }
+            }
             // THIR's pairing, `(x, i) => [i, x]`, in place of which a
             // callback that takes the pair apart is given each item and its
             // index, of an array (`eager_chains`).

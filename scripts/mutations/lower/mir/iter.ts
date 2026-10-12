@@ -286,4 +286,16 @@ export const mutations: Mutation[] = [
       "a range mapped and collected"
     ]
   },
+  {
+    "name": "mir-iter-eq-refused",
+    "breaks": "`a.eq(b)` of two iterators from MIR is refused",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            \"eq\" | \"ne\" => {",
+    "replace": "            \"eq\" | \"ne\" if false => {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterators compared equal from MIR"
+    ]
+  },
 ];

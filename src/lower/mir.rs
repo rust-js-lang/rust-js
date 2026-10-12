@@ -3533,7 +3533,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// That `subject` is `variant` of its enum, as a pattern tests it.
-    fn variant_test(&mut self, subject: Expr, ty: Ty<'tcx>, adt: ty::AdtDef<'tcx>, variant: VariantIdx) -> Expr {
+    pub(super) fn variant_test(
+        &mut self,
+        subject: Expr,
+        ty: Ty<'tcx>,
+        adt: ty::AdtDef<'tcx>,
+        variant: VariantIdx,
+    ) -> Expr {
         let def = adt.variant(variant);
         if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
             let inner = self.option_of(ty).expect("an `Option`");
@@ -4873,6 +4879,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 let made = matches!(exprs[0].kind, js::ExprKind::Call(..));
                 self.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?
+            }
+            // A B-tree's range of its keys, THIR's (ADR 0325).
+            Std::Map(MapOp::TreeRange { mutable: false }) => {
+                let [m, range]: [Value<'tcx>; 2] =
+                    values.collect::<Vec<_>>().try_into().ok().expect("a tree and a range");
+                let (m, range) = (self.value_expr(m, span)?, self.value_expr(range, span)?);
+                self.tree_range_values((m, arg_tys[0]), (range, arg_tys[1]), false, span, out)?
             }
             // A map's or a set's method, but an entry's value or a range, which
             // THIR takes apart from its places.

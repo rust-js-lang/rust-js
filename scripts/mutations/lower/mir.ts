@@ -2006,4 +2006,16 @@ export const mutations: Mutation[] = [
       "an enum cast to a number from MIR"
     ]
   },
+  {
+    "name": "mir-tree-range-refused",
+    "breaks": "a B-tree's `range` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Map(MapOp::TreeRange { mutable: false }) => {",
+    "replace": "            Std::Map(MapOp::TreeRange { mutable: false }) if false => {",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a B-tree's range from MIR"
+    ]
+  },
 ];
