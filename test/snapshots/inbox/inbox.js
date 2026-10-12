@@ -39,18 +39,20 @@ function orderDeserialize_deserialize(json) {
 }
 
 function orderDebug_fmt(order) {
-  const names = ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"];
-  const values = [
-    String(order.order_id),
-    $debugStr(order.item_name),
-    String(order.qty),
-    order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
-    $debugF64(order.price),
-    `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
-    String(order.paid),
-    String(order.cache),
-  ];
-  return $debugFields("Order", names, values);
+  return $debugFields(
+    "Order",
+    ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"],
+    [
+      String(order.order_id),
+      $debugStr(order.item_name),
+      String(order.qty),
+      order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
+      $debugF64(order.price),
+      `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
+      String(order.paid),
+      String(order.cache),
+    ],
+  );
 }
 
 function shapeDeserialize_deserialize(json) {
@@ -323,25 +325,27 @@ function holderDeserialize_deserialize(json) {
 }
 
 function holderDebug_fmt(holder) {
-  const names = ["boxed", "shared", "queue", "set", "by_char", "by_int", "nested"];
-  const values = [
-    String(holder.boxed),
-    $debugStr(holder.shared),
-    `[${holder.queue.map((item) => String(item)).join(", ")}]`,
-    `{${Array.from($sortedKeys(holder.set, $cmp))
-      .map((item) => $debugStr(item, "'"))
-      .join(", ")}}`,
-    `{${Array.from(holder.by_char)
-      .map(([key, value]) => `${$debugStr(key, "'")}: ${value}`)
-      .join(", ")}}`,
-    `{${Array.from(holder.by_int)
-      .map(([key, value]) => `${key}: ${$debugF64(value)}`)
-      .join(", ")}}`,
-    holder.nested == null
-      ? "None"
-      : `Some([${holder.nested.map((item) => (item == null ? "None" : `Some(${ptDebug_fmt(item)})`)).join(", ")}])`,
-  ];
-  return $debugFields("Holder", names, values);
+  return $debugFields(
+    "Holder",
+    ["boxed", "shared", "queue", "set", "by_char", "by_int", "nested"],
+    [
+      String(holder.boxed),
+      $debugStr(holder.shared),
+      `[${holder.queue.map((item) => String(item)).join(", ")}]`,
+      `{${Array.from($sortedKeys(holder.set, $cmp))
+        .map((item) => $debugStr(item, "'"))
+        .join(", ")}}`,
+      `{${Array.from(holder.by_char)
+        .map(([key, value]) => `${$debugStr(key, "'")}: ${value}`)
+        .join(", ")}}`,
+      `{${Array.from(holder.by_int)
+        .map(([key, value]) => `${key}: ${$debugF64(value)}`)
+        .join(", ")}}`,
+      holder.nested == null
+        ? "None"
+        : `Some([${holder.nested.map((item) => (item == null ? "None" : `Some(${ptDebug_fmt(item)})`)).join(", ")}])`,
+    ],
+  );
 }
 
 function detailsDeserialize_deserialize(json) {

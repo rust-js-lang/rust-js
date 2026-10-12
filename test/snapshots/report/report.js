@@ -37,13 +37,13 @@ export function rowErrorDisplay() {
 }
 
 function rowErrorDisplay_fmt(rowError) {
-  if (rowError.TAG === "Fields") {
-    return `expected 4 fields, got ${rowError._0}`;
+  if (rowError.TAG !== "Fields") {
+    if (rowError.TAG === "Number") {
+      return `bad number: ${rowError._0}`;
+    }
+    return `empty ${rowError._0}`;
   }
-  if (rowError.TAG === "Number") {
-    return `bad number: ${rowError._0}`;
-  }
-  return `empty ${rowError._0}`;
+  return `expected 4 fields, got ${rowError._0}`;
 }
 
 const HEADERS = ["name", "team", "score", "age"];

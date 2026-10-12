@@ -5492,3 +5492,73 @@ fn declared(stmts: &[Stmt]) -> impl Iterator<Item = &str> {
         _ => None,
     })
 }
+
+/// A writer's body (ADR 0054), `let f = ""` first: each way through that
+/// writes once and gives it back, `return s`; a first write the string's
+/// start, `let f = s`; no `f` at all where nothing's left to write it.
+pub(super) fn writer_body(out: &mut Vec<Stmt>, name: &str) {
+    let Some(at) = out.iter().position(|s| {
+        matches!(&s.kind, StmtKind::Let(n, Some(e)) if n == name && matches!(&e.kind, ExprKind::Str(t) if t.is_empty()))
+    }) else {
+        return;
+    };
+    let made = out.remove(at);
+    let mut rest = out.split_off(at);
+    returned_unwritten(&mut rest, name);
+    if js::mentions_in(&rest, name) > 0 {
+        match rest.first().map(|s| &s.kind) {
+            Some(StmtKind::Assign(target, value))
+                if matches!(&target.kind, ExprKind::Var(v) if v == name)
+                    && let ExprKind::Binary(Op::Add, lhs, first) = &value.kind
+                    && matches!(&lhs.kind, ExprKind::Var(v) if v == name) =>
+            {
+                let first = (**first).clone();
+                let span = rest[0].span;
+                rest[0] = StmtKind::Let(name.to_string(), Some(first)).at(span);
+            }
+            _ => rest.insert(0, made),
+        }
+    }
+    out.extend(rest);
+}
+
+/// Of `stmts`, run while `name` is still `""`: `f += s; return f` is
+/// `return s`, and `return f` is `return ""`, into each branch that
+/// starts so.
+fn returned_unwritten(stmts: &mut Vec<Stmt>, name: &str) {
+    let is_name = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == name);
+    let mut i = 0;
+    while i < stmts.len() {
+        let returned = matches!(stmts.get(i + 1).map(|s| &s.kind), Some(StmtKind::Return(Some(r))) if is_name(r));
+        let mentioned = js::mentions_in(std::slice::from_ref(&stmts[i]), name) > 0;
+        match &mut stmts[i].kind {
+            StmtKind::Assign(target, value)
+                if is_name(target)
+                    && let ExprKind::Binary(Op::Add, lhs, written) = &value.kind
+                    && is_name(lhs)
+                    && returned =>
+            {
+                let written = (**written).clone();
+                let span = stmts[i].span;
+                stmts.splice(i..i + 2, [StmtKind::Return(Some(written)).at(span)]);
+                return;
+            }
+            StmtKind::Return(Some(r)) if is_name(r) => {
+                *r = Expr::str("");
+                return;
+            }
+            StmtKind::If(_, then, els) => {
+                returned_unwritten(then, name);
+                if let Some(els) = els {
+                    returned_unwritten(els, name);
+                }
+                if js::mentions_in(std::slice::from_ref(&stmts[i]), name) > 0 {
+                    return;
+                }
+            }
+            _ if mentioned => return,
+            _ => {}
+        }
+        i += 1;
+    }
+}

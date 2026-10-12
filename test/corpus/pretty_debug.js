@@ -39,20 +39,20 @@ function pairDebug_fmt(pair, options) {
 }
 
 function shapeDebug_fmt(shape, options) {
-  let f = "";
   if (shape === "Dot") {
-    f += "Dot";
-  } else if (shape.TAG === "Circle") {
-    const shown = $debugF64(shape.r);
-    f += options?.alternate ? $pretty("Circle {", [`r: ${shown}`], "}") : `Circle { r: ${shown} }`;
-  } else {
-    const shown = pointDebug_fmt(shape._0, options);
-    const shown$1 = pointDebug_fmt(shape._1, options);
-    f += options?.alternate
-      ? $pretty("Line(", [shown, shown$1], ")")
-      : `Line(${shown}, ${shown$1})`;
+    return "Dot";
   }
-  return f;
+  if (shape.TAG === "Circle") {
+    const shown = $debugF64(shape.r);
+    return options?.alternate
+      ? $pretty("Circle {", [`r: ${shown}`], "}")
+      : `Circle { r: ${shown} }`;
+  }
+  const shown = pointDebug_fmt(shape._0, options);
+  const shown$1 = pointDebug_fmt(shape._1, options);
+  return options?.alternate
+    ? $pretty("Line(", [shown, shown$1], ")")
+    : `Line(${shown}, ${shown$1})`;
 }
 
 function unitDebug_fmt(unit, options) {
@@ -60,16 +60,19 @@ function unitDebug_fmt(unit, options) {
 }
 
 function wideDebug_fmt(wide, options) {
-  const names = ["a", "b", "c", "d", "e", "f"];
-  const values = [
-    String(wide.a),
-    String(wide.b),
-    String(wide.c),
-    String(wide.d),
-    String(wide.e),
-    String(wide.f),
-  ];
-  return $debugFields("Wide", names, values, options?.alternate);
+  return $debugFields(
+    "Wide",
+    ["a", "b", "c", "d", "e", "f"],
+    [
+      String(wide.a),
+      String(wide.b),
+      String(wide.c),
+      String(wide.d),
+      String(wide.e),
+      String(wide.f),
+    ],
+    options?.alternate,
+  );
 }
 
 function wrapDebug_fmt(wrap, options, TDebug) {

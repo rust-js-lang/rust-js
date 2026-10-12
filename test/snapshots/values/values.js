@@ -8,6 +8,7 @@ import {
   $eq,
   $index,
   $max,
+  $next,
   $sortedEntries,
 } from "@rust-js/runtime";
 
@@ -104,34 +105,46 @@ export function valueDisplay() {
 
 function valueDisplay_fmt(value) {
   let f = "";
-  if (value === "Null") {
-    f += "null";
-  } else if (value.TAG === "Bool") {
-    f += String(value._0);
-  } else if (value.TAG === "Num") {
-    f += $displayF64(value._0);
-  } else if (value.TAG === "Str") {
-    f += $debugStr(value._0);
-  } else if (value.TAG === "List") {
-    f += "[";
-    for (const [i, x] of value._0.entries()) {
+  if (value !== "Null") {
+    if (value.TAG === "Bool") {
+      return String(value._0);
+    }
+    if (value.TAG === "Num") {
+      return $displayF64(value._0);
+    }
+    if (value.TAG === "Str") {
+      return $debugStr(value._0);
+    }
+    if (value.TAG === "List") {
+      f += "[";
+      for (const [i, x] of value._0.entries()) {
+        if (i > 0) {
+          f += ",";
+        }
+        f += valueDisplay_fmt(x);
+      }
+      f += "]";
+      return f;
+    }
+    f += "{";
+    const iter = $sortedEntries(value._0, $cmp).entries();
+    while (true) {
+      const value = $next(iter);
+      if (!value) {
+        f += "}";
+        return f;
+      }
+      const i = value[0];
+      const k = value[1][0];
+      const x = value[1][1];
       if (i > 0) {
         f += ",";
       }
-      f += valueDisplay_fmt(x);
+      f += `${$debugStr(k)}:${valueDisplay_fmt(x)}`;
     }
-    f += "]";
   } else {
-    f += "{";
-    for (const item of $sortedEntries(value._0, $cmp).entries()) {
-      if (item[0] > 0) {
-        f += ",";
-      }
-      f += `${$debugStr(item[1][0])}:${valueDisplay_fmt(item[1][1])}`;
-    }
-    f += "}";
+    return "null";
   }
-  return f;
 }
 
 function price(v) {

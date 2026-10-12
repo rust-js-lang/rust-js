@@ -7,16 +7,13 @@ export function entry() {
 }
 
 function boundedDebug_fmt(bounded, options) {
-  let f = "";
   if (bounded.TAG === "Parse") {
-    f += options?.alternate ? $pretty("Parse(", [bounded._0], ")") : `Parse(${bounded._0})`;
-  } else {
-    const shown = String(bounded.limit);
-    f += options?.alternate
-      ? $pretty("OutOfRange {", [`kind: ${bounded.kind}`, `limit: ${shown}`], "}")
-      : `OutOfRange { kind: ${bounded.kind}, limit: ${shown} }`;
+    return options?.alternate ? $pretty("Parse(", [bounded._0], ")") : `Parse(${bounded._0})`;
   }
-  return f;
+  const shown = String(bounded.limit);
+  return options?.alternate
+    ? $pretty("OutOfRange {", [`kind: ${bounded.kind}`, `limit: ${shown}`], "}")
+    : `OutOfRange { kind: ${bounded.kind}, limit: ${shown} }`;
 }
 
 function read(text, max) {

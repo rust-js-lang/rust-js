@@ -5608,6 +5608,94 @@ pub fn each(pairs: Vec<(i32, i32)>) -> i32 {
   }
 });
 
+// ADR 0054, from MIR (ADR 0364): a writer returns the string it writes,
+// `return s` of each way through that writes once, `let f = s` of a first
+// write; a derived impl's parameters named as the program's are.
+test("a writer from its MIR returns the string it writes", async () => {
+  const dir = fixture("mir-writers");
+  writeFileSync(join(dir, "lib.rs"), `use std::fmt;
+
+#[derive(Debug)]
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
+
+pub enum Shape {
+    Dot,
+    Line(u32),
+}
+
+impl fmt::Display for Shape {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Shape::Dot => write!(f, "a dot"),
+            Shape::Line(n) => write!(f, "a line of {n}"),
+        }
+    }
+}
+
+pub struct List(pub Vec<u32>);
+
+impl fmt::Display for List {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[")?;
+        for (i, x) in self.0.iter().enumerate() {
+            if i > 0 {
+                write!(f, ", ")?;
+            }
+            write!(f, "{x}")?;
+        }
+        write!(f, "]")
+    }
+}
+
+pub fn shown(p: &Point, s: &Shape, l: &List) -> String {
+    format!("{p:?} {s} {l}")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function pointDebug_fmt(point) {\n  return `Point { x: ${point.x}, y: ${point.y} }`;\n}");
+  expect(js).toContain('function shapeDisplay_fmt(shape) {\n  if (shape === "Dot") {\n    return "a dot";\n  }\n  return `a line of ${shape._0}`;\n}');
+  expect(js).toContain('function listDisplay_fmt(list) {\n  let f = "[";');
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.shown({ x: 1, y: 2 }, { TAG: "Line", _0: 3 }, [[1, 2]]), lib.shown({ x: 1, y: 2 }, "Dot", [[]])]).toEqual(["Point { x: 1, y: 2 } a line of 3 [1, 2]", "Point { x: 1, y: 2 } a dot []"]);
+});
+
+// ADRs 0058, 0137, from MIR: a writer takes its `Formatter`'s options, and a
+// derived `Debug` gives them to each field.
+test("a writer from its MIR takes its Formatter's options", async () => {
+  const dir = fixture("mir-writer-options");
+  writeFileSync(join(dir, "lib.rs"), `use std::fmt;
+
+#[derive(Debug)]
+pub struct Point {
+    pub x: i32,
+    pub y: i32,
+}
+
+pub struct Name(pub String);
+
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.pad(&self.0)
+    }
+}
+
+pub fn shown(p: &Point, n: &Name) -> String {
+    format!("{p:#?}|{n:>6}|{n:<4}|")
+}
+
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function pointDebug_fmt(point, options) {\n  const shown = $formatted(String(point.x), options, true);");
+  expect(js).toContain("function nameDisplay_fmt(name, options) {\n  return $formatted(name[0], options);\n}");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shown({ x: 1, y: 2 }, ["ab"])).toBe("Point {\n    x: 1,\n    y: 2,\n}|    ab|ab  |");
+});
+
 // A `Copy` value a function gives, a variable of its own: handed over, as
 // nothing reads it after, uncopied; a copy where what it was read from goes on.
 test("a variable a function gives is handed over uncopied", async () => {

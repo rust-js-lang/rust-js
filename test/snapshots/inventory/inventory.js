@@ -6,7 +6,9 @@ import {
   $cmp,
   $debugF64,
   $debugStr,
+  $iter,
   $mutGet,
+  $next,
   $orInsert,
   $partialCmp,
   $toFixed,
@@ -63,11 +65,18 @@ function storeDisplay_fmt(store) {
   let f = "";
   const items = Array.from(store.stock);
   items.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  for (const [name, qty] of items) {
-    f += `${name}=${qty} `;
+  const iter = $iter(items);
+  while (true) {
+    const value = $next(iter);
+    if (value) {
+      const name = value[0];
+      const qty = value[1];
+      f += `${name}=${qty} `;
+    } else {
+      f += `| ${$toFixed(store.revenue, 2)}`;
+      return f;
+    }
   }
-  f += `| ${$toFixed(store.revenue, 2)}`;
-  return f;
 }
 
 export const Store = {

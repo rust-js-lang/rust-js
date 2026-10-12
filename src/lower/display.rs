@@ -272,6 +272,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.krate.pretty_debug || self.krate.format_options
     }
 
+    /// `lower`, a writer's body, given its `Formatter`'s options, `given`,
+    /// the parameter that has them, where the crate gives any (ADR 0137).
+    pub(super) fn with_given<T>(&mut self, given: Option<Expr>, lower: impl FnOnce(&mut Self) -> T) -> T {
+        let outer = std::mem::replace(&mut self.writing.given, given);
+        let made = lower(self);
+        self.writing.given = outer;
+        made
+    }
+
     /// `lower`, during which a `&dyn Debug` made shows its value as `pretty`
     /// says: a derived `Debug`'s or a builder's arguments (ADR 0137).
     pub(super) fn with_dyn_debug<T>(&mut self, pretty: Pretty, lower: impl FnOnce(&mut Self) -> T) -> T {
@@ -480,8 +489,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let outer = std::mem::replace(&mut self.writing.dyn_debug, pretty.clone());
         let values = self.operands(&others, out);
         self.writing.dyn_debug = outer;
-        let mut values = values?;
-        let written = match operation {
+        let values = values?;
+        let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
+        let target = Expr::var(&name);
+        let js_span = self.js_span(span);
+        let pieces = others.iter().any(|&other| self.formats_may_fail(other));
+        append_written(&target, written, pieces, js_span, out);
+        Ok(Some(Expr::undefined()))
+    }
+
+    /// What a call that writes to a formatter, `operation` of `def_id`,
+    /// writes, given its arguments but the formatter, `values`.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn written_of(
+        &mut self,
+        operation: WriteCall,
+        def_id: DefId,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        mut values: Vec<Expr>,
+        pretty: &Pretty,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let pretty = pretty.clone();
+        Ok(match operation {
             // `write!(f, ..)` is `f.write_fmt(format_args!(..))`, which is a string (ADR 0034).
             WriteCall::Text => values.remove(0),
             // A string, padded and cut as the `Formatter`'s options say, as a
@@ -591,12 +622,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let what = format!("calling `{}`", self.tcx.def_path_str(def_id));
                 return Err(self.unsupported(span, &what));
             }
-        };
-        let target = Expr::var(&name);
-        let js_span = self.js_span(span);
-        let pieces = others.iter().any(|&other| self.formats_may_fail(other));
-        append_written(&target, written, pieces, js_span, out);
-        Ok(Some(Expr::undefined()))
+        })
     }
 
     /// `f.debug_struct("P").field("x", &self.x).finish()`, and the other

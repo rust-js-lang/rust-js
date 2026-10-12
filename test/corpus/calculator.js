@@ -55,22 +55,22 @@ export function calcErrorDisplay() {
 }
 
 function calcErrorDisplay_fmt(calcError) {
-  if (calcError.TAG === "Unexpected") {
-    return `unexpected '${calcError._0}'`;
+  if (calcError.TAG !== "Unexpected") {
+    if (calcError === "UnexpectedEnd") {
+      return "unexpected end of input";
+    }
+    if (calcError.TAG === "Expected") {
+      return `expected ${calcError._0}`;
+    }
+    if (calcError.TAG === "Unknown") {
+      return `unknown name \`${calcError._0}\``;
+    }
+    if (calcError === "DivideByZero") {
+      return "division by zero";
+    }
+    return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
   }
-  if (calcError === "UnexpectedEnd") {
-    return "unexpected end of input";
-  }
-  if (calcError.TAG === "Expected") {
-    return `expected ${calcError._0}`;
-  }
-  if (calcError.TAG === "Unknown") {
-    return `unknown name \`${calcError._0}\``;
-  }
-  if (calcError === "DivideByZero") {
-    return "division by zero";
-  }
-  return `${calcError.name} takes ${calcError.wanted} argument${calcError.wanted === 1 ? "" : "s"}, got ${calcError.got}`;
+  return `unexpected '${calcError._0}'`;
 }
 
 function number(chars) {

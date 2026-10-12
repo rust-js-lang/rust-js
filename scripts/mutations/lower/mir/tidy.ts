@@ -2126,4 +2126,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","a value made only to be dropped is what making it does"],
   },
+  {
+    name: "mir-tidy-writer-branches-appended",
+    breaks: "MIR's writer writing once in each branch appends to `f` in each, not `return s`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                returned_unwritten(then, name);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","a writer from its MIR returns the string it writes"],
+  },
 ];

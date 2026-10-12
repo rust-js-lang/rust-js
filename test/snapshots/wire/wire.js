@@ -14,18 +14,20 @@ import {
 } from "@rust-js/runtime";
 
 function orderDebug_fmt(order) {
-  const names = ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"];
-  const values = [
-    String(order.order_id),
-    $debugStr(order.item_name),
-    String(order.qty),
-    order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
-    $debugF64(order.price),
-    `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
-    String(order.paid),
-    String(order.cache),
-  ];
-  return $debugFields("Order", names, values);
+  return $debugFields(
+    "Order",
+    ["order_id", "item_name", "qty", "note", "price", "tags", "paid", "cache"],
+    [
+      String(order.order_id),
+      $debugStr(order.item_name),
+      String(order.qty),
+      order.note == null ? "None" : `Some(${$debugStr(order.note)})`,
+      $debugF64(order.price),
+      `[${order.tags.map((item) => $debugStr(item)).join(", ")}]`,
+      String(order.paid),
+      String(order.cache),
+    ],
+  );
 }
 
 function orderSerialize_serialize(order, json) {

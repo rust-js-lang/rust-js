@@ -283,8 +283,7 @@ export function routeDisplay() {
 function routeDisplay_fmt(route) {
   let f = "";
   if (route.stops.length === 0) {
-    f += "nowhere";
-    return f;
+    return "nowhere";
   }
   for (const [i, stop] of route.stops.entries()) {
     if (i > 0) {
@@ -563,16 +562,18 @@ function glyphDebug_fmt(glyph) {
 }
 
 function sixDebug_fmt(six) {
-  const names = ["a", "b", "c", "d", "e", "f"];
-  const values = [
-    String(six.a),
-    String(six.b),
-    String(six.c),
-    String(six.d),
-    String(six.e),
-    $debugStr(six.f, "'"),
-  ];
-  return $debugFields("Six", names, values);
+  return $debugFields(
+    "Six",
+    ["a", "b", "c", "d", "e", "f"],
+    [
+      String(six.a),
+      String(six.b),
+      String(six.c),
+      String(six.d),
+      String(six.e),
+      $debugStr(six.f, "'"),
+    ],
+  );
 }
 
 function boxedDebug_fmt(boxed, TDebug) {

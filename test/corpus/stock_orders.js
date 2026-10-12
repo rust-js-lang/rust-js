@@ -38,7 +38,6 @@ export function categoryDisplay() {
 }
 
 function categoryDisplay_fmt(category, options) {
-  let f = "";
   let name;
   if (category === "Tools") {
     name = "tools";
@@ -47,26 +46,23 @@ function categoryDisplay_fmt(category, options) {
   } else {
     name = "kitchen";
   }
-  f += $formatted(name, options);
-  return f;
+  return $formatted(name, options);
 }
 
 function stockErrorDebug_fmt(stockError, options) {
-  let f = "";
   if (stockError.TAG === "UnknownSku") {
     const shown = $debugStr(stockError._0);
-    f += options?.alternate ? $pretty("UnknownSku(", [shown], ")") : `UnknownSku(${shown})`;
-  } else if (stockError.TAG === "OutOfStock") {
+    return options?.alternate ? $pretty("UnknownSku(", [shown], ")") : `UnknownSku(${shown})`;
+  }
+  if (stockError.TAG === "OutOfStock") {
     const shown = $debugStr(stockError.sku);
     const shown$1 = $formatted(String(stockError.wanted), options, true);
     const shown$2 = $formatted(String(stockError.have), options, true);
-    f += options?.alternate
+    return options?.alternate
       ? $pretty("OutOfStock {", [`sku: ${shown}`, `wanted: ${shown$1}`, `have: ${shown$2}`], "}")
       : `OutOfStock { sku: ${shown}, wanted: ${shown$1}, have: ${shown$2} }`;
-  } else {
-    f += "EmptyOrder";
   }
-  return f;
+  return "EmptyOrder";
 }
 
 export function stockErrorDisplay() {
@@ -77,13 +73,13 @@ export function stockErrorDisplay() {
 }
 
 function stockErrorDisplay_fmt(stockError, options) {
-  if (stockError.TAG === "UnknownSku") {
-    return `no item ${stockError._0}`;
+  if (stockError.TAG !== "UnknownSku") {
+    if (stockError.TAG === "OutOfStock") {
+      return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
+    }
+    return "an order needs a line";
   }
-  if (stockError.TAG === "OutOfStock") {
-    return `${stockError.sku}: wanted ${stockError.wanted}, have ${stockError.have}`;
-  }
-  return "an order needs a line";
+  return `no item ${stockError._0}`;
 }
 
 function linePriced() {

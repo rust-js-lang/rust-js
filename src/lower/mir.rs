@@ -241,6 +241,9 @@ struct State<'m, 'tcx> {
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
     jsx_props: std::collections::HashSet<Local>,
+    /// A writer's `Formatter` (ADR 0054): the locals that are it, and the
+    /// string it writes to, which the writer gives back.
+    writer: Option<(Vec<Local>, String)>,
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -426,8 +429,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             patterned: self.mir_patterned(mir_body),
             jsx_props: self.mir_jsx_props(mir_body),
             null_nones: Default::default(),
+            writer: None,
         };
         state.null_nones = self.mir_null_nones(mir_body, &state.locals);
+        // A writer's `Formatter`: no parameter, but the string it writes to,
+        // `let f = ""`, which it gives back, its `fmt::Result` nothing.
+        let formatter = (captures.is_none() && mir_body.coroutine.is_none())
+            .then(|| self.formatter_param(mir_body.source.def_id()))
+            .flatten()
+            .map(|i| Local::from_usize(i + 1));
+        if let Some(param) = formatter {
+            let aliases = formatter_aliases(mir_body, param);
+            let name = match state.locals.names[param].as_str() {
+                "" => self.fresh("f"),
+                name => name.to_string(),
+            };
+            for &alias in &aliases {
+                state.locals.names[alias] = String::new();
+                state.locals.declared[alias] = true;
+            }
+            state.locals.names[mir::RETURN_PLACE] = String::new();
+            state.writer = Some((aliases, name));
+        }
+        // Its `Formatter`'s options, where the crate gives any (ADRs 0058,
+        // 0137): a parameter after the others.
+        let options = (formatter.is_some() && self.writers_take_options()).then(|| self.fresh("options"));
         // A closure's first argument is its environment, read through its fields.
         // A coroutine's are that and what it's resumed with, which an async
         // function has neither of.
@@ -439,15 +465,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A parameter or a result of a type JS can't hold, a `&mut` to a
         // `&mut [i32]` whose place it can't share: refused, as THIR's.
         let def_span = self.tcx.def_span(mir_body.source.def_id());
-        for local in mir_body.args_iter().skip(skip) {
+        for local in mir_body.args_iter().skip(skip).filter(|&l| Some(l) != formatter) {
             self.check_value_ty(mir_body.local_decls[local].ty, def_span)?;
         }
-        if mir_body.coroutine.is_none() {
+        if mir_body.coroutine.is_none() && formatter.is_none() {
             self.check_value_ty(mir_body.return_ty(), def_span)?;
         }
         let mut params: Vec<js::Pattern> = mir_body
             .args_iter()
             .skip(skip)
+            .filter(|&local| Some(local) != formatter)
             .map(|local| {
                 state.locals.declared[local] = true;
                 // One the program names nothing and reads nowhere, `_: Ref`,
@@ -592,6 +619,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 state.flags[path] = Some(flag);
             }
         }
+        if let Some((_, name)) = &state.writer {
+            out.push(StmtKind::Let(name.clone(), Some(Expr::str(""))).at(js::Span::NONE));
+        }
         // Locals assigned more than once are `let`s, declared first.
         for local in mir_body.local_decls.indices() {
             if mir_body.local_kind(local) != LocalKind::Arg
@@ -605,7 +635,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         let start = BasicBlock::from_usize(0);
-        out.extend(self.mir_tree(&mut state, start)?);
+        let given = options.as_deref().map(Expr::var);
+        out.extend(self.with_given(given, |cx| cx.mir_tree(&mut state, start))?);
+        if let Some(options) = options {
+            params.push(js::Pattern::Name(options));
+        }
         // Each bounds check moved to where its element is read, made there.
         if !state.deferred.is_empty() {
             return Err(self.unsupported(mir_body.span, "a bounds check this read doesn't make, from its MIR"));
@@ -842,6 +876,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         );
         tidy::destructured_params(&mut params, &mut out);
         tidy::readable_temporaries(&params, &mut out);
+        if let Some((_, name)) = &state.writer {
+            tidy::writer_body(&mut out, name);
+        }
         Ok((params, out))
     }
 
@@ -1282,11 +1319,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let continued = self.continued(body);
         for info in &body.var_debug_info {
             // A variable a std macro makes, `format_args!`'s `args`, isn't
-            // one the program names, nor `.await`'s `result`.
+            // one the program names, nor `.await`'s `result`; a derived
+            // impl's parameters, its `self` and its `f`, are, as THIR's.
             if let mir::VarDebugInfoContents::Place(place) = info.value
                 && place.projection.is_empty()
                 && user[place.local].is_none()
-                && !info.source_info.span.in_external_macro(sm)
+                && (!info.source_info.span.in_external_macro(sm) || body.local_kind(place.local) == LocalKind::Arg)
                 && !info.source_info.span.is_desugaring(rustc_span::DesugaringKind::Await)
                 && !continued.contains(&place.local)
             {
@@ -1615,9 +1653,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TerminatorKind::Return => {
                 let ret = mir::RETURN_PLACE;
-                let value = match state.locals.names[ret].is_empty() {
-                    true => None,
-                    false => Some(self.read_local(state, ret, &mut out)?),
+                let value = match (&state.writer, state.locals.names[ret].is_empty()) {
+                    // A writer's, the string it wrote.
+                    (Some((_, name)), _) => Some(Expr::var(name)),
+                    (None, true) => None,
+                    (None, false) => Some(self.read_local(state, ret, &mut out)?),
                 };
                 self.flush(state, &mut out)?;
                 // Where what it gives was written, as THIR's: MIR's `return`
@@ -2185,6 +2225,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        // A writer's `Formatter`, which it writes to as `f`, and its
+        // `fmt::Result`, `Ok(())` or what a write gave: nothing.
+        if let Some((aliases, _)) = &state.writer {
+            if place.projection.is_empty() && aliases.contains(&place.local) {
+                return Ok(());
+            }
+            if place.local == mir::RETURN_PLACE {
+                return match rvalue {
+                    Rvalue::Use(..) => Ok(()),
+                    Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(_, VariantIdx::ZERO, ..)) => {
+                        Ok(())
+                    }
+                    _ => Err(self.unsupported(span, "this `fmt::Result`, from its MIR")),
+                };
+            }
+        }
         // What the function gives, a variable of its own nothing reads after:
         // that, handed over uncopied, as THIR's. Not of a `Cell` in it, which
         // a drop after may set.
@@ -3692,6 +3748,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // A `&dyn Debug` is the string it shows (ADR 0060), made
                         // where it's read: by `{:#?}`, as that shows it.
                         if self.is_dyn_debug(*to) && !self.is_dyn_debug(from) {
+                            // In a writer, as pretty as it's asked to be: a
+                            // derived `Debug`'s fields (ADR 0137).
+                            if state.writer.is_some() {
+                                let pretty = self.writer_pretty();
+                                let shown = self.debug_string_with(value, self.pointee(from), span, &pretty)?;
+                                return Ok(Value::Expr(shown));
+                            }
                             return Ok(Value::Fmt(Std::FmtDebug, self.pointee(from), value));
                         }
                         return Ok(Value::Expr(self.unsize_trait(from, *to, value, span, out)?));
@@ -4096,6 +4159,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         let decls = &state.body.local_decls;
+        // A write to the writer's `Formatter` (ADR 0054): `f += s`.
+        if let Some((aliases, name)) = &state.writer
+            && let Some(at) = args
+                .iter()
+                .position(|a| a.node.place().is_some_and(|p| aliases.contains(&p.local)))
+            && let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx))
+        {
+            let name = name.clone();
+            let others: Vec<&Operand<'tcx>> = (args.iter().enumerate())
+                .filter(|&(i, _)| i != at)
+                .map(|(_, a)| &a.node)
+                .collect();
+            let operation = self
+                .recognition()
+                .write_call(def_id, self.krate.fns.contains_key(&def_id));
+            let values = self.take_operands(state, &others, out)?;
+            let values = (values.into_iter())
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            let pretty = self.writer_pretty();
+            let written = self.written_of(operation, def_id, generic_args, values, &pretty, span, out)?;
+            self.flush(state, out)?;
+            super::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
+            return Ok(Value::Expr(Expr::undefined()));
+        }
         let Some((def_id, generic_args)) = fn_def(func.ty(decls, self.tcx)) else {
             // A function pointer, which may be JS's (ADR 0330): called with
             // its arguments given to JS.
@@ -6463,6 +6551,117 @@ pub(super) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::Ha
 
 /// Whether `local` is only read, by its parts or lent shared, once it's
 /// assigned: never moved, copied whole, nor lent `&mut`.
+/// `param`, a writer's `Formatter`, and the locals that are it: each a
+/// reborrow or a copy of one, `_5 = &mut (*_2)`.
+fn formatter_aliases(body: &mir::Body<'_>, param: Local) -> Vec<Local> {
+    let mut aliases = vec![param];
+    loop {
+        let found = (body.basic_blocks.iter().flat_map(|b| &b.statements)).find_map(|s| match &s.kind {
+            StatementKind::Assign(assign)
+                if assign.0.projection.is_empty()
+                    && !aliases.contains(&assign.0.local)
+                    && let Rvalue::Ref(_, _, from) | Rvalue::Use(Operand::Copy(from) | Operand::Move(from), _) =
+                        &assign.1
+                    && aliases.contains(&from.local)
+                    && from.projection.iter().all(|e| e == PlaceElem::Deref) =>
+            {
+                Some(assign.0.local)
+            }
+            _ => None,
+        });
+        match found {
+            Some(alias) => aliases.push(alias),
+            None => return aliases,
+        }
+    }
+}
+
+/// Whether `stmt` reads or writes one of `locals`.
+fn mentions_locals(locals: &[Local], visit: impl FnOnce(&mut Mentions<'_>)) -> bool {
+    let mut mentions = Mentions { locals, found: false };
+    visit(&mut mentions);
+    mentions.found
+}
+
+struct Mentions<'l> {
+    locals: &'l [Local],
+    found: bool,
+}
+
+impl<'tcx> Visitor<'tcx> for Mentions<'_> {
+    fn visit_local(&mut self, local: Local, context: PlaceContext, _: mir::Location) {
+        self.found |= self.locals.contains(&local) && !matches!(context, PlaceContext::NonUse(_));
+    }
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether a writer's MIR is what MIR lowers (ADR 0364): each use of its
+    /// `Formatter` param, `param`, a write to it, `write!`, `{}` of a
+    /// value or another writer, given it where a writer takes it; not its
+    /// options, a builder, nor a writer that may fail, which are THIR's.
+    pub(super) fn mir_writes(&self, body: &mir::Body<'tcx>, param: usize) -> bool {
+        if self.writer_fails() {
+            return false;
+        }
+        let aliases = formatter_aliases(body, Local::from_usize(param + 1));
+        let mut location = mir::Location::START;
+        for (block, data) in body.basic_blocks.iter_enumerated() {
+            location.block = block;
+            for (i, statement) in data.statements.iter().enumerate() {
+                location.statement_index = i;
+                let of_alias = matches!(&statement.kind, StatementKind::Assign(assign)
+                    if assign.0.projection.is_empty() && aliases.contains(&assign.0.local));
+                if !of_alias && mentions_locals(&aliases, |m| m.visit_statement(statement, location)) {
+                    return false;
+                }
+            }
+            location.statement_index = data.statements.len();
+            let terminator = data.terminator();
+            match &terminator.kind {
+                TerminatorKind::Call {
+                    func,
+                    args,
+                    destination,
+                    ..
+                } => {
+                    let at: Vec<usize> = (args.iter().enumerate())
+                        .filter(|(_, a)| mentions_locals(&aliases, |m| m.visit_operand(&a.node, location)))
+                        .map(|(i, _)| i)
+                        .collect();
+                    let [at] = at[..] else {
+                        if at.is_empty() {
+                            continue;
+                        }
+                        return false;
+                    };
+                    let Some((def_id, generic_args)) = fn_def(func.ty(&body.local_decls, self.tcx)) else {
+                        return false;
+                    };
+                    let whole = args[at].node.place().is_some_and(|p| p.projection.is_empty());
+                    let writes = self.formatter_param(def_id) == Some(at)
+                        || (at == 0 && self.recognition().fmt_write_on_formatter(def_id, generic_args));
+                    let operation = self
+                        .recognition()
+                        .write_call(def_id, self.krate.fns.contains_key(&def_id));
+                    if !whole
+                        || !writes
+                        || matches!(operation, super::recognition::WriteCall::Unsupported)
+                        || aliases.contains(&destination.local)
+                    {
+                        return false;
+                    }
+                }
+                _ => {
+                    if mentions_locals(&aliases, |m| m.visit_terminator(terminator, location)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        true
+    }
+}
+
 fn only_read(body: &mir::Body<'_>, local: Local) -> bool {
     struct Reads {
         local: Local,

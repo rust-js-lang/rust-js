@@ -21,14 +21,11 @@ function pointDebug_fmt(point, options) {
 }
 
 function shapeDebug_fmt(shape, options) {
-  let f = "";
   if (shape.TAG === "Dot") {
     const shown = pointDebug_fmt(shape._0, options);
-    f += options?.alternate ? $pretty("Dot(", [shown], ")") : `Dot(${shown})`;
-  } else {
-    f += "Empty";
+    return options?.alternate ? $pretty("Dot(", [shown], ")") : `Dot(${shown})`;
   }
-  return f;
+  return "Empty";
 }
 
 function main() {

@@ -309,10 +309,12 @@ pub fn lower_crate<'tcx>(
         let result = match body {
             Some(body) if initializer => cx.lower_initializer(body),
             // A writer, whose `Formatter` is the string it returns (ADR 0054),
-            // is THIR's still (ADR 0364).
+            // is THIR's still where MIR doesn't lower it yet (ADR 0364).
             Some(body)
                 if let Some(mir) = &body.mir
-                    && cx.formatter_param(def_id).is_none() =>
+                    && cx
+                        .formatter_param(def_id)
+                        .is_none_or(|param| cx.mir_writes(&mir.body, param)) =>
             {
                 cx.lower_fn_mir(body, mir)
             }
