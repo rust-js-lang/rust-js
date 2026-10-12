@@ -1529,6 +1529,7 @@ fn fresh(items: &Expr) -> bool {
                 "$windows",
                 "$chunks",
                 "$chunksExact",
+                "$chunksExactMut",
                 "$splitBy",
                 "$lines",
                 "$slice",

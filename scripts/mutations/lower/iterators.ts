@@ -817,4 +817,16 @@ export const mutations: Mutation[] = [
       "a chunks' remainder from MIR"
     ]
   },
+  {
+    "name": "chunks-exact-mut-not-fresh",
+    "breaks": "`$chunksExactMut(v, n)`'s array isn't one MIR knows is made there: `Iterator.from(..)`, whose `remainder` is gone",
+    "file": "src/lower/iterators.rs",
+    "find": "                \"$chunksExactMut\",\n",
+    "replace": "",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "slice_views"
+    ]
+  },
 ];

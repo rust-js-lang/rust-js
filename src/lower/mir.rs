@@ -4959,10 +4959,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         | SliceOp::UninitWrite { .. }
                         | SliceOp::UninitDrop
                         | SliceOp::CopyWithin
-                ) && !output.walk().any(|arg| {
-                    arg.as_type()
-                        .is_some_and(|t| matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut)))
-                }) =>
+                ) && (known.gives_its_cell() || !output.walk().any(|arg| {
+                    // A `&mut` to items, a view of them, THIR's (ADR 0335); not
+                    // to one item, which a number's is a box of, but where the
+                    // op makes that box itself, `split_first_mut`'s.
+                    arg.as_type().is_some_and(|t| {
+                        matches!(t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !inner.is_slice() && !inner.is_array())
+                    })
+                })) =>
             {
                 let values = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.slice_values(op, values, false, generic_args, span, out)?

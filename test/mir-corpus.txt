@@ -241,7 +241,9 @@ rotate_past_end.rs
 scope_temporaries.rs
 size_hint.rs
 size_of.rs
+slice_arrays.rs
 slice_bytes_text.rs
+slice_disjoint.rs
 slice_from_past_len.rs
 slice_methods.rs
 slice_pattern_mut_rest.rs
@@ -253,8 +255,10 @@ slice_split_at_panic.rs
 slice_start_past_len.rs
 slice_to_array.rs
 slice_view_past_len.rs
+slice_views.rs
 sort_unstable_adversary.rs
 sort_unstable_ties.rs
+split_at_mut_past_len.rs
 static_fns.rs
 static_mut.rs
 static_mut_reference.rs

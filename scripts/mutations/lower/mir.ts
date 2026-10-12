@@ -2170,4 +2170,28 @@ export const mutations: Mutation[] = [
       "a chunks' remainder from MIR"
     ]
   },
+  {
+    "name": "mir-slice-views-refused",
+    "breaks": "a slice op giving a `&mut` view of items from MIR, `split_at_mut`, is refused",
+    "file": "src/lower/mir.rs",
+    "find": "if !inner.is_slice() && !inner.is_array())",
+    "replace": ")",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "split_at_mut_past_len"
+    ]
+  },
+  {
+    "name": "mir-cell-giving-slice-refused",
+    "breaks": "`get_disjoint_mut` from MIR, which makes its items' boxes itself, is refused",
+    "file": "src/lower/mir.rs",
+    "find": "                ) && (known.gives_its_cell() || !output.walk().any(|arg| {\n",
+    "replace": "                ) && (false || !output.walk().any(|arg| {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "slice_disjoint"
+    ]
+  },
 ];
