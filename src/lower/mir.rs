@@ -2239,20 +2239,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             state.places.insert(local, places);
             return Ok(());
         }
-        // An object of constants read only by its fields, `Html::default()`'s:
-        // read where each is.
-        if place.projection.is_empty()
-            && !state.locals.user[local]
-            && state.locals.writes[local] == 1
-            && !state.locals.borrowed[local]
-            && state.locals.reads[local] == state.locals.fields[local].len()
-            && let Value::Expr(made) = &value
-            && matches!(made.kind, js::ExprKind::Object(_))
-            && made.is_made_of_constants()
-        {
-            state.in_place.insert(local, made.clone());
-            return Ok(());
-        }
         // One read by its fields, each once, a `format_args!`'s tuple: a list
         // whose items are each read where its field is.
         let parts = match &value {
@@ -5408,17 +5394,34 @@ fn written_from(body: &mir::Body<'_>, from: BasicBlock, local: Local) -> bool {
 /// Where the program wrote what `block` does first: a macro's, where it
 /// called it.
 fn written_at(body: &mir::Body<'_>, block: BasicBlock) -> Option<rustc_span::BytePos> {
+    written_within(body, block, 4)
+}
+
+/// `written_at`'s, of a block that only tests further, a pattern's field,
+/// `Done { ok: true }`'s: where the first of what it goes to is, its arms,
+/// not the `match` its test is spanned by; `depth` such tests at most.
+fn written_within(body: &mir::Body<'_>, block: BasicBlock, depth: usize) -> Option<rustc_span::BytePos> {
     let data = &body.basic_blocks[block];
-    let first = (data.statements.iter())
-        .find(|s| {
-            !matches!(
-                s.kind,
-                StatementKind::FakeRead(_)
-                    | StatementKind::StorageLive(_)
-                    | StatementKind::StorageDead(_)
-                    | StatementKind::Nop
-            )
-        })
+    let first = (data.statements.iter()).find(|s| {
+        !matches!(
+            s.kind,
+            StatementKind::FakeRead(_)
+                | StatementKind::StorageLive(_)
+                | StatementKind::StorageDead(_)
+                | StatementKind::Nop
+                | StatementKind::PlaceMention(_)
+        )
+    });
+    if first.is_none()
+        && depth > 0
+        && let TerminatorKind::SwitchInt { targets, .. } = &data.terminator().kind
+    {
+        return (targets.all_targets().iter())
+            .filter(|&&b| !is_unreachable(body, b))
+            .filter_map(|&b| written_within(body, b, depth - 1))
+            .min();
+    }
+    let first = first
         .map_or(data.terminator().source_info.span, |s| s.source_info.span)
         .source_callsite();
     (!first.is_dummy()).then(|| first.lo())

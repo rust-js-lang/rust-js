@@ -787,14 +787,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
-    name: "mir-constant-object-made",
-    breaks: "an object of constants read only by its fields, `Html::default()`'s, is a `const` each read reads",
-    file: "src/lower/mir.rs",
-    find: "            && made.is_made_of_constants()\n",
-    replace: "            && false\n",
-    tests: ["test/mir.test.ts","-t","JSX tests"],
-  },
-  {
     name: "mir-plain-of-bound-vars",
     breaks: "a local's type inside a binder, a function pointer's parameter, is asked whether it's `Freeze`, which crashes rustc",
     file: "src/lower/mir.rs",
@@ -1940,6 +1932,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a function's .s from MIR are guards"
+    ]
+  },
+  {
+    "name": "mir-arm-written-at-test",
+    "breaks": "an arm that tests a field first, `Done { ok: true }`, is placed where its test is spanned, the `match`, first",
+    "file": "src/lower/mir.rs",
+    "find": "    written_within(body, block, 4)\n",
+    "replace": "    written_within(body, block, 0)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a match's arms from MIR are in written order"
     ]
   },
 ];

@@ -6282,6 +6282,34 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
+// A \`match\`'s arms from MIR are tested in the order they're written, an
+// arm that tests a field first, \`Done { ok: true }\`, where it's written,
+// not where its test is spanned, the \`match\`.
+test("a match's arms from MIR are in written order, of fields tested too", async () => {
+  const dir = fixture("mir-arms-ordered");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum Status { Idle, Loading(u8), Done { ok: bool }, Failed(&'static str) }
+pub fn view(s: Status) -> String {
+    match s {
+        Status::Idle => "idle".to_string(),
+        Status::Loading(p) => format!("{p}%"),
+        Status::Done { ok: true } => "ok".to_string(),
+        Status::Done { ok: false } => "not ok".to_string(),
+        Status::Failed(why) => why.to_string(),
+    }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    const at = (s: string) => js.indexOf(s);
+    expect([at('"Idle"') < at('"Loading"'), at('"Loading"') < at('"Done"')]).toEqual([true, true]);
+    const lib = await import(join(dir, out));
+    const all = ["Idle", { TAG: "Loading", _0: 5 }, { TAG: "Done", ok: true }, { TAG: "Done", ok: false }, { TAG: "Failed", _0: "x" }];
+    expect(all.map(lib.view)).toEqual(["idle", "5%", "ok", "not ok", "x"]);
+  }
+});
+
 // Each \`?\` from MIR is a guard where it's written, \`if (result.TAG ===
 // "Err") return result;\`, the rest after it, as THIR's: not the rest
 // nested in a test that it's \`Ok\`.
