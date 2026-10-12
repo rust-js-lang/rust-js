@@ -4308,6 +4308,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // What THIR refuses of a call: the crate's collection or `Borrow`
         // where std's code takes JS's (ADRs 0160, 0167).
         self.check_call_takes(def_id, generic_args, span)?;
+        // serde_json's `Value` and what makes one, THIR's (ADR 0083).
+        if let Some(operation) = self.recognition().json_call(def_id, generic_args) {
+            let exprs = values
+                .into_iter()
+                .map(|v| self.value_expr(v, span))
+                .collect::<R<Vec<_>>>()?;
+            return Ok(Value::Expr(self.json_call_values(operation, exprs, span)?));
+        }
         // `x == &mut 1`, `p > q`, of `&mut`s to what JS can't change in place:
         // of what they point at, as THIR's (ADR 0099), not the handles.
         if let Some(trait_id) = tcx.trait_of_assoc(def_id)
@@ -5449,6 +5457,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.str_part_values(op, cell, given)
             }
+            // `serde_json::to_string(&v)` and `from_str(s)`, THIR's (ADR 0081).
+            Std::ToJson(pretty) => {
+                let value = self.value_expr(values.next().expect("the value"), span)?;
+                let ty = generic_args.types().next().expect("`to_string::<T>`");
+                self.json_text(value, ty, pretty, span)?
+            }
+            Std::FromJson => {
+                let text = self.value_expr(values.next().expect("the text"), span)?;
+                let ty = generic_args.types().next().expect("`from_str::<T>`");
+                self.json_value(text, ty, span)?
+            }
             // A slice of `MaybeUninit`s written from a slice, and each item
             // dropped, THIR's (ADR 0332).
             Std::Slice(SliceOp::UninitWrite { clone }) => {
@@ -5998,8 +6017,6 @@ fn lowered_from_values(known: Std) -> bool {
             | Std::UserWrite
             | Std::DequeRemove
             | Std::Step(_)
-            | Std::ToJson(_)
-            | Std::FromJson
             | Std::Cow(_)
             | Std::Rc(_)
             | Std::Slice(_)

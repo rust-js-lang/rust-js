@@ -2750,4 +2750,20 @@ export const mutations: Mutation[] = [
     replace: "                            if false {\n",
     tests: ["test/lowering.test.ts", "-t", "MIR refuses .....? of a kept"],
   },
+  {
+    name: "mir-json-text-pretty-lost",
+    breaks: "MIR's `serde_json::to_string_pretty` writes it compact",
+    file: "src/lower/mir.rs",
+    find: "                self.json_text(value, ty, pretty, span)?\n",
+    replace: "                self.json_text(value, ty, false, span)?\n",
+    tests: ["test/serde.test.ts", "-t", "ordinary renamed structs"],
+  },
+  {
+    name: "mir-json-calls-refused",
+    breaks: "MIR's `serde_json::Value` operations and `to_value` are refused",
+    file: "src/lower/mir.rs",
+    find: "            return Ok(Value::Expr(self.json_call_values(operation, exprs, span)?));\n",
+    replace: "            return Err(self.unsupported(span, &format!(\"serde_json of {}, from its MIR\", exprs.len())));\n",
+    tests: ["test/serde.test.ts", "-t", "f32 is written"],
+  },
 ];

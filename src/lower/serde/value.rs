@@ -34,9 +34,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(operation) = self.recognition().json_call(def_id, generic_args) else {
             return Ok(None);
         };
+        let values = self.operands(args, out)?;
+        self.json_call_values(operation, values, span).map(Some)
+    }
+
+    /// `operation`, a serde_json call, of its arguments' `values`: THIR's
+    /// and MIR's (ADR 0083).
+    pub(in crate::lower) fn json_call_values(
+        &mut self,
+        operation: JsonCall<'tcx>,
+        mut values: Vec<Expr>,
+        span: Span,
+    ) -> R<Expr> {
         match operation {
             JsonCall::ToValue(ty) => {
-                let value = self.expr(args[0], out)?;
+                let value = values.remove(0);
                 self.use_value();
                 // Of a string, a number, a `bool` or `()`, it can't fail: `Ok` of it.
                 if self.is_string_like(ty) || ty.is_bool() || ty.is_unit() || Num::of(ty).is_some() {
@@ -48,60 +60,55 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     } else {
                         self.json_value_from(value, ty, span)?
                     };
-                    return Ok(Some(Expr::object(vec![
+                    return Ok(Expr::object(vec![
                         Prop::Field("TAG".into(), Expr::str("Ok")),
                         Prop::Field("_0".into(), value),
-                    ])));
+                    ]));
                 }
                 let writer = self.json_writer(ty, span)?;
-                Ok(Some(Expr::call(Expr::var("$toJsonValue"), vec![value, writer])))
+                Ok(Expr::call(Expr::var("$toJsonValue"), vec![value, writer]))
             }
             JsonCall::FromValue(ty) => {
-                let value = self.expr(args[0], out)?;
+                let value = values.remove(0);
                 let reader = self.json_reader(ty, span)?;
                 self.use_value();
                 self.runtime.insert(Helper::FromJson);
-                Ok(Some(Expr::call(Expr::var("$fromJsonValue"), vec![value, reader])))
+                Ok(Expr::call(Expr::var("$fromJsonValue"), vec![value, reader]))
             }
             JsonCall::Index => {
-                let values = self.operands(args, out)?;
                 self.use_value();
-                Ok(Some(Expr::call(Expr::var("$jsonIndex"), values)))
+                Ok(Expr::call(Expr::var("$jsonIndex"), values))
             }
             JsonCall::Equal {
                 other,
                 value_first,
                 negate,
             } => {
-                let mut values = self.operands(args, out)?;
                 let (b, a) = (values.pop().expect("two sides"), values.pop().expect("two sides"));
                 let eq = if value_first {
                     self.json_value_eq(a, b, other, span)?
                 } else {
                     self.json_value_eq(b, a, other, span)?
                 };
-                Ok(Some(if negate {
+                Ok(if negate {
                     crate::lower::std_impls::negate(eq)
                 } else {
                     eq
-                }))
+                })
             }
             JsonCall::Convert { to, from, json } => {
-                let x = self.expr(args[0], out)?;
-                Ok(Some(match json {
+                let x = values.remove(0);
+                Ok(match json {
                     Json::Value => self.json_value_from(x, from, span)?,
                     Json::Number if Num::of(from.peel_refs()).is_some_and(|n| !n.float()) => {
                         self.use_value();
                         Expr::call(Expr::var("$jsonInt"), vec![x])
                     }
                     _ => return Err(self.unsupported(span, &format!("`{to}::from` of `{from}`"))),
-                }))
+                })
             }
-            JsonCall::Default => Ok(Some(Expr::str("Null"))),
-            JsonCall::Method(method) => {
-                let values = self.operands(args, out)?;
-                self.json_value_method(method, values, span).map(Some)
-            }
+            JsonCall::Default => Ok(Expr::str("Null")),
+            JsonCall::Method(method) => self.json_value_method(method, values, span),
         }
     }
 

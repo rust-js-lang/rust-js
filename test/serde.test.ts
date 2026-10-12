@@ -24,6 +24,16 @@ fn main() { println!("{}", serde_json::to_string(&report()).unwrap()); }
   return built.binary;
 }
 
+/** The case's JS, from THIR and from MIR (ADR 0364), each loaded. */
+async function compiled(dir: string) {
+  const modules = [];
+  for (const [out, env] of [["cases.js", {}], ["cases.mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "cases.rs"), "-o", join(dir, out), "--", ...buildSerde()], 600_000, env);
+    modules.push(await import(join(dir, out)));
+  }
+  return modules;
+}
+
 const cases = [
   {
     name: "a serde_json error given by ? to a Box<dyn Error> shows as serde_json's",
@@ -198,9 +208,7 @@ pub fn report() -> String {
 }
 `);
     const expected = JSON.parse(run([native(dir)]));
-    run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
-    const generated = await import(join(dir, "cases.js"));
-    expect(generated.report()).toBe(expected);
+    for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
   });
 }
 
@@ -236,9 +244,7 @@ pub fn report() -> String {
 }
 `);
   const expected = JSON.parse(run([native(dir)]));
-  run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
-  const generated = await import(join(dir, "cases.js"));
-  expect(generated.report()).toBe(expected);
+  for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
 });
 
 // A string whose text begins with U+FEFF keeps it, as serde_json reads
@@ -255,9 +261,7 @@ test("serde: a string beginning with U+FEFF keeps it", async () => {
 }
 `);
   const expected = JSON.parse(run([native(dir)]));
-  run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
-  const generated = await import(join(dir, "cases.js"));
-  expect(generated.report()).toBe(expected);
+  for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
 });
 
 // A set of structs, an array in JSON, found by value as it's read (ADR
@@ -280,9 +284,7 @@ pub fn report() -> String {
 }
 `);
   const expected = JSON.parse(run([native(dir)]));
-  run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
-  const generated = await import(join(dir, "cases.js"));
-  expect(generated.report()).toBe(expected);
+  for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
 });
 
 // A generic type's derived codec, of a value with a destructor: rust-js's,
@@ -303,9 +305,7 @@ pub fn report() -> String {
 }
 `);
   const expected = JSON.parse(run([native(dir)]));
-  run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
-  const generated = await import(join(dir, "cases.js"));
-  expect(generated.report()).toBe(expected);
+  for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
 });
 
 // Numbers chosen at random, the same ones each run: an f64 from any 64 bits,
@@ -356,7 +356,5 @@ test("serde: numbers are written and read as serde_json does", async () => {
 }
 `);
   const expected = JSON.parse(run([native(dir)]));
-  run([compiler, join(dir, "cases.rs"), "-o", join(dir, "cases.js"), "--", ...buildSerde()]);
-  const generated = await import(join(dir, "cases.js"));
-  expect(generated.report()).toBe(expected);
+  for (const generated of await compiled(dir)) expect(generated.report()).toBe(expected);
 }, 120_000);
