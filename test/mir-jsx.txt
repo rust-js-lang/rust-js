@@ -167,3 +167,5 @@ react.dev's SidebarLink writes its classes in place
 what an element reads past elements before it is read where it's written
 what an element reads, made before a branch in its tree, is read where it's written
 what elements read before branches, each a call, is read where it's written
+JSX attributes and children read in place around a borrowed one
+JSX reads what's made before a matches! child's block

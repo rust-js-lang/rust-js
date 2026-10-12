@@ -175,4 +175,16 @@ fn main() {
             Held::Both(duo) => println!("both {} {}", duo.first.0, duo.second.0),
         }
     }
+
+    // One that's there, its payload falsy in JS, `""`, `false` or `0`:
+    // there all the same.
+    let firsts = [vec![Value::Text(String::new())], vec![Value::Flag(false)], vec![Value::Count(0)], vec![]];
+    for values in &firsts {
+        let first = values.first();
+        if first.is_none() || first == Some(&Value::Count(1)) {
+            println!("none");
+            continue;
+        }
+        println!("first {first:?}");
+    }
 }

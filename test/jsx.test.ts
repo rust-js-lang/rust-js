@@ -3414,11 +3414,24 @@ pub fn Copy() -> JSX::Element {
     });
     jsx! { <div><Button onClick={handle_copy} />{if *copied { "Copied" } else { "Copy" }}</div> }
 }
+pub fn Parsed(text: String) -> JSX::Element {
+    let (copied, set_copied) = use_state(false);
+    let handle_copy = event::MouseEvent::spawn(async move |_| {
+        let Ok(n) = text.parse::<u32>() else {
+            return;
+        };
+        resolved().await;
+        set_copied.set(n == 1);
+    });
+    jsx! { <div><Button onClick={handle_copy} />{if *copied { "Copied" } else { "Copy" }}</div> }
+}
 `);
   args.push("--extern", `js=${join(target, "libjs.rmeta")}`);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("const handleCopy = async () => {\n    await Promise.resolve();\n    setCopied(true);\n  };");
+  // One that may return early, as react.dev's does, takes no event either.
+  expect(jsx.match(/const handleCopy = async \(\) => \{/g)?.length).toBe(2);
   expect(jsx).not.toContain("(async");
   const { Button } = await import(join(dir, "lib.jsx"));
   let clicked = false;
@@ -5884,4 +5897,86 @@ pub fn Chosen(c: bool) -> JSX::Element {
   const chosen = lib.Chosen(false);
   expect(log).toEqual([1, 2, 4]);
   expect(chosen.key).toBe("2");
+});
+
+// ADR 0364: what an element's attributes and children read, a state's
+// value and a prop, is read where they're written, as react.dev's
+// ExpandableExample writes its Button: not each held first, its children
+// then read apart, `children[0]`.
+test("JSX attributes and children read in place around a borrowed one", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx, use_state};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().cloned().collect::<Vec<_>>().join(" ")
+}
+pub struct ButtonProps<'a, C: ReactNode> {
+    pub children: C,
+    pub class_name: Option<&'a str>,
+    pub on_click: Option<Box<dyn Fn(u32)>>,
+}
+pub fn Button<C: ReactNode>(ButtonProps { children, class_name, .. }: ButtonProps<C>) -> JSX::Element {
+    jsx! { <button className={class_name}>{children}</button> }
+}
+pub fn App(deep: bool) -> JSX::Element {
+    let (is_expanded, set_is_expanded) = use_state(false);
+    jsx! {
+        <details open={*is_expanded} className={cn(&[Some("my-12"), deep.then_some("purple")])}>
+            <Button
+                class_name={Some(cn(&[deep.then_some("bg"), Some("x")]).as_str())}
+                on_click={Some(Box::new(move |_| set_is_expanded.update(|current| !current)))}>
+                <span>{if *is_expanded { "up" } else { "down" }}</span>
+                {if *is_expanded { "Hide" } else { "Show" }}
+            </Button>
+        </details>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain(`<details open={isExpanded} className={cn(["my-12", deep ? "purple" : undefined])}>`);
+  expect(jsx).toContain(`        <span>{isExpanded ? "up" : "down"}</span>\n`);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(() => lib.App(true)))).toBe('<details class="my-12 purple"><button class="bg x"><span>down</span>Show</button></details>');
+});
+
+// ADR 0364: what's made before a labeled block, a `matches!`'s, and read
+// after it is declared where it's read, as react.dev's Diagram has its
+// images' sources before its caption's test: not inside the block.
+test("JSX reads what's made before a matches! child's block", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+#[derive(Clone, Copy, PartialEq)]
+pub enum CaptionPosition {
+    #[cfg_attr(rust_js, rust_js::name = "top")]
+    Top,
+    #[cfg_attr(rust_js, rust_js::name = "bottom")]
+    Bottom,
+}
+fn with_base(path: &str) -> String {
+    format!("/base{path}")
+}
+pub struct ImageProps<'a> {
+    pub src: &'a str,
+}
+pub fn Image(ImageProps { src }: ImageProps) -> JSX::Element {
+    jsx! { <b>{src}</b> }
+}
+pub fn Diagram(name: &str, caption_position: Option<CaptionPosition>) -> JSX::Element {
+    jsx! {
+        <figure>
+            {(caption_position == Some(CaptionPosition::Top)).then(|| jsx! { <i>{"top"}</i> })}
+            <Image src={with_base(&format!("/{name}.dark.png")).as_str()} />
+            <Image src={with_base(&format!("/{name}.png")).as_str()} />
+            {matches!(caption_position, None | Some(CaptionPosition::Bottom)).then(|| jsx! { <i>{"bottom"}</i> })}
+        </figure>
+    }
+}
+`);
+  run(args);
+  const lib = await import(join(dir, "lib.jsx"));
+  expect([undefined, "top", "bottom"].map((at) => renderToStaticMarkup(lib.Diagram("d", at)))).toEqual([
+    '<figure><b>/base/d.dark.png</b><b>/base/d.png</b><i>bottom</i></figure>',
+    '<figure><i>top</i><b>/base/d.dark.png</b><b>/base/d.png</b></figure>',
+    '<figure><b>/base/d.dark.png</b><b>/base/d.png</b><i>bottom</i></figure>',
+  ]);
 });

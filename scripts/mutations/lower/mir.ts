@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);\n",
     replace: "                stable &= !state.borrowed_names.contains(name);\n",
-    tests: ["test/mir.test.ts", "-t", "atomics|operands_before_replace"],
+    tests: ["test/mir.test.ts", "-t", "JSX tests|atomics|operands_before_replace"],
   },
   {
     name: "mir-shared-temporary-a-place",
@@ -480,7 +480,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
     replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
-    tests: ["test/mir.test.ts","-t","matrix_floats"],
+    tests: ["test/mir.test.ts","-t","JSX tests|matrix_floats"],
   },
   {
     name: "mir-object-copied-back-rebound",

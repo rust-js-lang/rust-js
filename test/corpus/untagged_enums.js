@@ -186,6 +186,15 @@ function main() {
               console.log(`both ${h.first[0]} ${h.second[0]}`);
             }
           }
+          const firsts = [[""], [false], [0], []];
+          for (const values of firsts) {
+            const first = values[0];
+            if (first == null || first === 1) {
+              console.log("none");
+              continue;
+            }
+            console.log(`first ${first == null ? "None" : `Some(${valueDebug_fmt(first)})`}`);
+          }
         } finally {
           for (const item of held) {
             if (Array.isArray(item)) {

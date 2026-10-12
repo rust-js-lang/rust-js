@@ -128,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                    && matches!(&value.kind, ExprKind::Var(of) if !changing.contains(of)) =>\n",
     replace: "                    && false =>\n",
-    tests: ["test/lowering.test.ts","-t","what reads the same anywhere"],
+    tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
     name: "mir-tidy-destructured-kept",
