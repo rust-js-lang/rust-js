@@ -3914,7 +3914,8 @@ fn sunk_lets(stmts: &mut Vec<Stmt>) {
 
 /// Whether `stmts` assign `name` before anything reads it, each way through
 /// them that names it: first `name = e`, or a branch of an `if` that does
-/// so, which is all that names it.
+/// so, which is all that names it; or an `if` each of whose branches does
+/// so or leaves the turn first, `let y = match x { 0 => continue, .. }`'s.
 fn assigned_first(stmts: &[Stmt], name: &str) -> bool {
     let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
     let Some(at) = stmts.iter().position(names) else {
@@ -3927,10 +3928,32 @@ fn assigned_first(stmts: &[Stmt], name: &str) -> bool {
             matches!(&target.kind, ExprKind::Var(v) if v == name) && !value.mentions_var(name)
         }
         StmtKind::If(test, then, otherwise) => {
-            alone && !test.mentions_var(name) && assigned(then) && otherwise.as_deref().is_none_or(assigned)
+            !test.mentions_var(name)
+                && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)
+                    || assigned_on(then, name) && otherwise.as_deref().is_some_and(|o| assigned_on(o, name)))
         }
         _ => false,
     }
+}
+
+/// Whether each way through `stmts` that goes on past them assigns `name`
+/// before anything reads it: one that leaves the turn first, by `continue`,
+/// `return`, `throw` or the loop's own `break`, doesn't go on. A labeled
+/// `break` may go on, to the end of a block in the turn.
+fn assigned_on(stmts: &[Stmt], name: &str) -> bool {
+    let names = |s: &Stmt| js::mentions_in(std::slice::from_ref(s), name) > 0;
+    for stmt in stmts {
+        if names(stmt) {
+            return assigned_first(std::slice::from_ref(stmt), name);
+        }
+        if matches!(
+            stmt.kind,
+            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(None)
+        ) {
+            return true;
+        }
+    }
+    false
 }
 
 /// Whether loop `stmt`'s own test, start or what it steps names `name`.

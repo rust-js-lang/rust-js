@@ -1386,8 +1386,8 @@ export const mutations: Mutation[] = [
     "name": "loop-let-branch-assigned-not-sunk",
     "breaks": "a `let` a loop's branch makes from MIR stays one `let` before the loop, not a `const` in the branch",
     "file": "src/lower/mir/tidy.rs",
-    "find": "            alone && !test.mentions_var(name) && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
-    "replace": "            false",
+    "find": "                && (alone && assigned(then) && otherwise.as_deref().is_none_or(assigned)",
+    "replace": "                && (false",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -1884,6 +1884,30 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a handle used in place"
+    ]
+  },
+  {
+    "name": "mir-tidy-turn-let-branches-unseen",
+    "breaks": "`let y;` of `let y = match x { 0 => continue, .. }` is declared before the loop, as an `if`'s branches each assigning it don't count",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    || assigned_on(then, name) && otherwise.as_deref().is_some_and(|o| assigned_on(o, name)))",
+    "replace": "                    || false)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let each turn assigns"
+    ]
+  },
+  {
+    "name": "mir-tidy-turn-continue-goes-on",
+    "breaks": "a branch that `continue`s is taken to go on unassigned, and `let y;` stays before the loop",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "            StmtKind::Continue(_) | StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(None)",
+    "replace": "            StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(None)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a let each turn assigns"
     ]
   },
 ];

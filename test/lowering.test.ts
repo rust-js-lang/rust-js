@@ -9432,3 +9432,28 @@ pub fn run() -> u32 {
     expect((await import(join(dir, out))).run()).toBe(2);
   }
 });
+
+// A variable a loop's turn declares, `let y = match x { 0 => continue, ..
+// }`, is declared in the loop's body from MIR, as THIR declares it: each
+// arm assigns it or leaves the turn before it's read.
+test("a let each turn assigns from MIR is the loop body's", async () => {
+  const dir = fixture("turn-let");
+  writeFileSync(join(dir, "lib.rs"), `pub fn named(v: &[u32]) -> Vec<String> {
+    let mut out = Vec::new();
+    for &x in v {
+        let y = match x {
+            0 => continue,
+            1 => "one".to_string(),
+            _ => format!("{x}"),
+        };
+        out.push(y);
+    }
+    out
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("  for (const x of v) {\n    let y;\n");
+    expect((await import(join(dir, out))).named([0, 1, 7])).toEqual(["one", "7"]);
+  }
+});
