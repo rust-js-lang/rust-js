@@ -19,9 +19,7 @@ async-await/in-trait/async-default-fn-overridden.rs	error: rust-js does not supp
 async-await/issue-73137.rs	error: rust-js does not support user implementations of `std::task::Wake` yet
 autoref-autoderef/deref-chain-method-calls-13264.rs	error: rust-js does not support values of type `*const Node` yet
 binding/func-arg-incomplete-pattern.rs	error: rust-js does not support values of type `*const usize` yet
-binding/match-pipe-binding.rs	error: rust-js does not support a guard of a `|` pattern binding a name at another place in each alternative yet
 binding/nested-matchs.rs	error: rust-js does not support values of type `!` yet
-binding/order-drop-with-match.rs	error: rust-js does not support moving a value with a destructor here yet
 binding/zero_sized_subslice_match.rs	error: rust-js does not support this expression yet
 binop/augmented-assignment.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 borrowck/borrowck-borrow-from-expr-block.rs	error: rust-js does not support values of type `*const isize` yet
@@ -29,12 +27,8 @@ borrowck/borrowck-closures-slice-patterns-ok.rs	error: rust-js does not support 
 borrowck/borrowck-slice-pattern-element-loan-rpass.rs	error: rust-js does not support a `&mut` to part of a slice yet
 borrowck/borrowck-unsafe-static-mutable-borrows.rs	error: rust-js does not support `&mut` references to a `static mut` yet
 borrowck/call-and-ref-option-mutate.rs	error: rust-js does not support a `&mut` of this in a variable yet
-borrowck/issue-46095.rs	error: rust-js does not support assigning to this place yet
-borrowck/issue-51348-multi-ref-mut-in-guard.rs	error: rust-js does not support a `ref mut` bound at another place in each alternative of a `|` pattern yet
 borrowck/pointer-reassignment-after-deref-78192.rs	error: rust-js does not support values of type `*const u32` yet
-borrowck/ref-mut-rebind-does-not-affect-outer.rs	error: rust-js does not support `ref mut` bindings to this type yet
 borrowck/two-phase-multiple-activations.rs	error: rust-js does not support `{:?}` of a `std::io::Error` yet
-box/unit/unique-in-vec-copy.rs	error: rust-js does not support assigning to this place yet
 c-variadic/copy.rs	error: rust-js does not support values of type `*const std::ffi::c_void` yet
 c-variadic/inherent-method.rs	error: rust-js does not support values of type `*const std::ffi::c_void` yet
 c-variadic/trait-method.rs	error: rust-js does not support values of type `*const std::ffi::c_void` yet
@@ -53,7 +47,6 @@ cast/supported-cast.rs	error: rust-js does not support values of type `*const st
 cast/trait-object-cast-segfault-4333.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support constants of type `*const i32` yet
 closures/2229_closure_analysis/run_pass/unsafe_ptr.rs	error: rust-js does not support values of type `*const S` yet
-closures/call-fnmut-trait-object-via-ref-mut.rs	error: rust-js does not support `ref mut` bindings to this type yet
 closures/region-obligations-closure-and-projection.rs	error: rust-js does not support values of type `*mut u8` yet
 codegen/arm-collect-into-vec-codegen-regression.rs	error: rust-js does not support values of type `*mut ()` yet
 codegen/box-str-drop-glue.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
@@ -63,8 +56,6 @@ codegen/dynamic-size-of-prefix-correctly-36278.rs	error: rust-js does not suppor
 codegen/issue-27859.rs	error: rust-js does not support calling `std::iter::ExactSizeIterator::len` yet
 coercion/basic-ptr-coercions.rs	error: rust-js does not support values of type `*const isize` yet
 coercion/box-dyn-to-ref-dyn.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
-coercion/coerce-overloaded-autoderef.rs	error: rust-js does not support `&mut` to a `&mut &mut std::boxed::Box<T>` yet
-coercion/unsafe-coercion.rs	error: rust-js does not support this expression yet
 collections/hashmap/hashmap-path-key.rs	error: rust-js does not support values of type `&std::path::Path` yet
 const_prop/dont-propagate-generic-instance-2.rs	error: rust-js does not support this `const` block yet
 const_prop/dont-propagate-generic-instance.rs	error: rust-js does not support `type_name` of a type parameter yet
@@ -109,13 +100,9 @@ derives/debug/derive-debug.rs	error: rust-js does not support values of type `*c
 derives/derive-hash-on-unit-struct.rs	error: rust-js does not support calling `std::hash::SipHasher::new` yet
 derives/deriving-hash.rs	error: rust-js does not support user implementations of `std::hash::Hasher` yet
 derives/deriving-with-repr-packed-3.rs	error: rust-js does not support values of type `*const Aligned` yet
-destructuring-assignment/drop-order.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
 drop/drop-noncopyable-raw-pointer.rs	error: rust-js does not support values of type `*const u8` yet
 drop/drop-on-untaken-arm-raw-ptr.rs	error: rust-js does not support values of type `*mut std::boxed::Box<(dyn std::ops::Fn() + 'static)>` yet
-drop/drop-order-comparisons-let-chains.rs	error: rust-js does not support a temporary with a destructor here yet
 drop/dropck_legal_cycles.rs	error: rust-js does not support values of type `H<'_>` yet
-drop/if-let-guards-2.rs	error: rust-js does not support a temporary with a destructor here yet
-drop/issue-23338-ensure-param-drop-order.rs	error: rust-js does not support a temporary with a destructor in a branch yet
 drop/issue-90752-raw-ptr-shenanigans.rs	error: rust-js does not support values of type `*mut std::option::Option<(S<'_>, S<'_>)>` yet
 drop/multiple-drop-safe-code-25549.rs	error: rust-js does not support a `Holder<dyn Trait>`, whose last field is a `dyn` yet
 drop/or-pattern-drop-order.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
@@ -127,7 +114,6 @@ dst/dst-field-align.rs	error: rust-js does not support a `Baz<dyn Bar>`, whose l
 dst/dst-raw.rs	error: rust-js does not support values of type `*const dyn Trait` yet
 dst/dst-trait.rs	error: rust-js does not support a `Fat<dyn ToBar>`, whose last field is a `dyn` yet
 dst/match-dst-struct.rs	error: rust-js does not support a `Foo<dyn Get>`, whose last field is a `dyn` yet
-dst/reborrow-mut-dyn-trait-field.rs	error: rust-js does not support `&mut` to a `&mut dyn Aaa` yet
 enum-discriminant/discriminant_value-wrapper.rs	error: rust-js does not support calling `std::mem::discriminant` yet
 enum-discriminant/niche-prefer-zero.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 enum/enum-clike-ffi-as-int.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
@@ -141,7 +127,6 @@ for-loop-while/loop-no-reinit-needed-post-bot.rs	error: rust-js does not support
 foreign/foreign-fn-linkname.rs	error: rust-js does not support calling `std::ffi::CString::new` yet
 function-pointer/function-pointer-comparison-54696.rs	error: rust-js does not support `==` on `fn()` yet
 functions-closures/clone-closure.rs	error: rust-js does not support cloning a closure that changes what it captured yet
-generic-associated-types/issue-76826.rs	error: rust-js does not support `&mut` to a `Self` yet
 generic-associated-types/streaming_iterator.rs	error: rust-js does not support `&mut` to a `I` of a trait's method yet
 impl-trait/issues/issue-51185.rs	error: rust-js does not support calling `std::convert::Into::into` yet
 impl-trait/nesting.rs	error: rust-js does not support calling `std::convert::Into::into` yet
@@ -172,20 +157,10 @@ mir/mir_augmented_assignments.rs	error: rust-js does not support calling `std::i
 mir/mir_autoderef.rs	error: rust-js does not support this expression yet
 mir/mir_misc_casts.rs	error: rust-js does not support values of type `*const ()` yet
 mir/mir_raw_fat_ptr.rs	error: rust-js does not support values of type `*const S<[u8]>` yet
-mir/reset-discriminant-drop-flag-on-partial-move.rs	error: rust-js does not support a `let` of a value with a destructor, without its value yet
 never_type/regress/never-as-function-argument.rs	error: rust-js does not support calling `std::process::exit` yet
-nll/issue-24535-allow-mutable-borrow-in-match-guard.rs	error: rust-js does not support `&mut` to a `I` yet
-nll/issue-48623-closure.rs	error: rust-js does not support a `&mut` of this in a variable yet
 nll/issue-53123-raw-pointer-cast.rs	error: rust-js does not support values of type `*mut T` yet
 numbers-arithmetic/integer-literal-suffix-inference-2.rs	error: rust-js does not support values of type `*const ()` yet
-or-patterns/issue-70413-no-unreachable-pat-and-guard.rs	error: rust-js does not support a guard of a `|` pattern binding a name at another place in each alternative yet
-or-patterns/search-via-bindings.rs	error: rust-js does not support a guard of a `|` pattern binding a name at another place in each alternative yet
 overloaded/fixup-deref-mut.rs	error: rust-js does not support values of type `*mut Point` yet
-overloaded/overloaded_deref_with_ref_pattern_issue15609.rs	error: rust-js does not support `ref mut` bindings to this type yet
-overloaded/overloaded_deref_with_ref_pattern.rs	error: rust-js does not support `ref mut` bindings to this type yet
-overloaded/overloaded-deref-count.rs	error: rust-js does not support assigning to this place yet
-overloaded/overloaded-index-autoderef.rs	error: rust-js does not support assigning to this place yet
-overloaded/overloaded-index.rs	error: rust-js does not support assigning to this place yet
 packed/dyn-trait.rs	error: rust-js does not support calling `std::mem::ManuallyDrop::<T>::new` yet
 packed/issue-118537-field-offset-ice.rs	error: rust-js does not support values of type `*const PackedUnsized` yet
 packed/issue-118537-field-offset.rs	error: rust-js does not support values of type `*const PackedUnsized` yet
@@ -208,20 +183,17 @@ recursion/recursive-struct-with-raw-pointer-field.rs	error: rust-js does not sup
 regions/regions-issue-21422.rs	error: rust-js does not support values of type `*const &u8` yet
 return/ret-bang.rs	error: rust-js does not support values of type `!` yet
 rfcs/rfc-1789-as-cell/from-mut.rs	error: rust-js does not support calling `std::cell::Cell::<T>::from_mut` yet
-rfcs/rfc-2005-default-binding-mode/general.rs	error: rust-js does not support `&mut` to a `&mut std::option::Option<i32>` yet
 rfcs/rfc-2091-track-caller/file-is-nul-terminated.rs	error: rust-js does not support values of type `(*const str) is !null` yet
 rfcs/rfc-2091-track-caller/track-caller-ffi.rs	error: rust-js does not support an `extern` declaration of this crate's own `#[no_mangle]` function yet
 rfcs/rfc-2091-track-caller/tracked-trait-impls.rs	error: rust-js does not support values of type `(*const str) is !null` yet
 rfcs/rfc-2091-track-caller/tracked-trait-obj.rs	error: rust-js does not support values of type `(*const str) is !null` yet
 rfcs/rfc-3348-c-string-literals/basic.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
 rfcs/rfc-3348-c-string-literals/non-ascii.rs	error: rust-js does not support calling `std::ffi::CStr::to_bytes_with_nul` yet
-self/self-in-mut-slot-default-method.rs	error: rust-js does not support `&mut` to a `Self` yet
 statics/issue-17718-static-unsafe-interior.rs	error: rust-js does not support statics of type `MyUnsafePack<isize>` yet
 statics/static-function-pointer.rs	error: rust-js does not support statics of type `fn(isize) -> isize` yet
 statics/static-lazy-init-with-arena-set.rs	error: rust-js does not support statics of type `*const ArenaSet<std::vec::Vec<u8>>` yet
 statics/static-recursive.rs	error: rust-js does not support statics of type `*const u8` yet
 stdlib-unit-tests/raw-fat-ptr.rs	error: rust-js does not support values of type `*const [u8]` yet
-str/char-escape-unicode.rs	error: rust-js does not support iterating over `std::char::EscapeUnicode` yet
 structs-enums/align-struct.rs	error: rust-js does not support this expression yet
 structs-enums/enum-alignment.rs	error: rust-js does not support this expression yet
 structs-enums/enum-non-c-like-repr-c-and-int.rs	error: rust-js does not support calling `std::mem::zeroed` yet

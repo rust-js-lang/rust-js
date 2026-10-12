@@ -119,4 +119,12 @@ export const mutations: Mutation[] = [
     replace: "(HashMap::new(), HashSet::new());",
     tests: ["test/modules.test.ts","-t","thread-local only read and set"],
   },
+  {
+    name: "mir-evaluated-body-lost",
+    breaks: "a \`const fn\` a pattern's constant evaluates has no MIR, refused",
+    file: "src/lower/analysis.rs",
+    find: "        body.mir = match (built.is_stolen() || promoted.is_stolen(), evaluated(body.def_id)) {\n",
+    replace: "        body.mir = match (built.is_stolen() || promoted.is_stolen(), false) {\n",
+    tests: ["test/corpus.test.ts", "-t", "const_fn_in_patterns"],
+  },
 ];

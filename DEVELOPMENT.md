@@ -65,7 +65,7 @@ the last finished run, the cancelled one's changes too.
 | The new test, seen to fail, then pass | yes, on the Mac: it's the point | in the suite | in the suite |
 | Its module's focused tests, `bun test test/<file>.test.ts -t <name>` | yes, on the Mac | in the suite | in the suite |
 | The new mutations, `bun scripts/mutations.ts <name>` | yes, on the Mac | the changed ones | all of them, on 8 machines |
-| `bun run check:fast`: lint, the MIR corpus, the suites that check MIR's JS as THIR's, THIR's other suites a change touches, its new mutations, at once | yes, before each commit | | |
+| `bun run check:fast`: lint, the corpus, the lowering, compiler and bindings suites, the snapshots, JSX and diagnostics a change touches, its new mutations, at once | yes, before each commit | | |
 | `bun run ci:status`: main's latest run | yes, before each commit: a red one is fixed first | | |
 | Reading the generated JS and snapshot diffs | yes | the bless patch, read before it's committed | |
 | `bun run typecheck`, `fmt:check`, clippy, `cargo test` | | **lint** job | |
@@ -75,7 +75,7 @@ the last finished run, the cancelled one's changes too.
 | The Vite example's build | | **examples** job | |
 | Generated programs (fuzz) | | | yes |
 | Release qualification | | | yes |
-| react.dev port: MIR's JS against THIR's, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
+| react.dev port: its JS against what it committed, `bun run port measure`; its build's 823 pages, `bun run port compare` | yes: the port is private | | |
 
 Every local run is five minutes at most
 ([AGENTS.md](AGENTS.md#five-minutes-per-local-command)); what may take
@@ -140,9 +140,9 @@ On the M3 Max, with the scan off:
 | One mutation | 2-5 s |
 | Eight mutations, four at a time | 11 s |
 | The react.dev port, built | 30 s |
-| `bun run check:fast`, of a change to MIR's lowering | 40 s |
-| `bun run check:fast --all`, THIR's corpus, JSX, snapshots and diagnostics too | 40 s |
-| `bun run port measure`, MIR's compile of react.dev against THIR's JS | 7 s |
+| `bun run check:fast`, of a change to the lowering | 40 s |
+| `bun run check:fast --all`, JSX, snapshots and diagnostics too | 40 s |
+| `bun run port measure`, react.dev compiled against its committed JS | 7 s |
 | `bun run port compare`, its build and 823 pages | 7–15 s |
 
 Each of them is timed as it runs, and kept, in `target/timings.jsonl`
@@ -154,7 +154,7 @@ five seconds slower:
 
 ```
 ok   check:fast bindings 26 s (usual 25 s)
-ok   check:fast MIR corpus 1/3 52 s (usual 30 s)  ⚠ slower than usual: why?
+ok   check:fast corpus 1/3 52 s (usual 30 s)  ⚠ slower than usual: why?
 ```
 
 `bun run timings` shows every step, its last time, its usual and its
@@ -164,19 +164,16 @@ next thing to look at: what made it slower, before the loop is built on it.
 What keeps them there:
 
 - **`check:fast` runs its checks at once**, each a process of its own, and
-  the two corpora in parts, a third of the cases each (`RUST_JS_CASES=i/n`,
-  test/support.ts): one after another they took four minutes. The lowering,
-  compiler and bindings tests, which check MIR's JS as THIR's, always run;
-  THIR's corpus, JSX, snapshot and diagnostic tests where the change touches
-  what THIR reads, any of `src/` but MIR's own lowering, or the runtime; the
-  mutations, those the change adds or changes; CI runs the rest. Each job
+  the corpus in parts, a third of the cases each (`RUST_JS_CASES=i/n`,
+  test/support.ts): one after another they took four minutes. The corpus,
+  lowering, compiler and bindings tests always run; the JSX tests where the
+  change touches JSX, the snapshot and diagnostic tests where it touches
+  `src/` or the runtime; the mutations, those the change adds or changes;
+  CI runs the rest. Each job
   is given the compiler it built, `RUST_JS_COMPILER`: one that builds its
   own links it again, and races the others.
-- **`bun run port measure`** fails when MIR's compile of the port does: a
-  module that fails keeps its JS from before, which reads as no difference.
-- **`bun scripts/mirDiff.ts <file.rs>`** compiles a program from THIR and
-  from MIR and shows how their JS differs, for MIR's lowering to make it
-  none (ADR 0364).
+- **`bun run port measure`** fails when the port's compile does: a module
+  that fails keeps its JS from before, which reads as no difference.
 
 - **The react, webapi and js crates' metadata** is built only when their
   sources, build scripts or the toolchain change: a stamp beside it,

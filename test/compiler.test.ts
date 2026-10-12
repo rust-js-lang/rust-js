@@ -335,7 +335,7 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("source.instance.exports.add(1, 2) === 3");
   expect(js).toContain("export async function sum(a, b) {\n  return ((await double(a)) + (await double(b))) >>> 0;\n}");
   // Parameters are the body's variables: no `let x = x`.
-  expect(js).toContain("export async function countdown(n) {\n  let n$1 = n;\n  let steps = 0;");
+  expect(js).toContain("export async function countdown(n) {\n  let steps = 0;");
   // What's taken apart is taken apart where it's given, as a plain `fn` takes it.
   expect(js).toContain("export async function swap([a, b]) {\n  return [await setTimeout(0, b), a];");
   expect(js).toContain("export async function given({ params }) {\n");

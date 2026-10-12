@@ -5794,6 +5794,32 @@ pub fn shown(p: &P, b: &Bag, m: &Mark) -> String {
   expect(lib.shown({ x: 1 }, [[2, 3]], [true])).toBe("P { x: 1 } [0, 2, 3] yes y n");
 });
 
+// Two loops of ranges a call ends, each end held: two names, as two
+// `const end`s of one block are no JS (the fuzz's seed 2).
+test("two loops each hold their range's end by a name of their own", async () => {
+  const dir = fixture("held-ends");
+  writeFileSync(join(dir, "lib.rs"), `fn id<T>(x: T) -> T {
+    x
+}
+
+pub fn counts() -> u32 {
+    let mut n = 0;
+    for k in 0..id(1u32) {
+        n += k + 1;
+    }
+    for k in 0..id(2u32) {
+        n += k + 10;
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js.match(/const end =/g)?.length).toBe(1);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.counts()).toBe(22);
+});
+
 // A `Copy` value a function gives, a variable of its own: handed over, as
 // nothing reads it after, uncopied; a copy where what it was read from goes on.
 test("a variable a function gives is handed over uncopied", async () => {

@@ -240,6 +240,9 @@ struct State<'m, 'tcx> {
     /// the one its `Formatter` made, and what that's been given.
     builders: HashMap<Local, Local>,
     built: HashMap<Local, Built<'tcx>>,
+    /// Each variable a `let` binds: where the `let` is written, which its
+    /// declaration maps to, as THIR's did.
+    let_spans: HashMap<Local, js::Span>,
 }
 
 /// A `Debug` builder's kind, `"DebugStruct"` say, its type's name, and
@@ -347,6 +350,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out = body;
             // Its parameters as its body takes them apart, `{ params }`.
             tidy::destructured_params(&mut params, &mut out);
+            tidy::copied_params(&params, &mut out);
         }
         // The functions written in its body, each declared before what's
         // written after it, as THIR's (ADR 0308); a closure's in its own,
@@ -456,7 +460,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             writer: None,
             builders: Default::default(),
             built: Default::default(),
+            let_spans: Default::default(),
         };
+        let lets: Vec<(Span, Span)> = (self.thir.stmts.iter())
+            .filter_map(|s| match &s.kind {
+                thir::StmtKind::Let { pattern, span, .. } => Some((pattern.span, *span)),
+                _ => None,
+            })
+            .collect();
+        for info in &mir_body.var_debug_info {
+            if let mir::VarDebugInfoContents::Place(place) = info.value
+                && place.projection.is_empty()
+                && let Some((_, at)) = lets.iter().find(|(pattern, _)| pattern.contains(info.source_info.span))
+            {
+                state.let_spans.insert(place.local, self.js_span(*at));
+            }
+        }
         state.null_nones = self.mir_null_nones(mir_body, &state.locals);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing.
@@ -2333,7 +2352,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         // A named constant only read or lent shared, `XS.contains(&x)`'s: the
         // one there is, uncopied, as THIR's, as nothing changes it.
+        // Not what the function gives, which its caller may change.
         if place.projection.is_empty()
+            && place.local != mir::RETURN_PLACE
             && let Rvalue::Use(Operand::Constant(c), _) = rvalue
             && let Const::Unevaluated(uv, _) = c.const_
             && uv.promoted.is_none()
@@ -2353,12 +2374,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.locals.writes[place.local] == 1
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && target.projection.is_empty()
-            && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
-            && !self.is_cell_pointee(*pointee)
+            && let ty::Ref(_, _, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
         {
             let list = self.mir_place(state, *target, span, out)?;
             if matches!(list.kind, js::ExprKind::Var(_)) {
                 state.refs.insert(place.local, list);
+                return Ok(());
+            }
+        }
+        // And to a part of one that's a `&mut` itself, `ref mut x` of an
+        // `Option<&mut Foo>`'s: that part, where it's used. Of a place no
+        // index variable reads, which borrowck keeps as it is meanwhile.
+        if place.projection.is_empty()
+            && state.locals.user[place.local]
+            && state.locals.writes[place.local] == 1
+            && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
+            && !target.projection.is_empty()
+            && let ty::Ref(_, _, ty::Mutability::Mut) = *target.ty(state.body, self.tcx).ty.kind()
+        {
+            let part = self.mir_place(state, *target, span, out)?;
+            if steady_place(&part) {
+                state.refs.insert(place.local, part);
                 return Ok(());
             }
         }
@@ -2508,8 +2544,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let unread = !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local];
         if place.projection.is_empty() && (state.locals.names[local].is_empty() || unread) {
-            // Of `()`, or a temporary nothing reads: what made it runs.
-            let expr = self.value_expr(value, span)?;
+            // Of `()`, or a temporary nothing reads: what made it runs. Of
+            // a reference, `let _ = &mut p.y` through `deref_mut`: what makes
+            // its place, `deref_mut(p)`, no handle on it.
+            let expr = match value {
+                Value::Ref(mut place) => {
+                    while let js::ExprKind::Member(object, _) = place.kind {
+                        place = *object;
+                    }
+                    place
+                }
+                value => self.value_expr(value, span)?,
+            };
             if expr.has_effects() {
                 self.flush(state, out)?;
                 out.push(StmtKind::Expr(expr).at(self.js_span(span)));
@@ -2652,6 +2698,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A part borrowed mutably, `ref mut n` of an `Option<i32>`, may be
             // the variable itself in JS, written through the borrow: a `let`,
             // which tidy makes a `const` where nothing assigns it.
+            let js_span = state.let_spans.get(&local).copied().unwrap_or(js_span);
             out.push(
                 match state.locals.borrowed[local] {
                     true => StmtKind::Let(name, Some(expr)),
@@ -3095,6 +3142,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (false, _) => range.push(Expr::int(to.into())),
                 }
                 Expr::call(Expr::member(base, "slice"), range)
+            }
+            // Of an array made here, `let [_, x @ .., _] = [a, b, c, d]`: it held
+            // first, then read so.
+            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } => {
+                self.flush(state, out)?;
+                let held = self.spill("items", base, out);
+                return self.project_mir(state, held, ty, elem, span, out);
             }
             _ => return Err(self.unsupported(span, "this place, from its MIR")),
         })
@@ -7332,6 +7386,20 @@ fn str_part_of(place: &Expr) -> Option<(Expr, Vec<Expr>)> {
 fn inlined(body: &mir::Body<'_>, local: Local) -> bool {
     let scope = &body.source_scopes[body.local_decls[local].source_info.scope];
     scope.inlined.is_some() || scope.inlined_parent_scope.is_some()
+}
+
+/// A place whose parts are names and constant indexes: what it is stays
+/// put while what it's of is borrowed, as no variable an index reads may
+/// change it meanwhile.
+fn steady_place(place: &Expr) -> bool {
+    match &place.kind {
+        js::ExprKind::Var(_) => true,
+        js::ExprKind::Member(object, _) => steady_place(object),
+        js::ExprKind::Index(object, index) => steady_place(object) && index.is_constant(),
+        // An `Option`'s boxed `Some`'s value, `$someValue(o)`, read where it's used.
+        js::ExprKind::Call(..) => super::std_types::option::some_value_of(place).is_some_and(steady_place),
+        _ => false,
+    }
 }
 
 fn fixed_place(place: &Expr) -> bool {

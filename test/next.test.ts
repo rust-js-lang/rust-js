@@ -923,7 +923,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   expect(linkedJsx).toContain("const { slug } = useParams();");
   expect(linkedJsx).toContain('router.push("/about", { scroll: false })');
   expect(linkedJsx).toContain("<button key={router.bfcacheId} onClick={() => router.push(");
-  expect(readFileSync(join(dir, "app/actions.js"), "utf8")).toContain('  if (forbidden$1) {\n    forbidden();\n  }\n  redirect("/", "replace");');
+  expect(readFileSync(join(dir, "app/actions.js"), "utf8")).toContain('  if (forbidden$1) {\n    forbidden();\n  } else {\n    redirect("/", "replace");\n  }');
   // next/headers: the request's route is dynamic, rendered as it's asked.
   expect(output).toContain("ƒ /request");
   const requestJsx = readFileSync(join(dir, "app/request/page.jsx"), "utf8");

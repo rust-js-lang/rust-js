@@ -1,12 +1,11 @@
 // The react.dev port, a Rust app beside this checkout (`../rust-js-react.dev`,
-// or `$RUST_JS_PORT`), compiled from MIR (ADR 0364) and read against the JS
-// THIR's lowering wrote, which it commits:
+// or `$RUST_JS_PORT`), compiled and read against the JS it commits:
 //
-//   bun run port measure [--keep]  how much of its JS MIR writes otherwise
+//   bun run port measure [--keep]  how much of its JS is written otherwise now
 //   bun run port compare           its build's 823 pages against the reference
 //
 // Each starts from the JS as committed and puts it back after, `--keep`
-// leaving MIR's to read. A compile that fails stops it: what failed to
+// leaving the new to read. A compile that fails stops it: what failed to
 // compile keeps the JS before, which would read as no difference.
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";

@@ -781,9 +781,7 @@ export const mutations: Mutation[] = [
     "find": "                    && matches!(none.kind, ExprKind::Undefined)\n                {\n                    let test = match is_boolean(test, booleans) {",
     "replace": "                    && false\n                {\n                    let test = match is_boolean(test, booleans) {",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -901,9 +899,7 @@ export const mutations: Mutation[] = [
     "find": "                    (true, true) => Some(target),\n",
     "replace": "                    (true, true) => None,\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -985,9 +981,7 @@ export const mutations: Mutation[] = [
     "find": "            matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v))\n",
     "replace": "            false\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -997,9 +991,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Symbol(_) => true,\n        ExprKind::Arrow(..)",
     "replace": "        ExprKind::Arrow(..)",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1008,7 +1000,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        let past = |at: usize| {\n",
     "replace": "        let past = |at: usize| (!acts || at == 0) && {\n",
-    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
+    "tests": ["test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-passed-on-unread",
@@ -1029,9 +1021,7 @@ export const mutations: Mutation[] = [
     "find": "    js::each_expr_mut(body, &mut spread_spreads);\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1149,9 +1139,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Jsx(_) => inert_element(e, set),\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1173,9 +1161,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1185,9 +1171,7 @@ export const mutations: Mutation[] = [
     "find": "    js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1197,9 +1181,7 @@ export const mutations: Mutation[] = [
     "find": "            if guard.is_some_and(|g| same_test(a, g))",
     "replace": "            if false && guard.is_some_and(|g| same_test(a, g))",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1221,9 +1203,7 @@ export const mutations: Mutation[] = [
     "find": "    let (a, b) = (truth(a), truth(b));\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1233,9 +1213,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| tuple_reads(stmts, &changing, captured));\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1257,9 +1235,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1268,7 +1244,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,\n        ExprKind::Member(of, _) => {\n",
     "replace": "        ExprKind::Member(of, _) => {\n",
-    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
+    "tests": ["test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-choice-blocks",
@@ -1276,7 +1252,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "        ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),\n",
     "replace": "",
-    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
+    "tests": ["test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-lets-block",
@@ -1284,7 +1260,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    let set = closures_set(body);\n",
     "replace": "    let set = changed.clone();\n",
-    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
+    "tests": ["test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-returned-consts-kept",
@@ -1300,7 +1276,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "                    && concise.contains(&value.span)\n",
     "replace": "                    && false\n",
-    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
+    "tests": ["test/jsx.test.ts"]
   },
   {
     "name": "mir-tidy-bool-call-unknown",
@@ -1317,9 +1293,7 @@ export const mutations: Mutation[] = [
     "find": "unchanged_by_calls || !e.has_effects()",
     "replace": "!e.has_effects()",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1329,9 +1303,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Cond(a, b, c) => [a, b, c].iter().all(|e| inert_element(e, changing)),\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1425,9 +1397,7 @@ export const mutations: Mutation[] = [
     "find": "                if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
     "replace": "                if false {",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1461,9 +1431,7 @@ export const mutations: Mutation[] = [
     "find": "                        false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),",
     "replace": "                        false => continue,",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1473,9 +1441,7 @@ export const mutations: Mutation[] = [
     "find": "                || (unchanged_by_calls && reads.iter().all(|v| !assigns(&rest[..at], v)))\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1485,9 +1451,7 @@ export const mutations: Mutation[] = [
     "find": "                        (Some(prop), _) => prop.clone(),\n",
     "replace": "                        (Some(_), _) => \"value\".to_string(),\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1497,9 +1461,7 @@ export const mutations: Mutation[] = [
     "find": "                && let Some(found) = leads(key, name, guard, passes)\n",
     "replace": "                && false\n                && let Some(found) = leads(key, name, guard, passes)\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1521,9 +1483,7 @@ export const mutations: Mutation[] = [
     "find": "if !is_temporary(a) && (captured.contains(&b) || is_temporary(&b)) {",
     "replace": "if !is_temporary(a) && captured.contains(&b) {",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1533,9 +1493,7 @@ export const mutations: Mutation[] = [
     "find": "        ExprKind::Jsx(_) => levels(e) <= 2,\n",
     "replace": "        ExprKind::Jsx(_) => false,\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1545,9 +1503,7 @@ export const mutations: Mutation[] = [
     "find": "    // what it's given to reads it in place.\n    js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));\n",
     "replace": "    // what it's given to reads it in place.\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1557,9 +1513,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut |stmts| plain_reads(stmts, plain, captured));\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1569,9 +1523,7 @@ export const mutations: Mutation[] = [
     "find": "    js::statement_lists(body, &mut rest_parts);\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1581,9 +1533,7 @@ export const mutations: Mutation[] = [
     "find": "            !reads\n",
     "replace": "            true\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -2149,5 +2099,21 @@ export const mutations: Mutation[] = [
     find: "StmtKind::If(_, then, Some(els)) if returned && let Some(back) = next => {",
     replace: "StmtKind::If(_, then, Some(els)) if false && let Some(back) = next => {",
     tests: ["test/lowering.test.ts","-t","a writer's Debug builder from its MIR is the string its chain writes"],
+  },
+  {
+    name: "mir-tidy-loop-names-retaken",
+    breaks: "MIR's two loops each holding a range's end both name it `end`, two `const end`s of one block",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    *mentions.entry(name.clone()).or_default() += 1;\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "two loops each hold their range's end"],
+  },
+  {
+    name: "mir-tidy-async-param-copied",
+    breaks: "MIR's `async fn` copies its parameter where its body starts, `let n$1 = n`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        && js::mentions_in(body, param) == 1\n",
+    replace: "        && false\n",
+    tests: ["test/compiler.test.ts", "-t", "async code becomes async functions and await"],
   },
 ];

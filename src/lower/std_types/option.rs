@@ -437,6 +437,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
+/// What `$someValue(option)` reads, of an `Option` of a generic `T`.
+pub(in crate::lower) fn some_value_of(e: &Expr) -> Option<&Expr> {
+    match &e.kind {
+        js::ExprKind::Call(callee, args) if matches!(&callee.kind, js::ExprKind::Var(f) if f == "$someValue") => {
+            match args.as_slice() {
+                [option] => Some(option),
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
 /// `Some` of a constant, as `$some` makes it (ADR 0051): itself, or a box
 /// where it looks like `None`, `{ $someNone: 0 }`, one deeper for a box.
 pub(in crate::lower) fn some_literal(inner: Expr) -> Expr {

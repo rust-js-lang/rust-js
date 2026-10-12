@@ -25,10 +25,10 @@ test("React components are hand-written JSX, and React runs them", () => {
   const todos = js.slice(js.indexOf("export function Todos()"), js.indexOf("export function Clock()"));
   expect(todos).not.toMatch(/const\s+\S+\s*=\s*\(?\s*</);
   expect(todos).toMatch(/<Card title="Todos">\s*<>\s*<input/);
-  expect(todos).toContain("<ul>{items}</ul>");
+  expect(todos).toContain("<ul>{children}</ul>");
   // A list, with its keys.
   expect(js).toContain("<li\n      key={t.id}\n      className={t.done ? \"done\" : \"\"}\n      onClick={() => dispatch({ TAG: \"Toggle\", _0: t.id })}\n    >\n      {t.text}\n    </li>");
-  expect(js).toContain("<ul>{items}</ul>");
+  expect(js).toContain("<ul>{children}</ul>");
   // `Option::map` to an element: the element, or nothing.
   expect(js).toContain('{t && <p className="latest">{t.text}</p>}');
   // `()` as an effect's dependencies is `[]`, and its cleanup is a function it returns.

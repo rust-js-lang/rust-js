@@ -17,10 +17,9 @@ export async function twice(n) {
 }
 
 export async function countdown(n) {
-  let n$1 = n;
   let steps = 0;
-  while (n$1 > 0) {
-    n$1 = await setTimeout(0, (n$1 - 1) >>> 0);
+  while (n > 0) {
+    n = await setTimeout(0, (n - 1) >>> 0);
     steps = (steps + 1) >>> 0;
   }
   return steps;

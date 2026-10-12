@@ -240,7 +240,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                stable &= !state.borrowed_names.contains(name) && state.own_names.contains(name);\n",
     replace: "                stable &= !state.borrowed_names.contains(name);\n",
-    tests: ["test/corpus.test.ts", "-t", "JSX tests|atomics|operands_before_replace"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-shared-temporary-a-place",
@@ -480,7 +480,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
     replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
-    tests: ["test/corpus.test.ts","-t","JSX tests|matrix_floats"],
+    tests: ["test/jsx.test.ts"],
   },
   {
     name: "mir-object-copied-back-rebound",
@@ -1365,9 +1365,7 @@ export const mutations: Mutation[] = [
     "find": "            while let thir::PatKind::Deref { subpattern, .. } = &pattern.kind {\n                pattern = subpattern;\n            }\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1377,9 +1375,7 @@ export const mutations: Mutation[] = [
     "find": "                    | Rvalue::Ref(_, BorrowKind::Shared, from),\n",
     "replace": ",\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1389,9 +1385,7 @@ export const mutations: Mutation[] = [
     "find": "                && derefs.iter().all(|p| matches!(p, PlaceElem::Deref))\n",
     "replace": "                && derefs.is_empty()\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1437,9 +1431,7 @@ export const mutations: Mutation[] = [
     "find": "            js::ExprKind::Member(..) if context_member => true,\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1509,9 +1501,7 @@ export const mutations: Mutation[] = [
     "find": "                        StmtKind::Let(name, None) => {\n",
     "replace": "                        StmtKind::Let(name, None) if false => {\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1521,9 +1511,7 @@ export const mutations: Mutation[] = [
     "find": "                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1533,9 +1521,7 @@ export const mutations: Mutation[] = [
     "find": "                .flat_map(|imports| imports.values().cloned()),\n",
     "replace": "                .flat_map(|imports| imports.values().cloned())\n                .filter(|_| false),\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1564,7 +1550,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "        let concise = self.closure_calls_for_nothing(body);\n",
     "replace": "        let concise = false;\n",
-    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
+    "tests": ["test/jsx.test.ts"]
   },
   {
     "name": "mir-call-paths-unrecorded",
@@ -1580,7 +1566,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir.rs",
     "find": "                    self.locals.paths.entry(path).or_insert(true);\n",
     "replace": "",
-    "tests": ["test/corpus.test.ts", "-t", "JSX tests"]
+    "tests": ["test/jsx.test.ts"]
   },
   {
     "name": "mir-written-fn-in-closure-at-top",
@@ -1685,9 +1671,7 @@ export const mutations: Mutation[] = [
     "find": "if called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
     "replace": "if false && called.iter().any(|s| matches!(s.kind, StmtKind::Assign(..))) && !state.pending.is_empty() {",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1697,9 +1681,7 @@ export const mutations: Mutation[] = [
     "find": "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1709,9 +1691,7 @@ export const mutations: Mutation[] = [
     "find": "            && let Some(fields) = self.default_base_at(span)?\n",
     "replace": "            && false\n            && let Some(fields) = self.default_base_at(span)?\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1733,9 +1713,7 @@ export const mutations: Mutation[] = [
     "find": "if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
     "replace": "if false && !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1745,9 +1723,7 @@ export const mutations: Mutation[] = [
     "find": "            self.locals.plain.extend(fields);\n",
     "replace": "            drop(fields);\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1757,9 +1733,7 @@ export const mutations: Mutation[] = [
     "find": "            let through_mut = matches!(\n",
     "replace": "            let through_mut = false && matches!(\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1769,9 +1743,7 @@ export const mutations: Mutation[] = [
     "find": "            if self.has_drops(pat.ty) && !self.binds_dropped_fields(pat) {",
     "replace": "            if self.has_drops(pat.ty) {",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1781,9 +1753,7 @@ export const mutations: Mutation[] = [
     "find": "            let drops = 2 * dropped.iter().filter(|&&local| local == arg).count();",
     "replace": "            let drops = 0 * dropped.iter().filter(|&&local| local == arg).count();",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1793,9 +1763,7 @@ export const mutations: Mutation[] = [
     "find": "            PlaceElem::Field(_, field_ty) if bindings::is_rest(self.tcx, field_ty) => {",
     "replace": "            PlaceElem::Field(_, field_ty) if false && bindings::is_rest(self.tcx, field_ty) => {",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1805,9 +1773,7 @@ export const mutations: Mutation[] = [
     "find": "            .filter(|&(i, _)| !bindings::is_rest_field(tcx, ty, i))\n",
     "replace": "            .filter(|&(i, _)| false && !bindings::is_rest_field(tcx, ty, i))\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1817,9 +1783,7 @@ export const mutations: Mutation[] = [
     "find": "        if state.binding_var\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
     "replace": "        if false\n            && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -1997,9 +1961,7 @@ export const mutations: Mutation[] = [
     "find": "                || state.locals.writes[local] > 1 && !(state.locals.user[local] && once_each_way(mir_body, local))\n",
     "replace": "                || state.locals.writes[local] > 1\n",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -3105,5 +3067,53 @@ export const mutations: Mutation[] = [
     find: "        out.splice(0..0, self.directives(body.def_id));\n",
     replace: "        out.splice(0..0, Vec::new());\n",
     tests: ["test/modules.test.ts","-t","in a body is the body"],
+  },
+  {
+    name: "mir-constant-returned-shared",
+    breaks: "MIR's named constant a function gives is the constant itself, which its caller changes",
+    file: "src/lower/mir.rs",
+    find: "            && place.local != mir::RETURN_PLACE\n            && let Rvalue::Use(Operand::Constant(c), _) = rvalue\n",
+    replace: "            && let Rvalue::Use(Operand::Constant(c), _) = rvalue\n",
+    tests: ["test/corpus.test.ts", "-t", "const_returned_copied"],
+  },
+  {
+    name: "mir-ref-mut-payload-refused",
+    breaks: "MIR refuses \`ref mut x\` of an \`Option<&mut T>\`'s payload, a \`&mut &mut T\`",
+    file: "src/lower/mir.rs",
+    find: "            if steady_place(&part) {\n",
+    replace: "            if false && steady_place(&part) {\n",
+    tests: ["test/corpus.test.ts", "-t", "ref_mut_of_mut_payload"],
+  },
+  {
+    name: "mir-some-value-unsteady",
+    breaks: "MIR refuses \`ref mut x\` of a boxed \`Some\`'s payload, \`$someValue(o)\`",
+    file: "src/lower/mir.rs",
+    find: "        js::ExprKind::Call(..) => super::std_types::option::some_value_of(place).is_some_and(steady_place),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "ref_mut_of_mut_payload"],
+  },
+  {
+    name: "mir-mut-ref-of-cell-ref-refused",
+    breaks: "MIR refuses a \`&mut\` to a variable that's a \`&mut String\`, \`&mut &mut String\`",
+    file: "src/lower/mir.rs",
+    find: "            && let ty::Ref(_, _, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()\n",
+    replace: "            && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()\n            && !self.is_cell_pointee(*pointee)\n",
+    tests: ["test/corpus.test.ts", "-t", "mut_ref_of_mut_ref"],
+  },
+  {
+    name: "mir-unread-ref-handled",
+    breaks: "MIR's \`&mut\` nothing reads, \`let _ = &mut p.y\` through \`deref_mut\`, refused as a handle on a call's place",
+    file: "src/lower/mir.rs",
+    find: "                Value::Ref(mut place) => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
+    replace: "                Value::Ref(mut place) if false => {\n                    while let js::ExprKind::Member(object, _) = place.kind {\n",
+    tests: ["test/corpus.test.ts", "-t", "unread_mut_through_deref"],
+  },
+  {
+    name: "mir-made-array-unsliced",
+    breaks: "MIR refuses a slice pattern's rest of an array made where it's taken apart",
+    file: "src/lower/mir.rs",
+    find: "            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } => {\n",
+    replace: "            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } if false => {\n",
+    tests: ["test/corpus.test.ts", "-t", "slice_pattern_of_made_array"],
   },
 ];

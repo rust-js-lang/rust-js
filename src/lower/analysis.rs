@@ -106,10 +106,21 @@ pub fn collect_bodies(tcx: TyCtxt<'_>) -> Vec<Body<'_>> {
 }
 
 /// Each body's MIR, as borrowck reads it (ADR 0364), read once every
-/// body's THIR is copied: building MIR steals a body's THIR. One whose MIR
-/// is gone already, a constant's evaluated in type checking, keeps none.
+/// body's THIR is copied: building MIR steals a body's THIR. What rustc may
+/// evaluate first, a constant's or a `const fn`'s: one another body's MIR
+/// evaluates, a constant its patterns test, takes that body's MIR, which
+/// rustc keeps then only as it evaluates it, its MIR for evaluation.
 pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
-    for body in bodies {
+    let evaluated = |def_id: LocalDefId| {
+        matches!(
+            tcx.def_kind(def_id),
+            DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::Static { .. } | DefKind::AnonConst
+        ) || tcx.is_const_fn(def_id.to_def_id())
+    };
+    let mut order: Vec<usize> = (0..bodies.len()).collect();
+    order.sort_by_key(|&i| !evaluated(bodies[i].def_id));
+    for i in order {
+        let body = &mut bodies[i];
         if !matches!(
             tcx.def_kind(body.def_id),
             DefKind::Fn
@@ -123,14 +134,22 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
             continue;
         }
         let (built, promoted) = tcx.mir_promoted(body.def_id);
-        if built.is_stolen() || promoted.is_stolen() {
-            continue;
-        }
-        body.mir = Some(super::mir::Mir::new(
-            tcx,
-            built.borrow().clone(),
-            promoted.borrow().clone(),
-        ));
+        body.mir = match (built.is_stolen() || promoted.is_stolen(), evaluated(body.def_id)) {
+            (false, _) => Some(super::mir::Mir::new(
+                tcx,
+                built.borrow().clone(),
+                promoted.borrow().clone(),
+            )),
+            (true, true) => {
+                let def_id = body.def_id.to_def_id();
+                Some(super::mir::Mir::new(
+                    tcx,
+                    tcx.mir_for_ctfe(def_id).clone(),
+                    tcx.promoted_mir(def_id).clone(),
+                ))
+            }
+            (true, false) => None,
+        };
     }
 }
 

@@ -116,7 +116,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     // The innermost first: what a loop ends with may be another, recovered.
-    bottom_up(body, &mut |stmts| loops(stmts, &mentions));
+    let mut taken = mentions.clone();
+    bottom_up(body, &mut |stmts| loops(stmts, &mut taken));
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
@@ -345,10 +346,17 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
 /// reads the iterator, and only its end leaves the loop. MIR's other shape,
 /// `if (t != null) { const x = t; body } exit`, is `for (const x of xs) {
 /// body; break; } exit`, its body going on to the exit where it ends.
-fn loops(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
+fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
         if let Some(made) = for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], mentions) {
+            // What it names, its loop's `end` held say, taken: another
+            // loop's is another name.
+            for stmt in &made {
+                if let StmtKind::Const(name, _) | StmtKind::For { name, .. } = &stmt.kind {
+                    *mentions.entry(name.clone()).or_default() += 1;
+                }
+            }
             stmts.splice(i..i + 2, made);
         }
         i += 1;
@@ -5595,5 +5603,31 @@ fn never_taken(stmts: &mut Vec<Stmt>) {
             continue;
         }
         i += 1;
+    }
+}
+
+/// A parameter an `async fn`'s body copies where it starts and reads nowhere
+/// else, `const forbidden$2 = forbidden$1`: the copy, of the parameter's own
+/// name, is the parameter, as JS's parameters are variables the body may
+/// set. Not a variable the program names otherwise, `let mut n = from`.
+pub(super) fn copied_params(params: &[js::Pattern], body: &mut Vec<Stmt>) {
+    let names: Vec<&str> = params.iter().flat_map(|p| p.names()).collect();
+    while let Some(first) = body.first()
+        && let StmtKind::Const(copy, value) | StmtKind::Let(copy, Some(value)) = &first.kind
+        && let ExprKind::Var(param) = &value.kind
+        && names.contains(&param.as_str())
+        && !names.contains(&copy.as_str())
+        && copy.split('$').next() == param.split('$').next()
+        && js::mentions_in(body, param) == 1
+    {
+        let (copy, param) = (copy.clone(), param.clone());
+        body.remove(0);
+        js::each_expr_mut(body, &mut |e| {
+            if let ExprKind::Var(v) = &mut e.kind
+                && *v == copy
+            {
+                *v = param.clone();
+            }
+        });
     }
 }

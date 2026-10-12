@@ -505,9 +505,7 @@ export const mutations: Mutation[] = [
     "find": "                        value.span = self.js_span(self.thir[f.expr].span);\n",
     "replace": "",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
   {
@@ -517,9 +515,7 @@ export const mutations: Mutation[] = [
     "find": "let mut value = value.or_at(self.js_span(value_span));",
     "replace": "let mut value = value;",
     "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "JSX tests"
+      "test/jsx.test.ts"
     ]
   },
 ];
