@@ -174,6 +174,7 @@ kept_generic_iterators.rs
 labeled_blocks.rs
 lazy_cell_reentrant.rs
 lazy_cells.rs
+lazy_chains.rs
 lazy_effects.rs
 leak.rs
 leaked_string_written.rs
@@ -209,6 +210,7 @@ mut_ref_temporary.rs
 mut_ref_to_ref.rs
 nested_element_writes.rs
 nested_generic_types.rs
+nested_options.rs
 nested_type_chain.rs
 next_back_generic.rs
 next_back_lazy.rs

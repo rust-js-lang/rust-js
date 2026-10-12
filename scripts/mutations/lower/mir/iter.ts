@@ -490,4 +490,12 @@ export const mutations: Mutation[] = [
       "heap_peek_mut"
     ]
   },
+  {
+    name: "mir-find-boxed-unboxed",
+    breaks: "MIR's `find` of what looks like `None` gives it unboxed, `None` where it found `Some(None)`",
+    file: "src/lower/mir/iter.rs",
+    find: "                    true => self.helper(Helper::NextSome, \"$nextSome\", vec![method(\"filter\", it, vec![test])]),\n",
+    replace: "                    true => method(\"find\", it, vec![test]),\n",
+    tests: ["test/mir.test.ts", "-t", "lazy_chains"],
+  },
 ];

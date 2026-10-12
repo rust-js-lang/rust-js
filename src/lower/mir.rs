@@ -4468,7 +4468,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     v => self.value_expr(v, span),
                 })
                 .collect::<R<Vec<_>>>()?;
-            if let Some(call) = self.mir_iter_call(def_id, &arg_tys, exprs, output, span)? {
+            let mut made = Vec::new();
+            if let Some(call) = self.mir_iter_call(def_id, &arg_tys, exprs, output, span, &mut made)? {
+                // What it holds first, `last()`'s items: after what's made before.
+                if !made.is_empty() {
+                    self.flush(state, out)?;
+                    out.extend(made);
+                }
                 return Ok(Value::Expr(call));
             }
         }

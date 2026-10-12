@@ -2638,4 +2638,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/mir.test.ts", "-t", "rc_counted_uses"],
   },
+  {
+    name: "mir-iter-made-dropped",
+    breaks: "MIR's `last()` of what looks like `None` reads items it never holds",
+    file: "src/lower/mir.rs",
+    find: "                    out.extend(made);\n",
+    replace: "",
+    tests: ["test/mir.test.ts", "-t", "nested_options"],
+  },
 ];

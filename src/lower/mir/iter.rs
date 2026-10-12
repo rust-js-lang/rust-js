@@ -11,7 +11,7 @@ use rustc_middle::ty::{self, Mutability, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use crate::js::{self, Expr, Op, StmtKind};
+use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::iterators::made_array;
 use crate::lower::recognition::{StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
@@ -30,6 +30,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         values: Vec<Expr>,
         output: Ty<'tcx>,
         span: Span,
+        made: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let tcx = self.tcx;
         let Some(trait_id) = tcx.trait_of_assoc(def_id) else {
@@ -326,11 +327,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "for_each" => method("forEach", it, vec![self.unary_callback(arg(), own)]),
             "any" => method("some", it, vec![self.unary_callback(arg(), own)]),
             "all" => method("every", it, vec![self.unary_callback(arg(), own)]),
+            // Of what looks like `None`: the first kept, boxed, THIR's.
             "find" => {
-                let found = method("find", it, vec![self.unary_callback(arg(), own)]);
+                let test = self.unary_callback(arg(), own);
                 match item.is_some_and(|item| self.boxed_payload(item)) {
-                    true => return Err(self.unsupported(span, "`find` of what looks like `None`, from its MIR")),
-                    false => found,
+                    true => self.helper(Helper::NextSome, "$nextSome", vec![method("filter", it, vec![test])]),
+                    false => method("find", it, vec![test]),
                 }
             }
             "position" => {
@@ -421,12 +423,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             "last" => {
                 let items = method("toArray", it, Vec::new());
-                let mut made = Vec::new();
-                let last = self.last_of(items, item, &mut made);
-                if !made.is_empty() {
-                    return Err(self.unsupported(span, "`last` of what looks like `None`, from its MIR"));
-                }
-                last
+                self.last_of(items, item, made)
             }
             "by_ref" => it,
             "fuse" => it,
