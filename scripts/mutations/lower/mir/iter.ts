@@ -558,4 +558,12 @@ export const mutations: Mutation[] = [
     replace: "                let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));\n",
     tests: ["test/lowering.test.ts","-t","a fold given a function of the crate's"],
   },
+  {
+    name: "mir-rev-of-counted-refused",
+    breaks: "MIR's `rev` of an array's items skipped and taken from is refused",
+    file: "src/lower/mir/iter.rs",
+    find: "                        None if name == \"rev\" && counted_chain(&receiver) => sliced(&receiver),\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","rev of skipped and taken"],
+  },
 ];

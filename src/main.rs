@@ -232,6 +232,12 @@ impl Callbacks for RustJs {
 }
 
 fn main() -> ExitCode {
+    // A body's MIR is lowered block by block, as deep as the function is
+    // long (ADR 0364): rustc's thread has the stack for it, unless
+    // `RUST_MIN_STACK` says otherwise, as it does to rustc.
+    if std::env::var_os("RUST_MIN_STACK").is_none() {
+        let _ = rustc_interface::util::STACK_SIZE.set(256 * 1024 * 1024);
+    }
     let args: Vec<String> = std::env::args().skip(1).collect();
     // Cargo's workspace wrapper (ADR 0101): its call, as rust-js's, or rustc's.
     let args = match cargo::translate(args) {

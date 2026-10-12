@@ -2878,4 +2878,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
   },
+  {
+    name: "mir-deque-remove-refused",
+    breaks: "MIR's `VecDeque::remove` is refused",
+    file: "src/lower/mir.rs",
+    find: "                self.helper(Helper::RemoveOpt, \"$removeOpt\", exprs)\n",
+    replace: "                return Err(self.unsupported(span, &format!(\"`remove` of {}, from its MIR\", exprs.len())));\n",
+    tests: ["test/lowering.test.ts","-t","a deque's remove"],
+  },
 ];

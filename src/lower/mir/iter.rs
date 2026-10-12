@@ -237,6 +237,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             "peekable" => return Ok(Some(receiver)),
                             _ => crate::lower::iterators::iterated(receiver),
                         },
+                        // Of such an array's skipped and taken from, the array
+                        // sliced, as THIR's: no closure runs over it.
+                        None if name == "rev" && counted_chain(&receiver) => sliced(&receiver),
                         None => match from_iterator(receiver) {
                             Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
                             Err(_) => {
@@ -697,6 +700,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// or `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
 /// Whether `e` is an array's items made there, `$iter(xs)`, skipped or taken
 /// from, `.drop(1)`, by a count that does nothing (`len()`'s).
+/// `counted_chain`'s `$iter(xs).drop(1).take(2)`: the array it steps,
+/// `xs.slice(1).slice(0, 2)`.
+fn sliced(e: &Expr) -> Expr {
+    match &e.kind {
+        js::ExprKind::Call(callee, args)
+            if let js::ExprKind::Member(source, name) = &callee.kind
+                && let [n] = &args[..] =>
+        {
+            let items = sliced(source);
+            match name.as_str() {
+                "drop" => Expr::call(Expr::member(items, "slice"), vec![n.clone()]),
+                _ => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), n.clone()]),
+            }
+        }
+        _ => crate::lower::iterators::iterated(e.clone()),
+    }
+}
+
 fn counted_chain(e: &Expr) -> bool {
     let mut at = e;
     let mut stages = 0;

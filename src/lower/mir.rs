@@ -5876,6 +5876,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = self.value_expr(values.next().expect("the float"), span)?;
                 self.cast(value, arg_tys[0], output, span)?
             }
+            // What was there, taken out, as THIR's.
+            Std::DequeRemove => {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.helper(Helper::RemoveOpt, "$removeOpt", exprs)
+            }
             Std::Number(op) => {
                 // `i32::from_str_radix(s, 16)`'s is what its `Result` holds.
                 let ty = match (op, output.kind()) {

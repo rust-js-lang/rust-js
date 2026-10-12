@@ -86,4 +86,12 @@ export const mutations: Mutation[] = [
       "Cargo builds a crate again for the other lowering"
     ]
   },
+  {
+    name: "main-stack-default",
+    breaks: "a long function's MIR overflows rustc's default stack",
+    file: "src/main.rs",
+    find: "        let _ = rustc_interface::util::STACK_SIZE.set(256 * 1024 * 1024);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","a long function"],
+  },
 ];

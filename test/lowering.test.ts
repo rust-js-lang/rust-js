@@ -5539,6 +5539,63 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
+// `rev()` of an array's items skipped and taken from, which no closure
+// runs over: the array sliced, reversed, from MIR as from THIR.
+test("rev of skipped and taken items is the slice reversed", async () => {
+  const dir = fixture("rev-counted");
+  writeFileSync(join(dir, "lib.rs"), `pub fn middle(v: &[i32]) -> Vec<i32> {
+    v.iter().skip(1).take(2).rev().copied().collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("return v.slice(1).slice(0, 2).toReversed();");
+    const lib = await import(join(dir, out));
+    expect([lib.middle([1, 2, 3, 4]), lib.middle([1, 2]), lib.middle([])]).toEqual([[3, 2], [2], []]);
+  }
+});
+
+// A long function, each call a block of its MIR: lowered block by block,
+// as deep as it's long, on a stack grown as rustc grows its own.
+test("a long function is lowered from MIR as from THIR", async () => {
+  const dir = fixture("long-function");
+  const pushes = Array.from({ length: 3000 }, (_, i) => `    v.push(n + ${i});`).join("\n");
+  writeFileSync(join(dir, "lib.rs"), `pub fn long(n: u32) -> Vec<u32> {\n    let mut v = Vec::new();\n${pushes}\n    v\n}\n`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    const items = lib.long(1);
+    expect([items.length, items[0], items[2999]]).toEqual([3000, 1, 3000]);
+  }
+});
+
+// `VecDeque::remove` is `$removeOpt`, from MIR as from THIR; of items that
+// may look like `None`, refused, as its `Some` isn't boxed.
+test("a deque's remove gives what was there", async () => {
+  const dir = fixture("deque-remove");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
+
+pub fn removed(items: Vec<u32>, at: usize) -> (Option<u32>, Vec<u32>) {
+    let mut d: VecDeque<u32> = items.into_iter().collect();
+    let removed = d.remove(at);
+    (removed, d.into_iter().collect())
+}
+`);
+  writeFileSync(join(dir, "options.rs"), `use std::collections::VecDeque;
+
+pub fn removed(mut d: VecDeque<Option<u32>>) -> Option<Option<u32>> {
+    d.remove(0)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.removed([1, 2, 3], 1), lib.removed([1], 5)]).toEqual([[2, [1, 3]], [undefined, [1]]]);
+    const refused = Bun.spawnSync([compiler, join(dir, "options.rs"), "-o", join(dir, "options.js")], { env: { ...process.env, ...env }, stderr: "pipe" });
+    expect(refused.exitCode).not.toBe(0);
+  }
+});
+
 // MIR's `rest.split_off_mut(..n)` gives `rest` what's left; through `r`,
 // which holds a `&mut` to `rest`, JS would give `r` it, so it's refused.
 test("MIR's split_off through a held `&mut` is refused", () => {
