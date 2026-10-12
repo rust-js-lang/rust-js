@@ -17,14 +17,14 @@ export function entry() {
 function main() {
   const counts = new Map();
   for (const word of ["a", "b", "a", "c", "a"]) {
-    const match = $entry(counts, word);
-    if (match.TAG === "Occupied") {
-      const seen = match._0;
-      const cell = $entryGet(seen, true);
-      cell.value = (cell.value + 1) | 0;
+    const value = $entry(counts, word);
+    if (value.TAG === "Occupied") {
+      const seen = value._0;
+      const value$1 = $entryGet(seen, true);
+      value$1.value = (value$1.value + 1) | 0;
     } else {
-      console.log(`first ${match._0[1]}`);
-      $vacantInsert(match._0, 1, true);
+      console.log(`first ${value._0[1]}`);
+      $vacantInsert(value._0, 1, true);
     }
   }
   const sorted = Array.from(counts);
@@ -40,8 +40,8 @@ function main() {
       console.log(`took ${$entryRemove(entry._0)}`);
     } else {
       const key = entry._0[1];
-      const cell = $vacantInsert(entry._0, String(key), true);
-      cell.value += "!";
+      const value = $vacantInsert(entry._0, String(key), true);
+      value.value += "!";
     }
   }
   console.log(
@@ -50,9 +50,9 @@ function main() {
       .join(", ")}}`,
   );
   const empty = new Map();
-  const v = $entry(empty, "z");
-  if (v.TAG === "Vacant") {
-    const key = v._0[1];
+  const value$1 = $entry(empty, "z");
+  if (value$1.TAG === "Vacant") {
+    const key = value$1._0[1];
     console.log(`${key} ${empty.size}`);
   }
 }

@@ -19,20 +19,21 @@ export function entry() {
 
 function main() {
   const line = "id=42; name=Zoë, age 31";
-  const arg = $findBy(line, (c) => /^[0-9]$/.test(c), false);
-  const arg$1 = $findBy(line, (c) => /^\p{N}$/u.test(c), true);
-  const arg$2 = $findBy(line, (c) => [";", ","].includes(c), false);
-  const arg$3 = $findBy(line, (c) => /^\p{White_Space}$/u.test(c), false);
+  const value = $findBy(line, (c) => /^[0-9]$/.test(c), false);
+  const value$1 = $findBy(line, (c) => /^\p{N}$/u.test(c), true);
+  const value$2 = $findBy(line, (c) => [";", ","].includes(c), false);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`} ${arg$3 == null ? "None" : `Some(${arg$3})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${((value) => (value == null ? "None" : `Some(${value})`))($findBy(line, (c) => /^\p{White_Space}$/u.test(c), false))}`,
   );
-  const arg$4 = $findBy(line, (c) => c === "ë", false);
-  const arg$5 = $findBy(line, (c) => c === "~", true);
+  const value$3 = $findBy(line, (c) => c === "ë", false);
   console.log(
-    `${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))($findBy(line, (c) => c === "~", true))}`,
   );
+  const value$4 = $startsBy(line, (c) => /^\p{Alphabetic}$/u.test(c), false);
+  const value$5 = $startsBy(line, (c) => /^[0-9]$/.test(c), true);
+  const value$6 = $startsBy("", () => true, false);
   console.log(
-    `${$startsBy(line, (c) => /^\p{Alphabetic}$/u.test(c), false)} ${$startsBy(line, (c) => /^[0-9]$/.test(c), true)} ${$startsBy("", () => true, false)} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
+    `${value$4} ${value$5} ${value$6} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
   );
   console.log(`${$startsBy("x😀", (c) => $byteLen(c) === 4, true)}`);
   const fields = $splitBy(line, (c) => [";", ","].includes(c)).map((s) => $trim(s));
@@ -57,24 +58,25 @@ function main() {
       .join(", ")}]`,
   );
   const name = "Zoë!";
-  const arg$6 = $strGet(name, 0, 2);
-  const arg$7 = $strGet(name, 2, 3);
-  const arg$8 = $strGet(name, 2, 4);
-  const arg$9 = $strGet(name, 4);
-  const arg$10 = $strGet(name, 0, 2);
+  const value$7 = $strGet(name, 0, 2);
+  const value$8 = $strGet(name, 2, 3);
+  const value$9 = $strGet(name, 2, 4);
+  const value$10 = $strGet(name, 4);
   console.log(
-    `${arg$6 == null ? "None" : `Some(${$debugStr(arg$6)})`} ${arg$7 == null ? "None" : `Some(${$debugStr(arg$7)})`} ${arg$8 == null ? "None" : `Some(${$debugStr(arg$8)})`} ${arg$9 == null ? "None" : `Some(${$debugStr(arg$9)})`} ${arg$10 == null ? "None" : `Some(${$debugStr(arg$10)})`}`,
+    `${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8)})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`} ${value$10 == null ? "None" : `Some(${$debugStr(value$10)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($strGet(name, 0, 2))}`,
   );
-  const arg$11 = name;
-  const arg$12 = $strGet(name, 3, 9);
-  const arg$13 = $strGet(name, 9);
+  const value$11 = $strGet(name, 3, 9);
   console.log(
-    `${arg$11 == null ? "None" : `Some(${$debugStr(arg$11)})`} ${arg$12 == null ? "None" : `Some(${$debugStr(arg$12)})`} ${arg$13 == null ? "None" : `Some(${$debugStr(arg$13)})`}`,
+    `${name == null ? "None" : `Some(${$debugStr(name)})`} ${value$11 == null ? "None" : `Some(${$debugStr(value$11)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($strGet(name, 9))}`,
   );
-  const edges = $range(0, 6 + 1).map((i) => $charBoundary(name, i) !== undefined);
+  const edges = $range(0, 7).map((i) => $charBoundary(name, i) !== undefined);
   console.log(`[${edges.map((item) => String(item)).join(", ")}]`);
-  console.log(`${$byteLen("a")} ${$byteLen("ë")} ${$byteLen("😀")} ${"😀".length}`);
-  console.log(`${String.fromCharCode(65)} ${String.fromCharCode(233)}`);
+  const value$12 = $byteLen("a");
+  const value$13 = $byteLen("ë");
+  const value$14 = $byteLen("😀");
+  console.log(`${value$12} ${value$13} ${value$14} ${"😀".length}`);
+  const value$15 = String.fromCharCode(65);
+  console.log(`${value$15} ${String.fromCharCode(233)}`);
   const letters = ["h", "é", "!"].join("");
   const joined = ["ab", "cd"].join("");
   console.log(`${letters} ${joined}`);

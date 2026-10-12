@@ -35,18 +35,45 @@ function main() {
   buf[$at(buf, 2)] = 7;
   console.log(`[${buf.map((item) => String(item)).join(", ")}]`);
   const src = [[1], [2]];
+  const slots = new Array(2).fill(mainConst);
+  let cloned;
   try {
-    const slots = new Array(2).fill(mainConst);
-    const cloned = $writeCloneOfSlice(slots, src, (value) => noisyClone_clone(value));
-    console.log(`${$index(cloned, 1)[0]}`);
-    for (const item of slots) {
-      noisyDrop_drop(item);
-    }
-    console.log("end");
-  } finally {
+    cloned = $writeCloneOfSlice(slots, src, (value) => noisyClone_clone(value));
+  } catch (error) {
     for (const item of src) {
       noisyDrop_drop(item);
     }
+    throw error;
+  }
+  const value = $index(cloned, 1)[0];
+  try {
+    console.log(`${value}`);
+  } catch (error) {
+    for (const item of src) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    for (const item of slots) {
+      noisyDrop_drop(item);
+    }
+  } catch (error) {
+    for (const item of src) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  try {
+    console.log("end");
+  } catch (error) {
+    for (const item of src) {
+      noisyDrop_drop(item);
+    }
+    throw error;
+  }
+  for (const item of src) {
+    noisyDrop_drop(item);
   }
 }
 //# sourceMappingURL=case.js.map

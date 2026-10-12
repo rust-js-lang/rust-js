@@ -121,12 +121,16 @@ const Flags = {
 
 function main() {
   const rw = flagsBitOr_bitor([READ[0]], [WRITE[0]]);
+  const value = flagsBitAnd_bitand([rw[0]], [WRITE[0]]);
   console.log(
-    `${flagsDebug_fmt(rw)} ${flagsDebug_fmt(flagsBitAnd_bitand([rw[0]], [WRITE[0]]))} ${flagsDebug_fmt(flagsBitXor_bitxor([rw[0]], [RUN[0]]))}`,
+    `${flagsDebug_fmt(rw)} ${flagsDebug_fmt(value)} ${flagsDebug_fmt(flagsBitXor_bitxor([rw[0]], [RUN[0]]))}`,
   );
-  console.log(`${Flags.has([rw[0]], [WRITE[0]])} ${Flags.has([rw[0]], [RUN[0]])}`);
+  const value$1 = Flags.has([rw[0]], [WRITE[0]]);
+  console.log(`${value$1} ${Flags.has([rw[0]], [RUN[0]])}`);
+  const value$2 = flagsNot_not([rw[0]]);
+  const value$3 = flagsShlU8_shl([READ[0]], 2);
   console.log(
-    `${flagsDebug_fmt(flagsNot_not([rw[0]]))} ${flagsDebug_fmt(flagsShlU8_shl([READ[0]], 2))} ${flagsDebug_fmt(flagsShrU32_shr([RUN[0]], 1))}`,
+    `${flagsDebug_fmt(value$2)} ${flagsDebug_fmt(value$3)} ${flagsDebug_fmt(flagsShrU32_shr([RUN[0]], 1))}`,
   );
   console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor(READ, RUN))}`);
   const f = [READ[0]];
@@ -141,6 +145,9 @@ function main() {
   flagsShlAssignU8_shl_assign(f, 2);
   console.log(`${flagsDebug_fmt(f)}`);
   const all = [[READ[0]], [WRITE[0]]];
+  if (!(1 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 1");
+  }
   flagsBitOrAssign_bitor_assign(all[1], [RUN[0]]);
   const user = [[READ[0]], "ann"];
   flagsBitOrAssign_bitor_assign(user[0], [WRITE[0]]);

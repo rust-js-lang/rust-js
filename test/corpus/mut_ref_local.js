@@ -11,19 +11,20 @@ function bump(n) {
 }
 
 function main() {
-  let x = 3;
-  x = 5;
+  let x = 5;
   x = (x + 2) | 0;
   console.log(`${x}`);
-  const arg = {
-    get value() {
-      return x;
+  const value$1 = [
+    {
+      get value() {
+        return x;
+      },
+      set value(value) {
+        x = value;
+      },
     },
-    set value(value) {
-      x = value;
-    },
-  };
-  console.log(`${arg.value} ${arg.value}`);
+  ];
+  console.log(`${value$1[0].value} ${value$1[0].value}`);
   const n = { value: x };
   bump(n);
   x = n.value;
@@ -33,16 +34,25 @@ function main() {
   console.log(`${x}`);
   const v = [1, 2, 3];
   let i = 0;
-  const at = $at(v, i);
+  const index = i;
+  $index(v, index);
+  const r = {
+    get value() {
+      return v[index];
+    },
+    set value(value) {
+      v[index] = value;
+    },
+  };
   i = 2;
-  v[at] = (v[at] + 10) | 0;
+  r.value = (r.value + 10) | 0;
   console.log(`[${v.map((item) => String(item)).join(", ")}] ${i}`);
   let name = "ada";
   name += " lovelace";
-  name = name.toUpperCase();
+  const value = name.toUpperCase();
+  name = value;
   console.log(`${name}`);
-  let o;
-  o = 4;
+  let o = 4;
   if (o != null) {
     o = (o + 1) >>> 0;
   }
@@ -53,77 +63,75 @@ function main() {
   const a = { count: 1 };
   const b = { count: 10 };
   let cur = a;
-  const o$1 = cur;
+  const cur$1 = cur;
   cur = b;
-  o$1.count = (o$1.count + 1) | 0;
+  cur$1.count = (cur$1.count + 1) | 0;
   cur.count = (cur.count + 5) | 0;
   console.log(`${a.count} ${b.count}`);
   const xs = [1, 2];
   const ys = [10, 20];
   let list = xs;
-  const o$2 = list;
-  const at$1 = $at(list, 0);
+  $index(list, 0);
+  const item = list;
   list = ys;
-  o$2[at$1] = (o$2[at$1] + 1) | 0;
-  list[$at(list, 1)] = (list[$at(list, 1)] + 1) | 0;
+  item[0] = (item[0] + 1) | 0;
+  list[$at(list, 1)] = (list[1] + 1) | 0;
   console.log(
     `[${xs.map((item) => String(item)).join(", ")}] [${ys.map((item) => String(item)).join(", ")}]`,
   );
-  let [xs$1, ys$1] = [
-    [1, 2],
-    [10, 20],
-  ];
-  let [na, nb] = [{ count: 1 }, { count: 10 }];
+  const xs$1 = [1, 2];
+  const ys$1 = [10, 20];
+  const na = { count: 1 };
+  const nb = { count: 10 };
   const h = { list: xs$1, node: na };
-  const o$3 = h.list;
-  const at$2 = $at(h.list, 0);
-  const o$4 = h.node;
+  $index(h.list, 0);
+  const { list: list$2, node } = h;
   h.list = ys$1;
   h.node = nb;
-  o$3[at$2] = (o$3[at$2] + 1) | 0;
-  o$4.count = (o$4.count + 1) | 0;
-  h.list[$at(h.list, 1)] = (h.list[$at(h.list, 1)] + 1) | 0;
+  list$2[0] = (list$2[0] + 1) | 0;
+  node.count = (node.count + 1) | 0;
+  h.list[$at(h.list, 1)] = (h.list[1] + 1) | 0;
   console.log(
     `[${xs$1.map((item) => String(item)).join(", ")}] [${ys$1.map((item) => String(item)).join(", ")}] ${na.count} ${nb.count}`,
   );
-  let [xs$2, ys$2] = [
-    [1, 2],
-    [10, 20],
-  ];
+  const xs$2 = [1, 2];
+  const ys$2 = [10, 20];
   const refs = [xs$2];
-  const o$5 = refs[0];
-  const at$3 = $at(refs[0], 0);
+  if (!(0 < 1)) {
+    throw new Error("index out of bounds: the len is 1 but the index is 0");
+  }
+  $index(refs[0], 0);
+  const item$1 = refs[0];
   refs[0] = ys$2;
-  o$5[at$3] = (o$5[at$3] + 1) | 0;
+  item$1[0] = (item$1[0] + 1) | 0;
   console.log(
     `[${xs$2.map((item) => String(item)).join(", ")}] [${ys$2.map((item) => String(item)).join(", ")}]`,
   );
-  let [xs$3, ys$3] = [
-    [1, 2],
-    [10, 20],
-  ];
+  const xs$3 = [1, 2];
+  const ys$3 = [10, 20];
   let list$1 = xs$3;
-  const o$6 = list$1;
-  const at$4 = $at(list$1, 0);
+  $index(list$1, 0);
+  const item$2 = list$1;
   list$1 = ys$3;
-  o$6[at$4] = (o$6[at$4] + 1) | 0;
+  item$2[0] = (item$2[0] + 1) | 0;
   console.log(
     `[${xs$3.map((item) => String(item)).join(", ")}] [${ys$3.map((item) => String(item)).join(", ")}]`,
   );
   const nodes = [{ count: 1 }, { count: 2 }];
   let j = 1;
-  const item = $index(nodes, j);
+  const item$3 = $index(nodes, j);
   j = 0;
-  item.count = Math.imul(item.count, 7);
-  console.log(`${$index(nodes, 0).count} ${$index(nodes, 1).count} ${j}`);
+  item$3.count = Math.imul(item$3.count, 7);
+  const count = $index(nodes, 0).count;
+  console.log(`${count} ${$index(nodes, 1).count} ${j}`);
   const grid = [
     [1, 2],
     [3, 4],
   ];
-  const [row, col] = [1, 0];
+  const row = 1;
+  const col = 0;
   const items = $index(grid, row);
-  const at$5 = $at(items, col);
-  items[at$5] = 30;
+  items[$at(items, col)] = 30;
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );

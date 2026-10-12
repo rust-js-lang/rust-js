@@ -15,28 +15,26 @@ function size(s) {
 }
 
 function describe(s, seen) {
-  if (s.TAG === "Square" && (s.TAG === "Square" ? s._0 > 2 : false)) {
-    return "big square";
-  }
   if (s.TAG === "Square") {
+    if (s.TAG === "Square" && s._0 > 2) {
+      return "big square";
+    }
     seen.value = (seen.value + 1) | 0;
-    if (seen.value > 2) {
-      return "square, seen often";
+    if (!(seen.value > 2)) {
+      return "square";
     }
+    return "square, seen often";
   }
-  if (s.TAG === "Square") {
-    return "square";
-  }
-  if (size(s) > 10) {
-    return "big";
-  }
-  if (s.TAG === "Rect") {
-    const half = (s.w / 2) | 0;
-    if (half > 0) {
-      return "wide rect";
+  if (!(size(s) > 10)) {
+    if (s.TAG === "Rect") {
+      const half = (s.w / 2) | 0;
+      if (half > 0) {
+        return "wide rect";
+      }
     }
+    return "other";
   }
-  return "other";
+  return "big";
 }
 
 function main() {
@@ -53,34 +51,25 @@ function main() {
   ];
   for (const s of shapes) {
     const seen$1 = { value: seen };
-    const result = describe(s, seen$1);
+    const value = describe(s, seen$1);
     seen = seen$1.value;
-    console.log(`${result}`);
+    console.log(`${value}`);
   }
   let odd = 0;
   for (let i = 0; i < 6; i++) {
     odd = (odd + ((i % 2) | 0)) | 0;
-    if (i % 3 === 0) {
-      continue;
+    if (i % 3 !== 0) {
+      console.log(`${i} ${odd}`);
     }
-    console.log(`${i} ${odd}`);
   }
   let tries = 0;
   for (const s of shapes) {
     let label;
-    arms: {
-      if (s.TAG === "Rect") {
-        tries = (tries + 1) | 0;
-        if (s.w === s.h) {
-          label = "square rect";
-          break arms;
-        }
-      }
-      if (s.TAG === "Rect") {
-        label = "rect";
-      } else {
-        label = "not a rect";
-      }
+    if (s.TAG === "Rect") {
+      tries = (tries + 1) | 0;
+      label = s.w === s.h ? "square rect" : "rect";
+    } else {
+      label = "not a rect";
     }
     console.log(`${label} ${tries}`);
   }

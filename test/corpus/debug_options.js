@@ -17,24 +17,22 @@ export function entry() {
 }
 
 function main() {
-  const arg = [1.25, 2];
   console.log(
-    `[Some(${"1".padStart(5)})] [[${[5, 6].map((item) => String(item).padEnd(4)).join(", ")}]] [Some(${$plus("6")})] [(${$toFixed(arg[0], 1)}, ${$toFixed(arg[1], 1)})]`,
+    `[Some(${"1".padStart(5)})] [[${[5, 6].map((item) => String(item).padEnd(4)).join(", ")}]] [Some(${$plus("6")})] [${((tuple) => `(${$toFixed(tuple[0], 1)}, ${$toFixed(tuple[1], 1)})`)([1.25, 2])}]`,
   );
-  const arg$1 = [true, undefined];
   console.log(
-    `[(${String(arg$1[0]).padStart(3)}, ${$pad("()", 3, ">")})] [Some(${$debugStr("ab")})] [[${[-1, 2].map((item) => $zeroPad(String(item), 6)).join(", ")}]] [${String(true).padEnd(5)}]`,
+    `[${((tuple) => `(${String(tuple[0]).padStart(3)}, ${$pad("()", 3, ">")})`)([true, undefined])}] [Some(${$debugStr("ab")})] [[${[-1, 2].map((item) => $zeroPad(String(item), 6)).join(", ")}]] [${String(true).padEnd(5)}]`,
   );
   console.log(`[${$pretty("Some(", ["7".padStart(5)], ")")}]`);
   const m = new Map();
   m.set(1, 2.5);
-  const arg$2 = { TAG: "Ok", _0: 3 };
   console.log(
     `[{${Array.from($sortedEntries(m, $cmp))
       .map(([key, value]) => `${String(key).padStart(4)}: ${$debugF64(value).padStart(4)}`)
-      .join(
-        ", ",
-      )}}] [${arg$2.TAG === "Ok" ? `Ok(${String(arg$2._0).padStart(4, "x")})` : `Err(${$pad("()", 4, ">", "x")})`}]`,
+      .join(", ")}}] [${((result) =>
+      result.TAG === "Ok"
+        ? `Ok(${String(result._0).padStart(4, "x")})`
+        : `Err(${$pad("()", 4, ">", "x")})`)({ TAG: "Ok", _0: 3 })}]`,
   );
 }
 //# sourceMappingURL=case.js.map

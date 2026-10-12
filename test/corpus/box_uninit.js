@@ -13,22 +13,20 @@ function pointDebug_fmt(point) {
 function main() {
   const five = 5;
   console.log(`${five}`);
-  let point;
-  point = { x: 1, y: 2 };
+  const point = { x: 1, y: 2 };
   const written = point;
   written.x = (written.x + 10) | 0;
   console.log(`${pointDebug_fmt(point)}`);
   const squares = Array.from({ length: 4 });
-  for (const item of $mutItems(squares).entries()) {
-    item[1].value = BigInt(Math.imul(item[0], item[0]) >>> 0);
+  for (const [i, slot] of $mutItems(squares).entries()) {
+    slot.value = BigInt(Math.imul(i, i) >>> 0);
   }
   console.log(`[${squares.map((item) => String(item)).join(", ")}]`);
   const zero = [0, 0, false];
   console.log(`(${zero[0]}, ${$debugF64(zero[1])}, ${zero[2]})`);
   const zeros = new Array(3).fill(0);
   console.log(`[${zeros.map((item) => String(item)).join(", ")}]`);
-  let text;
-  text = "t";
+  let text = "t";
   text += "!";
   console.log(`${text}`);
   const empty = $some(undefined);

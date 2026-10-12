@@ -35,13 +35,13 @@ function peeked(p, PPeek) {
   return PPeek.peek(p);
 }
 
-function loudDrop_drop(self) {
+function loudDrop_drop(loud) {
   console.log("dropped");
 }
 
 function main() {
-  const w = [undefined];
   let w$live = true;
+  const w = [undefined];
   try {
     console.log(
       `${peeked(
@@ -51,12 +51,20 @@ function main() {
         }),
       )}`,
     );
-    w$live = false;
-    console.log(`${peeked(["text"], wrapPeek({ clone: (value) => value }))}`);
-  } finally {
+  } catch (error) {
     if (w$live) {
       loudDrop_drop({ value: w[0] });
     }
+    throw error;
+  }
+  w$live = false;
+  try {
+    console.log(`${peeked(["text"], wrapPeek({ clone: (value) => value }))}`);
+  } catch (error) {
+    if (w$live) {
+      loudDrop_drop({ value: w[0] });
+    }
+    throw error;
   }
 }
 //# sourceMappingURL=case.js.map

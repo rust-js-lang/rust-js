@@ -9,8 +9,9 @@ function pick(takeFirst, a, b) {
 }
 
 function main() {
-  let [a, b] = [1, 2];
-  const result = pick(
+  let a = 1;
+  let b = 2;
+  const value = pick(
     true,
     {
       get value() {
@@ -29,8 +30,8 @@ function main() {
       },
     },
   );
-  result.value = (result.value + 10) >>> 0;
-  const result$1 = pick(
+  value.value = (value.value + 10) >>> 0;
+  const value$1 = pick(
     false,
     {
       get value() {
@@ -49,7 +50,7 @@ function main() {
       },
     },
   );
-  result$1.value = (result$1.value + 20) >>> 0;
+  value$1.value = (value$1.value + 20) >>> 0;
   const h = {
     count: {
       get value() {

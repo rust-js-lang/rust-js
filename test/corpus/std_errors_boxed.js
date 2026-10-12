@@ -71,31 +71,31 @@ function parse_positive(s) {
 function settings(text) {
   const parts = text.split(",");
   const result = $parseF64($index(parts, 0));
-  if (result.TAG === "Err") {
-    return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseFloatError") } };
-  }
-  const scale = result._0;
-  const result$1 = $parseBool($index(parts, 1));
-  if (result$1.TAG === "Err") {
+  if (result.TAG !== "Err") {
+    const scale = result._0;
+    const result$1 = $parseBool($index(parts, 1));
+    if (result$1.TAG !== "Err") {
+      const on = result$1._0;
+      const result = $parseChar($index(parts, 2));
+      if (result.TAG !== "Err") {
+        const mark = result._0;
+        const result$1 = $parseInt($index(parts, 3), -2147483648, 2147483647);
+        if (result$1.TAG !== "Err") {
+          const wide = result$1._0;
+          const result = $tryFromInt(wide, 0, 255);
+          if (result.TAG !== "Err") {
+            const small = result._0;
+            return { TAG: "Ok", _0: [scale, on, mark, small] };
+          }
+          return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("TryFromIntError") } };
+        }
+        return { TAG: "Err", _0: { value: result$1._0, impl: $parseErrorDyn("ParseIntError") } };
+      }
+      return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseCharError") } };
+    }
     return { TAG: "Err", _0: { value: result$1._0, impl: $parseErrorDyn("ParseBoolError") } };
   }
-  const on = result$1._0;
-  const result$2 = $parseChar($index(parts, 2));
-  if (result$2.TAG === "Err") {
-    return { TAG: "Err", _0: { value: result$2._0, impl: $parseErrorDyn("ParseCharError") } };
-  }
-  const mark = result$2._0;
-  const result$3 = $parseInt($index(parts, 3), -2147483648, 2147483647);
-  if (result$3.TAG === "Err") {
-    return { TAG: "Err", _0: { value: result$3._0, impl: $parseErrorDyn("ParseIntError") } };
-  }
-  const wide = result$3._0;
-  const result$4 = $tryFromInt(wide, 0, 255);
-  if (result$4.TAG === "Err") {
-    return { TAG: "Err", _0: { value: result$4._0, impl: $parseErrorDyn("TryFromIntError") } };
-  }
-  const small = result$4._0;
-  return { TAG: "Ok", _0: [scale, on, mark, small] };
+  return { TAG: "Err", _0: { value: result._0, impl: $parseErrorDyn("ParseFloatError") } };
 }
 
 function tAsDyn(TError) {
@@ -110,32 +110,32 @@ function tAsDyn_as_dyn(self, TError) {
 }
 
 function describe(e, EError) {
-  const arg = !!EError.source(e);
-  return `${EError.Display().fmt(e)} | ${EError.Debug().fmt(e)} | ${arg}`;
+  const value = [!!EError.source(e), e];
+  return `${EError.Display().fmt(value[1])} | ${EError.Debug().fmt(value[1])} | ${value[0]}`;
 }
 
 function main() {
   for (const s of ["42", " 7 ", "-3", "x", "99999999999999999999", ""]) {
-    const match = parse_positive(s);
-    if (match.TAG === "Ok") {
-      console.log(`ok ${match._0}`);
+    const value = parse_positive(s);
+    if (value.TAG === "Ok") {
+      const n = value._0;
+      console.log(`ok ${n}`);
     } else {
-      const arg = !match._0.impl.source(match._0.value);
+      const e = value._0;
+      const value$1 = [!e.impl.source(e.value), e];
       console.log(
-        `err ${match._0.impl.Display().fmt(match._0.value)} / ${match._0.impl.Debug().fmt(match._0.value)} / ${arg}`,
+        `err ${value$1[1].impl.Display().fmt(value$1[1].value)} / ${value$1[1].impl.Debug().fmt(value$1[1].value)} / ${value$1[0]}`,
       );
     }
   }
   for (const text of ["1.5,true,x,7", "z,true,x,7", "1,maybe,x,7", "1,true,xy,7", "1,true,x,300"]) {
-    const match = settings(text);
-    if (match.TAG === "Ok") {
-      console.log(
-        `ok (${$debugF64(match._0[0])}, ${match._0[1]}, ${$debugStr(match._0[2], "'")}, ${match._0[3]})`,
-      );
+    const value = settings(text);
+    if (value.TAG === "Ok") {
+      const s = value._0;
+      console.log(`ok (${$debugF64(s[0])}, ${s[1]}, ${$debugStr(s[2], "'")}, ${s[3]})`);
     } else {
-      console.log(
-        `err ${match._0.impl.Display().fmt(match._0.value)} / ${match._0.impl.Debug().fmt(match._0.value)}`,
-      );
+      const e = value._0;
+      console.log(`err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)}`);
     }
   }
   const err = $unwrapErr($parseInt("x", -2147483648, 2147483647));
@@ -146,7 +146,7 @@ function main() {
       source: () => undefined,
     })}`,
   );
-  const tmp = tAsDyn_as_dyn(err, {
+  const receiver$1 = tAsDyn_as_dyn(err, {
     Debug: () => ({ fmt: (value) => $debugParseError(value, "ParseIntError") }),
     Display: () => ({ fmt: (value) => value }),
     source: () => undefined,
@@ -156,7 +156,9 @@ function main() {
     Display: () => ({ fmt: (value) => value }),
     source: () => undefined,
   });
-  console.log(`${tmp.impl.Display().fmt(tmp.value)} ${!receiver.impl.source(receiver.value)}`);
+  console.log(
+    `${receiver$1.impl.Display().fmt(receiver$1.value)} ${!receiver.impl.source(receiver.value)}`,
+  );
   console.log(
     `${describe($unwrapErr($tryFromInt(300, 0, 255)), {
       Debug: () => ({ fmt: (value) => $debugParseError(value, "TryFromIntError") }),

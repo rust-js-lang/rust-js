@@ -30,18 +30,18 @@ function spanDoubleEndedIterator_next_back(span) {
 
 function main() {
   const s = { low: 0, high: 5 };
-  const arg = spanIterator_next(s);
-  const arg$1 = spanDoubleEndedIterator_next_back(s);
+  const value = spanIterator_next(s);
+  const value$1 = spanDoubleEndedIterator_next_back(s);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${$exactLen(spanIterator_size_hint(s))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${$exactLen(spanIterator_size_hint(s))}`,
   );
   const backwards = $iterator({ low: 1, high: 4 }, spanDoubleEndedIterator_next_back).toArray();
   console.log(`[${backwards.map((item) => String(item)).join(", ")}]`);
   const both = { low: 10, high: 14 };
-  const arg$2 = spanDoubleEndedIterator_next_back(both);
-  const arg$3 = spanIterator_next(both);
+  const value$2 = spanDoubleEndedIterator_next_back(both);
+  const value$3 = spanIterator_next(both);
   console.log(
-    `${arg$2 == null ? "None" : `Some(${arg$2})`} ${arg$3 == null ? "None" : `Some(${arg$3})`} ${$exactLen(spanIterator_size_hint(both))}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${$exactLen(spanIterator_size_hint(both))}`,
   );
   for (const x of $iterator({ low: 0, high: 3 }, spanDoubleEndedIterator_next_back)) {
     console.log(`got ${x}`);

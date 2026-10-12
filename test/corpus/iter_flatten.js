@@ -23,13 +23,17 @@ function main() {
   const rows = [[1, 2], [], [3]];
   console.log(
     `[${rows
-      .flat()
+      .values()
+      .flatMap((item) => item)
+      .toArray()
       .map((item) => String(item))
       .join(", ")}]`,
   );
   console.log(
     `[${rows
-      .flat()
+      .values()
+      .flatMap((item) => item)
+      .toArray()
       .map((item) => String(item))
       .join(", ")}]`,
   );

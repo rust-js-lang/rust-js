@@ -20,10 +20,10 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7];
   const items = $slice(v, 0, 3);
-  const arg = items.length === 3 ? items : undefined;
-  const arg$1 = v.length === 3 ? v : undefined;
+  const value$1 = items.length === 3 ? items : undefined;
+  const value = v.length === 3 ? v : undefined;
   console.log(
-    `${arg == null ? "None" : `Some([${arg.map((item) => String(item)).join(", ")}])`} ${arg$1 == null ? "None" : `Some([${arg$1.map((item) => String(item)).join(", ")}])`}`,
+    `${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`} ${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`}`,
   );
   for (const [a, b] of $windows(v, 2)) {
     $print(`${Math.imul(a, b)} `);
@@ -38,9 +38,9 @@ function main() {
     `[${rest$1.map((item) => String(item)).join(", ")}] [${chunks$1.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   const pairs = $asChunks($slice(v, 0, 6), 2)[0];
-  const arg$2 = pairs.flat();
+  const arg = pairs.flat();
   console.log(
-    `[${pairs.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${arg$2.map((item) => String(item)).join(", ")}]`,
+    `[${pairs.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
   );
   const w = [1, 2, 3, 4, 5, 6, 7];
   const items$1 = $view(w, 0, 2);
@@ -49,11 +49,19 @@ function main() {
     $swap(all, 0, 1);
   }
   const [chunks$2, rest$2] = $asChunksMut(w, 3);
-  $index(chunks$2, 0)[2] = 0;
+  const length = chunks$2.length;
+  if (!(0 < length)) {
+    throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+  }
+  chunks$2[0][2] = 0;
   chunks$2[$at(chunks$2, 1)] = [9, 9, 9];
   $swap(chunks$2, 0, 1);
   const kept = $index(chunks$2, 0).slice();
-  $index(chunks$2, 0)[0] = 8;
+  const length$1 = chunks$2.length;
+  if (!(0 < length$1)) {
+    throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
+  }
+  chunks$2[0][0] = 8;
   $print(`[${kept.map((item) => String(item)).join(", ")}] `);
   rest$2[$at(rest$2, 0)] = -1;
   console.log(`[${w.map((item) => String(item)).join(", ")}]`);
@@ -73,9 +81,9 @@ function main() {
   flat[$at(flat, 1)] = 20;
   $view(flat, 4).fill(0);
   flat.reverse();
-  const arg$3 = grid.flat().length;
+  const arg$1 = grid.flat().length;
   console.log(
-    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] ${arg$3}`,
+    `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] ${arg$1}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -7,10 +7,11 @@ export function entry() {
 }
 
 function make_counter() {
-  let count = 0;
+  const count = 0;
+  let count$1 = count;
   return () => {
-    count = (count + 1) | 0;
-    return count;
+    count$1 = (count$1 + 1) | 0;
+    return count$1;
   };
 }
 
@@ -31,7 +32,10 @@ function main() {
   console.log(`total ${total}`);
   const a = make_counter();
   const b = make_counter();
-  console.log(`${a()} ${a()} ${b()} ${a()}`);
+  const value$1 = a();
+  const value$2 = a();
+  const value$3 = b();
+  console.log(`${value$1} ${value$2} ${value$3} ${a()}`);
   const names = ["x"];
   const add = (s) => {
     names.push(s);

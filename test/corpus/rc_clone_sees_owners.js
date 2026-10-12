@@ -30,8 +30,13 @@ function loneClone_clone(lone) {
   $withBorrowMut(
     KEPT,
     (kept) => {
-      if (kept.value != null) {
-        $rcDrop(kept.value, loneDrop_drop);
+      try {
+        if (kept.value != null) {
+          $rcDrop(kept.value, loneDrop_drop);
+        }
+      } catch (error) {
+        kept.value = undefined;
+        throw error;
       }
       kept.value = undefined;
     },
@@ -63,83 +68,254 @@ function probeClone_clone(probe) {
 
 function main() {
   let first = $newCyclic((me) => ({ me: $weakClone(me) }));
+  let second;
   try {
-    const second = $rcClone(first);
-    try {
-      first = $makeMut(
-        first,
-        (value) => probeClone_clone(value),
-        (probe) => {
-          $weakDrop(probe.me);
-        },
-      );
-      console.log(`${second.strong}`);
-      const third = $rcClone(second);
-      const _owned = $unwrapOrClone(
-        third,
-        (value) => probeClone_clone(value),
-        (probe) => {
-          $weakDrop(probe.me);
-        },
-      );
-      try {
-        console.log(`${second.strong}`);
-        let lone = { value: [1], strong: 1, weak: 0 };
-        try {
-          $withBorrowMut(
-            KEPT,
-            (kept) => {
-              const next = $rcClone(lone);
-              if (kept.value != null) {
-                $rcDrop(kept.value, loneDrop_drop);
-              }
-              kept.value = next;
-            },
-            true,
-          );
-          lone = $makeMut(lone, (value) => loneClone_clone(value), loneDrop_drop);
-          console.log(`made ${lone.value[0]}`);
-          const shared = { value: [5], strong: 1, weak: 0 };
-          let shared$live = true;
-          try {
-            $withBorrowMut(
-              KEPT,
-              (kept) => {
-                const next = $rcClone(shared);
-                if (kept.value != null) {
-                  $rcDrop(kept.value, loneDrop_drop);
-                }
-                kept.value = next;
-              },
-              true,
-            );
-            shared$live = false;
-            const owned = $unwrapOrClone(shared, (value) => loneClone_clone(value), loneDrop_drop);
-            try {
-              console.log(`owned ${owned[0]}`);
-            } finally {
-              loneDrop_drop(owned);
-            }
-          } finally {
-            if (shared$live) {
-              $rcDrop(shared, loneDrop_drop);
-            }
-          }
-        } finally {
-          $rcDrop(lone, loneDrop_drop);
-        }
-      } finally {
-        $weakDrop(_owned.me);
-      }
-    } finally {
-      $rcDrop(second, (value) => {
-        $weakDrop(value.me);
-      });
-    }
-  } finally {
+    second = $rcClone(first);
+  } catch (error) {
     $rcDrop(first, (value) => {
       $weakDrop(value.me);
     });
+    throw error;
   }
+  try {
+    first = $makeMut(
+      first,
+      (value) => probeClone_clone(value),
+      (probe) => {
+        $weakDrop(probe.me);
+      },
+    );
+  } catch (error) {
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    console.log(`${second.strong}`);
+  } catch (error) {
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  let third;
+  try {
+    third = $rcClone(second);
+  } catch (error) {
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  let _owned;
+  try {
+    _owned = $unwrapOrClone(
+      third,
+      (value) => probeClone_clone(value),
+      (probe) => {
+        $weakDrop(probe.me);
+      },
+    );
+  } catch (error) {
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    console.log(`${second.strong}`);
+  } catch (error) {
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  let lone = { value: [1], strong: 1, weak: 0 };
+  const value = (kept) => {
+    const value = $rcClone(lone);
+    try {
+      if (kept.value != null) {
+        $rcDrop(kept.value, loneDrop_drop);
+      }
+    } catch (error) {
+      kept.value = value;
+      throw error;
+    }
+    kept.value = value;
+  };
+  try {
+    $withBorrowMut(KEPT, value, true);
+  } catch (error) {
+    $rcDrop(lone, loneDrop_drop);
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    lone = $makeMut(lone, (value) => loneClone_clone(value), loneDrop_drop);
+  } catch (error) {
+    $rcDrop(lone, loneDrop_drop);
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    console.log(`made ${lone.value[0]}`);
+  } catch (error) {
+    $rcDrop(lone, loneDrop_drop);
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  const shared = { value: [5], strong: 1, weak: 0 };
+  let shared$live = true;
+  const value$1 = (kept) => {
+    const value = $rcClone(shared);
+    try {
+      if (kept.value != null) {
+        $rcDrop(kept.value, loneDrop_drop);
+      }
+    } catch (error) {
+      kept.value = value;
+      throw error;
+    }
+    kept.value = value;
+  };
+  try {
+    $withBorrowMut(KEPT, value$1, true);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared, loneDrop_drop);
+    }
+    $rcDrop(lone, loneDrop_drop);
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  shared$live = false;
+  let owned;
+  try {
+    owned = $unwrapOrClone(shared, (value) => loneClone_clone(value), loneDrop_drop);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared, loneDrop_drop);
+    }
+    $rcDrop(lone, loneDrop_drop);
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    console.log(`owned ${owned[0]}`);
+  } catch (error) {
+    loneDrop_drop(owned);
+    if (shared$live) {
+      $rcDrop(shared, loneDrop_drop);
+    }
+    $rcDrop(lone, loneDrop_drop);
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    loneDrop_drop(owned);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared, loneDrop_drop);
+    }
+    $rcDrop(lone, loneDrop_drop);
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  shared$live = false;
+  try {
+    $rcDrop(lone, loneDrop_drop);
+  } catch (error) {
+    $weakDrop(_owned.me);
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    $weakDrop(_owned.me);
+  } catch (error) {
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  try {
+    $rcDrop(second, (value) => {
+      $weakDrop(value.me);
+    });
+  } catch (error) {
+    $rcDrop(first, (value) => {
+      $weakDrop(value.me);
+    });
+    throw error;
+  }
+  $rcDrop(first, (value) => {
+    $weakDrop(value.me);
+  });
 }
 //# sourceMappingURL=case.js.map

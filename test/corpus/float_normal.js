@@ -32,15 +32,15 @@ function main() {
   }
   console.log("");
   for (const x of [1, 0, Math.fround(1e-40), NaN, -Infinity]) {
+    const value = $classify(x, 1.1754943508222875e-38);
     let kind;
-    const match = $classify(x, 1.1754943508222875e-38);
-    if (match === "Normal") {
+    if (value === "Normal") {
       kind = "n";
-    } else if (match === "Subnormal") {
+    } else if (value === "Subnormal") {
       kind = "s";
-    } else if (match === "Zero") {
+    } else if (value === "Zero") {
       kind = "z";
-    } else if (match === "Infinite") {
+    } else if (value === "Infinite") {
       kind = "i";
     } else {
       kind = "?";

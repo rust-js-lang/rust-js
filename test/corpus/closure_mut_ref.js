@@ -32,7 +32,8 @@ function main() {
   };
   call(tick);
   passed_on(tick);
-  tick();
+  const r = tick;
+  r();
   console.log(`${count}`);
   let total = 0;
   console.log(

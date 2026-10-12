@@ -33,7 +33,7 @@ pub(super) struct Hints<'h> {
     /// The closures a `let` names that a hook's function alone is (ADR 0297).
     pub(super) callbacks: &'h HashSet<String>,
     /// Where each `match` that reads a table by its key is (ADR 0233).
-    pub(super) tables: &'h [js::Span],
+    pub(super) tables: &'h [(js::Span, Vec<String>)],
     /// What a `let`'s struct pattern binds, by name.
     pub(super) patterns: &'h HashSet<String>,
     /// Whether the body is a closure's, tidied again in its function's.
@@ -308,6 +308,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
+    // A `const` nothing reads, of a value made only to be dropped, `drop(vec![..])`'s:
+    // what making it does, as THIR's.
+    js::statement_lists(body, &mut |stmts| unread_made(stmts, &mentions));
     // Its jumps then, of the loop they're now in, unnamed.
     let mut headed = false;
     js::statement_lists(body, &mut |stmts| headed |= while_heads(stmts));
@@ -840,8 +843,15 @@ fn written(returns: &[js::Span], span: js::Span) -> bool {
 /// variant: `if (k === "a") { v = M.a; } else { v = k === "b" ? M.b : M.c; }`,
 /// `v = M[k]`; of each arm its own name, `"a"`, `v = k`. And of returns,
 /// `if (k === "a") { return M.a; } .. return M.c;`, `return M[k];`.
-fn table_reads(stmts: &mut Vec<Stmt>, tables: &[js::Span]) {
-    let within = |s: js::Span| !s.is_none() && tables.iter().any(|t| t.lo <= s.lo && s.hi <= t.hi);
+fn table_reads(stmts: &mut Vec<Stmt>, tables: &[(js::Span, Vec<String>)]) {
+    // The `match` written where `s` is, innermost, and its variants' names.
+    let table_of = |s: js::Span| {
+        (tables.iter())
+            .filter(|(t, _)| !s.is_none() && t.lo <= s.lo && s.hi <= t.hi)
+            .min_by_key(|(t, _)| t.hi - t.lo)
+            .map(|(_, names)| names.as_slice())
+    };
+    let within = |s: js::Span| table_of(s).is_some();
     let mut i = 0;
     while i < stmts.len() {
         let returned = (stmts[i..].iter())
@@ -872,7 +882,7 @@ fn table_reads(stmts: &mut Vec<Stmt>, tables: &[js::Span]) {
                 })
                 .collect();
             value_arms(last, &mut arms);
-            if let Some(read) = table_read(&arms) {
+            if let Some(read) = table_of(stmts[i].span).and_then(|names| table_read(&arms, names)) {
                 let span = stmts[i].span;
                 stmts.splice(i..=i + returned, [StmtKind::Return(Some(read)).at(span)]);
             }
@@ -901,7 +911,9 @@ fn table_reads(stmts: &mut Vec<Stmt>, tables: &[js::Span]) {
             }
             _ => continue,
         };
-        let Some(read) = table_read(&arms) else { continue };
+        let Some(read) = table_of(stmt.span).and_then(|names| table_read(&arms, names)) else {
+            continue;
+        };
         match (&mut stmt.kind, target) {
             (StmtKind::If(..), Some(target)) => stmt.kind = StmtKind::Assign(target, read),
             (
@@ -956,11 +968,28 @@ fn value_arms(e: &Expr, arms: &mut Vec<(Option<Expr>, Expr)>) {
 }
 
 /// `M[k]`, of arms each `k === "a"` giving `M.a`, the last whichever's
-/// left; or `k` itself, of each giving its own name.
-fn table_read(arms: &[(Option<Expr>, Expr)]) -> Option<Expr> {
+/// left, of `names`, the variants'; or `k` itself, of each giving its own
+/// name.
+fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Option<Expr> {
     let [first, .., (None, _)] = arms else { return None };
     let (Some(first), _) = first else { return None };
     let ExprKind::Binary(Op::Eq, key, _) = &first.kind else {
+        return None;
+    };
+    // The one variant the last arm is of: the one no test names.
+    let tested: Vec<&str> = (arms.iter())
+        .filter_map(|(test, _)| match &test.as_ref()?.kind {
+            ExprKind::Binary(Op::Eq, _, name) => match &name.kind {
+                ExprKind::Str(name) => Some(name.as_str()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    let [left] = (names.iter())
+        .filter(|n| !tested.contains(&n.as_str()))
+        .collect::<Vec<_>>()[..]
+    else {
         return None;
     };
     let mut table: Option<&Expr> = None;
@@ -978,7 +1007,7 @@ fn table_read(arms: &[(Option<Expr>, Expr)]) -> Option<Expr> {
                 }
                 Some(name.as_str())
             }
-            None => None,
+            None => Some(left.as_str()),
         };
         match &value.kind {
             ExprKind::Member(of, field) if name.is_none_or(|n| n == field) && !fields.contains(&field.as_str()) => {
@@ -1394,6 +1423,29 @@ fn written_order_steps(stmts: &mut [Stmt]) {
         }
         body.push(StmtKind::If(not(test), rest, None).at(span));
         body.extend(then);
+    }
+}
+
+/// `const x = [loud(1), 2]` nothing reads: each part that does something, in
+/// turn, `loud(1);`, as the array, made here, is never seen.
+fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::Const(name, value) = &stmts[i].kind
+            && !mentions.contains_key(name)
+            && let ExprKind::Array(parts) = &value.kind
+        {
+            let span = stmts[i].span;
+            let done: Vec<Stmt> = (parts.iter())
+                .filter(|part| part.has_effects())
+                .map(|part| StmtKind::Expr(part.clone()).at(span))
+                .collect();
+            let count = done.len();
+            stmts.splice(i..=i, done);
+            i += count;
+            continue;
+        }
+        i += 1;
     }
 }
 
@@ -4519,32 +4571,25 @@ fn unguarded(body: &mut Vec<Stmt>) {
 }
 
 /// `const h = { get value() { return o.f; }, .. }`, a `&Cell`'s handle on a
-/// field, whose `value` alone is read, never set nor the handle given:
-/// `const h = o.f`, `h` where its `value` is read, as THIR reads a cell
-/// field a pattern binds where it's bound (ADR 0287).
+/// field, whose `value` alone is used, the handle never given: read before
+/// anything could set `o.f`, `const h = o.f`, `h` where its `value` is
+/// read, as THIR reads a cell field a pattern binds where it's bound (ADR
+/// 0287); else `o.f` where its `value` is, the `o` it was made of, as MIR
+/// holds a reference written again before it's made.
 fn read_handles(body: &mut Vec<Stmt>) {
-    let mut handles: Vec<String> = Vec::new();
+    let mut handles: Vec<(String, Expr, bool)> = Vec::new();
     js::statement_lists(&mut body.clone(), &mut |stmts| {
-        for stmt in stmts.iter() {
+        for (k, stmt) in stmts.iter().enumerate() {
             if let StmtKind::Const(name, value) = &stmt.kind
                 && let ExprKind::Handle(place) = &value.kind
                 && matches!(place.kind, ExprKind::Member(..))
             {
-                handles.push(name.clone());
+                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));
             }
         }
     });
-    handles.retain(|name| {
-        // Each read of it one of its `value`, none set: none left once
-        // those are read otherwise.
-        let mut set = false;
-        js::statement_lists(&mut body.clone(), &mut |stmts| {
-            for stmt in stmts.iter() {
-                if let StmtKind::Assign(target, _) = &stmt.kind {
-                    target.visit_vars(&mut |v| set |= v == name);
-                }
-            }
-        });
+    handles.retain(|(name, place, at_once)| {
+        // Each use of it one of its `value`: none left once those are.
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
             if let ExprKind::Member(of, key) = &e.kind
@@ -4554,15 +4599,23 @@ fn read_handles(body: &mut Vec<Stmt>) {
                 *e = Expr::undefined();
             }
         });
-        !set && js::mentions_in(&rest, name) == 0
+        let mut root = place;
+        while let ExprKind::Member(of, _) = &root.kind {
+            root = of;
+        }
+        js::mentions_in(&rest, name) == 0 && (*at_once || matches!(root.kind, ExprKind::Var(_)))
     });
     if handles.is_empty() {
         return;
     }
+    let read = |name: &str| (handles.iter()).find(|(h, ..)| h == name);
     js::statement_lists(body, &mut |stmts| {
+        stmts.retain(
+            |stmt| !matches!(&stmt.kind, StmtKind::Const(name, _) if read(name).is_some_and(|(.., at_once)| !at_once)),
+        );
         for stmt in stmts.iter_mut() {
             if let StmtKind::Const(name, value) = &mut stmt.kind
-                && handles.contains(name)
+                && read(name).is_some()
                 && let ExprKind::Handle(place) = &value.kind
             {
                 *value = (**place).clone();
@@ -4573,14 +4626,37 @@ fn read_handles(body: &mut Vec<Stmt>) {
         if let ExprKind::Member(of, key) = &e.kind
             && key == "value"
             && let ExprKind::Var(v) = &of.kind
-            && handles.contains(v)
+            && let Some((_, place, at_once)) = read(v)
         {
-            *e = Expr {
-                span: e.span,
-                ..Expr::var(v)
+            let read = match at_once {
+                true => Expr::var(v),
+                false => place.clone(),
             };
+            *e = Expr { span: e.span, ..read };
         }
     });
+}
+
+/// Whether what `stmts[at]` names is last read before anything that could
+/// set a field: no field set nor call made from it to there.
+fn read_at_once(stmts: &[Stmt], at: usize, name: &str) -> bool {
+    let Some(last) = (at + 1..stmts.len())
+        .rev()
+        .find(|&k| js::mentions_in(&stmts[k..=k], name) > 0)
+    else {
+        return true;
+    };
+    let mut between = stmts[at + 1..=last].to_vec();
+    let mut still = true;
+    js::statement_lists(&mut between, &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Assign(target, _) = &stmt.kind {
+                still &= matches!(target.kind, ExprKind::Var(_));
+            }
+        }
+    });
+    js::each_expr_mut(&mut between, &mut |e| still &= !e.has_effects());
+    still
 }
 
 /// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose

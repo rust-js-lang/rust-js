@@ -790,8 +790,8 @@ export const mutations: Mutation[] = [
     "name": "table-reads-off",
     "breaks": "a `match` reading a table is MIR's tests of each variant, not `MAP[kind]`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    let within = |s: js::Span| !s.is_none() && tables.iter().any(|t| t.lo <= s.lo && s.hi <= t.hi);",
-    "replace": "    let within = |s: js::Span| false && !s.is_none() && tables.iter().any(|t| t.lo <= s.lo && s.hi <= t.hi);",
+    "find": "    let within = |s: js::Span| table_of(s).is_some();",
+    "replace": "    let within = |s: js::Span| false && table_of(s).is_some();",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -936,18 +936,6 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    read_handles(body);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a cell field a let pattern binds"
-    ]
-  },
-  {
-    "name": "read-handles-set",
-    "breaks": "a cell field a pattern binds and sets is its value read once, its set lost",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "        !set && js::mentions_in(&rest, name) == 0\n",
-    "replace": "        js::mentions_in(&rest, name) == 0\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -2113,5 +2101,29 @@ export const mutations: Mutation[] = [
     find: "        if parts.iter().any(|(p, ..)| *p == part) {\n            break;\n        }\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","two names of one field"],
+  },
+  {
+    name: "mir-tidy-table-last-arm-unchecked",
+    breaks: "MIR's last arm of a match on an enum's names is taken as its own name, whatever it gives",
+    file: "src/lower/mir/tidy.rs",
+    find: "            None => Some(left.as_str()),\n",
+    replace: "            None => None,\n",
+    tests: ["test/lowering.test.ts","-t","an enum's own names are the enum"],
+  },
+  {
+    name: "mir-tidy-handle-read-early",
+    breaks: "MIR's handle on a `Cell` field is read where it's made, though set before it's read",
+    file: "src/lower/mir/tidy.rs",
+    find: "                handles.push((name.clone(), (**place).clone(), read_at_once(stmts, k, name)));\n",
+    replace: "                handles.push((name.clone(), (**place).clone(), true));\n",
+    tests: ["test/lowering.test.ts","-t","a Cell a let takes apart"],
+  },
+  {
+    name: "mir-tidy-unread-made-kept",
+    breaks: "MIR's array made and never read is kept, `const value = [loud(1)]`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut |stmts| unread_made(stmts, &mentions));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","a value made only to be dropped is what making it does"],
   },
 ];

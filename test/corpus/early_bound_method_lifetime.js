@@ -33,8 +33,9 @@ function generic(p, PPicker) {
 }
 
 function main() {
-  console.log(
-    `${boxed({ impl: sevenPicker() })} ${boxed({ impl: doublePicker() })} ${generic(undefined, sevenPicker())} ${generic(undefined, doublePicker())}`,
-  );
+  const value = boxed({ impl: sevenPicker() });
+  const value$1 = boxed({ impl: doublePicker() });
+  const value$2 = generic(undefined, sevenPicker());
+  console.log(`${value} ${value$1} ${value$2} ${generic(undefined, doublePicker())}`);
 }
 //# sourceMappingURL=case.js.map

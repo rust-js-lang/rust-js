@@ -15,8 +15,7 @@ function main() {
   s += "a";
   const arg = $byteLen(mainConst$1);
   console.log(`${s} ${arg}`);
-  let slot = mainConst$2;
-  slot = [1, 2];
+  const slot = [1, 2];
   console.log(`(${slot[0]}, ${slot[1]})`);
 }
 //# sourceMappingURL=case.js.map

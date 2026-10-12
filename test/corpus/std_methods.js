@@ -12,6 +12,7 @@ import {
   $print,
   $some,
   $sortedEntries,
+  $unborrow,
 } from "@rust-js/runtime";
 
 var $pointDebug, $secretDebug, $pairDebug, $bagDebug, $lettersDebug, $tableDebug;
@@ -22,9 +23,8 @@ export function entry() {
 
 const Stack = {
   push(stack, value) {
-    const old = stack.head;
+    const next = stack.head;
     stack.head = undefined;
-    const next = old;
     stack.head = { value, next };
   },
   pop(stack) {
@@ -122,59 +122,55 @@ function loud(n) {
 function main() {
   let a = 3;
   loud(1);
-  const old = a;
+  const taken = a;
   a = undefined;
-  const taken = old;
   let b = 1;
-  const old$1 = b;
+  const old = b;
   b = 5;
-  const old$2 = old$1;
   let slot;
   const slot$1 = { value: slot };
-  const result = swap_in(slot$1, "x");
+  const first = swap_in(slot$1, "x");
   slot = slot$1.value;
-  const first = result;
   const slot$2 = { value: slot };
-  const result$1 = swap_in(slot$2, "y");
+  const second = swap_in(slot$2, "y");
   slot = slot$2.value;
-  const second = result$1;
   console.log(
-    `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old$2 == null ? "None" : `Some(${old$2})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,
+    `${taken == null ? "None" : `Some(${taken})`} ${a == null ? "None" : `Some(${a})`} ${old == null ? "None" : `Some(${old})`} ${b == null ? "None" : `Some(${b})`} ${first == null ? "None" : `Some(${$debugStr(first)})`} ${second == null ? "None" : `Some(${$debugStr(second)})`} ${slot == null ? "None" : `Some(${$debugStr(slot)})`}`,
   );
   const stack = {};
   Stack.push(stack, 1);
   Stack.push(stack, 2);
-  const arg = Stack.pop(stack);
-  const arg$1 = Stack.pop(stack);
-  const arg$2 = Stack.pop(stack);
+  const value = Stack.pop(stack);
+  const value$1 = Stack.pop(stack);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))(Stack.pop(stack))}`,
   );
   let items = [1, 2];
   let text = "hi";
-  const old$3 = items;
+  const old$1 = items;
   items = [];
-  const tmp = old$3;
-  const old$4 = text;
+  const old$2 = text;
   text = "";
-  const [itemsTaken, textTaken] = [tmp, old$4];
+  const itemsTaken = old$1;
+  const textTaken = old$2;
   console.log(
     `[${itemsTaken.map((item) => String(item)).join(", ")}] [${items.map((item) => String(item)).join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}`,
   );
-  const tmp$1 = Math.min(3, 7);
-  const tmp$2 = $bigMax(-2n, 5n);
-  const tmp$3 = $cmp("a", "b") > 0 ? "a" : "b";
+  const value$2 = Math.min(3, 7);
+  const value$3 = $bigMax(-2n, 5n);
   const left = [1, "x"];
   const right = [1, "w"];
-  const tmp$4 = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
+  const value$4 = $cmp("a", "b") > 0 ? "a" : "b";
   const left$1 = [2, "a"];
   const right$1 = [2, "a"];
+  const value$5 = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
   console.log(
-    `${tmp$1} ${tmp$2} ${tmp$3} ${versionDebug_fmt(tmp$4)} ${versionDebug_fmt(($cmp(left$1[0], right$1[0]) || $cmp(left$1[1], right$1[1])) > 0 ? left$1 : right$1)}`,
+    `${value$2} ${value$3} ${value$4} ${versionDebug_fmt(value$5)} ${versionDebug_fmt(($cmp(left$1[0], right$1[0]) || $cmp(left$1[1], right$1[1])) > 0 ? left$1 : right$1)}`,
   );
-  console.log(
-    `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
-  );
+  const value$6 = $asciiCase("HeLLo Ünï");
+  const value$7 = $asciiCase("abc é", true);
+  const value$8 = $asciiCase("Hello") === $asciiCase("hELLO");
+  console.log(`${value$6} ${value$7} ${value$8} ${$asciiCase("é") === $asciiCase("É")}`);
   const inspect = (x) => {
     $print(`saw ${x} `);
   };
@@ -186,18 +182,26 @@ function main() {
     .map((x) => Math.imul(x, 2));
   console.log(`[${doubled.map((item) => String(item)).join(", ")}]`);
   const r = { TAG: "Ok", _0: "abc" };
-  const arg$3 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
   console.log(
-    `${arg$3.TAG === "Ok" ? `Ok(${$debugStr(arg$3._0)})` : `Err(${arg$3._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
+    `${((result) => (result.TAG === "Ok" ? `Ok(${$debugStr(result._0)})` : `Err(${result._0})`))(
+      r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r,
+    )} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
   );
   const cell = { value: [1] };
-  $borrowMut(cell).value.push(2);
+  const value$9 = $borrowMut(cell, true);
+  try {
+    value$9.value.push(2);
+  } catch (error) {
+    $unborrow(value$9);
+    throw error;
+  }
+  $unborrow(value$9);
   console.log(`[${cell.value.map((item) => String(item)).join(", ")}] 5`);
   const front = [1];
   const back = [2, 3];
   $append(front, back);
-  const queue = [9];
-  const more = [8, 7];
+  const queue = [9].slice();
+  const more = [8, 7].slice();
   $append(queue, more);
   console.log(
     `[${front.map((item) => String(item)).join(", ")}] [${back.map((item) => String(item)).join(", ")}] [${queue.map((item) => String(item)).join(", ")}] [${more.map((item) => String(item)).join(", ")}]`,

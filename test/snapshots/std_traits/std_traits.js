@@ -11,11 +11,12 @@ import {
   $eq,
   $index,
   $iterator,
+  $lazyRange,
+  $lent,
   $max,
   $maxBy,
   $minBy,
   $partialCmp,
-  $range,
   $some,
   $thenCmp,
   $traitImpl,
@@ -138,14 +139,14 @@ function points(s) {
 
 export function enum_clones() {
   const a = { TAG: "Poly", _0: [1] };
+  const other = a.TAG === "Poly" ? { ...a, _0: a._0.slice() } : a;
   let b;
-  const match = a.TAG === "Poly" ? { ...a, _0: a._0.slice() } : a;
-  if (match.TAG === "Poly") {
-    const p = match._0;
+  if (other.TAG === "Poly") {
+    const p = other._0;
     p.push(2);
     b = { TAG: "Poly", _0: p };
   } else {
-    b = match;
+    b = other;
   }
   const dot = "Dot";
   const f = figureClone_clone({ TAG: "Poly", _0: [1, 2, 3] });
@@ -168,8 +169,8 @@ function evenTryFromU32_try_from(n) {
 }
 
 export function fallible_conversions(n) {
-  const match = evenTryFromU32_try_from(n);
-  const direct = match.TAG === "Ok" ? `even ${match._0[0]}` : match._0;
+  const value = evenTryFromU32_try_from(n);
+  const direct = value.TAG === "Ok" ? `even ${value._0[0]}` : value._0;
   const inferred = evenTryFromU32_try_from((n + 1) >>> 0);
   const result = inferred.TAG === "Ok" ? { TAG: "Ok", _0: String(inferred._0[0]) } : inferred;
   return `${direct}, ${result.TAG === "Ok" ? result._0 : result._0}`;
@@ -202,25 +203,24 @@ export function equalities() {
   const r1 = { version: version(1, "a"), notes: ["x"] };
   const r2 = { version: version(1, "b"), notes: ["x"] };
   const r3 = { version: version(1, "c"), notes: [] };
-  const tmp = versionPartialEq_eq(r1.version, r2.version) && $eq(r1.notes, r2.notes);
-  const tmp$1 = !(versionPartialEq_eq(r1.version, r3.version) && $eq(r1.notes, r3.notes));
-  const tmp$2 = same(version(2, "a"), version(3, "a"), versionPartialEq());
+  const value = versionPartialEq_eq(r1.version, r2.version) && $eq(r1.notes, r2.notes);
+  const value$1 = !(versionPartialEq_eq(r1.version, r3.version) && $eq(r1.notes, r3.notes));
+  const value$2 = same(version(2, "a"), version(3, "a"), versionPartialEq());
   const left = { TAG: "Bump", _0: version(4, "a") };
   const right = { TAG: "Bump", _0: version(4, "b") };
-  const tmp$3 =
+  const value$3 =
     left.TAG === "Bump"
       ? right.TAG === "Bump" && versionPartialEq_eq(left._0, right._0)
       : $eq(left, right);
-  const tmp$4 = { TAG: "Note", _0: "n" } === "Nothing";
-  const left$1 = version(5, "a");
+  const value$4 = version(5, "a");
   const right$1 = version(5, "b");
   return [
-    tmp,
-    tmp$1,
-    tmp$2,
-    tmp$3,
-    tmp$4,
-    left$1 == null || right$1 == null ? left$1 == right$1 : versionPartialEq_eq(left$1, right$1),
+    value,
+    value$1,
+    value$2,
+    value$3,
+    { TAG: "Note", _0: "n" } === "Nothing",
+    value$4 == null || right$1 == null ? value$4 == right$1 : versionPartialEq_eq(value$4, right$1),
   ];
 }
 
@@ -383,22 +383,26 @@ function fibonacci() {
 
 export function iterations() {
   let total = 0;
-  for (const x of $iterator({ n: 3 }, countdownIterator_next)) {
+  const iter = { n: 3 };
+  while (true) {
+    const x = countdownIterator_next(iter);
+    if (x == null) {
+      const c = { n: 2 };
+      const first = countdownIterator_next(c) ?? 0;
+      return [
+        total,
+        first,
+        $iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray(),
+        $iterator(fibonacci(), fibonacciIterator_next)
+          .take(5)
+          .map((x) => Math.imul(x, 2) >>> 0)
+          .reduce((a, b) => (a + b) >>> 0, 0),
+        $iterator({ n: 4 }, countdownIterator_next).reduce((n) => n + 1, 0),
+        $lent($iterator(fibonacci(), fibonacciIterator_next)).find((x) => x > 50),
+      ];
+    }
     total = (total + x) >>> 0;
   }
-  const c = { n: 2 };
-  const first = countdownIterator_next(c) ?? 0;
-  return [
-    total,
-    first,
-    $iterator(fibonacci(), fibonacciIterator_next).drop(1).take(6).toArray(),
-    $iterator(fibonacci(), fibonacciIterator_next)
-      .take(5)
-      .map((x) => Math.imul(x, 2) >>> 0)
-      .reduce((a, b) => (a + b) >>> 0, 0),
-    $iterator({ n: 4 }, countdownIterator_next).toArray().length,
-    $iterator(fibonacci(), fibonacciIterator_next).find((x) => x > 50),
-  ];
 }
 
 export function generic_iterations() {
@@ -407,14 +411,14 @@ export function generic_iterations() {
       { times: 3 },
       (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
       true,
-    ).toArray().length,
+    ).reduce((n) => n + 1, 0),
     $iterator(
       { times: 2 },
       (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
       true,
     )
       .filter((o) => o == null)
-      .toArray().length,
+      .reduce((n) => n + 1, 0),
     $iterator(
       { item: 2, times: 3 },
       (iterator) => repeatIterator_next(iterator, { clone: (value) => value }),
@@ -422,7 +426,8 @@ export function generic_iterations() {
     ).toArray(),
     $max(
       $iterator({ n: 5 }, countdownIterator_next)
-        .map((x, i) => Math.imul(i, x) >>> 0)
+        .map((x, i) => [i, x])
+        .map(([i, x]) => Math.imul(i, x) >>> 0)
         .toArray(),
     ),
   ];
@@ -455,11 +460,7 @@ function wordOrd_cmp(word, other) {
 }
 
 export function largest(xs, TOrd, TCopy) {
-  return $maxBy(
-    xs.map((item) => TCopy.copy(item)),
-    TOrd.cmp,
-    true,
-  );
+  return $maxBy(xs, TOrd.cmp, true);
 }
 
 export function in_order(a, b, TPartialOrd) {
@@ -596,24 +597,18 @@ export function debugged(x, TDebug) {
 export function debugs(n) {
   const p = { x: n, y: -2.5 };
   const r = n > 1 ? { TAG: "Ok", _0: n } : { TAG: "Err", _0: "small" };
-  const tmp = posDebug_fmt(p);
-  const tmp$1 = `${dimsDebug_fmt([n, 2])} ${nothingDebug_fmt(undefined)} ${glyphDebug_fmt("Dot")}`;
-  const tmp$2 = `${glyphDebug_fmt({ TAG: "Ring", _0: 1.5 })} ${glyphDebug_fmt({
-    TAG: "Box",
-    w: n,
-    h: 3,
-  })}`;
-  const tmp$3 = sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" });
-  const tmp$4 = `${boxedDebug_fmt({ item: p }, posDebug())} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`;
-  const arg = [n, "a", "'"];
-  const arg$1 = [5];
   return [
-    tmp,
-    tmp$1,
-    tmp$2,
-    tmp$3,
-    tmp$4,
-    `Some(${$debugF64(1)}) None (${arg[0]}, ${$debugStr(arg[1])}, ${$debugStr(arg[2], "'")}) (${arg$1[0]},)`,
+    posDebug_fmt(p),
+    `${dimsDebug_fmt([n, 2])} ${nothingDebug_fmt(undefined)} ${glyphDebug_fmt("Dot")}`,
+    `${glyphDebug_fmt({ TAG: "Ring", _0: 1.5 })} ${glyphDebug_fmt({ TAG: "Box", w: n, h: 3 })}`,
+    sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" }),
+    `${boxedDebug_fmt({ item: p }, posDebug())} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`,
+    `Some(${$debugF64(1)}) None ${((tuple) =>
+      `(${tuple[0]}, ${$debugStr(tuple[1])}, ${$debugStr(tuple[2], "'")})`)([
+      n,
+      "a",
+      "'",
+    ])} ${((tuple) => `(${tuple[0]},)`)([5])}`,
     `[${[p, p].map((item) => posDebug_fmt(item)).join(", ")}] ${r.TAG === "Ok" ? `Ok(${r._0})` : `Err(${$debugStr(r._0)})`} ${
       ["Less", "Equal", "Greater"][$cmp(n, 1) + 1]
     }`,
@@ -622,7 +617,7 @@ export function debugs(n) {
 }
 
 export function evens_below(n) {
-  return $range(0, n).filter((x) => x % 2 === 0);
+  return $lazyRange(0, n).filter((x) => x % 2 === 0);
 }
 
 export function countdown(n) {

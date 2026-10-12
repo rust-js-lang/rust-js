@@ -17,9 +17,8 @@ function twice(count) {
 function main() {
   let x = 3;
   const n = { value: x };
-  const result = bump(n, 2);
+  const doubled = bump(n, 2);
   x = n.value;
-  const doubled = result;
   const count = { value: x };
   twice(count);
   x = count.value;

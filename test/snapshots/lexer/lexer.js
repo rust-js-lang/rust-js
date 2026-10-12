@@ -6,7 +6,6 @@ import {
   $next,
   $nextIf,
   $peek,
-  $rest,
   $restStr,
   $toDigit,
   $unwrap,
@@ -32,71 +31,83 @@ export const Lexer = {
   number(lexer, first) {
     let n = $unwrap($toDigit(first, 10));
     while (true) {
-      const value = $peek(lexer.chars);
-      if (value != null) {
-        const match = $toDigit(value, 10);
-        if (match != null) {
-          n = ((Math.imul(n, 10) >>> 0) + match) >>> 0;
+      const c = $peek(lexer.chars);
+      if (c != null) {
+        const d = $toDigit(c, 10);
+        if (d != null) {
+          n = ((Math.imul(n, 10) >>> 0) + d) >>> 0;
           $next(lexer.chars);
-        } else {
-          break;
+          continue;
         }
-      } else {
-        break;
       }
+      break;
     }
     return n;
   },
   word(lexer, first) {
     let w = first;
     while (true) {
-      const c = $nextIf(lexer.chars, (c) => /^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
-      if (c != null) {
-        w += c;
-      } else {
+      const c = $nextIf(lexer.chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
+      if (c == null) {
         break;
       }
+      w += c;
     }
     return w;
   },
   tokens(lexer) {
     const out = [];
+    let s;
     while (true) {
       const c = $next(lexer.chars);
-      if (c != null) {
+      if (c == null) {
+        return { TAG: "Ok", _0: out };
+      }
+      bb67: {
         if (c === "\n") {
           lexer.line = (lexer.line + 1) >>> 0;
         } else if (!/^\p{White_Space}$/u.test(c)) {
           if (c >= "0" && c <= "9") {
             const n = Lexer.number(lexer, c);
             out.push({ TAG: "Num", _0: n });
-          } else if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_") {
-            const w = Lexer.word(lexer, c);
-            out.push({ TAG: "Ident", _0: w });
-          } else if (c === '"') {
-            let s = "";
-            while (true) {
-              const match = $next(lexer.chars);
-              if (match === '"') {
-                break;
-              } else if (match != null) {
-                s += match;
-              } else {
-                return { TAG: "Err", _0: `line ${lexer.line}: unterminated string` };
+          } else {
+            bb20: {
+              if (!(c >= "a") || !(c <= "z")) {
+                if (!(c >= "A") || !(c <= "Z")) {
+                  if (c === "_") {
+                    break bb20;
+                  } else if (c === '"') {
+                    s = "";
+                    while (true) {
+                      const ch = $next(lexer.chars);
+                      if (ch == null) {
+                        return { TAG: "Err", _0: `line ${lexer.line}: unterminated string` };
+                      }
+                      if (ch === '"') {
+                        out.push({ TAG: "Str", _0: s });
+                        break bb67;
+                      } else {
+                        s += ch;
+                      }
+                    }
+                  } else if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
+                    while (true) {
+                      if ($nextIf(lexer.chars, (c) => c !== "\n") == null) {
+                        break bb67;
+                      }
+                    }
+                  }
+                  out.push({ TAG: "Sym", _0: c });
+                  break bb67;
+                }
               }
             }
-            out.push({ TAG: "Str", _0: s });
-          } else if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
-            while ($nextIf(lexer.chars, (c) => c !== "\n") != null) {}
-          } else {
-            out.push({ TAG: "Sym", _0: c });
+            const w = Lexer.word(lexer, c);
+            out.push({ TAG: "Ident", _0: w });
           }
         }
-      } else {
-        break;
       }
     }
-    return { TAG: "Ok", _0: out };
   },
 };
 
@@ -104,23 +115,23 @@ export function pairs(v) {
   const it = $iter(v);
   const out = [];
   while (true) {
-    const value = $next(it);
-    const value$1 = $next(it);
-    if (value != null && value$1 != null) {
-      out.push([value, value$1]);
-    } else {
-      break;
+    const value = [$next(it), $next(it)];
+    if (value[0] != null && value[1] != null) {
+      const a = value[0];
+      const b = value[1];
+      out.push([a, b]);
+      continue;
     }
+    const rest = it.toArray();
+    return [out, rest];
   }
-  const rest = $rest(it);
-  return [out, rest];
 }
 
 export function capitalize(s) {
   const chars = $iter(Array.from(s));
-  const match = $next(chars);
-  if (match != null) {
-    return match.toUpperCase() + $restStr(chars);
+  const c = $next(chars);
+  if (c != null) {
+    return c.toUpperCase() + $restStr(chars);
   }
   return "";
 }
@@ -128,16 +139,15 @@ export function capitalize(s) {
 export function report() {
   let out = "";
   for (const src of ['let x_1 = 42 + y;\n// note\nprint("hi there") 7', 'a "open', "  "]) {
-    const arg = Lexer.tokens(Lexer.new(src));
-    out += `${arg.TAG === "Ok" ? `Ok([${arg._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(arg._0)})`}\n`;
+    const value = Lexer.new(src);
+    out += `${((result) => (result.TAG === "Ok" ? `Ok([${result._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(result._0)})`))(Lexer.tokens(value))}\n`;
   }
-  const arg = pairs([1, 2, 3, 4, 5]);
-  const arg$1 = pairs([]);
-  out += `([${arg[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}]) ([${arg$1[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${arg$1[1].map((item) => String(item)).join(", ")}])\n`;
+  const value = pairs([1, 2, 3, 4, 5]);
+  out += `([${value[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}]) ${((tuple) => `([${tuple[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${tuple[1].map((item) => String(item)).join(", ")}])`)(pairs([]))}\n`;
   out += `${capitalize("hello")} ${capitalize("ßig")} ${$debugStr(capitalize(""))}\n`;
   const words = $iter("one two three four".split(" "));
   const first = $next(words);
-  const rest = $rest(words);
+  const rest = words.toArray();
   out += `${first == null ? "None" : `Some(${$debugStr(first)})`} [${rest.map((item) => $debugStr(item)).join(", ")}]\n`;
   return out;
 }

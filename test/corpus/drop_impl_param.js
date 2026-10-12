@@ -22,11 +22,8 @@ function wrapPeek(TClone, dropT) {
 
 function wrapPeek_peek(wrap, TClone, dropT) {
   const copy = TClone.clone(wrap[0]);
-  try {
-    return 1;
-  } finally {
-    dropT?.(copy);
-  }
+  dropT?.(copy);
+  return 1;
 }
 
 function peeked(p, PPeek) {
@@ -41,10 +38,22 @@ function main() {
   const w = [["kept"]];
   try {
     console.log(`${peeked(w, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
-    console.log(`${wrapPeek_peek(w, { clone: (value) => value }, loudDrop_drop)}`);
-    console.log(`${peeked([1], wrapPeek({ clone: (value) => value }))}`);
-  } finally {
+  } catch (error) {
     loudDrop_drop(w[0]);
+    throw error;
   }
+  try {
+    console.log(`${wrapPeek_peek(w, { clone: (value) => value }, loudDrop_drop)}`);
+  } catch (error) {
+    loudDrop_drop(w[0]);
+    throw error;
+  }
+  try {
+    console.log(`${peeked([1], wrapPeek({ clone: (value) => value }))}`);
+  } catch (error) {
+    loudDrop_drop(w[0]);
+    throw error;
+  }
+  loudDrop_drop(w[0]);
 }
 //# sourceMappingURL=case.js.map

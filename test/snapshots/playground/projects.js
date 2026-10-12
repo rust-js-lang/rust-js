@@ -8,9 +8,9 @@ function copy(files) {
 }
 
 export function jsName(path) {
-  const match = $stripSuffix(path, ".rs");
-  if (match != null) {
-    return `${match}.js`;
+  const stem = $stripSuffix(path, ".rs");
+  if (stem != null) {
+    return `${stem}.js`;
   }
   return path;
 }
@@ -30,9 +30,9 @@ export const Project = {
     return project.files.map((f) => f.path);
   },
   currentState(project) {
-    const match = project.files.find((f) => f.path === project.current);
-    if (match) {
-      return match.state;
+    const file = project.files.find((f) => f.path === project.current);
+    if (file) {
+      return file.state;
     }
     return;
   },
@@ -64,7 +64,7 @@ export const Project = {
   },
   sources(project, live) {
     const files = Project.keeping(project, live);
-    return new Map(files.map((f) => [f.path, textOf(f.state)]));
+    return new Map(files.values().map((f) => [f.path, textOf(f.state)]));
   },
 };
 //# sourceMappingURL=projects.js.map

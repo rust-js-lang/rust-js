@@ -66,18 +66,18 @@ export function Store() {
 }
 
 function submit(previous, data) {
-  const match = data.get("name");
-  const name = typeof match === "string" ? match : "";
+  const text = data.get("name");
+  const name = typeof text === "string" ? text : "";
   return `${previous}${name};`;
 }
 
 export function SubmitStatus() {
+  const value = useFormStatus();
   let status;
-  const match = useFormStatus();
-  if (match.pending === true) {
-    const match$1 = match.data.get("name");
-    const name = typeof match$1 === "string" ? match$1 : "";
-    status = `sending ${name} by ${match.method}`;
+  if (value.pending === true) {
+    const text = value.data.get("name");
+    const name = typeof text === "string" ? text : "";
+    status = `sending ${name} by ${value.method}`;
   } else {
     status = "ready";
   }
@@ -214,15 +214,9 @@ export function Misc() {
     <Profiler
       id="misc"
       onRender={(id, phase) => {
-        let tmp;
-        if (phase === "mount") {
-          tmp = "mount";
-        } else if (phase === "update") {
-          tmp = "update";
-        } else {
-          tmp = "nested";
-        }
-        globalThis.log(`${id} ${tmp}`);
+        globalThis.log(
+          `${id} ${phase === "mount" ? "mount" : phase === "update" ? "update" : "nested"}`,
+        );
       }}
     >
       <ul>

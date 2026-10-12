@@ -34,7 +34,7 @@ function spanDoubleEndedIterator_next_back(span) {
 
 function main() {
   const down = $range(1, 4).toReversed();
-  const top = $range(250, 255 + 1).toReversed();
+  const top = $range(250, 256).toReversed();
   const own = $iterator([0, 3], spanDoubleEndedIterator_next_back).toArray();
   console.log(
     `[${down.map((item) => String(item)).join(", ")}] [${top.map((item) => String(item)).join(", ")}] [${own.map((item) => String(item)).join(", ")}]`,
@@ -43,24 +43,23 @@ function main() {
   const it = $iter(v);
   const back = $nextBack(it);
   const front = $next(it);
-  const arg = it.end - it.at;
-  const arg$1 = it.items.slice(it.at, it.end);
+  const value = it.end - it.at;
+  const arg = it.items.slice(it.at, it.end);
   console.log(
-    `${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`} ${arg} [${arg$1.map((item) => String(item)).join(", ")}]`,
+    `${back == null ? "None" : `Some(${back})`} ${front == null ? "None" : `Some(${front})`} ${value} [${arg.map((item) => String(item)).join(", ")}]`,
   );
   const range = { start: 0, end: 5 };
-  const arg$2 = $rangeNextBack(range);
-  const arg$3 = $rangeNext(range);
+  const value$1 = $rangeNextBack(range);
   console.log(
-    `${arg$2 == null ? "None" : `Some(${arg$2})`} ${arg$3 == null ? "None" : `Some(${arg$3})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))($rangeNext(range))}`,
   );
   const p = $iter(v);
   const peeked = $peek(p);
   const ten = $nextIf(p, (item) => item === 10);
   const big = $nextIf(p, (x) => x > 100);
-  const arg$4 = $next(p);
+  const arg$1 = $next(p);
   console.log(
-    `${peeked == null ? "None" : `Some(${peeked})`} ${ten == null ? "None" : `Some(${ten})`} ${big == null ? "None" : `Some(${big})`} ${arg$4 == null ? "None" : `Some(${arg$4})`}`,
+    `${peeked == null ? "None" : `Some(${peeked})`} ${ten == null ? "None" : `Some(${ten})`} ${big == null ? "None" : `Some(${big})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

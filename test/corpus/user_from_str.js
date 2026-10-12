@@ -23,14 +23,14 @@ export function roleFromStr() {
 }
 
 function roleFromStr_from_str(s) {
-  const match = $trim(s).toLowerCase();
-  if (match === "admin") {
+  const other = $trim(s).toLowerCase();
+  if (other === "admin") {
     return { TAG: "Ok", _0: "Admin" };
   }
-  if (match === "member") {
+  if (other === "member") {
     return { TAG: "Ok", _0: "Member" };
   }
-  return { TAG: "Err", _0: `no role ${$debugStr(match)}` };
+  return { TAG: "Err", _0: `no role ${$debugStr(other)}` };
 }
 
 function pointDebug_fmt(point) {
@@ -103,36 +103,37 @@ function total(text) {
 }
 
 function main() {
-  const arg = roleFromStr_from_str("Admin");
-  const arg$1 = roleFromStr_from_str(" member ");
-  const arg$2 = roleFromStr_from_str("guest");
+  const value$1 = roleFromStr_from_str("Admin");
+  const value$2 = roleFromStr_from_str(" member ");
   console.log(
-    `${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugStr(arg$1._0)})`} ${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${$debugStr(arg$2._0)})`}`,
+    `${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugStr(result._0)})`))(roleFromStr_from_str("guest"))}`,
   );
   const result = roleFromStr_from_str("ADMIN");
-  const arg$3 = result.TAG === "Ok" ? { TAG: "Ok", _0: result._0 === "Admin" } : result;
-  console.log(`${arg$3.TAG === "Ok" ? `Ok(${arg$3._0})` : `Err(${$debugStr(arg$3._0)})`}`);
+  console.log(
+    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugStr(result._0)})`))(
+      result.TAG === "Ok" ? { TAG: "Ok", _0: result._0 === "Admin" } : result,
+    )}`,
+  );
   const roles = $collectResults(["admin", "member"].values().map((s) => roleFromStr_from_str(s)));
   console.log(
     `${roles.TAG === "Ok" ? `Ok([${roles._0.map((item) => item).join(", ")}])` : `Err(${$debugStr(roles._0)})`}`,
   );
-  const arg$4 = pointFromStr_from_str("3, 4");
   console.log(
-    `${arg$4.TAG === "Ok" ? `Ok(${pointDebug_fmt(arg$4._0)})` : `Err(${pointErrorDebug_fmt(arg$4._0)})`}`,
+    `${((result) => (result.TAG === "Ok" ? `Ok(${pointDebug_fmt(result._0)})` : `Err(${pointErrorDebug_fmt(result._0)})`))(pointFromStr_from_str("3, 4"))}`,
   );
-  const match = pointFromStr_from_str("3");
-  if (match.TAG === "Ok") {
-    console.log(`${pointDebug_fmt(match._0)}`);
+  const value$3 = pointFromStr_from_str("3");
+  if (value$3.TAG === "Ok") {
+    console.log(`${pointDebug_fmt(value$3._0)}`);
   } else {
-    console.log(`${pointErrorDisplay_fmt(match._0)}`);
+    console.log(`${pointErrorDisplay_fmt(value$3._0)}`);
   }
-  const e = pointFromStr_from_str("3,x");
-  if (e.TAG === "Err") {
-    console.log(`${pointErrorDisplay_fmt(e._0)} ${pointErrorDebug_fmt(e._0)}`);
+  const value$4 = pointFromStr_from_str("3,x");
+  if (value$4.TAG === "Err") {
+    console.log(`${pointErrorDisplay_fmt(value$4._0)} ${pointErrorDebug_fmt(value$4._0)}`);
   }
   const result$1 = total("1,2; 3,4");
-  const arg$5 = result$1.TAG === "Ok" ? result$1._0 : undefined;
-  console.log(`${arg$5 == null ? "None" : `Some(${arg$5})`}`);
+  const value = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   const result$2 = total("1,2;oops");
   console.log(
     `${result$2.TAG === "Ok" ? String(result$2._0) : pointErrorDisplay_fmt(result$2._0)}`,

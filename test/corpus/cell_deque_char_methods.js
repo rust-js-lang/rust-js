@@ -13,6 +13,7 @@ import {
   $escapeDefault,
   $escapeUnicode,
   $mutAt,
+  $mutItems,
   $partitionPoint,
   $popFrontIf,
   $popIfCell,
@@ -20,6 +21,7 @@ import {
   $refCellSwap,
   $retainMut,
   $slice,
+  $unborrow,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -38,34 +40,51 @@ function main() {
   list.value.push(2);
   const more = { value: [9] };
   $refCellSwap(list, more);
-  console.log(
-    `[${$borrow(list)
-      .value.map((item) => String(item))
-      .join(", ")}] [${$borrow(more)
-      .value.map((item) => String(item))
-      .join(", ")}]`,
-  );
+  const value = $borrow(list, true);
+  let tmp;
+  try {
+    tmp = $borrow(more, true);
+  } catch (error) {
+    $unborrow(value);
+    throw error;
+  }
+  try {
+    console.log(
+      `[${value.value.map((item) => String(item)).join(", ")}] [${tmp.value.map((item) => String(item)).join(", ")}]`,
+    );
+  } catch (error) {
+    $unborrow(tmp);
+    $unborrow(value);
+    throw error;
+  }
+  try {
+    $unborrow(tmp);
+  } catch (error) {
+    $unborrow(value);
+    throw error;
+  }
+  $unborrow(value);
   console.log(`${false} ${false}`);
-  const deque = $range(1, 6 + 1);
+  const deque = $range(1, 7);
+  const value$1 = deque[1];
   console.log(
-    `${deque[1] == null ? "None" : `Some(${deque[1]})`} ${deque[9] == null ? "None" : `Some(${deque[9]})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${deque[9] == null ? "None" : `Some(${deque[9]})`}`,
   );
   const x = $mutAt(deque, 0);
   if (x != null) {
     x.value = (x.value + 100) | 0;
   }
-  const cell = $unwrap($mutAt(deque, 0));
-  cell.value = (cell.value + 1) | 0;
-  const cell$1 = $unwrap($mutAt(deque, -1));
-  cell$1.value = Math.imul(cell$1.value, 10);
+  const value$2 = $unwrap($mutAt(deque, 0));
+  value$2.value = (value$2.value + 1) | 0;
+  const value$3 = $unwrap($mutAt(deque, -1));
+  value$3.value = Math.imul(value$3.value, 10);
   const arg = $slice(deque, 1, 3);
   console.log(
     `[${deque.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
   );
-  const arg$1 = $dequeSwapRemove(deque, 1, false);
-  const arg$2 = $dequeSwapRemove(deque, 3, true);
+  const value$4 = $dequeSwapRemove(deque, 1, false);
   console.log(
-    `${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`} [${deque.map((item) => String(item)).join(", ")}]`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${((value) => (value == null ? "None" : `Some(${value})`))($dequeSwapRemove(deque, 3, true))} [${deque.map((item) => String(item)).join(", ")}]`,
   );
   $retainMut(
     deque,
@@ -75,26 +94,28 @@ function main() {
     },
     true,
   );
-  const arg$3 = $partitionPoint(deque, (x) => x < 50);
-  console.log(`[${deque.map((item) => String(item)).join(", ")}] ${arg$3}`);
-  const arg$4 = $popFrontIf(deque, (x) => x.value > 100, true);
-  const arg$5 = $popIfCell(deque, (x) => x.value > 100);
+  const arg$1 = $partitionPoint(deque, (x) => x < 50);
+  console.log(`[${deque.map((item) => String(item)).join(", ")}] ${arg$1}`);
+  const value$5 = $popFrontIf(deque, (x) => x.value > 100, true);
   console.log(
-    `${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`} [${deque.map((item) => String(item)).join(", ")}]`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${value})`))($popIfCell(deque, (x) => x.value > 100))} [${deque.map((item) => String(item)).join(", ")}]`,
   );
   for (const c of ["a", "\n", "'", "é", "😀", ""]) {
-    console.log(`${$escapeDefault(c)} ${$escapeDebug(c, false)} ${$escapeUnicode(c)}`);
+    const value = $escapeDefault(c);
+    const value$1 = $escapeDebug(c, false);
+    console.log(`${value} ${value$1} ${$escapeUnicode(c)}`);
   }
-  console.log(`${$escapeDefault("a	b\"'é")} ${$escapeDebug("a	b\"'é́", true)}`);
+  const value$6 = $escapeDefault("a	b\"'é");
+  console.log(`${value$6} ${$escapeDebug("a	b\"'é́", true)}`);
   console.log(`${$escapeUnicode("hé")}`);
   const buffer = [0, 0, 0, 0];
-  const text = { value: $encodeUtf8("é", buffer) };
-  const arg$6 = $byteLen(text.value);
-  console.log(`${text.value} ${arg$6}`);
+  const text = $encodeUtf8("é", buffer);
+  const arg$2 = $byteLen(text);
+  console.log(`${text} ${arg$2}`);
   console.log(`[${buffer.map((item) => String(item)).join(", ")}]`);
-  const decoded = $decodeUtf16([104, 55357, 56832, 55296, 105]).map((r) =>
-    r.TAG === "Err" ? { TAG: "Err", _0: r._0 } : r,
-  );
+  const decoded = Iterator.from($decodeUtf16([104, 55357, 56832, 55296, 105]))
+    .map((r) => (r.TAG === "Err" ? { TAG: "Err", _0: r._0 } : r))
+    .toArray();
   console.log(
     `[${decoded.map((item) => (item.TAG === "Ok" ? `Ok(${$debugStr(item._0, "'")})` : `Err(${item._0})`)).join(", ")}]`,
   );
@@ -109,8 +130,8 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  for (let i = 0; i < pair.length; i++) {
-    pair[i] = (pair[i] + 1) | 0;
+  for (const x of $mutItems(pair)) {
+    x.value = (x.value + 1) | 0;
   }
   console.log(`[${pair.map((item) => String(item)).join(", ")}]`);
 }

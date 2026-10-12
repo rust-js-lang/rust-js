@@ -10,13 +10,13 @@ export function half(n) {
 }
 
 export function describe(o) {
-  if (o === 0) {
-    return 100;
-  }
-  if (o != null && o < 0) {
-    return -1;
-  }
   if (o != null) {
+    if (o === 0) {
+      return 100;
+    }
+    if (o < 0) {
+      return -1;
+    }
     return Math.imul(o, 2);
   }
   return 0;
@@ -35,14 +35,13 @@ export function halvings(n) {
   while (true) {
     const h = half(n);
     if (h != null) {
-      if (h === 0) {
-        break;
+      if (h !== 0) {
+        n = h;
+        count = (count + 1) >>> 0;
+        continue;
       }
-      n = h;
-      count = (count + 1) >>> 0;
-    } else {
-      break;
     }
+    break;
   }
   return count;
 }
@@ -86,10 +85,7 @@ export function same_slots(a, b) {
 
 export function label(n) {
   const name = n > 0 ? String(n) : undefined;
-  if (name != null) {
-    return name + "!";
-  }
-  return "none";
+  return name != null ? name + "!" : "none";
 }
 
 function double(n) {
@@ -106,12 +102,11 @@ function pair(n) {
 export function mapped(n) {
   const h = half(n);
   const h$1 = half(n);
-  const tmp = h$1 != null ? (h$1 + 1) | 0 : undefined;
-  const tmp$1 = h != null ? double(h) : undefined;
-  const tmp$2 = h != null ? h > 2 : undefined;
+  const value = h$1 != null ? (h$1 + 1) | 0 : undefined;
+  const value$1 = h != null ? double(h) : undefined;
   const h$2 = half(n);
   const x = h$2 != null ? (h$2 + 1) | 0 : undefined;
-  return [tmp, tmp$1, tmp$2, x != null ? Math.imul(x, 3) : undefined];
+  return [value, value$1, h != null ? h > 2 : undefined, x != null ? Math.imul(x, 3) : undefined];
 }
 
 export function mapped_more(n) {
@@ -123,10 +118,10 @@ export function mapped_more(n) {
   };
   const counted = h != null ? map(h) : undefined;
   const option = pair(n);
-  const tmp = option ? Math.imul(option[0], option[1]) : undefined;
-  const tmp$1 = calls;
+  const value = option ? Math.imul(option[0], option[1]) : undefined;
+  const value$1 = calls;
   const option$1 = half(n);
-  return [tmp, counted, tmp$1, option$1 != null ? 7 : undefined];
+  return [value, counted, value$1, option$1 != null ? 7 : undefined];
 }
 
 export function chained(n) {
@@ -143,16 +138,16 @@ export function chained_twice(n) {
     calls = (calls + 1) >>> 0;
     return half(m);
   };
-  let v;
   const h = half(n);
-  if (h != null && h !== 0) {
-    const q = counted(h);
-    if (q != null && q > 1) {
-      v = q;
-    } else {
-      v = 0;
+  let v;
+  bb15: {
+    if (h != null && h !== 0) {
+      const q = counted(h);
+      if (q != null && q > 1) {
+        v = q;
+        break bb15;
+      }
     }
-  } else {
     v = 0;
   }
   return [v, calls];
@@ -164,17 +159,15 @@ export function chained_long_else(n) {
     calls = (calls + 1) | 0;
     return half(m);
   };
-  chain: {
-    const h = half(n);
-    if (h != null) {
-      const q = counted(h);
-      if (q != null && q > 1) {
-        return q;
-      }
+  const h = half(n);
+  if (h != null) {
+    const q = counted(h);
+    if (q != null && q > 1) {
+      return q;
     }
-    calls = (calls + 10) | 0;
-    return -calls | 0;
   }
+  calls = (calls + 10) | 0;
+  return -calls | 0;
 }
 
 export function chained_statement(n) {
@@ -183,7 +176,9 @@ export function chained_statement(n) {
   if (h != null) {
     const value = h > 0 ? [h, (h + 1) | 0] : undefined;
     if (value && value[0] < 10) {
-      total = (value[0] + value[1]) | 0;
+      const a = value[0];
+      const b = value[1];
+      total = (a + b) | 0;
     }
   }
   return total;
@@ -196,9 +191,9 @@ export function chained_loop(n) {
     if (h != null && h !== 0) {
       n = h;
       count = (count + 1) >>> 0;
-    } else {
-      break;
+      continue;
     }
+    break;
   }
   return count;
 }

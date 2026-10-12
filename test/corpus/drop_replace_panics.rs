@@ -1,4 +1,3 @@
-//@ ignore-rust-js: THIR's lowering writes the new value only if the old one's drop returns, so unwinding drops the old one again
 //@ run-fail: boom
 // An assignment drops the old value, then writes the new one: if the old
 // one's drop panics, the new one is written still, and it's what unwinding

@@ -21,11 +21,8 @@ function wrapConsume(TClone, dropT) {
 }
 
 function wrapConsume_consume(wrap, TClone, dropT) {
-  try {
-    return 1;
-  } finally {
-    dropT?.(wrap[0]);
-  }
+  dropT?.(wrap[0]);
+  return 1;
 }
 
 function eat(c, CConsume) {
@@ -45,11 +42,8 @@ function wrapTake(dropT) {
 }
 
 function wrapTake_take(wrap, dropT) {
-  try {
-    return 2;
-  } finally {
-    dropT?.(wrap[0]);
-  }
+  dropT?.(wrap[0]);
+  return 2;
 }
 
 function taken(c, CTake) {
@@ -69,9 +63,14 @@ function wrapReset(TDefault, dropT) {
 }
 
 function wrapReset_reset(wrap, TDefault, dropT) {
-  const next = TDefault.default();
-  dropT?.(wrap[0]);
-  wrap[0] = next;
+  const value = TDefault.default();
+  try {
+    dropT?.(wrap[0]);
+  } catch (error) {
+    wrap[0] = value;
+    throw error;
+  }
+  wrap[0] = value;
 }
 
 export function loudDefault() {
@@ -97,14 +96,22 @@ function main() {
     `${wrapConsume_consume([["called directly"]], { clone: (value) => value }, loudDrop_drop)}`,
   );
   console.log(`${eat([5], wrapConsume({ clone: (value) => value }))}`);
-  console.log(`${taken([7], wrapTake())} ${taken([["taken"]], wrapTake(loudDrop_drop))}`);
+  const value = taken([7], wrapTake());
+  console.log(`${value} ${taken([["taken"]], wrapTake(loudDrop_drop))}`);
   console.log(`${taken([8], wrapTake())}`);
   const wrapped = [["replaced"]];
   try {
     wrapReset_reset(wrapped, loudDefault(), loudDrop_drop);
-    console.log("reset");
-  } finally {
+  } catch (error) {
     loudDrop_drop(wrapped[0]);
+    throw error;
   }
+  try {
+    console.log("reset");
+  } catch (error) {
+    loudDrop_drop(wrapped[0]);
+    throw error;
+  }
+  loudDrop_drop(wrapped[0]);
 }
 //# sourceMappingURL=case.js.map

@@ -8,37 +8,36 @@ export function entry() {
 
 function main() {
   const v = [1, 2, 3, 4];
-  console.log(
-    `${$sliceStartsWith(v, [1, 2])} ${$sliceStartsWith(v, [2])} ${$sliceStartsWith(v, [])} ${$sliceStartsWith(
-      v,
-      [1, 2, 3, 4, 5],
-    )}`,
-  );
-  console.log(
-    `${$sliceStartsWith(v, [3, 4], true)} ${$sliceStartsWith(
-      v,
-      [1, 2, 3, 4, 5],
-      true,
-    )} ${$sliceStartsWith($slice(v, 0, 2), [2], true)}`,
-  );
+  const value = $sliceStartsWith(v, [1, 2]);
+  const value$1 = $sliceStartsWith(v, [2]);
+  const value$2 = $sliceStartsWith(v, []);
+  console.log(`${value} ${value$1} ${value$2} ${$sliceStartsWith(v, [1, 2, 3, 4, 5])}`);
+  const value$3 = $sliceStartsWith(v, [3, 4], true);
+  const value$4 = $sliceStartsWith(v, [1, 2, 3, 4, 5], true);
+  console.log(`${value$3} ${value$4} ${$sliceStartsWith($slice(v, 0, 2), [2], true)}`);
   const words = ["a", "b", "c"];
-  console.log(`${$sliceStartsWith(words, ["a", "b"])} ${$sliceStartsWith(words, ["b"], true)}`);
+  const value$5 = $sliceStartsWith(words, ["a", "b"]);
+  console.log(`${value$5} ${$sliceStartsWith(words, ["b"], true)}`);
   const text = "content-type: json";
+  const value$6 = $sliceStartsWith(
+    Array.from(new TextEncoder().encode(text)),
+    [99, 111, 110, 116, 101, 110, 116],
+  );
   console.log(
-    `${$sliceStartsWith(
+    `${value$6} ${$sliceStartsWith(
       Array.from(new TextEncoder().encode(text)),
-      [99, 111, 110, 116, 101, 110, 116],
-    )} ${$sliceStartsWith(Array.from(new TextEncoder().encode(text)), [120, 109, 108], true)}`,
+      [120, 109, 108],
+      true,
+    )}`,
   );
   const flags = [true, false];
   console.log(`${$sliceStartsWith(flags, [false], true)}`);
   const a = [67, 111, 110, 116, 101, 110, 116, 45, 84, 121, 112, 101];
+  const value$7 = $bytesAsciiEq(a, [99, 111, 110, 116, 101, 110, 116, 45, 116, 121, 112, 101]);
   console.log(
-    `${$bytesAsciiEq(
-      a,
-      [99, 111, 110, 116, 101, 110, 116, 45, 116, 121, 112, 101],
-    )} ${$bytesAsciiEq(a, [99, 111, 110, 116, 101, 110, 116, 95, 116, 121, 112, 101])}`,
+    `${value$7} ${$bytesAsciiEq(a, [99, 111, 110, 116, 101, 110, 116, 95, 116, 121, 112, 101])}`,
   );
-  console.log(`${$bytesAsciiEq([97, 98], [97, 98, 99])} ${$bytesAsciiEq([192, 128], [224, 128])}`);
+  const value$8 = $bytesAsciiEq([97, 98], [97, 98, 99]);
+  console.log(`${value$8} ${$bytesAsciiEq([192, 128], [224, 128])}`);
 }
 //# sourceMappingURL=case.js.map

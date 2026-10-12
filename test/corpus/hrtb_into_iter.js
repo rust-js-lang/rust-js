@@ -18,6 +18,10 @@ function main() {
   const total = _T_Collection()
     .my_iter(v)
     .reduce((a, b) => (a + b) >>> 0, 0);
-  console.log(`${total} ${_T_Collection().my_iter(v).length}`);
+  console.log(
+    `${total} ${_T_Collection()
+      .my_iter(v)
+      .reduce((n) => n + 1, 0)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

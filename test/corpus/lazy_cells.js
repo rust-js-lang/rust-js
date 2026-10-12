@@ -24,13 +24,14 @@ function lookup(name) {
 
 function main() {
   console.log("before");
-  const arg = lookup("one");
-  const arg$1 = lookup("three");
+  const value$2 = lookup("one");
+  const value$3 = lookup("three");
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${$forceLock(TABLE).size}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${$forceLock(TABLE).size}`,
   );
+  const length = $forceLock(NAMES).length;
   console.log(
-    `${$forceLock(NAMES).length} [${$forceLock(NAMES)
+    `${length} [${$forceLock(NAMES)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -41,15 +42,16 @@ function main() {
       return "made";
     },
   };
-  const arg$2 = lazy.init === undefined ? lazy.value : undefined;
-  console.log(`${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`);
-  console.log(`${$force(lazy)} ${$byteLen($force(lazy))}`);
-  const arg$3 = lazy.init === undefined ? lazy.value : undefined;
-  console.log(`${arg$3 == null ? "None" : `Some(${$debugStr(arg$3)})`} ${$force(lazy)}`);
+  const value = lazy.init === undefined ? lazy.value : undefined;
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  const value$4 = $force(lazy);
+  console.log(`${value$4} ${$byteLen($force(lazy))}`);
+  const value$5 = lazy.init === undefined ? lazy.value : undefined;
+  console.log(`${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${$force(lazy)}`);
   console.log(`${calls}`);
   const count = { init: () => 40 };
-  const arg$4 = count.init === undefined ? count : undefined;
-  console.log(`${arg$4 == null ? "None" : `Some(${arg$4.value})`}`);
+  const value$1 = count.init === undefined ? count : undefined;
+  console.log(`${value$1 == null ? "None" : `Some(${value$1.value})`}`);
   $force(count);
   count.value = (count.value + 1) | 0;
   $force(count);
@@ -87,12 +89,12 @@ function main() {
       console.log("unit");
     },
   };
-  const arg$5 = unit.init === undefined ? $some(unit.value) : undefined;
-  console.log(`${arg$5 == null ? "None" : "Some(())"}`);
-  $force(unit);
-  const arg$6 = unit.init === undefined ? $some(unit.value) : undefined;
   console.log(
-    `${arg$6 == null ? "None" : "Some(())"} LazyCell(${unit.init === undefined ? "()" : "<uninit>"})`,
+    `${((value) => (value == null ? "None" : "Some(())"))(unit.init === undefined ? $some(unit.value) : undefined)}`,
+  );
+  $force(unit);
+  console.log(
+    `${((value) => (value == null ? "None" : "Some(())"))(unit.init === undefined ? $some(unit.value) : undefined)} LazyCell(${unit.init === undefined ? "()" : "<uninit>"})`,
   );
 }
 //# sourceMappingURL=case.js.map

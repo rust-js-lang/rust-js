@@ -7,23 +7,27 @@ export function entry() {
 }
 
 function main() {
-  const [a, b, c, d] = [255, -128, 65535, 32767];
+  const a = 255;
+  const b = -128;
+  const c = 65535;
+  const d = 32767;
   console.log(
     `${(a + 1) & 255} ${((b - 1) << 24) >> 24} ${(c * 2) & 65535} ${((d + 1) << 16) >> 16}`,
   );
-  const [e, f] = [4294967295, -2147483648];
+  const e = 4294967295;
+  const f = -2147483648;
   console.log(`${(e + 2) >>> 0} ${(f - 1) | 0} ${Math.imul(e, e) >>> 0}`);
-  const [g, h] = [18446744073709551615n, -9223372036854775808n];
+  const g = 18446744073709551615n;
+  const h = -9223372036854775808n;
   console.log(
     `${BigInt.asUintN(64, g + 1n)} ${BigInt.asIntN(64, h - 1n)} ${BigInt.asUintN(64, g * 3n)}`,
   );
   console.log("-56 4294967295 44");
-  console.log(`${(1 << 31) >>> 0} ${(1 << 31) | 0} ${-8 >> 1}`);
-  const arg = $checked(250 + 10, 0, 255);
-  const arg$1 = $checked(5 - 6, 0, 4294967295);
-  const arg$2 = $checked(2147483647 * 2, -2147483648, 2147483647);
+  console.log("2147483648 -2147483648 -4");
+  const value = $checked(250 + 10, 0, 255);
+  const value$1 = $checked(5 - 6, 0, 4294967295);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))($checked(2147483647 * 2, -2147483648, 2147483647))}`,
   );
   console.log(
     `${Math.min(250 + 10, 255)} ${Math.max(0 - 1, 0)} ${Math.min(Math.max(-2147483648 - 1, -2147483648), 2147483647)}`,
@@ -32,8 +36,9 @@ function main() {
 }
 
 function shifts(by, far, small) {
-  console.log(
-    `${22 >> Number(by & 63n)} ${(1 << (Number(far & 63n) & 7)) & 255} ${BigInt.asUintN(64, 5n << (BigInt(small) & 63n))} ${-64n >> (BigInt(far) & 63n)}`,
-  );
+  const value = 22 >> Number(by & 63n);
+  const value$1 = (1 << (Number(far & 63n) & 7)) & 255;
+  const value$2 = BigInt.asUintN(64, 5n << (BigInt(small) & 63n));
+  console.log(`${value} ${value$1} ${value$2} ${-64n >> (BigInt(far) & 63n)}`);
 }
 //# sourceMappingURL=case.js.map

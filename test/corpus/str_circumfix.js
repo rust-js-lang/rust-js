@@ -7,21 +7,28 @@ export function entry() {
 }
 
 function main() {
-  const arg = $stripCircumfix("bar:hello:foo", "bar:", ":foo");
-  console.log(`${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
-  const arg$1 = $stripCircumfix("bar:foo", "foo", "foo");
-  console.log(`${arg$1 == null ? "None" : `Some(${$debugStr(arg$1)})`}`);
-  const arg$2 = $stripCircumfix("foo:bar;", "foo:", ";");
-  console.log(`${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`);
-  const arg$3 = $stripCircumfix("foo:bar:baz", "foo:bar:", ":bar:baz");
-  console.log(`${arg$3 == null ? "None" : `Some(${$debugStr(arg$3)})`}`);
-  const arg$4 = $stripCircumfix("[]", "[", "]");
-  console.log(`${arg$4 == null ? "None" : `Some(${$debugStr(arg$4)})`}`);
-  const arg$5 = $stripCircumfix("[", "[", "[");
-  console.log(`${arg$5 == null ? "None" : `Some(${$debugStr(arg$5)})`}`);
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($stripCircumfix("bar:hello:foo", "bar:", ":foo"))}`,
+  );
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($stripCircumfix("bar:foo", "foo", "foo"))}`,
+  );
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($stripCircumfix("foo:bar;", "foo:", ";"))}`,
+  );
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($stripCircumfix("foo:bar:baz", "foo:bar:", ":bar:baz"))}`,
+  );
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($stripCircumfix("[]", "[", "]"))}`,
+  );
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($stripCircumfix("[", "[", "["))}`,
+  );
   const quoted = "«héllo»";
   const s = $stripCircumfix(quoted, "«", "»");
-  const arg$6 = s != null ? $byteLen(s) : undefined;
-  console.log(`${arg$6 == null ? "None" : `Some(${arg$6})`}`);
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${value})`))(s != null ? $byteLen(s) : undefined)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

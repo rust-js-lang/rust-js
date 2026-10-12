@@ -28,517 +28,232 @@ function half(n) {
 
 function main() {
   const option = some(1);
-  let option$live = true;
-  let holds;
-  try {
-    option$live = false;
-    holds = (n) => {
-      try {
-        return n[0] === 1;
-      } finally {
-        noisyDrop_drop(n);
-      }
-    };
-    console.log(`${option != null && holds(option)}`);
-  } finally {
-    if (option$live) {
-      if (option != null) {
-        noisyDrop_drop(option);
-      }
-    }
-  }
+  const holds = (n) => {
+    const result = n[0] === 1;
+    noisyDrop_drop(n);
+    return result;
+  };
+  console.log(`${option != null && holds(option)}`);
   const option$1 = some(2);
-  let option$1$live = true;
-  let holds$1;
-  try {
-    option$1$live = false;
-    holds$1 = (n) => {
-      try {
-        return n[0] > 5;
-      } finally {
-        noisyDrop_drop(n);
-      }
-    };
-    console.log(`${option$1 == null || holds$1(option$1)}`);
-  } finally {
-    if (option$1$live) {
-      if (option$1 != null) {
-        noisyDrop_drop(option$1);
-      }
-    }
-  }
+  const holds$1 = (n) => {
+    const result$1 = n[0] > 5;
+    noisyDrop_drop(n);
+    return result$1;
+  };
+  console.log(`${option$1 == null || holds$1(option$1)}`);
   const result = ok(4);
-  let result$live = true;
   let holds$2;
-  try {
-    result$live = false;
-    if (result.TAG === "Ok") {
-      const holds = (n) => {
-        try {
-          return n[0] === 4;
-        } finally {
-          noisyDrop_drop(n);
-        }
-      };
-      holds$2 = holds(result._0);
-    } else {
-      noisyDrop_drop(result._0);
-      holds$2 = false;
-    }
-    console.log(`${holds$2}`);
-  } finally {
-    if (result$live) {
-      if (result.TAG === "Ok") {
-        noisyDrop_drop(result._0);
-      }
-      if (result.TAG === "Err") {
-        noisyDrop_drop(result._0);
-      }
-    }
+  if (result.TAG === "Ok") {
+    const holds = (n) => {
+      const result$2 = n[0] === 4;
+      noisyDrop_drop(n);
+      return result$2;
+    };
+    holds$2 = holds(result._0);
+  } else {
+    noisyDrop_drop(result._0);
+    holds$2 = false;
   }
+  console.log(`${holds$2}`);
   const result$1 = ok(5);
-  let result$1$live = true;
   let holds$3;
-  try {
-    result$1$live = false;
-    if (result$1.TAG === "Err") {
-      const holds = (n) => {
-        try {
-          return n[0] === 5;
-        } finally {
-          noisyDrop_drop(n);
-        }
-      };
-      holds$3 = holds(result$1._0);
-    } else {
-      noisyDrop_drop(result$1._0);
-      holds$3 = false;
-    }
-    console.log(`${holds$3}`);
-  } finally {
-    if (result$1$live) {
-      if (result$1.TAG === "Ok") {
-        noisyDrop_drop(result$1._0);
-      }
-      if (result$1.TAG === "Err") {
-        noisyDrop_drop(result$1._0);
-      }
-    }
+  if (result$1.TAG === "Err") {
+    const holds = (n) => {
+      const result$4 = n[0] === 5;
+      noisyDrop_drop(n);
+      return result$4;
+    };
+    holds$3 = holds(result$1._0);
+  } else {
+    noisyDrop_drop(result$1._0);
+    holds$3 = false;
   }
+  console.log(`${holds$3}`);
   const option$2 = some(6);
-  let option$2$live = true;
-  let then;
-  let kept;
-  let kept$live;
-  try {
-    option$2$live = false;
-    then = (n) => {
-      let n$live = true;
-      try {
-        if (n[0] > 0) {
-          n$live = false;
-          return n;
-        }
-        return;
-      } finally {
-        if (n$live) {
-          noisyDrop_drop(n);
-        }
-      }
-    };
-    kept = option$2 != null ? then(option$2) : undefined;
-    kept$live = true;
-  } finally {
-    if (option$2$live) {
-      if (option$2 != null) {
-        noisyDrop_drop(option$2);
-      }
-    }
-  }
-  try {
-    kept$live = false;
-    const map = (n) => {
-      try {
-        return n[0];
-      } finally {
-        noisyDrop_drop(n);
-      }
-    };
-    console.log(`${kept != null ? map(kept) : 0}`);
-    const option = some(7);
-    let option$3$live = true;
-    let map$1;
-    try {
-      option$3$live = false;
-      map$1 = (n) => {
-        try {
-          return (n[0] + 1) & 255;
-        } finally {
-          noisyDrop_drop(n);
-        }
-      };
-      console.log(`${option != null ? map$1(option) : 0}`);
-    } finally {
-      if (option$3$live) {
-        if (option != null) {
-          noisyDrop_drop(option);
-        }
-      }
-    }
-    const result = ok(8);
-    let result$2$live = true;
-    let map$2;
-    let fallback;
-    try {
-      result$2$live = false;
-      map$2 = (n) => {
-        try {
-          return (n[0] * 2) & 255;
-        } finally {
-          noisyDrop_drop(n);
-        }
-      };
-      fallback = (e) => {
-        try {
-          return e[0];
-        } finally {
-          noisyDrop_drop(e);
-        }
-      };
-      console.log(`${result.TAG === "Ok" ? map$2(result._0) : fallback(result._0)}`);
-    } finally {
-      if (result$2$live) {
-        if (result.TAG === "Ok") {
-          noisyDrop_drop(result._0);
-        }
-        if (result.TAG === "Err") {
-          noisyDrop_drop(result._0);
-        }
-      }
-    }
-    const result$1 = ok(9);
-    let result$3$live = true;
-    let fallback$1;
-    let noisy;
-    try {
-      result$3$live = false;
-      fallback$1 = (e) => {
-        try {
-          return [(e[0] + 1) & 255];
-        } finally {
-          noisyDrop_drop(e);
-        }
-      };
-      noisy = result$1.TAG === "Ok" ? result$1._0 : fallback$1(result$1._0);
-      try {
-        console.log(`${noisy[0]}`);
-      } finally {
-        noisyDrop_drop(noisy);
-      }
-    } finally {
-      if (result$3$live) {
-        if (result$1.TAG === "Ok") {
-          noisyDrop_drop(result$1._0);
-        }
-        if (result$1.TAG === "Err") {
-          noisyDrop_drop(result$1._0);
-        }
-      }
-    }
-    const result$2 = ok(10);
-    let value;
-    if (result$2.TAG === "Ok") {
-      value = result$2._0;
-    } else {
-      noisyDrop_drop(result$2._0);
-      value = undefined;
-    }
-    const option$1 = value;
-    let option$4$live = true;
-    let map$3;
-    let arg;
-    try {
-      option$4$live = false;
-      map$3 = (n) => {
-        try {
-          return n[0];
-        } finally {
-          noisyDrop_drop(n);
-        }
-      };
-      arg = option$1 ? map$3(option$1) : undefined;
-      console.log(`${arg == null ? "None" : `Some(${arg})`}`);
-    } finally {
-      if (option$4$live) {
-        if (option$1 != null) {
-          noisyDrop_drop(option$1);
-        }
-      }
-    }
-    const result$3 = ok(11);
-    let result$5$live = true;
-    let holds;
-    let tmp;
-    let result$4;
-    let result$6$live;
-    let holds$1;
-    try {
-      result$5$live = false;
-      if (result$3.TAG === "Ok") {
-        const holds$1 = (n) => {
-          try {
-            return n[0] > 0;
-          } finally {
-            noisyDrop_drop(n);
-          }
-        };
-        holds = holds$1(result$3._0);
-      } else {
-        noisyDrop_drop(result$3._0);
-        holds = false;
-      }
-      tmp = holds;
-      result$4 = ok(12);
-      result$6$live = true;
-      try {
-        result$6$live = false;
-        if (result$4.TAG === "Err") {
-          const holds = (n) => {
-            try {
-              return n[0] > 0;
-            } finally {
-              noisyDrop_drop(n);
-            }
-          };
-          holds$1 = holds(result$4._0);
-        } else {
-          noisyDrop_drop(result$4._0);
-          holds$1 = false;
-        }
-        console.log(`${tmp} ${holds$1}`);
-      } finally {
-        if (result$6$live) {
-          if (result$4.TAG === "Ok") {
-            noisyDrop_drop(result$4._0);
-          }
-          if (result$4.TAG === "Err") {
-            noisyDrop_drop(result$4._0);
-          }
-        }
-      }
-    } finally {
-      if (result$5$live) {
-        if (result$3.TAG === "Ok") {
-          noisyDrop_drop(result$3._0);
-        }
-        if (result$3.TAG === "Err") {
-          noisyDrop_drop(result$3._0);
-        }
-      }
-    }
-    const result$5 = ok(13);
-    let value$1;
-    if (result$5.TAG === "Ok") {
-      value$1 = result$5._0;
-    } else {
-      noisyDrop_drop(result$5._0);
-      value$1 = undefined;
-    }
-    const option$2 = value$1;
-    let option$5$live = true;
-    let map$4;
-    let tmp$1;
+  const then = (n) => {
+    let n$4$live = true;
     let result$6;
-    let error;
-    let option$3;
-    let option$6$live;
-    let map$5;
-    let arg$1;
-    try {
-      option$5$live = false;
-      map$4 = (n) => {
-        try {
-          return n[0];
-        } finally {
-          noisyDrop_drop(n);
-        }
-      };
-      tmp$1 = option$2 ? map$4(option$2) : undefined;
-      result$6 = ok(14);
-      if (result$6.TAG === "Err") {
-        error = result$6._0;
-      } else {
-        noisyDrop_drop(result$6._0);
-        error = undefined;
-      }
-      option$3 = error;
-      option$6$live = true;
-      try {
-        option$6$live = false;
-        map$5 = (n) => {
-          try {
-            return n[0];
-          } finally {
-            noisyDrop_drop(n);
-          }
-        };
-        arg$1 = option$3 ? map$5(option$3) : undefined;
-        console.log(
-          `${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
-        );
-      } finally {
-        if (option$6$live) {
-          if (option$3 != null) {
-            noisyDrop_drop(option$3);
-          }
-        }
-      }
-    } finally {
-      if (option$5$live) {
-        if (option$2 != null) {
-          noisyDrop_drop(option$2);
-        }
-      }
+    if (n[0] > 0) {
+      n$4$live = false;
+      result$6 = n;
+    } else {
+      result$6 = undefined;
     }
-    const result$7 = ok(15);
-    let result$9$live = true;
-    let tmp$2;
-    let noisy$1;
-    let noisy$1$live;
-    let mapped;
-    let noisy$2;
-    try {
-      tmp$2 = result$7;
-      noisy$1 = [100];
-      noisy$1$live = true;
-      try {
-        result$9$live = false;
-        noisy$1$live = false;
-        if (tmp$2.TAG === "Ok") {
-          try {
-            mapped = tmp$2._0;
-          } finally {
-            noisyDrop_drop(noisy$1);
-          }
-        } else {
-          noisyDrop_drop(tmp$2._0);
-          mapped = noisy$1;
-        }
-        noisy$2 = mapped;
-        try {
-          console.log(`${noisy$2[0]}`);
-        } finally {
-          noisyDrop_drop(noisy$2);
-        }
-      } finally {
-        if (noisy$1$live) {
-          noisyDrop_drop(noisy$1);
-        }
-      }
-    } finally {
-      if (result$9$live) {
-        if (result$7.TAG === "Ok") {
-          noisyDrop_drop(result$7._0);
-        }
-        if (result$7.TAG === "Err") {
-          noisyDrop_drop(result$7._0);
-        }
-      }
+    if (n$4$live) {
+      noisyDrop_drop(n);
     }
-    const result$8 = ok(16);
-    let result$10$live = true;
-    let tmp$3;
-    let noisy$3;
-    let noisy$3$live;
-    let mapped$1;
-    let noisy$4;
-    try {
-      tmp$3 = result$8;
-      noisy$3 = [101];
-      noisy$3$live = true;
-      try {
-        result$10$live = false;
-        noisy$3$live = false;
-        if (tmp$3.TAG === "Ok") {
-          try {
-            mapped$1 = tmp$3._0;
-          } finally {
-            noisyDrop_drop(noisy$3);
-          }
-        } else {
-          noisyDrop_drop(tmp$3._0);
-          mapped$1 = noisy$3;
-        }
-        noisy$4 = mapped$1;
-        try {
-          console.log(`${noisy$4[0]}`);
-        } finally {
-          noisyDrop_drop(noisy$4);
-        }
-      } finally {
-        if (noisy$3$live) {
-          noisyDrop_drop(noisy$3);
-        }
-      }
-    } finally {
-      if (result$10$live) {
-        if (result$8.TAG === "Ok") {
-          noisyDrop_drop(result$8._0);
-        }
-        if (result$8.TAG === "Err") {
-          noisyDrop_drop(result$8._0);
-        }
-      }
-    }
-    const result$9 = half(17);
-    let result$11$live = true;
-    let holds$2;
-    let tmp$4;
-    let result$10;
-    let result$12$live;
-    let holds$3;
-    try {
-      result$11$live = false;
-      if (result$9.TAG === "Ok") {
-        holds$2 = result$9._0 > 0;
-      } else {
-        noisyDrop_drop(result$9._0);
-        holds$2 = false;
-      }
-      tmp$4 = holds$2;
-      result$10 = half(18);
-      result$12$live = true;
-      try {
-        result$12$live = false;
-        holds$3 = (n) => {
-          try {
-            return n[0] > 0;
-          } finally {
-            noisyDrop_drop(n);
-          }
-        };
-        console.log(`${tmp$4} ${result$10.TAG === "Err" && holds$3(result$10._0)}`);
-      } finally {
-        if (result$12$live) {
-          if (result$10.TAG === "Err") {
-            noisyDrop_drop(result$10._0);
-          }
-        }
-      }
-    } finally {
-      if (result$11$live) {
-        if (result$9.TAG === "Err") {
-          noisyDrop_drop(result$9._0);
-        }
-      }
-    }
-    console.log("end");
-  } finally {
-    if (kept$live) {
-      if (kept != null) {
-        noisyDrop_drop(kept);
-      }
-    }
+    return result$6;
+  };
+  const kept = option$2 != null ? then(option$2) : undefined;
+  const map = (n) => {
+    const result$7 = n[0];
+    noisyDrop_drop(n);
+    return result$7;
+  };
+  console.log(`${kept != null ? map(kept) : 0}`);
+  const option$3 = some(7);
+  const map$1 = (n) => {
+    const result$9 = (n[0] + 1) & 255;
+    noisyDrop_drop(n);
+    return result$9;
+  };
+  console.log(`${option$3 != null ? map$1(option$3) : 0}`);
+  const result$2 = ok(8);
+  const map$2 = (n) => {
+    const result$11 = (n[0] * 2) & 255;
+    noisyDrop_drop(n);
+    return result$11;
+  };
+  const fallback = (e) => {
+    const result$10 = e[0];
+    noisyDrop_drop(e);
+    return result$10;
+  };
+  console.log(`${result$2.TAG === "Ok" ? map$2(result$2._0) : fallback(result$2._0)}`);
+  const result$3 = ok(9);
+  const fallback$1 = (e) => {
+    const result = [(e[0] + 1) & 255];
+    noisyDrop_drop(e);
+    return result;
+  };
+  const value$2 = result$3.TAG === "Ok" ? result$3._0 : fallback$1(result$3._0);
+  try {
+    console.log(`${value$2[0]}`);
+  } catch (error) {
+    noisyDrop_drop(value$2);
+    throw error;
   }
+  noisyDrop_drop(value$2);
+  const result$4 = ok(10);
+  let value;
+  if (result$4.TAG === "Ok") {
+    value = result$4._0;
+  } else {
+    noisyDrop_drop(result$4._0);
+    value = undefined;
+  }
+  const map$3 = (n) => {
+    const result = n[0];
+    noisyDrop_drop(n);
+    return result;
+  };
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${value})`))(value ? map$3(value) : undefined)}`,
+  );
+  const result$5 = ok(11);
+  let holds$4;
+  if (result$5.TAG === "Ok") {
+    const holds = (n) => {
+      const result = n[0] > 0;
+      noisyDrop_drop(n);
+      return result;
+    };
+    holds$4 = holds(result$5._0);
+  } else {
+    noisyDrop_drop(result$5._0);
+    holds$4 = false;
+  }
+  const result$6 = ok(12);
+  let holds$5;
+  if (result$6.TAG === "Err") {
+    const holds = (n) => {
+      const result = n[0] > 0;
+      noisyDrop_drop(n);
+      return result;
+    };
+    holds$5 = holds(result$6._0);
+  } else {
+    noisyDrop_drop(result$6._0);
+    holds$5 = false;
+  }
+  console.log(`${holds$4} ${holds$5}`);
+  const result$7 = ok(13);
+  let value$1;
+  if (result$7.TAG === "Ok") {
+    value$1 = result$7._0;
+  } else {
+    noisyDrop_drop(result$7._0);
+    value$1 = undefined;
+  }
+  const map$4 = (n) => {
+    const result = n[0];
+    noisyDrop_drop(n);
+    return result;
+  };
+  const value$3 = value$1 ? map$4(value$1) : undefined;
+  const result$8 = ok(14);
+  let error;
+  if (result$8.TAG === "Err") {
+    error = result$8._0;
+  } else {
+    noisyDrop_drop(result$8._0);
+    error = undefined;
+  }
+  const map$5 = (n) => {
+    const result = n[0];
+    noisyDrop_drop(n);
+    return result;
+  };
+  console.log(
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))(error ? map$5(error) : undefined)}`,
+  );
+  const result$9 = ok(15);
+  const fallback$2 = [100];
+  let mapped;
+  if (result$9.TAG === "Ok") {
+    try {
+      mapped = result$9._0;
+    } finally {
+      noisyDrop_drop(fallback$2);
+    }
+  } else {
+    noisyDrop_drop(result$9._0);
+    mapped = fallback$2;
+  }
+  const value$4 = mapped;
+  try {
+    console.log(`${value$4[0]}`);
+  } catch (error) {
+    noisyDrop_drop(value$4);
+    throw error;
+  }
+  noisyDrop_drop(value$4);
+  const result$10 = ok(16);
+  const fallback$3 = [101];
+  let mapped$1;
+  if (result$10.TAG === "Ok") {
+    try {
+      mapped$1 = result$10._0;
+    } finally {
+      noisyDrop_drop(fallback$3);
+    }
+  } else {
+    noisyDrop_drop(result$10._0);
+    mapped$1 = fallback$3;
+  }
+  const value$5 = mapped$1;
+  try {
+    console.log(`${value$5[0]}`);
+  } catch (error) {
+    noisyDrop_drop(value$5);
+    throw error;
+  }
+  noisyDrop_drop(value$5);
+  const result$11 = half(17);
+  let holds$6;
+  if (result$11.TAG === "Ok") {
+    holds$6 = result$11._0 > 0;
+  } else {
+    noisyDrop_drop(result$11._0);
+    holds$6 = false;
+  }
+  const result$12 = half(18);
+  const holds$7 = (n) => {
+    const result = n[0] > 0;
+    noisyDrop_drop(n);
+    return result;
+  };
+  console.log(`${holds$6} ${result$12.TAG === "Err" && holds$7(result$12._0)}`);
+  console.log("end");
 }
 //# sourceMappingURL=case.js.map

@@ -6,7 +6,7 @@ export function entry() {
   main();
 }
 
-function foreverIterator_next(self) {
+function foreverIterator_next(forever) {
   return 1;
 }
 

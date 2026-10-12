@@ -112,7 +112,7 @@ function money(cents) {
 
 const Inventory = {
   new(items) {
-    const items$1 = new Map(items.map((item) => [item.sku, item]));
+    const items$1 = new Map(items.values().map((item) => [item.sku, item]));
     return { items: items$1, log: [] };
   },
   reserve(inventory, sku, wanted) {
@@ -138,9 +138,9 @@ const Inventory = {
     }
     const lines = [];
     for (const [sku, quantity] of order) {
-      const match = Inventory.reserve(inventory, sku, quantity);
-      if (match.TAG === "Ok") {
-        lines.push(match._0);
+      const value = Inventory.reserve(inventory, sku, quantity);
+      if (value.TAG === "Ok") {
+        lines.push(value._0);
       } else {
         for (const line of lines) {
           const item = inventory.items.get(line.sku);
@@ -149,7 +149,7 @@ const Inventory = {
           }
         }
         inventory.log.push(`rolled back ${lines.length} lines`);
-        return { TAG: "Err", _0: match._0 };
+        return { TAG: "Err", _0: value._0 };
       }
     }
     return { TAG: "Ok", _0: lines };
@@ -175,7 +175,10 @@ const Inventory = {
   },
   value_cents(inventory) {
     return Array.from(inventory.items.values())
-      .map((item) => BigInt.asUintN(64, BigInt(item.price_cents) * BigInt(item.stock)))
+      .map((item) => {
+        const value = BigInt(item.price_cents);
+        return BigInt.asUintN(64, value * BigInt(item.stock));
+      })
       .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
   },
 };
@@ -188,10 +191,10 @@ function parse_order(text) {
       .map((s) => $trim(s))
       .filter(Boolean)
       .map((part) => {
-        const option = $splitOnce(part, "x");
+        const value = $splitOnce(part, "x");
         const result =
-          option != null
-            ? { TAG: "Ok", _0: option }
+          value != null
+            ? { TAG: "Ok", _0: value }
             : { TAG: "Err", _0: `${$debugStr(part)} has no x` };
         if (result.TAG === "Err") {
           return result;
@@ -238,89 +241,84 @@ function main() {
     "pan-3 x two",
     "hos-9x2,ham-1x1",
     "zzz-0 x1",
-  ];
+  ].slice();
   const totals = [];
   while (true) {
     const text = queue.shift();
-    if (text != null) {
-      let parsed;
-      const match = parse_order(text);
-      if (match.TAG === "Ok") {
-        parsed = match._0;
-      } else {
-        console.log(`bad order: ${match._0}`);
-        continue;
-      }
+    if (text == null) {
+      console.log(
+        `low stock: [${Inventory.low_stock(inventory, 3)
+          .map((item) => $debugStr(item))
+          .join(", ")}]`,
+      );
+      console.log(`log: ${inventory.log.join("; ")}`);
+      const mean =
+        Number(totals.reduce((a, b) => BigInt.asUintN(64, a + b), 0n)) / totals.length / 100;
+      const length = totals.length;
+      const c = $max(totals);
+      console.log(
+        `orders: ${length}, mean ${$toFixed(mean, 2)}, max ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(c != null ? money(c) : undefined)}`,
+      );
+      const seen = new Set();
+      const names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
+      const key = (name) => [$byteLen(name), name];
+      names.sort((a, b) => {
+        const left = key(a);
+        const right = key(b);
+        return $cmp(left[0], right[0]) || $cmp(left[1], right[1]);
+      });
+      $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
+      console.log(`first letters: ${names.join(",")}`);
+      const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
+      prices.sort((a, b) => a - b);
+      $dedup(prices);
+      const value = $binarySearch(prices, 1899);
+      console.log(
+        `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}, 2000 at ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearch(prices, 2000))}`,
+      );
+      const restock = new Map([
+        ["KNF-4", 6],
+        ["SAW-2", 2],
+      ]);
+      const restocked = Array.from(inventory.items)
+        .map(([sku, item]) => {
+          const value = restock.get(sku);
+          if (value == null) {
+            return;
+          }
+          item.stock = (item.stock + value) >>> 0;
+          return [sku, item.stock];
+        })
+        .filter(Boolean);
+      restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
+      const arg = money(Inventory.value_cents(inventory));
+      console.log(
+        `restocked: [${restocked.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}], value now ${arg}`,
+      );
+      return;
+    }
+    const value = parse_order(text);
+    if (value.TAG === "Ok") {
+      const parsed = value._0;
       const order = parsed.map(([sku, n]) => [sku, n]);
-      const match$1 = Inventory.place(inventory, order);
-      if (match$1.TAG === "Ok") {
-        const total = match$1._0
+      const value$1 = Inventory.place(inventory, order);
+      if (value$1.TAG === "Ok") {
+        const total = value$1._0
           .map((arg0) => linePriced().total_cents(arg0))
           .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
         totals.push(total);
-        const skus = match$1._0.map((line) => line.sku);
+        const skus = value$1._0.map((line) => line.sku);
         console.log(
           `placed [${skus.map((item) => $debugStr(item)).join(", ")}] for ${money(total)}`,
         );
       } else {
         console.log(
-          `refused: ${stockErrorDisplay_fmt(match$1._0)} (${stockErrorDebug_fmt(match$1._0)})`,
+          `refused: ${stockErrorDisplay_fmt(value$1._0)} (${stockErrorDebug_fmt(value$1._0)})`,
         );
       }
     } else {
-      break;
+      console.log(`bad order: ${value._0}`);
     }
   }
-  console.log(
-    `low stock: [${Inventory.low_stock(inventory, 3)
-      .map((item) => $debugStr(item))
-      .join(", ")}]`,
-  );
-  console.log(`log: ${inventory.log.join("; ")}`);
-  const mean = Number(totals.reduce((a, b) => BigInt.asUintN(64, a + b), 0n)) / totals.length / 100;
-  const tmp = totals.length;
-  const c = $max(totals);
-  const arg = c != null ? money(c) : undefined;
-  console.log(
-    `orders: ${tmp}, mean ${$toFixed(mean, 2)}, max ${arg == null ? "None" : `Some(${$debugStr(arg)})`}`,
-  );
-  const seen = new Set();
-  const names = Array.from(inventory.items.values()).map((item) => item.name.toLowerCase());
-  const key = (name) => [$byteLen(name), name];
-  names.sort((a, b) => {
-    const left = key(a);
-    const right = key(b);
-    return $cmp(left[0], right[0]) || $cmp(left[1], right[1]);
-  });
-  $retain(names, (name) => $add(seen, $unwrap(Array.from(name)[0])));
-  console.log(`first letters: ${names.join(",")}`);
-  const prices = Array.from(inventory.items.values()).map((item) => item.price_cents);
-  prices.sort((a, b) => a - b);
-  $dedup(prices);
-  const arg$1 = $binarySearch(prices, 1899);
-  const arg$2 = $binarySearch(prices, 2000);
-  console.log(
-    `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${arg$1._0})`}, 2000 at ${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${arg$2._0})`}`,
-  );
-  const restock = new Map([
-    ["KNF-4", 6],
-    ["SAW-2", 2],
-  ]);
-  const restocked = Array.from(inventory.items)
-    .map(([sku, item]) => {
-      const value = restock.get(sku);
-      if (value == null) {
-        return;
-      }
-      const more = value;
-      item.stock = (item.stock + more) >>> 0;
-      return [sku, item.stock];
-    })
-    .filter(Boolean);
-  restocked.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
-  const arg$3 = money(Inventory.value_cents(inventory));
-  console.log(
-    `restocked: [${restocked.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}], value now ${arg$3}`,
-  );
 }
 //# sourceMappingURL=case.js.map

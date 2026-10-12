@@ -29,134 +29,288 @@ function partialDefault_default() {
 }
 
 function swap_y(p) {
-  let p$y$live = true;
-  let p$x$live = true;
+  let p$0$live = true;
+  let tmp;
   try {
-    p$y$live = false;
-    const y = keep(p.y);
-    p$x$live = false;
-    return { ...p, y };
-  } finally {
-    if (p$x$live) {
+    tmp = keep(p.y);
+    p$0$live = false;
+  } catch (error) {
+    if (p$0$live) {
       noisyDrop_drop(p.x);
     }
-    if (p$y$live) {
-      noisyDrop_drop(p.y);
-    }
+    throw error;
   }
+  return { ...p, y: tmp };
 }
 
 function keep(n) {
   try {
     console.log(`keep ${n[0]}`);
-    return [(n[0] + 10) & 255];
-  } finally {
+  } catch (error) {
     noisyDrop_drop(n);
+    throw error;
   }
+  const result = [(n[0] + 10) & 255];
+  noisyDrop_drop(n);
+  return result;
 }
 
 function rebuild(p, stop) {
-  let p$x$live = true;
-  try {
-    let tmp;
-    if (stop) {
-      return;
-    }
-    tmp = [9];
-    p$x$live = false;
-    return { ...p, y: tmp };
-  } finally {
-    if (p$x$live) {
-      noisyDrop_drop(p.x);
-    }
+  let result;
+  if (!stop) {
+    result = { ...p, y: [9] };
     noisyDrop_drop(p.y);
+    return result;
   }
+  result = undefined;
+  noisyDrop_drop(p.x);
+  noisyDrop_drop(p.y);
+  return result;
 }
 
 function main() {
   const p = { x: [1], y: [2], n: 1 };
-  let p$x$live = true;
+  const q = { ...p, y: [3] };
   try {
-    p$x$live = false;
-    const q = { ...p, y: [3] };
-    try {
-      console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
-    } finally {
-      noisyDrop_drop(q.x);
-      noisyDrop_drop(q.y);
-    }
-  } finally {
-    if (p$x$live) {
-      noisyDrop_drop(p.x);
-    }
+    console.log(`q ${q.x[0]} ${q.y[0]} ${q.n}`);
+  } catch (error) {
+    noisyDrop_drop(q.x);
+    noisyDrop_drop(q.y);
     noisyDrop_drop(p.y);
+    throw error;
   }
+  try {
+    noisyDrop_drop(q.x);
+    noisyDrop_drop(q.y);
+  } catch (error) {
+    noisyDrop_drop(p.y);
+    throw error;
+  }
+  noisyDrop_drop(p.y);
   console.log("after p");
   const swapped = swap_y({ x: [4], y: [5], n: 2 });
   try {
     console.log(`swapped ${swapped.x[0]} ${swapped.y[0]}`);
-    const partial = { x: [7], y: [8], n: 3 };
-    let fromTemp;
-    try {
-      fromTemp = { x: partial.x, y: [6], n: partial.n };
-    } finally {
-      noisyDrop_drop(partial.y);
-    }
-    try {
-      console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
-      const partial = partialDefault_default();
-      let defaults;
-      try {
-        defaults = { x: [22], y: partial.y, n: partial.n };
-      } finally {
-        noisyDrop_drop(partial.x);
-      }
-      try {
-        console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
-        const option = rebuild({ x: [10], y: [11], n: 4 }, true);
-        try {
-          console.log(`stopped ${!option}`);
-        } finally {
-          if (option != null) {
-            noisyDrop_drop(option.x);
-            noisyDrop_drop(option.y);
-          }
-        }
-        const option$1 = rebuild({ x: [12], y: [13], n: 5 }, false);
-        let option$1$Some$0$live = true;
-        try {
-          if (option$1) {
-            option$1$Some$0$live = false;
-            const built = option$1;
-            try {
-              console.log(`built ${built.x[0]} ${built.y[0]}`);
-            } finally {
-              noisyDrop_drop(built.x);
-              noisyDrop_drop(built.y);
-            }
-          } else {
-            console.log("none");
-          }
-        } finally {
-          if (option$1 != null) {
-            if (option$1$Some$0$live) {
-              noisyDrop_drop(option$1.x);
-              noisyDrop_drop(option$1.y);
-            }
-          }
-        }
-        console.log("end");
-      } finally {
-        noisyDrop_drop(defaults.x);
-        noisyDrop_drop(defaults.y);
-      }
-    } finally {
-      noisyDrop_drop(fromTemp.x);
-      noisyDrop_drop(fromTemp.y);
-    }
-  } finally {
+  } catch (error) {
     noisyDrop_drop(swapped.x);
     noisyDrop_drop(swapped.y);
+    throw error;
   }
+  const value = { x: [7], y: [8], n: 3 };
+  const fromTemp = { x: value.x, y: [6], n: value.n };
+  try {
+    noisyDrop_drop(value.y);
+  } catch (error) {
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  try {
+    console.log(`from temp ${fromTemp.x[0]} ${fromTemp.y[0]} ${fromTemp.n}`);
+  } catch (error) {
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  const value$1 = [22];
+  let tmp;
+  try {
+    tmp = partialDefault_default();
+  } catch (error) {
+    noisyDrop_drop(value$1);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  const defaults = { x: value$1, y: tmp.y, n: tmp.n };
+  try {
+    noisyDrop_drop(tmp.x);
+  } catch (error) {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  try {
+    console.log(`defaults ${defaults.x[0]} ${defaults.y[0]}`);
+  } catch (error) {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = rebuild({ x: [10], y: [11], n: 4 }, true);
+  } catch (error) {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  try {
+    console.log(`stopped ${!tmp$1}`);
+  } catch (error) {
+    if (tmp$1 != null) {
+      noisyDrop_drop(tmp$1.x);
+      noisyDrop_drop(tmp$1.y);
+    }
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  try {
+    if (tmp$1 != null) {
+      noisyDrop_drop(tmp$1.x);
+      noisyDrop_drop(tmp$1.y);
+    }
+  } catch (error) {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  let tmp$2;
+  try {
+    tmp$2 = rebuild({ x: [12], y: [13], n: 5 }, false);
+  } catch (error) {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  let _107$0$live = true;
+  if (tmp$2) {
+    _107$0$live = false;
+    const built = tmp$2;
+    try {
+      console.log(`built ${built.x[0]} ${built.y[0]}`);
+    } catch (error) {
+      noisyDrop_drop(built.x);
+      noisyDrop_drop(built.y);
+      if (tmp$2) {
+        if (_107$0$live) {
+          noisyDrop_drop(tmp$2.x);
+          noisyDrop_drop(tmp$2.y);
+        }
+      }
+      noisyDrop_drop(defaults.x);
+      noisyDrop_drop(defaults.y);
+      noisyDrop_drop(fromTemp.x);
+      noisyDrop_drop(fromTemp.y);
+      noisyDrop_drop(swapped.x);
+      noisyDrop_drop(swapped.y);
+      throw error;
+    }
+    try {
+      noisyDrop_drop(built.x);
+      noisyDrop_drop(built.y);
+    } catch (error) {
+      if (tmp$2) {
+        if (_107$0$live) {
+          noisyDrop_drop(tmp$2.x);
+          noisyDrop_drop(tmp$2.y);
+        }
+      }
+      noisyDrop_drop(defaults.x);
+      noisyDrop_drop(defaults.y);
+      noisyDrop_drop(fromTemp.x);
+      noisyDrop_drop(fromTemp.y);
+      noisyDrop_drop(swapped.x);
+      noisyDrop_drop(swapped.y);
+      throw error;
+    }
+  } else {
+    try {
+      console.log("none");
+    } catch (error) {
+      if (tmp$2) {
+        if (_107$0$live) {
+          noisyDrop_drop(tmp$2.x);
+          noisyDrop_drop(tmp$2.y);
+        }
+      }
+      noisyDrop_drop(defaults.x);
+      noisyDrop_drop(defaults.y);
+      noisyDrop_drop(fromTemp.x);
+      noisyDrop_drop(fromTemp.y);
+      noisyDrop_drop(swapped.x);
+      noisyDrop_drop(swapped.y);
+      throw error;
+    }
+  }
+  try {
+    if (tmp$2) {
+      if (_107$0$live) {
+        noisyDrop_drop(tmp$2.x);
+        noisyDrop_drop(tmp$2.y);
+      }
+    }
+  } catch (error) {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  _107$0$live = false;
+  try {
+    console.log("end");
+  } catch (error) {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  try {
+    noisyDrop_drop(defaults.x);
+    noisyDrop_drop(defaults.y);
+  } catch (error) {
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  try {
+    noisyDrop_drop(fromTemp.x);
+    noisyDrop_drop(fromTemp.y);
+  } catch (error) {
+    noisyDrop_drop(swapped.x);
+    noisyDrop_drop(swapped.y);
+    throw error;
+  }
+  noisyDrop_drop(swapped.x);
+  noisyDrop_drop(swapped.y);
 }
 //# sourceMappingURL=case.js.map

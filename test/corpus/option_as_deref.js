@@ -13,14 +13,13 @@ function first(items) {
 }
 
 function main() {
+  const value = path_is("/learn", "/learn");
+  const value$1 = path_is("/a", "/learn");
+  console.log(`${value} ${value$1} ${path_is(undefined, "/learn")}`);
+  const value$2 = first([4, 5]);
+  const value$3 = first([]);
   console.log(
-    `${path_is("/learn", "/learn")} ${path_is("/a", "/learn")} ${path_is(undefined, "/learn")}`,
-  );
-  const arg = first([4, 5]);
-  const arg$1 = first([]);
-  const arg$2 = first(undefined);
-  console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first(undefined))}`,
   );
 }
 //# sourceMappingURL=case.js.map

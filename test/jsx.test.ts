@@ -2174,13 +2174,13 @@ pub fn Looped() -> JSX::Element {
   expect(jsx).toMatch(/<ButtonLink size=\{\w+\} href=\{\w+\}>/);
   expect(jsx).toContain("<Linky label={label} target={target} />");
   // MIR's first prop read in place, made after `label` as Rust makes it.
-  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? '<ButtonLink target={note("t")} label={label} href={h}>' : "<ButtonLink target={target} label={label} href={h}>");
+  expect(jsx).toContain(process.env.RUST_JS_MIR !== "0" ? '<ButtonLink target={note("t")} label={label} href={h}>' : "<ButtonLink target={target} label={label} href={h}>");
   // Each made first is named as its field is, as a person names it.
   // MIR names only `href`, made before the rest; THIR names each.
-  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? '<ButtonLink label={note("l")} target={note("t")} id={note("i")} href={href}>' : "<ButtonLink label={label} target={target} id={id} href={href}>");
+  expect(jsx).toContain(process.env.RUST_JS_MIR !== "0" ? '<ButtonLink label={note("l")} target={note("t")} id={note("i")} href={href}>' : "<ButtonLink label={label} target={target} id={id} href={href}>");
   expect(jsx).toContain('<ButtonLink href="/t" target={t}>');
   // MIR reads `target` in place, made after `href`.
-  expect(jsx).toMatch(process.env.RUST_JS_MIR === "1" ? /<ButtonLink target=\{note\("t"\)\} href=\{\w+\}>/ : /<ButtonLink target=\{\w+\} href=\{\w+\}>/);
+  expect(jsx).toMatch(process.env.RUST_JS_MIR !== "0" ? /<ButtonLink target=\{note\("t"\)\} href=\{\w+\}>/ : /<ButtonLink target=\{\w+\} href=\{\w+\}>/);
   expect(renderToStaticMarkup(App())).toBe('<a href="/a" data-size="lg" target="_blank" id="x">A</a><a href="/b" data-size="md" class="c">B</a>');
   const refused = (source: string, says: string) => {
     const c = compile(source);
@@ -2819,7 +2819,7 @@ pub fn Block<C: ReactNode>(BlockProps { children }: BlockProps<C>) -> JSX::Eleme
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // MIR's is the chain as it's written, one `else` for what fails it.
-  if (process.env.RUST_JS_MIR === "1") {
+  if (process.env.RUST_JS_MIR !== "0") {
     expect(jsx).toContain(`  if (typeof children === "string") {
     message = children;
   } else if (isValidElement(children) && typeof children.props.children === "string") {
@@ -3936,7 +3936,7 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
   // MIR's held key named as it's given, `key`, where THIR's is a `match`.
-  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? "<Panel key={key} {...props} wide />" : "<Panel key={match} {...props} wide />");
+  expect(jsx).toContain(process.env.RUST_JS_MIR !== "0" ? "<Panel key={key} {...props} wide />" : "<Panel key={match} {...props} wide />");
   const { Again } = await import(join(dir, "lib.jsx"));
   const tree = Again({ title: "t", wide: false, extra: 1 });
   expect(tree.props.extra).toBe(1);
@@ -3969,7 +3969,7 @@ pub fn Named(name: &'static str) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // MIR's key read in place, what's after it doing nothing (ADR 0364).
-  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? "<Panel key={described(name)} title={name} wide />" : "<Panel key={match} title={name} wide />");
+  expect(jsx).toContain(process.env.RUST_JS_MIR !== "0" ? "<Panel key={described(name)} title={name} wide />" : "<Panel key={match} title={name} wide />");
   const { Named } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(Named("n"))).toBe('<p title="n" data-wide="true"></p>');
 });
@@ -4009,7 +4009,7 @@ pub fn List(items: &'static [ItemProps<'static>]) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // MIR's key where it's written, read in place, before the spread.
-  expect(jsx).toContain(process.env.RUST_JS_MIR === "1" ? "return <Item key={String(i)} {...props} />;" : "return <Item {...props} key={match} />;");
+  expect(jsx).toContain(process.env.RUST_JS_MIR !== "0" ? "return <Item key={String(i)} {...props} />;" : "return <Item {...props} key={match} />;");
   expect(jsx).not.toContain("let tmp");
   const { List } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(List([{ label: "a" }, { label: "" }, { label: "b" }]))).toBe("<ul><li>a</li><li>b</li></ul>");
@@ -5503,7 +5503,7 @@ pub fn SidebarLink(href: &'static str, title: &'static str, selected: bool, leve
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   // MIR's, which reads them in place; THIR holds them still.
-  if (process.env.RUST_JS_MIR === "1") {
+  if (process.env.RUST_JS_MIR !== "0") {
     expect(jsx).toContain("      target={target}\n      aria_current={selected ? \"page\" : undefined}\n      class_name={cn([");
   }
   const lib = await import(join(dir, "lib.jsx"));
@@ -6039,7 +6039,7 @@ pub fn Looped() -> JSX::Element {
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain('const href = made("h");');
   // MIR's child too, where THIR's is a `tmp`.
-  if (process.env.RUST_JS_MIR === "1") expect(jsx).toContain('const children = made("L");');
+  if (process.env.RUST_JS_MIR !== "0") expect(jsx).toContain('const children = made("L");');
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Looped())).toBe('<a href="h" title="two">L2</a>');
 });

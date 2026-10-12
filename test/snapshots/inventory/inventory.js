@@ -6,9 +6,11 @@ import {
   $cmp,
   $debugF64,
   $debugStr,
+  $mutGet,
   $orInsert,
   $partialCmp,
   $toFixed,
+  $unborrow,
   $unwrap,
 } from "@rust-js/runtime";
 
@@ -70,22 +72,26 @@ function storeDisplay_fmt(store) {
 
 export const Store = {
   apply(store, e) {
-    if (e.TAG === "Restock") {
-      const current = $orInsert(store.stock, e.item, 0);
-      store.stock.set(e.item, (current + e.qty) >>> 0);
-    } else if (e.TAG === "Sale") {
-      let have = store.stock.get(e.item);
-      if (have == null) {
-        return { TAG: "Err", _0: `unknown item ${e.item}` };
+    bb36: {
+      if (e.TAG === "Restock") {
+        $orInsert(store.stock, e.item, 0);
+        $mutGet(store.stock, e.item).value = ($mutGet(store.stock, e.item).value + e.qty) >>> 0;
+      } else {
+        if (e.TAG === "Sale") {
+          const have = $mutGet(store.stock, e.item);
+          if (have != null) {
+            if (have.value < e.qty) {
+              return { TAG: "Err", _0: `not enough ${e.item}: ${have.value} < ${e.qty}` };
+            }
+            have.value = (have.value - e.qty) >>> 0;
+            store.revenue += e.qty * e.price;
+            break bb36;
+          } else {
+            return { TAG: "Err", _0: `unknown item ${e.item}` };
+          }
+        }
+        store.log.push(`audit at ${$toFixed(store.revenue, 2)}`);
       }
-      if (have < e.qty) {
-        return { TAG: "Err", _0: `not enough ${e.item}: ${have} < ${e.qty}` };
-      }
-      have = (have - e.qty) >>> 0;
-      store.stock.set(e.item, have);
-      store.revenue += e.qty * e.price;
-    } else {
-      store.log.push(`audit at ${$toFixed(store.revenue, 2)}`);
     }
     return { TAG: "Ok" };
   },
@@ -96,17 +102,21 @@ function discount(pct) {
 }
 
 function classify(n) {
-  if (n <= -1) {
-    return "negative";
+  if (n >= -2147483648) {
+    if (n <= -1) {
+      return "negative";
+    }
   }
   if (n === 0) {
     return "zero";
   }
-  if (n >= 1 && n <= 9 && n % 2 === 0) {
-    return "small even";
-  }
-  if (n >= 1 && n <= 9) {
-    return "small odd";
+  if (n >= 1) {
+    if (n <= 9) {
+      if (n % 2 === 0) {
+        return "small even";
+      }
+      return "small odd";
+    }
   }
   return "large";
 }
@@ -123,9 +133,9 @@ export function report() {
   ];
   let out = "";
   for (const e of events) {
-    const msg = Store.apply(store, e);
-    if (msg.TAG === "Err") {
-      out += `error: ${msg._0}\n`;
+    const value = Store.apply(store, e);
+    if (value.TAG === "Err") {
+      out += `error: ${value._0}\n`;
     }
   }
   const rules = [
@@ -133,9 +143,9 @@ export function report() {
     { value: [10], impl: revenueRule() },
   ];
   for (const r of rules) {
-    const match = r.impl.check(r.value, store);
-    if (match != null) {
-      out += `[${r.impl.name(r.value)}] ${match}\n`;
+    const w = r.impl.check(r.value, store);
+    if (w != null) {
+      out += `[${r.impl.name(r.value)}] ${w}\n`;
     } else {
       out += `[${r.impl.name(r.value)}] ok\n`;
     }
@@ -150,33 +160,49 @@ export function report() {
   const counter = { value: 0 };
   const c = counter;
   const bump = (n) => {
-    const cell = $borrowMut(c);
-    cell.value = (cell.value + n) | 0;
+    const value = $borrowMut(c, true);
+    value.value = (value.value + n) | 0;
+    $unborrow(value);
   };
   for (const n of [-3, 0, 4, 7, 12]) {
     bump(n);
     out += `${classify(n)} `;
   }
-  out += `total=${$borrow(counter).value} again=${$borrow(counter).value}\n`;
+  const value = $borrow(counter, true);
+  let tmp;
+  try {
+    tmp = $borrow(counter, true);
+  } catch (error) {
+    $unborrow(value);
+    throw error;
+  }
+  const value$1 = `total=${value.value} again=${tmp.value}\n`;
+  try {
+    $unborrow(tmp);
+  } catch (error) {
+    $unborrow(value);
+    throw error;
+  }
+  $unborrow(value);
+  out += value$1;
   const stack = [1, 2, 3];
   const popped = [];
   while (true) {
     const top = stack.pop();
-    if (top != null) {
-      if (top === 2) {
-        stack.push(10);
-      }
-      popped.push(top);
-    } else {
+    if (top == null) {
+      out += `[${popped.map((item) => String(item)).join(", ")}]\n`;
+      out += `[${tallies(["a", "b", "a", "b", "c"])
+        .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
+        .join(", ")}] [${bands([0, 3, 42, 150, 250])
+        .map((item) => $debugStr(item))
+        .join(", ")}]\n`;
       break;
     }
+    if (top === 2) {
+      stack.push(10);
+    }
+    popped.push(top);
   }
-  out += `[${popped.map((item) => String(item)).join(", ")}]\n`;
-  out += `[${tallies(["a", "b", "a", "b", "c"])
-    .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
-    .join(", ")}] [${bands([0, 3, 42, 150, 250])
-    .map((item) => $debugStr(item))
-    .join(", ")}]\n`;
   return out;
 }
 
@@ -184,12 +210,11 @@ export function tallies(words) {
   const counts = new Map();
   const one = 1;
   for (const w of words) {
-    const current = $orInsert(counts, w, 0);
-    counts.set(w, (current + one) >>> 0);
-    let n = counts.get("b");
+    $orInsert(counts, w, 0);
+    $mutGet(counts, w).value = ($mutGet(counts, w).value + one) >>> 0;
+    const n = $mutGet(counts, "b");
     if (n != null) {
-      n = Math.imul(n, 2) >>> 0;
-      counts.set("b", n);
+      n.value = Math.imul(n.value, 2) >>> 0;
     }
   }
   const all = Array.from(counts);
@@ -202,13 +227,17 @@ export function bands(xs) {
     if (x === 0) {
       return "none";
     }
-    if (x >= 1 && x < 10) {
-      return `few ${x}`;
+    if (x >= 1) {
+      if (x < 10) {
+        return `few ${x}`;
+      }
     }
-    if ((x >= 10 && x <= 99) || x >= 200) {
-      return `many ${x}`;
+    if (!(x >= 10) || !(x <= 99)) {
+      if (!(x >= 200)) {
+        return "odd";
+      }
     }
-    return "odd";
+    return `many ${x}`;
   });
 }
 //# sourceMappingURL=inventory.js.map

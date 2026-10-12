@@ -11,109 +11,105 @@ function bump(x) {
 
 function pick(take) {
   let x = 0;
-  let tmp;
+  let picked;
   if (take) {
     const x$1 = { value: x };
-    const result = bump(x$1);
+    picked = bump(x$1);
     x = x$1.value;
-    tmp = result;
   } else {
-    tmp = 7;
+    picked = 7;
   }
-  const picked = tmp;
   return (Math.imul(x, 10) + picked) | 0;
 }
 
 function both(take) {
   let x = 0;
   let y = 10;
-  let tmp;
+  let picked;
   if (take) {
     const x$1 = { value: x };
-    const result = bump(x$1);
+    picked = bump(x$1);
     x = x$1.value;
-    tmp = result;
   } else {
-    const x = { value: y };
-    const result = bump(x);
-    y = x.value;
-    tmp = result;
+    const x$1 = { value: y };
+    picked = bump(x$1);
+    y = x$1.value;
   }
-  const picked = tmp;
   return (((Math.imul(x, 1000) + Math.imul(y, 100)) | 0) + picked) | 0;
 }
 
 function guard(value) {
   let calls = 0;
-  let tmp;
-  if (value != null) {
-    const x = { value: calls };
-    const result = bump(x);
-    calls = x.value;
-    tmp = result === value;
-  } else {
-    tmp = false;
+  let matched;
+  bb7: {
+    if (value != null) {
+      const x = { value: calls };
+      const value$1 = bump(x);
+      calls = x.value;
+      if (value$1 === value) {
+        matched = true;
+        break bb7;
+      }
+    }
+    matched = false;
   }
-  const matched = tmp;
   return (Math.imul(calls, 10) + (matched ? 1 : 0)) | 0;
 }
 
 function nested(take, inner) {
   let x = 0;
-  let tmp$1;
+  let picked;
   if (take) {
-    let tmp;
     if (inner) {
       const x$1 = { value: x };
-      const result = bump(x$1);
+      picked = bump(x$1);
       x = x$1.value;
-      tmp = result;
     } else {
-      tmp = 3;
+      picked = 3;
     }
-    tmp$1 = tmp;
   } else {
-    tmp$1 = 7;
+    picked = 7;
   }
-  const picked = tmp$1;
   return (Math.imul(x, 10) + picked) | 0;
 }
 
 function main() {
-  console.log(`${pick(false)} ${pick(true)}`);
-  console.log(`${both(false)} ${both(true)}`);
-  console.log(`${guard(undefined)} ${guard(1)} ${guard(2)}`);
-  console.log(`${nested(false, true)} ${nested(true, false)} ${nested(true, true)}`);
+  const value = pick(false);
+  console.log(`${value} ${pick(true)}`);
+  const value$1 = both(false);
+  console.log(`${value$1} ${both(true)}`);
+  const value$2 = guard(undefined);
+  const value$3 = guard(1);
+  console.log(`${value$2} ${value$3} ${guard(2)}`);
+  const value$4 = nested(false, true);
+  const value$5 = nested(true, false);
+  console.log(`${value$4} ${value$5} ${nested(true, true)}`);
   let x = 0;
   const x$1 = { value: x };
-  const result = bump(x$1);
+  const value$6 = bump(x$1);
   x = x$1.value;
-  let tmp;
-  if (result === 1) {
+  let picked;
+  if (value$6 === 1) {
     const x$1 = { value: x };
-    const result = bump(x$1);
+    picked = bump(x$1);
     x = x$1.value;
-    tmp = result;
   } else {
     const x$1 = { value: x };
-    const result = bump(x$1);
+    const value = bump(x$1);
     x = x$1.value;
-    tmp = (result + 10) | 0;
+    picked = (value + 10) | 0;
   }
-  const picked = tmp;
   console.log(`${x} ${picked}`);
   let total = 0;
   for (let i = 0; i < 4; i++) {
-    let tmp;
+    let picked;
     if (i % 2 === 0) {
       const x = { value: total };
-      const result = bump(x);
+      picked = bump(x);
       total = x.value;
-      tmp = result;
     } else {
-      tmp = 7;
+      picked = 7;
     }
-    const picked = tmp;
     console.log(`${total} ${picked}`);
   }
 }

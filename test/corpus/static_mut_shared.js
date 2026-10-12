@@ -10,25 +10,25 @@ function statsDebug_fmt(stats) {
   return `Stats { calls: ${stats.calls}, last: ${stats.last} }`;
 }
 
-const COUNT = { value: 0 };
-const STATS = { value: { calls: 0, last: -1n } };
-const NAME = { value: "start" };
+let COUNT = 0;
+const STATS = { calls: 0, last: -1n };
+let NAME = "start";
 
 function show(n) {
   return `<${n}>`;
 }
 
 function main() {
-  COUNT.value = (COUNT.value + 2) >>> 0;
-  console.log(`${COUNT.value} ${show(COUNT.value)}`);
-  const stats = STATS.value;
+  COUNT = (COUNT + 2) >>> 0;
+  console.log(`${COUNT} ${show(COUNT)}`);
+  const stats = STATS;
   console.log(`${statsDebug_fmt(stats)} ${(stats.calls + 1) >>> 0}`);
-  STATS.value.calls = 5;
-  STATS.value.last = 9n;
-  console.log(`${STATS.value.calls} ${STATS.value.last} ${$pow(STATS.value.calls, 2) >>> 0}`);
-  NAME.value = "renamed";
-  console.log(`${NAME.value} ${!NAME.value}`);
-  const total = [COUNT.value, STATS.value.calls].map((n) => n).reduce((a, b) => (a + b) >>> 0, 0);
+  STATS.calls = 5;
+  STATS.last = 9n;
+  console.log(`${STATS.calls} ${STATS.last} ${$pow(STATS.calls, 2) >>> 0}`);
+  NAME = "renamed";
+  console.log(`${NAME} ${!NAME}`);
+  const total = [COUNT, STATS.calls].map((n) => n).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
 }
 //# sourceMappingURL=case.js.map

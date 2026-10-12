@@ -8,27 +8,27 @@ export function entry() {
 
 function main() {
   const queue = [2, 3];
-  const cell = $pushFrontMut(queue, 1, true);
-  cell.value = Math.imul(cell.value, 10);
-  const cell$1 = $pushMut(queue, 4, true);
-  cell$1.value = (cell$1.value + 1) | 0;
-  const cell$2 = $dequeInsert(queue, 2, 7, true);
-  cell$2.value = (cell$2.value - 1) | 0;
+  const value$3 = $pushFrontMut(queue, 1, true);
+  value$3.value = Math.imul(value$3.value, 10);
+  const value$4 = $pushMut(queue, 4, true);
+  value$4.value = (value$4.value + 1) | 0;
+  const value$5 = $dequeInsert(queue, 2, 7, true);
+  value$5.value = (value$5.value - 1) | 0;
   $dequeInsert(queue, 0, 0);
   console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
   const names = [];
-  const cell$3 = $pushMut(names, "b", true);
-  cell$3.value += "!";
-  const cell$4 = $pushFrontMut(names, "a", true);
-  cell$4.value += "?";
-  const cell$5 = $dequeInsert(names, 1, "m", true);
-  cell$5.value += ".";
+  const value = $pushMut(names, "b", true);
+  value.value += "!";
+  const value$1 = $pushFrontMut(names, "a", true);
+  value$1.value += "?";
+  const value$2 = $dequeInsert(names, 1, "m", true);
+  value$2.value += ".";
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
   const list = [];
-  const cell$6 = $pushMut(list, 5, true);
-  cell$6.value = (cell$6.value + 1) | 0;
-  const cell$7 = $pushFrontMut(list, 4, true);
-  cell$7.value = Math.imul(cell$7.value, 2);
+  const value$6 = $pushMut(list, 5, true);
+  value$6.value = (value$6.value + 1) | 0;
+  const value$7 = $pushFrontMut(list, 4, true);
+  value$7.value = Math.imul(value$7.value, 2);
   console.log(`[${list.map((item) => String(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

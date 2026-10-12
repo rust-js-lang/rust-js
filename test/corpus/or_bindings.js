@@ -23,34 +23,73 @@ function shapeDebug_fmt(shape) {
 }
 
 function size(s) {
-  if (s.TAG === "Circle" || s.TAG === "Sphere") {
-    return s._0 * 2;
+  let r;
+  bb11: {
+    let w;
+    if (s.TAG === "Circle") {
+      r = s._0;
+      break bb11;
+    } else if (s.TAG === "Sphere") {
+      r = s._0;
+      break bb11;
+    } else if (s.TAG === "Rect") {
+      w = s.w;
+    } else {
+      if (s.TAG !== "Line") {
+        return s._0;
+      }
+      w = s.w;
+    }
+    return w;
   }
-  if (s.TAG === "Rect" || s.TAG === "Line") {
-    return s.w;
-  }
-  return s._0;
+  return r * 2;
 }
 
 function pick(p) {
-  if (p[0] === 0 || p[1] === 0) {
-    return p[0] === 0 ? p[1] : p[0];
+  let x;
+  if (p[0] === 0) {
+    x = p[1];
+  } else {
+    if (p[1] !== 0) {
+      const [a, b] = p;
+      return Math.imul(a, b);
+    }
+    x = p[0];
   }
-  return Math.imul(p[0], p[1]);
+  return x;
 }
 
 function first_some(o) {
-  if (o[0] != null || (o[0] == null && o[1] != null)) {
-    return o[0] != null ? o[0] : o[1];
+  let x;
+  if (o[0] == null) {
+    if (o[1] == null) {
+      return;
+    }
+    x = o[1];
+  } else {
+    x = o[0];
   }
-  return;
+  return x;
 }
 
 function text(t) {
-  if (t.TAG === "Word" || t.TAG === "Quoted") {
-    return t._0;
+  let n;
+  bb11: {
+    let s;
+    if (t.TAG === "Word") {
+      s = t._0;
+    } else if (t.TAG === "Quoted") {
+      s = t._0;
+    } else if (t.TAG === "Num") {
+      n = t._0;
+      break bb11;
+    } else {
+      n = t._0;
+      break bb11;
+    }
+    return s;
   }
-  return String(t._0);
+  return String(n);
 }
 
 function main() {
@@ -64,12 +103,13 @@ function main() {
   for (const s of shapes) {
     console.log(`${$displayF64(size(s))}`);
   }
-  console.log(`${pick([0, 7])} ${pick([8, 0])} ${pick([2, 3])}`);
-  const arg = first_some([1, 2]);
-  const arg$1 = first_some([undefined, 2]);
-  const arg$2 = first_some([undefined, undefined]);
+  const value = pick([0, 7]);
+  const value$1 = pick([8, 0]);
+  console.log(`${value} ${value$1} ${pick([2, 3])}`);
+  const value$2 = first_some([1, 2]);
+  const value$3 = first_some([undefined, 2]);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first_some([undefined, undefined]))}`,
   );
   for (const t of [
     { TAG: "Num", _0: 4n },
@@ -79,28 +119,81 @@ function main() {
   ]) {
     console.log(`${text(t)}`);
   }
-  for (const item of [{ TAG: "Circle", _0: 0.5 }, { TAG: "Sphere", _0: 3 }, undefined]) {
-    if (item && (item.TAG === "Circle" || item.TAG === "Sphere") && item._0 > 1) {
-      const r = item._0;
-      console.log(`big ${$displayF64(r)}`);
-    } else if (item && (item.TAG === "Circle" || item.TAG === "Sphere")) {
-      const r = item._0;
-      console.log(`small ${$displayF64(r)}`);
-    } else {
-      console.log("none");
+  let r;
+  let r$1;
+  let r$2;
+  for (const o of [{ TAG: "Circle", _0: 0.5 }, { TAG: "Sphere", _0: 3 }, undefined]) {
+    bb66: {
+      if (o) {
+        bb84: {
+          if (o.TAG === "Circle") {
+            r$1 = o._0;
+            if (!(r$1 > 1)) {
+              r$2 = o._0;
+              break bb84;
+            } else {
+              r = o._0;
+            }
+          } else if (o.TAG === "Sphere") {
+            r$1 = o._0;
+            if (!(r$1 > 1)) {
+              r$2 = o._0;
+              break bb84;
+            } else {
+              r = o._0;
+            }
+          } else {
+            break bb66;
+          }
+          console.log(`big ${$displayF64(r)}`);
+          continue;
+        }
+        console.log(`small ${$displayF64(r$2)}`);
+        continue;
+      }
     }
+    console.log("none");
   }
-  const value = $index(shapes, 4);
-  if (value.TAG === "Rect" || value.TAG === "Line") {
-    console.log(`width ${$displayF64(value.w)}`);
+  const value$4 = $index(shapes, 4);
+  bb103: {
+    let w;
+    if (value$4.TAG === "Rect") {
+      w = value$4.w;
+    } else if (value$4.TAG === "Line") {
+      w = value$4.w;
+    } else {
+      break bb103;
+    }
+    console.log(`width ${$displayF64(w)}`);
   }
-  const r = { TAG: "Err", _0: 9 };
-  console.log(`${r._0}`);
+  const r$3 = { TAG: "Err", _0: 9 };
+  const n = r$3.TAG === "Ok" ? r$3._0 : r$3._0;
+  console.log(`${n}`);
   const grown = shapes.map((item) => ({ ...item }));
   for (const s of grown) {
-    if (s.TAG === "Circle" || s.TAG === "Sphere") {
-      s._0 *= 10;
+    let r;
+    if (s.TAG === "Circle") {
+      r = {
+        get value() {
+          return s._0;
+        },
+        set value(value) {
+          s._0 = value;
+        },
+      };
+    } else if (s.TAG === "Sphere") {
+      r = {
+        get value() {
+          return s._0;
+        },
+        set value(value) {
+          s._0 = value;
+        },
+      };
+    } else {
+      continue;
     }
+    r.value *= 10;
   }
   console.log(`[${grown.map((item) => shapeDebug_fmt(item)).join(", ")}]`);
   console.log(`[${shapes.map((item) => shapeDebug_fmt(item)).join(", ")}]`);

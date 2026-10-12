@@ -23,311 +23,1449 @@ export function entry() {
 }
 
 function main() {
-  const dropNode = (node) => {
-    $weakDrop(node.parent.value);
-    for (const item of node.children.value) {
-      $rcDrop(item, dropNode);
-    }
-  };
   const a = { value: 5, strong: 1, weak: 0 };
   let a$live = true;
+  const strong = a.strong;
   try {
-    console.log(`${a.strong} ${a.weak}`);
-    const b = $rcClone(a);
-    let b$live = true;
-    try {
-      const c = $rcClone(a);
-      try {
-        console.log(`${a.strong} ${(c.value + b.value) | 0}`);
-      } finally {
-        $rcDrop(c);
-      }
-      console.log(`${a.strong} ${a === b}`);
-      b$live = false;
-      $rcDrop(b);
-      console.log(`${a.strong}`);
-      a$live = false;
-      let a$1 = a;
-      let a$1$live = true;
-      try {
-        const cell = $unwrap(a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined);
-        cell.value = (cell.value + 1) | 0;
-        const weak = $downgrade(a$1);
-        try {
-          const tmp = a$1.weak;
-          const option = $upgrade(weak);
-          let option$live = true;
-          let map;
-          let arg;
-          try {
-            option$live = false;
-            map = (n) => {
-              try {
-                return n.value;
-              } finally {
-                $rcDrop(n);
-              }
-            };
-            arg = option ? map(option) : undefined;
-            console.log(`${tmp} ${arg == null ? "None" : `Some(${arg})`}`);
-          } finally {
-            if (option$live) {
-              if (option != null) {
-                $rcDrop(option);
-              }
-            }
-          }
-          const shared = $rcClone(a$1);
-          let shared$live = true;
-          try {
-            const arg = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
-            console.log(`${arg == null ? "None" : `Some(${arg.value})`}`);
-            a$1 = $makeMut(a$1);
-            console.log(`${(a$1.value + 1) | 0}`);
-            a$1 = $makeMut(a$1);
-            a$1.value = (a$1.value + 10) | 0;
-            console.log(`${a$1.value} ${shared.value} ${a$1 === shared}`);
-            shared$live = false;
-            const result = $tryUnwrap(shared);
-            try {
-              console.log(
-                `${result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0.value})`}`,
-              );
-            } finally {
-              if (result.TAG === "Err") {
-                $rcDrop(result._0);
-              }
-            }
-            const option = $upgrade(weak);
-            let tmp;
-            let arg$1;
-            try {
-              tmp = option;
-              a$1$live = false;
-              arg$1 = $intoInner(a$1);
-              console.log(
-                `${tmp == null ? "None" : `Some(${tmp.value})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
-              );
-            } finally {
-              if (option != null) {
-                $rcDrop(option);
-              }
-            }
-            const option$1 = $upgrade(weak);
-            try {
-              console.log(
-                `${option$1 == null ? "None" : `Some(${option$1.value})`} ${weak.strong} ${$weakCount(weak)}`,
-              );
-            } finally {
-              if (option$1 != null) {
-                $rcDrop(option$1);
-              }
-            }
-            const refCell = { value: { strong: 0, weak: 0 } };
-            let refCell$live = true;
-            let leaf;
-            try {
-              refCell$live = false;
-              leaf = {
-                value: { name: "leaf", parent: refCell, children: { value: [] } },
-                strong: 1,
-                weak: 0,
-              };
-            } finally {
-              if (refCell$live) {
-                $weakDrop(refCell.value);
-              }
-            }
-            try {
-              const ref = $borrow(leaf.value.parent, true);
-              let option;
-              let option$3$live;
-              let map;
-              let arg;
-              try {
-                option = $upgrade(ref.value);
-                option$3$live = true;
-                try {
-                  option$3$live = false;
-                  map = (p) => {
-                    const dropNode = (node) => {
-                      $weakDrop(node.parent.value);
-                      for (const item of node.children.value) {
-                        $rcDrop(item, dropNode);
-                      }
-                    };
-                    try {
-                      return p.value.name;
-                    } finally {
-                      $rcDrop(p, dropNode);
-                    }
-                  };
-                  arg = option ? map(option) : undefined;
-                  console.log(`${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
-                } finally {
-                  if (option$3$live) {
-                    if (option != null) {
-                      $rcDrop(option, dropNode);
-                    }
-                  }
-                }
-              } finally {
-                $unborrow(ref);
-              }
-              const refCell = { value: { strong: 0, weak: 0 } };
-              let refCell$1$live = true;
-              let arg$1;
-              let branch;
-              try {
-                arg$1 = { value: [$rcClone(leaf)] };
-                refCell$1$live = false;
-                branch = {
-                  value: { name: "branch", parent: refCell, children: arg$1 },
-                  strong: 1,
-                  weak: 0,
-                };
-              } finally {
-                if (refCell$1$live) {
-                  $weakDrop(refCell.value);
-                }
-              }
-              try {
-                const next = $downgrade(branch);
-                const refMut = $borrowMut(leaf.value.parent, true);
-                try {
-                  $weakDrop(refMut.value);
-                  refMut.value = next;
-                } finally {
-                  $unborrow(refMut);
-                }
-                const ref = $borrow(leaf.value.parent, true);
-                let option;
-                let option$4$live;
-                let map;
-                let tmp;
-                let tmp$1;
-                let tmp$2;
-                let ref$1;
-                try {
-                  option = $upgrade(ref.value);
-                  option$4$live = true;
-                  try {
-                    option$4$live = false;
-                    map = (p) => {
-                      const dropNode = (node) => {
-                        $weakDrop(node.parent.value);
-                        for (const item of node.children.value) {
-                          $rcDrop(item, dropNode);
-                        }
-                      };
-                      try {
-                        return p.value.name;
-                      } finally {
-                        $rcDrop(p, dropNode);
-                      }
-                    };
-                    tmp = option ? map(option) : undefined;
-                    tmp$1 = branch.strong;
-                    tmp$2 = branch.weak;
-                    ref$1 = $borrow(branch.value.children, true);
-                    try {
-                      console.log(
-                        `${tmp == null ? "None" : `Some(${$debugStr(tmp)})`} ${tmp$1} ${tmp$2} ${ref$1.value.length}`,
-                      );
-                    } finally {
-                      $unborrow(ref$1);
-                    }
-                  } finally {
-                    if (option$4$live) {
-                      if (option != null) {
-                        $rcDrop(option, dropNode);
-                      }
-                    }
-                  }
-                } finally {
-                  $unborrow(ref);
-                }
-                console.log(`${leaf.strong}`);
-              } finally {
-                $rcDrop(branch, dropNode);
-              }
-              const ref$1 = $borrow(leaf.value.parent, true);
-              let option$1;
-              let option$5$live;
-              let map$1;
-              let arg$2;
-              try {
-                option$1 = $upgrade(ref$1.value);
-                option$5$live = true;
-                try {
-                  option$5$live = false;
-                  map$1 = (p) => {
-                    const dropNode = (node) => {
-                      $weakDrop(node.parent.value);
-                      for (const item of node.children.value) {
-                        $rcDrop(item, dropNode);
-                      }
-                    };
-                    try {
-                      return p.value.name;
-                    } finally {
-                      $rcDrop(p, dropNode);
-                    }
-                  };
-                  arg$2 = option$1 ? map$1(option$1) : undefined;
-                  console.log(
-                    `${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`} ${leaf.strong}`,
-                  );
-                } finally {
-                  if (option$5$live) {
-                    if (option$1 != null) {
-                      $rcDrop(option$1, dropNode);
-                    }
-                  }
-                }
-              } finally {
-                $unborrow(ref$1);
-              }
-              const text = { value: "hi", strong: 1, weak: 0 };
-              let text$live = true;
-              try {
-                const other = $rcClone(text);
-                try {
-                  text$live = false;
-                  console.log(`${$unwrapOrClone(text)} ${other.strong}`);
-                } finally {
-                  $rcDrop(other);
-                }
-              } finally {
-                if (text$live) {
-                  $rcDrop(text);
-                }
-              }
-            } finally {
-              $rcDrop(leaf, dropNode);
-            }
-          } finally {
-            if (shared$live) {
-              $rcDrop(shared);
-            }
-          }
-        } finally {
-          $weakDrop(weak);
-        }
-      } finally {
-        if (a$1$live) {
-          $rcDrop(a$1);
-        }
-      }
-    } finally {
-      if (b$live) {
-        $rcDrop(b);
-      }
-    }
-  } finally {
+    console.log(`${strong} ${a.weak}`);
+  } catch (error) {
     if (a$live) {
       $rcDrop(a);
     }
+    throw error;
   }
+  let b;
+  try {
+    b = $rcClone(a);
+  } catch (error) {
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let b$live = true;
+  let c;
+  try {
+    c = $rcClone(a);
+  } catch (error) {
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const strong$1 = a.strong;
+  const value$1 = c.value;
+  try {
+    console.log(`${strong$1} ${(value$1 + b.value) | 0}`);
+  } catch (error) {
+    $rcDrop(c);
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    $rcDrop(c);
+  } catch (error) {
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${a.strong} ${a === b}`);
+  } catch (error) {
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  b$live = false;
+  try {
+    $rcDrop(b);
+  } catch (error) {
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${a.strong}`);
+  } catch (error) {
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  a$live = false;
+  let a$1$live = true;
+  let a$1 = a;
+  let tmp;
+  try {
+    tmp = $unwrap(a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined);
+  } catch (error) {
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  tmp.value = (tmp.value + 1) | 0;
+  let weak;
+  try {
+    weak = $downgrade(a$1);
+  } catch (error) {
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$1;
+  let tmp$2;
+  let tmp$3;
+  try {
+    tmp$1 = a$1.weak;
+    tmp$2 = $upgrade(weak);
+    tmp$3 = (n) => {
+      const result = n.value;
+      $rcDrop(n);
+      return result;
+    };
+  } catch (error) {
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$4;
+  try {
+    tmp$4 = [undefined, tmp$2 ? tmp$3(tmp$2) : undefined];
+  } catch (error) {
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$1} ${tmp$4[1] == null ? "None" : `Some(${tmp$4[1]})`}`);
+  } catch (error) {
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let shared;
+  try {
+    shared = $rcClone(a$1);
+  } catch (error) {
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let shared$live = true;
+  const value = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
+  try {
+    console.log(`${value == null ? "None" : `Some(${value.value})`}`);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    a$1 = $makeMut(a$1);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const value$2 = (a$1.value + 1) | 0;
+  try {
+    console.log(`${value$2}`);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$5;
+  try {
+    a$1 = $makeMut(a$1);
+    tmp$5 = a$1;
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  tmp$5.value = (tmp$5.value + 10) | 0;
+  try {
+    console.log(`${a$1.value} ${shared.value} ${a$1 === shared}`);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  shared$live = false;
+  let tmp$6;
+  try {
+    tmp$6 = $tryUnwrap(shared);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$6.TAG === "Ok" ? `Ok(${tmp$6._0})` : `Err(${tmp$6._0.value})`}`);
+  } catch (error) {
+    if (tmp$6.TAG === "Err") {
+      $rcDrop(tmp$6._0);
+    }
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    if (tmp$6.TAG === "Err") {
+      $rcDrop(tmp$6._0);
+    }
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$7;
+  try {
+    tmp$7 = $upgrade(weak);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  a$1$live = false;
+  let tmp$8;
+  try {
+    tmp$8 = [undefined, $intoInner(a$1)];
+  } catch (error) {
+    if (tmp$7 != null) {
+      $rcDrop(tmp$7);
+    }
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(
+      `${tmp$7 == null ? "None" : `Some(${tmp$7.value})`} ${tmp$8[1] == null ? "None" : `Some(${tmp$8[1]})`}`,
+    );
+  } catch (error) {
+    if (tmp$7 != null) {
+      $rcDrop(tmp$7);
+    }
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    if (tmp$7 != null) {
+      $rcDrop(tmp$7);
+    }
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$9;
+  try {
+    tmp$9 = $upgrade(weak);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const strong$2 = weak.strong;
+  try {
+    console.log(
+      `${tmp$9 == null ? "None" : `Some(${tmp$9.value})`} ${strong$2} ${$weakCount(weak)}`,
+    );
+  } catch (error) {
+    if (tmp$9 != null) {
+      $rcDrop(tmp$9);
+    }
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    if (tmp$9 != null) {
+      $rcDrop(tmp$9);
+    }
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const leaf = {
+    value: { name: "leaf", parent: { value: { strong: 0, weak: 0 } }, children: { value: [] } },
+    strong: 1,
+    weak: 0,
+  };
+  let tmp$10;
+  try {
+    tmp$10 = $borrow(leaf.value.parent, true);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$11;
+  let tmp$12;
+  try {
+    tmp$11 = $upgrade(tmp$10.value);
+    tmp$12 = (p) => {
+      const result = p.value.name;
+      const dropNode = (node) => {
+        $weakDrop(node.parent.value);
+        for (const item of node.children.value) {
+          $rcDrop(item, dropNode);
+        }
+      };
+      $rcDrop(p, dropNode);
+      return result;
+    };
+  } catch (error) {
+    $unborrow(tmp$10);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$13;
+  try {
+    tmp$13 = tmp$11 ? tmp$12(tmp$11) : undefined;
+  } catch (error) {
+    $unborrow(tmp$10);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$13 == null ? "None" : `Some(${$debugStr(tmp$13)})`}`);
+  } catch (error) {
+    $unborrow(tmp$10);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(tmp$10);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const value$3 = { value: { strong: 0, weak: 0 } };
+  let tmp$14;
+  try {
+    tmp$14 = [$rcClone(leaf)];
+  } catch (error) {
+    $weakDrop(value$3.value);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const branch = {
+    value: { name: "branch", parent: value$3, children: { value: tmp$14 } },
+    strong: 1,
+    weak: 0,
+  };
+  let tmp$15;
+  try {
+    tmp$15 = $downgrade(branch);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let _287$live = true;
+  let tmp$16;
+  try {
+    tmp$16 = $borrowMut(leaf.value.parent, true);
+  } catch (error) {
+    $weakDrop(tmp$15);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    $weakDrop(tmp$16.value);
+  } catch (error) {
+    _287$live = false;
+    tmp$16.value = tmp$15;
+    if (_287$live) {
+      $weakDrop(tmp$15);
+    }
+    $unborrow(tmp$16);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  _287$live = false;
+  tmp$16.value = tmp$15;
+  _287$live = false;
+  try {
+    $unborrow(tmp$16);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$17;
+  try {
+    tmp$17 = $borrow(leaf.value.parent, true);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$18;
+  let tmp$19;
+  try {
+    tmp$18 = $upgrade(tmp$17.value);
+    tmp$19 = (p) => {
+      const result = p.value.name;
+      const dropNode = (node) => {
+        $weakDrop(node.parent.value);
+        for (const item of node.children.value) {
+          $rcDrop(item, dropNode);
+        }
+      };
+      $rcDrop(p, dropNode);
+      return result;
+    };
+  } catch (error) {
+    $unborrow(tmp$17);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$20;
+  try {
+    tmp$20 = tmp$18 ? tmp$19(tmp$18) : undefined;
+  } catch (error) {
+    $unborrow(tmp$17);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const strong$3 = branch.strong;
+  const weak$1 = branch.weak;
+  let tmp$21;
+  try {
+    tmp$21 = $borrow(branch.value.children, true);
+  } catch (error) {
+    $unborrow(tmp$17);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const value$4 = tmp$21.value;
+  try {
+    console.log(
+      `${tmp$20 == null ? "None" : `Some(${$debugStr(tmp$20)})`} ${strong$3} ${weak$1} ${value$4.length}`,
+    );
+  } catch (error) {
+    $unborrow(tmp$21);
+    $unborrow(tmp$17);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(tmp$21);
+  } catch (error) {
+    $unborrow(tmp$17);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(tmp$17);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${leaf.strong}`);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+    const dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let dropNode;
+  try {
+    dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(branch, dropNode);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$22;
+  try {
+    tmp$22 = $borrow(leaf.value.parent, true);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$23;
+  let tmp$24;
+  try {
+    tmp$23 = $upgrade(tmp$22.value);
+    tmp$24 = (p) => {
+      const result = p.value.name;
+      const dropNode = (node) => {
+        $weakDrop(node.parent.value);
+        for (const item of node.children.value) {
+          $rcDrop(item, dropNode);
+        }
+      };
+      $rcDrop(p, dropNode);
+      return result;
+    };
+  } catch (error) {
+    $unborrow(tmp$22);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  let tmp$25;
+  try {
+    tmp$25 = tmp$23 ? tmp$24(tmp$23) : undefined;
+  } catch (error) {
+    $unborrow(tmp$22);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$25 == null ? "None" : `Some(${$debugStr(tmp$25)})`} ${leaf.strong}`);
+  } catch (error) {
+    $unborrow(tmp$22);
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(tmp$22);
+  } catch (error) {
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  const text = { value: "hi", strong: 1, weak: 0 };
+  let text$live = true;
+  let other;
+  try {
+    other = $rcClone(text);
+  } catch (error) {
+    if (text$live) {
+      $rcDrop(text);
+    }
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  text$live = false;
+  let tmp$26;
+  try {
+    tmp$26 = $unwrapOrClone(text);
+  } catch (error) {
+    $rcDrop(other);
+    if (text$live) {
+      $rcDrop(text);
+    }
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$26} ${other.strong}`);
+  } catch (error) {
+    $rcDrop(other);
+    if (text$live) {
+      $rcDrop(text);
+    }
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  try {
+    $rcDrop(other);
+  } catch (error) {
+    if (text$live) {
+      $rcDrop(text);
+    }
+    const dropNode = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode);
+      }
+    };
+    $rcDrop(leaf, dropNode);
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  text$live = false;
+  let dropNode$1;
+  try {
+    dropNode$1 = (node) => {
+      $weakDrop(node.parent.value);
+      for (const item of node.children.value) {
+        $rcDrop(item, dropNode$1);
+      }
+    };
+    $rcDrop(leaf, dropNode$1);
+  } catch (error) {
+    if (shared$live) {
+      $rcDrop(shared);
+    }
+    $weakDrop(weak);
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  shared$live = false;
+  try {
+    $weakDrop(weak);
+  } catch (error) {
+    if (a$1$live) {
+      $rcDrop(a$1);
+    }
+    if (b$live) {
+      $rcDrop(b);
+    }
+    if (a$live) {
+      $rcDrop(a);
+    }
+    throw error;
+  }
+  a$1$live = false;
+  b$live = false;
 }
 //# sourceMappingURL=case.js.map

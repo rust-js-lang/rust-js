@@ -10,10 +10,11 @@ export function methods(button) {
 }
 
 export function mutable(button) {
-  let count = 0;
+  const count = 0;
+  let count$1 = count;
   button.addEventListener("click", () => {
-    count = (count + 1) | 0;
-    globalThis.record(count);
+    count$1 = (count$1 + 1) | 0;
+    globalThis.record(count$1);
   });
 }
 

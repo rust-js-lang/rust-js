@@ -22,16 +22,17 @@ function main() {
   const crab = "🦀";
   const bang = "！";
   const words = ["b", bang, crab, "�", "a", "x", "🦀🦀"];
-  const arg = $cmp(crab, bang) < 0;
-  const arg$1 = $cmp(crab, bang) > 0;
-  const arg$2 = $cmp(crab, bang);
-  const arg$3 = $cmp(crab, bang);
+  const value = $cmp(crab, bang) < 0;
+  const value$1 = $cmp(crab, bang) > 0;
+  const value$2 = $cmp(crab, bang);
   console.log(
-    `${arg} ${arg$1} ${["Less", "Equal", "Greater"][arg$2 + 1]} ${
-      arg$3 == null ? "None" : `Some(${["Less", "Equal", "Greater"][arg$3 + 1]})`
-    }`,
+    `${value} ${value$1} ${["Less", "Equal", "Greater"][value$2 + 1]} ${((value) =>
+      value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
+      $cmp(crab, bang),
+    )}`,
   );
-  console.log(`${$cmp(crab, bang) > 0 ? crab : bang} ${$cmp(crab, bang) > 0 ? bang : crab}`);
+  const value$3 = $cmp(crab, bang) > 0 ? crab : bang;
+  console.log(`${value$3} ${$cmp(crab, bang) > 0 ? bang : crab}`);
   const sorted = words.slice();
   sorted.sort($cmp);
   console.log(`[${sorted.map((item) => $debugStr(item)).join(", ")}]`);
@@ -39,15 +40,13 @@ function main() {
   const key = (w) => w;
   byKey.sort((a, b) => $cmp(key(a), key(b)));
   console.log(`[${byKey.map((item) => $debugStr(item)).join(", ")}]`);
-  const arg$4 = $maxBy(words, $cmp);
-  const arg$5 = $minBy(words, $cmp);
+  const value$4 = $maxBy(words, $cmp);
   console.log(
-    `${arg$4 == null ? "None" : `Some(${$debugStr(arg$4)})`} ${arg$5 == null ? "None" : `Some(${$debugStr(arg$5)})`}`,
+    `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($minBy(words, $cmp))}`,
   );
-  const arg$6 = $binarySearchBy(sorted, (each) => $cmp(each, crab));
-  const arg$7 = $binarySearchBy(sorted, (each) => $cmp(each, "�"));
+  const value$5 = $binarySearchBy(sorted, (each) => $cmp(each, crab));
   console.log(
-    `${arg$6.TAG === "Ok" ? `Ok(${arg$6._0})` : `Err(${arg$6._0})`} ${arg$7.TAG === "Ok" ? `Ok(${arg$7._0})` : `Err(${arg$7._0})`}`,
+    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${value$5._0})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearchBy(sorted, (each) => $cmp(each, "�")))}`,
   );
   const set = new Set(words);
   console.log(
@@ -55,7 +54,7 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}}`,
   );
-  const map = new Map(words.map((w) => [w, $byteLen(w)]));
+  const map = new Map(words.values().map((w) => [w, $byteLen(w)]));
   console.log(
     `{${Array.from($sortedEntries(map, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
@@ -72,23 +71,27 @@ function main() {
   const right = [bang];
   console.log(`${$cmp(left[0], right[0]) > 0}`);
   const c = "🦀";
+  const value$6 = $cmp(c, "！") > 0;
+  const value$7 = $cmp(c, "�");
   console.log(
-    `${$cmp(c, "！") > 0} ${
-      ["Less", "Equal", "Greater"][$cmp(c, "�") + 1]
+    `${value$6} ${
+      ["Less", "Equal", "Greater"][value$7 + 1]
     } ${$cmp("", c) <= 0 && $cmp(c, "￿") <= 0}`,
   );
-  console.log(`${"a" <= c && $cmp(c, "￿") <= 0} ${"a" <= "！" && $cmp("！", "�") < 0}`);
+  const value$8 = "a" <= c && $cmp(c, "￿") <= 0;
+  console.log(`${value$8} ${"a" <= "！" && $cmp("！", "�") < 0}`);
   const private$ = $cmp(c, "") >= 0 && $cmp(c, "") <= 0;
   const ascii = c >= "a" && c <= "z";
   const wide = c >= "a" && $cmp(c, "￿") <= 0;
-  const match = "q";
-  console.log(`${private$} ${ascii} ${wide} ${match >= "a" && match <= "z"}`);
+  console.log(`${private$} ${ascii} ${wide} ${"q" >= "a" && "q" <= "z"}`);
   const chars = Array.from("b！🦀�a");
   chars.sort($cmp);
   console.log(`[${chars.map((item) => $debugStr(item, "'")).join(", ")}]`);
   console.log(`${crab > "z"} ${"m" < crab} ${"apple" < "banana"}`);
   for (const s of ["hi", "﻿hi﻿", " 	 hi \n", "　hi\u2028"]) {
-    console.log(`${$debugStr($trim(s))} ${$debugStr($trimStart(s))} ${$debugStr($trimEnd(s))}`);
+    const value = $trim(s);
+    const value$1 = $trimStart(s);
+    console.log(`${$debugStr(value)} ${$debugStr(value$1)} ${$debugStr($trimEnd(s))}`);
   }
 }
 //# sourceMappingURL=case.js.map

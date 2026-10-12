@@ -68,72 +68,70 @@ const STRINGS = [
 
 function main() {
   for (const a of STRINGS) {
-    const arg = $byteLen(a);
-    const arg$1 = !a;
-    const arg$2 = Array.from(a).length;
-    const arg$3 = Array.from(a)[1];
-    const arg$4 = Array.from(a).toReversed().join("");
-    const arg$5 = a.toUpperCase();
-    const arg$6 = a.toLowerCase();
-    const arg$7 = $asciiCase(a, true);
-    const arg$8 = $asciiCase(a);
+    const value = $byteLen(a);
+    const length = Array.from(a).length;
+    const value$1 = Array.from(a)[1];
+    const value$2 = Array.from(a).toReversed().join("");
+    const value$3 = a.toUpperCase();
+    const value$4 = a.toLowerCase();
+    const value$5 = $asciiCase(a, true);
+    const arg = $asciiCase(a);
     console.log(
-      `${$debugStr(a)}: len ${arg} ${arg$1} ${arg$2} chars ${arg$3 == null ? "None" : `Some(${$debugStr(arg$3, "'")})`} rev ${$debugStr(arg$4)} case ${$debugStr(arg$5)} ${$debugStr(arg$6)} ${$debugStr(arg$7)} ${$debugStr(arg$8)}`,
+      `${$debugStr(a)}: len ${value} ${!a} ${length} chars ${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`} rev ${$debugStr(value$2)} case ${$debugStr(value$3)} ${$debugStr(value$4)} ${$debugStr(value$5)} ${$debugStr(arg)}`,
     );
-    const arg$9 = $trim(a);
-    const arg$10 = $trimStart(a);
-    const arg$11 = $trimEnd(a);
-    const arg$12 = $trimMatches(a, " ");
-    const arg$13 = $trimMatches(a, "a", true, false);
-    const arg$14 = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
-    const arg$15 = $lines(a);
+    const value$6 = $trim(a);
+    const value$7 = $trimStart(a);
+    const value$8 = $trimEnd(a);
+    const value$9 = $trimMatches(a, " ");
+    const value$10 = $trimMatches(a, "a", true, false);
+    const value$11 = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
+    const arg$1 = $lines(a);
     console.log(
-      `${$debugStr(a)}: trim ${$debugStr(arg$9)} ${$debugStr(arg$10)} ${$debugStr(arg$11)} ${$debugStr(arg$12)} ${$debugStr(arg$13)} words [${arg$14.map((item) => $debugStr(item)).join(", ")}] lines [${arg$15.map((item) => $debugStr(item)).join(", ")}]`,
+      `${$debugStr(a)}: trim ${$debugStr(value$6)} ${$debugStr(value$7)} ${$debugStr(value$8)} ${$debugStr(value$9)} ${$debugStr(value$10)} words [${value$11.map((item) => $debugStr(item)).join(", ")}] lines [${arg$1.map((item) => $debugStr(item)).join(", ")}]`,
     );
-    const arg$16 = a.split(",");
-    const arg$17 = $splitN(a, 2, " ").slice();
-    const arg$18 = $rsplit(a, " ").slice();
-    const arg$19 = $splitOnce(a, ",");
-    const arg$20 = Array.from(new TextEncoder().encode(a))
+    const value$12 = a.split(",");
+    const value$13 = Iterator.from($splitN(a, 2, " ")).toArray();
+    const value$14 = Iterator.from($rsplit(a, " ")).toArray();
+    const value$15 = $splitOnce(a, ",");
+    const value$16 = Array.from(new TextEncoder().encode(a))
       .map((n) => n)
       .reduce((a, b) => (a + b) >>> 0, 0);
-    const arg$21 = $charIndices(a).slice();
-    const arg$22 = $charBoundary(a, 1) !== undefined;
-    const arg$23 = $strGet(a, 0, 1);
-    const arg$24 = $charIndices(a).toReversed()[0];
+    const value$17 = Iterator.from($charIndices(a)).toArray();
+    const value$18 = $charBoundary(a, 1) !== undefined;
+    const value$19 = $strGet(a, 0, 1);
+    const arg$2 = Array.from($charIndices(a)).toReversed()[0];
     console.log(
-      `${$debugStr(a)}: split [${arg$16.map((item) => $debugStr(item)).join(", ")}] [${arg$17.map((item) => $debugStr(item)).join(", ")}] [${arg$18.map((item) => $debugStr(item)).join(", ")}] ${arg$19 == null ? "None" : `Some((${$debugStr(arg$19[0])}, ${$debugStr(arg$19[1])}))`} bytes ${arg$20} [${arg$21.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${arg$22} ${arg$23 == null ? "None" : `Some(${$debugStr(arg$23)})`} ${arg$24 == null ? "None" : `Some((${arg$24[0]}, ${$debugStr(arg$24[1], "'")}))`}`,
+      `${$debugStr(a)}: split [${value$12.map((item) => $debugStr(item)).join(", ")}] [${value$13.map((item) => $debugStr(item)).join(", ")}] [${value$14.map((item) => $debugStr(item)).join(", ")}] ${value$15 == null ? "None" : `Some((${$debugStr(value$15[0])}, ${$debugStr(value$15[1])}))`} bytes ${value$16} [${value$17.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${value$18} ${value$19 == null ? "None" : `Some(${$debugStr(value$19)})`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}`,
     );
-    const arg$25 = $find(a, "a");
-    const arg$26 = $rfind(a, "a");
-    const arg$27 = $find(a, "b");
-    const arg$28 = $matches(a, "a").length;
-    const arg$29 = a.replaceAll("a", "xy");
-    const arg$30 = a.repeat(2);
-    const arg$31 = $parseInt(a, -2147483648, 2147483647);
-    const arg$32 = $parseF64(a);
-    const arg$33 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
-    const arg$34 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
+    const value$20 = $find(a, "a");
+    const value$21 = $rfind(a, "a");
+    const value$22 = $find(a, "b");
+    const value$23 = Iterator.from($matches(a, "a")).reduce((n) => n + 1, 0);
+    const value$24 = a.replaceAll("a", "xy");
+    const value$25 = a.repeat(2);
+    const value$26 = $parseInt(a, -2147483648, 2147483647);
+    const value$27 = $parseF64(a);
+    const value$28 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
+    const arg$3 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
     console.log(
-      `${$debugStr(a)}: find ${arg$25 == null ? "None" : `Some(${arg$25})`} ${arg$26 == null ? "None" : `Some(${arg$26})`} ${arg$27 == null ? "None" : `Some(${arg$27})`} ${arg$28} replace ${$debugStr(arg$29)} ${$debugStr(arg$30)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${arg$31.TAG === "Ok" ? `Ok(${arg$31._0})` : `Err(${$debugParseError(arg$31._0, "ParseIntError")})`} ${arg$32.TAG === "Ok" ? `Ok(${$debugF64(arg$32._0)})` : `Err(${$debugParseError(arg$32._0, "ParseFloatError")})`} lossy ${$debugStr(arg$33._0)} all ${arg$34}`,
+      `${$debugStr(a)}: find ${value$20 == null ? "None" : `Some(${value$20})`} ${value$21 == null ? "None" : `Some(${value$21})`} ${value$22 == null ? "None" : `Some(${value$22})`} ${value$23} replace ${$debugStr(value$24)} ${$debugStr(value$25)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${value$26.TAG === "Ok" ? `Ok(${value$26._0})` : `Err(${$debugParseError(value$26._0, "ParseIntError")})`} ${value$27.TAG === "Ok" ? `Ok(${$debugF64(value$27._0)})` : `Err(${$debugParseError(value$27._0, "ParseFloatError")})`} lossy ${$debugStr(value$28._0)} all ${arg$3}`,
     );
     for (const b of STRINGS) {
-      const arg = a.startsWith(b);
-      const arg$1 = a.endsWith(b);
-      const arg$2 = a.includes(b);
-      const arg$3 = $cmp(a, b);
-      const arg$4 = $cmp(a, b) < 0;
-      const arg$5 = $cmp(a, b) > 0 ? a : b;
-      const arg$6 = a === b;
-      const arg$7 = $asciiCase(a) === $asciiCase(b);
-      const arg$8 = $find(a, b);
-      const arg$9 = $stripPrefix(a, b);
-      const arg$10 = $stripSuffix(a, b);
-      const arg$11 = $byteLen(a + b);
+      const value = a.startsWith(b);
+      const value$1 = a.endsWith(b);
+      const value$2 = a.includes(b);
+      const value$3 = $cmp(a, b);
+      const value$4 = $cmp(a, b) < 0;
+      const value$5 = $cmp(a, b) > 0 ? a : b;
+      const value$6 = $asciiCase(a) === $asciiCase(b);
+      const value$7 = $find(a, b);
+      const value$8 = $stripPrefix(a, b);
+      const value$9 = $stripSuffix(a, b);
+      const arg = $byteLen(a + b);
       console.log(
-        `${$debugStr(a)} ${$debugStr(b)}: ${arg} ${arg$1} ${arg$2} ${
-          ["Less", "Equal", "Greater"][arg$3 + 1]
-        } ${arg$4} ${arg$5} ${arg$6} ${arg$7} ${arg$8 == null ? "None" : `Some(${arg$8})`} ${arg$9 == null ? "None" : `Some(${$debugStr(arg$9)})`} ${arg$10 == null ? "None" : `Some(${$debugStr(arg$10)})`} ${arg$11}`,
+        `${$debugStr(a)} ${$debugStr(b)}: ${value} ${value$1} ${value$2} ${
+          ["Less", "Equal", "Greater"][value$3 + 1]
+        } ${value$4} ${value$5} ${a === b} ${value$6} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8)})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`} ${arg}`,
       );
     }
   }

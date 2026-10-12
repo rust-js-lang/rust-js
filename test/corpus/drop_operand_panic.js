@@ -11,10 +11,12 @@ function noisyDrop_drop(noisy) {
 function pair(a, b) {
   try {
     console.log(`pair ${a[0]} ${b}`);
-    return b;
-  } finally {
+  } catch (error) {
     noisyDrop_drop(a);
+    throw error;
   }
+  noisyDrop_drop(a);
+  return b;
 }
 
 function second(fail) {
@@ -26,26 +28,50 @@ function second(fail) {
 
 function main() {
   const first = ["first"];
-  let first$live = true;
+  let _8$live = true;
+  let tmp;
   try {
-    const arg = second(false);
-    first$live = false;
-    console.log(`${pair(first, arg)}`);
-    const again = ["again"];
-    let again$live = true;
-    try {
-      const arg = second(true);
-      again$live = false;
-      console.log(`${pair(again, arg)}`);
-    } finally {
-      if (again$live) {
-        noisyDrop_drop(again);
-      }
-    }
-  } finally {
-    if (first$live) {
+    tmp = second(false);
+  } catch (error) {
+    if (_8$live) {
       noisyDrop_drop(first);
     }
+    throw error;
   }
+  _8$live = false;
+  let tmp$1;
+  try {
+    tmp$1 = pair(first, tmp);
+    _8$live = false;
+  } catch (error) {
+    if (_8$live) {
+      noisyDrop_drop(first);
+    }
+    throw error;
+  }
+  console.log(`${tmp$1}`);
+  const again = ["again"];
+  let _24$live = true;
+  let tmp$2;
+  try {
+    tmp$2 = second(true);
+  } catch (error) {
+    if (_24$live) {
+      noisyDrop_drop(again);
+    }
+    throw error;
+  }
+  _24$live = false;
+  let tmp$3;
+  try {
+    tmp$3 = pair(again, tmp$2);
+    _24$live = false;
+  } catch (error) {
+    if (_24$live) {
+      noisyDrop_drop(again);
+    }
+    throw error;
+  }
+  console.log(`${tmp$3}`);
 }
 //# sourceMappingURL=case.js.map

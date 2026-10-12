@@ -5,6 +5,7 @@ import {
   $collectResults,
   $debugParseError,
   $debugStr,
+  $iter,
   $parseInt,
   $some,
 } from "@rust-js/runtime";
@@ -19,7 +20,7 @@ function parse_all(v) {
 
 function halves(v) {
   return $collectOptions(
-    v.map((n) => {
+    v.values().map((n) => {
       if (n % 2 === 0) {
         return (n / 2) >>> 0;
       }
@@ -29,15 +30,22 @@ function halves(v) {
 }
 
 function main() {
-  const arg = parse_all(["1", "22"]);
-  const arg$1 = parse_all(["1", "x", "3"]);
+  const value = parse_all(["1", "22"]);
   console.log(
-    `${arg.TAG === "Ok" ? `Ok([${arg._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(arg._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok([${arg$1._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+    `${value.TAG === "Ok" ? `Ok([${value._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugParseError(value._0, "ParseIntError")})`} ${((
+      result,
+    ) =>
+      result.TAG === "Ok"
+        ? `Ok([${result._0.map((item) => String(item)).join(", ")}])`
+        : `Err(${$debugParseError(result._0, "ParseIntError")})`)(parse_all(["1", "x", "3"]))}`,
   );
-  const arg$2 = halves([2, 4]);
-  const arg$3 = halves([2, 3, 4]);
+  const value$1 = halves([2, 4]);
   console.log(
-    `${arg$2 == null ? "None" : `Some([${arg$2.map((item) => String(item)).join(", ")}])`} ${arg$3 == null ? "None" : `Some([${arg$3.map((item) => String(item)).join(", ")}])`}`,
+    `${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`} ${((
+      value,
+    ) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(
+      halves([2, 3, 4]),
+    )}`,
   );
   const seen = [];
   const r = $collectResults(
@@ -52,15 +60,17 @@ function main() {
   console.log(
     `${r.TAG === "Ok" ? `Ok([${r._0.map((item) => String(item)).join(", ")}])` : `Err(${$debugStr(r._0)})`} [${seen.map((item) => String(item)).join(", ")}]`,
   );
-  const nested = $collectOptions([1, $some(undefined)], true);
-  const none = $collectOptions([1, undefined], true);
+  const nested = $collectOptions($iter([1, $some(undefined)]), true);
+  const none = $collectOptions($iter([1, undefined]), true);
   console.log(
     `${nested == null ? "None" : `Some([${nested.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}])`} ${none == null ? "None" : `Some([${none.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}])`}`,
   );
-  const deque = $collectResults([
-    { TAG: "Ok", _0: 1 },
-    { TAG: "Ok", _0: 2 },
-  ]);
+  const deque = $collectResults(
+    $iter([
+      { TAG: "Ok", _0: 1 },
+      { TAG: "Ok", _0: 2 },
+    ]),
+  );
   console.log(
     `${deque.TAG === "Ok" ? `Ok([${deque._0.map((item) => String(item)).join(", ")}])` : "Err(())"}`,
   );

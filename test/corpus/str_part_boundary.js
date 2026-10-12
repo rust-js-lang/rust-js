@@ -8,7 +8,7 @@ export function entry() {
 
 function main() {
   let s = "éa";
-  const part = $strPart(
+  const item = $strPart(
     {
       get value() {
         return s;
@@ -21,6 +21,6 @@ function main() {
     1,
   );
   console.log("made");
-  part.value = $asciiCase(part.value, true);
+  item.value = $asciiCase(item.value, true);
 }
 //# sourceMappingURL=case.js.map

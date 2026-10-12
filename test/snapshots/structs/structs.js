@@ -24,7 +24,8 @@ export function grow(w, h, by) {
   const r = rect(0, 0, w, h);
   r.size[0] = (r.size[0] + by) >>> 0;
   r.size[1] = Math.imul(r.size[1], 2) >>> 0;
-  r.origin = point(-1, -1);
+  const value = point(-1, -1);
+  r.origin = value;
   return r;
 }
 
@@ -48,8 +49,7 @@ export function caller_keeps_its_point(y) {
 
 export function moves_share_nothing(x) {
   const a = point(x, x);
-  const r = { origin: { ...a }, size: [1, 1] };
-  const s = r;
+  const s = { origin: { ...a }, size: [1, 1] };
   s.origin.x = 0;
   return [a.x, s.origin.x];
 }
@@ -106,9 +106,8 @@ export function with_x(x, y) {
 }
 
 export function written_order(a, b) {
-  const y = $div(100, a, -2147483648) | 0;
-  const x = $rem(100, b, -2147483648) | 0;
-  return { x, y };
+  const value = $div(100, a, -2147483648) | 0;
+  return { x: $rem(100, b, -2147483648) | 0, y: value };
 }
 
 export function divmod(a, b) {
@@ -121,32 +120,47 @@ export function divmod_sum(a, b) {
 }
 
 export function classify([a, b]) {
-  if (a === 0 && b === 0) {
-    return 0;
+  if (a === 0) {
+    if (b === 0) {
+      return 0;
+    }
+  } else if (b !== 0) {
+    const x = a;
+    const y = b;
+    if (x === y) {
+      return 2;
+    }
+    const x$1 = a;
+    if (x$1 < 0) {
+      return 3;
+    }
+    return 4;
   }
-  if (a === 0 || b === 0) {
-    return 1;
-  }
-  if (a === b) {
-    return 2;
-  }
-  if (a < 0) {
-    return 3;
-  }
-  return 4;
+  return 1;
 }
 
 export function quadrant(x, y) {
-  const match = point(x, y);
-  if (match.x === 0 || match.y === 0) {
-    return 0;
+  const value = point(x, y);
+  if (value.x !== 0) {
+    if (value.y !== 0) {
+      const x = value.x;
+      const y$1 = value.y;
+      if (x > 0) {
+        if (y$1 > 0) {
+          const x = value.x;
+          const y$1 = value.y;
+          return 1;
+        }
+      }
+      const x$1 = value.x;
+      if (x$1 < 0) {
+        const x = value.x;
+        return (2 + (y < 0 ? 1 : 0)) | 0;
+      }
+      const y$2 = value.y;
+      return Math.imul(y$2, 4);
+    }
   }
-  if (match.x > 0 && match.y > 0) {
-    return 1;
-  }
-  if (match.x < 0) {
-    return (2 + (y < 0 ? 1 : 0)) | 0;
-  }
-  return Math.imul(match.y, 4);
+  return 0;
 }
 //# sourceMappingURL=structs.js.map

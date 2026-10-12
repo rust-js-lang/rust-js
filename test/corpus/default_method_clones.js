@@ -6,11 +6,11 @@ export function entry() {
   main();
 }
 
-function numbersIterator_next(self) {
+function numbersIterator_next(numbers) {
   return;
 }
 
-function listsIterator_next(self) {
+function listsIterator_next(lists) {
   return;
 }
 

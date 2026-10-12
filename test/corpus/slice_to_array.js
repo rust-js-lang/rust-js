@@ -25,9 +25,9 @@ function main() {
   console.log(
     `[${fixed.map((item) => String(item)).join(", ")}] [${owned.map((item) => String(item)).join(", ")}] ${wrong.TAG === "Ok" ? `Ok([${wrong._0.map((item) => String(item)).join(", ")}])` : "Err(TryFromSliceError(()))"} ${wrong.TAG !== "Ok"}`,
   );
-  const match = bytes.length === 2 ? { TAG: "Ok", _0: bytes.slice() } : { TAG: "Err" };
-  if (match.TAG === "Ok") {
-    console.log(`[${match._0.map((item) => String(item)).join(", ")}]`);
+  const value = bytes.length === 2 ? { TAG: "Ok", _0: bytes.slice() } : { TAG: "Err" };
+  if (value.TAG === "Ok") {
+    console.log(`[${value._0.map((item) => String(item)).join(", ")}]`);
   } else {
     console.log("could not convert slice to array");
   }

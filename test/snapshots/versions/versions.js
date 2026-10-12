@@ -85,16 +85,16 @@ function configDebug_fmt(config) {
 function largest(items, TPartialOrd) {
   const it = $iter(items);
   const value = $nextSome(it);
-  if (value == null) {
-    return;
-  }
-  let best = $someValue(value);
-  for (const item of it) {
-    if (TPartialOrd.partial_cmp(item, best) > 0) {
-      best = item;
+  if (value != null) {
+    let best = $someValue(value);
+    for (const x of it) {
+      if (TPartialOrd.partial_cmp(x, best) > 0) {
+        best = x;
+      }
     }
+    return $some(best);
   }
-  return $some(best);
+  return;
 }
 
 export function tour() {
@@ -115,32 +115,31 @@ export function tour() {
     .map((v) => `${v.major}.${v.minor}.${v.patch}`)
     .map((item) => $debugStr(item))
     .join(", ")}]\n`;
-  const tmp = $maxBy(
+  const value = $maxBy(
     vs,
     (a, b) => $cmp(a.major, b.major) || $cmp(a.minor, b.minor) || $cmp(a.patch, b.patch),
   );
-  const left = $index(vs, 1);
+  const value$1 = $index(vs, 1);
   const right = $index(vs, 2);
-  out += `${tmp == null ? "None" : `Some(${versionDebug_fmt(tmp)})`} ${($cmp(left.major, right.major) || $cmp(left.minor, right.minor) || $cmp(left.patch, right.patch)) < 0}\n`;
+  out += `${value == null ? "None" : `Some(${versionDebug_fmt(value)})`} ${($cmp(value$1.major, right.major) || $cmp(value$1.minor, right.minor) || $cmp(value$1.patch, right.patch)) < 0}\n`;
   const c = { name: "svc", retries: 3, verbose: false, ratio: 0 };
   out += `${configDebug_fmt(c)}\n`;
-  const arg = largest([3, 9, 2], { partial_cmp: $cmp });
-  const arg$1 = largest([1.5, -2], { partial_cmp: $partialCmp });
-  const arg$2 = largest([], { partial_cmp: $cmp });
-  out += `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${$debugF64(arg$1)})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}\n`;
+  const value$2 = largest([3, 9, 2], { partial_cmp: $cmp });
+  const value$3 = largest([1.5, -2], { partial_cmp: $partialCmp });
+  out += `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${$debugF64(value$3)})`} ${((value) => (value == null ? "None" : `Some(${value})`))(largest([], { partial_cmp: $cmp }))}\n`;
   const running = $scan([1, 2, 3, 4], 0, (acc, x) => {
     acc.value = (acc.value + x) >>> 0;
     return acc.value;
   });
-  const v = $range(1, 8 + 1);
+  const v = $range(1, 9);
   const tail = $splitOff(v, 5);
   const drained = $drain(v, 1, 3);
   out += `[${running.map((item) => String(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}] [${tail.map((item) => String(item)).join(", ")}] [${drained.map((item) => String(item)).join(", ")}]\n`;
   const fs = [2.5, -1, 3.25, 0];
   fs.sort((a, b) => $totalCmp(a, b));
   const total = fs.reduce((a, b) => a + b, -0);
-  const arg$3 = $fromDigit(7, 10);
-  out += `[${fs.map((item) => $debugF64(item)).join(", ")}] ${$displayF64(total)} ${$lowerExp(1234.5)} ${$zeroPad($toFixed(-3.14159, 3), 8)} ${arg$3 == null ? "None" : `Some(${$debugStr(arg$3, "'")})`}\n`;
+  const arg = $fromDigit(7, 10);
+  out += `[${fs.map((item) => $debugF64(item)).join(", ")}] ${$displayF64(total)} ${$lowerExp(1234.5)} ${$zeroPad($toFixed(-3.14159, 3), 8)} ${arg == null ? "None" : `Some(${$debugStr(arg, "'")})`}\n`;
   const words = ["a", "b"];
   out += `${words.join("-")} ${words.join("")}\n`;
   return out;
@@ -158,10 +157,8 @@ function made(c) {
 
 export function edges() {
   const order = { value: 0 };
-  const patch = tick(order, 1);
-  const major = tick(order, 2);
-  const base = made(order);
-  const v = { major, minor: base.minor, patch };
+  const value = tick(order, 1);
+  const v = { major: tick(order, 2), minor: made(order).minor, patch: value };
   const upto = $scan([5, 3, 8, 1], 1, (acc, x) => {
     acc.value = Math.imul(acc.value, x) >>> 0;
     if (acc.value > 100) {

@@ -12,8 +12,8 @@ export function by_reference(a, b) {
 
 export function move_copies(n) {
   let n$1 = n;
-  const n$2 = n$1;
-  const get = () => n$2;
+  const captured = n$1;
+  const get = () => captured;
   n$1 = (n$1 + 100) | 0;
   return (Math.imul(get(), 1000) + n$1) | 0;
 }
@@ -48,10 +48,10 @@ export function fresh_copy_each_time(times) {
 
 export function struct_copy(x) {
   const p = { x, y: 0 };
-  let x$1 = p.x;
+  let captured = p.x;
   const shift = () => {
-    x$1 = (x$1 + 1) | 0;
-    return x$1;
+    captured = (captured + 1) | 0;
+    return captured;
   };
   shift();
   p.y = 5;

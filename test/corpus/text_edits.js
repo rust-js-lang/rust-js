@@ -33,84 +33,84 @@ function main() {
   let long = "aé-bc-déf";
   const drained = $strDrain(long, 0, 4);
   long = drained[0];
-  const taken = drained[1].join("");
+  const taken = Iterator.from(drained[1]).toArray().join("");
   console.log(`[${taken}] [${long}]`);
   const drained$1 = $strDrain(long, 2, 4);
   long = drained$1[0];
-  const removed = drained$1[1].slice();
+  const removed = Iterator.from(drained$1[1]).toArray();
   console.log(`[${removed.map((item) => $debugStr(item, "'")).join(", ")}] [${long}]`);
   long = $strExtendWithin(long, 0, 2);
   long = $strExtendWithin(long, 1);
   console.log(`[${long}]`);
-  console.log(
-    `${/^[\0-\x7f]*$/.test("abc")} ${/^[\0-\x7f]*$/.test("héllo")} ${/^[\0-\x7f]*$/.test("")}`,
-  );
-  console.log(
-    `[${" 	 a b \n".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "")}] [${"  x ".replace(/^[\t\n\f\r ]+/, "")}] [${"  x ".replace(/[\t\n\f\r ]+$/, "")}]`,
-  );
+  const value = /^[\0-\x7f]*$/.test("abc");
+  const value$1 = /^[\0-\x7f]*$/.test("héllo");
+  console.log(`${value} ${value$1} ${/^[\0-\x7f]*$/.test("")}`);
+  const value$2 = " 	 a b \n".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "");
+  const value$3 = "  x ".replace(/^[\t\n\f\r ]+/, "");
+  console.log(`[${value$2}] [${value$3}] [${"  x ".replace(/[\t\n\f\r ]+$/, "")}]`);
   console.log(`${$debugStr("\vx\v ".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, ""))}`);
   console.log(
-    `[${$splitInclusive("a\nb\n\nc\n", "\n")
-      .slice()
+    `[${Iterator.from($splitInclusive("a\nb\n\nc\n", "\n"))
+      .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${$splitInclusive("a--b--", "--")
-      .slice()
+    `[${Iterator.from($splitInclusive("a--b--", "--"))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}]`,
+  );
+  const value$4 = Iterator.from($splitInclusive("ab", "")).toArray();
+  console.log(
+    `[${value$4.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from(
+      $splitInclusive("", "x"),
+    )
+      .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   console.log(
-    `[${$splitInclusive("ab", "")
-      .slice()
-      .map((item) => $debugStr(item))
-      .join(", ")}] [${$splitInclusive("", "x")
-      .slice()
+    `[${Iterator.from($rsplitTerminator("a.b.c.", "."))
+      .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
+  const value$5 = Iterator.from($rmatches("abaXab", "ab")).toArray();
   console.log(
-    `[${$rsplitTerminator("a.b.c.", ".")
-      .slice()
-      .map((item) => $debugStr(item))
-      .join(", ")}]`,
-  );
-  console.log(
-    `[${$rmatches("abaXab", "ab")
-      .slice()
-      .map((item) => $debugStr(item))
-      .join(", ")}] [${$rmatchIndices("aaa", "aa")
-      .slice()
+    `[${value$5.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from(
+      $rmatchIndices("aaa", "aa"),
+    )
+      .toArray()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$rmatchIndices("héllo", "l")
-      .slice()
+    `[${Iterator.from($rmatchIndices("héllo", "l"))
+      .toArray()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const arg = $splitAtChecked("héllo", 1);
-  const arg$1 = $splitAtChecked("héllo", 2);
-  const arg$2 = $splitAtChecked("héllo", 9);
+  const value$6 = $splitAtChecked("héllo", 1);
+  const value$7 = $splitAtChecked("héllo", 2);
   console.log(
-    `${arg == null ? "None" : `Some((${$debugStr(arg[0])}, ${$debugStr(arg[1])}))`} ${arg$1 == null ? "None" : `Some((${$debugStr(arg$1[0])}, ${$debugStr(arg$1[1])}))`} ${arg$2 == null ? "None" : `Some((${$debugStr(arg$2[0])}, ${$debugStr(arg$2[1])}))`}`,
+    `${value$6 == null ? "None" : `Some((${$debugStr(value$6[0])}, ${$debugStr(value$6[1])}))`} ${value$7 == null ? "None" : `Some((${$debugStr(value$7[0])}, ${$debugStr(value$7[1])}))`} ${((value) => (value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`))($splitAtChecked("héllo", 9))}`,
   );
   console.log(
-    `[${$encodeUtf16("hé𝄞")
-      .slice()
+    `[${Iterator.from($encodeUtf16("hé𝄞"))
+      .toArray()
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const arg$3 = $fromUtf16([104, 55348, 56606]);
-  const arg$4 = $fromUtf16([55348, 104]);
+  const value$8 = $fromUtf16([104, 55348, 56606]);
   console.log(
-    `${arg$3.TAG === "Ok" ? `Ok(${$debugStr(arg$3._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${arg$4.TAG === "Ok" ? `Ok(${$debugStr(arg$4._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"}`,
+    `${value$8.TAG === "Ok" ? `Ok(${$debugStr(value$8._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${((result) => (result.TAG === "Ok" ? `Ok(${$debugStr(result._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"))($fromUtf16([55348, 104]))}`,
   );
   console.log("invalid utf-16: lone surrogate found");
   console.log(`${$fromUtf16Lossy([104, 55348, 105])}`);
-  console.log(`${$floorCharBoundary("héllo", 2)} ${$ceilCharBoundary("héllo", 2)}`);
-  console.log(`${$floorCharBoundary("héllo", 99)} ${$ceilCharBoundary("héllo", 99)}`);
+  const value$9 = $floorCharBoundary("héllo", 2);
+  console.log(`${value$9} ${$ceilCharBoundary("héllo", 2)}`);
+  const value$10 = $floorCharBoundary("héllo", 99);
+  console.log(`${value$10} ${$ceilCharBoundary("héllo", 99)}`);
 }
 //# sourceMappingURL=case.js.map

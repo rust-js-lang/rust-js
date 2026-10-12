@@ -4,7 +4,7 @@ export function entry() {
   main();
 }
 
-function temporaryDrop_drop(self) {
+function temporaryDrop_drop(temporary) {
   console.log("drop");
 }
 
@@ -19,15 +19,19 @@ function make() {
 }
 
 function main() {
-  const box = make();
-  let value;
+  const value = make();
+  let tmp;
   try {
-    value = Temporary.ready(box);
-  } finally {
-    temporaryDrop_drop({ value: box });
+    tmp = Temporary.ready(value);
+  } catch (error) {
+    temporaryDrop_drop({ value });
+    throw error;
   }
-  if (value) {
+  if (tmp) {
+    temporaryDrop_drop({ value });
     console.log("ready");
+  } else {
+    temporaryDrop_drop({ value });
   }
 }
 //# sourceMappingURL=case.js.map

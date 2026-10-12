@@ -23,6 +23,7 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_index::IndexVec;
 use rustc_middle::mir::interpret::GlobalId;
+use rustc_middle::mir::visit::{MutatingUseContext, NonMutatingUseContext, PlaceContext, Visitor};
 use rustc_middle::mir::{
     self, AggregateKind, AssertKind, BasicBlock, BinOp, BorrowKind, Const, ConstOperand, Local, LocalKind, Operand,
     Place, PlaceElem, Promoted, Rvalue, StatementKind, TerminatorKind, UnOp, UnwindAction,
@@ -87,13 +88,14 @@ impl<'tcx> Mir<'tcx> {
     }
 }
 
-/// Whether bodies are lowered from their MIR: `RUST_JS_MIR=1`, while the
-/// proof of concept runs (ADR 0364).
+/// Whether bodies are lowered from their MIR, as they are unless
+/// `RUST_JS_MIR=0` says THIR's, till THIR's lowering of bodies is retired
+/// (ADR 0364).
 pub fn mir_mode() -> bool {
-    std::env::var_os(MIR).is_some_and(|v| v == "1")
+    std::env::var_os(MIR).is_none_or(|v| v != "0")
 }
 
-/// The variable that says which lowering: `1`, MIR's.
+/// The variable that says which lowering: `0`, THIR's; else MIR's.
 pub const MIR: &str = "RUST_JS_MIR";
 
 /// What a temporary holds until it's used: a value, or a part of a
@@ -624,7 +626,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Where each `match` is written whose arms are each a variant of its
         // own, with no field, guard or binding: one that may read a table by
         // what's matched (ADR 0233), as tidy's `table_reads` tells.
-        let tables: Vec<js::Span> = (self.thir.exprs.iter())
+        let tables: Vec<(js::Span, Vec<String>)> = (self.thir.exprs.iter())
             .filter_map(|e| {
                 let thir::ExprKind::Match { scrutinee, ref arms, .. } = e.kind else {
                     return None;
@@ -637,8 +639,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     arm.guard.is_none()
                         && matches!(&arm.pattern.kind, thir::PatKind::Variant { subpatterns, .. } if subpatterns.is_empty())
                 });
-                (adt.is_enum() && arms.len() >= 2 && each)
-                    .then(|| self.js_span(e.span))
+                // Each variant's name too, to know the one an `else` is of.
+                let names = adt.variants().iter().map(|v| bindings::variant_name(self.tcx, v)).collect();
+                (adt.is_enum() && arms.len() >= 2 && each).then(|| (self.js_span(e.span), names))
             })
             .collect();
         // Where each `if`'s condition is written, of the body THIR has:
@@ -2182,6 +2185,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<()> {
+        // What the function gives, a variable of its own nothing reads after:
+        // that, handed over uncopied, as THIR's. Not of a `Cell` in it, which
+        // a drop after may set.
+        let handed;
+        let rvalue = match rvalue {
+            Rvalue::Use(Operand::Copy(from), retag)
+                if *place == Place::from(mir::RETURN_PLACE)
+                    && from.projection.is_empty()
+                    && (from.ty(state.body, self.tcx).ty).is_freeze(self.tcx, self.typing_env) =>
+            {
+                handed = Rvalue::Use(Operand::Move(*from), *retag);
+                &handed
+            }
+            _ => rvalue,
+        };
+        // A named constant only read or lent shared, `XS.contains(&x)`'s: the
+        // one there is, uncopied, as THIR's, as nothing changes it.
+        if place.projection.is_empty()
+            && let Rvalue::Use(Operand::Constant(c), _) = rvalue
+            && let Const::Unevaluated(uv, _) = c.const_
+            && uv.promoted.is_none()
+            && matches!(self.tcx.def_kind(uv.def), DefKind::Const { .. })
+            && self.krate.fns.contains_key(&uv.def)
+            && c.ty().is_freeze(self.tcx, self.typing_env)
+            && only_read(state.body, place.local)
+        {
+            let constant = self.fn_ref(uv.def);
+            return self.mir_store(state, *place, Value::Expr(constant), span, out);
+        }
         // A `&mut` a variable keeps to a variable that's a `&mut` itself,
         // `let outer = &mut list`: `list`, where it's used, so `*outer = ..`
         // gives `list` it, as THIR's.
@@ -2941,7 +2973,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(base);
         }
         match (ty.ty.kind(), ty.variant_index) {
-            (ty::Adt(adt, _), Some(variant)) if adt.is_enum() => {
+            (ty::Adt(adt, args), Some(variant)) if adt.is_enum() => {
                 if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
                     let inner = self.option_of(ty.ty).expect("an `Option`");
                     return Ok(match self.boxed_payload(inner) {
@@ -2952,7 +2984,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if bindings::is_untagged(self.tcx, adt.did()) {
                     return Ok(base);
                 }
-                Ok(Expr::member(base, variant_field(self.tcx, adt.variant(variant), i)))
+                // A `Cell` it holds, as a struct's (ADR 0288): a handle on it.
+                let variant = adt.variant(variant);
+                let read = Expr::member(base, variant_field(self.tcx, variant, i));
+                Ok(self.held(read, self.field_ty(&variant.fields[field], args)))
             }
             (ty::Adt(adt, _), _) if adt.is_union() => Err(self.unsupported(span, "unions")),
             (ty::Tuple(_) | ty::Adt(..), _) => Ok(self.project(base, ty.ty, i)),
@@ -3227,6 +3262,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(referred) = referred_constant(&state.promoted[promoted])
             && self.const_static(c).is_none()
         {
+            // Of the crate's named one, the one there is, uncopied, as it's
+            // only lent shared.
+            if let Const::Unevaluated(named, _) = referred.const_
+                && named.promoted.is_none()
+                && matches!(tcx.def_kind(named.def), DefKind::Const { .. })
+                && self.krate.fns.contains_key(&named.def)
+                && referred.ty().is_freeze(tcx, self.typing_env)
+            {
+                return Ok(self.fn_ref(named.def));
+            }
             return self.mir_const(state, &referred);
         }
         // A promoted reference to a variant without fields, `&None` of generic
@@ -3503,6 +3548,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         false => target,
                     };
                     return Ok(Value::Ref(target));
+                }
+                // `&error.title` of a `Cell` a field holds, a handle on it,
+                // through a reference written again, `error = other` after:
+                // of what `error` is now, held, as a `&mut`'s above.
+                if matches!(kind, BorrowKind::Shared)
+                    && (self.is_std_type(pointee, StdItem::Cell) || self.plain_ref_cell(pointee))
+                    && place.projection.first() == Some(&PlaceElem::Deref)
+                    && state.locals.writes[place.local] + usize::from(state.body.args_iter().any(|a| a == place.local))
+                        > 1
+                    && state.body.local_decls[place.local].ty.is_ref()
+                    && !state.locals.names[place.local].is_empty()
+                {
+                    let target = self.mir_place(state, *place, span, out)?;
+                    let name = state.locals.names[place.local].clone();
+                    self.flush(state, out)?;
+                    let held = self.spill(&name, Expr::var(&name), out);
+                    let target = (target.substitute(&|v| (v == name).then(|| held.clone()))).unwrap_or(target);
+                    return Ok(Value::Place(target));
                 }
                 if self.through_values(state.body, place, true) {
                     let value = self.read_local_value(state, place.local, out)?;
@@ -4844,7 +4907,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         match value.kind {
                             js::ExprKind::Undefined => Expr::null(),
-                            _ if value.is_constant() => value,
+                            _ if value.is_constant() || value.is_made_here() => value,
                             _ => Expr::bin(Op::Coalesce, value, Expr::null()),
                         }
                     }
@@ -6396,6 +6459,38 @@ pub(super) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::Ha
             }
         }
     }
+}
+
+/// Whether `local` is only read, by its parts or lent shared, once it's
+/// assigned: never moved, copied whole, nor lent `&mut`.
+fn only_read(body: &mir::Body<'_>, local: Local) -> bool {
+    struct Reads {
+        local: Local,
+        only: bool,
+    }
+    impl<'tcx> Visitor<'tcx> for Reads {
+        fn visit_place(&mut self, place: &Place<'tcx>, context: PlaceContext, _: mir::Location) {
+            if place.local != self.local {
+                return;
+            }
+            self.only &= match context {
+                PlaceContext::NonUse(_) | PlaceContext::MutatingUse(MutatingUseContext::Store) => {
+                    place.projection.is_empty()
+                }
+                PlaceContext::NonMutatingUse(
+                    NonMutatingUseContext::SharedBorrow
+                    | NonMutatingUseContext::FakeBorrow
+                    | NonMutatingUseContext::Inspect
+                    | NonMutatingUseContext::PlaceMention,
+                ) => true,
+                PlaceContext::NonMutatingUse(NonMutatingUseContext::Copy) => !place.projection.is_empty(),
+                _ => false,
+            };
+        }
+    }
+    let mut reads = Reads { local, only: true };
+    reads.visit_body(body);
+    reads.only
 }
 
 /// Whether `local` is assigned in `from`, or a block it goes on to.

@@ -5,17 +5,18 @@ export function entry() {
 }
 
 function main() {
-  let n = 0;
-  const f = () => {
-    n = (n + 1) | 0;
-    return n;
+  const n = 0;
+  let n$1 = n;
+  const g = () => {
+    n$1 = (n$1 + 1) | 0;
+    return n$1;
   };
-  const g = f;
   g();
   console.log(`${g()}`);
   const k = 41;
   const h = () => (k + 1) | 0;
   const h2 = h;
-  console.log(`${h()} ${h2()}`);
+  const value = h();
+  console.log(`${value} ${h2()}`);
 }
 //# sourceMappingURL=case.js.map

@@ -7,7 +7,8 @@ export function entry() {
 }
 
 function main() {
-  const [low, high] = [5, 1];
+  const low = 5;
+  const high = 1;
   console.log(`${$clamp(3, high, low)}`);
   console.log(`${$clamp(3, low, high)}`);
 }

@@ -22,19 +22,19 @@ function main() {
   const v = [1, 2, 3, 4, 5, 6];
   const value = $getDisjointMut(v, [0, 5], true);
   if (value.TAG === "Ok") {
-    const t = value._0[0].value;
-    value._0[0].value = value._0[1].value;
-    value._0[1].value = t;
-    value._0[0].value = Math.imul(value._0[0].value, 10);
+    const a = value._0[0];
+    const b = value._0[1];
+    const t = a.value;
+    a.value = b.value;
+    b.value = t;
+    a.value = Math.imul(a.value, 10);
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-  const arg = $getDisjointMut(v, [1, 9], true);
   console.log(
-    `${arg.TAG === "Ok" ? `Ok([${arg._0.map((item) => String(item.value)).join(", ")}])` : `Err(${arg._0})`}`,
+    `${((result) => (result.TAG === "Ok" ? `Ok([${result._0.map((item) => String(item.value)).join(", ")}])` : `Err(${result._0})`))($getDisjointMut(v, [1, 9], true))}`,
   );
-  const arg$1 = $getDisjointMut(v, [2, 2], true);
   console.log(
-    `${arg$1.TAG === "Ok" ? `Ok([${arg$1._0.map((item) => String(item.value)).join(", ")}])` : `Err(${arg$1._0})`}`,
+    `${((result) => (result.TAG === "Ok" ? `Ok([${result._0.map((item) => String(item.value)).join(", ")}])` : `Err(${result._0})`))($getDisjointMut(v, [2, 2], true))}`,
   );
   console.log(
     `${$unwrapErr(
@@ -54,8 +54,10 @@ function main() {
     { start: 3, end: 6 },
   ]);
   if (value$1.TAG === "Ok") {
-    $copyFromSlice(value$1._0[0], $slice(value$1._0[1], 1));
-    value$1._0[1].reverse();
+    const left = value$1._0[0];
+    const right = value$1._0[1];
+    $copyFromSlice(left, $slice(right, 1));
+    right.reverse();
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   console.log(
@@ -90,12 +92,14 @@ function main() {
     true,
   );
   if (value$2.TAG === "Ok") {
-    const value = $index(value$2._0[1], 0);
-    value$2._0[0][$at(value$2._0[0], 1)] = value;
+    const a = value$2._0[0];
+    const b = value$2._0[1];
+    const value = $index(b, 0);
+    a[$at(a, 1)] = value;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-  const tmp = $getDisjointMut(v, [1, 4], true)._0;
-  tmp[0].value = (tmp[0].value + tmp[1].value) | 0;
+  const [x, y] = $getDisjointMut(v, [1, 4], true)._0;
+  x.value = (x.value + y.value) | 0;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const cells = [{ n: 1 }, { n: 2 }, { n: 3 }];
   const [first, last] = $unwrapOk($getDisjointMut(cells, [0, 2]), undefined, (e) => e);

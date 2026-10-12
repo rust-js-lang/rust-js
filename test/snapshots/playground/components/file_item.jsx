@@ -5,10 +5,10 @@ import { ROW } from "../styles.js";
 export function FileItem({ name, path, depth, open, root, onOpen, onDelete }) {
   const opened = path;
   let end;
-  if (onDelete != null && root) {
-    end = <span className="text-[11px] text-muted">root </span>;
-  } else if (onDelete != null) {
-    end = (
+  if (onDelete != null) {
+    end = root ? (
+      <span className="text-[11px] text-muted">root </span>
+    ) : (
       <button
         className="invisible cursor-pointer px-1.5 text-muted group-hover:visible focus:visible"
         aria-label={`Delete ${path}`}

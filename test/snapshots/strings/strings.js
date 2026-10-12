@@ -35,7 +35,8 @@ export function replaced(s) {
 }
 
 export function module_name(path) {
-  const file = $stripPrefix(path, "src/") ?? path;
+  const rest = $stripPrefix(path, "src/");
+  const file = rest != null ? rest : path;
   return $stripSuffix(file, ".rs") ?? file;
 }
 
@@ -75,8 +76,22 @@ export function separator(windows) {
 }
 
 export function folder_and_file(path) {
-  const first = $splitOnce(path, "/")?.[0] ?? "";
-  const file = $rsplitOnce(path, "/")?.[1] ?? path;
+  const value = $splitOnce(path, "/");
+  let first;
+  if (value) {
+    const top = value[0];
+    first = top;
+  } else {
+    first = "";
+  }
+  const value$1 = $rsplitOnce(path, "/");
+  let file;
+  if (value$1) {
+    const name = value$1[1];
+    file = name;
+  } else {
+    file = path;
+  }
   return [first, file];
 }
 
@@ -103,18 +118,26 @@ export function kind(s) {
 export function tagged(s) {
   const option = $splitOnce(s, "/");
   const top = option ? option[0] : undefined;
+  const value = [top, s.endsWith("/")];
   let n;
-  const match = s.endsWith("/");
-  if (top === "ab") {
-    n = 1;
-  } else if (top === "" && match) {
-    n = 2;
-  } else if (top == null) {
-    n = 3;
-  } else {
+  bb16: {
+    if (value[0] == null) {
+      n = 3;
+      break bb16;
+    } else if (value[0] != null) {
+      if (value[0] === "ab") {
+        n = 1;
+        break bb16;
+      } else if (value[1]) {
+        if (value[0] === "") {
+          n = 2;
+          break bb16;
+        }
+      }
+    }
     n = 4;
   }
-  return [n, top != null && (top === "a" || top === "src")];
+  return [n, top === "a" || top === "src"];
 }
 
 function tick(c) {
@@ -124,10 +147,8 @@ function tick(c) {
 
 export function format_order(start) {
   const c = { value: start };
-  const arg = tick(c);
-  const arg$1 = tick(c);
-  const arg$2 = c.value;
-  return `${arg$1} ${arg} ${arg} ${arg$2}`;
+  const value = tick(c);
+  return `${tick(c)} ${value} ${value} ${c.value}`;
 }
 
 export function padded(n, name) {

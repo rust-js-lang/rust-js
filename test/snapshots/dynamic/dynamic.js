@@ -273,12 +273,12 @@ export function report() {
     '{"z":1,"a":2}',
   ];
   for (const t of texts) {
-    const match = $fromJson(t, $json.value);
-    if (match.TAG === "Ok") {
-      const arg = describe(match._0);
-      out += `${$jsonValueText(match._0, false)} | ${$debugJsonValue(match._0)} | ${arg}\n`;
+    const value = $fromJson(t, $json.value);
+    if (value.TAG === "Ok") {
+      const value$1 = [describe(value._0), value._0];
+      out += `${$jsonValueText(value$1[1], false)} | ${$debugJsonValue(value$1[1])} | ${value$1[0]}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   const v = $unwrapOk(
@@ -287,36 +287,36 @@ export function report() {
     $debugJsonError,
   );
   out += `${$jsonValueText($jsonIndex(v, "name"), false)} ${$jsonValueText($jsonIndex($jsonIndex(v, "list"), 1), false)} ${$jsonValueText($jsonIndex($jsonIndex(v, "nested"), "k"), false)} ${$jsonValueText($jsonIndex(v, "missing"), false)}\n`;
-  const arg = $jsonGet(v, "name");
-  const arg$1 = $jsonGet(v, "nope");
-  const arg$2 = $jsonGet($jsonIndex(v, "list"), 5);
-  const arg$3 = $jsonGet($jsonIndex(v, "list"), 0);
-  out += `${arg == null ? "None" : `Some(${$debugJsonValue(arg)})`} ${arg$1 == null ? "None" : `Some(${$debugJsonValue(arg$1)})`} ${arg$2 == null ? "None" : `Some(${$debugJsonValue(arg$2)})`} ${arg$3 == null ? "None" : `Some(${$debugJsonValue(arg$3)})`}\n`;
-  const arg$4 = $jsonValueAs($jsonIndex(v, "name"), "String");
-  const arg$5 = $jsonValueAs($jsonIndex(v, "flag"), "Bool");
-  const arg$6 = $jsonValueF64($jsonIndex(v, "f"));
-  const arg$7 = $jsonValueAs($jsonIndex(v, "list"), "Array")?.length;
-  out += `${arg$4 == null ? "None" : `Some(${$debugStr(arg$4)})`} ${arg$5 == null ? "None" : `Some(${arg$5})`} ${arg$6 == null ? "None" : `Some(${$debugF64(arg$6)})`} ${arg$7 == null ? "None" : `Some(${arg$7})`}\n`;
+  const value$1 = $jsonGet(v, "name");
+  const value$4 = $jsonGet(v, "nope");
+  const value$5 = $jsonGet($jsonIndex(v, "list"), 5);
+  const value$2 = $jsonGet($jsonIndex(v, "list"), 0);
+  out += `${value$1 == null ? "None" : `Some(${$debugJsonValue(value$1)})`} ${value$4 == null ? "None" : `Some(${$debugJsonValue(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugJsonValue(value$5)})`} ${value$2 == null ? "None" : `Some(${$debugJsonValue(value$2)})`}\n`;
+  const value$7 = $jsonValueAs($jsonIndex(v, "name"), "String");
+  const value$8 = $jsonValueAs($jsonIndex(v, "flag"), "Bool");
+  const value$9 = $jsonValueF64($jsonIndex(v, "f"));
+  const value$3 = $jsonValueAs($jsonIndex(v, "list"), "Array")?.length;
+  out += `${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${$debugF64(value$9)})`} ${value$3 == null ? "None" : `Some(${value$3})`}\n`;
   out += `${$jsonValueEq($jsonIndex(v, "name"), "n", "String")} ${$jsonValueEq($jsonIndex($jsonIndex(v, "list"), 0), 1, "i64")} ${$jsonValueEq($jsonIndex(v, "f"), 2.5, "f64")} ${$jsonValueEq($jsonIndex(v, "flag"), true, "Bool")} ${$jsonValueEq($jsonIndex($jsonIndex(v, "list"), 0), 1, "f64")} ${$jsonValueEq($jsonIndex(v, "f"), 2, "i64")}\n`;
   out += `${v.TAG === "Object"} ${$jsonIndex(v, "list").TAG === "Array"} ${$jsonIndex(v, "missing") === "Null"}\n`;
-  const object = new Map();
-  object.set("x", { TAG: "Number", _0: $jsonInt(1) });
-  object.set("y", {
+  const value$10 = new Map();
+  value$10.set("x", { TAG: "Number", _0: $jsonInt(1) });
+  value$10.set("y", {
     TAG: "Array",
     _0: [{ TAG: "Number", _0: $jsonInt(1) }, { TAG: "String", _0: "two" }, "Null", $jsonFloat(3.5)],
   });
-  const object$1 = new Map();
-  object$1.set("w", { TAG: "Bool", _0: false });
-  object.set("z", { TAG: "Object", _0: object$1 });
-  object.set("s", { TAG: "String", _0: "str" });
-  const j = { TAG: "Object", _0: object };
+  const value$11 = new Map();
+  value$11.set("w", { TAG: "Bool", _0: false });
+  value$10.set("z", { TAG: "Object", _0: value$11 });
+  value$10.set("s", { TAG: "String", _0: "str" });
+  const j = { TAG: "Object", _0: value$10 };
   out += `${$jsonValueText(j, false)}\n${$debugJsonValue(j)}\n`;
   const n = 5;
   const name = "abc";
-  const object$2 = new Map();
-  object$2.set("n", { TAG: "Number", _0: $jsonInt(n) });
-  object$2.set("name", { TAG: "String", _0: name });
-  object$2.set(
+  const value$12 = new Map();
+  value$12.set("n", { TAG: "Number", _0: $jsonInt(n) });
+  value$12.set("name", { TAG: "String", _0: name });
+  value$12.set(
     "list",
     $unwrapOk(
       $toJsonValue([1, 2], (value, json) => {
@@ -331,7 +331,7 @@ export function report() {
       $debugJsonError,
     ),
   );
-  object$2.set(
+  value$12.set(
     "opt",
     $unwrapOk(
       $toJsonValue(undefined, (value, json) => {
@@ -345,14 +345,20 @@ export function report() {
       $debugJsonError,
     ),
   );
-  const k = { TAG: "Object", _0: object$2 };
+  const k = { TAG: "Object", _0: value$12 };
   out += `${$jsonValueText(k, false)}\n`;
-  const tmp = { TAG: "Number", _0: $jsonInt(1) };
-  const object$3 = new Map();
-  object$3.set("a", "Null");
+  const value$13 = $jsonInt(1);
+  const value$14 = new Map();
+  value$14.set("a", "Null");
   const e = {
     name: "e",
-    data: { TAG: "Array", _0: [tmp, { TAG: "Object", _0: object$3 }] },
+    data: {
+      TAG: "Array",
+      _0: [
+        { TAG: "Number", _0: value$13 },
+        { TAG: "Object", _0: value$14 },
+      ],
+    },
     meta: new Map(),
   };
   const text = $unwrapOk($toJson(e, recordSerialize_serialize, false), undefined, $debugJsonError);
@@ -368,70 +374,70 @@ export function report() {
   m.set("a", { TAG: "String", _0: "x" });
   m.set("c", { TAG: "Array", _0: [1.5, 2].map((x) => $jsonFloat(x)) });
   const o = { TAG: "Object", _0: m };
-  const object$4 = new Map();
-  object$4.set("a", { TAG: "String", _0: "x" });
-  object$4.set("b", { TAG: "Number", _0: $jsonInt(2) });
-  object$4.set("c", { TAG: "Array", _0: [$jsonFloat(1.5), $jsonFloat(2)] });
-  const arg$8 = $eq(o, { TAG: "Object", _0: object$4 });
-  out += `${$jsonValueText(o, false)} ${arg$8}\n`;
+  const value$15 = new Map();
+  value$15.set("a", { TAG: "String", _0: "x" });
+  value$15.set("b", { TAG: "Number", _0: $jsonInt(2) });
+  value$15.set("c", { TAG: "Array", _0: [$jsonFloat(1.5), $jsonFloat(2)] });
+  const arg = $eq(o, { TAG: "Object", _0: value$15 });
+  out += `${$jsonValueText(o, false)} ${arg}\n`;
   const tv = $unwrapOk($toJsonValue(e, recordSerialize_serialize), undefined, $debugJsonError);
   out += `${$jsonValueText(tv, false)}\n`;
   out += `${$jsonValueText($jsonFloat(NaN), false)}\n`;
-  const arg$9 = $jsonNumberOfF64(1.5);
-  out += `${arg$9 == null ? "None" : `Some(${$debugJsonNumber(arg$9)})`}\n`;
-  const object$5 = new Map();
-  object$5.set("name", { TAG: "String", _0: "a" });
-  object$5.set("age", { TAG: "Number", _0: $jsonInt(3) });
-  object$5.set("tags", { TAG: "Array", _0: [{ TAG: "String", _0: "x" }] });
-  object$5.set("initial", { TAG: "String", _0: "q" });
-  const match = $fromJsonValue({ TAG: "Object", _0: object$5 }, userDeserialize_deserialize);
-  if (match.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match._0)}\n`;
+  const value$6 = $jsonNumberOfF64(1.5);
+  out += `${value$6 == null ? "None" : `Some(${$debugJsonNumber(value$6)})`}\n`;
+  const value$16 = new Map();
+  value$16.set("name", { TAG: "String", _0: "a" });
+  value$16.set("age", { TAG: "Number", _0: $jsonInt(3) });
+  value$16.set("tags", { TAG: "Array", _0: [{ TAG: "String", _0: "x" }] });
+  value$16.set("initial", { TAG: "String", _0: "q" });
+  const value$17 = $fromJsonValue({ TAG: "Object", _0: value$16 }, userDeserialize_deserialize);
+  if (value$17.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$17._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match._0)}\n`;
+    out += `err ${$displayJsonError(value$17._0)}\n`;
   }
-  const object$6 = new Map();
-  object$6.set("name", { TAG: "String", _0: "a" });
-  object$6.set("age", { TAG: "Number", _0: $jsonInt(300) });
-  object$6.set("tags", { TAG: "Array", _0: [] });
-  object$6.set("initial", { TAG: "String", _0: "q" });
-  const match$1 = $fromJsonValue({ TAG: "Object", _0: object$6 }, userDeserialize_deserialize);
-  if (match$1.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$1._0)}\n`;
+  const value$18 = new Map();
+  value$18.set("name", { TAG: "String", _0: "a" });
+  value$18.set("age", { TAG: "Number", _0: $jsonInt(300) });
+  value$18.set("tags", { TAG: "Array", _0: [] });
+  value$18.set("initial", { TAG: "String", _0: "q" });
+  const value$19 = $fromJsonValue({ TAG: "Object", _0: value$18 }, userDeserialize_deserialize);
+  if (value$19.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$19._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$1._0)}\n`;
+    out += `err ${$displayJsonError(value$19._0)}\n`;
   }
-  const object$7 = new Map();
-  object$7.set("name", { TAG: "String", _0: "a" });
-  object$7.set("tags", { TAG: "Array", _0: [] });
-  object$7.set("initial", { TAG: "String", _0: "q" });
-  const match$2 = $fromJsonValue({ TAG: "Object", _0: object$7 }, userDeserialize_deserialize);
-  if (match$2.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$2._0)}\n`;
+  const value$20 = new Map();
+  value$20.set("name", { TAG: "String", _0: "a" });
+  value$20.set("tags", { TAG: "Array", _0: [] });
+  value$20.set("initial", { TAG: "String", _0: "q" });
+  const value$21 = $fromJsonValue({ TAG: "Object", _0: value$20 }, userDeserialize_deserialize);
+  if (value$21.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$21._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$2._0)}\n`;
+    out += `err ${$displayJsonError(value$21._0)}\n`;
   }
-  const object$8 = new Map();
-  object$8.set("name", { TAG: "String", _0: "a" });
-  object$8.set("age", { TAG: "Number", _0: $jsonInt(1) });
-  object$8.set("tags", { TAG: "Array", _0: [] });
-  object$8.set("initial", { TAG: "String", _0: "qq" });
-  object$8.set("zzz", { TAG: "Number", _0: $jsonInt(1) });
-  const match$3 = $fromJsonValue({ TAG: "Object", _0: object$8 }, userDeserialize_deserialize);
-  if (match$3.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$3._0)}\n`;
+  const value$22 = new Map();
+  value$22.set("name", { TAG: "String", _0: "a" });
+  value$22.set("age", { TAG: "Number", _0: $jsonInt(1) });
+  value$22.set("tags", { TAG: "Array", _0: [] });
+  value$22.set("initial", { TAG: "String", _0: "qq" });
+  value$22.set("zzz", { TAG: "Number", _0: $jsonInt(1) });
+  const value$23 = $fromJsonValue({ TAG: "Object", _0: value$22 }, userDeserialize_deserialize);
+  if (value$23.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$23._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$3._0)}\n`;
+    out += `err ${$displayJsonError(value$23._0)}\n`;
   }
-  const object$9 = new Map();
-  object$9.set("name", { TAG: "Number", _0: $jsonInt(5) });
-  const match$4 = $fromJsonValue({ TAG: "Object", _0: object$9 }, userDeserialize_deserialize);
-  if (match$4.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$4._0)}\n`;
+  const value$24 = new Map();
+  value$24.set("name", { TAG: "Number", _0: $jsonInt(5) });
+  const value$25 = $fromJsonValue({ TAG: "Object", _0: value$24 }, userDeserialize_deserialize);
+  if (value$25.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$25._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$4._0)}\n`;
+    out += `err ${$displayJsonError(value$25._0)}\n`;
   }
-  const match$5 = $fromJsonValue(
+  const value$26 = $fromJsonValue(
     {
       TAG: "Array",
       _0: [
@@ -444,12 +450,12 @@ export function report() {
     },
     userDeserialize_deserialize,
   );
-  if (match$5.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$5._0)}\n`;
+  if (value$26.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$26._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$5._0)}\n`;
+    out += `err ${$displayJsonError(value$26._0)}\n`;
   }
-  const match$6 = $fromJsonValue(
+  const value$27 = $fromJsonValue(
     {
       TAG: "Array",
       _0: [
@@ -463,26 +469,26 @@ export function report() {
     },
     userDeserialize_deserialize,
   );
-  if (match$6.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$6._0)}\n`;
+  if (value$27.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$27._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$6._0)}\n`;
+    out += `err ${$displayJsonError(value$27._0)}\n`;
   }
-  const object$10 = new Map();
-  object$10.set("name", { TAG: "String", _0: "a" });
-  object$10.set("age", { TAG: "Number", _0: $jsonInt(1) });
-  object$10.set("tags", { TAG: "Array", _0: [] });
-  object$10.set("initial", { TAG: "String", _0: "q" });
-  const object$11 = new Map();
-  object$11.set("k", { TAG: "Array", _0: [{ TAG: "Number", _0: $jsonInt(1) }, "Null"] });
-  object$10.set("extra", { TAG: "Object", _0: object$11 });
-  const match$7 = $fromJsonValue({ TAG: "Object", _0: object$10 }, userDeserialize_deserialize);
-  if (match$7.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$7._0)}\n`;
+  const value$28 = new Map();
+  value$28.set("name", { TAG: "String", _0: "a" });
+  value$28.set("age", { TAG: "Number", _0: $jsonInt(1) });
+  value$28.set("tags", { TAG: "Array", _0: [] });
+  value$28.set("initial", { TAG: "String", _0: "q" });
+  const value$29 = new Map();
+  value$29.set("k", { TAG: "Array", _0: [{ TAG: "Number", _0: $jsonInt(1) }, "Null"] });
+  value$28.set("extra", { TAG: "Object", _0: value$29 });
+  const value$30 = $fromJsonValue({ TAG: "Object", _0: value$28 }, userDeserialize_deserialize);
+  if (value$30.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$30._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$7._0)}\n`;
+    out += `err ${$displayJsonError(value$30._0)}\n`;
   }
-  const match$8 = $fromJsonValue(
+  const value$31 = $fromJsonValue(
     {
       TAG: "Array",
       _0: [
@@ -492,12 +498,12 @@ export function report() {
     },
     $json.vec($json.u8),
   );
-  if (match$8.TAG === "Ok") {
-    out += `ok [${match$8._0.map((item) => String(item)).join(", ")}]\n`;
+  if (value$31.TAG === "Ok") {
+    out += `ok [${value$31._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$8._0)}\n`;
+    out += `err ${$displayJsonError(value$31._0)}\n`;
   }
-  const match$9 = $fromJsonValue(
+  const value$32 = $fromJsonValue(
     {
       TAG: "Array",
       _0: [
@@ -507,20 +513,20 @@ export function report() {
     },
     $json.vec($json.u8),
   );
-  if (match$9.TAG === "Ok") {
-    out += `ok [${match$9._0.map((item) => String(item)).join(", ")}]\n`;
+  if (value$32.TAG === "Ok") {
+    out += `ok [${value$32._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$9._0)}\n`;
+    out += `err ${$displayJsonError(value$32._0)}\n`;
   }
-  const object$12 = new Map();
-  object$12.set("a", { TAG: "Number", _0: $jsonInt(1) });
-  const match$10 = $fromJsonValue({ TAG: "Object", _0: object$12 }, $json.vec($json.u8));
-  if (match$10.TAG === "Ok") {
-    out += `ok [${match$10._0.map((item) => String(item)).join(", ")}]\n`;
+  const value$33 = new Map();
+  value$33.set("a", { TAG: "Number", _0: $jsonInt(1) });
+  const value$34 = $fromJsonValue({ TAG: "Object", _0: value$33 }, $json.vec($json.u8));
+  if (value$34.TAG === "Ok") {
+    out += `ok [${value$34._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$10._0)}\n`;
+    out += `err ${$displayJsonError(value$34._0)}\n`;
   }
-  const match$11 = $fromJsonValue(
+  const value$35 = $fromJsonValue(
     {
       TAG: "Array",
       _0: [
@@ -530,12 +536,12 @@ export function report() {
     },
     $json.tuple($json.u8, $json.u8),
   );
-  if (match$11.TAG === "Ok") {
-    out += `ok (${match$11._0[0]}, ${match$11._0[1]})\n`;
+  if (value$35.TAG === "Ok") {
+    out += `ok (${value$35._0[0]}, ${value$35._0[1]})\n`;
   } else {
-    out += `err ${$displayJsonError(match$11._0)}\n`;
+    out += `err ${$displayJsonError(value$35._0)}\n`;
   }
-  const match$12 = $fromJsonValue(
+  const value$36 = $fromJsonValue(
     {
       TAG: "Array",
       _0: [
@@ -546,298 +552,298 @@ export function report() {
     },
     $json.tuple($json.u8, $json.u8),
   );
-  if (match$12.TAG === "Ok") {
-    out += `ok (${match$12._0[0]}, ${match$12._0[1]})\n`;
+  if (value$36.TAG === "Ok") {
+    out += `ok (${value$36._0[0]}, ${value$36._0[1]})\n`;
   } else {
-    out += `err ${$displayJsonError(match$12._0)}\n`;
+    out += `err ${$displayJsonError(value$36._0)}\n`;
   }
-  const match$13 = $fromJsonValue(
+  const value$37 = $fromJsonValue(
     { TAG: "Array", _0: [{ TAG: "Number", _0: $jsonInt(1) }] },
     $json.tuple($json.u8, $json.u8),
   );
-  if (match$13.TAG === "Ok") {
-    out += `ok (${match$13._0[0]}, ${match$13._0[1]})\n`;
+  if (value$37.TAG === "Ok") {
+    out += `ok (${value$37._0[0]}, ${value$37._0[1]})\n`;
   } else {
-    out += `err ${$displayJsonError(match$13._0)}\n`;
+    out += `err ${$displayJsonError(value$37._0)}\n`;
   }
-  const object$13 = new Map();
-  object$13.set("1", { TAG: "Bool", _0: true });
-  object$13.set("20", { TAG: "Bool", _0: false });
-  const match$14 = $fromJsonValue(
-    { TAG: "Object", _0: object$13 },
+  const value$38 = new Map();
+  value$38.set("1", { TAG: "Bool", _0: true });
+  value$38.set("20", { TAG: "Bool", _0: false });
+  const value$39 = $fromJsonValue(
+    { TAG: "Object", _0: value$38 },
     $json.map($json.key.number($json.u32), $json.bool),
   );
-  if (match$14.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$14._0, $cmp))
+  if (value$39.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$39._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$14._0)}\n`;
+    out += `err ${$displayJsonError(value$39._0)}\n`;
   }
-  const object$14 = new Map();
-  object$14.set("x", { TAG: "Bool", _0: true });
-  const match$15 = $fromJsonValue(
-    { TAG: "Object", _0: object$14 },
+  const value$40 = new Map();
+  value$40.set("x", { TAG: "Bool", _0: true });
+  const value$41 = $fromJsonValue(
+    { TAG: "Object", _0: value$40 },
     $json.map($json.key.number($json.u32), $json.bool),
   );
-  if (match$15.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$15._0, $cmp))
+  if (value$41.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$41._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$15._0)}\n`;
+    out += `err ${$displayJsonError(value$41._0)}\n`;
   }
-  const object$15 = new Map();
-  object$15.set("1 ", { TAG: "Bool", _0: true });
-  const match$16 = $fromJsonValue(
-    { TAG: "Object", _0: object$15 },
+  const value$42 = new Map();
+  value$42.set("1 ", { TAG: "Bool", _0: true });
+  const value$43 = $fromJsonValue(
+    { TAG: "Object", _0: value$42 },
     $json.map($json.key.number($json.u32), $json.bool),
   );
-  if (match$16.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$16._0, $cmp))
+  if (value$43.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$43._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$16._0)}\n`;
+    out += `err ${$displayJsonError(value$43._0)}\n`;
   }
-  const object$16 = new Map();
-  object$16.set("300", { TAG: "Bool", _0: true });
-  const match$17 = $fromJsonValue(
-    { TAG: "Object", _0: object$16 },
+  const value$44 = new Map();
+  value$44.set("300", { TAG: "Bool", _0: true });
+  const value$45 = $fromJsonValue(
+    { TAG: "Object", _0: value$44 },
     $json.map($json.key.number($json.u32), $json.bool),
   );
-  if (match$17.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$17._0, $cmp))
+  if (value$45.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$45._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$17._0)}\n`;
+    out += `err ${$displayJsonError(value$45._0)}\n`;
   }
-  const object$17 = new Map();
-  object$17.set("true", { TAG: "Number", _0: $jsonInt(1) });
-  const match$18 = $fromJsonValue(
-    { TAG: "Object", _0: object$17 },
+  const value$46 = new Map();
+  value$46.set("true", { TAG: "Number", _0: $jsonInt(1) });
+  const value$47 = $fromJsonValue(
+    { TAG: "Object", _0: value$46 },
     $json.map($json.key.bool, $json.u8),
   );
-  if (match$18.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$18._0, $cmp))
+  if (value$47.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$47._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$18._0)}\n`;
+    out += `err ${$displayJsonError(value$47._0)}\n`;
   }
-  const object$18 = new Map();
-  object$18.set("yes", { TAG: "Number", _0: $jsonInt(1) });
-  const match$19 = $fromJsonValue(
-    { TAG: "Object", _0: object$18 },
+  const value$48 = new Map();
+  value$48.set("yes", { TAG: "Number", _0: $jsonInt(1) });
+  const value$49 = $fromJsonValue(
+    { TAG: "Object", _0: value$48 },
     $json.map($json.key.bool, $json.u8),
   );
-  if (match$19.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$19._0, $cmp))
+  if (value$49.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$49._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$19._0)}\n`;
+    out += `err ${$displayJsonError(value$49._0)}\n`;
   }
-  const match$20 = $fromJsonValue({ TAG: "String", _0: "Dot" }, shapeDeserialize_deserialize);
-  if (match$20.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$20._0)}\n`;
+  const value$50 = $fromJsonValue({ TAG: "String", _0: "Dot" }, shapeDeserialize_deserialize);
+  if (value$50.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$50._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$20._0)}\n`;
+    out += `err ${$displayJsonError(value$50._0)}\n`;
   }
-  const object$19 = new Map();
-  object$19.set("Circle", $jsonFloat(1.5));
-  const match$21 = $fromJsonValue({ TAG: "Object", _0: object$19 }, shapeDeserialize_deserialize);
-  if (match$21.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$21._0)}\n`;
+  const value$51 = new Map();
+  value$51.set("Circle", $jsonFloat(1.5));
+  const value$52 = $fromJsonValue({ TAG: "Object", _0: value$51 }, shapeDeserialize_deserialize);
+  if (value$52.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$52._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$21._0)}\n`;
+    out += `err ${$displayJsonError(value$52._0)}\n`;
   }
-  const object$20 = new Map();
-  object$20.set("Rect", {
+  const value$53 = new Map();
+  value$53.set("Rect", {
     TAG: "Array",
     _0: [
       { TAG: "Number", _0: $jsonInt(1) },
       { TAG: "Number", _0: $jsonInt(2) },
     ],
   });
-  const match$22 = $fromJsonValue({ TAG: "Object", _0: object$20 }, shapeDeserialize_deserialize);
-  if (match$22.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$22._0)}\n`;
+  const value$54 = $fromJsonValue({ TAG: "Object", _0: value$53 }, shapeDeserialize_deserialize);
+  if (value$54.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$54._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$22._0)}\n`;
+    out += `err ${$displayJsonError(value$54._0)}\n`;
   }
-  const object$21 = new Map();
-  object$21.set("Rect", { TAG: "Array", _0: [] });
-  const match$23 = $fromJsonValue({ TAG: "Object", _0: object$21 }, shapeDeserialize_deserialize);
-  if (match$23.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$23._0)}\n`;
+  const value$55 = new Map();
+  value$55.set("Rect", { TAG: "Array", _0: [] });
+  const value$56 = $fromJsonValue({ TAG: "Object", _0: value$55 }, shapeDeserialize_deserialize);
+  if (value$56.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$56._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$23._0)}\n`;
+    out += `err ${$displayJsonError(value$56._0)}\n`;
   }
-  const object$22 = new Map();
-  const object$23 = new Map();
-  object$23.set("sides", { TAG: "Number", _0: $jsonInt(3) });
-  object$22.set("Poly", { TAG: "Object", _0: object$23 });
-  const match$24 = $fromJsonValue({ TAG: "Object", _0: object$22 }, shapeDeserialize_deserialize);
-  if (match$24.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$24._0)}\n`;
+  const value$57 = new Map();
+  const value$58 = new Map();
+  value$58.set("sides", { TAG: "Number", _0: $jsonInt(3) });
+  value$57.set("Poly", { TAG: "Object", _0: value$58 });
+  const value$59 = $fromJsonValue({ TAG: "Object", _0: value$57 }, shapeDeserialize_deserialize);
+  if (value$59.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$59._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$24._0)}\n`;
+    out += `err ${$displayJsonError(value$59._0)}\n`;
   }
-  const object$24 = new Map();
-  object$24.set("Poly", { TAG: "Array", _0: [{ TAG: "Number", _0: $jsonInt(3) }] });
-  const match$25 = $fromJsonValue({ TAG: "Object", _0: object$24 }, shapeDeserialize_deserialize);
-  if (match$25.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$25._0)}\n`;
+  const value$60 = new Map();
+  value$60.set("Poly", { TAG: "Array", _0: [{ TAG: "Number", _0: $jsonInt(3) }] });
+  const value$61 = $fromJsonValue({ TAG: "Object", _0: value$60 }, shapeDeserialize_deserialize);
+  if (value$61.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$61._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$25._0)}\n`;
+    out += `err ${$displayJsonError(value$61._0)}\n`;
   }
-  const object$25 = new Map();
-  object$25.set("A", { TAG: "Number", _0: $jsonInt(1) });
-  object$25.set("B", { TAG: "Number", _0: $jsonInt(2) });
-  const match$26 = $fromJsonValue({ TAG: "Object", _0: object$25 }, shapeDeserialize_deserialize);
-  if (match$26.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$26._0)}\n`;
+  const value$62 = new Map();
+  value$62.set("A", { TAG: "Number", _0: $jsonInt(1) });
+  value$62.set("B", { TAG: "Number", _0: $jsonInt(2) });
+  const value$63 = $fromJsonValue({ TAG: "Object", _0: value$62 }, shapeDeserialize_deserialize);
+  if (value$63.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$63._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$26._0)}\n`;
+    out += `err ${$displayJsonError(value$63._0)}\n`;
   }
-  const match$27 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(5) }, shapeDeserialize_deserialize);
-  if (match$27.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$27._0)}\n`;
+  const value$64 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(5) }, shapeDeserialize_deserialize);
+  if (value$64.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$64._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$27._0)}\n`;
+    out += `err ${$displayJsonError(value$64._0)}\n`;
   }
-  const match$28 = $fromJsonValue({ TAG: "String", _0: "Circle" }, shapeDeserialize_deserialize);
-  if (match$28.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$28._0)}\n`;
+  const value$65 = $fromJsonValue({ TAG: "String", _0: "Circle" }, shapeDeserialize_deserialize);
+  if (value$65.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$65._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$28._0)}\n`;
+    out += `err ${$displayJsonError(value$65._0)}\n`;
   }
-  const object$26 = new Map();
-  object$26.set("Nope", { TAG: "Number", _0: $jsonInt(1) });
-  const match$29 = $fromJsonValue({ TAG: "Object", _0: object$26 }, shapeDeserialize_deserialize);
-  if (match$29.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$29._0)}\n`;
+  const value$66 = new Map();
+  value$66.set("Nope", { TAG: "Number", _0: $jsonInt(1) });
+  const value$67 = $fromJsonValue({ TAG: "Object", _0: value$66 }, shapeDeserialize_deserialize);
+  if (value$67.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$67._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$29._0)}\n`;
+    out += `err ${$displayJsonError(value$67._0)}\n`;
   }
-  const object$27 = new Map();
-  object$27.set("type", { TAG: "String", _0: "Moved" });
-  object$27.set("dx", { TAG: "Number", _0: $jsonInt(4) });
-  const match$30 = $fromJsonValue({ TAG: "Object", _0: object$27 }, taggedDeserialize_deserialize);
-  if (match$30.TAG === "Ok") {
-    out += `ok ${taggedDebug_fmt(match$30._0)}\n`;
+  const value$68 = new Map();
+  value$68.set("type", { TAG: "String", _0: "Moved" });
+  value$68.set("dx", { TAG: "Number", _0: $jsonInt(4) });
+  const value$69 = $fromJsonValue({ TAG: "Object", _0: value$68 }, taggedDeserialize_deserialize);
+  if (value$69.TAG === "Ok") {
+    out += `ok ${taggedDebug_fmt(value$69._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$30._0)}\n`;
+    out += `err ${$displayJsonError(value$69._0)}\n`;
   }
-  const object$28 = new Map();
-  object$28.set("dx", { TAG: "Number", _0: $jsonInt(4) });
-  const match$31 = $fromJsonValue({ TAG: "Object", _0: object$28 }, taggedDeserialize_deserialize);
-  if (match$31.TAG === "Ok") {
-    out += `ok ${taggedDebug_fmt(match$31._0)}\n`;
+  const value$70 = new Map();
+  value$70.set("dx", { TAG: "Number", _0: $jsonInt(4) });
+  const value$71 = $fromJsonValue({ TAG: "Object", _0: value$70 }, taggedDeserialize_deserialize);
+  if (value$71.TAG === "Ok") {
+    out += `ok ${taggedDebug_fmt(value$71._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$31._0)}\n`;
+    out += `err ${$displayJsonError(value$71._0)}\n`;
   }
-  const object$29 = new Map();
-  object$29.set("type", { TAG: "String", _0: "Named" });
-  object$29.set("name", { TAG: "String", _0: "n" });
-  object$29.set("age", { TAG: "Number", _0: $jsonInt(1) });
-  object$29.set("tags", { TAG: "Array", _0: [] });
-  object$29.set("initial", { TAG: "String", _0: "i" });
-  const match$32 = $fromJsonValue({ TAG: "Object", _0: object$29 }, taggedDeserialize_deserialize);
-  if (match$32.TAG === "Ok") {
-    out += `ok ${taggedDebug_fmt(match$32._0)}\n`;
+  const value$72 = new Map();
+  value$72.set("type", { TAG: "String", _0: "Named" });
+  value$72.set("name", { TAG: "String", _0: "n" });
+  value$72.set("age", { TAG: "Number", _0: $jsonInt(1) });
+  value$72.set("tags", { TAG: "Array", _0: [] });
+  value$72.set("initial", { TAG: "String", _0: "i" });
+  const value$73 = $fromJsonValue({ TAG: "Object", _0: value$72 }, taggedDeserialize_deserialize);
+  if (value$73.TAG === "Ok") {
+    out += `ok ${taggedDebug_fmt(value$73._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$32._0)}\n`;
+    out += `err ${$displayJsonError(value$73._0)}\n`;
   }
-  const match$33 = $fromJsonValue({ TAG: "String", _0: "s" }, $json.string);
-  if (match$33.TAG === "Ok") {
-    out += `ok ${$debugStr(match$33._0)}\n`;
+  const value$74 = $fromJsonValue({ TAG: "String", _0: "s" }, $json.string);
+  if (value$74.TAG === "Ok") {
+    out += `ok ${$debugStr(value$74._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$33._0)}\n`;
+    out += `err ${$displayJsonError(value$74._0)}\n`;
   }
-  const match$34 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(1) }, $json.string);
-  if (match$34.TAG === "Ok") {
-    out += `ok ${$debugStr(match$34._0)}\n`;
+  const value$75 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(1) }, $json.string);
+  if (value$75.TAG === "Ok") {
+    out += `ok ${$debugStr(value$75._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$34._0)}\n`;
+    out += `err ${$displayJsonError(value$75._0)}\n`;
   }
-  const match$35 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(1) }, $json.f64);
-  if (match$35.TAG === "Ok") {
-    out += `ok ${$debugF64(match$35._0)}\n`;
+  const value$76 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(1) }, $json.f64);
+  if (value$76.TAG === "Ok") {
+    out += `ok ${$debugF64(value$76._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$35._0)}\n`;
+    out += `err ${$displayJsonError(value$76._0)}\n`;
   }
-  const match$36 = $fromJsonValue($jsonFloat(1.5), $json.f64);
-  if (match$36.TAG === "Ok") {
-    out += `ok ${$debugF64(match$36._0)}\n`;
+  const value$77 = $fromJsonValue($jsonFloat(1.5), $json.f64);
+  if (value$77.TAG === "Ok") {
+    out += `ok ${$debugF64(value$77._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$36._0)}\n`;
+    out += `err ${$displayJsonError(value$77._0)}\n`;
   }
-  const match$37 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(-3) }, $json.f64);
-  if (match$37.TAG === "Ok") {
-    out += `ok ${$debugF64(match$37._0)}\n`;
+  const value$78 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(-3) }, $json.f64);
+  if (value$78.TAG === "Ok") {
+    out += `ok ${$debugF64(value$78._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$37._0)}\n`;
+    out += `err ${$displayJsonError(value$78._0)}\n`;
   }
-  const match$38 = $fromJsonValue($jsonFloat(1.5), $json.u32);
-  if (match$38.TAG === "Ok") {
-    out += `ok ${match$38._0}\n`;
+  const value$79 = $fromJsonValue($jsonFloat(1.5), $json.u32);
+  if (value$79.TAG === "Ok") {
+    out += `ok ${value$79._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$38._0)}\n`;
+    out += `err ${$displayJsonError(value$79._0)}\n`;
   }
-  const match$39 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(-1) }, $json.u32);
-  if (match$39.TAG === "Ok") {
-    out += `ok ${match$39._0}\n`;
+  const value$80 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(-1) }, $json.u32);
+  if (value$80.TAG === "Ok") {
+    out += `ok ${value$80._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$39._0)}\n`;
+    out += `err ${$displayJsonError(value$80._0)}\n`;
   }
-  const match$40 = $fromJsonValue("Null", $json.option($json.u8));
-  if (match$40.TAG === "Ok") {
-    out += `ok ${match$40._0 == null ? "None" : `Some(${match$40._0})`}\n`;
+  const value$81 = $fromJsonValue("Null", $json.option($json.u8));
+  if (value$81.TAG === "Ok") {
+    out += `ok ${value$81._0 == null ? "None" : `Some(${value$81._0})`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$40._0)}\n`;
+    out += `err ${$displayJsonError(value$81._0)}\n`;
   }
-  const match$41 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(7) }, $json.option($json.u8));
-  if (match$41.TAG === "Ok") {
-    out += `ok ${match$41._0 == null ? "None" : `Some(${match$41._0})`}\n`;
+  const value$82 = $fromJsonValue({ TAG: "Number", _0: $jsonInt(7) }, $json.option($json.u8));
+  if (value$82.TAG === "Ok") {
+    out += `ok ${value$82._0 == null ? "None" : `Some(${value$82._0})`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$41._0)}\n`;
+    out += `err ${$displayJsonError(value$82._0)}\n`;
   }
-  const object$30 = new Map();
-  object$30.set("b", {
+  const value$83 = new Map();
+  value$83.set("b", {
     TAG: "Array",
     _0: [{ TAG: "Number", _0: $jsonInt(1) }, $jsonFloat(2.5), { TAG: "String", _0: "x" }],
   });
-  object$30.set("a", "Null");
-  const match$42 = $fromJsonValue({ TAG: "Object", _0: object$30 }, $json.value);
-  if (match$42.TAG === "Ok") {
-    out += `ok ${$debugJsonValue(match$42._0)}\n`;
+  value$83.set("a", "Null");
+  const value$84 = $fromJsonValue({ TAG: "Object", _0: value$83 }, $json.value);
+  if (value$84.TAG === "Ok") {
+    out += `ok ${$debugJsonValue(value$84._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$42._0)}\n`;
+    out += `err ${$displayJsonError(value$84._0)}\n`;
   }
   const user = { name: "r", age: 9, tags: ["t"], initial: "z" };
   const value = $unwrapOk($toJsonValue(user, userSerialize_serialize), undefined, $debugJsonError);
   out += `${$jsonValueText(value, false)}\n`;
-  const match$43 = $fromJsonValue(value, userDeserialize_deserialize);
-  if (match$43.TAG === "Ok") {
-    out += `ok ${userDebug_fmt(match$43._0)}\n`;
+  const value$85 = $fromJsonValue(value, userDeserialize_deserialize);
+  if (value$85.TAG === "Ok") {
+    out += `ok ${userDebug_fmt(value$85._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$43._0)}\n`;
+    out += `err ${$displayJsonError(value$85._0)}\n`;
   }
-  const object$31 = new Map();
-  object$31.set("b", { TAG: "Number", _0: $jsonInt(1) });
-  const object$32 = new Map();
-  object$32.set("c", "Null");
-  object$31.set("a", {
+  const value$86 = new Map();
+  value$86.set("b", { TAG: "Number", _0: $jsonInt(1) });
+  const value$87 = new Map();
+  value$87.set("c", "Null");
+  value$86.set("a", {
     TAG: "Array",
     _0: [
       { TAG: "Bool", _0: true },
-      { TAG: "Object", _0: object$32 },
+      { TAG: "Object", _0: value$87 },
     ],
   });
-  const v$1 = { TAG: "Object", _0: object$31 };
+  const v$1 = { TAG: "Object", _0: value$86 };
   out += `${$jsonValueText(v$1, true)}\n`;
   const obj = $jsonValueAs(v$1, "Object");
   if (obj) {
@@ -854,8 +860,8 @@ export function report() {
     obj$1.set("e", { TAG: "Bool", _0: false });
   }
   out += `${$jsonValueText(v$1, false)}\n${$jsonValueText(copy, false)}\n`;
-  for (const [key, value] of $sortedEntries($unwrap($jsonValueAs(v$1, "Object")), $cmp)) {
-    out += `${key}=${$jsonValueText(value, false)};`;
+  for (const [key, value$1] of $sortedEntries($unwrap($jsonValueAs(v$1, "Object")), $cmp)) {
+    out += `${key}=${$jsonValueText(value$1, false)};`;
   }
   out += "\n";
   const keys = $sortedEntries($unwrap($jsonValueAs(v$1, "Object")), $cmp).map((entry) => entry[0]);
@@ -876,29 +882,29 @@ export function report() {
     '{"payload":"p","kind":"Data"}',
     '{"kind":"Empty"}',
   ]) {
-    const match = $fromJson(text, messageDeserialize_deserialize);
-    if (match.TAG === "Ok") {
+    const value = $fromJson(text, messageDeserialize_deserialize);
+    if (value.TAG === "Ok") {
       const arg = $unwrapOk(
-        $toJson(match._0, messageSerialize_serialize, false),
+        $toJson(value._0, messageSerialize_serialize, false),
         undefined,
         $debugJsonError,
       );
-      out += `ok ${messageDebug_fmt(match._0)} -> ${arg}\n`;
+      out += `ok ${messageDebug_fmt(value._0)} -> ${arg}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   for (const text of ['{"id":1,"x":true,"y":[null]}', '{"id":2}']) {
-    const match = $fromJson(text, openDeserialize_deserialize);
-    if (match.TAG === "Ok") {
+    const value = $fromJson(text, openDeserialize_deserialize);
+    if (value.TAG === "Ok") {
       const arg = $unwrapOk(
-        $toJson(match._0, openSerialize_serialize, false),
+        $toJson(value._0, openSerialize_serialize, false),
         undefined,
         $debugJsonError,
       );
-      out += `ok ${openDebug_fmt(match._0)} -> ${arg}\n`;
+      out += `ok ${openDebug_fmt(value._0)} -> ${arg}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   return out;

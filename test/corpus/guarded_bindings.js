@@ -16,18 +16,23 @@ function shapeDebug_fmt(shape) {
 
 function describe(shape) {
   let text;
-  if (shape.TAG === "Line" && shape._0 > 10) {
-    text = `long ${shape._0}`;
-  } else if (shape.TAG === "Line" && shape._0 < 0) {
-    let n = shape._0;
-    n = -n | 0;
-    text = `backwards ${n}`;
-  } else if (shape.TAG === "Line") {
-    text = `line ${shape._0}`;
-  } else if (shape.TAG === "Rect" && shape.w === shape.h) {
-    text = `square ${shape.w}`;
+  if (shape.TAG === "Line") {
+    if (shape._0 > 10) {
+      text = `long ${shape._0}`;
+    } else if (shape._0 < 0) {
+      let n = shape._0;
+      n = -n | 0;
+      text = `backwards ${n}`;
+    } else {
+      text = `line ${shape._0}`;
+    }
   } else if (shape.TAG === "Rect") {
-    text = `rect ${shape.w}x${shape.h}`;
+    if (shape.w === shape.h) {
+      text = `square ${shape.w}`;
+    } else {
+      const value = [shape.w, shape.h];
+      text = `rect ${value[0]}x${value[1]}`;
+    }
   } else {
     text = "dot";
   }
@@ -50,16 +55,22 @@ function main() {
   for (const value of [3, undefined, -1, 8]) {
     let current = value;
     let tmp;
-    if (current != null && current > 5) {
+    if (current != null) {
       const n = current;
-      tmp = Math.imul(n, 10);
-    } else if (current != null && current < 0) {
-      const n = current;
-      current = undefined;
-      tmp = n;
-    } else if (current != null) {
-      const n = current;
-      tmp = n;
+      if (n > 5) {
+        const n = current;
+        tmp = Math.imul(n, 10);
+      } else {
+        const n = current;
+        if (n < 0) {
+          const n = current;
+          current = undefined;
+          tmp = n;
+        } else {
+          const n = current;
+          tmp = n;
+        }
+      }
     } else {
       tmp = 0;
     }

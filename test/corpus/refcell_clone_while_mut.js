@@ -9,13 +9,21 @@ export function entry() {
 function main() {
   const cell = { value: [1] };
   const writing = $borrowMut(cell, true);
+  let copy;
   try {
-    const copy = { value: $borrow(cell).value };
+    copy = { value: $borrow(cell).value };
+  } catch (error) {
+    $unborrow(writing);
+    throw error;
+  }
+  try {
     console.log(
       `RefCell { value: ${$showBorrowed(copy, (value) => `[${value.map((item) => String(item)).join(", ")}]`)} } ${writing.value.length}`,
     );
-  } finally {
+  } catch (error) {
     $unborrow(writing);
+    throw error;
   }
+  $unborrow(writing);
 }
 //# sourceMappingURL=case.js.map

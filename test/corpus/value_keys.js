@@ -5,6 +5,9 @@ import {
   $KeySet,
   $add,
   $debugStr,
+  $iter,
+  $mutGet,
+  $next,
   $orInsert,
   $orInsertWith,
   $unwrap,
@@ -24,22 +27,25 @@ function accountDebug_fmt(account) {
 
 function main() {
   const seen = new $KeySet();
-  console.log(`${$add(seen, [1, 2])} ${$add(seen, [1, 2])} ${$add(seen, [2, 1])}`);
-  console.log(`${seen.size} ${seen.has([1, 2])} ${seen.has([3, 3])}`);
+  const value = $add(seen, [1, 2]);
+  const value$1 = $add(seen, [1, 2]);
+  console.log(`${value} ${value$1} ${$add(seen, [2, 1])}`);
+  const size = seen.size;
+  const value$2 = seen.has([1, 2]);
+  console.log(`${size} ${value$2} ${seen.has([3, 3])}`);
   seen.delete([1, 2]);
   console.log(`${seen.size} ${seen.has([1, 2])}`);
   const walls = new $KeyMap();
   walls.set({ x: 1, y: 2 }, "stone");
   walls.set({ x: 1, y: 2 }, "brick");
-  const arg = walls.size;
-  const arg$1 = walls.get({ x: 1, y: 2 });
-  const arg$2 = walls.get({ x: 2, y: 1 });
+  const size$1 = walls.size;
+  const value$3 = walls.get({ x: 1, y: 2 });
   console.log(
-    `${arg} ${arg$1 == null ? "None" : `Some(${$debugStr(arg$1)})`} ${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`,
+    `${size$1} ${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${((value) =>
+      value == null ? "None" : `Some(${$debugStr(value)})`)(walls.get({ x: 2, y: 1 }))}`,
   );
-  console.log(
-    `${$unwrap(walls.get({ x: 1, y: 2 }), "no entry found for key")} ${walls.has({ x: 1, y: 2 })}`,
-  );
+  const value$4 = $unwrap(walls.get({ x: 1, y: 2 }), "no entry found for key");
+  console.log(`${value$4} ${walls.has({ x: 1, y: 2 })}`);
   console.log(
     `{${Array.from(walls)
       .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
@@ -56,78 +62,90 @@ function main() {
     const current = $orInsert(counts, shape, 0);
     counts.set(shape, (current + 1) >>> 0);
   }
-  const arg$3 = counts.size;
-  const arg$4 = counts.get({ TAG: "Circle", _0: 2 });
-  const arg$5 = counts.get("Dot");
-  const arg$6 = counts.get({ TAG: "Rect", w: 1, h: 3 });
-  const arg$7 = counts.get({ TAG: "Rect", w: 3, h: 1 });
+  const size$2 = counts.size;
+  const value$5 = counts.get({ TAG: "Circle", _0: 2 });
+  const value$6 = counts.get("Dot");
+  const value$7 = counts.get({ TAG: "Rect", w: 1, h: 3 });
   console.log(
-    `${arg$3} ${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`} ${arg$6 == null ? "None" : `Some(${arg$6})`} ${arg$7 == null ? "None" : `Some(${arg$7})`}`,
+    `${size$2} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${((
+      value,
+    ) => (value == null ? "None" : `Some(${value})`))(counts.get({ TAG: "Rect", w: 3, h: 1 }))}`,
   );
   const byParent = new Map();
   $orInsertWith(byParent, undefined, () => []).push("root");
   $orInsertWith(byParent, 1, () => []).push("leaf");
   $orInsertWith(byParent, undefined, () => []).push("other root");
-  const arg$8 = byParent.get(undefined);
-  const arg$9 = byParent.get(1);
-  const arg$10 = byParent.get(2);
+  const value$8 = byParent.get(undefined);
+  const value$9 = byParent.get(1);
   console.log(
-    `${arg$8 == null ? "None" : `Some([${arg$8.map((item) => $debugStr(item)).join(", ")}])`} ${arg$9 == null ? "None" : `Some([${arg$9.map((item) => $debugStr(item)).join(", ")}])`} ${arg$10 == null ? "None" : `Some([${arg$10.map((item) => $debugStr(item)).join(", ")}])`}`,
+    `${value$8 == null ? "None" : `Some([${value$8.map((item) => $debugStr(item)).join(", ")}])`} ${value$9 == null ? "None" : `Some([${value$9.map((item) => $debugStr(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => $debugStr(item)).join(", ")}])`))(byParent.get(2))}`,
   );
   const ann = { owner: "ann", id: BigInt.asUintN(64, 1n << 40n), at: { x: 0, y: 0 } };
   const balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
-  const current = $unwrap(balances.get(ann));
-  balances.set(ann, (current + 5) | 0);
-  const base = { ...ann, at: { ...ann.at } };
-  const other = { owner: base.owner, id: BigInt.asUintN(64, 1n << 41n), at: { ...base.at } };
-  const arg$11 = balances.get(ann);
-  const arg$12 = balances.get(other);
+  const value$10 = $unwrap($mutGet(balances, ann));
+  value$10.value = (value$10.value + 5) | 0;
+  const value$11 = { ...ann, at: { ...ann.at } };
+  const other = {
+    owner: value$11.owner,
+    id: BigInt.asUintN(64, 1n << 41n),
+    at: { ...value$11.at },
+  };
+  const value$12 = balances.get(ann);
   console.log(
-    `${arg$11 == null ? "None" : `Some(${arg$11})`} ${arg$12 == null ? "None" : `Some(${arg$12})`}`,
+    `${value$12 == null ? "None" : `Some(${value$12})`} ${((value) => (value == null ? "None" : `Some(${value})`))(balances.get(other))}`,
   );
   const p = { x: 5, y: 5 };
   const marks = new $KeySet();
   marks.add({ ...p });
   p.x = 6;
+  const value$13 = marks.has({ x: 5, y: 5 });
   console.log(
-    `${marks.has({ x: 5, y: 5 })} ${marks.has(p)} {${Array.from(marks)
+    `${value$13} ${marks.has(p)} {${Array.from(marks)
       .map((item) => pointDebug_fmt(item))
       .join(", ")}}`,
   );
   const copy = new $KeyMap(Array.from(walls).map(([key, value]) => [{ ...key }, value]));
-  for (const item of walls) {
-    const key = { ...item[0] };
+  const iter = $iter(Array.from(walls));
+  while (true) {
+    const value = $next(iter);
+    if (!value) {
+      console.log(
+        `{${Array.from(copy)
+          .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
+          .join(", ")}} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(
+          copy.get({ x: 1, y: 2 }),
+        )}`,
+      );
+      const kept = new $KeyMap(
+        Array.from(balances).map(([key, value]) => [{ ...key, at: { ...key.at } }, value]),
+      );
+      for (const [account, balance] of balances) {
+        account.owner += " smith";
+        console.log(`${account.owner} ${balance}`);
+      }
+      console.log(
+        `{${Array.from(kept)
+          .map(([key, value]) => `${accountDebug_fmt(key)}: ${value}`)
+          .join(", ")}}`,
+      );
+      const pairs = new $KeyMap(
+        $iter([
+          [["a", true], 1],
+          [["a", false], 2],
+          [["a", true], 3],
+        ]),
+      );
+      const value = pairs.get(["a", true]);
+      const arg = pairs.get(["a", false]);
+      console.log(
+        `${pairs.size} ${value == null ? "None" : `Some(${value})`} ${arg == null ? "None" : `Some(${arg})`}`,
+      );
+      return;
+    }
+    const key = { ...value[0] };
+    const kind = value[1];
     key.x = (key.x + 100) | 0;
-    console.log(`${pointDebug_fmt(key)} ${item[1]}`);
+    console.log(`${pointDebug_fmt(key)} ${kind}`);
   }
-  const arg$13 = copy.get({ x: 1, y: 2 });
-  console.log(
-    `{${Array.from(copy)
-      .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
-      .join(", ")}} ${arg$13 == null ? "None" : `Some(${$debugStr(arg$13)})`}`,
-  );
-  const kept = new $KeyMap(
-    Array.from(balances).map(([key, value]) => [{ ...key, at: { ...key.at } }, value]),
-  );
-  for (let [account, balance] of balances) {
-    account.owner += " smith";
-    console.log(`${account.owner} ${balance}`);
-  }
-  console.log(
-    `{${Array.from(kept)
-      .map(([key, value]) => `${accountDebug_fmt(key)}: ${value}`)
-      .join(", ")}}`,
-  );
-  const pairs = new $KeyMap([
-    [["a", true], 1],
-    [["a", false], 2],
-    [["a", true], 3],
-  ]);
-  const arg$14 = pairs.size;
-  const arg$15 = pairs.get(["a", true]);
-  const arg$16 = pairs.get(["a", false]);
-  console.log(
-    `${arg$14} ${arg$15 == null ? "None" : `Some(${arg$15})`} ${arg$16 == null ? "None" : `Some(${arg$16})`}`,
-  );
 }
 //# sourceMappingURL=case.js.map

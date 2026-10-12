@@ -13,7 +13,8 @@ function sDebug_fmt(s) {
 function main() {
   const a = 1;
   console.log(`${a === 1}`);
-  let [b, c] = [2, 2];
+  let b = 2;
+  const c = 2;
   let p = {
     get value() {
       return b;
@@ -55,15 +56,26 @@ function main() {
       m = value;
     },
   };
-  r = r;
+  const item = r;
+  r = {
+    get value() {
+      return item.value;
+    },
+    set value(value) {
+      item.value = value;
+    },
+  };
   if (r.value === 3) {
     console.log("three");
   } else {
     console.log("other");
   }
-  r.value = (r.value + 1) | 0;
+  const v = r;
+  v.value = (v.value + 1) | 0;
   console.log(`${m}`);
-  let [i, j, k] = [3, 1, 2];
+  let i = 3;
+  let j = 1;
+  let k = 2;
   const refs = [
     {
       get value() {
@@ -91,14 +103,22 @@ function main() {
     },
   ];
   refs.sort((a, b) => $cmp(a.value, b.value));
-  const item = { value: 2 };
-  const arg = refs.some((each) => each.value === item.value);
-  const arg$1 = $maxBy(refs, (a, b) => $cmp(a.value, b.value));
+  let tmp = 2;
+  const item$1 = {
+    get value() {
+      return tmp;
+    },
+    set value(value) {
+      tmp = value;
+    },
+  };
+  const value = refs.some((each) => each.value === item$1.value);
+  const arg = $maxBy(refs, (a, b) => $cmp(a.value, b.value));
   console.log(
-    `[${refs.map((item) => String(item.value)).join(", ")}] ${arg} ${arg$1 == null ? "None" : `Some(${arg$1.value})`}`,
+    `[${refs.map((item) => String(item.value)).join(", ")}] ${value} ${arg == null ? "None" : `Some(${arg.value})`}`,
   );
   let z = 2;
-  const item$1 = {
+  const item$2 = {
     get value() {
       return z;
     },
@@ -106,7 +126,7 @@ function main() {
       z = value;
     },
   };
-  console.log(`${refs.some((each) => each.value === item$1.value)}`);
+  console.log(`${refs.some((each) => each.value === item$2.value)}`);
   let t = 7;
   const o = {
     get value() {
@@ -116,8 +136,16 @@ function main() {
       t = value;
     },
   };
-  const arg$2 = $eq(o, { value: 7 });
-  console.log(`${o == null ? "None" : `Some(${o.value})`} ${arg$2}`);
+  let tmp$1 = 7;
+  const arg$1 = $eq(o, {
+    get value() {
+      return tmp$1;
+    },
+    set value(value) {
+      tmp$1 = value;
+    },
+  });
+  console.log(`${o == null ? "None" : `Some(${o.value})`} ${arg$1}`);
   let u = 5;
   const held = {
     r: {
@@ -133,15 +161,17 @@ function main() {
   let w = 5;
   if (w != null) {
     w = (w + 1) | 0;
-    const arg = {
-      get value() {
-        return w;
+    const value = [
+      {
+        get value() {
+          return w;
+        },
+        set value(value) {
+          w = value;
+        },
       },
-      set value(value) {
-        w = value;
-      },
-    };
-    console.log(`${arg.value} ${arg.value}`);
+    ];
+    console.log(`${value[0].value} ${value[0].value}`);
   }
 }
 //# sourceMappingURL=case.js.map

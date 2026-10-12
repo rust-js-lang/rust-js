@@ -5,11 +5,11 @@ import {
   $debugStr,
   $insertStr,
   $iter,
+  $lazyRange,
   $mutEntries,
   $next,
+  $nextBack,
   $print,
-  $range,
-  $rest,
   $sortedEntries,
   $treeRange,
 } from "@rust-js/runtime";
@@ -19,12 +19,12 @@ export function entry() {
 }
 
 function main() {
-  const scores = new Map($range(1, 6 + 1).map((k) => [k, Math.imul(k | 0, 10)]));
-  for (const item of $mutEntries(
+  const scores = new Map($lazyRange(1, 7).map((k) => [k, Math.imul(k | 0, 10)]));
+  for (const [k, v] of $mutEntries(
     scores,
     $treeRange(scores, $cmp, false, "BTreeMap", true, 2, true, 5, false),
   )) {
-    item[1].value = (item[1].value + (item[0] | 0)) | 0;
+    v.value = (v.value + (k | 0)) | 0;
   }
   console.log(
     `{${Array.from($sortedEntries(scores, $cmp))
@@ -35,9 +35,9 @@ function main() {
     scores,
     $treeRange(scores, $cmp, false, "BTreeMap", false, undefined, true, 3, true),
   )
-    .map((param) => {
-      param[1].value = Math.imul(param[1].value, 2);
-      return param[1].value;
+    .map(([, v]) => {
+      v.value = Math.imul(v.value, 2);
+      return v.value;
     })
     .reduce((a, b) => (a + b) | 0, 0);
   console.log(
@@ -50,34 +50,42 @@ function main() {
     ["bob", "b"],
     ["cy", "c"],
   ]);
-  for (const item of $mutEntries(
+  for (const [, name] of $mutEntries(
     names,
     $treeRange(names, $cmp, false, "BTreeMap", true, "b", false, undefined, false),
   )) {
-    item[1].value = item[1].value + "!";
+    name.value += "!";
   }
-  const value = $mutEntries(
-    names,
-    $treeRange(names, $cmp, false, "BTreeMap", false, undefined, true, "ann", true),
-  ).at(-1);
+  const value = $nextBack(
+    $iter(
+      $mutEntries(
+        names,
+        $treeRange(names, $cmp, false, "BTreeMap", false, undefined, true, "ann", true),
+      ),
+    ),
+  );
   if (value) {
-    value[1].value = $insertStr(value[1].value, 0, ">");
-    console.log(`${value[0]}`);
+    const k = value[0];
+    const v = value[1];
+    v.value = $insertStr(v.value, 0, ">");
+    console.log(`${k}`);
   }
   const last = $iter(
     $mutEntries(names, $treeRange(names, $cmp, false, "BTreeMap", true, "a", true, "c", false)),
   );
   const value$1 = $next(last);
   if (value$1) {
-    value$1[1].value = value$1[1].value.toUpperCase();
+    const v = value$1[1];
+    const value = v.value.toUpperCase();
+    v.value = value;
   }
-  const arg = $rest(last).length;
+  const arg = last.reduce((n) => n + 1, 0);
   console.log(
     `{${Array.from($sortedEntries(names, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${$debugStr(value)}`)
       .join(", ")}} ${arg}`,
   );
-  const points = new Map($range(0, 4).map((k) => [k, [k, 0]]));
+  const points = new Map($lazyRange(0, 4).map((k) => [k, [k, 0]]));
   for (const [, p] of $treeRange(points, $cmp, false, "BTreeMap", true, 1, true, 3, false)) {
     p[1] = (p[1] + 5) | 0;
   }
@@ -97,7 +105,7 @@ function main() {
       .map(([key, value]) => `${key}: (${value[0]}, ${value[1]})`)
       .join(", ")}} ${arg$1}`,
   );
-  const set = new Set($range(0, 5));
+  const set = new Set($lazyRange(0, 5));
   for (const x of $treeRange(set, $cmp, true, "BTreeSet", true, 2, true, 4, false)) {
     $print(`${x} `);
   }

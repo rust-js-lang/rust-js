@@ -50,41 +50,46 @@ function stringAsStr_get(string) {
 }
 
 function main() {
-  console.log(`${same("i32", "i32")} ${same("i32", "i64")} ${relay("u8")}`);
+  const value = same("i32", "i32");
+  const value$1 = same("i32", "i64");
+  console.log(`${value} ${value$1} ${relay("u8")}`);
   const items = [
     { value: 1, impl: { type_id: () => "u8" } },
     { value: "a", impl: { type_id: () => "&str" } },
     { value: 2, impl: { type_id: () => "u8" } },
     erased("e", "alloc::string::String"),
   ];
+  const value$2 = find(items, { clone: (value) => value }, "u8");
+  const value$3 = find(items, { clone: (value) => value }, "&str");
   console.log(
-    `[${find(items, { clone: (value) => value }, "u8")
-      .map((item) => String(item))
-      .join(", ")}] [${find(items, { clone: (value) => value }, "&str")
-      .map((item) => $debugStr(item))
-      .join(", ")}] [${find(items, { clone: (value) => value }, "alloc::string::String")
+    `[${value$2.map((item) => String(item)).join(", ")}] [${value$3.map((item) => $debugStr(item)).join(", ")}] [${find(
+      items,
+      { clone: (value) => value },
+      "alloc::string::String",
+    )
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
   const shared = { value: [1, 2], impl: { type_id: () => "alloc::vec::Vec<i32>" } };
-  const match =
+  const value$4 =
     shared.impl.type_id() === "alloc::vec::Vec<i32>"
       ? { TAG: "Ok", _0: shared.value }
       : { TAG: "Err", _0: shared };
-  if (match.TAG === "Ok") {
-    console.log(`[${match._0.map((item) => String(item)).join(", ")}]`);
+  if (value$4.TAG === "Ok") {
+    const list = value$4._0;
+    console.log(`[${list.map((item) => String(item)).join(", ")}]`);
   } else {
     console.log("not a list");
   }
   const sent = { value: 3, impl: { type_id: () => "core::option::Option<u16>" } };
-  const arg = sent.impl.type_id() === "core::option::Option<u16>" ? $some(sent.value) : undefined;
+  const value$5 =
+    sent.impl.type_id() === "core::option::Option<u16>" ? $some(sent.value) : undefined;
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg)} ${sent.impl.type_id() === "u16"}`,
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$5)} ${sent.impl.type_id() === "u16"}`,
   );
   const none = { impl: { type_id: () => "core::option::Option<u16>" } };
-  const arg$1 = none.impl.type_id() === "core::option::Option<u16>" ? $some(none.value) : undefined;
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(arg$1)}`,
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(none.impl.type_id() === "core::option::Option<u16>" ? $some(none.value) : undefined)}`,
   );
   const f = {
     value: first,
@@ -92,8 +97,11 @@ function main() {
       type_id: () => "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe",
     },
   };
+  const value$6 =
+    f.impl.type_id() ===
+    "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe";
   console.log(
-    `${f.impl.type_id() === "fn(&'_ alloc::string::String) -> &'_ str#78a52cb8b84a85e2730aa5ac32643cbe"} ${f.impl.type_id() === "fn(&'_ alloc::string::String) -> &str#1640b6a367c494fbf6715693d04896bb"}`,
+    `${value$6} ${f.impl.type_id() === "fn(&'_ alloc::string::String) -> &str#1640b6a367c494fbf6715693d04896bb"}`,
   );
   console.log(`${$debugAny(made())}`);
   const held = {
@@ -102,8 +110,11 @@ function main() {
       type_id: () => "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d",
     },
   };
+  const value$7 =
+    held.impl.type_id() ===
+    "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d";
   console.log(
-    `${held.impl.type_id() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#bb8ce6d98aab4c714f83ee02600e635d"} ${held.impl.type_id() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#89c2aaac78c7d3d1d025385a90e83325"}`,
+    `${value$7} ${held.impl.type_id() === "alloc::boxed::Box<dyn lib::AsStr<'_, '_>>#89c2aaac78c7d3d1d025385a90e83325"}`,
   );
 }
 //# sourceMappingURL=case.js.map

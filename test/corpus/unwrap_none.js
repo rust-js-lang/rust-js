@@ -11,8 +11,7 @@ function find(v, x) {
 }
 
 function main() {
-  const arg = find([4, 5], 5);
-  console.log(`${arg == null ? "None" : `Some(${arg})`}`);
+  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(find([4, 5], 5))}`);
   const at = $unwrap(find([4, 5], 6));
   console.log(`${at}`);
 }

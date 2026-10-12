@@ -8,7 +8,8 @@ function main() {
   const base = 10;
   const add = (x) => (x + base) | 0;
   const add2 = add;
-  console.log(`${add(1)} ${add2(2)}`);
+  const value = add(1);
+  console.log(`${value} ${add2(2)}`);
   let count = 0;
   const counter = () => {
     count = (count + 1) | 0;

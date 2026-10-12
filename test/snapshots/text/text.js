@@ -58,8 +58,11 @@ export function parses(s) {
   const b = $parseBool(s);
   const c = $parseChar(s);
   const owned = s;
-  const arg = i.TAG === "Err" ? { TAG: "Err", _0: i._0 } : i;
-  return `${n.TAG === "Ok" ? `Ok(${n._0})` : `Err(${$debugStr(n._0)})`} ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`} ${f.TAG === "Ok" ? `Ok(${$debugF64(f._0)})` : `Err(${$debugStr(f._0)})`} ${b.TAG === "Ok" ? `Ok(${b._0})` : `Err(${$debugStr(b._0)})`} ${c.TAG === "Ok" ? `Ok(${$debugStr(c._0, "'")})` : `Err(${$debugStr(c._0)})`} ${$debugStr(owned)}`;
+  return `${n.TAG === "Ok" ? `Ok(${n._0})` : `Err(${$debugStr(n._0)})`} ${
+    (i.TAG === "Err" ? { TAG: "Err", _0: i._0 } : i).TAG === "Ok"
+      ? `Ok(${(i.TAG === "Err" ? { TAG: "Err", _0: i._0 } : i)._0})`
+      : `Err(${$debugStr((i.TAG === "Err" ? { TAG: "Err", _0: i._0 } : i)._0)})`
+  } ${f.TAG === "Ok" ? `Ok(${$debugF64(f._0)})` : `Err(${$debugStr(f._0)})`} ${b.TAG === "Ok" ? `Ok(${b._0})` : `Err(${$debugStr(b._0)})`} ${c.TAG === "Ok" ? `Ok(${$debugStr(c._0, "'")})` : `Err(${$debugStr(c._0)})`} ${$debugStr(owned)}`;
 }
 
 function sum(text) {
@@ -80,9 +83,9 @@ export function words(text) {
     .filter((word) => word !== "")
     .map((w) => w);
   const lines = $lines(text).map((l) => l);
-  const match = sum(text);
-  const total = match.TAG === "Ok" ? `sum ${match._0}` : `error: ${match._0}`;
-  const pieces = $splitBy(text, (c) => /^[0-9]$/.test(c) || c === "\r").map((p) => p);
+  const value = sum(text);
+  const total = value.TAG === "Ok" ? `sum ${value._0}` : `error: ${value._0}`;
+  const pieces = $splitBy(text, (c) => !!/^[0-9]$/.test(c) || c === "\r").map((p) => p);
   return [words, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
 }
 
@@ -108,10 +111,10 @@ export function templates(n) {
 export function report() {
   let out = "";
   for (const c of ["a", "Z", "7", " ", "\n", "　", "é", "ß", "٣", "Ⅻ", "!", "﻿", ""]) {
-    const arg = chars(c);
-    const arg$1 = ascii(c);
-    const arg$2 = casts(c);
-    out += `${$debugStr(c, "'")} (${arg[0]}, ${arg[1]}, ${arg[2]}, ${arg[3]}, ${arg[4]}, ${arg[5]}, ${arg[6]}, ${arg[7]}) (${arg$1[0]}, ${arg$1[1]}, ${arg$1[2]}, ${arg$1[3]}, ${$debugStr(arg$1[4], "'")}, ${$debugStr(arg$1[5], "'")}, ${arg$1[6] == null ? "None" : `Some(${arg$1[6]})`}, ${arg$1[7]}) (${arg$2[0]}, ${arg$2[1]}, ${$debugStr(arg$2[2], "'")}, ${$debugStr(arg$2[3], "'")}, ${arg$2[4]})\n`;
+    const value = chars(c);
+    const value$1 = ascii(c);
+    const arg = casts(c);
+    out += `${$debugStr(c, "'")} (${value[0]}, ${value[1]}, ${value[2]}, ${value[3]}, ${value[4]}, ${value[5]}, ${value[6]}, ${value[7]}) (${value$1[0]}, ${value$1[1]}, ${value$1[2]}, ${value$1[3]}, ${$debugStr(value$1[4], "'")}, ${$debugStr(value$1[5], "'")}, ${value$1[6] == null ? "None" : `Some(${value$1[6]})`}, ${value$1[7]}) (${arg[0]}, ${arg[1]}, ${$debugStr(arg[2], "'")}, ${$debugStr(arg[3], "'")}, ${arg[4]})\n`;
   }
   for (const s of [
     "42",
@@ -147,11 +150,10 @@ export function report() {
     "\n",
     "\r",
   ]) {
-    const arg = words(text);
-    out += `([${arg[0].map((item) => $debugStr(item)).join(", ")}], [${arg[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(arg[2])}, [${arg[3].map((item) => $debugStr(item)).join(", ")}], ${arg[4]})\n`;
+    out += `${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(tuple[2])}, [${tuple[3].map((item) => $debugStr(item)).join(", ")}], ${tuple[4]})`)(words(text))}\n`;
   }
-  const arg = slices([1, 2, 3, 4]);
-  out += `([${arg[0].map((item) => String(item)).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}], [${arg[2].map((item) => String(item)).join(", ")}], [${arg[3].map((item) => String(item)).join(", ")}], ${arg[4]})\n${escapes()}\n`;
+  const value = slices([1, 2, 3, 4]);
+  out += `([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}], [${value[2].map((item) => String(item)).join(", ")}], [${value[3].map((item) => String(item)).join(", ")}], ${value[4]})\n${escapes()}\n`;
   out += `${$debugStr(templates(7))}\n`;
   return out;
 }

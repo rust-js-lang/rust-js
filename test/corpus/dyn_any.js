@@ -33,8 +33,7 @@ function describe(value) {
     return `string ${s}`;
   }
   if (value.impl.type_id() === "lib::Point") {
-    const arg = value.impl.type_id() === "lib::Point" ? value.value : undefined;
-    return `point ${arg == null ? "None" : `Some(${pointDebug_fmt(arg)})`}`;
+    return `point ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(value.impl.type_id() === "lib::Point" ? value.value : undefined)}`;
   }
   return "other";
 }
@@ -62,44 +61,46 @@ function main() {
   if (n != null) {
     n.value = (n.value + 1) & 255;
   }
-  const arg = number.impl.type_id() === "u8" ? number.value : undefined;
-  const arg$1 = number.impl.type_id() === "i8" ? number.value : undefined;
+  const value = number.impl.type_id() === "u8" ? number.value : undefined;
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${((value) => (value == null ? "None" : `Some(${value})`))(number.impl.type_id() === "i8" ? number.value : undefined)}`,
   );
-  const match =
+  const value$1 =
     number.impl.type_id() === "u8" ? { TAG: "Ok", _0: number.value } : { TAG: "Err", _0: number };
-  if (match.TAG === "Ok") {
-    console.log(`u8 ${match._0}`);
+  if (value$1.TAG === "Ok") {
+    const n = value$1._0;
+    console.log(`u8 ${n}`);
   } else {
     console.log("not u8");
   }
   const text = boxed("t", { type_id: () => "alloc::string::String" });
-  const match$1 =
+  const value$2 =
     text.impl.type_id() === "i32" ? { TAG: "Ok", _0: text.value } : { TAG: "Err", _0: text };
-  if (match$1.TAG === "Ok") {
-    console.log(`i32 ${match$1._0}`);
+  if (value$2.TAG === "Ok") {
+    const n = value$2._0;
+    console.log(`i32 ${n}`);
   } else {
-    const arg =
-      match$1._0.impl.type_id() === "alloc::string::String" ? match$1._0.value : undefined;
-    console.log(`back ${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
+    const back = value$2._0;
+    console.log(
+      `back ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(back.impl.type_id() === "alloc::string::String" ? back.value : undefined)}`,
+    );
   }
-  console.log(
-    `${"i32" === key(3, { type_id: () => "i32" })} ${key(3, { type_id: () => "u8" }) === "i32"}`,
-  );
+  const value$3 = "i32" === key(3, { type_id: () => "i32" });
+  console.log(`${value$3} ${key(3, { type_id: () => "u8" }) === "i32"}`);
   const seen = new Map();
   seen.set("lib::Point", "point");
   seen.set("i64", "i64");
-  const arg$2 = seen.get("i64");
-  console.log(`${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`} ${seen.size}`);
+  const value$4 = seen.get("i64");
+  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${seen.size}`);
   console.log(
     `${"lib::Point".endsWith("::Point")} alloc::vec::Vec<core::option::Option<&str>> f64`,
   );
   const component = { value: { x: 2 }, impl: pointComponent() };
   const any = { value: component.value, impl: component.impl.Any() };
-  const arg$3 = component.impl.name(component.value);
-  const arg$4 = any.impl.type_id() === "lib::Point" ? any.value : undefined;
-  console.log(`${arg$3} ${arg$4 == null ? "None" : `Some(${pointDebug_fmt(arg$4)})`} Any { .. }`);
+  const value$5 = component.impl.name(component.value);
+  console.log(
+    `${value$5} ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(any.impl.type_id() === "lib::Point" ? any.value : undefined)} Any { .. }`,
+  );
   console.log(`${component.impl.Any().type_id() === "lib::Point"}`);
 }
 //# sourceMappingURL=case.js.map

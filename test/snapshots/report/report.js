@@ -6,6 +6,7 @@ import {
   $debugParseError,
   $debugStr,
   $index,
+  $iter,
   $lines,
   $maxBy,
   $orInsertWith,
@@ -56,24 +57,25 @@ function parse_row(line) {
     return { TAG: "Err", _0: { TAG: "Empty", _0: "name" } };
   }
   const result = $parseInt(parts[2], 0, 4294967295);
-  if (result.TAG === "Err") {
-    return { TAG: "Err", _0: rowErrorFromParseIntError_from(result._0) };
-  }
-  const score = result._0;
-  const result$1 = $parseInt(parts[3], 0, 4294967295);
-  if (result$1.TAG === "Err") {
+  if (result.TAG !== "Err") {
+    const score = result._0;
+    const result$1 = $parseInt(parts[3], 0, 4294967295);
+    if (result$1.TAG !== "Err") {
+      const age = result$1._0;
+      return { TAG: "Ok", _0: { name: parts[0], team: parts[1], score, age } };
+    }
     return { TAG: "Err", _0: rowErrorFromParseIntError_from(result$1._0) };
   }
-  const age = result$1._0;
-  return { TAG: "Ok", _0: { name: parts[0], team: parts[1], score, age } };
+  return { TAG: "Err", _0: rowErrorFromParseIntError_from(result._0) };
 }
 
 function capitalize(s) {
   return [
     ...Array.from(s)
-      .slice(0, 1)
-      .flatMap((c) => Array.from(c.toUpperCase())),
-    ...Array.from(s).slice(1),
+      .values()
+      .take(1)
+      .flatMap((c) => $iter(Array.from(c.toUpperCase()))),
+    ...Array.from(s).values().drop(1),
   ].join("");
 }
 
@@ -81,11 +83,14 @@ function grade(score, age) {
   if (score >= 90) {
     return "A";
   }
-  if (score >= 70 && score <= 89 && age < 30) {
-    return "B+";
-  }
-  if (score >= 70 && score <= 89) {
-    return "B";
+  if (score >= 70) {
+    if (score <= 89) {
+      const a = age;
+      if (a < 30) {
+        return "B+";
+      }
+      return "B";
+    }
   }
   return "C";
 }
@@ -93,20 +98,31 @@ function grade(score, age) {
 export function table(input) {
   let out = "";
   const rows = [];
-  for (const [i, line] of $lines(input)
-    .map((x, i) => [i, x])
-    .slice(1)) {
-    const match = parse_row(line);
-    if (match.TAG === "Ok") {
-      rows.push(match._0);
+  for (const [i, line] of $lines(input).entries().drop(1)) {
+    const value = parse_row(line);
+    if (value.TAG === "Ok") {
+      rows.push(value._0);
     } else {
-      out += `line ${(i + 1) >>> 0}: ${rowErrorDisplay_fmt(match._0)}\n`;
+      out += `line ${(i + 1) >>> 0}: ${rowErrorDisplay_fmt(value._0)}\n`;
     }
   }
   rows.sort((a, b) => $cmp(b.score, a.score) || $cmp(a.name, b.name));
-  out += `${$pad(HEADERS[0], 8, "<")}|${$pad(HEADERS[2], 6, ">")}|${$pad("grade", 7, "^")}|${HEADERS[1]}\n`;
+  if (!(0 < 4)) {
+    throw new Error("index out of bounds: the len is 4 but the index is 0");
+  }
+  const value = HEADERS[0];
+  if (!(2 < 4)) {
+    throw new Error("index out of bounds: the len is 4 but the index is 2");
+  }
+  const value$1 = HEADERS[2];
+  if (!(1 < 4)) {
+    throw new Error("index out of bounds: the len is 4 but the index is 1");
+  }
+  out += `${$pad(value, 8, "<")}|${$pad(value$1, 6, ">")}|${$pad("grade", 7, "^")}|${HEADERS[1]}\n`;
   for (const r of rows) {
-    out += `${$pad(capitalize(r.name), 8, "<")}|${String(r.score).padStart(6)}|${$pad(grade(r.score, r.age), 7, "^")}|${r.team.toUpperCase()}\n`;
+    const value = capitalize(r.name);
+    const value$1 = grade(r.score, r.age);
+    out += `${$pad(value, 8, "<")}|${String(r.score).padStart(6)}|${$pad(value$1, 7, "^")}|${r.team.toUpperCase()}\n`;
   }
   const byTeam = new Map();
   for (const r of rows) {
@@ -127,15 +143,17 @@ export function table(input) {
   const ages = rows.map((r) => r.age);
   const gaps = $windows(ages, 2).map((w) => (($index(w, 1) | 0) - ($index(w, 0) | 0)) | 0);
   out += `[${gaps.map((item) => String(item)).join(", ")}]\n`;
-  const arg = rows.every((r) => r.score > 50);
-  const arg$1 = rows.some((r) => r.team === "red");
-  const arg$2 = $position(rows, (r) => r.age > 40);
-  out += `${arg} ${arg$1} ${arg$2 == null ? "None" : `Some(${arg$2})`}\n`;
+  out += `${rows.every((r) => r.score > 50)} ${rows.some((r) => r.team === "red")} ${((value) => (value == null ? "None" : `Some(${value})`))($position(rows, (r) => r.age > 40))}\n`;
   return out;
 }
 
 export function parse_errors() {
-  return `${$debugParseError($unwrapErr($parseInt("", 0, 255)), "ParseIntError")} ${$debugParseError($unwrapErr($parseInt("300", 0, 255)), "ParseIntError")} ${$debugParseError($unwrapErr($parseInt("-40000", -32768, 32767)), "ParseIntError")} ${$debugParseError($unwrapErr($parseF64("x"), undefined, $debugF64), "ParseFloatError")} ${$debugParseError($unwrapErr($parseBool("no")), "ParseBoolError")} ${$debugParseError(
+  const value = $unwrapErr($parseInt("", 0, 255));
+  const value$1 = $unwrapErr($parseInt("300", 0, 255));
+  const value$2 = $unwrapErr($parseInt("-40000", -32768, 32767));
+  const value$3 = $unwrapErr($parseF64("x"), undefined, $debugF64);
+  const value$4 = $unwrapErr($parseBool("no"));
+  return `${$debugParseError(value, "ParseIntError")} ${$debugParseError(value$1, "ParseIntError")} ${$debugParseError(value$2, "ParseIntError")} ${$debugParseError(value$3, "ParseFloatError")} ${$debugParseError(value$4, "ParseBoolError")} ${$debugParseError(
     $unwrapErr($parseChar("ab"), undefined, (e) => $debugStr(e, "'")),
     "ParseCharError",
   )}`;
@@ -152,9 +170,6 @@ export function function_values(words) {
 export function report() {
   const input =
     "name,team,score,age\nann, red, 91, 34\nbob,blue,78,25\ncy,red,78,45\n,blue,5,5\ndee,blue,x,3\neve,green,64,29\nfay,red\ngus, blue ,88,31\nßen,red,70,20\n";
-  const arg = table(input);
-  const arg$1 = parse_errors();
-  const arg$2 = function_values(["x", "é"]);
-  return `${arg}${arg$1}\n([${arg$2[0].map((item) => $debugStr(item)).join(", ")}], [${arg$2[1].map((item) => String(item)).join(", ")}], [${arg$2[2].map((item) => $debugF64(item)).join(", ")}], [${arg$2[3].map((item) => $debugStr(item)).join(", ")}])\n`;
+  return `${table(input)}${parse_errors()}\n${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].map((item) => String(item)).join(", ")}], [${tuple[2].map((item) => $debugF64(item)).join(", ")}], [${tuple[3].map((item) => $debugStr(item)).join(", ")}])`)(function_values(["x", "é"]))}\n`;
 }
 //# sourceMappingURL=report.js.map

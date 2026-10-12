@@ -11,11 +11,9 @@ function main() {
   list.push(2);
   list.push(3);
   list.unshift(1);
-  const arg = list.length;
-  const arg$1 = list[0];
-  const arg$2 = list.at(-1);
+  const value = list[0];
   console.log(
-    `[${list.map((item) => String(item)).join(", ")}] ${arg} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    `[${list.map((item) => String(item)).join(", ")}] ${list.length} ${value == null ? "None" : `Some(${value})`} ${((value) => (value == null ? "None" : `Some(${value})`))(list.at(-1))}`,
   );
   const more = [4, 5];
   $append(list, more);
@@ -24,13 +22,15 @@ function main() {
   console.log(
     `[${list.map((item) => String(item)).join(", ")}] [${tail.map((item) => String(item)).join(", ")}]`,
   );
-  const arg$3 = list.shift();
-  const arg$4 = list.pop();
+  const value$1 = list.shift();
   console.log(
-    `${arg$3 == null ? "None" : `Some(${arg$3})`} ${arg$4 == null ? "None" : `Some(${arg$4})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))(list.pop())}`,
   );
-  console.log(`${list.includes(2)} ${list.reduce((a, b) => (a + b) >>> 0, 0)}`);
-  const doubled = tail.map((x) => Math.imul(x, 2) >>> 0);
+  const value$2 = list.includes(2);
+  console.log(`${value$2} ${Iterator.from(list).reduce((a, b) => (a + b) >>> 0, 0)}`);
+  const doubled = Iterator.from(tail)
+    .map((x) => Math.imul(x, 2) >>> 0)
+    .toArray();
   for (const x of doubled) {
     $print(`${x} `);
   }
@@ -38,7 +38,7 @@ function main() {
   const words = [];
   $extend(words, Array.from(["a", "b"]));
   console.log(
-    `[${words.map((item) => $debugStr(item)).join(", ")}] [${words
+    `[${words.map((item) => $debugStr(item)).join(", ")}] [${Array.from(words)
       .toReversed()
       .map((item) => $debugStr(item))
       .join(", ")}]`,

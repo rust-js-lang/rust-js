@@ -79,9 +79,10 @@ function main() {
       align: "Left",
     })}]`,
   );
-  console.log(
-    `${show(42, { fmt: (value, options) => $formatted(String(value), options, true) })} ${show("ab", { fmt: $formatted })} ${show([3], metersDisplay())} ${show(["xyz"], nameDisplay())}`,
-  );
+  const value$1 = show(42, { fmt: (value, options) => $formatted(String(value), options, true) });
+  const value$2 = show("ab", { fmt: $formatted });
+  const value$3 = show([3], metersDisplay());
+  console.log(`${value$1} ${value$2} ${value$3} ${show(["xyz"], nameDisplay())}`);
   const d = {
     value: 7,
     impl: { fmt: (value, options) => $formatted(String(value), options, true) },
@@ -92,17 +93,19 @@ function main() {
       align: "Center",
     })}] [${nameDisplay_fmt(["rust"], { precision: 2 })}]`,
   );
-  const arg = { x: -3, y: 0.25 };
+  const value = { x: -3, y: 0.25 };
   console.log(
     `[${pointDebug_fmt(
       { x: 1, y: 2 },
       { width: 5 },
-    )}] [${arg == null ? "None" : `Some(${pointDebug_fmt(arg, { precision: 1 })})`}]`,
+    )}] [${value == null ? "None" : `Some(${pointDebug_fmt(value, { precision: 1 })})`}]`,
   );
   console.log(`${pointDebug_fmt({ x: 4, y: 5.5 }, { alternate: true, width: 5 })}`);
   console.log(`${metersDisplay_fmt([0.5])}`);
+  const value$4 = [7, "a"];
+  const value$5 = debug(1, { fmt: (value, options) => $formatted(String(value), options, true) });
   console.log(
-    `[${pairDebug_fmt([7, "a"], { width: 4 })}] ${debug(1, { fmt: (value, options) => $formatted(String(value), options, true) })} ${debug([2, "b"], pairDebug())}`,
+    `[${pairDebug_fmt(value$4, { width: 4 })}] ${value$5} ${debug([2, "b"], pairDebug())}`,
   );
   const b = { value: [-2.5], impl: metersDisplay() };
   console.log(

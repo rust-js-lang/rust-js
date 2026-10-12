@@ -40,9 +40,9 @@ function lightClone_clone(light) {
   return "Off";
 }
 
-function lightClone_clone_from(self, source) {
-  console.log(`clone_from ${source} into ${self.value}`);
-  self.value = source === "On" ? "On" : "Off";
+function lightClone_clone_from(light, source) {
+  console.log(`clone_from ${source} into ${light.value}`);
+  light.value = source === "On" ? "On" : "Off";
 }
 
 function main() {

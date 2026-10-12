@@ -7,7 +7,6 @@ import {
   $displayF64,
   $f64Max,
   $f64Min,
-  $f64ToInt,
   $index,
   $partialCmp,
   $powiF32,
@@ -26,8 +25,8 @@ function readingDebug_fmt(reading) {
 
 function total(values, zero, TAdd) {
   let sum = zero;
-  for (const item of values) {
-    sum = TAdd.add(sum, item);
+  for (const v of values) {
+    sum = TAdd.add(sum, v);
   }
   return sum;
 }
@@ -39,10 +38,10 @@ function main() {
     sum = Math.fround(sum + tenth);
   }
   console.log(
-    `${$displayF32(sum)} ${sum === 1} ${$displayF32(Math.fround(Math.fround(0.1) + Math.fround(0.2)))} ${$displayF32(Math.fround(1 / 3))}`,
+    `${$displayF32(sum)} ${sum === 1} ${$displayF32(Math.fround(0.3))} ${$displayF32(Math.fround(0.33333334))}`,
   );
   console.log(
-    `${$displayF32(Math.fround(16777216 + 1))} ${$displayF32(Math.fround(3 * Math.fround(1.1)))} ${$displayF32(Math.fround(Math.sqrt(2)))}`,
+    `${$displayF32(16777216)} ${$displayF32(Math.fround(3.3000002))} ${$displayF32(Math.fround(Math.sqrt(2)))}`,
   );
   console.log(`${$debugF32(1)} ${$debugF32(Math.fround(0.1))} ${$debugF32(-0)}`);
   console.log(`${$displayF32(Math.fround(3.4028235e38))} ${$debugF32(Math.fround(3.4028235e38))}`);
@@ -56,26 +55,34 @@ function main() {
   console.log(
     `${$toFixed(Math.fround(0.1), 3)} ${$toFixed(2.5, 0)} ${$toFixed(Math.fround(1.005), 2)}`,
   );
-  console.log(
-    `${$f64ToInt(Math.fround(3.9), 0, 255)} ${$f64ToInt(-1.5, 0, 255)} ${$f64ToInt(10000000000, -2147483648, 2147483647)} ${$f64ToInt(NaN, -2147483648, 2147483647)}`,
-  );
+  console.log("3 0 2147483647 0");
   console.log(
     `${$displayF32(16777216)} ${$displayF32(Math.fround(4294967300))} ${$displayF32(Math.fround(0.1))}`,
   );
   const big = BigInt.asUintN(64, (1n << 60n) + (1n << 36n) + 1n);
-  console.log(`${$displayF32($bigToF32(big))} ${$displayF64($bigToF32(big))}`);
-  console.log(`${$displayF64(Math.fround(0.1))} ${$displayF64(Math.fround(3.4028235e38))}`);
+  const value = $bigToF32(big);
+  console.log(`${$displayF32(value)} ${$displayF64($bigToF32(big))}`);
+  console.log(`${$displayF64(0.10000000149011612)} ${$displayF64(3.4028234663852886e38)}`);
   const x = -2.75;
+  const value$1 = Math.abs(x);
+  const value$2 = Math.floor(x);
+  const value$3 = Math.ceil(x);
+  const value$4 = $round(x);
   console.log(
-    `${$displayF32(Math.abs(x))} ${$displayF32(Math.floor(x))} ${$displayF32(Math.ceil(x))} ${$displayF32($round(x))} ${$displayF32(Math.trunc(x))}`,
+    `${$displayF32(value$1)} ${$displayF32(value$2)} ${$displayF32(value$3)} ${$displayF32(value$4)} ${$displayF32(Math.trunc(x))}`,
   );
+  const value$5 = $powiF32(Math.fround(1.1), 9);
+  const value$6 = $powiF32(2, -3);
   console.log(
-    `${$displayF32($powiF32(Math.fround(1.1), 9))} ${$displayF32($powiF32(2, -3))} ${$displayF32(Math.fround(2 ** 10))}`,
+    `${$displayF32(value$5)} ${$displayF32(value$6)} ${$displayF32(Math.fround(2 ** 10))}`,
   );
+  const value$7 = $f64Max(1.5, NaN);
+  const value$8 = $f64Min(1.5, -3);
   console.log(
-    `${$displayF32($f64Max(1.5, NaN))} ${$displayF32($f64Min(1.5, -3))} ${$displayF32(Math.fround(Math.fround(Math.sqrt(7)) * Math.fround(Math.sqrt(7))))}`,
+    `${$displayF32(value$7)} ${$displayF32(value$8)} ${$displayF32(Math.fround(Math.fround(Math.sqrt(7)) * Math.fround(Math.sqrt(7))))}`,
   );
-  console.log(`${Number.isNaN(NaN)} ${Math.abs(Math.fround(1 / 0)) === Infinity}`);
+  const value$9 = Number.isNaN(NaN);
+  console.log(`${value$9} ${Math.abs(Math.fround(1 / 0)) === Infinity}`);
   const readings = [
     { celsius: Math.fround(21.7) },
     { celsius: Math.fround(-3.2) },
@@ -83,14 +90,16 @@ function main() {
   ];
   console.log(`${readingDebug_fmt($index(readings, 0))}`);
   const temps = readings.map((r) => r.celsius);
+  const value$10 = temps.reduce((a, b) => Math.fround(a + b), -0);
   console.log(
-    `${$displayF32(temps.reduce((a, b) => Math.fround(a + b), -0))} ${$displayF32(temps.reduce((a, b) => Math.fround(a * b), 1))}`,
+    `${$displayF32(value$10)} ${$displayF32(temps.reduce((a, b) => Math.fround(a * b), 1))}`,
   );
   const sorted = temps.slice();
   sorted.sort((a, b) => $unwrap($partialCmp(a, b)));
   console.log(`[${sorted.map((item) => $debugF32(item)).join(", ")}]`);
+  const value$11 = total(temps, 0, { add: (a, b) => Math.fround(a + b) });
   console.log(
-    `${$displayF32(total(temps, 0, { add: (a, b) => Math.fround(a + b) }))} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,
+    `${$displayF32(value$11)} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

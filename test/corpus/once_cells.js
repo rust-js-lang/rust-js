@@ -27,13 +27,14 @@ function greeting() {
 function main() {
   const cell = {};
   console.log(`${cell.value == null ? "None" : `Some(${cell.value})`}`);
-  const arg = $onceSet(cell, 1);
-  console.log(`${arg.TAG === "Ok" ? "Ok(())" : `Err(${arg._0})`}`);
-  const arg$1 = $onceSet(cell, 2);
-  console.log(`${arg$1.TAG === "Ok" ? "Ok(())" : `Err(${arg$1._0})`}`);
   console.log(
-    `${cell.value == null ? "None" : `Some(${cell.value})`} ${$getOrInit(cell, () => 3)}`,
+    `${((result) => (result.TAG === "Ok" ? "Ok(())" : `Err(${result._0})`))($onceSet(cell, 1))}`,
   );
+  console.log(
+    `${((result) => (result.TAG === "Ok" ? "Ok(())" : `Err(${result._0})`))($onceSet(cell, 2))}`,
+  );
+  const value = cell.value;
+  console.log(`${value == null ? "None" : `Some(${value})`} ${$getOrInit(cell, () => 3)}`);
   const lazy = {};
   let calls = 0;
   for (let i = 0; i < 3; i++) {
@@ -52,38 +53,38 @@ function main() {
     config.name += "b";
   }
   console.log(`${taken.value?.name == null ? "None" : `Some(${$debugStr(taken.value?.name)})`}`);
-  const arg$2 = $cellReplace(taken)?.name;
-  console.log(`${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`} ${!taken.value}`);
+  const value$1 = $cellReplace(taken)?.name;
+  console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`} ${!taken.value}`);
   const count = {};
   $unwrapOk($onceSet(count, 5));
-  const cell$1 = $unwrap(count.value == null ? undefined : count);
-  cell$1.value = (cell$1.value + 1) | 0;
+  const value$2 = $unwrap(count.value == null ? undefined : count);
+  value$2.value = (value$2.value + 1) | 0;
   console.log(`${count.value == null ? "None" : `Some(${count.value})`}`);
   const unit = {};
-  const arg$3 = unit.value;
-  const arg$4 = $onceSet(unit);
+  const value$3 = unit.value;
+  const value$4 = $onceSet(unit);
   console.log(
-    `${arg$3 == null ? "None" : "Some(())"} ${arg$4.TAG === "Ok" ? "Ok(())" : "Err(())"} ${unit.value == null ? "None" : "Some(())"}`,
+    `${value$3 == null ? "None" : "Some(())"} ${value$4.TAG === "Ok" ? "Ok(())" : "Err(())"} ${unit.value == null ? "None" : "Some(())"}`,
   );
   const nothing = {};
-  const arg$5 = $getOrInit(nothing, () => undefined);
+  const value$5 = $getOrInit(nothing, () => undefined);
   console.log(
-    `${arg$5 == null ? "None" : `Some(${arg$5})`} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(nothing.value)}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(nothing.value)}`,
   );
-  const arg$6 = $onceSet(nothing, 1);
   console.log(
-    `${arg$6.TAG === "Ok" ? "Ok(())" : `Err(${arg$6._0 == null ? "None" : `Some(${arg$6._0})`})`}`,
+    `${((result) => (result.TAG === "Ok" ? "Ok(())" : `Err(${result._0 == null ? "None" : `Some(${result._0})`})`))($onceSet(nothing, 1))}`,
   );
   const lock = {};
   console.log(
     `${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,
   );
   $getOrInitLock(lock, () => [1, 2]);
-  const arg$7 = $onceSet(lock, [3]);
+  const value$6 = $onceSet(lock, [3]);
   console.log(
-    `${arg$7.TAG === "Ok" ? "Ok(())" : `Err([${arg$7._0.map((item) => String(item)).join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,
+    `${value$6.TAG === "Ok" ? "Ok(())" : `Err([${value$6._0.map((item) => String(item)).join(", ")}])`} ${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,
   );
-  console.log(`${greeting()} ${greeting()}`);
+  const value$7 = greeting();
+  console.log(`${value$7} ${greeting()}`);
   const shown = {};
   console.log(
     `OnceLock(${undefined == null ? "<uninit>" : "()"}) OnceCell(${shown.value == null ? "<uninit>" : `[${shown.value.map((item) => String(item)).join(", ")}]`}) ${$pretty(
@@ -122,7 +123,8 @@ function main() {
   );
   const copy = { value: shown.value };
   $getOrInit(copy, () => []);
-  console.log(`${$eq(copy, shown)} ${$eq(copy, {})}`);
+  const value$8 = $eq(copy, shown);
+  console.log(`${value$8} ${$eq(copy, {})}`);
   console.log(
     `OnceCell(${unit.value == null ? "<uninit>" : "()"}) ${((value) => `OnceCell(${value == null ? "<uninit>" : ((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`)(nothing.value)}`,
   );

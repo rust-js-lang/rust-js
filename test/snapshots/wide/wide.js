@@ -20,7 +20,6 @@ import {
   $displayF64,
   $displayJsonError,
   $eq,
-  $f64ToBig,
   $fromJson,
   $json,
   $max,
@@ -106,9 +105,8 @@ function paymentDeserialize_deserialize(json) {
 export function balances(entries) {
   const totals = new Map();
   for (const [account, cents] of entries) {
-    const value = cents;
     const current = $orInsert(totals, account, 0n);
-    totals.set(account, BigInt.asIntN(64, current + value));
+    totals.set(account, BigInt.asIntN(64, current + cents));
   }
   return totals;
 }
@@ -122,7 +120,9 @@ export function dollars(cents) {
 export function report() {
   let out = "";
   const id = Id.new(1700000000123n, 5, 42);
-  out += `${idDebug_fmt(id)} ${Id.millis(id)} ${Id.worker(id)} ${Id.sequence(id)}\n`;
+  const value = Id.millis(id);
+  const value$1 = Id.worker(id);
+  out += `${idDebug_fmt(id)} ${value} ${value$1} ${Id.sequence(id)}\n`;
   const later = Id.new(1700000000124n, 1, 0);
   out += `${$cmp(id[0], later[0]) < 0} ${$bigMax(id[0], later[0]) === later[0]}\n`;
   for (const text of ["", "a", "rust-js"]) {
@@ -142,33 +142,38 @@ export function report() {
   out += "\n";
   const max = 18446744073709551615n;
   const min = -9223372036854775808n;
-  out += `${max} ${BigInt.asUintN(64, max + 1n)} ${BigInt.asIntN(64, min - 1n)} ${BigInt.asUintN(64, (1n << 53n) + 1n)} ${27021597764222979n}\n`;
-  out += `${18446744073709551615n} ${BigInt.asIntN(64, max)} ${Number(BigInt.asUintN(32, max))} ${Number(BigInt.asIntN(32, min))} ${$displayF64(Number(max))} ${$displayF64(Number(BigInt.asIntN(64, 1n << 60n)))}\n`;
-  out += `${$f64ToBig(1.7976931348623157e308, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(-1.5, 0n, 18446744073709551615n)} ${$f64ToBig(NaN, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(10000000000000000000, 0n, 18446744073709551615n)}\n`;
-  const arg = $bigChecked(max + 1n, 0n, 18446744073709551615n);
-  const arg$1 = $bigChecked(0n - min, -9223372036854775808n, 9223372036854775807n);
-  const arg$2 = $bigCheckedDiv(5n, 0n, -9223372036854775808n);
-  const arg$3 = $checkedPow(10n, 19, 0n, 18446744073709551615n);
-  out += `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`} ${arg$3 == null ? "None" : `Some(${arg$3})`}\n`;
+  out += `${max} ${BigInt.asUintN(64, max + 1n)} ${BigInt.asIntN(64, min - 1n)} ${9007199254740993n} ${27021597764222979n}\n`;
+  out += `${18446744073709551615n} ${BigInt.asIntN(64, max)} ${Number(BigInt.asUintN(32, max))} ${Number(BigInt.asIntN(32, min))} ${$displayF64(Number(max))} ${$displayF64(1152921504606847000)}\n`;
+  out += `${9223372036854775807n} ${0n} ${0n} ${10000000000000000000n}\n`;
+  const value$2 = $bigChecked(max + 1n, 0n, 18446744073709551615n);
+  const value$3 = $bigChecked(0n - min, -9223372036854775808n, 9223372036854775807n);
+  const value$4 = $bigCheckedDiv(5n, 0n, -9223372036854775808n);
+  out += `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedPow(10n, 19, 0n, 18446744073709551615n))}\n`;
   out += `${$bigClamp(max + 9n, 0n, 18446744073709551615n)} ${$bigClamp(min - 1n, -9223372036854775808n, 9223372036854775807n)} ${$bigLeadingZeros(max)} ${$bigTrailingZeros(BigInt.asUintN(64, 1n << 40n))} ${$bigCountOnes(max)}\n`;
-  const arg$4 = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
-  const arg$5 = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
-  const arg$6 = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
-  out += `${arg$4} ${arg$5} ${arg$6.TAG === "Ok" ? `Ok(${arg$6._0})` : `Err(${$debugParseError(arg$6._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG !== "Ok"}\n`;
-  const arg$7 = $tryFromInt(max, 0, 4294967295);
-  out += `${arg$7.TAG === "Ok" ? `Ok(${arg$7._0})` : `Err(${$debugParseError(arg$7._0, "TryFromIntError")})`} ${$tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG !== "Ok"} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
+  const value$5 = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
+  const value$6 = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
+  const value$7 = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
+  out += `${value$5} ${value$6} ${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugParseError(value$7._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG !== "Ok"}\n`;
+  const value$8 = $tryFromInt(max, 0, 4294967295);
+  const value$9 =
+    $tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG !==
+    "Ok";
+  out += `${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${$debugParseError(value$8._0, "TryFromIntError")})`} ${value$9} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
-  const arg$8 = $unwrapErr($tryFromInt(300n, 0, 255));
-  const arg$9 = low === $unwrapErr($tryFromInt(300n, 0, 255));
-  out += `${$debugParseError(low, "TryFromIntError")} ${low} ${arg$8} ${arg$9}\n`;
+  const value$10 = [
+    $unwrapErr($tryFromInt(300n, 0, 255)),
+    low === $unwrapErr($tryFromInt(300n, 0, 255)),
+    low,
+  ];
+  out += `${$debugParseError(value$10[2], "TryFromIntError")} ${value$10[2]} ${value$10[0]} ${value$10[1]}\n`;
   const stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
   stamps.sort($cmp);
   const total = stamps
     .slice(1)
     .slice(0, 3)
     .reduce((a, b) => BigInt.asIntN(64, a + b), 0n);
-  const arg$10 = $max(stamps);
-  out += `[${stamps.map((item) => String(item)).join(", ")}] ${total} ${arg$10 == null ? "None" : `Some(${arg$10})`}\n`;
+  const arg = $max(stamps);
+  out += `[${stamps.map((item) => String(item)).join(", ")}] ${total} ${arg == null ? "None" : `Some(${arg})`}\n`;
   const payment = { id, cents: -1999n, at: 1700000000123n };
   const text = $unwrapOk(
     $toJson(payment, paymentSerialize_serialize, false),
@@ -188,11 +193,11 @@ export function report() {
     '{"id":1,"cents":9223372036854775808,"at":0}',
     '{"id":1.5,"cents":0,"at":0}',
   ]) {
-    const match = $fromJson(text, paymentDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `${paymentDebug_fmt(match._0)}\n`;
+    const value = $fromJson(text, paymentDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      out += `${paymentDebug_fmt(value._0)}\n`;
     } else {
-      out += `${$displayJsonError(match._0)}\n`;
+      out += `${$displayJsonError(value._0)}\n`;
     }
   }
   return out;

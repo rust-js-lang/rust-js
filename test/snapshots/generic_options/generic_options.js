@@ -4,8 +4,8 @@ import { $pop, $some, $someAt, $someValue, $unwrap } from "@rust-js/runtime";
 
 export function count_some(xs) {
   let n = 0;
-  for (const item of xs) {
-    const o = $some(item);
+  for (const x of xs) {
+    const o = $some(x);
     if (o != null) {
       n = (n + 1) >>> 0;
     }
@@ -22,9 +22,8 @@ export function pick(x, keep) {
 
 export function kept(xs) {
   let n = 0;
-  for (const item of xs) {
-    const match = pick(item, true);
-    if (match != null) {
+  for (const x of xs) {
+    if (pick(x, true) != null) {
       n = (n + 1) >>> 0;
     }
   }
@@ -45,11 +44,12 @@ export function mapped(x, f) {
 }
 
 export function tried(x, keep) {
-  const v = pick(x, keep);
-  if (v == null) {
+  const value = pick(x, keep);
+  if (value == null) {
     return;
   }
-  return $some($someValue(v));
+  const v = $someValue(value);
+  return $some(v);
 }
 
 export function popped(xs) {

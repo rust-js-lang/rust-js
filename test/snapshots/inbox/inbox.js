@@ -631,1037 +631,1037 @@ function strictTaggedDebug_fmt(strictTagged) {
 
 export function report() {
   let out = "";
-  const match = $fromJson(
+  const value = $fromJson(
     '{"orderId":7,"itemName":"pen","qty":3,"note":null,"price":2.5,"tags":["a","b"],"ok":true}',
     orderDeserialize_deserialize,
   );
-  if (match.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match._0)}\n`;
+  if (value.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match._0)} / ${$debugJsonError(match._0)}\n`;
+    out += `err ${$displayJsonError(value._0)} / ${$debugJsonError(value._0)}\n`;
   }
-  const match$1 = $fromJson(
+  const value$1 = $fromJson(
     '{"orderId":7,"itemName":"pen","price":2.5,"tags":[],"paid":false,"extra":{"x":[1,2,{"y":null}]}}',
     orderDeserialize_deserialize,
   );
-  if (match$1.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$1._0)}\n`;
+  if (value$1.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$1._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$1._0)} / ${$debugJsonError(match$1._0)}\n`;
+    out += `err ${$displayJsonError(value$1._0)} / ${$debugJsonError(value$1._0)}\n`;
   }
-  const match$2 = $fromJson('{"orderId":-1,"itemName":"pen"}', orderDeserialize_deserialize);
-  if (match$2.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$2._0)}\n`;
+  const value$2 = $fromJson('{"orderId":-1,"itemName":"pen"}', orderDeserialize_deserialize);
+  if (value$2.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$2._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$2._0)} / ${$debugJsonError(match$2._0)}\n`;
+    out += `err ${$displayJsonError(value$2._0)} / ${$debugJsonError(value$2._0)}\n`;
   }
-  const match$3 = $fromJson('{"orderId":7.5}', orderDeserialize_deserialize);
-  if (match$3.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$3._0)}\n`;
+  const value$3 = $fromJson('{"orderId":7.5}', orderDeserialize_deserialize);
+  if (value$3.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$3._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$3._0)} / ${$debugJsonError(match$3._0)}\n`;
+    out += `err ${$displayJsonError(value$3._0)} / ${$debugJsonError(value$3._0)}\n`;
   }
-  const match$4 = $fromJson('{"orderId":7,"orderId":8}', orderDeserialize_deserialize);
-  if (match$4.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$4._0)}\n`;
+  const value$4 = $fromJson('{"orderId":7,"orderId":8}', orderDeserialize_deserialize);
+  if (value$4.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$4._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$4._0)} / ${$debugJsonError(match$4._0)}\n`;
+    out += `err ${$displayJsonError(value$4._0)} / ${$debugJsonError(value$4._0)}\n`;
   }
-  const match$5 = $fromJson('{"itemName":"x"}', orderDeserialize_deserialize);
-  if (match$5.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$5._0)}\n`;
+  const value$5 = $fromJson('{"itemName":"x"}', orderDeserialize_deserialize);
+  if (value$5.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$5._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$5._0)} / ${$debugJsonError(match$5._0)}\n`;
+    out += `err ${$displayJsonError(value$5._0)} / ${$debugJsonError(value$5._0)}\n`;
   }
-  const match$6 = $fromJson('[7,"pen",3,null,2.5,[],true]', orderDeserialize_deserialize);
-  if (match$6.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$6._0)}\n`;
+  const value$6 = $fromJson('[7,"pen",3,null,2.5,[],true]', orderDeserialize_deserialize);
+  if (value$6.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$6._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$6._0)} / ${$debugJsonError(match$6._0)}\n`;
+    out += `err ${$displayJsonError(value$6._0)} / ${$debugJsonError(value$6._0)}\n`;
   }
-  const match$7 = $fromJson('[7,"pen"]', orderDeserialize_deserialize);
-  if (match$7.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$7._0)}\n`;
+  const value$7 = $fromJson('[7,"pen"]', orderDeserialize_deserialize);
+  if (value$7.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$7._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$7._0)} / ${$debugJsonError(match$7._0)}\n`;
+    out += `err ${$displayJsonError(value$7._0)} / ${$debugJsonError(value$7._0)}\n`;
   }
-  const match$8 = $fromJson('{"orderId":7,', orderDeserialize_deserialize);
-  if (match$8.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$8._0)}\n`;
+  const value$8 = $fromJson('{"orderId":7,', orderDeserialize_deserialize);
+  if (value$8.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$8._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$8._0)} / ${$debugJsonError(match$8._0)}\n`;
+    out += `err ${$displayJsonError(value$8._0)} / ${$debugJsonError(value$8._0)}\n`;
   }
-  const match$9 = $fromJson('{"orderId" 7}', orderDeserialize_deserialize);
-  if (match$9.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$9._0)}\n`;
+  const value$9 = $fromJson('{"orderId" 7}', orderDeserialize_deserialize);
+  if (value$9.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$9._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$9._0)} / ${$debugJsonError(match$9._0)}\n`;
+    out += `err ${$displayJsonError(value$9._0)} / ${$debugJsonError(value$9._0)}\n`;
   }
-  const match$10 = $fromJson('{"orderId":7,}', orderDeserialize_deserialize);
-  if (match$10.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$10._0)}\n`;
+  const value$10 = $fromJson('{"orderId":7,}', orderDeserialize_deserialize);
+  if (value$10.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$10._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$10._0)} / ${$debugJsonError(match$10._0)}\n`;
+    out += `err ${$displayJsonError(value$10._0)} / ${$debugJsonError(value$10._0)}\n`;
   }
-  const match$11 = $fromJson('"x"', orderDeserialize_deserialize);
-  if (match$11.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$11._0)}\n`;
+  const value$11 = $fromJson('"x"', orderDeserialize_deserialize);
+  if (value$11.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$11._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$11._0)} / ${$debugJsonError(match$11._0)}\n`;
+    out += `err ${$displayJsonError(value$11._0)} / ${$debugJsonError(value$11._0)}\n`;
   }
-  const match$12 = $fromJson(
+  const value$12 = $fromJson(
     '{\n  "itemName": "é",\n  "orderId": "7"\n}',
     orderDeserialize_deserialize,
   );
-  if (match$12.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$12._0)}\n`;
+  if (value$12.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$12._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$12._0)} / ${$debugJsonError(match$12._0)}\n`;
+    out += `err ${$displayJsonError(value$12._0)} / ${$debugJsonError(value$12._0)}\n`;
   }
-  const match$13 = $fromJson('{"orderId":1e3}', orderDeserialize_deserialize);
-  if (match$13.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$13._0)}\n`;
+  const value$13 = $fromJson('{"orderId":1e3}', orderDeserialize_deserialize);
+  if (value$13.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$13._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$13._0)} / ${$debugJsonError(match$13._0)}\n`;
+    out += `err ${$displayJsonError(value$13._0)} / ${$debugJsonError(value$13._0)}\n`;
   }
-  const match$14 = $fromJson(
+  const value$14 = $fromJson(
     '{"orderId":1,"itemName":"aé😀\\n\\"q\\"","price":1,"tags":[],"ok":true}',
     orderDeserialize_deserialize,
   );
-  if (match$14.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$14._0)}\n`;
+  if (value$14.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$14._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$14._0)} / ${$debugJsonError(match$14._0)}\n`;
+    out += `err ${$displayJsonError(value$14._0)} / ${$debugJsonError(value$14._0)}\n`;
   }
-  const match$15 = $fromJson('{"itemName":"\\x"}', orderDeserialize_deserialize);
-  if (match$15.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$15._0)}\n`;
+  const value$15 = $fromJson('{"itemName":"\\x"}', orderDeserialize_deserialize);
+  if (value$15.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$15._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$15._0)} / ${$debugJsonError(match$15._0)}\n`;
+    out += `err ${$displayJsonError(value$15._0)} / ${$debugJsonError(value$15._0)}\n`;
   }
-  const match$16 = $fromJson('{"itemName":"\\ud800"}', orderDeserialize_deserialize);
-  if (match$16.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$16._0)}\n`;
+  const value$16 = $fromJson('{"itemName":"\\ud800"}', orderDeserialize_deserialize);
+  if (value$16.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$16._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$16._0)} / ${$debugJsonError(match$16._0)}\n`;
+    out += `err ${$displayJsonError(value$16._0)} / ${$debugJsonError(value$16._0)}\n`;
   }
-  const match$17 = $fromJson('{"itemName":"\\udc00"}', orderDeserialize_deserialize);
-  if (match$17.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$17._0)}\n`;
+  const value$17 = $fromJson('{"itemName":"\\udc00"}', orderDeserialize_deserialize);
+  if (value$17.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$17._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$17._0)} / ${$debugJsonError(match$17._0)}\n`;
+    out += `err ${$displayJsonError(value$17._0)} / ${$debugJsonError(value$17._0)}\n`;
   }
-  const match$18 = $fromJson('{"itemName":"a"}', orderDeserialize_deserialize);
-  if (match$18.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$18._0)}\n`;
+  const value$18 = $fromJson('{"itemName":"a"}', orderDeserialize_deserialize);
+  if (value$18.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$18._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$18._0)} / ${$debugJsonError(match$18._0)}\n`;
+    out += `err ${$displayJsonError(value$18._0)} / ${$debugJsonError(value$18._0)}\n`;
   }
-  const match$19 = $fromJson('{"orderId":4294967296}', orderDeserialize_deserialize);
-  if (match$19.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$19._0)}\n`;
+  const value$19 = $fromJson('{"orderId":4294967296}', orderDeserialize_deserialize);
+  if (value$19.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$19._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$19._0)} / ${$debugJsonError(match$19._0)}\n`;
+    out += `err ${$displayJsonError(value$19._0)} / ${$debugJsonError(value$19._0)}\n`;
   }
-  const match$20 = $fromJson('{"orderId":18446744073709551616}', orderDeserialize_deserialize);
-  if (match$20.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$20._0)}\n`;
+  const value$20 = $fromJson('{"orderId":18446744073709551616}', orderDeserialize_deserialize);
+  if (value$20.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$20._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$20._0)} / ${$debugJsonError(match$20._0)}\n`;
+    out += `err ${$displayJsonError(value$20._0)} / ${$debugJsonError(value$20._0)}\n`;
   }
-  const match$21 = $fromJson('{"orderId":null}', orderDeserialize_deserialize);
-  if (match$21.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$21._0)}\n`;
+  const value$21 = $fromJson('{"orderId":null}', orderDeserialize_deserialize);
+  if (value$21.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$21._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$21._0)} / ${$debugJsonError(match$21._0)}\n`;
+    out += `err ${$displayJsonError(value$21._0)} / ${$debugJsonError(value$21._0)}\n`;
   }
-  const match$22 = $fromJson('{"orderId":true}', orderDeserialize_deserialize);
-  if (match$22.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$22._0)}\n`;
+  const value$22 = $fromJson('{"orderId":true}', orderDeserialize_deserialize);
+  if (value$22.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$22._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$22._0)} / ${$debugJsonError(match$22._0)}\n`;
+    out += `err ${$displayJsonError(value$22._0)} / ${$debugJsonError(value$22._0)}\n`;
   }
-  const match$23 = $fromJson('{"orderId":[1]}', orderDeserialize_deserialize);
-  if (match$23.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$23._0)}\n`;
+  const value$23 = $fromJson('{"orderId":[1]}', orderDeserialize_deserialize);
+  if (value$23.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$23._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$23._0)} / ${$debugJsonError(match$23._0)}\n`;
+    out += `err ${$displayJsonError(value$23._0)} / ${$debugJsonError(value$23._0)}\n`;
   }
-  const match$24 = $fromJson('{"orderId":{}}', orderDeserialize_deserialize);
-  if (match$24.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$24._0)}\n`;
+  const value$24 = $fromJson('{"orderId":{}}', orderDeserialize_deserialize);
+  if (value$24.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$24._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$24._0)} / ${$debugJsonError(match$24._0)}\n`;
+    out += `err ${$displayJsonError(value$24._0)} / ${$debugJsonError(value$24._0)}\n`;
   }
-  const match$25 = $fromJson('{"orderId":01}', orderDeserialize_deserialize);
-  if (match$25.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$25._0)}\n`;
+  const value$25 = $fromJson('{"orderId":01}', orderDeserialize_deserialize);
+  if (value$25.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$25._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$25._0)} / ${$debugJsonError(match$25._0)}\n`;
+    out += `err ${$displayJsonError(value$25._0)} / ${$debugJsonError(value$25._0)}\n`;
   }
-  const match$26 = $fromJson('{"orderId":1.}', orderDeserialize_deserialize);
-  if (match$26.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$26._0)}\n`;
+  const value$26 = $fromJson('{"orderId":1.}', orderDeserialize_deserialize);
+  if (value$26.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$26._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$26._0)} / ${$debugJsonError(match$26._0)}\n`;
+    out += `err ${$displayJsonError(value$26._0)} / ${$debugJsonError(value$26._0)}\n`;
   }
-  const match$27 = $fromJson('{"orderId":-}', orderDeserialize_deserialize);
-  if (match$27.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$27._0)}\n`;
+  const value$27 = $fromJson('{"orderId":-}', orderDeserialize_deserialize);
+  if (value$27.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$27._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$27._0)} / ${$debugJsonError(match$27._0)}\n`;
+    out += `err ${$displayJsonError(value$27._0)} / ${$debugJsonError(value$27._0)}\n`;
   }
-  const match$28 = $fromJson('{"orderId":1e}', orderDeserialize_deserialize);
-  if (match$28.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$28._0)}\n`;
+  const value$28 = $fromJson('{"orderId":1e}', orderDeserialize_deserialize);
+  if (value$28.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$28._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$28._0)} / ${$debugJsonError(match$28._0)}\n`;
+    out += `err ${$displayJsonError(value$28._0)} / ${$debugJsonError(value$28._0)}\n`;
   }
-  const match$29 = $fromJson('{"orderId":tru}', orderDeserialize_deserialize);
-  if (match$29.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$29._0)}\n`;
+  const value$29 = $fromJson('{"orderId":tru}', orderDeserialize_deserialize);
+  if (value$29.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$29._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$29._0)} / ${$debugJsonError(match$29._0)}\n`;
+    out += `err ${$displayJsonError(value$29._0)} / ${$debugJsonError(value$29._0)}\n`;
   }
-  const match$30 = $fromJson('{"orderId":7,"tags":[1,]}', orderDeserialize_deserialize);
-  if (match$30.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$30._0)}\n`;
+  const value$30 = $fromJson('{"orderId":7,"tags":[1,]}', orderDeserialize_deserialize);
+  if (value$30.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$30._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$30._0)} / ${$debugJsonError(match$30._0)}\n`;
+    out += `err ${$displayJsonError(value$30._0)} / ${$debugJsonError(value$30._0)}\n`;
   }
-  const match$31 = $fromJson('{"orderId":7 "x":1}', orderDeserialize_deserialize);
-  if (match$31.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$31._0)}\n`;
+  const value$31 = $fromJson('{"orderId":7 "x":1}', orderDeserialize_deserialize);
+  if (value$31.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$31._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$31._0)} / ${$debugJsonError(match$31._0)}\n`;
+    out += `err ${$displayJsonError(value$31._0)} / ${$debugJsonError(value$31._0)}\n`;
   }
-  const match$32 = $fromJson("{7:1}", orderDeserialize_deserialize);
-  if (match$32.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$32._0)}\n`;
+  const value$32 = $fromJson("{7:1}", orderDeserialize_deserialize);
+  if (value$32.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$32._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$32._0)} / ${$debugJsonError(match$32._0)}\n`;
+    out += `err ${$displayJsonError(value$32._0)} / ${$debugJsonError(value$32._0)}\n`;
   }
-  const match$33 = $fromJson('{"orderId":7,"extra":[1 2]}', orderDeserialize_deserialize);
-  if (match$33.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$33._0)}\n`;
+  const value$33 = $fromJson('{"orderId":7,"extra":[1 2]}', orderDeserialize_deserialize);
+  if (value$33.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$33._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$33._0)} / ${$debugJsonError(match$33._0)}\n`;
+    out += `err ${$displayJsonError(value$33._0)} / ${$debugJsonError(value$33._0)}\n`;
   }
-  const match$34 = $fromJson("", orderDeserialize_deserialize);
-  if (match$34.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$34._0)}\n`;
+  const value$34 = $fromJson("", orderDeserialize_deserialize);
+  if (value$34.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$34._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$34._0)} / ${$debugJsonError(match$34._0)}\n`;
+    out += `err ${$displayJsonError(value$34._0)} / ${$debugJsonError(value$34._0)}\n`;
   }
-  const match$35 = $fromJson("   ", orderDeserialize_deserialize);
-  if (match$35.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$35._0)}\n`;
+  const value$35 = $fromJson("   ", orderDeserialize_deserialize);
+  if (value$35.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$35._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$35._0)} / ${$debugJsonError(match$35._0)}\n`;
+    out += `err ${$displayJsonError(value$35._0)} / ${$debugJsonError(value$35._0)}\n`;
   }
-  const match$36 = $fromJson(
+  const value$36 = $fromJson(
     '{"orderId":7,"itemName":"p","price":1,"tags":[],"ok":true} x',
     orderDeserialize_deserialize,
   );
-  if (match$36.TAG === "Ok") {
-    out += `ok ${orderDebug_fmt(match$36._0)}\n`;
+  if (value$36.TAG === "Ok") {
+    out += `ok ${orderDebug_fmt(value$36._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$36._0)} / ${$debugJsonError(match$36._0)}\n`;
+    out += `err ${$displayJsonError(value$36._0)} / ${$debugJsonError(value$36._0)}\n`;
   }
-  const match$37 = $fromJson('"Dot"', shapeDeserialize_deserialize);
-  if (match$37.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$37._0)}\n`;
+  const value$37 = $fromJson('"Dot"', shapeDeserialize_deserialize);
+  if (value$37.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$37._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$37._0)} / ${$debugJsonError(match$37._0)}\n`;
+    out += `err ${$displayJsonError(value$37._0)} / ${$debugJsonError(value$37._0)}\n`;
   }
-  const match$38 = $fromJson('{"Circle":1.5}', shapeDeserialize_deserialize);
-  if (match$38.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$38._0)}\n`;
+  const value$38 = $fromJson('{"Circle":1.5}', shapeDeserialize_deserialize);
+  if (value$38.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$38._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$38._0)} / ${$debugJsonError(match$38._0)}\n`;
+    out += `err ${$displayJsonError(value$38._0)} / ${$debugJsonError(value$38._0)}\n`;
   }
-  const match$39 = $fromJson('{"Rect":[1,2]}', shapeDeserialize_deserialize);
-  if (match$39.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$39._0)}\n`;
+  const value$39 = $fromJson('{"Rect":[1,2]}', shapeDeserialize_deserialize);
+  if (value$39.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$39._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$39._0)} / ${$debugJsonError(match$39._0)}\n`;
+    out += `err ${$displayJsonError(value$39._0)} / ${$debugJsonError(value$39._0)}\n`;
   }
-  const match$40 = $fromJson('{"Poly":{"sides":6,"name":"hex"}}', shapeDeserialize_deserialize);
-  if (match$40.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$40._0)}\n`;
+  const value$40 = $fromJson('{"Poly":{"sides":6,"name":"hex"}}', shapeDeserialize_deserialize);
+  if (value$40.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$40._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$40._0)} / ${$debugJsonError(match$40._0)}\n`;
+    out += `err ${$displayJsonError(value$40._0)} / ${$debugJsonError(value$40._0)}\n`;
   }
-  const match$41 = $fromJson('"Circle"', shapeDeserialize_deserialize);
-  if (match$41.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$41._0)}\n`;
+  const value$41 = $fromJson('"Circle"', shapeDeserialize_deserialize);
+  if (value$41.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$41._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$41._0)} / ${$debugJsonError(match$41._0)}\n`;
+    out += `err ${$displayJsonError(value$41._0)} / ${$debugJsonError(value$41._0)}\n`;
   }
-  const match$42 = $fromJson('{"Nope":1}', shapeDeserialize_deserialize);
-  if (match$42.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$42._0)}\n`;
+  const value$42 = $fromJson('{"Nope":1}', shapeDeserialize_deserialize);
+  if (value$42.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$42._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$42._0)} / ${$debugJsonError(match$42._0)}\n`;
+    out += `err ${$displayJsonError(value$42._0)} / ${$debugJsonError(value$42._0)}\n`;
   }
-  const match$43 = $fromJson('{"Dot":null}', shapeDeserialize_deserialize);
-  if (match$43.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$43._0)}\n`;
+  const value$43 = $fromJson('{"Dot":null}', shapeDeserialize_deserialize);
+  if (value$43.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$43._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$43._0)} / ${$debugJsonError(match$43._0)}\n`;
+    out += `err ${$displayJsonError(value$43._0)} / ${$debugJsonError(value$43._0)}\n`;
   }
-  const match$44 = $fromJson('{"Dot":1}', shapeDeserialize_deserialize);
-  if (match$44.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$44._0)}\n`;
+  const value$44 = $fromJson('{"Dot":1}', shapeDeserialize_deserialize);
+  if (value$44.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$44._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$44._0)} / ${$debugJsonError(match$44._0)}\n`;
+    out += `err ${$displayJsonError(value$44._0)} / ${$debugJsonError(value$44._0)}\n`;
   }
-  const match$45 = $fromJson('{"Circle":1.5,"x":1}', shapeDeserialize_deserialize);
-  if (match$45.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$45._0)}\n`;
+  const value$45 = $fromJson('{"Circle":1.5,"x":1}', shapeDeserialize_deserialize);
+  if (value$45.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$45._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$45._0)} / ${$debugJsonError(match$45._0)}\n`;
+    out += `err ${$displayJsonError(value$45._0)} / ${$debugJsonError(value$45._0)}\n`;
   }
-  const match$46 = $fromJson("{}", shapeDeserialize_deserialize);
-  if (match$46.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$46._0)}\n`;
+  const value$46 = $fromJson("{}", shapeDeserialize_deserialize);
+  if (value$46.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$46._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$46._0)} / ${$debugJsonError(match$46._0)}\n`;
+    out += `err ${$displayJsonError(value$46._0)} / ${$debugJsonError(value$46._0)}\n`;
   }
-  const match$47 = $fromJson("5", shapeDeserialize_deserialize);
-  if (match$47.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$47._0)}\n`;
+  const value$47 = $fromJson("5", shapeDeserialize_deserialize);
+  if (value$47.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$47._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$47._0)} / ${$debugJsonError(match$47._0)}\n`;
+    out += `err ${$displayJsonError(value$47._0)} / ${$debugJsonError(value$47._0)}\n`;
   }
-  const match$48 = $fromJson('{"Rect":[1]}', shapeDeserialize_deserialize);
-  if (match$48.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$48._0)}\n`;
+  const value$48 = $fromJson('{"Rect":[1]}', shapeDeserialize_deserialize);
+  if (value$48.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$48._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$48._0)} / ${$debugJsonError(match$48._0)}\n`;
+    out += `err ${$displayJsonError(value$48._0)} / ${$debugJsonError(value$48._0)}\n`;
   }
-  const match$49 = $fromJson('{"Poly":[6]}', shapeDeserialize_deserialize);
-  if (match$49.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$49._0)}\n`;
+  const value$49 = $fromJson('{"Poly":[6]}', shapeDeserialize_deserialize);
+  if (value$49.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$49._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$49._0)} / ${$debugJsonError(match$49._0)}\n`;
+    out += `err ${$displayJsonError(value$49._0)} / ${$debugJsonError(value$49._0)}\n`;
   }
-  const match$50 = $fromJson('{"Poly":{"sides":6}}', shapeDeserialize_deserialize);
-  if (match$50.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$50._0)}\n`;
+  const value$50 = $fromJson('{"Poly":{"sides":6}}', shapeDeserialize_deserialize);
+  if (value$50.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$50._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$50._0)} / ${$debugJsonError(match$50._0)}\n`;
+    out += `err ${$displayJsonError(value$50._0)} / ${$debugJsonError(value$50._0)}\n`;
   }
-  const match$51 = $fromJson('"Poly"', shapeDeserialize_deserialize);
-  if (match$51.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$51._0)}\n`;
+  const value$51 = $fromJson('"Poly"', shapeDeserialize_deserialize);
+  if (value$51.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$51._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$51._0)} / ${$debugJsonError(match$51._0)}\n`;
+    out += `err ${$displayJsonError(value$51._0)} / ${$debugJsonError(value$51._0)}\n`;
   }
-  const match$52 = $fromJson('"Rect"', shapeDeserialize_deserialize);
-  if (match$52.TAG === "Ok") {
-    out += `ok ${shapeDebug_fmt(match$52._0)}\n`;
+  const value$52 = $fromJson('"Rect"', shapeDeserialize_deserialize);
+  if (value$52.TAG === "Ok") {
+    out += `ok ${shapeDebug_fmt(value$52._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$52._0)} / ${$debugJsonError(match$52._0)}\n`;
+    out += `err ${$displayJsonError(value$52._0)} / ${$debugJsonError(value$52._0)}\n`;
   }
-  const match$53 = $fromJson("5", idDeserialize_deserialize);
-  if (match$53.TAG === "Ok") {
-    out += `ok ${idDebug_fmt(match$53._0)}\n`;
+  const value$53 = $fromJson("5", idDeserialize_deserialize);
+  if (value$53.TAG === "Ok") {
+    out += `ok ${idDebug_fmt(value$53._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$53._0)} / ${$debugJsonError(match$53._0)}\n`;
+    out += `err ${$displayJsonError(value$53._0)} / ${$debugJsonError(value$53._0)}\n`;
   }
-  const match$54 = $fromJson('"5"', idDeserialize_deserialize);
-  if (match$54.TAG === "Ok") {
-    out += `ok ${idDebug_fmt(match$54._0)}\n`;
+  const value$54 = $fromJson('"5"', idDeserialize_deserialize);
+  if (value$54.TAG === "Ok") {
+    out += `ok ${idDebug_fmt(value$54._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$54._0)} / ${$debugJsonError(match$54._0)}\n`;
+    out += `err ${$displayJsonError(value$54._0)} / ${$debugJsonError(value$54._0)}\n`;
   }
-  const match$55 = $fromJson("5 x", idDeserialize_deserialize);
-  if (match$55.TAG === "Ok") {
-    out += `ok ${idDebug_fmt(match$55._0)}\n`;
+  const value$55 = $fromJson("5 x", idDeserialize_deserialize);
+  if (value$55.TAG === "Ok") {
+    out += `ok ${idDebug_fmt(value$55._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$55._0)} / ${$debugJsonError(match$55._0)}\n`;
+    out += `err ${$displayJsonError(value$55._0)} / ${$debugJsonError(value$55._0)}\n`;
   }
-  const match$56 = $fromJson("[5]", idDeserialize_deserialize);
-  if (match$56.TAG === "Ok") {
-    out += `ok ${idDebug_fmt(match$56._0)}\n`;
+  const value$56 = $fromJson("[5]", idDeserialize_deserialize);
+  if (value$56.TAG === "Ok") {
+    out += `ok ${idDebug_fmt(value$56._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$56._0)} / ${$debugJsonError(match$56._0)}\n`;
+    out += `err ${$displayJsonError(value$56._0)} / ${$debugJsonError(value$56._0)}\n`;
   }
-  const match$57 = $fromJson("[1,-2]", pointDeserialize_deserialize);
-  if (match$57.TAG === "Ok") {
-    out += `ok ${pointDebug_fmt(match$57._0)}\n`;
+  const value$57 = $fromJson("[1,-2]", pointDeserialize_deserialize);
+  if (value$57.TAG === "Ok") {
+    out += `ok ${pointDebug_fmt(value$57._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$57._0)} / ${$debugJsonError(match$57._0)}\n`;
+    out += `err ${$displayJsonError(value$57._0)} / ${$debugJsonError(value$57._0)}\n`;
   }
-  const match$58 = $fromJson("[1]", pointDeserialize_deserialize);
-  if (match$58.TAG === "Ok") {
-    out += `ok ${pointDebug_fmt(match$58._0)}\n`;
+  const value$58 = $fromJson("[1]", pointDeserialize_deserialize);
+  if (value$58.TAG === "Ok") {
+    out += `ok ${pointDebug_fmt(value$58._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$58._0)} / ${$debugJsonError(match$58._0)}\n`;
+    out += `err ${$displayJsonError(value$58._0)} / ${$debugJsonError(value$58._0)}\n`;
   }
-  const match$59 = $fromJson("[1,2,3]", pointDeserialize_deserialize);
-  if (match$59.TAG === "Ok") {
-    out += `ok ${pointDebug_fmt(match$59._0)}\n`;
+  const value$59 = $fromJson("[1,2,3]", pointDeserialize_deserialize);
+  if (value$59.TAG === "Ok") {
+    out += `ok ${pointDebug_fmt(value$59._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$59._0)} / ${$debugJsonError(match$59._0)}\n`;
+    out += `err ${$displayJsonError(value$59._0)} / ${$debugJsonError(value$59._0)}\n`;
   }
-  const match$60 = $fromJson('{"a":1}', pointDeserialize_deserialize);
-  if (match$60.TAG === "Ok") {
-    out += `ok ${pointDebug_fmt(match$60._0)}\n`;
+  const value$60 = $fromJson('{"a":1}', pointDeserialize_deserialize);
+  if (value$60.TAG === "Ok") {
+    out += `ok ${pointDebug_fmt(value$60._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$60._0)} / ${$debugJsonError(match$60._0)}\n`;
+    out += `err ${$displayJsonError(value$60._0)} / ${$debugJsonError(value$60._0)}\n`;
   }
-  const match$61 = $fromJson("[1,2,]", pointDeserialize_deserialize);
-  if (match$61.TAG === "Ok") {
-    out += `ok ${pointDebug_fmt(match$61._0)}\n`;
+  const value$61 = $fromJson("[1,2,]", pointDeserialize_deserialize);
+  if (value$61.TAG === "Ok") {
+    out += `ok ${pointDebug_fmt(value$61._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$61._0)} / ${$debugJsonError(match$61._0)}\n`;
+    out += `err ${$displayJsonError(value$61._0)} / ${$debugJsonError(value$61._0)}\n`;
   }
-  const match$62 = $fromJson("[-2147483649,0]", pointDeserialize_deserialize);
-  if (match$62.TAG === "Ok") {
-    out += `ok ${pointDebug_fmt(match$62._0)}\n`;
+  const value$62 = $fromJson("[-2147483649,0]", pointDeserialize_deserialize);
+  if (value$62.TAG === "Ok") {
+    out += `ok ${pointDebug_fmt(value$62._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$62._0)} / ${$debugJsonError(match$62._0)}\n`;
+    out += `err ${$displayJsonError(value$62._0)} / ${$debugJsonError(value$62._0)}\n`;
   }
-  const match$63 = $fromJson("null", unitDeserialize_deserialize);
-  if (match$63.TAG === "Ok") {
-    out += `ok ${unitDebug_fmt(match$63._0)}\n`;
+  const value$63 = $fromJson("null", unitDeserialize_deserialize);
+  if (value$63.TAG === "Ok") {
+    out += `ok ${unitDebug_fmt(value$63._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$63._0)} / ${$debugJsonError(match$63._0)}\n`;
+    out += `err ${$displayJsonError(value$63._0)} / ${$debugJsonError(value$63._0)}\n`;
   }
-  const match$64 = $fromJson("1", unitDeserialize_deserialize);
-  if (match$64.TAG === "Ok") {
-    out += `ok ${unitDebug_fmt(match$64._0)}\n`;
+  const value$64 = $fromJson("1", unitDeserialize_deserialize);
+  if (value$64.TAG === "Ok") {
+    out += `ok ${unitDebug_fmt(value$64._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$64._0)} / ${$debugJsonError(match$64._0)}\n`;
+    out += `err ${$displayJsonError(value$64._0)} / ${$debugJsonError(value$64._0)}\n`;
   }
-  const match$65 = $fromJson("3.5", metersDeserialize_deserialize);
-  if (match$65.TAG === "Ok") {
-    out += `ok ${metersDebug_fmt(match$65._0)}\n`;
+  const value$65 = $fromJson("3.5", metersDeserialize_deserialize);
+  if (value$65.TAG === "Ok") {
+    out += `ok ${metersDebug_fmt(value$65._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$65._0)} / ${$debugJsonError(match$65._0)}\n`;
+    out += `err ${$displayJsonError(value$65._0)} / ${$debugJsonError(value$65._0)}\n`;
   }
-  const match$66 = $fromJson("3", metersDeserialize_deserialize);
-  if (match$66.TAG === "Ok") {
-    out += `ok ${metersDebug_fmt(match$66._0)}\n`;
+  const value$66 = $fromJson("3", metersDeserialize_deserialize);
+  if (value$66.TAG === "Ok") {
+    out += `ok ${metersDebug_fmt(value$66._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$66._0)} / ${$debugJsonError(match$66._0)}\n`;
+    out += `err ${$displayJsonError(value$66._0)} / ${$debugJsonError(value$66._0)}\n`;
   }
-  const match$67 = $fromJson("-0", metersDeserialize_deserialize);
-  if (match$67.TAG === "Ok") {
-    out += `ok ${metersDebug_fmt(match$67._0)}\n`;
+  const value$67 = $fromJson("-0", metersDeserialize_deserialize);
+  if (value$67.TAG === "Ok") {
+    out += `ok ${metersDebug_fmt(value$67._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$67._0)} / ${$debugJsonError(match$67._0)}\n`;
+    out += `err ${$displayJsonError(value$67._0)} / ${$debugJsonError(value$67._0)}\n`;
   }
-  const match$68 = $fromJson('{"a":1,"c":2}', strictDeserialize_deserialize);
-  if (match$68.TAG === "Ok") {
-    out += `ok ${strictDebug_fmt(match$68._0)}\n`;
+  const value$68 = $fromJson('{"a":1,"c":2}', strictDeserialize_deserialize);
+  if (value$68.TAG === "Ok") {
+    out += `ok ${strictDebug_fmt(value$68._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$68._0)} / ${$debugJsonError(match$68._0)}\n`;
+    out += `err ${$displayJsonError(value$68._0)} / ${$debugJsonError(value$68._0)}\n`;
   }
-  const match$69 = $fromJson('{"a":300}', strictDeserialize_deserialize);
-  if (match$69.TAG === "Ok") {
-    out += `ok ${strictDebug_fmt(match$69._0)}\n`;
+  const value$69 = $fromJson('{"a":300}', strictDeserialize_deserialize);
+  if (value$69.TAG === "Ok") {
+    out += `ok ${strictDebug_fmt(value$69._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$69._0)} / ${$debugJsonError(match$69._0)}\n`;
+    out += `err ${$displayJsonError(value$69._0)} / ${$debugJsonError(value$69._0)}\n`;
   }
-  const match$70 = $fromJson('{"a":1,"b":-129}', strictDeserialize_deserialize);
-  if (match$70.TAG === "Ok") {
-    out += `ok ${strictDebug_fmt(match$70._0)}\n`;
+  const value$70 = $fromJson('{"a":1,"b":-129}', strictDeserialize_deserialize);
+  if (value$70.TAG === "Ok") {
+    out += `ok ${strictDebug_fmt(value$70._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$70._0)} / ${$debugJsonError(match$70._0)}\n`;
+    out += `err ${$displayJsonError(value$70._0)} / ${$debugJsonError(value$70._0)}\n`;
   }
-  const match$71 = $fromJson('{"a":1,"b":-128}', strictDeserialize_deserialize);
-  if (match$71.TAG === "Ok") {
-    out += `ok ${strictDebug_fmt(match$71._0)}\n`;
+  const value$71 = $fromJson('{"a":1,"b":-128}', strictDeserialize_deserialize);
+  if (value$71.TAG === "Ok") {
+    out += `ok ${strictDebug_fmt(value$71._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$71._0)} / ${$debugJsonError(match$71._0)}\n`;
+    out += `err ${$displayJsonError(value$71._0)} / ${$debugJsonError(value$71._0)}\n`;
   }
-  const match$72 = $fromJson('"lo"', levelDeserialize_deserialize);
-  if (match$72.TAG === "Ok") {
-    out += `ok ${match$72._0}\n`;
+  const value$72 = $fromJson('"lo"', levelDeserialize_deserialize);
+  if (value$72.TAG === "Ok") {
+    out += `ok ${value$72._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$72._0)} / ${$debugJsonError(match$72._0)}\n`;
+    out += `err ${$displayJsonError(value$72._0)} / ${$debugJsonError(value$72._0)}\n`;
   }
-  const match$73 = $fromJson('"High"', levelDeserialize_deserialize);
-  if (match$73.TAG === "Ok") {
-    out += `ok ${match$73._0}\n`;
+  const value$73 = $fromJson('"High"', levelDeserialize_deserialize);
+  if (value$73.TAG === "Ok") {
+    out += `ok ${value$73._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$73._0)} / ${$debugJsonError(match$73._0)}\n`;
+    out += `err ${$displayJsonError(value$73._0)} / ${$debugJsonError(value$73._0)}\n`;
   }
-  const match$74 = $fromJson('"zzz"', levelDeserialize_deserialize);
-  if (match$74.TAG === "Ok") {
-    out += `ok ${match$74._0}\n`;
+  const value$74 = $fromJson('"zzz"', levelDeserialize_deserialize);
+  if (value$74.TAG === "Ok") {
+    out += `ok ${value$74._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$74._0)} / ${$debugJsonError(match$74._0)}\n`;
+    out += `err ${$displayJsonError(value$74._0)} / ${$debugJsonError(value$74._0)}\n`;
   }
-  const match$75 = $fromJson('"Low"', levelDeserialize_deserialize);
-  if (match$75.TAG === "Ok") {
-    out += `ok ${match$75._0}\n`;
+  const value$75 = $fromJson('"Low"', levelDeserialize_deserialize);
+  if (value$75.TAG === "Ok") {
+    out += `ok ${value$75._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$75._0)} / ${$debugJsonError(match$75._0)}\n`;
+    out += `err ${$displayJsonError(value$75._0)} / ${$debugJsonError(value$75._0)}\n`;
   }
-  const match$76 = $fromJson('{"lo":null}', levelDeserialize_deserialize);
-  if (match$76.TAG === "Ok") {
-    out += `ok ${match$76._0}\n`;
+  const value$76 = $fromJson('{"lo":null}', levelDeserialize_deserialize);
+  if (value$76.TAG === "Ok") {
+    out += `ok ${value$76._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$76._0)} / ${$debugJsonError(match$76._0)}\n`;
+    out += `err ${$displayJsonError(value$76._0)} / ${$debugJsonError(value$76._0)}\n`;
   }
-  const match$77 = $fromJson('{"b":1,"a":2,"b":3}', $json.map($json.key.string, $json.u32));
-  if (match$77.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$77._0, $cmp))
+  const value$77 = $fromJson('{"b":1,"a":2,"b":3}', $json.map($json.key.string, $json.u32));
+  if (value$77.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$77._0, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$77._0)} / ${$debugJsonError(match$77._0)}\n`;
+    out += `err ${$displayJsonError(value$77._0)} / ${$debugJsonError(value$77._0)}\n`;
   }
-  const match$78 = $fromJson(
+  const value$78 = $fromJson(
     '{"10":true,"2":false}',
     $json.map($json.key.number($json.u32), $json.bool),
   );
-  if (match$78.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$78._0, $cmp))
+  if (value$78.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$78._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$78._0)} / ${$debugJsonError(match$78._0)}\n`;
+    out += `err ${$displayJsonError(value$78._0)} / ${$debugJsonError(value$78._0)}\n`;
   }
-  const match$79 = $fromJson('{"x":true}', $json.map($json.key.number($json.u32), $json.bool));
-  if (match$79.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$79._0, $cmp))
+  const value$79 = $fromJson('{"x":true}', $json.map($json.key.number($json.u32), $json.bool));
+  if (value$79.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$79._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$79._0)} / ${$debugJsonError(match$79._0)}\n`;
+    out += `err ${$displayJsonError(value$79._0)} / ${$debugJsonError(value$79._0)}\n`;
   }
-  const match$80 = $fromJson('{"1 ":true}', $json.map($json.key.number($json.u32), $json.bool));
-  if (match$80.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$80._0, $cmp))
+  const value$80 = $fromJson('{"1 ":true}', $json.map($json.key.number($json.u32), $json.bool));
+  if (value$80.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$80._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$80._0)} / ${$debugJsonError(match$80._0)}\n`;
+    out += `err ${$displayJsonError(value$80._0)} / ${$debugJsonError(value$80._0)}\n`;
   }
-  const match$81 = $fromJson('{"-1":true}', $json.map($json.key.number($json.u32), $json.bool));
-  if (match$81.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$81._0, $cmp))
+  const value$81 = $fromJson('{"-1":true}', $json.map($json.key.number($json.u32), $json.bool));
+  if (value$81.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$81._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$81._0)} / ${$debugJsonError(match$81._0)}\n`;
+    out += `err ${$displayJsonError(value$81._0)} / ${$debugJsonError(value$81._0)}\n`;
   }
-  const match$82 = $fromJson('{"true":1,"false":2}', $json.map($json.key.bool, $json.u8));
-  if (match$82.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$82._0, $cmp))
+  const value$82 = $fromJson('{"true":1,"false":2}', $json.map($json.key.bool, $json.u8));
+  if (value$82.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$82._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$82._0)} / ${$debugJsonError(match$82._0)}\n`;
+    out += `err ${$displayJsonError(value$82._0)} / ${$debugJsonError(value$82._0)}\n`;
   }
-  const match$83 = $fromJson('{"yes":1}', $json.map($json.key.bool, $json.u8));
-  if (match$83.TAG === "Ok") {
-    out += `ok {${Array.from($sortedEntries(match$83._0, $cmp))
+  const value$83 = $fromJson('{"yes":1}', $json.map($json.key.bool, $json.u8));
+  if (value$83.TAG === "Ok") {
+    out += `ok {${Array.from($sortedEntries(value$83._0, $cmp))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}}\n`;
   } else {
-    out += `err ${$displayJsonError(match$83._0)} / ${$debugJsonError(match$83._0)}\n`;
+    out += `err ${$displayJsonError(value$83._0)} / ${$debugJsonError(value$83._0)}\n`;
   }
-  const match$84 = $fromJson("[1,null,2.5e-3,-0]", $json.vec($json.option($json.f64)));
-  if (match$84.TAG === "Ok") {
-    out += `ok [${match$84._0.map((item) => (item == null ? "None" : `Some(${$debugF64(item)})`)).join(", ")}]\n`;
+  const value$84 = $fromJson("[1,null,2.5e-3,-0]", $json.vec($json.option($json.f64)));
+  if (value$84.TAG === "Ok") {
+    out += `ok [${value$84._0.map((item) => (item == null ? "None" : `Some(${$debugF64(item)})`)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$84._0)} / ${$debugJsonError(match$84._0)}\n`;
+    out += `err ${$displayJsonError(value$84._0)} / ${$debugJsonError(value$84._0)}\n`;
   }
-  const match$85 = $fromJson("[1,null", $json.vec($json.option($json.f64)));
-  if (match$85.TAG === "Ok") {
-    out += `ok [${match$85._0.map((item) => (item == null ? "None" : `Some(${$debugF64(item)})`)).join(", ")}]\n`;
+  const value$85 = $fromJson("[1,null", $json.vec($json.option($json.f64)));
+  if (value$85.TAG === "Ok") {
+    out += `ok [${value$85._0.map((item) => (item == null ? "None" : `Some(${$debugF64(item)})`)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$85._0)} / ${$debugJsonError(match$85._0)}\n`;
+    out += `err ${$displayJsonError(value$85._0)} / ${$debugJsonError(value$85._0)}\n`;
   }
-  const match$86 = $fromJson("[,1]", $json.vec($json.option($json.f64)));
-  if (match$86.TAG === "Ok") {
-    out += `ok [${match$86._0.map((item) => (item == null ? "None" : `Some(${$debugF64(item)})`)).join(", ")}]\n`;
+  const value$86 = $fromJson("[,1]", $json.vec($json.option($json.f64)));
+  if (value$86.TAG === "Ok") {
+    out += `ok [${value$86._0.map((item) => (item == null ? "None" : `Some(${$debugF64(item)})`)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$86._0)} / ${$debugJsonError(match$86._0)}\n`;
+    out += `err ${$displayJsonError(value$86._0)} / ${$debugJsonError(value$86._0)}\n`;
   }
-  const match$87 = $fromJson('[255,"x",true]', $json.tuple($json.u8, $json.string, $json.bool));
-  if (match$87.TAG === "Ok") {
-    out += `ok (${match$87._0[0]}, ${$debugStr(match$87._0[1])}, ${match$87._0[2]})\n`;
+  const value$87 = $fromJson('[255,"x",true]', $json.tuple($json.u8, $json.string, $json.bool));
+  if (value$87.TAG === "Ok") {
+    out += `ok (${value$87._0[0]}, ${$debugStr(value$87._0[1])}, ${value$87._0[2]})\n`;
   } else {
-    out += `err ${$displayJsonError(match$87._0)} / ${$debugJsonError(match$87._0)}\n`;
+    out += `err ${$displayJsonError(value$87._0)} / ${$debugJsonError(value$87._0)}\n`;
   }
-  const match$88 = $fromJson('[256,"x",true]', $json.tuple($json.u8, $json.string, $json.bool));
-  if (match$88.TAG === "Ok") {
-    out += `ok (${match$88._0[0]}, ${$debugStr(match$88._0[1])}, ${match$88._0[2]})\n`;
+  const value$88 = $fromJson('[256,"x",true]', $json.tuple($json.u8, $json.string, $json.bool));
+  if (value$88.TAG === "Ok") {
+    out += `ok (${value$88._0[0]}, ${$debugStr(value$88._0[1])}, ${value$88._0[2]})\n`;
   } else {
-    out += `err ${$displayJsonError(match$88._0)} / ${$debugJsonError(match$88._0)}\n`;
+    out += `err ${$displayJsonError(value$88._0)} / ${$debugJsonError(value$88._0)}\n`;
   }
-  const match$89 = $fromJson("[1]", $json.tuple($json.u8, $json.string, $json.bool));
-  if (match$89.TAG === "Ok") {
-    out += `ok (${match$89._0[0]}, ${$debugStr(match$89._0[1])}, ${match$89._0[2]})\n`;
+  const value$89 = $fromJson("[1]", $json.tuple($json.u8, $json.string, $json.bool));
+  if (value$89.TAG === "Ok") {
+    out += `ok (${value$89._0[0]}, ${$debugStr(value$89._0[1])}, ${value$89._0[2]})\n`;
   } else {
-    out += `err ${$displayJsonError(match$89._0)} / ${$debugJsonError(match$89._0)}\n`;
+    out += `err ${$displayJsonError(value$89._0)} / ${$debugJsonError(value$89._0)}\n`;
   }
-  const match$90 = $fromJson("[1,2,3]", $json.array(3, $json.u8));
-  if (match$90.TAG === "Ok") {
-    out += `ok [${match$90._0.map((item) => String(item)).join(", ")}]\n`;
+  const value$90 = $fromJson("[1,2,3]", $json.array(3, $json.u8));
+  if (value$90.TAG === "Ok") {
+    out += `ok [${value$90._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$90._0)} / ${$debugJsonError(match$90._0)}\n`;
+    out += `err ${$displayJsonError(value$90._0)} / ${$debugJsonError(value$90._0)}\n`;
   }
-  const match$91 = $fromJson("[1,2]", $json.array(3, $json.u8));
-  if (match$91.TAG === "Ok") {
-    out += `ok [${match$91._0.map((item) => String(item)).join(", ")}]\n`;
+  const value$91 = $fromJson("[1,2]", $json.array(3, $json.u8));
+  if (value$91.TAG === "Ok") {
+    out += `ok [${value$91._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$91._0)} / ${$debugJsonError(match$91._0)}\n`;
+    out += `err ${$displayJsonError(value$91._0)} / ${$debugJsonError(value$91._0)}\n`;
   }
-  const match$92 = $fromJson("1e400", $json.f64);
-  if (match$92.TAG === "Ok") {
-    out += `ok ${$debugF64(match$92._0)}\n`;
+  const value$92 = $fromJson("1e400", $json.f64);
+  if (value$92.TAG === "Ok") {
+    out += `ok ${$debugF64(value$92._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$92._0)} / ${$debugJsonError(match$92._0)}\n`;
+    out += `err ${$displayJsonError(value$92._0)} / ${$debugJsonError(value$92._0)}\n`;
   }
-  const match$93 = $fromJson("123456789012345678901234567890", $json.f64);
-  if (match$93.TAG === "Ok") {
-    out += `ok ${$debugF64(match$93._0)}\n`;
+  const value$93 = $fromJson("123456789012345678901234567890", $json.f64);
+  if (value$93.TAG === "Ok") {
+    out += `ok ${$debugF64(value$93._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$93._0)} / ${$debugJsonError(match$93._0)}\n`;
+    out += `err ${$displayJsonError(value$93._0)} / ${$debugJsonError(value$93._0)}\n`;
   }
-  const match$94 = $fromJson("0.1", $json.f64);
-  if (match$94.TAG === "Ok") {
-    out += `ok ${$debugF64(match$94._0)}\n`;
+  const value$94 = $fromJson("0.1", $json.f64);
+  if (value$94.TAG === "Ok") {
+    out += `ok ${$debugF64(value$94._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$94._0)} / ${$debugJsonError(match$94._0)}\n`;
+    out += `err ${$displayJsonError(value$94._0)} / ${$debugJsonError(value$94._0)}\n`;
   }
-  const match$95 = $fromJson("-0", $json.f64);
-  if (match$95.TAG === "Ok") {
-    out += `ok ${$debugF64(match$95._0)}\n`;
+  const value$95 = $fromJson("-0", $json.f64);
+  if (value$95.TAG === "Ok") {
+    out += `ok ${$debugF64(value$95._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$95._0)} / ${$debugJsonError(match$95._0)}\n`;
+    out += `err ${$displayJsonError(value$95._0)} / ${$debugJsonError(value$95._0)}\n`;
   }
-  const match$96 = $fromJson("1.7976931348623157e308", $json.f64);
-  if (match$96.TAG === "Ok") {
-    out += `ok ${$debugF64(match$96._0)}\n`;
+  const value$96 = $fromJson("1.7976931348623157e308", $json.f64);
+  if (value$96.TAG === "Ok") {
+    out += `ok ${$debugF64(value$96._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$96._0)} / ${$debugJsonError(match$96._0)}\n`;
+    out += `err ${$displayJsonError(value$96._0)} / ${$debugJsonError(value$96._0)}\n`;
   }
-  const match$97 = $fromJson("4.9e-324", $json.f64);
-  if (match$97.TAG === "Ok") {
-    out += `ok ${$debugF64(match$97._0)}\n`;
+  const value$97 = $fromJson("4.9e-324", $json.f64);
+  if (value$97.TAG === "Ok") {
+    out += `ok ${$debugF64(value$97._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$97._0)} / ${$debugJsonError(match$97._0)}\n`;
+    out += `err ${$displayJsonError(value$97._0)} / ${$debugJsonError(value$97._0)}\n`;
   }
-  const match$98 = $fromJson("2.2250738585072014e-308", $json.f64);
-  if (match$98.TAG === "Ok") {
-    out += `ok ${$debugF64(match$98._0)}\n`;
+  const value$98 = $fromJson("2.2250738585072014e-308", $json.f64);
+  if (value$98.TAG === "Ok") {
+    out += `ok ${$debugF64(value$98._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$98._0)} / ${$debugJsonError(match$98._0)}\n`;
+    out += `err ${$displayJsonError(value$98._0)} / ${$debugJsonError(value$98._0)}\n`;
   }
-  const match$99 = $fromJson("0.30000000000000004", $json.f64);
-  if (match$99.TAG === "Ok") {
-    out += `ok ${$debugF64(match$99._0)}\n`;
+  const value$99 = $fromJson("0.30000000000000004", $json.f64);
+  if (value$99.TAG === "Ok") {
+    out += `ok ${$debugF64(value$99._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$99._0)} / ${$debugJsonError(match$99._0)}\n`;
+    out += `err ${$displayJsonError(value$99._0)} / ${$debugJsonError(value$99._0)}\n`;
   }
-  const match$100 = $fromJson("1.5E+3", $json.f64);
-  if (match$100.TAG === "Ok") {
-    out += `ok ${$debugF64(match$100._0)}\n`;
+  const value$100 = $fromJson("1.5E+3", $json.f64);
+  if (value$100.TAG === "Ok") {
+    out += `ok ${$debugF64(value$100._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$100._0)} / ${$debugJsonError(match$100._0)}\n`;
+    out += `err ${$displayJsonError(value$100._0)} / ${$debugJsonError(value$100._0)}\n`;
   }
-  const match$101 = $fromJson("-1e-400", $json.f64);
-  if (match$101.TAG === "Ok") {
-    out += `ok ${$debugF64(match$101._0)}\n`;
+  const value$101 = $fromJson("-1e-400", $json.f64);
+  if (value$101.TAG === "Ok") {
+    out += `ok ${$debugF64(value$101._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$101._0)} / ${$debugJsonError(match$101._0)}\n`;
+    out += `err ${$displayJsonError(value$101._0)} / ${$debugJsonError(value$101._0)}\n`;
   }
-  const match$102 = $fromJson("1e-400", $json.f64);
-  if (match$102.TAG === "Ok") {
-    out += `ok ${$debugF64(match$102._0)}\n`;
+  const value$102 = $fromJson("1e-400", $json.f64);
+  if (value$102.TAG === "Ok") {
+    out += `ok ${$debugF64(value$102._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$102._0)} / ${$debugJsonError(match$102._0)}\n`;
+    out += `err ${$displayJsonError(value$102._0)} / ${$debugJsonError(value$102._0)}\n`;
   }
-  const match$103 = $fromJson("18446744073709551615", $json.f64);
-  if (match$103.TAG === "Ok") {
-    out += `ok ${$debugF64(match$103._0)}\n`;
+  const value$103 = $fromJson("18446744073709551615", $json.f64);
+  if (value$103.TAG === "Ok") {
+    out += `ok ${$debugF64(value$103._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$103._0)} / ${$debugJsonError(match$103._0)}\n`;
+    out += `err ${$displayJsonError(value$103._0)} / ${$debugJsonError(value$103._0)}\n`;
   }
-  const match$104 = $fromJson("18446744073709551616", $json.f64);
-  if (match$104.TAG === "Ok") {
-    out += `ok ${$debugF64(match$104._0)}\n`;
+  const value$104 = $fromJson("18446744073709551616", $json.f64);
+  if (value$104.TAG === "Ok") {
+    out += `ok ${$debugF64(value$104._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$104._0)} / ${$debugJsonError(match$104._0)}\n`;
+    out += `err ${$displayJsonError(value$104._0)} / ${$debugJsonError(value$104._0)}\n`;
   }
-  const match$105 = $fromJson("-9223372036854775808", $json.f64);
-  if (match$105.TAG === "Ok") {
-    out += `ok ${$debugF64(match$105._0)}\n`;
+  const value$105 = $fromJson("-9223372036854775808", $json.f64);
+  if (value$105.TAG === "Ok") {
+    out += `ok ${$debugF64(value$105._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$105._0)} / ${$debugJsonError(match$105._0)}\n`;
+    out += `err ${$displayJsonError(value$105._0)} / ${$debugJsonError(value$105._0)}\n`;
   }
-  const match$106 = $fromJson("-9223372036854775809", $json.f64);
-  if (match$106.TAG === "Ok") {
-    out += `ok ${$debugF64(match$106._0)}\n`;
+  const value$106 = $fromJson("-9223372036854775809", $json.f64);
+  if (value$106.TAG === "Ok") {
+    out += `ok ${$debugF64(value$106._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$106._0)} / ${$debugJsonError(match$106._0)}\n`;
+    out += `err ${$displayJsonError(value$106._0)} / ${$debugJsonError(value$106._0)}\n`;
   }
-  const match$107 = $fromJson("123.456e-2", $json.f64);
-  if (match$107.TAG === "Ok") {
-    out += `ok ${$debugF64(match$107._0)}\n`;
+  const value$107 = $fromJson("123.456e-2", $json.f64);
+  if (value$107.TAG === "Ok") {
+    out += `ok ${$debugF64(value$107._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$107._0)} / ${$debugJsonError(match$107._0)}\n`;
+    out += `err ${$displayJsonError(value$107._0)} / ${$debugJsonError(value$107._0)}\n`;
   }
-  const match$108 = $fromJson("1234567890123456789012.5", $json.f64);
-  if (match$108.TAG === "Ok") {
-    out += `ok ${$debugF64(match$108._0)}\n`;
+  const value$108 = $fromJson("1234567890123456789012.5", $json.f64);
+  if (value$108.TAG === "Ok") {
+    out += `ok ${$debugF64(value$108._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$108._0)} / ${$debugJsonError(match$108._0)}\n`;
+    out += `err ${$displayJsonError(value$108._0)} / ${$debugJsonError(value$108._0)}\n`;
   }
-  const match$109 = $fromJson("0.000001", $json.f64);
-  if (match$109.TAG === "Ok") {
-    out += `ok ${$debugF64(match$109._0)}\n`;
+  const value$109 = $fromJson("0.000001", $json.f64);
+  if (value$109.TAG === "Ok") {
+    out += `ok ${$debugF64(value$109._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$109._0)} / ${$debugJsonError(match$109._0)}\n`;
+    out += `err ${$displayJsonError(value$109._0)} / ${$debugJsonError(value$109._0)}\n`;
   }
-  const match$110 = $fromJson("9007199254740993", $json.f64);
-  if (match$110.TAG === "Ok") {
-    out += `ok ${$debugF64(match$110._0)}\n`;
+  const value$110 = $fromJson("9007199254740993", $json.f64);
+  if (value$110.TAG === "Ok") {
+    out += `ok ${$debugF64(value$110._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$110._0)} / ${$debugJsonError(match$110._0)}\n`;
+    out += `err ${$displayJsonError(value$110._0)} / ${$debugJsonError(value$110._0)}\n`;
   }
-  const match$111 = $fromJson("1e2147483648", $json.f64);
-  if (match$111.TAG === "Ok") {
-    out += `ok ${$debugF64(match$111._0)}\n`;
+  const value$111 = $fromJson("1e2147483648", $json.f64);
+  if (value$111.TAG === "Ok") {
+    out += `ok ${$debugF64(value$111._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$111._0)} / ${$debugJsonError(match$111._0)}\n`;
+    out += `err ${$displayJsonError(value$111._0)} / ${$debugJsonError(value$111._0)}\n`;
   }
-  const match$112 = $fromJson("0e99999999999", $json.f64);
-  if (match$112.TAG === "Ok") {
-    out += `ok ${$debugF64(match$112._0)}\n`;
+  const value$112 = $fromJson("0e99999999999", $json.f64);
+  if (value$112.TAG === "Ok") {
+    out += `ok ${$debugF64(value$112._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$112._0)} / ${$debugJsonError(match$112._0)}\n`;
+    out += `err ${$displayJsonError(value$112._0)} / ${$debugJsonError(value$112._0)}\n`;
   }
-  const match$113 = $fromJson('"é"', $json.char);
-  if (match$113.TAG === "Ok") {
-    out += `ok ${$debugStr(match$113._0, "'")}\n`;
+  const value$113 = $fromJson('"é"', $json.char);
+  if (value$113.TAG === "Ok") {
+    out += `ok ${$debugStr(value$113._0, "'")}\n`;
   } else {
-    out += `err ${$displayJsonError(match$113._0)} / ${$debugJsonError(match$113._0)}\n`;
+    out += `err ${$displayJsonError(value$113._0)} / ${$debugJsonError(value$113._0)}\n`;
   }
-  const match$114 = $fromJson('"ab"', $json.char);
-  if (match$114.TAG === "Ok") {
-    out += `ok ${$debugStr(match$114._0, "'")}\n`;
+  const value$114 = $fromJson('"ab"', $json.char);
+  if (value$114.TAG === "Ok") {
+    out += `ok ${$debugStr(value$114._0, "'")}\n`;
   } else {
-    out += `err ${$displayJsonError(match$114._0)} / ${$debugJsonError(match$114._0)}\n`;
+    out += `err ${$displayJsonError(value$114._0)} / ${$debugJsonError(value$114._0)}\n`;
   }
-  const match$115 = $fromJson('""', $json.char);
-  if (match$115.TAG === "Ok") {
-    out += `ok ${$debugStr(match$115._0, "'")}\n`;
+  const value$115 = $fromJson('""', $json.char);
+  if (value$115.TAG === "Ok") {
+    out += `ok ${$debugStr(value$115._0, "'")}\n`;
   } else {
-    out += `err ${$displayJsonError(match$115._0)} / ${$debugJsonError(match$115._0)}\n`;
+    out += `err ${$displayJsonError(value$115._0)} / ${$debugJsonError(value$115._0)}\n`;
   }
-  const match$116 = $fromJson("-128", $json.i8);
-  if (match$116.TAG === "Ok") {
-    out += `ok ${match$116._0}\n`;
+  const value$116 = $fromJson("-128", $json.i8);
+  if (value$116.TAG === "Ok") {
+    out += `ok ${value$116._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$116._0)} / ${$debugJsonError(match$116._0)}\n`;
+    out += `err ${$displayJsonError(value$116._0)} / ${$debugJsonError(value$116._0)}\n`;
   }
-  const match$117 = $fromJson("-129", $json.i8);
-  if (match$117.TAG === "Ok") {
-    out += `ok ${match$117._0}\n`;
+  const value$117 = $fromJson("-129", $json.i8);
+  if (value$117.TAG === "Ok") {
+    out += `ok ${value$117._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$117._0)} / ${$debugJsonError(match$117._0)}\n`;
+    out += `err ${$displayJsonError(value$117._0)} / ${$debugJsonError(value$117._0)}\n`;
   }
-  const match$118 = $fromJson("128", $json.i8);
-  if (match$118.TAG === "Ok") {
-    out += `ok ${match$118._0}\n`;
+  const value$118 = $fromJson("128", $json.i8);
+  if (value$118.TAG === "Ok") {
+    out += `ok ${value$118._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$118._0)} / ${$debugJsonError(match$118._0)}\n`;
+    out += `err ${$displayJsonError(value$118._0)} / ${$debugJsonError(value$118._0)}\n`;
   }
-  const match$119 = $fromJson("1.0", $json.i8);
-  if (match$119.TAG === "Ok") {
-    out += `ok ${match$119._0}\n`;
+  const value$119 = $fromJson("1.0", $json.i8);
+  if (value$119.TAG === "Ok") {
+    out += `ok ${value$119._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$119._0)} / ${$debugJsonError(match$119._0)}\n`;
+    out += `err ${$displayJsonError(value$119._0)} / ${$debugJsonError(value$119._0)}\n`;
   }
-  const match$120 = $fromJson("5", $json.string);
-  if (match$120.TAG === "Ok") {
-    out += `ok ${$debugStr(match$120._0)}\n`;
+  const value$120 = $fromJson("5", $json.string);
+  if (value$120.TAG === "Ok") {
+    out += `ok ${$debugStr(value$120._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$120._0)} / ${$debugJsonError(match$120._0)}\n`;
+    out += `err ${$displayJsonError(value$120._0)} / ${$debugJsonError(value$120._0)}\n`;
   }
-  const match$121 = $fromJson("true", $json.string);
-  if (match$121.TAG === "Ok") {
-    out += `ok ${$debugStr(match$121._0)}\n`;
+  const value$121 = $fromJson("true", $json.string);
+  if (value$121.TAG === "Ok") {
+    out += `ok ${$debugStr(value$121._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$121._0)} / ${$debugJsonError(match$121._0)}\n`;
+    out += `err ${$displayJsonError(value$121._0)} / ${$debugJsonError(value$121._0)}\n`;
   }
-  const match$122 = $fromJson("null", $json.string);
-  if (match$122.TAG === "Ok") {
-    out += `ok ${$debugStr(match$122._0)}\n`;
+  const value$122 = $fromJson("null", $json.string);
+  if (value$122.TAG === "Ok") {
+    out += `ok ${$debugStr(value$122._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$122._0)} / ${$debugJsonError(match$122._0)}\n`;
+    out += `err ${$displayJsonError(value$122._0)} / ${$debugJsonError(value$122._0)}\n`;
   }
-  const match$123 = $fromJson("[]", $json.string);
-  if (match$123.TAG === "Ok") {
-    out += `ok ${$debugStr(match$123._0)}\n`;
+  const value$123 = $fromJson("[]", $json.string);
+  if (value$123.TAG === "Ok") {
+    out += `ok ${$debugStr(value$123._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$123._0)} / ${$debugJsonError(match$123._0)}\n`;
+    out += `err ${$displayJsonError(value$123._0)} / ${$debugJsonError(value$123._0)}\n`;
   }
-  const match$124 = $fromJson("{}", $json.string);
-  if (match$124.TAG === "Ok") {
-    out += `ok ${$debugStr(match$124._0)}\n`;
+  const value$124 = $fromJson("{}", $json.string);
+  if (value$124.TAG === "Ok") {
+    out += `ok ${$debugStr(value$124._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$124._0)} / ${$debugJsonError(match$124._0)}\n`;
+    out += `err ${$displayJsonError(value$124._0)} / ${$debugJsonError(value$124._0)}\n`;
   }
-  const match$125 = $fromJson('"\\/\\b\\f\\r\\t"', $json.string);
-  if (match$125.TAG === "Ok") {
-    out += `ok ${$debugStr(match$125._0)}\n`;
+  const value$125 = $fromJson('"\\/\\b\\f\\r\\t"', $json.string);
+  if (value$125.TAG === "Ok") {
+    out += `ok ${$debugStr(value$125._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$125._0)} / ${$debugJsonError(match$125._0)}\n`;
+    out += `err ${$displayJsonError(value$125._0)} / ${$debugJsonError(value$125._0)}\n`;
   }
-  const match$126 = $fromJson("true", $json.bool);
-  if (match$126.TAG === "Ok") {
-    out += `ok ${match$126._0}\n`;
+  const value$126 = $fromJson("true", $json.bool);
+  if (value$126.TAG === "Ok") {
+    out += `ok ${value$126._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$126._0)} / ${$debugJsonError(match$126._0)}\n`;
+    out += `err ${$displayJsonError(value$126._0)} / ${$debugJsonError(value$126._0)}\n`;
   }
-  const match$127 = $fromJson("false", $json.bool);
-  if (match$127.TAG === "Ok") {
-    out += `ok ${match$127._0}\n`;
+  const value$127 = $fromJson("false", $json.bool);
+  if (value$127.TAG === "Ok") {
+    out += `ok ${value$127._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$127._0)} / ${$debugJsonError(match$127._0)}\n`;
+    out += `err ${$displayJsonError(value$127._0)} / ${$debugJsonError(value$127._0)}\n`;
   }
-  const match$128 = $fromJson("tru", $json.bool);
-  if (match$128.TAG === "Ok") {
-    out += `ok ${match$128._0}\n`;
+  const value$128 = $fromJson("tru", $json.bool);
+  if (value$128.TAG === "Ok") {
+    out += `ok ${value$128._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$128._0)} / ${$debugJsonError(match$128._0)}\n`;
+    out += `err ${$displayJsonError(value$128._0)} / ${$debugJsonError(value$128._0)}\n`;
   }
-  const match$129 = $fromJson("nul", $json.bool);
-  if (match$129.TAG === "Ok") {
-    out += `ok ${match$129._0}\n`;
+  const value$129 = $fromJson("nul", $json.bool);
+  if (value$129.TAG === "Ok") {
+    out += `ok ${value$129._0}\n`;
   } else {
-    out += `err ${$displayJsonError(match$129._0)} / ${$debugJsonError(match$129._0)}\n`;
+    out += `err ${$displayJsonError(value$129._0)} / ${$debugJsonError(value$129._0)}\n`;
   }
-  const match$130 = $fromJson("{}", configDeserialize_deserialize);
-  if (match$130.TAG === "Ok") {
-    out += `ok ${configDebug_fmt(match$130._0)}\n`;
+  const value$130 = $fromJson("{}", configDeserialize_deserialize);
+  if (value$130.TAG === "Ok") {
+    out += `ok ${configDebug_fmt(value$130._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$130._0)} / ${$debugJsonError(match$130._0)}\n`;
+    out += `err ${$displayJsonError(value$130._0)} / ${$debugJsonError(value$130._0)}\n`;
   }
-  const match$131 = $fromJson('{"name":"x"}', configDeserialize_deserialize);
-  if (match$131.TAG === "Ok") {
-    out += `ok ${configDebug_fmt(match$131._0)}\n`;
+  const value$131 = $fromJson('{"name":"x"}', configDeserialize_deserialize);
+  if (value$131.TAG === "Ok") {
+    out += `ok ${configDebug_fmt(value$131._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$131._0)} / ${$debugJsonError(match$131._0)}\n`;
+    out += `err ${$displayJsonError(value$131._0)} / ${$debugJsonError(value$131._0)}\n`;
   }
-  const match$132 = $fromJson(
+  const value$132 = $fromJson(
     '{"level":1,"verbose":false,"name":"y"}',
     configDeserialize_deserialize,
   );
-  if (match$132.TAG === "Ok") {
-    out += `ok ${configDebug_fmt(match$132._0)}\n`;
+  if (value$132.TAG === "Ok") {
+    out += `ok ${configDebug_fmt(value$132._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$132._0)} / ${$debugJsonError(match$132._0)}\n`;
+    out += `err ${$displayJsonError(value$132._0)} / ${$debugJsonError(value$132._0)}\n`;
   }
-  const match$133 = $fromJson("[]", configDeserialize_deserialize);
-  if (match$133.TAG === "Ok") {
-    out += `ok ${configDebug_fmt(match$133._0)}\n`;
+  const value$133 = $fromJson("[]", configDeserialize_deserialize);
+  if (value$133.TAG === "Ok") {
+    out += `ok ${configDebug_fmt(value$133._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$133._0)} / ${$debugJsonError(match$133._0)}\n`;
+    out += `err ${$displayJsonError(value$133._0)} / ${$debugJsonError(value$133._0)}\n`;
   }
-  const match$134 = $fromJson('["z"]', configDeserialize_deserialize);
-  if (match$134.TAG === "Ok") {
-    out += `ok ${configDebug_fmt(match$134._0)}\n`;
+  const value$134 = $fromJson('["z"]', configDeserialize_deserialize);
+  if (value$134.TAG === "Ok") {
+    out += `ok ${configDebug_fmt(value$134._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$134._0)} / ${$debugJsonError(match$134._0)}\n`;
+    out += `err ${$displayJsonError(value$134._0)} / ${$debugJsonError(value$134._0)}\n`;
   }
-  const match$135 = $fromJson("{}", looseDeserialize_deserialize);
-  if (match$135.TAG === "Ok") {
-    out += `ok ${looseDebug_fmt(match$135._0)}\n`;
+  const value$135 = $fromJson("{}", looseDeserialize_deserialize);
+  if (value$135.TAG === "Ok") {
+    out += `ok ${looseDebug_fmt(value$135._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$135._0)} / ${$debugJsonError(match$135._0)}\n`;
+    out += `err ${$displayJsonError(value$135._0)} / ${$debugJsonError(value$135._0)}\n`;
   }
-  const match$136 = $fromJson('{"c":1,"d":[1]}', looseDeserialize_deserialize);
-  if (match$136.TAG === "Ok") {
-    out += `ok ${looseDebug_fmt(match$136._0)}\n`;
+  const value$136 = $fromJson('{"c":1,"d":[1]}', looseDeserialize_deserialize);
+  if (value$136.TAG === "Ok") {
+    out += `ok ${looseDebug_fmt(value$136._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$136._0)} / ${$debugJsonError(match$136._0)}\n`;
+    out += `err ${$displayJsonError(value$136._0)} / ${$debugJsonError(value$136._0)}\n`;
   }
-  const match$137 = $fromJson("[5]", looseDeserialize_deserialize);
-  if (match$137.TAG === "Ok") {
-    out += `ok ${looseDebug_fmt(match$137._0)}\n`;
+  const value$137 = $fromJson("[5]", looseDeserialize_deserialize);
+  if (value$137.TAG === "Ok") {
+    out += `ok ${looseDebug_fmt(value$137._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$137._0)} / ${$debugJsonError(match$137._0)}\n`;
+    out += `err ${$displayJsonError(value$137._0)} / ${$debugJsonError(value$137._0)}\n`;
   }
-  const match$138 = $fromJson('[5,"b",9]', looseDeserialize_deserialize);
-  if (match$138.TAG === "Ok") {
-    out += `ok ${looseDebug_fmt(match$138._0)}\n`;
+  const value$138 = $fromJson('[5,"b",9]', looseDeserialize_deserialize);
+  if (value$138.TAG === "Ok") {
+    out += `ok ${looseDebug_fmt(value$138._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$138._0)} / ${$debugJsonError(match$138._0)}\n`;
+    out += `err ${$displayJsonError(value$138._0)} / ${$debugJsonError(value$138._0)}\n`;
   }
-  const match$139 = $fromJson('[5,"b",9,1]', looseDeserialize_deserialize);
-  if (match$139.TAG === "Ok") {
-    out += `ok ${looseDebug_fmt(match$139._0)}\n`;
+  const value$139 = $fromJson('[5,"b",9,1]', looseDeserialize_deserialize);
+  if (value$139.TAG === "Ok") {
+    out += `ok ${looseDebug_fmt(value$139._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$139._0)} / ${$debugJsonError(match$139._0)}\n`;
+    out += `err ${$displayJsonError(value$139._0)} / ${$debugJsonError(value$139._0)}\n`;
   }
-  const match$140 = $fromJson('"started"', eventDeserialize_deserialize);
-  if (match$140.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$140._0)}\n`;
+  const value$140 = $fromJson('"started"', eventDeserialize_deserialize);
+  if (value$140.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$140._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$140._0)} / ${$debugJsonError(match$140._0)}\n`;
+    out += `err ${$displayJsonError(value$140._0)} / ${$debugJsonError(value$140._0)}\n`;
   }
-  const match$141 = $fromJson('"begin"', eventDeserialize_deserialize);
-  if (match$141.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$141._0)}\n`;
+  const value$141 = $fromJson('"begin"', eventDeserialize_deserialize);
+  if (value$141.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$141._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$141._0)} / ${$debugJsonError(match$141._0)}\n`;
+    out += `err ${$displayJsonError(value$141._0)} / ${$debugJsonError(value$141._0)}\n`;
   }
-  const match$142 = $fromJson('"Aa"', eventDeserialize_deserialize);
-  if (match$142.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$142._0)}\n`;
+  const value$142 = $fromJson('"Aa"', eventDeserialize_deserialize);
+  if (value$142.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$142._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$142._0)} / ${$debugJsonError(match$142._0)}\n`;
+    out += `err ${$displayJsonError(value$142._0)} / ${$debugJsonError(value$142._0)}\n`;
   }
-  const match$143 = $fromJson('"hidden"', eventDeserialize_deserialize);
-  if (match$143.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$143._0)}\n`;
+  const value$143 = $fromJson('"hidden"', eventDeserialize_deserialize);
+  if (value$143.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$143._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$143._0)} / ${$debugJsonError(match$143._0)}\n`;
+    out += `err ${$displayJsonError(value$143._0)} / ${$debugJsonError(value$143._0)}\n`;
   }
-  const match$144 = $fromJson('"Hidden"', eventDeserialize_deserialize);
-  if (match$144.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$144._0)}\n`;
+  const value$144 = $fromJson('"Hidden"', eventDeserialize_deserialize);
+  if (value$144.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$144._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$144._0)} / ${$debugJsonError(match$144._0)}\n`;
+    out += `err ${$displayJsonError(value$144._0)} / ${$debugJsonError(value$144._0)}\n`;
   }
-  const match$145 = $fromJson('"nope"', eventDeserialize_deserialize);
-  if (match$145.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$145._0)}\n`;
+  const value$145 = $fromJson('"nope"', eventDeserialize_deserialize);
+  if (value$145.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$145._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$145._0)} / ${$debugJsonError(match$145._0)}\n`;
+    out += `err ${$displayJsonError(value$145._0)} / ${$debugJsonError(value$145._0)}\n`;
   }
-  const match$146 = $fromJson('{"moved":{"deltaX":1,"deltaY":-1}}', eventDeserialize_deserialize);
-  if (match$146.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$146._0)}\n`;
+  const value$146 = $fromJson('{"moved":{"deltaX":1,"deltaY":-1}}', eventDeserialize_deserialize);
+  if (value$146.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$146._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$146._0)} / ${$debugJsonError(match$146._0)}\n`;
+    out += `err ${$displayJsonError(value$146._0)} / ${$debugJsonError(value$146._0)}\n`;
   }
-  const match$147 = $fromJson('{"moved":{"deltaX":1,"delta_y":-1}}', eventDeserialize_deserialize);
-  if (match$147.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$147._0)}\n`;
+  const value$147 = $fromJson('{"moved":{"deltaX":1,"delta_y":-1}}', eventDeserialize_deserialize);
+  if (value$147.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$147._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$147._0)} / ${$debugJsonError(match$147._0)}\n`;
+    out += `err ${$displayJsonError(value$147._0)} / ${$debugJsonError(value$147._0)}\n`;
   }
-  const match$148 = $fromJson('{"renamed":{"OLD_NAME":"a"}}', eventDeserialize_deserialize);
-  if (match$148.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$148._0)}\n`;
+  const value$148 = $fromJson('{"renamed":{"OLD_NAME":"a"}}', eventDeserialize_deserialize);
+  if (value$148.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$148._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$148._0)} / ${$debugJsonError(match$148._0)}\n`;
+    out += `err ${$displayJsonError(value$148._0)} / ${$debugJsonError(value$148._0)}\n`;
   }
-  const match$149 = $fromJson('{"renamed":{"oldName":"a"}}', eventDeserialize_deserialize);
-  if (match$149.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$149._0)}\n`;
+  const value$149 = $fromJson('{"renamed":{"oldName":"a"}}', eventDeserialize_deserialize);
+  if (value$149.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$149._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$149._0)} / ${$debugJsonError(match$149._0)}\n`;
+    out += `err ${$displayJsonError(value$149._0)} / ${$debugJsonError(value$149._0)}\n`;
   }
-  const match$150 = $fromJson('{"moved":[1,2]}', eventDeserialize_deserialize);
-  if (match$150.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$150._0)}\n`;
+  const value$150 = $fromJson('{"moved":[1,2]}', eventDeserialize_deserialize);
+  if (value$150.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$150._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$150._0)} / ${$debugJsonError(match$150._0)}\n`;
+    out += `err ${$displayJsonError(value$150._0)} / ${$debugJsonError(value$150._0)}\n`;
   }
-  const match$151 = $fromJson('{"moved":[1]}', eventDeserialize_deserialize);
-  if (match$151.TAG === "Ok") {
-    out += `ok ${eventDebug_fmt(match$151._0)}\n`;
+  const value$151 = $fromJson('{"moved":[1]}', eventDeserialize_deserialize);
+  if (value$151.TAG === "Ok") {
+    out += `ok ${eventDebug_fmt(value$151._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$151._0)} / ${$debugJsonError(match$151._0)}\n`;
+    out += `err ${$displayJsonError(value$151._0)} / ${$debugJsonError(value$151._0)}\n`;
   }
-  const match$152 = $fromJson("[1,2]", ptDeserialize_deserialize);
-  if (match$152.TAG === "Ok") {
-    out += `ok ${ptDebug_fmt(match$152._0)}\n`;
+  const value$152 = $fromJson("[1,2]", ptDeserialize_deserialize);
+  if (value$152.TAG === "Ok") {
+    out += `ok ${ptDebug_fmt(value$152._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$152._0)} / ${$debugJsonError(match$152._0)}\n`;
+    out += `err ${$displayJsonError(value$152._0)} / ${$debugJsonError(value$152._0)}\n`;
   }
-  const match$153 = $fromJson("[1]", ptDeserialize_deserialize);
-  if (match$153.TAG === "Ok") {
-    out += `ok ${ptDebug_fmt(match$153._0)}\n`;
+  const value$153 = $fromJson("[1]", ptDeserialize_deserialize);
+  if (value$153.TAG === "Ok") {
+    out += `ok ${ptDebug_fmt(value$153._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$153._0)} / ${$debugJsonError(match$153._0)}\n`;
+    out += `err ${$displayJsonError(value$153._0)} / ${$debugJsonError(value$153._0)}\n`;
   }
-  const match$154 = $fromJson("{}", ptDeserialize_deserialize);
-  if (match$154.TAG === "Ok") {
-    out += `ok ${ptDebug_fmt(match$154._0)}\n`;
+  const value$154 = $fromJson("{}", ptDeserialize_deserialize);
+  if (value$154.TAG === "Ok") {
+    out += `ok ${ptDebug_fmt(value$154._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$154._0)} / ${$debugJsonError(match$154._0)}\n`;
+    out += `err ${$displayJsonError(value$154._0)} / ${$debugJsonError(value$154._0)}\n`;
   }
-  const match$155 = $fromJson("3", ptDeserialize_deserialize);
-  if (match$155.TAG === "Ok") {
-    out += `ok ${ptDebug_fmt(match$155._0)}\n`;
+  const value$155 = $fromJson("3", ptDeserialize_deserialize);
+  if (value$155.TAG === "Ok") {
+    out += `ok ${ptDebug_fmt(value$155._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$155._0)} / ${$debugJsonError(match$155._0)}\n`;
+    out += `err ${$displayJsonError(value$155._0)} / ${$debugJsonError(value$155._0)}\n`;
   }
-  const match$156 = $fromJson('{"in":1,"other":2}', namedDeserialize_deserialize);
-  if (match$156.TAG === "Ok") {
-    out += `ok ${namedDebug_fmt(match$156._0)}\n`;
+  const value$156 = $fromJson('{"in":1,"other":2}', namedDeserialize_deserialize);
+  if (value$156.TAG === "Ok") {
+    out += `ok ${namedDebug_fmt(value$156._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$156._0)} / ${$debugJsonError(match$156._0)}\n`;
+    out += `err ${$displayJsonError(value$156._0)} / ${$debugJsonError(value$156._0)}\n`;
   }
-  const match$157 = $fromJson('{"out":1,"other":2}', namedDeserialize_deserialize);
-  if (match$157.TAG === "Ok") {
-    out += `ok ${namedDebug_fmt(match$157._0)}\n`;
+  const value$157 = $fromJson('{"out":1,"other":2}', namedDeserialize_deserialize);
+  if (value$157.TAG === "Ok") {
+    out += `ok ${namedDebug_fmt(value$157._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$157._0)} / ${$debugJsonError(match$157._0)}\n`;
+    out += `err ${$displayJsonError(value$157._0)} / ${$debugJsonError(value$157._0)}\n`;
   }
-  const match$158 = $fromJson('{"in":1,"only_out":2}', namedDeserialize_deserialize);
-  if (match$158.TAG === "Ok") {
-    out += `ok ${namedDebug_fmt(match$158._0)}\n`;
+  const value$158 = $fromJson('{"in":1,"only_out":2}', namedDeserialize_deserialize);
+  if (value$158.TAG === "Ok") {
+    out += `ok ${namedDebug_fmt(value$158._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$158._0)} / ${$debugJsonError(match$158._0)}\n`;
+    out += `err ${$displayJsonError(value$158._0)} / ${$debugJsonError(value$158._0)}\n`;
   }
-  const match$159 = $fromJson("{}", nothingDeserialize_deserialize);
-  if (match$159.TAG === "Ok") {
-    out += `ok ${nothingDebug_fmt(match$159._0)}\n`;
+  const value$159 = $fromJson("{}", nothingDeserialize_deserialize);
+  if (value$159.TAG === "Ok") {
+    out += `ok ${nothingDebug_fmt(value$159._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$159._0)} / ${$debugJsonError(match$159._0)}\n`;
+    out += `err ${$displayJsonError(value$159._0)} / ${$debugJsonError(value$159._0)}\n`;
   }
-  const match$160 = $fromJson('{"x":1}', nothingDeserialize_deserialize);
-  if (match$160.TAG === "Ok") {
-    out += `ok ${nothingDebug_fmt(match$160._0)}\n`;
+  const value$160 = $fromJson('{"x":1}', nothingDeserialize_deserialize);
+  if (value$160.TAG === "Ok") {
+    out += `ok ${nothingDebug_fmt(value$160._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$160._0)} / ${$debugJsonError(match$160._0)}\n`;
+    out += `err ${$displayJsonError(value$160._0)} / ${$debugJsonError(value$160._0)}\n`;
   }
-  const match$161 = $fromJson('"a"', neverDeserialize_deserialize);
-  if (match$161.TAG === "Ok") {
+  const value$161 = $fromJson('"a"', neverDeserialize_deserialize);
+  if (value$161.TAG === "Ok") {
     out += "ok \n";
   } else {
-    out += `err ${$displayJsonError(match$161._0)} / ${$debugJsonError(match$161._0)}\n`;
+    out += `err ${$displayJsonError(value$161._0)} / ${$debugJsonError(value$161._0)}\n`;
   }
-  const match$162 = $fromJson("{}", neverDeserialize_deserialize);
-  if (match$162.TAG === "Ok") {
+  const value$162 = $fromJson("{}", neverDeserialize_deserialize);
+  if (value$162.TAG === "Ok") {
     out += "ok \n";
   } else {
-    out += `err ${$displayJsonError(match$162._0)} / ${$debugJsonError(match$162._0)}\n`;
+    out += `err ${$displayJsonError(value$162._0)} / ${$debugJsonError(value$162._0)}\n`;
   }
-  const match$163 = $fromJson(
+  const value$163 = $fromJson(
     '{"value":1,"children":[{"value":2,"children":[]}]}',
     treeDeserialize_deserialize,
   );
-  if (match$163.TAG === "Ok") {
-    out += `ok ${treeDebug_fmt(match$163._0)}\n`;
+  if (value$163.TAG === "Ok") {
+    out += `ok ${treeDebug_fmt(value$163._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$163._0)} / ${$debugJsonError(match$163._0)}\n`;
+    out += `err ${$displayJsonError(value$163._0)} / ${$debugJsonError(value$163._0)}\n`;
   }
   let deep = "";
   for (let i = 0; i < 130; i++) {
     deep += '{"value":0,"children":[';
   }
-  const match$164 = $fromJson(deep, treeDeserialize_deserialize);
-  if (match$164.TAG === "Ok") {
-    out += `ok ${treeDebug_fmt(match$164._0)}\n`;
+  const value$164 = $fromJson(deep, treeDeserialize_deserialize);
+  if (value$164.TAG === "Ok") {
+    out += `ok ${treeDebug_fmt(value$164._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$164._0)} / ${$debugJsonError(match$164._0)}\n`;
+    out += `err ${$displayJsonError(value$164._0)} / ${$debugJsonError(value$164._0)}\n`;
   }
   let ignored = '{"value":0,"children":[],"skip":';
   for (let i = 0; i < 200; i++) {
@@ -1671,658 +1671,658 @@ export function report() {
     ignored += "]";
   }
   ignored += "}";
-  const match$165 = $fromJson(ignored, treeDeserialize_deserialize);
-  if (match$165.TAG === "Ok") {
-    out += `ok ${treeDebug_fmt(match$165._0)}\n`;
+  const value$165 = $fromJson(ignored, treeDeserialize_deserialize);
+  if (value$165.TAG === "Ok") {
+    out += `ok ${treeDebug_fmt(value$165._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$165._0)} / ${$debugJsonError(match$165._0)}\n`;
+    out += `err ${$displayJsonError(value$165._0)} / ${$debugJsonError(value$165._0)}\n`;
   }
-  const match$166 = $fromJson(
+  const value$166 = $fromJson(
     '{"boxed":5,"shared":"s","queue":[-1,2],"set":["b","a","b"],"by_char":{"x":1},"by_int":{"-3":1.5},"nested":[null,[1,2]]}',
     holderDeserialize_deserialize,
   );
-  if (match$166.TAG === "Ok") {
-    out += `ok ${holderDebug_fmt(match$166._0)}\n`;
+  if (value$166.TAG === "Ok") {
+    out += `ok ${holderDebug_fmt(value$166._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$166._0)} / ${$debugJsonError(match$166._0)}\n`;
+    out += `err ${$displayJsonError(value$166._0)} / ${$debugJsonError(value$166._0)}\n`;
   }
-  const match$167 = $fromJson(
+  const value$167 = $fromJson(
     '{"boxed":5,"shared":"s","queue":[],"set":[],"by_char":{"xy":1},"by_int":{},"nested":null}',
     holderDeserialize_deserialize,
   );
-  if (match$167.TAG === "Ok") {
-    out += `ok ${holderDebug_fmt(match$167._0)}\n`;
+  if (value$167.TAG === "Ok") {
+    out += `ok ${holderDebug_fmt(value$167._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$167._0)} / ${$debugJsonError(match$167._0)}\n`;
+    out += `err ${$displayJsonError(value$167._0)} / ${$debugJsonError(value$167._0)}\n`;
   }
-  const match$168 = $fromJson(
+  const value$168 = $fromJson(
     '{"boxed":5,"shared":"s","queue":[],"set":[],"by_char":{},"by_int":{"1.5":1},"nested":null}',
     holderDeserialize_deserialize,
   );
-  if (match$168.TAG === "Ok") {
-    out += `ok ${holderDebug_fmt(match$168._0)}\n`;
+  if (value$168.TAG === "Ok") {
+    out += `ok ${holderDebug_fmt(value$168._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$168._0)} / ${$debugJsonError(match$168._0)}\n`;
+    out += `err ${$displayJsonError(value$168._0)} / ${$debugJsonError(value$168._0)}\n`;
   }
-  const match$169 = $fromJson(
+  const value$169 = $fromJson(
     '{"boxed":5,"shared":"s","queue":[],"set":[],"by_char":{},"by_int":{},"nested":[[1]]}',
     holderDeserialize_deserialize,
   );
-  if (match$169.TAG === "Ok") {
-    out += `ok ${holderDebug_fmt(match$169._0)}\n`;
+  if (value$169.TAG === "Ok") {
+    out += `ok ${holderDebug_fmt(value$169._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$169._0)} / ${$debugJsonError(match$169._0)}\n`;
+    out += `err ${$displayJsonError(value$169._0)} / ${$debugJsonError(value$169._0)}\n`;
   }
   const text = "[1, 2]";
-  const match$170 = $fromJson(text, ptDeserialize_deserialize);
-  if (match$170.TAG === "Ok") {
-    out += `ok ${ptDebug_fmt(match$170._0)}\n`;
+  const value$170 = $fromJson(text, ptDeserialize_deserialize);
+  if (value$170.TAG === "Ok") {
+    out += `ok ${ptDebug_fmt(value$170._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$170._0)} / ${$debugJsonError(match$170._0)}\n`;
+    out += `err ${$displayJsonError(value$170._0)} / ${$debugJsonError(value$170._0)}\n`;
   }
-  const match$171 = $fromJson("[1,\n2,\n  x]", $json.vec($json.u32));
-  if (match$171.TAG === "Ok") {
-    out += `ok [${match$171._0.map((item) => String(item)).join(", ")}]\n`;
+  const value$171 = $fromJson("[1,\n2,\n  x]", $json.vec($json.u32));
+  if (value$171.TAG === "Ok") {
+    out += `ok [${value$171._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$171._0)} / ${$debugJsonError(match$171._0)}\n`;
+    out += `err ${$displayJsonError(value$171._0)} / ${$debugJsonError(value$171._0)}\n`;
   }
-  const match$172 = $fromJson("[\r\n1	,2  ]", $json.vec($json.u32));
-  if (match$172.TAG === "Ok") {
-    out += `ok [${match$172._0.map((item) => String(item)).join(", ")}]\n`;
+  const value$172 = $fromJson("[\r\n1	,2  ]", $json.vec($json.u32));
+  if (value$172.TAG === "Ok") {
+    out += `ok [${value$172._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$172._0)} / ${$debugJsonError(match$172._0)}\n`;
+    out += `err ${$displayJsonError(value$172._0)} / ${$debugJsonError(value$172._0)}\n`;
   }
-  const match$173 = $fromJson("\n\n  [1,2", $json.vec($json.u32));
-  if (match$173.TAG === "Ok") {
-    out += `ok [${match$173._0.map((item) => String(item)).join(", ")}]\n`;
+  const value$173 = $fromJson("\n\n  [1,2", $json.vec($json.u32));
+  if (value$173.TAG === "Ok") {
+    out += `ok [${value$173._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$173._0)} / ${$debugJsonError(match$173._0)}\n`;
+    out += `err ${$displayJsonError(value$173._0)} / ${$debugJsonError(value$173._0)}\n`;
   }
-  const match$174 = $fromJson("[1]\n\n  ,", $json.vec($json.u32));
-  if (match$174.TAG === "Ok") {
-    out += `ok [${match$174._0.map((item) => String(item)).join(", ")}]\n`;
+  const value$174 = $fromJson("[1]\n\n  ,", $json.vec($json.u32));
+  if (value$174.TAG === "Ok") {
+    out += `ok [${value$174._0.map((item) => String(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$174._0)} / ${$debugJsonError(match$174._0)}\n`;
+    out += `err ${$displayJsonError(value$174._0)} / ${$debugJsonError(value$174._0)}\n`;
   }
-  const match$175 = $fromJson('{"type":"started"}', updateDeserialize_deserialize);
-  if (match$175.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$175._0)}\n`;
+  const value$175 = $fromJson('{"type":"started"}', updateDeserialize_deserialize);
+  if (value$175.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$175._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$175._0)} / ${$debugJsonError(match$175._0)}\n`;
+    out += `err ${$displayJsonError(value$175._0)} / ${$debugJsonError(value$175._0)}\n`;
   }
-  const match$176 = $fromJson('{"type":"started","extra":1}', updateDeserialize_deserialize);
-  if (match$176.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$176._0)}\n`;
+  const value$176 = $fromJson('{"type":"started","extra":1}', updateDeserialize_deserialize);
+  if (value$176.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$176._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$176._0)} / ${$debugJsonError(match$176._0)}\n`;
+    out += `err ${$displayJsonError(value$176._0)} / ${$debugJsonError(value$176._0)}\n`;
   }
-  const match$177 = $fromJson('{"extra":[1,{}],"type":"started"}', updateDeserialize_deserialize);
-  if (match$177.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$177._0)}\n`;
+  const value$177 = $fromJson('{"extra":[1,{}],"type":"started"}', updateDeserialize_deserialize);
+  if (value$177.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$177._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$177._0)} / ${$debugJsonError(match$177._0)}\n`;
+    out += `err ${$displayJsonError(value$177._0)} / ${$debugJsonError(value$177._0)}\n`;
   }
-  const match$178 = $fromJson('{"type":"moved","dx":1,"dy":2}', updateDeserialize_deserialize);
-  if (match$178.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$178._0)}\n`;
+  const value$178 = $fromJson('{"type":"moved","dx":1,"dy":2}', updateDeserialize_deserialize);
+  if (value$178.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$178._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$178._0)} / ${$debugJsonError(match$178._0)}\n`;
+    out += `err ${$displayJsonError(value$178._0)} / ${$debugJsonError(value$178._0)}\n`;
   }
-  const match$179 = $fromJson('{"dx":1,"type":"moved","dy":2}', updateDeserialize_deserialize);
-  if (match$179.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$179._0)}\n`;
+  const value$179 = $fromJson('{"dx":1,"type":"moved","dy":2}', updateDeserialize_deserialize);
+  if (value$179.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$179._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$179._0)} / ${$debugJsonError(match$179._0)}\n`;
+    out += `err ${$displayJsonError(value$179._0)} / ${$debugJsonError(value$179._0)}\n`;
   }
-  const match$180 = $fromJson('{"type":"moved","dx":1}', updateDeserialize_deserialize);
-  if (match$180.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$180._0)}\n`;
+  const value$180 = $fromJson('{"type":"moved","dx":1}', updateDeserialize_deserialize);
+  if (value$180.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$180._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$180._0)} / ${$debugJsonError(match$180._0)}\n`;
+    out += `err ${$displayJsonError(value$180._0)} / ${$debugJsonError(value$180._0)}\n`;
   }
-  const match$181 = $fromJson(
+  const value$181 = $fromJson(
     '{"type":"moved","dx":1,"dy":2,"dz":3}',
     updateDeserialize_deserialize,
   );
-  if (match$181.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$181._0)}\n`;
+  if (value$181.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$181._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$181._0)} / ${$debugJsonError(match$181._0)}\n`;
+    out += `err ${$displayJsonError(value$181._0)} / ${$debugJsonError(value$181._0)}\n`;
   }
-  const match$182 = $fromJson('{"type":"moved","dx":"1","dy":2}', updateDeserialize_deserialize);
-  if (match$182.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$182._0)}\n`;
+  const value$182 = $fromJson('{"type":"moved","dx":"1","dy":2}', updateDeserialize_deserialize);
+  if (value$182.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$182._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$182._0)} / ${$debugJsonError(match$182._0)}\n`;
+    out += `err ${$displayJsonError(value$182._0)} / ${$debugJsonError(value$182._0)}\n`;
   }
-  const match$183 = $fromJson('{"type":"placed","id":5}', updateDeserialize_deserialize);
-  if (match$183.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$183._0)}\n`;
+  const value$183 = $fromJson('{"type":"placed","id":5}', updateDeserialize_deserialize);
+  if (value$183.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$183._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$183._0)} / ${$debugJsonError(match$183._0)}\n`;
+    out += `err ${$displayJsonError(value$183._0)} / ${$debugJsonError(value$183._0)}\n`;
   }
-  const match$184 = $fromJson('{"type":"placed","id":5,"note":"x"}', updateDeserialize_deserialize);
-  if (match$184.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$184._0)}\n`;
+  const value$184 = $fromJson('{"type":"placed","id":5,"note":"x"}', updateDeserialize_deserialize);
+  if (value$184.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$184._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$184._0)} / ${$debugJsonError(match$184._0)}\n`;
+    out += `err ${$displayJsonError(value$184._0)} / ${$debugJsonError(value$184._0)}\n`;
   }
-  const match$185 = $fromJson('{"type":"placed"}', updateDeserialize_deserialize);
-  if (match$185.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$185._0)}\n`;
+  const value$185 = $fromJson('{"type":"placed"}', updateDeserialize_deserialize);
+  if (value$185.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$185._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$185._0)} / ${$debugJsonError(match$185._0)}\n`;
+    out += `err ${$displayJsonError(value$185._0)} / ${$debugJsonError(value$185._0)}\n`;
   }
-  const match$186 = $fromJson('{"type":"marked"}', updateDeserialize_deserialize);
-  if (match$186.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$186._0)}\n`;
+  const value$186 = $fromJson('{"type":"marked"}', updateDeserialize_deserialize);
+  if (value$186.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$186._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$186._0)} / ${$debugJsonError(match$186._0)}\n`;
+    out += `err ${$displayJsonError(value$186._0)} / ${$debugJsonError(value$186._0)}\n`;
   }
-  const match$187 = $fromJson('{"type":"marked","x":1}', updateDeserialize_deserialize);
-  if (match$187.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$187._0)}\n`;
+  const value$187 = $fromJson('{"type":"marked","x":1}', updateDeserialize_deserialize);
+  if (value$187.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$187._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$187._0)} / ${$debugJsonError(match$187._0)}\n`;
+    out += `err ${$displayJsonError(value$187._0)} / ${$debugJsonError(value$187._0)}\n`;
   }
-  const match$188 = $fromJson('{"type":"count"}', updateDeserialize_deserialize);
-  if (match$188.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$188._0)}\n`;
+  const value$188 = $fromJson('{"type":"count"}', updateDeserialize_deserialize);
+  if (value$188.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$188._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$188._0)} / ${$debugJsonError(match$188._0)}\n`;
+    out += `err ${$displayJsonError(value$188._0)} / ${$debugJsonError(value$188._0)}\n`;
   }
-  const match$189 = $fromJson('{"type":"keys","map":{"1":2}}', updateDeserialize_deserialize);
-  if (match$189.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$189._0)}\n`;
+  const value$189 = $fromJson('{"type":"keys","map":{"1":2}}', updateDeserialize_deserialize);
+  if (value$189.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$189._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$189._0)} / ${$debugJsonError(match$189._0)}\n`;
+    out += `err ${$displayJsonError(value$189._0)} / ${$debugJsonError(value$189._0)}\n`;
   }
-  const match$190 = $fromJson('{"type":"nope"}', updateDeserialize_deserialize);
-  if (match$190.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$190._0)}\n`;
+  const value$190 = $fromJson('{"type":"nope"}', updateDeserialize_deserialize);
+  if (value$190.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$190._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$190._0)} / ${$debugJsonError(match$190._0)}\n`;
+    out += `err ${$displayJsonError(value$190._0)} / ${$debugJsonError(value$190._0)}\n`;
   }
-  const match$191 = $fromJson("{}", updateDeserialize_deserialize);
-  if (match$191.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$191._0)}\n`;
+  const value$191 = $fromJson("{}", updateDeserialize_deserialize);
+  if (value$191.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$191._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$191._0)} / ${$debugJsonError(match$191._0)}\n`;
+    out += `err ${$displayJsonError(value$191._0)} / ${$debugJsonError(value$191._0)}\n`;
   }
-  const match$192 = $fromJson('{"type":1}', updateDeserialize_deserialize);
-  if (match$192.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$192._0)}\n`;
+  const value$192 = $fromJson('{"type":1}', updateDeserialize_deserialize);
+  if (value$192.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$192._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$192._0)} / ${$debugJsonError(match$192._0)}\n`;
+    out += `err ${$displayJsonError(value$192._0)} / ${$debugJsonError(value$192._0)}\n`;
   }
-  const match$193 = $fromJson('{"type":"started","type":"moved"}', updateDeserialize_deserialize);
-  if (match$193.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$193._0)}\n`;
+  const value$193 = $fromJson('{"type":"started","type":"moved"}', updateDeserialize_deserialize);
+  if (value$193.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$193._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$193._0)} / ${$debugJsonError(match$193._0)}\n`;
+    out += `err ${$displayJsonError(value$193._0)} / ${$debugJsonError(value$193._0)}\n`;
   }
-  const match$194 = $fromJson('["moved",1,2]', updateDeserialize_deserialize);
-  if (match$194.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$194._0)}\n`;
+  const value$194 = $fromJson('["moved",1,2]', updateDeserialize_deserialize);
+  if (value$194.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$194._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$194._0)} / ${$debugJsonError(match$194._0)}\n`;
+    out += `err ${$displayJsonError(value$194._0)} / ${$debugJsonError(value$194._0)}\n`;
   }
-  const match$195 = $fromJson('["started"]', updateDeserialize_deserialize);
-  if (match$195.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$195._0)}\n`;
+  const value$195 = $fromJson('["started"]', updateDeserialize_deserialize);
+  if (value$195.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$195._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$195._0)} / ${$debugJsonError(match$195._0)}\n`;
+    out += `err ${$displayJsonError(value$195._0)} / ${$debugJsonError(value$195._0)}\n`;
   }
-  const match$196 = $fromJson('["started",1]', updateDeserialize_deserialize);
-  if (match$196.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$196._0)}\n`;
+  const value$196 = $fromJson('["started",1]', updateDeserialize_deserialize);
+  if (value$196.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$196._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$196._0)} / ${$debugJsonError(match$196._0)}\n`;
+    out += `err ${$displayJsonError(value$196._0)} / ${$debugJsonError(value$196._0)}\n`;
   }
-  const match$197 = $fromJson("[]", updateDeserialize_deserialize);
-  if (match$197.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$197._0)}\n`;
+  const value$197 = $fromJson("[]", updateDeserialize_deserialize);
+  if (value$197.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$197._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$197._0)} / ${$debugJsonError(match$197._0)}\n`;
+    out += `err ${$displayJsonError(value$197._0)} / ${$debugJsonError(value$197._0)}\n`;
   }
-  const match$198 = $fromJson('"started"', updateDeserialize_deserialize);
-  if (match$198.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$198._0)}\n`;
+  const value$198 = $fromJson('"started"', updateDeserialize_deserialize);
+  if (value$198.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$198._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$198._0)} / ${$debugJsonError(match$198._0)}\n`;
+    out += `err ${$displayJsonError(value$198._0)} / ${$debugJsonError(value$198._0)}\n`;
   }
-  const match$199 = $fromJson("5", updateDeserialize_deserialize);
-  if (match$199.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$199._0)}\n`;
+  const value$199 = $fromJson("5", updateDeserialize_deserialize);
+  if (value$199.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$199._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$199._0)} / ${$debugJsonError(match$199._0)}\n`;
+    out += `err ${$displayJsonError(value$199._0)} / ${$debugJsonError(value$199._0)}\n`;
   }
-  const match$200 = $fromJson("null", updateDeserialize_deserialize);
-  if (match$200.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$200._0)}\n`;
+  const value$200 = $fromJson("null", updateDeserialize_deserialize);
+  if (value$200.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$200._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$200._0)} / ${$debugJsonError(match$200._0)}\n`;
+    out += `err ${$displayJsonError(value$200._0)} / ${$debugJsonError(value$200._0)}\n`;
   }
-  const match$201 = $fromJson('{"type":"moved","dx":1,"dy":2} x', updateDeserialize_deserialize);
-  if (match$201.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$201._0)}\n`;
+  const value$201 = $fromJson('{"type":"moved","dx":1,"dy":2} x', updateDeserialize_deserialize);
+  if (value$201.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$201._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$201._0)} / ${$debugJsonError(match$201._0)}\n`;
+    out += `err ${$displayJsonError(value$201._0)} / ${$debugJsonError(value$201._0)}\n`;
   }
-  const match$202 = $fromJson('{"type":"moved","dx":1,"dy":2', updateDeserialize_deserialize);
-  if (match$202.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$202._0)}\n`;
+  const value$202 = $fromJson('{"type":"moved","dx":1,"dy":2', updateDeserialize_deserialize);
+  if (value$202.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$202._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$202._0)} / ${$debugJsonError(match$202._0)}\n`;
+    out += `err ${$displayJsonError(value$202._0)} / ${$debugJsonError(value$202._0)}\n`;
   }
-  const match$203 = $fromJson(
+  const value$203 = $fromJson(
     '{\n  "type": "placed",\n  "id": 1.5\n}',
     updateDeserialize_deserialize,
   );
-  if (match$203.TAG === "Ok") {
-    out += `ok ${updateDebug_fmt(match$203._0)}\n`;
+  if (value$203.TAG === "Ok") {
+    out += `ok ${updateDebug_fmt(value$203._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$203._0)} / ${$debugJsonError(match$203._0)}\n`;
+    out += `err ${$displayJsonError(value$203._0)} / ${$debugJsonError(value$203._0)}\n`;
   }
-  const match$204 = $fromJson(
+  const value$204 = $fromJson(
     '[{"type":"started"},{"type":"moved","dx":1}]',
     $json.vec(updateDeserialize_deserialize),
   );
-  if (match$204.TAG === "Ok") {
-    out += `ok [${match$204._0.map((item) => updateDebug_fmt(item)).join(", ")}]\n`;
+  if (value$204.TAG === "Ok") {
+    out += `ok [${value$204._0.map((item) => updateDebug_fmt(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$204._0)} / ${$debugJsonError(match$204._0)}\n`;
+    out += `err ${$displayJsonError(value$204._0)} / ${$debugJsonError(value$204._0)}\n`;
   }
-  const match$205 = $fromJson('[{"type":"started"}, 5]', $json.vec(updateDeserialize_deserialize));
-  if (match$205.TAG === "Ok") {
-    out += `ok [${match$205._0.map((item) => updateDebug_fmt(item)).join(", ")}]\n`;
+  const value$205 = $fromJson('[{"type":"started"}, 5]', $json.vec(updateDeserialize_deserialize));
+  if (value$205.TAG === "Ok") {
+    out += `ok [${value$205._0.map((item) => updateDebug_fmt(item)).join(", ")}]\n`;
   } else {
-    out += `err ${$displayJsonError(match$205._0)} / ${$debugJsonError(match$205._0)}\n`;
+    out += `err ${$displayJsonError(value$205._0)} / ${$debugJsonError(value$205._0)}\n`;
   }
-  const match$206 = $fromJson('{"t":"Ping"}', chatDeserialize_deserialize);
-  if (match$206.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$206._0)}\n`;
+  const value$206 = $fromJson('{"t":"Ping"}', chatDeserialize_deserialize);
+  if (value$206.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$206._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$206._0)} / ${$debugJsonError(match$206._0)}\n`;
+    out += `err ${$displayJsonError(value$206._0)} / ${$debugJsonError(value$206._0)}\n`;
   }
-  const match$207 = $fromJson('{"t":"Ping","c":null}', chatDeserialize_deserialize);
-  if (match$207.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$207._0)}\n`;
+  const value$207 = $fromJson('{"t":"Ping","c":null}', chatDeserialize_deserialize);
+  if (value$207.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$207._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$207._0)} / ${$debugJsonError(match$207._0)}\n`;
+    out += `err ${$displayJsonError(value$207._0)} / ${$debugJsonError(value$207._0)}\n`;
   }
-  const match$208 = $fromJson('{"t":"Ping","c":1}', chatDeserialize_deserialize);
-  if (match$208.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$208._0)}\n`;
+  const value$208 = $fromJson('{"t":"Ping","c":1}', chatDeserialize_deserialize);
+  if (value$208.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$208._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$208._0)} / ${$debugJsonError(match$208._0)}\n`;
+    out += `err ${$displayJsonError(value$208._0)} / ${$debugJsonError(value$208._0)}\n`;
   }
-  const match$209 = $fromJson('{"t":"Text","c":"hi"}', chatDeserialize_deserialize);
-  if (match$209.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$209._0)}\n`;
+  const value$209 = $fromJson('{"t":"Text","c":"hi"}', chatDeserialize_deserialize);
+  if (value$209.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$209._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$209._0)} / ${$debugJsonError(match$209._0)}\n`;
+    out += `err ${$displayJsonError(value$209._0)} / ${$debugJsonError(value$209._0)}\n`;
   }
-  const match$210 = $fromJson('{"c":"hi","t":"Text"}', chatDeserialize_deserialize);
-  if (match$210.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$210._0)}\n`;
+  const value$210 = $fromJson('{"c":"hi","t":"Text"}', chatDeserialize_deserialize);
+  if (value$210.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$210._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$210._0)} / ${$debugJsonError(match$210._0)}\n`;
+    out += `err ${$displayJsonError(value$210._0)} / ${$debugJsonError(value$210._0)}\n`;
   }
-  const match$211 = $fromJson('{"t":"Text"}', chatDeserialize_deserialize);
-  if (match$211.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$211._0)}\n`;
+  const value$211 = $fromJson('{"t":"Text"}', chatDeserialize_deserialize);
+  if (value$211.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$211._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$211._0)} / ${$debugJsonError(match$211._0)}\n`;
+    out += `err ${$displayJsonError(value$211._0)} / ${$debugJsonError(value$211._0)}\n`;
   }
-  const match$212 = $fromJson('{"t":"Maybe"}', chatDeserialize_deserialize);
-  if (match$212.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$212._0)}\n`;
+  const value$212 = $fromJson('{"t":"Maybe"}', chatDeserialize_deserialize);
+  if (value$212.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$212._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$212._0)} / ${$debugJsonError(match$212._0)}\n`;
+    out += `err ${$displayJsonError(value$212._0)} / ${$debugJsonError(value$212._0)}\n`;
   }
-  const match$213 = $fromJson('{"t":"Pair","c":[1,2]}', chatDeserialize_deserialize);
-  if (match$213.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$213._0)}\n`;
+  const value$213 = $fromJson('{"t":"Pair","c":[1,2]}', chatDeserialize_deserialize);
+  if (value$213.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$213._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$213._0)} / ${$debugJsonError(match$213._0)}\n`;
+    out += `err ${$displayJsonError(value$213._0)} / ${$debugJsonError(value$213._0)}\n`;
   }
-  const match$214 = $fromJson('{"c":[1,2],"t":"Pair"}', chatDeserialize_deserialize);
-  if (match$214.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$214._0)}\n`;
+  const value$214 = $fromJson('{"c":[1,2],"t":"Pair"}', chatDeserialize_deserialize);
+  if (value$214.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$214._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$214._0)} / ${$debugJsonError(match$214._0)}\n`;
+    out += `err ${$displayJsonError(value$214._0)} / ${$debugJsonError(value$214._0)}\n`;
   }
-  const match$215 = $fromJson('{"c":[1,2,3],"t":"Pair"}', chatDeserialize_deserialize);
-  if (match$215.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$215._0)}\n`;
+  const value$215 = $fromJson('{"c":[1,2,3],"t":"Pair"}', chatDeserialize_deserialize);
+  if (value$215.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$215._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$215._0)} / ${$debugJsonError(match$215._0)}\n`;
+    out += `err ${$displayJsonError(value$215._0)} / ${$debugJsonError(value$215._0)}\n`;
   }
-  const match$216 = $fromJson('{"t":"Pair","c":[1,2,3]}', chatDeserialize_deserialize);
-  if (match$216.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$216._0)}\n`;
+  const value$216 = $fromJson('{"t":"Pair","c":[1,2,3]}', chatDeserialize_deserialize);
+  if (value$216.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$216._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$216._0)} / ${$debugJsonError(match$216._0)}\n`;
+    out += `err ${$displayJsonError(value$216._0)} / ${$debugJsonError(value$216._0)}\n`;
   }
-  const match$217 = $fromJson('{"t":"Move","c":{"x":1}}', chatDeserialize_deserialize);
-  if (match$217.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$217._0)}\n`;
+  const value$217 = $fromJson('{"t":"Move","c":{"x":1}}', chatDeserialize_deserialize);
+  if (value$217.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$217._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$217._0)} / ${$debugJsonError(match$217._0)}\n`;
+    out += `err ${$displayJsonError(value$217._0)} / ${$debugJsonError(value$217._0)}\n`;
   }
-  const match$218 = $fromJson('{"t":"Move","c":[1]}', chatDeserialize_deserialize);
-  if (match$218.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$218._0)}\n`;
+  const value$218 = $fromJson('{"t":"Move","c":[1]}', chatDeserialize_deserialize);
+  if (value$218.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$218._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$218._0)} / ${$debugJsonError(match$218._0)}\n`;
+    out += `err ${$displayJsonError(value$218._0)} / ${$debugJsonError(value$218._0)}\n`;
   }
-  const match$219 = $fromJson('{"c":[1],"t":"Move"}', chatDeserialize_deserialize);
-  if (match$219.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$219._0)}\n`;
+  const value$219 = $fromJson('{"c":[1],"t":"Move"}', chatDeserialize_deserialize);
+  if (value$219.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$219._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$219._0)} / ${$debugJsonError(match$219._0)}\n`;
+    out += `err ${$displayJsonError(value$219._0)} / ${$debugJsonError(value$219._0)}\n`;
   }
-  const match$220 = $fromJson('{"t":"Text","c":"a","t":"Ping"}', chatDeserialize_deserialize);
-  if (match$220.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$220._0)}\n`;
+  const value$220 = $fromJson('{"t":"Text","c":"a","t":"Ping"}', chatDeserialize_deserialize);
+  if (value$220.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$220._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$220._0)} / ${$debugJsonError(match$220._0)}\n`;
+    out += `err ${$displayJsonError(value$220._0)} / ${$debugJsonError(value$220._0)}\n`;
   }
-  const match$221 = $fromJson('{"t":"Text","c":"a","c":"b"}', chatDeserialize_deserialize);
-  if (match$221.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$221._0)}\n`;
+  const value$221 = $fromJson('{"t":"Text","c":"a","c":"b"}', chatDeserialize_deserialize);
+  if (value$221.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$221._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$221._0)} / ${$debugJsonError(match$221._0)}\n`;
+    out += `err ${$displayJsonError(value$221._0)} / ${$debugJsonError(value$221._0)}\n`;
   }
-  const match$222 = $fromJson('{"c":1}', chatDeserialize_deserialize);
-  if (match$222.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$222._0)}\n`;
+  const value$222 = $fromJson('{"c":1}', chatDeserialize_deserialize);
+  if (value$222.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$222._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$222._0)} / ${$debugJsonError(match$222._0)}\n`;
+    out += `err ${$displayJsonError(value$222._0)} / ${$debugJsonError(value$222._0)}\n`;
   }
-  const match$223 = $fromJson('{"x":1,"t":"Ping"}', chatDeserialize_deserialize);
-  if (match$223.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$223._0)}\n`;
+  const value$223 = $fromJson('{"x":1,"t":"Ping"}', chatDeserialize_deserialize);
+  if (value$223.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$223._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$223._0)} / ${$debugJsonError(match$223._0)}\n`;
+    out += `err ${$displayJsonError(value$223._0)} / ${$debugJsonError(value$223._0)}\n`;
   }
-  const match$224 = $fromJson('{"t":"Nope"}', chatDeserialize_deserialize);
-  if (match$224.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$224._0)}\n`;
+  const value$224 = $fromJson('{"t":"Nope"}', chatDeserialize_deserialize);
+  if (value$224.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$224._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$224._0)} / ${$debugJsonError(match$224._0)}\n`;
+    out += `err ${$displayJsonError(value$224._0)} / ${$debugJsonError(value$224._0)}\n`;
   }
-  const match$225 = $fromJson('["Text","hi"]', chatDeserialize_deserialize);
-  if (match$225.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$225._0)}\n`;
+  const value$225 = $fromJson('["Text","hi"]', chatDeserialize_deserialize);
+  if (value$225.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$225._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$225._0)} / ${$debugJsonError(match$225._0)}\n`;
+    out += `err ${$displayJsonError(value$225._0)} / ${$debugJsonError(value$225._0)}\n`;
   }
-  const match$226 = $fromJson('["Text"]', chatDeserialize_deserialize);
-  if (match$226.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$226._0)}\n`;
+  const value$226 = $fromJson('["Text"]', chatDeserialize_deserialize);
+  if (value$226.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$226._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$226._0)} / ${$debugJsonError(match$226._0)}\n`;
+    out += `err ${$displayJsonError(value$226._0)} / ${$debugJsonError(value$226._0)}\n`;
   }
-  const match$227 = $fromJson("[]", chatDeserialize_deserialize);
-  if (match$227.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$227._0)}\n`;
+  const value$227 = $fromJson("[]", chatDeserialize_deserialize);
+  if (value$227.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$227._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$227._0)} / ${$debugJsonError(match$227._0)}\n`;
+    out += `err ${$displayJsonError(value$227._0)} / ${$debugJsonError(value$227._0)}\n`;
   }
-  const match$228 = $fromJson('{"t":{"Text":null},"c":"x"}', chatDeserialize_deserialize);
-  if (match$228.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$228._0)}\n`;
+  const value$228 = $fromJson('{"t":{"Text":null},"c":"x"}', chatDeserialize_deserialize);
+  if (value$228.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$228._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$228._0)} / ${$debugJsonError(match$228._0)}\n`;
+    out += `err ${$displayJsonError(value$228._0)} / ${$debugJsonError(value$228._0)}\n`;
   }
-  const match$229 = $fromJson('{"t":5}', chatDeserialize_deserialize);
-  if (match$229.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$229._0)}\n`;
+  const value$229 = $fromJson('{"t":5}', chatDeserialize_deserialize);
+  if (value$229.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$229._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$229._0)} / ${$debugJsonError(match$229._0)}\n`;
+    out += `err ${$displayJsonError(value$229._0)} / ${$debugJsonError(value$229._0)}\n`;
   }
-  const match$230 = $fromJson('{"c":"hi","t":"Ping"}', chatDeserialize_deserialize);
-  if (match$230.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$230._0)}\n`;
+  const value$230 = $fromJson('{"c":"hi","t":"Ping"}', chatDeserialize_deserialize);
+  if (value$230.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$230._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$230._0)} / ${$debugJsonError(match$230._0)}\n`;
+    out += `err ${$displayJsonError(value$230._0)} / ${$debugJsonError(value$230._0)}\n`;
   }
-  const match$231 = $fromJson('{"c":{},"t":"Ping"}', chatDeserialize_deserialize);
-  if (match$231.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$231._0)}\n`;
+  const value$231 = $fromJson('{"c":{},"t":"Ping"}', chatDeserialize_deserialize);
+  if (value$231.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$231._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$231._0)} / ${$debugJsonError(match$231._0)}\n`;
+    out += `err ${$displayJsonError(value$231._0)} / ${$debugJsonError(value$231._0)}\n`;
   }
-  const match$232 = $fromJson('"Ping"', chatDeserialize_deserialize);
-  if (match$232.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$232._0)}\n`;
+  const value$232 = $fromJson('"Ping"', chatDeserialize_deserialize);
+  if (value$232.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$232._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$232._0)} / ${$debugJsonError(match$232._0)}\n`;
+    out += `err ${$displayJsonError(value$232._0)} / ${$debugJsonError(value$232._0)}\n`;
   }
-  const match$233 = $fromJson("{}", chatDeserialize_deserialize);
-  if (match$233.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$233._0)}\n`;
+  const value$233 = $fromJson("{}", chatDeserialize_deserialize);
+  if (value$233.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$233._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$233._0)} / ${$debugJsonError(match$233._0)}\n`;
+    out += `err ${$displayJsonError(value$233._0)} / ${$debugJsonError(value$233._0)}\n`;
   }
-  const match$234 = $fromJson('{"t":"Maybe","c":null}', chatDeserialize_deserialize);
-  if (match$234.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$234._0)}\n`;
+  const value$234 = $fromJson('{"t":"Maybe","c":null}', chatDeserialize_deserialize);
+  if (value$234.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$234._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$234._0)} / ${$debugJsonError(match$234._0)}\n`;
+    out += `err ${$displayJsonError(value$234._0)} / ${$debugJsonError(value$234._0)}\n`;
   }
-  const match$235 = $fromJson('{"c":null,"t":"Maybe"}', chatDeserialize_deserialize);
-  if (match$235.TAG === "Ok") {
-    out += `ok ${chatDebug_fmt(match$235._0)}\n`;
+  const value$235 = $fromJson('{"c":null,"t":"Maybe"}', chatDeserialize_deserialize);
+  if (value$235.TAG === "Ok") {
+    out += `ok ${chatDebug_fmt(value$235._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$235._0)} / ${$debugJsonError(match$235._0)}\n`;
+    out += `err ${$displayJsonError(value$235._0)} / ${$debugJsonError(value$235._0)}\n`;
   }
-  const match$236 = $fromJson('{"t":"A","c":1,"x":2}', strictChatDeserialize_deserialize);
-  if (match$236.TAG === "Ok") {
-    out += `ok ${strictChatDebug_fmt(match$236._0)}\n`;
+  const value$236 = $fromJson('{"t":"A","c":1,"x":2}', strictChatDeserialize_deserialize);
+  if (value$236.TAG === "Ok") {
+    out += `ok ${strictChatDebug_fmt(value$236._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$236._0)} / ${$debugJsonError(match$236._0)}\n`;
+    out += `err ${$displayJsonError(value$236._0)} / ${$debugJsonError(value$236._0)}\n`;
   }
-  const match$237 = $fromJson('{"t":"B"}', strictChatDeserialize_deserialize);
-  if (match$237.TAG === "Ok") {
-    out += `ok ${strictChatDebug_fmt(match$237._0)}\n`;
+  const value$237 = $fromJson('{"t":"B"}', strictChatDeserialize_deserialize);
+  if (value$237.TAG === "Ok") {
+    out += `ok ${strictChatDebug_fmt(value$237._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$237._0)} / ${$debugJsonError(match$237._0)}\n`;
+    out += `err ${$displayJsonError(value$237._0)} / ${$debugJsonError(value$237._0)}\n`;
   }
-  const match$238 = $fromJson('{"x":2}', strictChatDeserialize_deserialize);
-  if (match$238.TAG === "Ok") {
-    out += `ok ${strictChatDebug_fmt(match$238._0)}\n`;
+  const value$238 = $fromJson('{"x":2}', strictChatDeserialize_deserialize);
+  if (value$238.TAG === "Ok") {
+    out += `ok ${strictChatDebug_fmt(value$238._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$238._0)} / ${$debugJsonError(match$238._0)}\n`;
+    out += `err ${$displayJsonError(value$238._0)} / ${$debugJsonError(value$238._0)}\n`;
   }
-  const match$239 = $fromJson("1.5", anythingDeserialize_deserialize);
-  if (match$239.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$239._0)}\n`;
+  const value$239 = $fromJson("1.5", anythingDeserialize_deserialize);
+  if (value$239.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$239._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$239._0)} / ${$debugJsonError(match$239._0)}\n`;
+    out += `err ${$displayJsonError(value$239._0)} / ${$debugJsonError(value$239._0)}\n`;
   }
-  const match$240 = $fromJson('"w"', anythingDeserialize_deserialize);
-  if (match$240.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$240._0)}\n`;
+  const value$240 = $fromJson('"w"', anythingDeserialize_deserialize);
+  if (value$240.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$240._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$240._0)} / ${$debugJsonError(match$240._0)}\n`;
+    out += `err ${$displayJsonError(value$240._0)} / ${$debugJsonError(value$240._0)}\n`;
   }
-  const match$241 = $fromJson("[1,true]", anythingDeserialize_deserialize);
-  if (match$241.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$241._0)}\n`;
+  const value$241 = $fromJson("[1,true]", anythingDeserialize_deserialize);
+  if (value$241.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$241._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$241._0)} / ${$debugJsonError(match$241._0)}\n`;
+    out += `err ${$displayJsonError(value$241._0)} / ${$debugJsonError(value$241._0)}\n`;
   }
-  const match$242 = $fromJson('{"x":1,"y":2}', anythingDeserialize_deserialize);
-  if (match$242.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$242._0)}\n`;
+  const value$242 = $fromJson('{"x":1,"y":2}', anythingDeserialize_deserialize);
+  if (value$242.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$242._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$242._0)} / ${$debugJsonError(match$242._0)}\n`;
+    out += `err ${$displayJsonError(value$242._0)} / ${$debugJsonError(value$242._0)}\n`;
   }
-  const match$243 = $fromJson("null", anythingDeserialize_deserialize);
-  if (match$243.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$243._0)}\n`;
+  const value$243 = $fromJson("null", anythingDeserialize_deserialize);
+  if (value$243.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$243._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$243._0)} / ${$debugJsonError(match$243._0)}\n`;
+    out += `err ${$displayJsonError(value$243._0)} / ${$debugJsonError(value$243._0)}\n`;
   }
-  const match$244 = $fromJson("[1,2,3]", anythingDeserialize_deserialize);
-  if (match$244.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$244._0)}\n`;
+  const value$244 = $fromJson("[1,2,3]", anythingDeserialize_deserialize);
+  if (value$244.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$244._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$244._0)} / ${$debugJsonError(match$244._0)}\n`;
+    out += `err ${$displayJsonError(value$244._0)} / ${$debugJsonError(value$244._0)}\n`;
   }
-  const match$245 = $fromJson("true", anythingDeserialize_deserialize);
-  if (match$245.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$245._0)}\n`;
+  const value$245 = $fromJson("true", anythingDeserialize_deserialize);
+  if (value$245.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$245._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$245._0)} / ${$debugJsonError(match$245._0)}\n`;
+    out += `err ${$displayJsonError(value$245._0)} / ${$debugJsonError(value$245._0)}\n`;
   }
-  const match$246 = $fromJson('{"x":1}', anythingDeserialize_deserialize);
-  if (match$246.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$246._0)}\n`;
+  const value$246 = $fromJson('{"x":1}', anythingDeserialize_deserialize);
+  if (value$246.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$246._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$246._0)} / ${$debugJsonError(match$246._0)}\n`;
+    out += `err ${$displayJsonError(value$246._0)} / ${$debugJsonError(value$246._0)}\n`;
   }
-  const match$247 = $fromJson("[1]", anythingDeserialize_deserialize);
-  if (match$247.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$247._0)}\n`;
+  const value$247 = $fromJson("[1]", anythingDeserialize_deserialize);
+  if (value$247.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$247._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$247._0)} / ${$debugJsonError(match$247._0)}\n`;
+    out += `err ${$displayJsonError(value$247._0)} / ${$debugJsonError(value$247._0)}\n`;
   }
-  const match$248 = $fromJson("-3", anythingDeserialize_deserialize);
-  if (match$248.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$248._0)}\n`;
+  const value$248 = $fromJson("-3", anythingDeserialize_deserialize);
+  if (value$248.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$248._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$248._0)} / ${$debugJsonError(match$248._0)}\n`;
+    out += `err ${$displayJsonError(value$248._0)} / ${$debugJsonError(value$248._0)}\n`;
   }
-  const match$249 = $fromJson('{"x":1,"y":2,"z":3}', anythingDeserialize_deserialize);
-  if (match$249.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$249._0)}\n`;
+  const value$249 = $fromJson('{"x":1,"y":2,"z":3}', anythingDeserialize_deserialize);
+  if (value$249.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$249._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$249._0)} / ${$debugJsonError(match$249._0)}\n`;
+    out += `err ${$displayJsonError(value$249._0)} / ${$debugJsonError(value$249._0)}\n`;
   }
-  const match$250 = $fromJson("[1,true,3]", anythingDeserialize_deserialize);
-  if (match$250.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$250._0)}\n`;
+  const value$250 = $fromJson("[1,true,3]", anythingDeserialize_deserialize);
+  if (value$250.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$250._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$250._0)} / ${$debugJsonError(match$250._0)}\n`;
+    out += `err ${$displayJsonError(value$250._0)} / ${$debugJsonError(value$250._0)}\n`;
   }
-  const match$251 = $fromJson("{}", anythingDeserialize_deserialize);
-  if (match$251.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$251._0)}\n`;
+  const value$251 = $fromJson("{}", anythingDeserialize_deserialize);
+  if (value$251.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$251._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$251._0)} / ${$debugJsonError(match$251._0)}\n`;
+    out += `err ${$displayJsonError(value$251._0)} / ${$debugJsonError(value$251._0)}\n`;
   }
-  const match$252 = $fromJson("[]", anythingDeserialize_deserialize);
-  if (match$252.TAG === "Ok") {
-    out += `ok ${anythingDebug_fmt(match$252._0)}\n`;
+  const value$252 = $fromJson("[]", anythingDeserialize_deserialize);
+  if (value$252.TAG === "Ok") {
+    out += `ok ${anythingDebug_fmt(value$252._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$252._0)} / ${$debugJsonError(match$252._0)}\n`;
+    out += `err ${$displayJsonError(value$252._0)} / ${$debugJsonError(value$252._0)}\n`;
   }
-  const match$253 = $fromJson('{"A":1}', eitherDeserialize_deserialize);
-  if (match$253.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$253._0)}\n`;
+  const value$253 = $fromJson('{"A":1}', eitherDeserialize_deserialize);
+  if (value$253.TAG === "Ok") {
+    out += `ok ${eitherDebug_fmt(value$253._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$253._0)} / ${$debugJsonError(match$253._0)}\n`;
+    out += `err ${$displayJsonError(value$253._0)} / ${$debugJsonError(value$253._0)}\n`;
   }
-  const match$254 = $fromJson('{"B":{"x":2}}', eitherDeserialize_deserialize);
-  if (match$254.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$254._0)}\n`;
+  const value$254 = $fromJson('{"B":{"x":2}}', eitherDeserialize_deserialize);
+  if (value$254.TAG === "Ok") {
+    out += `ok ${eitherDebug_fmt(value$254._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$254._0)} / ${$debugJsonError(match$254._0)}\n`;
+    out += `err ${$displayJsonError(value$254._0)} / ${$debugJsonError(value$254._0)}\n`;
   }
-  const match$255 = $fromJson('"raw"', eitherDeserialize_deserialize);
-  if (match$255.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$255._0)}\n`;
+  const value$255 = $fromJson('"raw"', eitherDeserialize_deserialize);
+  if (value$255.TAG === "Ok") {
+    out += `ok ${eitherDebug_fmt(value$255._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$255._0)} / ${$debugJsonError(match$255._0)}\n`;
+    out += `err ${$displayJsonError(value$255._0)} / ${$debugJsonError(value$255._0)}\n`;
   }
-  const match$256 = $fromJson("7", eitherDeserialize_deserialize);
-  if (match$256.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$256._0)}\n`;
+  const value$256 = $fromJson("7", eitherDeserialize_deserialize);
+  if (value$256.TAG === "Ok") {
+    out += `ok ${eitherDebug_fmt(value$256._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$256._0)} / ${$debugJsonError(match$256._0)}\n`;
+    out += `err ${$displayJsonError(value$256._0)} / ${$debugJsonError(value$256._0)}\n`;
   }
-  const match$257 = $fromJson('{"C":1}', eitherDeserialize_deserialize);
-  if (match$257.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$257._0)}\n`;
+  const value$257 = $fromJson('{"C":1}', eitherDeserialize_deserialize);
+  if (value$257.TAG === "Ok") {
+    out += `ok ${eitherDebug_fmt(value$257._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$257._0)} / ${$debugJsonError(match$257._0)}\n`;
+    out += `err ${$displayJsonError(value$257._0)} / ${$debugJsonError(value$257._0)}\n`;
   }
-  const match$258 = $fromJson("[1]", eitherDeserialize_deserialize);
-  if (match$258.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$258._0)}\n`;
+  const value$258 = $fromJson("[1]", eitherDeserialize_deserialize);
+  if (value$258.TAG === "Ok") {
+    out += `ok ${eitherDebug_fmt(value$258._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$258._0)} / ${$debugJsonError(match$258._0)}\n`;
+    out += `err ${$displayJsonError(value$258._0)} / ${$debugJsonError(value$258._0)}\n`;
   }
-  const match$259 = $fromJson('{"A":1,"B":2}', eitherDeserialize_deserialize);
-  if (match$259.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$259._0)}\n`;
+  const value$259 = $fromJson('{"A":1,"B":2}', eitherDeserialize_deserialize);
+  if (value$259.TAG === "Ok") {
+    out += `ok ${eitherDebug_fmt(value$259._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$259._0)} / ${$debugJsonError(match$259._0)}\n`;
+    out += `err ${$displayJsonError(value$259._0)} / ${$debugJsonError(value$259._0)}\n`;
   }
-  const match$260 = $fromJson('{"type":"started"}', wrapperDeserialize_deserialize);
-  if (match$260.TAG === "Ok") {
-    out += `ok ${wrapperDebug_fmt(match$260._0)}\n`;
+  const value$260 = $fromJson('{"type":"started"}', wrapperDeserialize_deserialize);
+  if (value$260.TAG === "Ok") {
+    out += `ok ${wrapperDebug_fmt(value$260._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$260._0)} / ${$debugJsonError(match$260._0)}\n`;
+    out += `err ${$displayJsonError(value$260._0)} / ${$debugJsonError(value$260._0)}\n`;
   }
-  const match$261 = $fromJson('{"t":"Text","c":"x"}', wrapperDeserialize_deserialize);
-  if (match$261.TAG === "Ok") {
-    out += `ok ${wrapperDebug_fmt(match$261._0)}\n`;
+  const value$261 = $fromJson('{"t":"Text","c":"x"}', wrapperDeserialize_deserialize);
+  if (value$261.TAG === "Ok") {
+    out += `ok ${wrapperDebug_fmt(value$261._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$261._0)} / ${$debugJsonError(match$261._0)}\n`;
+    out += `err ${$displayJsonError(value$261._0)} / ${$debugJsonError(value$261._0)}\n`;
   }
-  const match$262 = $fromJson('{"type":"keys","map":{}}', wrapperDeserialize_deserialize);
-  if (match$262.TAG === "Ok") {
-    out += `ok ${wrapperDebug_fmt(match$262._0)}\n`;
+  const value$262 = $fromJson('{"type":"keys","map":{}}', wrapperDeserialize_deserialize);
+  if (value$262.TAG === "Ok") {
+    out += `ok ${wrapperDebug_fmt(value$262._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$262._0)} / ${$debugJsonError(match$262._0)}\n`;
+    out += `err ${$displayJsonError(value$262._0)} / ${$debugJsonError(value$262._0)}\n`;
   }
-  const match$263 = $fromJson("1", wrapperDeserialize_deserialize);
-  if (match$263.TAG === "Ok") {
-    out += `ok ${wrapperDebug_fmt(match$263._0)}\n`;
+  const value$263 = $fromJson("1", wrapperDeserialize_deserialize);
+  if (value$263.TAG === "Ok") {
+    out += `ok ${wrapperDebug_fmt(value$263._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$263._0)} / ${$debugJsonError(match$263._0)}\n`;
+    out += `err ${$displayJsonError(value$263._0)} / ${$debugJsonError(value$263._0)}\n`;
   }
-  const match$264 = $fromJson(
+  const value$264 = $fromJson(
     '{"events":[{"type":"moved","dx":1}],"loose":1}',
     batchDeserialize_deserialize,
   );
-  if (match$264.TAG === "Ok") {
-    out += `ok ${batchDebug_fmt(match$264._0)}\n`;
+  if (value$264.TAG === "Ok") {
+    out += `ok ${batchDebug_fmt(value$264._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$264._0)} / ${$debugJsonError(match$264._0)}\n`;
+    out += `err ${$displayJsonError(value$264._0)} / ${$debugJsonError(value$264._0)}\n`;
   }
-  const match$265 = $fromJson('{"events":[],"loose":true}', batchDeserialize_deserialize);
-  if (match$265.TAG === "Ok") {
-    out += `ok ${batchDebug_fmt(match$265._0)}\n`;
+  const value$265 = $fromJson('{"events":[],"loose":true}', batchDeserialize_deserialize);
+  if (value$265.TAG === "Ok") {
+    out += `ok ${batchDebug_fmt(value$265._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$265._0)} / ${$debugJsonError(match$265._0)}\n`;
+    out += `err ${$displayJsonError(value$265._0)} / ${$debugJsonError(value$265._0)}\n`;
   }
-  const match$266 = $fromJson(
+  const value$266 = $fromJson(
     '{"events":[{"type":"started"}],"loose":[4,5]}',
     batchDeserialize_deserialize,
   );
-  if (match$266.TAG === "Ok") {
-    out += `ok ${batchDebug_fmt(match$266._0)}\n`;
+  if (value$266.TAG === "Ok") {
+    out += `ok ${batchDebug_fmt(value$266._0)}\n`;
   } else {
-    out += `err ${$displayJsonError(match$266._0)} / ${$debugJsonError(match$266._0)}\n`;
+    out += `err ${$displayJsonError(value$266._0)} / ${$debugJsonError(value$266._0)}\n`;
   }
   for (const text of ['{"kind":"Tagged","id":1}', '{"id":1}', '{"kind":5,"id":1}']) {
-    const match = $fromJson(text, taggedDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${taggedDebug_fmt(match._0)}\n`;
+    const value = $fromJson(text, taggedDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      out += `ok ${taggedDebug_fmt(value._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
-    const match$1 = $fromJson(text, strictTaggedDeserialize_deserialize);
-    if (match$1.TAG === "Ok") {
-      out += `ok ${strictTaggedDebug_fmt(match$1._0)}\n`;
+    const value$1 = $fromJson(text, strictTaggedDeserialize_deserialize);
+    if (value$1.TAG === "Ok") {
+      out += `ok ${strictTaggedDebug_fmt(value$1._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match$1._0)}\n`;
+      out += `err ${$displayJsonError(value$1._0)}\n`;
     }
   }
   return out;

@@ -31,10 +31,10 @@ function get(node, KKey, VClone) {
 }
 
 function fill(slot) {
-  if (slot.TAG === "Full" && slot._0 != null) {
-    return slot._0;
-  }
-  if (slot.TAG === "Full" && slot._0 == null) {
+  if (slot.TAG === "Full") {
+    if (slot._0 != null) {
+      return slot._0;
+    }
     return 1;
   }
   return 0;
@@ -43,12 +43,14 @@ function fill(slot) {
 function main() {
   const a = { key: 1, value: 22 };
   const b = { key: "k", value: ["x"] };
-  const arg = get(a, i32Key(), { clone: (value) => value });
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${nodeDebug_fmt(a, { fmt: (value) => String(value) }, i32Key(), { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} ${nodeDebug_fmt(b, { fmt: (value) => $debugStr(value) }, refStrKey(), { fmt: (value) => `[${value.map((item) => $debugStr(item)).join(", ")}]` })}`,
+    `${((value) => (value == null ? "None" : `Some(${value})`))(get(a, i32Key(), { clone: (value) => value }))} ${nodeDebug_fmt(a, { fmt: (value) => String(value) }, i32Key(), { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} ${nodeDebug_fmt(b, { fmt: (value) => $debugStr(value) }, refStrKey(), { fmt: (value) => `[${value.map((item) => $debugStr(item)).join(", ")}]` })}`,
   );
   const c = a;
-  console.log(`${$eq(c, a)} ${c.value != null ? (c.value + 1) >>> 0 : 0}`);
-  console.log(`${fill({ TAG: "Full", _0: 5 })} ${fill({ TAG: "Full" })} ${fill("Empty")}`);
+  const value = $eq(c, a);
+  console.log(`${value} ${c.value != null ? (c.value + 1) >>> 0 : 0}`);
+  const value$1 = fill({ TAG: "Full", _0: 5 });
+  const value$2 = fill({ TAG: "Full" });
+  console.log(`${value$1} ${value$2} ${fill("Empty")}`);
 }
 //# sourceMappingURL=case.js.map

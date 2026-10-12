@@ -18,21 +18,27 @@ export function entry() {
 
 function record(stats, name) {
   const s = $lock(stats, true);
+  s.value.hits = (s.value.hits + 1) >>> 0;
   try {
-    s.value.hits = (s.value.hits + 1) >>> 0;
     s.value.names.push(name);
-  } finally {
+  } catch (error) {
     $unborrow(s);
+    throw error;
   }
+  $unborrow(s);
 }
 
 function total(shared, f) {
-  const mutexGuard = $lock(shared, true);
+  const value = $lock(shared, true);
+  let result;
   try {
-    return f(mutexGuard.value);
-  } finally {
-    $unborrow(mutexGuard);
+    result = f(value.value);
+  } catch (error) {
+    $unborrow(value);
+    throw error;
   }
+  $unborrow(value);
+  return result;
 }
 
 function main() {
@@ -40,85 +46,182 @@ function main() {
   const other = stats;
   record(stats, "a");
   record(other, "b");
-  const hits = $lock(stats).value.hits;
-  console.log(
-    `${hits} [${$lock(stats)
-      .value.names.map((item) => $debugStr(item))
-      .join(", ")}]`,
-  );
+  const value = $lock(stats, true);
+  const hits = value.value.hits;
+  $unborrow(value);
+  const value$1 = $lock(stats, true);
+  try {
+    console.log(`${hits} [${value$1.value.names.map((item) => $debugStr(item)).join(", ")}]`);
+  } catch (error) {
+    $unborrow(value$1);
+    throw error;
+  }
+  $unborrow(value$1);
   const count = { value: 5 };
-  const cell = $lock(count);
-  cell.value = (cell.value + 2) >>> 0;
+  const value$2 = $lock(count, true);
+  value$2.value = (value$2.value + 2) >>> 0;
+  $unborrow(value$2);
   const seen = count;
-  const cell$1 = $lock(seen);
-  cell$1.value = Math.imul(cell$1.value, 3) >>> 0;
-  const now = $lock(count).value;
+  const value$3 = $lock(seen, true);
+  value$3.value = Math.imul(value$3.value, 3) >>> 0;
+  $unborrow(value$3);
+  const value$4 = $lock(count, true);
+  const now = value$4.value;
+  $unborrow(value$4);
   console.log(`${now} ${total(count, (n) => (n + 1) >>> 0)}`);
   const config = { value: [1, 2] };
-  $lock(config).value.push(3);
-  const len = $lockRead(config).value.length;
-  console.log(
-    `[${$lockRead(config)
-      .value.map((item) => String(item))
-      .join(", ")}] ${len}`,
-  );
+  const value$5 = $lock(config, true);
+  try {
+    value$5.value.push(3);
+  } catch (error) {
+    $unborrow(value$5);
+    throw error;
+  }
+  $unborrow(value$5);
+  const value$6 = $lockRead(config, true);
+  const len = value$6.value.length;
+  $unborrow(value$6);
+  const value$7 = $lockRead(config, true);
+  try {
+    console.log(`[${value$7.value.map((item) => String(item)).join(", ")}] ${len}`);
+  } catch (error) {
+    $unborrow(value$7);
+    throw error;
+  }
+  $unborrow(value$7);
   const m = { value: "x" };
-  const cell$2 = $lock(m);
-  cell$2.value += "y";
+  const value$8 = $lock(m, true);
+  value$8.value += "y";
+  $unborrow(value$8);
   console.log(`${m.value}`);
   const counter = { value: 0 };
   const num = $lock(counter, true);
+  num.value = (num.value + 1) | 0;
+  num.value = Math.imul(num.value, 10);
   try {
-    num.value = (num.value + 1) | 0;
-    num.value = Math.imul(num.value, 10);
     console.log(`inside ${num.value}`);
-  } finally {
+  } catch (error) {
     $unborrow(num);
+    throw error;
   }
-  console.log(`${$lock(counter).value}`);
-  const cell$3 = { value: 1.5 };
-  const v = $borrowMut(cell$3, true);
+  $unborrow(num);
+  const value$9 = $lock(counter, true);
   try {
-    v.value += 1;
-    const r = v.value;
-    console.log(`${$displayF64(r)} ${$displayF64(v.value)}`);
-  } finally {
-    $unborrow(v);
+    console.log(`${value$9.value}`);
+  } catch (error) {
+    $unborrow(value$9);
+    throw error;
   }
+  $unborrow(value$9);
+  const cell = { value: 1.5 };
+  const v = $borrowMut(cell, true);
+  v.value += 1;
+  const r = v.value;
+  try {
+    console.log(`${$displayF64(r)} ${$displayF64(v.value)}`);
+  } catch (error) {
+    $unborrow(v);
+    throw error;
+  }
+  $unborrow(v);
   const text = { value: "a" };
   const w = $lock(text, true);
-  try {
-    w.value += "b";
-    w.value += "c";
-  } finally {
-    $unborrow(w);
-  }
+  w.value += "b";
+  w.value += "c";
+  $unborrow(w);
   const slots = [{ value: 1 }, { value: 2 }];
   let i = 0;
   const first = $lock($index(slots, i), true);
   let first$live = true;
+  i = (i + 1) >>> 0;
+  first.value = (first.value + 10) | 0;
   try {
-    i = (i + 1) >>> 0;
-    first.value = (first.value + 10) | 0;
     console.log(`${first.value} ${i}`);
-    first$live = false;
-    $unborrow(first);
-    console.log(
-      `[${slots
-        .map((m) => $lock(m).value)
-        .map((item) => String(item))
-        .join(", ")}]`,
-    );
-    const r = $lockRead(text, true);
-    try {
-      console.log(`${r.value} ${$byteLen(r.value)} ${$displayF64($borrow(cell$3).value)}`);
-    } finally {
-      $unborrow(r);
-    }
-  } finally {
+  } catch (error) {
     if (first$live) {
       $unborrow(first);
     }
+    throw error;
   }
+  first$live = false;
+  try {
+    $unborrow(first);
+  } catch (error) {
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = slots.map((m) => {
+      const value = $lock(m, true);
+      $unborrow(value);
+      return value.value;
+    });
+  } catch (error) {
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  try {
+    console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
+  } catch (error) {
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = $lockRead(text, true);
+  } catch (error) {
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  const r$1 = tmp$1;
+  const value$10 = $byteLen(r$1.value);
+  let tmp$2;
+  try {
+    tmp$2 = $borrow(cell, true);
+  } catch (error) {
+    $unborrow(r$1);
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  const value$11 = [undefined, value$10, tmp$2];
+  try {
+    console.log(`${r$1.value} ${value$11[1]} ${$displayF64(value$11[2].value)}`);
+  } catch (error) {
+    $unborrow(tmp$2);
+    $unborrow(r$1);
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(tmp$2);
+  } catch (error) {
+    $unborrow(r$1);
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(r$1);
+  } catch (error) {
+    if (first$live) {
+      $unborrow(first);
+    }
+    throw error;
+  }
+  first$live = false;
 }
 //# sourceMappingURL=case.js.map

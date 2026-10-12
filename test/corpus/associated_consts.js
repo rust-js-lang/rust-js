@@ -117,12 +117,13 @@ function fresh(TZero, TBump, TDebug) {
 
 function main() {
   console.log("4 shape square 90");
-  console.log(`${describe([2], squareShape())} | ${describe([3], triangleShape())}`);
-  console.log(`${total([[1], [2]], squareShape())} ${describe([1], wrapShape())}`);
-  const arg = fresh(counterZero(), counterBump(), counterDebug());
-  const arg$1 = fresh(u32Zero(), u32Bump(), { fmt: (value) => String(value) });
+  const value = describe([2], squareShape());
+  console.log(`${value} | ${describe([3], triangleShape())}`);
+  const value$1 = total([[1], [2]], squareShape());
+  console.log(`${value$1} ${describe([1], wrapShape())}`);
+  const value$2 = fresh(counterZero(), counterBump(), counterDebug());
   console.log(
-    `(${counterDebug_fmt(arg[0])}, ${counterDebug_fmt(arg[1])}) (${arg$1[0]}, ${arg$1[1]})`,
+    `(${counterDebug_fmt(value$2[0])}, ${counterDebug_fmt(value$2[1])}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(fresh(u32Zero(), u32Bump(), { fmt: (value) => String(value) }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

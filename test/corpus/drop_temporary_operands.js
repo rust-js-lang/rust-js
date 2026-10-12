@@ -23,63 +23,103 @@ function third(fail) {
 function three(a, b, n) {
   try {
     console.log(`three ${a[0]} ${b[0]}`);
-    return n;
-  } finally {
+  } catch (error) {
     noisyDrop_drop(b);
     noisyDrop_drop(a);
+    throw error;
   }
+  try {
+    noisyDrop_drop(b);
+  } catch (error) {
+    noisyDrop_drop(a);
+    throw error;
+  }
+  noisyDrop_drop(a);
+  return n;
 }
 
 function main() {
-  const noisy = make("a");
-  let noisy$live = true;
+  const value = make("a");
+  let _7$live = true;
   let tmp;
-  let noisy$1;
-  let noisy$1$live;
-  let arg;
   try {
-    tmp = noisy;
-    noisy$1 = make("b");
-    noisy$1$live = true;
-    try {
-      arg = third(false);
-      noisy$live = false;
-      noisy$1$live = false;
-      console.log(`${three(tmp, noisy$1, arg)}`);
-    } finally {
-      if (noisy$1$live) {
-        noisyDrop_drop(noisy$1);
-      }
+    tmp = make("b");
+  } catch (error) {
+    if (_7$live) {
+      noisyDrop_drop(value);
     }
-  } finally {
-    if (noisy$live) {
-      noisyDrop_drop(noisy);
-    }
+    throw error;
   }
-  const noisy$2 = make("c");
-  let noisy$2$live = true;
+  let _8$live = true;
   let tmp$1;
-  let noisy$3;
-  let noisy$3$live;
-  let arg$1;
   try {
-    tmp$1 = noisy$2;
-    noisy$3 = make("d");
-    noisy$3$live = true;
-    try {
-      arg$1 = third(true);
-      noisy$2$live = false;
-      noisy$3$live = false;
-      console.log(`${three(tmp$1, noisy$3, arg$1)}`);
-    } finally {
-      if (noisy$3$live) {
-        noisyDrop_drop(noisy$3);
-      }
+    tmp$1 = third(false);
+  } catch (error) {
+    if (_8$live) {
+      noisyDrop_drop(tmp);
     }
-  } finally {
-    if (noisy$2$live) {
-      noisyDrop_drop(noisy$2);
+    if (_7$live) {
+      noisyDrop_drop(value);
     }
+    throw error;
   }
+  _7$live = false;
+  _8$live = false;
+  let tmp$2;
+  try {
+    tmp$2 = three(value, tmp, tmp$1);
+    _8$live = false;
+  } catch (error) {
+    if (_8$live) {
+      noisyDrop_drop(tmp);
+    }
+    if (_7$live) {
+      noisyDrop_drop(value);
+    }
+    throw error;
+  }
+  _7$live = false;
+  console.log(`${tmp$2}`);
+  const value$1 = make("c");
+  let _23$live = true;
+  let tmp$3;
+  try {
+    tmp$3 = make("d");
+  } catch (error) {
+    if (_23$live) {
+      noisyDrop_drop(value$1);
+    }
+    throw error;
+  }
+  let _24$live = true;
+  let tmp$4;
+  try {
+    tmp$4 = third(true);
+  } catch (error) {
+    if (_24$live) {
+      noisyDrop_drop(tmp$3);
+    }
+    if (_23$live) {
+      noisyDrop_drop(value$1);
+    }
+    throw error;
+  }
+  _23$live = false;
+  _24$live = false;
+  let tmp$5;
+  try {
+    tmp$5 = three(value$1, tmp$3, tmp$4);
+    _24$live = false;
+  } catch (error) {
+    if (_24$live) {
+      noisyDrop_drop(tmp$3);
+    }
+    if (_23$live) {
+      noisyDrop_drop(value$1);
+    }
+    throw error;
+  }
+  _23$live = false;
+  console.log(`${tmp$5}`);
 }
 //# sourceMappingURL=case.js.map

@@ -23,7 +23,7 @@ function duplicate(t, TClone) {
   return { ...t, unit: t.unit };
 }
 
-function numbersIterator_next(self) {
+function numbersIterator_next(numbers) {
   return;
 }
 
@@ -41,6 +41,9 @@ function main() {
     [0, 0, 0],
   ];
   const row = grid[0].slice();
+  if (!(0 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 0");
+  }
   grid[0][1] = 5;
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
@@ -91,6 +94,9 @@ function main() {
       return p;
     });
   const copied = points$1.map((item) => ({ ...item }));
+  if (!(0 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 0");
+  }
   copied[0].y = 0;
   console.log(
     `[${points$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${moved$1.map((item) => pointDebug_fmt(item)).join(", ")}] [${copied.map((item) => pointDebug_fmt(item)).join(", ")}]`,

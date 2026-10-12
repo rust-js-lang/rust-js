@@ -30,24 +30,22 @@ function quarter(n) {
 }
 
 function first_doubled(v) {
-  const x = v[0];
-  if (x == null) {
+  if (v[0] == null) {
     return;
   }
+  const x = v[0];
   return Math.imul(x, 2) >>> 0;
 }
 
 function main() {
-  const arg = quarter(8);
-  const arg$1 = quarter(6);
-  const arg$2 = quarter(5);
+  const value = quarter(8);
+  const value$1 = quarter(6);
   console.log(
-    `${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${oddDebug_fmt(arg._0)})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${oddDebug_fmt(arg$1._0)})`} ${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${oddDebug_fmt(arg$2._0)})`}`,
+    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${oddDebug_fmt(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${oddDebug_fmt(value$1._0)})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${oddDebug_fmt(result._0)})`))(quarter(5))}`,
   );
-  const arg$3 = first_doubled([4, 5]);
-  const arg$4 = first_doubled([]);
+  const value$2 = first_doubled([4, 5]);
   console.log(
-    `${arg$3 == null ? "None" : `Some(${arg$3})`} ${arg$4 == null ? "None" : `Some(${arg$4})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first_doubled([]))}`,
   );
 }
 //# sourceMappingURL=case.js.map

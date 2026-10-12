@@ -163,7 +163,7 @@ pub fn page(el: &Element, blob: &Blob, url: &str) -> (&'static Response, js::Pro
 `;
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), source);
-  for (const [out, env] of [[dir, {}], [join(dir, "mir"), { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [[dir, { RUST_JS_MIR: "0" }], [join(dir, "mir"), {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(out, "lib.js"), ...withWeb], 600_000, env);
     // To TypeScript, the trait is the union: by TypeScript's own name for it,
     // `Float32List`, where Rust takes each of its members; else each member,
@@ -335,7 +335,7 @@ pub fn shown(text: &str) -> String {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withJs], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toMatch(/return String\((match\._0|error)\);/);
@@ -725,7 +725,7 @@ pub fn shouted(path: &str) -> String {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('import { readFileSync } from "fs";');
@@ -1349,7 +1349,7 @@ pub fn counted(n: u32) -> String {
     string(Some(unknown(&n)))
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return text;");
@@ -1402,7 +1402,7 @@ pub fn nested(parts: Vec<Option<&Unknown>>) -> String {
     }
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
     const lib = await import(join(dir, out));
     expect([lib.stepped([null, 1, undefined]), lib.first([null]), lib.last([1, null])]).toEqual(["null1undefined", "null", "null"]);
@@ -1515,7 +1515,7 @@ pub fn counted(key: &str) -> f64 {
     dict::get(counts, key).copied().unwrap_or(0.0)
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     // A lookup is the runtime's `$dictGet`, imported with its other helpers.
@@ -1712,7 +1712,7 @@ pub fn kept(n: Option<u32>) -> String {
     plain(&[matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two")])
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('return cn("a", expanded && "wide", !expanded && shown && "tall");');
@@ -1758,7 +1758,7 @@ pub fn call<A: 'static>(value: A, given: Option<&'static dyn Fn(A) -> u32>) -> u
     f(value)
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--library", "--manifest", join(dir, out.replace(".js", ".manifest.json")),
       "--", "--crate-name", "counted", `--emit=metadata=${join(dir, "libcounted.rmeta")}`], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
@@ -1808,7 +1808,7 @@ pub async fn rooted() -> u32 {
 }
 `);
   // From MIR too (ADR 0364).
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('const { run } = await import("./lint.js");');
@@ -2079,7 +2079,7 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
     )))]
 }
 `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withJs], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("    formatted = formatted.replace(REGEXP, (match, escaped, ptn, flag) => {\n");

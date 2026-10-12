@@ -15,10 +15,11 @@ function main() {
     console.log(`${$displayF32(power)} ${$debugF32(power)}`);
     power = Math.fround(power * 2);
   }
-  let seed = 20261001;
+  const seed = 20261001;
+  let seed$1 = seed;
   const next = () => {
-    seed = ((Math.imul(seed, 1664525) >>> 0) + 1013904223) >>> 0;
-    return seed;
+    seed$1 = ((Math.imul(seed$1, 1664525) >>> 0) + 1013904223) >>> 0;
+    return seed$1;
   };
   for (let i = 0; i < 3000; i++) {
     const significand = Math.fround(next() >>> 8);

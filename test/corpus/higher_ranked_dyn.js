@@ -23,6 +23,7 @@ function show(s) {
 
 function main() {
   const b = { value: "bar", impl: stringAsStr() };
-  console.log(`${b.impl.get(b.value)} ${show({ value: "four", impl: stringAsStr() })}`);
+  const value = b.impl.get(b.value);
+  console.log(`${value} ${show({ value: "four", impl: stringAsStr() })}`);
 }
 //# sourceMappingURL=case.js.map

@@ -47,35 +47,47 @@ function loudPartialOrd_partial_cmp(loud, other) {
 
 function main() {
   const heap = $heapFrom([3, 8, 5, 1], $cmp);
-  const option = $peekMut(heap, $cmp);
-  let option$Some$0$live = true;
-  try {
-    if (option) {
-      option$Some$0$live = false;
-      const top = option;
-      try {
-        const cell = $peekMutTop(top, true);
-        cell.value = 0;
-      } finally {
-        $peekMutDrop(top);
+  const value = $peekMut(heap, $cmp);
+  let _5$live = true;
+  let _5$0$live = true;
+  if (value) {
+    _5$0$live = false;
+    const top = value;
+    try {
+      $peekMutTop(top, true).value = 0;
+    } catch (error) {
+      $peekMutDrop(top);
+      throw error;
+    }
+    $peekMutDrop(top);
+    _5$live = false;
+    _5$0$live = false;
+  } else {
+    if (value) {
+      if (_5$0$live) {
+        $peekMutDrop(value);
       }
     }
-  } finally {
-    if (option != null) {
-      if (option$Some$0$live) {
-        $peekMutDrop(option);
-      }
-    }
+    _5$live = false;
+    _5$0$live = false;
   }
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
   const top = $unwrap($peekMut(heap, $cmp));
+  let tmp;
   try {
-    const cell = $peekMutTop(top, true);
-    cell.value = (cell.value - 10) | 0;
-    console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
-  } finally {
+    tmp = $peekMutTop(top, true);
+  } catch (error) {
     $peekMutDrop(top);
+    throw error;
   }
+  tmp.value = (tmp.value - 10) | 0;
+  try {
+    console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
+  } catch (error) {
+    $peekMutDrop(top);
+    throw error;
+  }
+  $peekMutDrop(top);
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
   const top$1 = $unwrap($peekMut(heap, $cmp));
   console.log(`popped ${$peekMutPop(top$1)}`);
@@ -84,53 +96,65 @@ function main() {
   $heapPush(loud, [2], loudOrd_cmp);
   $heapPush(loud, [7], loudOrd_cmp);
   console.log("read");
-  const option$1 = $peekMut(loud, loudOrd_cmp);
-  let option$1$Some$0$live = true;
-  try {
-    if (option$1) {
-      option$1$Some$0$live = false;
-      const top = option$1;
-      try {
-        console.log(`top ${top.heap[0][0]}`);
-      } finally {
-        $peekMutDrop(top);
+  const top$2 = $peekMut(loud, loudOrd_cmp);
+  let _104$live = true;
+  let _104$0$live = true;
+  if (top$2) {
+    _104$0$live = false;
+    try {
+      console.log(`top ${top$2.heap[0][0]}`);
+    } catch (error) {
+      $peekMutDrop(top$2);
+      throw error;
+    }
+    $peekMutDrop(top$2);
+    _104$live = false;
+    _104$0$live = false;
+  } else {
+    if (top$2) {
+      if (_104$0$live) {
+        $peekMutDrop(top$2);
       }
     }
-  } finally {
-    if (option$1 != null) {
-      if (option$1$Some$0$live) {
-        $peekMutDrop(option$1);
-      }
-    }
+    _104$live = false;
+    _104$0$live = false;
   }
   console.log("write");
-  const option$2 = $peekMut(loud, loudOrd_cmp);
-  let option$2$Some$0$live = true;
-  try {
-    if (option$2) {
-      option$2$Some$0$live = false;
-      const top = option$2;
-      try {
-        $peekMutTop(top)[0] = 1;
-      } finally {
-        $peekMutDrop(top);
+  const value$1 = $peekMut(loud, loudOrd_cmp);
+  let _126$live = true;
+  let _126$0$live = true;
+  if (value$1) {
+    _126$0$live = false;
+    const top = value$1;
+    try {
+      $peekMutTop(top)[0] = 1;
+    } catch (error) {
+      $peekMutDrop(top);
+      throw error;
+    }
+    $peekMutDrop(top);
+    _126$live = false;
+    _126$0$live = false;
+  } else {
+    if (value$1) {
+      if (_126$0$live) {
+        $peekMutDrop(value$1);
       }
     }
-  } finally {
-    if (option$2 != null) {
-      if (option$2$Some$0$live) {
-        $peekMutDrop(option$2);
-      }
-    }
+    _126$live = false;
+    _126$0$live = false;
   }
-  const tmp = loud;
-  const option$3 = $peekMut([], $cmp);
+  const value$2 = $peekMut([], $cmp);
   try {
-    console.log(`[${tmp.map((item) => loudDebug_fmt(item)).join(", ")}] ${!option$3}`);
-  } finally {
-    if (option$3 != null) {
-      $peekMutDrop(option$3);
+    console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${!value$2}`);
+  } catch (error) {
+    if (value$2 != null) {
+      $peekMutDrop(value$2);
     }
+    throw error;
+  }
+  if (value$2 != null) {
+    $peekMutDrop(value$2);
   }
 }
 //# sourceMappingURL=case.js.map

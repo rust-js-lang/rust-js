@@ -22,10 +22,10 @@ function take_word(input) {
   const end = $position(input.value, (b) => b === 32) ?? input.value.length;
   const split = $sliceSplitOff(input.value, end);
   input.value = split[0];
-  const word = split[1];
-  if (!word) {
+  if (!split[1]) {
     return;
   }
+  const word = split[1];
   const split$1 = $sliceSplitOffEnd(input.value, false);
   input.value = split$1[0];
   return word;
@@ -56,11 +56,11 @@ function main() {
   );
   const split$4 = $sliceSplitOffEnd(s, false);
   s = split$4[0];
-  const tmp = split$4[1];
+  const value = split$4[1];
   const split$5 = $sliceSplitOffEnd(s, true);
   s = split$5[0];
   console.log(
-    `${tmp == null ? "None" : `Some(${tmp})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.map((item) => String(item)).join(", ")}]`,
+    `${value == null ? "None" : `Some(${value})`} ${split$5[1] == null ? "None" : `Some(${split$5[1]})`} [${s.map((item) => String(item)).join(", ")}]`,
   );
   const split$6 = $sliceSplitOffEnd(s, false);
   s = split$6[0];
@@ -69,7 +69,7 @@ function main() {
   );
   let text = [116, 111, 32, 98, 101, 32, 111, 114];
   while (true) {
-    const result = take_word({
+    const word = take_word({
       get value() {
         return text;
       },
@@ -77,54 +77,57 @@ function main() {
         text = value;
       },
     });
-    const word = result;
-    if (word) {
-      $print(`${word.length} `);
-    } else {
-      break;
+    if (!word) {
+      console.log("");
+      const w = [1, 2, 3, 4, 5, 6];
+      let rest = w;
+      const split = $sliceSplitOffMut(rest, 2);
+      rest = split[0];
+      const head = split[1];
+      if (head) {
+        head[$at(head, 0)] = 10;
+      }
+      const split$1 = $sliceSplitOffEndMut(rest, false, true);
+      rest = split$1[0];
+      const first = split$1[1];
+      if (first != null) {
+        first.value = Math.imul(first.value, 100);
+      }
+      const split$2 = $sliceSplitOffEndMut(rest, true, true);
+      rest = split$2[0];
+      const last = split$2[1];
+      if (last != null) {
+        last.value = -1;
+      }
+      rest.reverse();
+      console.log(`[${w.map((item) => String(item)).join(", ")}]`);
+      const names = ["a", "b"];
+      let all = names;
+      const split$3 = $sliceSplitOffEndMut(all, true, true);
+      all = split$3[0];
+      const name = split$3[1];
+      if (name != null) {
+        name.value += "!";
+      }
+      const length = all.length;
+      if (!(0 < length)) {
+        throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
+      }
+      const all$1 = all;
+      all$1[0] = all$1[0] + "?";
+      console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+      let none = [];
+      const split$4 = $sliceSplitOffEndMut(none, false, true);
+      none = split$4[0];
+      const value = split$4[1];
+      const split$5 = $sliceSplitOffMut(none, 1, true);
+      none = split$5[0];
+      console.log(
+        `${value == null ? "None" : `Some(${value.value})`} ${split$5[1] == null ? "None" : `Some([${split$5[1].map((item) => String(item)).join(", ")}])`}`,
+      );
+      return;
     }
+    $print(`${word.length} `);
   }
-  console.log("");
-  const w = [1, 2, 3, 4, 5, 6];
-  let rest = w;
-  const split$7 = $sliceSplitOffMut(rest, 2);
-  rest = split$7[0];
-  const head = split$7[1];
-  if (head) {
-    head[$at(head, 0)] = 10;
-  }
-  const split$8 = $sliceSplitOffEndMut(rest, false, true);
-  rest = split$8[0];
-  const first = split$8[1];
-  if (first != null) {
-    first.value = Math.imul(first.value, 100);
-  }
-  const split$9 = $sliceSplitOffEndMut(rest, true, true);
-  rest = split$9[0];
-  const last = split$9[1];
-  if (last != null) {
-    last.value = -1;
-  }
-  rest.reverse();
-  console.log(`[${w.map((item) => String(item)).join(", ")}]`);
-  const names = ["a", "b"];
-  let all = names;
-  const split$10 = $sliceSplitOffEndMut(all, true, true);
-  all = split$10[0];
-  const name = split$10[1];
-  if (name != null) {
-    name.value += "!";
-  }
-  all[$at(all, 0)] = all[$at(all, 0)] + "?";
-  console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-  let none = [];
-  const split$11 = $sliceSplitOffEndMut(none, false, true);
-  none = split$11[0];
-  const tmp$1 = split$11[1];
-  const split$12 = $sliceSplitOffMut(none, 1, true);
-  none = split$12[0];
-  console.log(
-    `${tmp$1 == null ? "None" : `Some(${tmp$1.value})`} ${split$12[1] == null ? "None" : `Some([${split$12[1].map((item) => String(item)).join(", ")}])`}`,
-  );
 }
 //# sourceMappingURL=case.js.map

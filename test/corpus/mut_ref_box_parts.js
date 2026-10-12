@@ -7,42 +7,40 @@ export function entry() {
 }
 
 function number(o) {
-  const match = o.value;
-  if (match !== 3) {
-    const kind = "Eq";
-    $assertFailed(kind, String(match), "3");
+  if (o.value !== 3) {
+    $assertFailed("Eq", String(o.value), "3");
   }
   o.value = (o.value + 1) | 0;
 }
 
 function text(o) {
-  const match = o.value;
-  if (match !== "a") {
-    const kind = "Eq";
-    $assertFailed(kind, $debugStr(match), $debugStr("a"));
+  if (o.value !== "a") {
+    $assertFailed("Eq", $debugStr(o.value), $debugStr("a"));
   }
   o.value += "b";
 }
 
 function generic(o, TPartialEq, TDebug) {
-  const match = o.value;
-  if (match != undefined) {
-    const kind = "Eq";
+  if (o.value != undefined) {
     $assertFailed(
-      kind,
-      match == null ? "None" : `Some(${TDebug.fmt($someValue(match))})`,
+      "Eq",
+      o.value == null ? "None" : `Some(${TDebug.fmt($someValue(o.value))})`,
       undefined == null ? "None" : `Some(${TDebug.fmt($someValue(undefined))})`,
     );
   }
 }
 
 function pair(o, p) {
-  const match = o.value;
-  const match$1 = p.value;
-  if (match < match$1) {
-    return (match$1 - match) | 0;
+  const a = o.value;
+  const b = p.value;
+  if (a < b) {
+    const a = o.value;
+    const b = p.value;
+    return (b - a) | 0;
   }
-  return (match - match$1) | 0;
+  const a$1 = o.value;
+  const b$1 = p.value;
+  return (a$1 - b$1) | 0;
 }
 
 function main() {
@@ -56,21 +54,27 @@ function main() {
   s = o$1.value;
   let n;
   const o$2 = { value: n };
+  let a;
+  let b;
   generic(o$2, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
   n = o$2.value;
-  generic({}, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
-  let [a, b] = [2, 7];
-  const o$3 = { value: a };
+  let tmp;
+  const o$3 = { value: tmp };
+  generic(o$3, { eq: (a, b) => a === b }, { fmt: (value) => String(value) });
+  tmp = o$3.value;
+  a = 2;
+  b = 7;
+  const value = n;
+  const o$4 = { value: a };
   const p = { value: b };
-  const result = pair(o$3, p);
-  a = o$3.value;
+  const value$1 = pair(o$4, p);
+  a = o$4.value;
   b = p.value;
-  const tmp = result;
-  const o$4 = { value: b };
+  const o$5 = { value: b };
   const p$1 = { value: a };
-  const result$1 = pair(o$4, p$1);
-  b = o$4.value;
+  const value$2 = pair(o$5, p$1);
+  b = o$5.value;
   a = p$1.value;
-  console.log(`${x} ${s} ${n == null ? "None" : `Some(${n})`} ${tmp} ${result$1}`);
+  console.log(`${x} ${s} ${value == null ? "None" : `Some(${value})`} ${value$1} ${value$2}`);
 }
 //# sourceMappingURL=case.js.map

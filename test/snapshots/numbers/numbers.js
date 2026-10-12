@@ -93,19 +93,29 @@ export function vectors() {
     { x: 0, y: 0 },
   );
   vec2AddAssign_add_assign(c, { ...b });
-  return `${vec2Debug_fmt(c)} ${$displayF64(Vec2.len(a))} ${$debugF64(Vec2.len(vec2Sub_sub({ ...a }, { ...b })))} ${$displayF64(0)}`;
+  const value = Vec2.len(a);
+  return `${vec2Debug_fmt(c)} ${$displayF64(value)} ${$debugF64(Vec2.len(vec2Sub_sub({ ...a }, { ...b })))} ${$displayF64(0)}`;
 }
 
 export function integers(a, b) {
-  const arg = Math.abs(a) | 0;
-  const arg$1 = $pow(a, 2);
-  const arg$2 = $remEuclid(a, 7, -2147483648);
-  const arg$3 = $divEuclid(a, 7, -2147483648);
-  const arg$4 = $checked(b - 10, 0, 4294967295);
-  const arg$5 = $checked(a + 2147483647, -2147483648, 2147483647);
-  const arg$6 = $checked(a * a, -2147483648, 2147483647);
-  const arg$7 = $checkedDiv(a, ((b | 0) - 3) | 0, -2147483648);
-  return `${arg} ${arg$1} ${arg$2} ${arg$3} ${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`} ${arg$6 == null ? "None" : `Some(${arg$6})`} ${arg$7 == null ? "None" : `Some(${arg$7})`} ${Math.max(b - 100, 0)} ${Math.min(b + 4294967290, 4294967295)} ${Math.min(Math.max(a * ((1 << 20) | 0), -2147483648), 2147483647) | 0} ${(b - 5) >>> 0} ${Math.imul(a, (1 << 30) | 0)} ${Math.sign(a)} ${Math.clz32(b)} ${$trailingZeros(b, 32)} ${$countOnes(a)} ${Math.abs(b - 100)}`;
+  const value = Math.abs(a) | 0;
+  const value$1 = $pow(a, 2);
+  const value$2 = $remEuclid(a, 7, -2147483648);
+  const value$3 = $divEuclid(a, 7, -2147483648);
+  const value$4 = $checked(b - 10, 0, 4294967295);
+  const value$5 = $checked(a + 2147483647, -2147483648, 2147483647);
+  const value$6 = $checked(a * a, -2147483648, 2147483647);
+  const value$7 = $checkedDiv(a, ((b | 0) - 3) | 0, -2147483648);
+  const value$8 = Math.max(b - 100, 0);
+  const value$9 = Math.min(b + 4294967290, 4294967295);
+  const value$10 = Math.min(Math.max(a * ((1 << 20) | 0), -2147483648), 2147483647) | 0;
+  const value$11 = (b - 5) >>> 0;
+  const value$12 = Math.imul(a, (1 << 30) | 0);
+  const value$13 = Math.sign(a);
+  const value$14 = Math.clz32(b);
+  const value$15 = $trailingZeros(b, 32);
+  const value$16 = $countOnes(a);
+  return `${value} ${value$1} ${value$2} ${value$3} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8} ${value$9} ${value$10} ${value$11} ${value$12} ${value$13} ${value$14} ${value$15} ${value$16} ${Math.abs(b - 100)}`;
 }
 
 export function narrow(a, b) {
@@ -113,7 +123,18 @@ export function narrow(a, b) {
 }
 
 export function floats(x) {
-  return `${$displayF64(Math.floor(x))} ${$displayF64(Math.ceil(x))} ${$displayF64($round(x))} ${$displayF64(Math.trunc(x))} ${$displayF64(Math.abs(x))} ${$displayF64($f64Max(x, 1.5))} ${$toFixed(x ** 0.5, 3)} ${$displayF64($powi(x, 3))} ${$displayF64($powi(x, -2))} ${Number.isNaN(x)} ${Number.isFinite(x)} ${$displayF64(Math.hypot(x, 4))}`;
+  const value = Math.floor(x);
+  const value$1 = Math.ceil(x);
+  const value$2 = $round(x);
+  const value$3 = Math.trunc(x);
+  const value$4 = Math.abs(x);
+  const value$5 = $f64Max(x, 1.5);
+  const value$6 = x ** 0.5;
+  const value$7 = $powi(x, 3);
+  const value$8 = $powi(x, -2);
+  const value$9 = Number.isNaN(x);
+  const value$10 = Number.isFinite(x);
+  return `${$displayF64(value)} ${$displayF64(value$1)} ${$displayF64(value$2)} ${$displayF64(value$3)} ${$displayF64(value$4)} ${$displayF64(value$5)} ${$toFixed(value$6, 3)} ${$displayF64(value$7)} ${$displayF64(value$8)} ${value$9} ${value$10} ${$displayF64(Math.hypot(x, 4))}`;
 }
 
 export function gcd(a, b) {
@@ -128,14 +149,17 @@ function cell2Debug_fmt(cell2) {
 }
 
 export function grids(n) {
-  const m = Array.from({ length: n }, () => new Array(n).fill(0));
+  const item = new Array(n).fill(0);
+  const m = Array.from({ length: n }, () => item.slice());
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
+      const value = ((Math.imul(i, n) >>> 0) + j) >>> 0;
       const items = $index(m, i);
-      items[$at(items, j)] = ((Math.imul(i, n) >>> 0) + j) >>> 0;
+      items[$at(items, j)] = value;
     }
   }
-  const t = Array.from({ length: n }, () => new Array(n).fill(0));
+  const item$1 = new Array(n).fill(0);
+  const t = Array.from({ length: n }, () => item$1.slice());
   for (const [i, row] of m.entries()) {
     for (const [j, v] of row.entries()) {
       const items = $index(t, j);
@@ -144,21 +168,21 @@ export function grids(n) {
   }
   const cell = { hits: 0 };
   const cells = Array.from({ length: 3 }, () => ({ ...cell }));
-  $index(cells, 1).hits = ($index(cells, 1).hits + 5) >>> 0;
+  const value = $index(cells, 1);
+  value.hits = (value.hits + 5) >>> 0;
   const flags = new Array(n).fill(1);
   return [t, flags, `[${cells.map((item) => cell2Debug_fmt(item)).join(", ")}]`];
 }
 
 export function searches() {
   const v = [1, 3, 3, 3, 5, 7, 7];
-  const found = [0, 1, 3, 4, 7, 8].map((x) => {
-    const arg = $binarySearch(v, x);
-    return arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${arg._0})`;
-  });
+  const found = [0, 1, 3, 4, 7, 8].map((x) =>
+    ((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
+      $binarySearch(v, x),
+    ),
+  );
   const empty = [];
-  const arg = found.join(" ");
-  const arg$1 = $binarySearch(empty, 1);
-  return `${arg} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${arg$1._0})`}`;
+  return `${found.join(" ")} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearch(empty, 1))}`;
 }
 
 export function zeros(a) {
@@ -200,14 +224,14 @@ export function report() {
   for (const x of [2.5, -2.5, 0.49999999999999994, -1.25, 9, -0, 1e21, NaN, Infinity]) {
     out += `${floats(x)}\n`;
   }
-  out += `${gcd(48, 18)} ${$displayF64(2.220446049250313e-16)} ${$displayF64(0.1 + 0.2)}\n`;
+  out += `${gcd(48, 18)} ${$displayF64(2.220446049250313e-16)} ${$displayF64(0.30000000000000004)}\n`;
   out += `[${zeros(-14)
     .map((item) => $debugF64(item))
     .join(", ")}] [${zeros(0)
     .map((item) => $debugF64(item))
     .join(", ")}]\n`;
-  const arg = grids(3);
-  out += `([${arg[0].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}], ${$debugStr(arg[2])})\n${searches()}\n`;
+  const value = grids(3);
+  out += `([${value[0].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}], ${$debugStr(value[2])})\n${searches()}\n`;
   return out;
 }
 //# sourceMappingURL=numbers.js.map

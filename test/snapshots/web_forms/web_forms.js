@@ -79,9 +79,10 @@ export function styled(el) {
 }
 
 export function iterables(nodes, headers, ranges) {
-  let count = 0;
+  const count = 0;
+  let count$1 = count;
   nodes.forEach((_node, _i, _list) => {
-    count = (count + 1) | 0;
+    count$1 = (count$1 + 1) | 0;
   });
   const seen = 0;
   let seen$1 = seen;
@@ -99,7 +100,7 @@ export function iterated(headers, list) {
   const long = list
     .values()
     .filter((token) => $byteLen(token) > 3)
-    .toArray().length;
+    .reduce((n) => n + 1, 0);
   const keys = headers.keys();
   return [names, long, $next(keys)];
 }
@@ -127,7 +128,7 @@ export function on_errors(button) {
 }
 
 export function listed(list, headers) {
-  const count = Iterator.from(list).toArray().length;
+  const count = Iterator.from(list).reduce((n) => n + 1, 0);
   const names = Iterator.from(headers)
     .map(([name]) => name)
     .toArray();
@@ -135,9 +136,10 @@ export function listed(list, headers) {
 }
 
 export function unions_read(reader, data) {
-  const text = typeof reader.result === "string";
-  const match = data.get("name");
-  const name = typeof match === "string" ? match : undefined;
+  const result = reader.result;
+  const text = typeof result === "string";
+  const name$1 = data.get("name");
+  const name = typeof name$1 === "string" ? name$1 : undefined;
   return [text, name];
 }
 

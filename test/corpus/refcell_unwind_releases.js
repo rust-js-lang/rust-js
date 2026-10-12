@@ -8,30 +8,38 @@ export function entry() {
 
 const LOG = { value: [] };
 
-function asksDrop_drop(self) {
+function asksDrop_drop(asks) {
   ((log) => {
-    const result = $tryBorrow(log, true);
+    const value = $tryBorrow(log, true);
+    const value$1 = value.TAG === "Ok";
     try {
-      console.log(`free as it unwinds: ${result.TAG === "Ok"}`);
-    } finally {
-      if (result.TAG === "Ok") {
-        $unborrow(result._0);
+      console.log(`free as it unwinds: ${value$1}`);
+    } catch (error) {
+      if (value.TAG === "Ok") {
+        $unborrow(value._0);
       }
+      throw error;
+    }
+    if (value.TAG === "Ok") {
+      $unborrow(value._0);
     }
   })(LOG);
 }
 
 function main() {
   const _asks = undefined;
+  const value = (log) => {
+    log.push(1);
+    if (log.length === 1) {
+      throw new Error("boom");
+    }
+  };
   try {
-    $withBorrowMut(LOG, (log) => {
-      log.push(1);
-      if (log.length === 1) {
-        throw new Error("boom");
-      }
-    });
-  } finally {
+    $withBorrowMut(LOG, value);
+  } catch (error) {
     asksDrop_drop({ value: _asks });
+    throw error;
   }
+  asksDrop_drop({ value: _asks });
 }
 //# sourceMappingURL=case.js.map

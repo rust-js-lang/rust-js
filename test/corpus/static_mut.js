@@ -11,37 +11,43 @@ function statsDebug_fmt(stats) {
   return `Stats { calls: ${stats.calls}, last: ${stats.last} }`;
 }
 
-const COUNT = { value: 0 };
-const STATS = { value: { calls: 0, last: -1n } };
-const SLOTS = { value: [0, 0, 0] };
-const WRAP = { value: 250 };
+let COUNT = 0;
+const STATS = { calls: 0, last: -1n };
+const SLOTS = [0, 0, 0];
+let WRAP = 250;
 
 function bump() {
-  COUNT.value = (COUNT.value + 1) >>> 0;
-  return COUNT.value;
+  COUNT = (COUNT + 1) >>> 0;
+  return COUNT;
 }
 
 function record(value) {
-  STATS.value.calls = (STATS.value.calls + 1) >>> 0;
-  STATS.value.last = value;
+  STATS.calls = (STATS.calls + 1) >>> 0;
+  STATS.last = value;
+  const value$2 = Number(BigInt.asUintN(32, value)) % 3;
   const value$1 = Number(BigInt.asUintN(8, value));
-  SLOTS.value[$at(SLOTS.value, Number(BigInt.asUintN(32, value)) % 3)] = value$1;
-  WRAP.value = (WRAP.value + 3) & 255;
+  SLOTS[$at(SLOTS, value$2)] = value$1;
+  WRAP = (WRAP + 3) & 255;
 }
 
 function main() {
   const first = bump();
   const second = bump();
-  console.log(`${first} ${second} ${COUNT.value}`);
+  console.log(`${first} ${second} ${COUNT}`);
   record(4n);
   record(8n);
-  const stats = { ...STATS.value };
+  const stats = { ...STATS };
   record(1n);
-  const [calls, last, slot] = [STATS.value.calls, STATS.value.last, SLOTS.value[1]];
+  const calls = STATS.calls;
+  const last = STATS.last;
+  const slot = SLOTS[1];
   console.log(`${statsDebug_fmt(stats)} ${calls} ${last} ${slot}`);
-  const tmp = [SLOTS.value.slice(), WRAP.value];
-  console.log(`[${tmp[0].map((item) => String(item)).join(", ")}] ${tmp[1]}`);
+  const value = [SLOTS.slice(), WRAP];
+  const slots = value[0].slice();
+  const wrap = value[1];
+  console.log(`[${slots.map((item) => String(item)).join(", ")}] ${wrap}`);
   LINES.value = 10;
-  console.log(`${line()} ${line()}`);
+  const value$1 = line();
+  console.log(`${value$1} ${line()}`);
 }
 //# sourceMappingURL=case.js.map

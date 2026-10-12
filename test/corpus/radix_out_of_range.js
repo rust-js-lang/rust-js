@@ -8,9 +8,8 @@ export function entry() {
 
 function main() {
   for (const radix of [2, 36, 37]) {
-    const arg = $parseInt("11", 0, 4294967295, radix);
     console.log(
-      `${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugParseError(arg._0, "ParseIntError")})`}`,
+      `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($parseInt("11", 0, 4294967295, radix))}`,
     );
   }
 }

@@ -12,7 +12,7 @@ function itemDebug_fmt(item) {
 
 function pick(items, log) {
   log.push("pick");
-  return $unwrap(items.at(-1));
+  return $unwrap(items.slice().at(-1));
 }
 
 function value(log) {
@@ -25,19 +25,20 @@ function main() {
     { name: "a", count: 1 },
     { name: "b", count: 2 },
   ];
-  $unwrap(items.at(-1)).count = 9;
-  const item = $unwrap(items[1]);
-  item.count = (item.count + 1) >>> 0;
+  $unwrap(items.slice().at(-1)).count = 9;
+  const value$1 = $unwrap(items[1]);
+  value$1.count = (value$1.count + 1) >>> 0;
   const log = [];
-  const value$1 = value(log);
-  pick(items, log).count = value$1;
+  const value$2 = value(log);
+  const value$3 = pick(items, log);
+  value$3.count = value$2;
   console.log(
     `[${items.map((item) => itemDebug_fmt(item)).join(", ")}] [${log.map((item) => $debugStr(item)).join(", ")}]`,
   );
   const stock = new Map();
   stock.set("pen", { name: "pen", count: 3 });
-  const item$1 = $unwrap(stock.get("pen"));
-  item$1.count = Math.imul(item$1.count, 4) >>> 0;
+  const value$4 = $unwrap(stock.get("pen"));
+  value$4.count = Math.imul(value$4.count, 4) >>> 0;
   console.log(`${$unwrap(stock.get("pen"), "no entry found for key").count}`);
 }
 //# sourceMappingURL=case.js.map

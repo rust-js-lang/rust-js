@@ -6,7 +6,6 @@ import {
   $lent,
   $next,
   $nextIf,
-  $rest,
   $successors,
   $toDigit,
   $unwrap,
@@ -17,14 +16,12 @@ export function entry() {
 }
 
 function skip(it, n) {
-  it = $lent(it);
   for (let i = 0; i < n; i++) {
     $next(it);
   }
 }
 
 function first(it) {
-  it = $lent(it);
   return $next(it);
 }
 
@@ -32,41 +29,36 @@ function number(it) {
   let n = 0;
   while (true) {
     const c = $nextIf(it, (c) => /^[0-9]$/.test(c));
-    if (c != null) {
-      n = ((Math.imul(n, 10) >>> 0) + $unwrap($toDigit(c, 10))) >>> 0;
-    } else {
+    if (c == null) {
       break;
     }
+    n = ((Math.imul(n, 10) >>> 0) + $unwrap($toDigit(c, 10))) >>> 0;
   }
   return n;
 }
 
 function word(it) {
-  it = $lent(it);
   let s = "";
   while (true) {
     const c = $next(it);
     if (c != null) {
-      if (c === " ") {
-        break;
+      if (c !== " ") {
+        s += c;
+        continue;
       }
-      s += c;
-    } else {
-      break;
     }
+    break;
   }
   return s;
 }
 
 function take2(it) {
-  it = $lent(it);
-  return Iterator.from(it).take(2).toArray();
+  return $lent(Iterator.from(it)).take(2).toArray();
 }
 
 function until_zero(it) {
-  it = $lent(it);
   let sum = 0;
-  for (const x of Iterator.from(it)) {
+  for (const x of it) {
     if (x === 0) {
       break;
     }
@@ -86,36 +78,37 @@ function countdownIterator_next(countdown) {
 function main() {
   const it = $iter([1, 2, 3, 4, 5]);
   skip(it, 2);
-  const arg = first(it);
+  const value = first(it);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} [${$rest(it)
+    `${value == null ? "None" : `Some(${value})`} [${it
+      .toArray()
       .map((item) => String(item))
       .join(", ")}]`,
   );
   const c = [5];
   skip($iterator(c, countdownIterator_next), 1);
-  const arg$1 = first($iterator(c, countdownIterator_next));
-  const arg$2 = countdownIterator_next(c);
+  const value$1 = first($iterator(c, countdownIterator_next));
   console.log(
-    `${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))(countdownIterator_next(c))}`,
   );
   const chars = $iter(Array.from("12+345"));
   const a = number(chars);
   $next(chars);
   console.log(`${a} ${number(chars)}`);
   const words = $iter(Array.from("hello big world"));
-  const [x, y] = [word(words), word(words)];
+  const x = word(words);
+  const y = word(words);
   console.log(`${x} ${y} ${word(words)}`);
-  const lazy = $successors(1, (n) => Math.imul(n, 2) >>> 0).map((n) => (n + 1) >>> 0);
+  const lazy = Iterator.from($successors(1, (n) => Math.imul(n, 2) >>> 0)).map(
+    (n) => (n + 1) >>> 0,
+  );
   const a$1 = take2(lazy);
-  const arg$3 = $next(lazy);
   console.log(
-    `[${a$1.map((item) => String(item)).join(", ")}] ${arg$3 == null ? "None" : `Some(${arg$3})`}`,
+    `[${a$1.map((item) => String(item)).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(lazy))}`,
   );
   const v = $iter([1, 2, 0, 3, 4, 0, 5]);
   const s1 = until_zero(v);
   const s2 = until_zero(v);
-  const arg$4 = $next(v);
-  console.log(`${s1} ${s2} ${arg$4 == null ? "None" : `Some(${arg$4})`}`);
+  console.log(`${s1} ${s2} ${((value) => (value == null ? "None" : `Some(${value})`))($next(v))}`);
 }
 //# sourceMappingURL=case.js.map

@@ -15,6 +15,6 @@ function main() {
   const v = [];
   const i = 0;
   const value$1 = value(1);
-  v[$at(v, i)] = (v[$at(v, i)] + value$1) | 0;
+  v[$at(v, i)] = (v[i] + value$1) | 0;
 }
 //# sourceMappingURL=case.js.map

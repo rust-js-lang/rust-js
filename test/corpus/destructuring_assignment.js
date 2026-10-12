@@ -5,45 +5,32 @@ export function entry() {
 }
 
 function fibonacci(n) {
-  let [a, b] = [0n, 1n];
+  let a = 0n;
+  let b = 1n;
   for (let i = 0; i < n; i++) {
-    const [lhs, lhs$1] = [b, BigInt.asUintN(64, a + b)];
-    a = lhs;
-    b = lhs$1;
+    const value = BigInt.asUintN(64, a + b);
+    a = b;
+    b = value;
   }
   return a;
 }
 
 function main() {
-  let a;
-  let b;
-  const [lhs, lhs$1] = [1, 2];
-  a = lhs;
-  b = lhs$1;
-  let c;
-  let d;
-  let e;
-  const tmp = [3, [4, 5]];
-  c = tmp[0];
-  d = tmp[1][0];
-  e = tmp[1][1];
+  const a = 1;
+  const b = 2;
+  const d = [4, 5][0];
+  const value = [4, 5][1];
+  let c = 3;
+  let e = value;
   c = (c + 1) | 0;
   e = Math.imul(e, 2);
-  let x;
-  let y;
-  const { x: lhs$2, y: lhs$3 } = { x: 7, y: 8 };
-  x = lhs$2;
-  y = lhs$3;
+  const { x, y } = { x: 7, y: 8 };
   console.log(`${a} ${b} ${c} ${d} ${e} ${x} ${y}`);
   const slots = [0, 0, 0, 0];
-  const tmp$1 = [9, 10, 11, 12];
-  slots[0] = tmp$1[0];
-  slots[3] = tmp$1[3];
-  let first;
-  let last;
-  const tmp$2 = [1, 2, 3, 4];
-  first = tmp$2[0];
-  last = tmp$2[3];
+  slots[0] = 9;
+  slots[3] = 12;
+  const first = 1;
+  const last = 4;
   console.log(
     `[${slots.map((item) => String(item)).join(", ")}] ${first} ${last} ${fibonacci(10)}`,
   );

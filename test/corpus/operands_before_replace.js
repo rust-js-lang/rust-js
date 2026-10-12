@@ -4,19 +4,19 @@ export function entry() {
   main();
 }
 
-const HITS = { value: 1 };
+let HITS = 1;
 
 function main() {
   let x = 1;
-  const tmp = (x + 0) >>> 0;
+  const value = (x + 0) >>> 0;
   const old = x;
   x = 5;
-  console.log(`${tmp} ${old}`);
+  console.log(`${value} ${old}`);
   console.log(`${x}`);
-  const tmp$1 = HITS.value;
-  const previous = HITS.value;
-  HITS.value = (previous + 10) >>> 0;
-  console.log(`${tmp$1} ${previous}`);
-  console.log(`${HITS.value}`);
+  const value$1 = HITS;
+  const previous = HITS;
+  HITS = (previous + 10) >>> 0;
+  console.log(`${value$1} ${previous}`);
+  console.log(`${HITS}`);
 }
 //# sourceMappingURL=case.js.map

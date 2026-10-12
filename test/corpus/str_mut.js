@@ -6,6 +6,7 @@ import {
   $debugStr,
   $fromUtf8Mut,
   $index,
+  $mutItems,
   $strGetMut,
   $strPart,
   $strSlice,
@@ -54,12 +55,13 @@ function main() {
   u = t$2.value;
   console.log(`${u}`);
   const v = ["x", "y"];
-  v[$at(v, 1)] = $asciiCase(v[$at(v, 1)], true);
-  const t$3 = { value: $index(v, 0) };
+  v[$at(v, 1)] = $asciiCase(v[1], true);
+  $index(v, 0);
+  const t$3 = { value: v[0] };
   shout(t$3);
-  v[$at(v, 0)] = t$3.value;
-  for (let i = 0; i < v.length; i++) {
-    v[i] = $asciiCase(v[i], false);
+  v[0] = t$3.value;
+  for (const w of $mutItems(v)) {
+    w.value = $asciiCase(w.value, false);
   }
   console.log(`[${v.map((item) => $debugStr(item)).join(", ")}]`);
   let kept = "hey";
@@ -94,7 +96,7 @@ function main() {
       4,
     ),
   );
-  const result = tail({
+  const part = tail({
     get value() {
       return name;
     },
@@ -102,7 +104,7 @@ function main() {
       name = value;
     },
   });
-  result.value = $asciiCase(result.value, true);
+  part.value = $asciiCase(part.value, true);
   console.log(`${name}`);
   let word = "capital";
   const head = $strGetMut(
@@ -121,31 +123,37 @@ function main() {
     head.value = $asciiCase(head.value, true);
   }
   console.log(`${word}`);
-  const arg = $strGetMut(
-    {
-      get value() {
-        return word;
-      },
-      set value(value) {
-        word = value;
-      },
-    },
-    1,
-    9,
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value.value)})`))(
+      $strGetMut(
+        {
+          get value() {
+            return word;
+          },
+          set value(value) {
+            word = value;
+          },
+        },
+        1,
+        9,
+      ),
+    )}`,
   );
-  console.log(`${arg == null ? "None" : `Some(${$debugStr(arg.value)})`}`);
-  const arg$1 = $strGetMut(
-    {
-      get value() {
-        return word;
-      },
-      set value(value) {
-        word = value;
-      },
-    },
-    9,
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value.value)})`))(
+      $strGetMut(
+        {
+          get value() {
+            return word;
+          },
+          set value(value) {
+            word = value;
+          },
+        },
+        9,
+      ),
+    )}`,
   );
-  console.log(`${arg$1 == null ? "None" : `Some(${$debugStr(arg$1.value)})`}`);
   let accented = "ébc";
   console.log(
     `${
@@ -163,7 +171,7 @@ function main() {
     }`,
   );
   let pair = "left|right";
-  const tmp = $strSplitAtMut(
+  const [a, z] = $strSplitAtMut(
     {
       get value() {
         return pair;
@@ -174,10 +182,10 @@ function main() {
     },
     5,
   );
-  tmp[0].value = $asciiCase(tmp[0].value, true);
-  tmp[1].value = $asciiCase(tmp[1].value, true);
-  tmp[0].value = $asciiCase(tmp[0].value, false);
-  console.log(`${tmp[0].value} ${tmp[1].value}`);
+  a.value = $asciiCase(a.value, true);
+  z.value = $asciiCase(z.value, true);
+  a.value = $asciiCase(a.value, false);
+  console.log(`${a.value} ${z.value}`);
   console.log(`${pair}`);
   console.log(
     `${!$strSplitAtMut(
@@ -206,7 +214,8 @@ function main() {
     true,
   );
   if (value) {
-    value[1].value = $asciiCase(value[1].value, false);
+    const rest = value[1];
+    rest.value = $asciiCase(rest.value, false);
   }
   console.log(`${pair}`);
   console.log(`${$strSlice(pair, 1, 3)}`);
@@ -214,7 +223,7 @@ function main() {
   pair = $asciiCase(pair, true, 0, 2);
   pair = $asciiCase(pair, true, 6, 8);
   console.log(`${pair}`);
-  const head$1 = $strPart(
+  const item = $strPart(
     {
       get value() {
         return pair;
@@ -226,24 +235,25 @@ function main() {
     0,
     3,
   );
-  head$1.value = $asciiCase(head$1.value, false);
+  item.value = $asciiCase(item.value, false);
   console.log(`${pair}`);
   pair = $asciiCase(pair, true, 7);
   console.log(`${pair}`);
   pair = $asciiCase(pair, true, 0, 2);
   console.log(`${pair}`);
   const bytes = [104, 101, 108, 108, 111];
-  const text = $fromUtf8Mut(bytes);
-  if (text.TAG === "Ok") {
-    text._0.value = $asciiCase(text._0.value, true);
-    console.log(`${text._0.value}`);
+  const value$1 = $fromUtf8Mut(bytes);
+  if (value$1.TAG === "Ok") {
+    const text = value$1._0;
+    text.value = $asciiCase(text.value, true);
+    console.log(`${text.value}`);
   }
   console.log(`[${bytes.map((item) => String(item)).join(", ")}]`);
   const bad = [255, 97];
   console.log(`${$fromUtf8Mut(bad).TAG !== "Ok"}`);
   const raw = [97, 195, 169, 98];
-  const cell = $fromUtf8Mut(raw, true);
-  cell.value = $asciiCase(cell.value, true);
+  const part$1 = $fromUtf8Mut(raw, true);
+  part$1.value = $asciiCase(part$1.value, true);
   console.log(`[${raw.map((item) => String(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

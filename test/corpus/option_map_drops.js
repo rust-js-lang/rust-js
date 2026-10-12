@@ -23,19 +23,19 @@ function wrapped(value) {
 
 function keep_if(value, keep, dropT) {
   let value$live = true;
-  try {
-    if (keep) {
-      value$live = false;
-      return value;
-    }
-    return;
-  } finally {
-    if (value$live) {
-      if (value != null) {
-        dropT?.($someValue(value));
-      }
+  let result;
+  if (keep) {
+    value$live = false;
+    result = value;
+  } else {
+    result = undefined;
+  }
+  if (value$live) {
+    if (value != null) {
+      dropT?.($someValue(value));
     }
   }
+  return result;
 }
 
 function checked(n) {
@@ -51,172 +51,959 @@ function wrapped_result(value) {
 
 function discard_result(value, keep, dropT) {
   let value$live = true;
-  try {
-    if (keep) {
-      value$live = false;
-      if (value.TAG === "Ok") {
-        dropT?.(value._0);
-      }
-      return true;
+  let result;
+  if (keep) {
+    value$live = false;
+    if (value.TAG === "Ok") {
+      dropT?.(value._0);
     }
-    return false;
-  } finally {
-    if (value$live) {
-      if (value.TAG === "Ok") {
-        dropT?.(value._0);
-      }
+    result = true;
+  } else {
+    result = false;
+  }
+  if (value$live) {
+    if (value.TAG === "Ok") {
+      dropT?.(value._0);
     }
   }
+  return result;
 }
 
 function main() {
-  const option = make(1);
-  let option$live = true;
-  let map;
-  let read;
-  try {
-    option$live = false;
-    map = (d) => {
-      try {
-        return (d[0] + 10) >>> 0;
-      } finally {
-        dDrop_drop(d);
-      }
-    };
-    read = option ? map(option) : undefined;
-  } finally {
-    if (option$live) {
-      if (option != null) {
-        dDrop_drop(option);
-      }
-    }
-  }
+  const d = make(1);
+  const map = (d) => {
+    const result = (d[0] + 10) >>> 0;
+    dDrop_drop(d);
+    return result;
+  };
+  const read = d ? map(d) : undefined;
   console.log(`read ${read == null ? "None" : `Some(${read})`}`);
   const value = make(2);
   const kept = value ? [value] : undefined;
   let kept$live = true;
+  const value$1 = (l) => l[0][0];
   try {
-    console.log(`kept ${kept?.[0][0] ?? 0}`);
-    const value = make(0);
-    const none = value ? [value] : undefined;
-    try {
-      console.log(`none ${!none}`);
-      const generic = wrapped(make(3));
-      try {
-        console.log(`generic ${generic?.[0][0] ?? 0}`);
-        kept$live = false;
-        if (kept != null) {
-          dDrop_drop(kept[0]);
-        }
-        const option = keep_if(make(4), false, dDrop_drop);
-        try {
-          console.log(`${!option}`);
-        } finally {
-          if (option != null) {
-            dDrop_drop(option);
-          }
-        }
-        const option$1 = keep_if($some(make(5)), false, (option$2) => {
-          if (option$2 != null) {
-            dDrop_drop(option$2);
-          }
-        });
-        try {
-          console.log(`${option$1 == null}`);
-        } finally {
-          if (option$1 != null) {
-            if ($someValue(option$1) != null) {
-              dDrop_drop($someValue(option$1));
-            }
-          }
-        }
-        const option$2 = keep_if($some(make(0)), false, (option) => {
-          if (option != null) {
-            dDrop_drop(option);
-          }
-        });
-        try {
-          console.log(`${option$2 == null}`);
-        } finally {
-          if (option$2 != null) {
-            if ($someValue(option$2) != null) {
-              dDrop_drop($someValue(option$2));
-            }
-          }
-        }
-        const nested = keep_if($some(make(6)), true, (option) => {
-          if (option != null) {
-            dDrop_drop(option);
-          }
-        });
-        try {
-          console.log(`${nested != null}`);
-          const result = checked(1);
-          const ok = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
-          try {
-            console.log(`ok ${ok.TAG === "Ok" ? ok._0[0][0] : 0}`);
-            const result = checked(12);
-            const result$1 = result.TAG === "Ok" ? { TAG: "Ok", _0: [result._0] } : result;
-            let result$2$Ok$0$live = true;
-            try {
-              if (result$1.TAG === "Ok") {
-                result$2$Ok$0$live = false;
-                const l = result$1._0;
-                try {
-                  console.log(`ok ${l[0][0]}`);
-                } finally {
-                  dDrop_drop(l[0]);
-                }
-              } else {
-                console.log(`err ${result$1._0}`);
-              }
-            } finally {
-              if (result$1.TAG === "Ok") {
-                if (result$2$Ok$0$live) {
-                  dDrop_drop(result$1._0[0]);
-                }
-              }
-            }
-            const generic = wrapped_result(checked(2));
-            try {
-              console.log(`generic ${generic.TAG === "Ok" ? generic._0[0][0] : 0}`);
-              console.log(
-                `${discard_result(checked(3), false, dDrop_drop)} ${discard_result(checked(4), true, dDrop_drop)}`,
-              );
-              console.log("end");
-            } finally {
-              if (generic.TAG === "Ok") {
-                dDrop_drop(generic._0[0]);
-              }
-            }
-          } finally {
-            if (ok.TAG === "Ok") {
-              dDrop_drop(ok._0[0]);
-            }
-          }
-        } finally {
-          if (nested != null) {
-            if ($someValue(nested) != null) {
-              dDrop_drop($someValue(nested));
-            }
-          }
-        }
-      } finally {
-        if (generic != null) {
-          dDrop_drop(generic[0]);
-        }
-      }
-    } finally {
-      if (none != null) {
-        dDrop_drop(none[0]);
-      }
-    }
-  } finally {
+    console.log(`kept ${kept != null ? value$1(kept) : 0}`);
+  } catch (error) {
     if (kept$live) {
       if (kept != null) {
         dDrop_drop(kept[0]);
       }
     }
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = make(0);
+  } catch (error) {
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  const none = tmp ? [tmp] : undefined;
+  try {
+    console.log(`none ${!none}`);
+  } catch (error) {
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = make(3);
+  } catch (error) {
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let generic;
+  try {
+    generic = wrapped(tmp$1);
+  } catch (error) {
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  const value$2 = (w) => w[0][0];
+  try {
+    console.log(`generic ${generic != null ? value$2(generic) : 0}`);
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  kept$live = false;
+  try {
+    if (kept != null) {
+      dDrop_drop(kept[0]);
+    }
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$2;
+  try {
+    tmp$2 = make(4);
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$3;
+  try {
+    tmp$3 = keep_if(tmp$2, false, dDrop_drop);
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    console.log(`${!tmp$3}`);
+  } catch (error) {
+    if (tmp$3 != null) {
+      dDrop_drop(tmp$3);
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (tmp$3 != null) {
+      dDrop_drop(tmp$3);
+    }
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$4;
+  try {
+    tmp$4 = $some(make(5));
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$5;
+  try {
+    tmp$5 = keep_if(tmp$4, false, (option) => {
+      if (option != null) {
+        dDrop_drop(option);
+      }
+    });
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$5 == null}`);
+  } catch (error) {
+    if (tmp$5 != null) {
+      if ($someValue(tmp$5) != null) {
+        dDrop_drop($someValue(tmp$5));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (tmp$5 != null) {
+      if ($someValue(tmp$5) != null) {
+        dDrop_drop($someValue(tmp$5));
+      }
+    }
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$6;
+  try {
+    tmp$6 = $some(make(0));
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$7;
+  try {
+    tmp$7 = keep_if(tmp$6, false, (option) => {
+      if (option != null) {
+        dDrop_drop(option);
+      }
+    });
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$7 == null}`);
+  } catch (error) {
+    if (tmp$7 != null) {
+      if ($someValue(tmp$7) != null) {
+        dDrop_drop($someValue(tmp$7));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (tmp$7 != null) {
+      if ($someValue(tmp$7) != null) {
+        dDrop_drop($someValue(tmp$7));
+      }
+    }
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$8;
+  try {
+    tmp$8 = $some(make(6));
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let nested;
+  try {
+    nested = keep_if(tmp$8, true, (option) => {
+      if (option != null) {
+        dDrop_drop(option);
+      }
+    });
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    console.log(`${nested != null}`);
+  } catch (error) {
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$9;
+  try {
+    tmp$9 = checked(1);
+  } catch (error) {
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  const ok = tmp$9.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$9._0] } : tmp$9;
+  const value$3 = (l) => l[0][0];
+  try {
+    console.log(`ok ${ok.TAG === "Ok" ? value$3(ok._0) : 0}`);
+  } catch (error) {
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$10;
+  try {
+    tmp$10 = checked(12);
+  } catch (error) {
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  const value$4 = tmp$10.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$10._0] } : tmp$10;
+  let _156$0$live = true;
+  if (value$4.TAG === "Ok") {
+    _156$0$live = false;
+    try {
+      console.log(`ok ${value$4._0[0][0]}`);
+    } catch (error) {
+      dDrop_drop(value$4._0[0]);
+      if (value$4.TAG === "Ok") {
+        if (_156$0$live) {
+          dDrop_drop(value$4._0[0]);
+        }
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0[0]);
+      }
+      if (nested != null) {
+        if ($someValue(nested) != null) {
+          dDrop_drop($someValue(nested));
+        }
+      }
+      if (generic != null) {
+        dDrop_drop(generic[0]);
+      }
+      if (none != null) {
+        dDrop_drop(none[0]);
+      }
+      if (kept$live) {
+        if (kept != null) {
+          dDrop_drop(kept[0]);
+        }
+      }
+      throw error;
+    }
+    try {
+      dDrop_drop(value$4._0[0]);
+    } catch (error) {
+      if (value$4.TAG === "Ok") {
+        if (_156$0$live) {
+          dDrop_drop(value$4._0[0]);
+        }
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0[0]);
+      }
+      if (nested != null) {
+        if ($someValue(nested) != null) {
+          dDrop_drop($someValue(nested));
+        }
+      }
+      if (generic != null) {
+        dDrop_drop(generic[0]);
+      }
+      if (none != null) {
+        dDrop_drop(none[0]);
+      }
+      if (kept$live) {
+        if (kept != null) {
+          dDrop_drop(kept[0]);
+        }
+      }
+      throw error;
+    }
+  } else {
+    try {
+      console.log(`err ${value$4._0}`);
+    } catch (error) {
+      if (value$4.TAG === "Ok") {
+        if (_156$0$live) {
+          dDrop_drop(value$4._0[0]);
+        }
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0[0]);
+      }
+      if (nested != null) {
+        if ($someValue(nested) != null) {
+          dDrop_drop($someValue(nested));
+        }
+      }
+      if (generic != null) {
+        dDrop_drop(generic[0]);
+      }
+      if (none != null) {
+        dDrop_drop(none[0]);
+      }
+      if (kept$live) {
+        if (kept != null) {
+          dDrop_drop(kept[0]);
+        }
+      }
+      throw error;
+    }
+  }
+  try {
+    if (value$4.TAG === "Ok") {
+      if (_156$0$live) {
+        dDrop_drop(value$4._0[0]);
+      }
+    }
+  } catch (error) {
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  _156$0$live = false;
+  let tmp$11;
+  try {
+    tmp$11 = checked(2);
+  } catch (error) {
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let generic$1;
+  try {
+    generic$1 = wrapped_result(tmp$11);
+  } catch (error) {
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  const value$5 = (w) => w[0][0];
+  try {
+    console.log(`generic ${generic$1.TAG === "Ok" ? value$5(generic$1._0) : 0}`);
+  } catch (error) {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$12;
+  try {
+    tmp$12 = checked(3);
+  } catch (error) {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$13;
+  try {
+    tmp$13 = discard_result(tmp$12, false, dDrop_drop);
+  } catch (error) {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$14;
+  try {
+    tmp$14 = checked(4);
+  } catch (error) {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  let tmp$15;
+  try {
+    tmp$15 = [undefined, discard_result(tmp$14, true, dDrop_drop)];
+  } catch (error) {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp$13} ${tmp$15[1]}`);
+  } catch (error) {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    console.log("end");
+  } catch (error) {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (generic$1.TAG === "Ok") {
+      dDrop_drop(generic$1._0[0]);
+    }
+  } catch (error) {
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (ok.TAG === "Ok") {
+      dDrop_drop(ok._0[0]);
+    }
+  } catch (error) {
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (nested != null) {
+      if ($someValue(nested) != null) {
+        dDrop_drop($someValue(nested));
+      }
+    }
+  } catch (error) {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (generic != null) {
+      dDrop_drop(generic[0]);
+    }
+  } catch (error) {
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
+  }
+  try {
+    if (none != null) {
+      dDrop_drop(none[0]);
+    }
+  } catch (error) {
+    if (kept$live) {
+      if (kept != null) {
+        dDrop_drop(kept[0]);
+      }
+    }
+    throw error;
   }
 }
 //# sourceMappingURL=case.js.map

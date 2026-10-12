@@ -16,9 +16,8 @@ function counterIterator_next(counter) {
 }
 
 function after_first(it) {
-  it = Iterator.from(it);
   $next(it);
-  for (const x of Iterator.from(it)) {
+  for (const x of it) {
     console.log(`took ${x}`);
     if (x >= 2) {
       break;

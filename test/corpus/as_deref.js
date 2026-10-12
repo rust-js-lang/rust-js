@@ -12,10 +12,10 @@ function nameDeref_deref(name) {
 }
 
 function greet(name) {
-  if (name === "root") {
-    return "hi admin";
-  }
   if (name != null) {
+    if (name === "root") {
+      return "hi admin";
+    }
     return `hi ${name}`;
   }
   return "hi stranger";
@@ -24,23 +24,28 @@ function greet(name) {
 function main() {
   const owned = "ann";
   const none = undefined;
-  console.log(`${greet(owned)} ${greet(none)}`);
-  const arg = owned != null ? $byteLen(owned) : undefined;
-  console.log(`${arg == null ? "None" : `Some(${arg})`}`);
+  const value$1 = greet(owned);
+  console.log(`${value$1} ${greet(none)}`);
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${value})`))(owned != null ? $byteLen(owned) : undefined)}`,
+  );
   const items = [3, 1, 2];
   const slice = items;
-  const arg$1 = slice != null ? slice[0] : undefined;
+  const value$2 = slice?.length;
+  const value = slice != null ? slice[0] : undefined;
   console.log(
-    `${slice?.length == null ? "None" : `Some(${slice?.length})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value == null ? "None" : `Some(${value})`}`,
   );
   const boxed = 7;
   console.log(`${boxed == null ? "None" : `Some(${boxed})`}`);
   const shared = "rc";
-  const arg$2 = shared?.toUpperCase();
-  console.log(`${arg$2 == null ? "None" : `Some(${$debugStr(arg$2)})`}`);
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(shared?.toUpperCase())}`,
+  );
   const named = ["custom"];
-  const arg$3 = named != null ? nameDeref_deref(named) : undefined;
-  console.log(`${arg$3 == null ? "None" : `Some(${$debugStr(arg$3)})`}`);
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(named != null ? nameDeref_deref(named) : undefined)}`,
+  );
   const ok = { TAG: "Ok", _0: "fine" };
   const err = { TAG: "Err", _0: 4 };
   console.log(
@@ -48,8 +53,7 @@ function main() {
   );
   const sharedOk = { TAG: "Ok", _0: "rc ok" };
   console.log(`${sharedOk.TAG === "Ok" ? `Ok(${$debugStr(sharedOk._0)})` : `Err(${sharedOk._0})`}`);
-  const value = ok;
-  if (value.TAG === "Ok" && value._0 === "fine") {
+  if (ok.TAG === "Ok" && ok._0 === "fine") {
     console.log("matched");
   }
 }

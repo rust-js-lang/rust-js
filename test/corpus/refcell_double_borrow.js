@@ -9,11 +9,32 @@ export function entry() {
 function main() {
   const cell = { value: [1] };
   const reading = $borrow(cell, true);
+  let tmp;
   try {
-    $borrowMut(cell).value.push(2);
-    console.log(`${reading.value.length}`);
-  } finally {
+    tmp = $borrowMut(cell, true);
+  } catch (error) {
     $unborrow(reading);
+    throw error;
   }
+  try {
+    tmp.value.push(2);
+  } catch (error) {
+    $unborrow(tmp);
+    $unborrow(reading);
+    throw error;
+  }
+  try {
+    $unborrow(tmp);
+  } catch (error) {
+    $unborrow(reading);
+    throw error;
+  }
+  try {
+    console.log(`${reading.value.length}`);
+  } catch (error) {
+    $unborrow(reading);
+    throw error;
+  }
+  $unborrow(reading);
 }
 //# sourceMappingURL=case.js.map

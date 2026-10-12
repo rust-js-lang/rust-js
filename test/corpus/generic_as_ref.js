@@ -44,17 +44,16 @@ function scoresAsRef_i32__as_ref(scores) {
 
 function main() {
   const owned = "tea";
-  console.log(
-    `${shout("hi", { as_ref: (value) => value })} ${shout(owned, { as_ref: (value) => value })} ${shout(owned, { as_ref: (value) => value })} ${shout({ first: "ada" }, nameAsRefStr())}`,
-  );
-  console.log(
-    `${total([1, 2, 3], {
-      as_ref: (value) => value,
-    })} ${total([4, 5], { as_ref: (value) => value })} ${total([6], { as_ref: (value) => value })} ${total([[7, 8]], scoresAsRef_i32_())}`,
-  );
-  console.log(
-    `${longest(["a", "abc"], { as_ref: (value) => value })} ${longest(["four"], { as_ref: (value) => value })}`,
-  );
+  const value = shout("hi", { as_ref: (value) => value });
+  const value$1 = shout(owned, { as_ref: (value) => value });
+  const value$2 = shout(owned, { as_ref: (value) => value });
+  console.log(`${value} ${value$1} ${value$2} ${shout({ first: "ada" }, nameAsRefStr())}`);
+  const value$3 = total([1, 2, 3], { as_ref: (value) => value });
+  const value$4 = total([4, 5], { as_ref: (value) => value });
+  const value$5 = total([6], { as_ref: (value) => value });
+  console.log(`${value$3} ${value$4} ${value$5} ${total([[7, 8]], scoresAsRef_i32_())}`);
+  const value$6 = longest(["a", "abc"], { as_ref: (value) => value });
+  console.log(`${value$6} ${longest(["four"], { as_ref: (value) => value })}`);
   const name = { first: "lin" };
   const direct = nameAsRefStr_as_ref(name);
   console.log(`${direct} ${scoresAsRef_i32__as_ref([[1, 2]]).length}`);

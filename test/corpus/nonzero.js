@@ -33,42 +33,38 @@ function main() {
   const a = $unwrap(7);
   const b = undefined;
   console.log(`${a} ${a} ${b == null ? "None" : `Some(${b})`} ${(a + 1) & 255}`);
-  const arg = year(2024);
-  const arg$1 = year(0);
+  const value = year(2024);
   console.log(
-    `${arg == null ? "None" : `Some(${yearDebug_fmt(arg)})`} ${arg$1 == null ? "None" : `Some(${yearDebug_fmt(arg$1)})`}`,
+    `${value == null ? "None" : `Some(${yearDebug_fmt(value)})`} ${((value) => (value == null ? "None" : `Some(${yearDebug_fmt(value)})`))(year(0))}`,
   );
-  const arg$2 = non_zero(0);
-  const arg$3 = non_zero(3);
+  const value$1 = non_zero(0);
   console.log(
-    `${arg$2 == null ? "None" : `Some(${arg$2})`} ${arg$3 == null ? "None" : `Some(${arg$3})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))(non_zero(3))}`,
   );
   const big = $unwrap(18446744073709551615n);
   console.log(`${big} ${$bigLeadingZeros(big)} 1`);
   const c = a | 8;
   console.log(`${c} ${a < c} ${a === $unwrap(7)}`);
-  const arg$4 = $nonZeroOk($parseInt("12", 0, 255), "number would be zero for non-zero type");
-  const arg$5 = $nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type");
+  const value$2 = $nonZeroOk($parseInt("12", 0, 255), "number would be zero for non-zero type");
   console.log(
-    `${arg$4.TAG === "Ok" ? `Ok(${arg$4._0})` : `Err(${$debugParseError(arg$4._0, "ParseIntError")})`} ${arg$5.TAG === "Ok" ? `Ok(${arg$5._0})` : `Err(${$debugParseError(arg$5._0, "ParseIntError")})`}`,
+    `${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugParseError(value$2._0, "ParseIntError")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($nonZeroOk($parseInt("0", 0, 255), "number would be zero for non-zero type"))}`,
   );
   const result = $nonZeroOk($tryFromInt(3, 0, 255), "number would be zero for non-zero type");
-  const arg$6 = result.TAG === "Ok" ? result._0 : undefined;
-  const arg$7 = $nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type");
+  const value$3 = result.TAG === "Ok" ? result._0 : undefined;
   console.log(
-    `${arg$6 == null ? "None" : `Some(${arg$6})`} ${arg$7.TAG === "Ok" ? `Ok(${arg$7._0})` : `Err(${$debugParseError(arg$7._0, "TryFromIntError")})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "TryFromIntError")})`))($nonZeroOk($tryFromInt(0, 0, 255), "number would be zero for non-zero type"))}`,
   );
   const d = -5;
-  const arg$8 = Math.abs(d) | 0;
-  const arg$9 = $checked(d * $unwrap(2), -2147483648, 2147483647);
-  console.log(`${arg$8} ${arg$9 == null ? "None" : `Some(${arg$9})`}`);
+  console.log(
+    `${Math.abs(d) | 0} ${((value) => (value == null ? "None" : `Some(${value})`))($checked(d * $unwrap(2), -2147483648, 2147483647))}`,
+  );
   const v = [$unwrap(9), a, $unwrap(1)];
   v.sort((a, b) => a - b);
   console.log(`[${v.map((item) => String(item)).join(", ")}] 8`);
   for (const n of v) {
-    if (n === 7) {
+    if (7 === n) {
       console.log("seven");
-    } else if (n === 1) {
+    } else if (1 === n) {
       console.log("one");
     } else {
       console.log(`${n}`);

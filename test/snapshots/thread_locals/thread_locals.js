@@ -2,7 +2,7 @@
 
 let COUNT = 0;
 const LOG = [];
-const START = { value: (Math.imul(10, 4) + 2) | 0 };
+const START = (Math.imul(10, 4) + 2) | 0;
 
 export function bump() {
   COUNT = (COUNT + 1) >>> 0;
@@ -17,6 +17,6 @@ export function record(line) {
 }
 
 export function start() {
-  return START.value;
+  return START;
 }
 //# sourceMappingURL=thread_locals.js.map

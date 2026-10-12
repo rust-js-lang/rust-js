@@ -33,12 +33,13 @@ function gridAsMut_u8__as_mut(grid) {
 
 function main() {
   const stack = { items: [3, 1, 2] };
-  const items = stackAsMut_i32__as_mut(stack);
-  items[$at(items, 0)] = 9;
+  const value$1 = stackAsMut_i32__as_mut(stack);
+  value$1[$at(value$1, 0)] = 9;
   console.log(`[${stack.items.map((item) => String(item)).join(", ")}]`);
   const slice = stackBorrowMut_i32__borrow_mut(stack);
   slice.sort((a, b) => a - b);
-  slice[$at(slice, 2)] = (slice[$at(slice, 2)] + 1) | 0;
+  const value = (slice[$at(slice, 2)] + 1) | 0;
+  slice[2] = value;
   console.log(`[${stack.items.map((item) => String(item)).join(", ")}]`);
   const all = stackAsMut_i32__as_mut(stack);
   all.reverse();
@@ -46,8 +47,8 @@ function main() {
     `[${stack.items.map((item) => String(item)).join(", ")}] ${stackBorrow_i32__borrow(stack).length}`,
   );
   const grid = [[0, 0, 0, 0]];
-  for (const item of $mutItems(gridAsMut_u8__as_mut(grid)).entries()) {
-    item[1].value = ((item[0] & 255) * 2) & 255;
+  for (const [i, cell] of $mutItems(gridAsMut_u8__as_mut(grid)).entries()) {
+    cell.value = ((i & 255) * 2) & 255;
   }
   const result = gridAsMut_u8__as_mut(grid);
   $swap(result, 0, 3);

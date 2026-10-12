@@ -11,11 +11,14 @@ function pow(base, one, exp, TMul, TCopy) {
   for (let i = 0; i < exp; i++) {
     acc = TMul.mul(TCopy.copy(acc), TCopy.copy(base));
   }
-  return acc;
+  return TCopy.copy(acc);
 }
 
 function total(items, zero, TAdd, TCopy) {
-  return items.reduce((acc, x) => TAdd.add(TCopy.copy(acc), TCopy.copy(x)), TCopy.copy(zero));
+  return items.reduce((acc, _3) => {
+    const x = TCopy.copy(_3);
+    return TAdd.add(TCopy.copy(acc), TCopy.copy(x));
+  }, TCopy.copy(zero));
 }
 
 function same(a, b, TPartialEq) {
@@ -30,24 +33,35 @@ function main() {
   let c = [2147483647];
   c = [(c[0] + 1) | 0];
   c = [(c[0] - 2) | 0];
-  console.log(`${c[0]} -128 ${~0 & 65535}`);
+  console.log(`${c[0]} ${-128} ${~0 & 65535}`);
   const wrapping$1 = [1];
-  const tmp = [(wrapping$1[0] << 35) >>> 0];
   const wrapping$2 = [-16n];
-  const tmp$1 = [wrapping$2[0] >> 2n];
   const wrapping$3 = [1];
-  console.log(`${tmp[0]} ${tmp$1[0]} ${(wrapping$3[0] << (9 & 7)) & 255}`);
   console.log(
-    `${pow([3], [1], 7, { mul: (a, b) => [(a[0] * b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 }, { copy: (value) => value })}`,
+    `${(wrapping$1[0] << 35) >>> 0} ${wrapping$2[0] >> 2n} ${(wrapping$3[0] << (9 & 7)) & 255}`,
+  );
+  const value = pow(
+    [3],
+    [1],
+    7,
+    { mul: (a, b) => [(a[0] * b[0]) & 255] },
+    { copy: (value) => [value[0]] },
   );
   console.log(
-    `${total([[250], [10]], [0], { add: (a, b) => [(a[0] + b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${same([5n], [5n], { eq: $eq })}`,
+    `${value[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 }, { copy: (value) => value })}`,
   );
+  const value$1 = total(
+    [[250], [10]],
+    [0],
+    { add: (a, b) => [(a[0] + b[0]) & 255] },
+    { copy: (value) => [value[0]] },
+  );
+  console.log(`${value$1[0]} ${same([5n], [5n], { eq: $eq })}`);
   const left = [7];
   const right = [9];
-  const tmp$2 = $cmp(left[0], right[0]) > 0 ? left : right;
   const left$1 = [3];
   const right$1 = [-1];
-  console.log(`${tmp$2[0]} ${$cmp(left$1[0], right$1[0]) < 0}`);
+  const value$2 = $cmp(left[0], right[0]) > 0 ? left : right;
+  console.log(`${value$2[0]} ${$cmp(left$1[0], right$1[0]) < 0}`);
 }
 //# sourceMappingURL=case.js.map

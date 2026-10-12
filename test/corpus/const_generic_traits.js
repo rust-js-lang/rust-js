@@ -83,26 +83,27 @@ function by(s, K, SScaled) {
 }
 
 function main() {
+  const value = sevenRepeat_repeat(undefined, 4);
+  const value$1 = sevenRepeat().twice(undefined);
   console.log(
-    `[${sevenRepeat_repeat(undefined, 4)
-      .map((item) => String(item))
-      .join(", ")}] [${sevenRepeat()
-      .twice(undefined)
-      .map((item) => String(item))
-      .join(", ")}] [${three(undefined, sevenRepeat())
+    `[${value.map((item) => String(item)).join(", ")}] [${value$1.map((item) => String(item)).join(", ")}] [${three(
+      undefined,
+      sevenRepeat(),
+    )
       .map((item) => String(item))
       .join(", ")}]`,
   );
   const m = [3];
+  const value$2 = metersScaled10_scaled(m);
+  const value$3 = metersScaled100_scaled(m);
+  const value$4 = metersScaled100().factor(m);
+  console.log(`${value$2} ${value$3} ${value$4} ${by_ten(m, metersScaled10())}`);
+  const value$5 = by(m, 100, metersScaled100());
+  const value$6 = by([2], 5, anyScaled(5));
   console.log(
-    `${metersScaled10_scaled(m)} ${metersScaled100_scaled(m)} ${metersScaled100().factor(m)} ${by_ten(m, metersScaled10())}`,
+    `(${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(by([3], 7, anyScaled(7)))}`,
   );
-  const arg = by(m, 100, metersScaled100());
-  const arg$1 = by([2], 5, anyScaled(5));
-  const arg$2 = by([3], 7, anyScaled(7));
-  console.log(`(${arg[0]}, ${arg[1]}) (${arg$1[0]}, ${arg$1[1]}) (${arg$2[0]}, ${arg$2[1]})`);
-  console.log(
-    `${padded(undefined, dotsPad())} ${dotsPad_pad(undefined, "x", 1, { fmt: (value) => value })}`,
-  );
+  const value$7 = padded(undefined, dotsPad());
+  console.log(`${value$7} ${dotsPad_pad(undefined, "x", 1, { fmt: (value) => value })}`);
 }
 //# sourceMappingURL=case.js.map

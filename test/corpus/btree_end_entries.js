@@ -7,7 +7,7 @@ import {
   $entryGet,
   $entryInsert,
   $entryRemove,
-  $range,
+  $lazyRange,
   $sortedEntries,
   $unwrap,
 } from "@rust-js/runtime";
@@ -17,18 +17,19 @@ export function entry() {
 }
 
 function main() {
-  const names = new Map($range(1, 4 + 1).map((i) => [i, String(i)]));
-  const first = $endEntry(names, $cmp, false);
-  if (first) {
-    const first$1 = first;
-    const cell = $entryGet(first$1, true);
-    cell.value += "!";
-    console.log(`${first$1[1]} ${$entryGet(first$1)}`);
+  const names = new Map($lazyRange(1, 5).map((i) => [i, String(i)]));
+  const value$1 = $endEntry(names, $cmp, false);
+  if (value$1) {
+    const first = value$1;
+    const value = $entryGet(first, true);
+    value.value += "!";
+    console.log(`${first[1]} ${$entryGet(first)}`);
   }
   const last = $endEntry(names, $cmp, true);
   if (last) {
-    const arg = $entryRemove(last, true);
-    console.log(`(${arg[0]}, ${$debugStr(arg[1])})`);
+    console.log(
+      `${((tuple) => `(${tuple[0]}, ${$debugStr(tuple[1])})`)($entryRemove(last, true))}`,
+    );
   }
   console.log(
     `{${Array.from($sortedEntries(names, $cmp))
@@ -40,31 +41,33 @@ function main() {
     ["a", 1],
     ["c", 3],
   ]);
-  const first$1 = $endEntry(counts, $cmp, false);
-  if (first$1) {
-    const first = first$1;
-    const cell = $entryGet(first, true);
-    cell.value = (cell.value + 10) | 0;
+  const value = $endEntry(counts, $cmp, false);
+  if (value) {
+    const first = value;
+    const value$1 = $entryGet(first, true);
+    value$1.value = (value$1.value + 10) | 0;
     const old = $entryInsert(first, 100);
     const arg = $entryGet(first);
     console.log(`${old} ${arg}`);
   }
-  const cell = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
-  cell.value = Math.imul(cell.value, 7);
+  const value$2 = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
+  value$2.value = Math.imul(value$2.value, 7);
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
   const e = $endEntry(counts, $cmp, false);
-  const arg = e ? $entryRemove(e) : undefined;
-  console.log(`${arg == null ? "None" : `Some(${arg})`}`);
+  console.log(
+    `${((value) => (value == null ? "None" : `Some(${value})`))(e ? $entryRemove(e) : undefined)}`,
+  );
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
   const empty = new Map();
-  console.log(`${!$endEntry(empty, $cmp, false)} ${!$endEntry(empty, $cmp, true)}`);
+  const value$3 = !$endEntry(empty, $cmp, false);
+  console.log(`${value$3} ${!$endEntry(empty, $cmp, true)}`);
 }
 //# sourceMappingURL=case.js.map

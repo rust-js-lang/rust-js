@@ -1,4 +1,3 @@
-//@ ignore-rust-js: THIR's lowering refuses stepping through a `char` range a variable keeps
 // A `char` range stepped from both ends, and collected across the
 // surrogates, which no `char` is: each step is a code point's.
 fn main() {

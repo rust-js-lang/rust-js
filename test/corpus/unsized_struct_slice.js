@@ -5,8 +5,9 @@ export function entry() {
 }
 
 function check(val) {
-  console.log(`${val.a} [${val.inner.map((item) => String(item)).join(", ")}]`);
-  return val.inner.length;
+  const { a, inner } = val;
+  console.log(`${a} [${inner.map((item) => String(item)).join(", ")}]`);
+  return inner.length;
 }
 
 function main() {

@@ -12,190 +12,751 @@ function loudDrop_drop(loud) {
 
 const Mapped = {
   earliest(mapped, dropT) {
-    let mapped$Single$0$live = true;
-    let mapped$Ambiguous$0$live = true;
-    try {
-      if (mapped.TAG === "Single" || mapped.TAG === "Ambiguous") {
-        mapped$Single$0$live = false;
-        mapped$Ambiguous$0$live = false;
-        const t = mapped._0;
-        return $some(t);
-      }
-      return;
-    } finally {
+    let mapped$0$live = true;
+    let mapped$0$live$1 = true;
+    let result;
+    bb9: {
+      let t;
       if (mapped.TAG === "Single") {
-        if (mapped$Single$0$live) {
-          dropT?.(mapped._0);
-        }
+        mapped$0$live$1 = false;
+        t = mapped._0;
+      } else if (mapped.TAG === "Ambiguous") {
+        mapped$0$live = false;
+        t = mapped._0;
+      } else {
+        result = undefined;
+        break bb9;
       }
-      if (mapped.TAG === "Ambiguous") {
-        if (mapped$Ambiguous$0$live) {
-          dropT?.(mapped._0);
-        }
+      result = $some(t);
+    }
+    if (mapped.TAG === "Single") {
+      if (mapped$0$live$1) {
+        dropT?.(mapped._0);
+      }
+    } else if (mapped.TAG === "Ambiguous") {
+      if (mapped$0$live) {
+        dropT?.(mapped._0);
+      }
+      dropT?.(mapped._1);
+    }
+    return result;
+  },
+  latest(mapped, dropT) {
+    let mapped$1$live = true;
+    let mapped$0$live = true;
+    let result;
+    bb9: {
+      let t;
+      if (mapped.TAG === "Single") {
+        mapped$0$live = false;
+        t = mapped._0;
+      } else if (mapped.TAG === "Ambiguous") {
+        mapped$1$live = false;
+        t = mapped._1;
+      } else {
+        result = undefined;
+        break bb9;
+      }
+      result = $some(t);
+    }
+    if (mapped.TAG === "Single") {
+      if (mapped$0$live) {
+        dropT?.(mapped._0);
+      }
+    } else if (mapped.TAG === "Ambiguous") {
+      dropT?.(mapped._0);
+      if (mapped$1$live) {
         dropT?.(mapped._1);
       }
     }
-  },
-  latest(mapped, dropT) {
-    let mapped$Single$0$live = true;
-    let mapped$Ambiguous$1$live = true;
-    try {
-      if (mapped.TAG === "Single" || mapped.TAG === "Ambiguous") {
-        mapped$Single$0$live = false;
-        mapped$Ambiguous$1$live = false;
-        const t = mapped.TAG === "Single" ? mapped._0 : mapped._1;
-        return $some(t);
-      }
-      return;
-    } finally {
-      if (mapped.TAG === "Single") {
-        if (mapped$Single$0$live) {
-          dropT?.(mapped._0);
-        }
-      }
-      if (mapped.TAG === "Ambiguous") {
-        dropT?.(mapped._0);
-        if (mapped$Ambiguous$1$live) {
-          dropT?.(mapped._1);
-        }
-      }
-    }
+    return result;
   },
 };
 
 function middle(shape) {
-  let shape$Pair$1$live = true;
-  let shape$Triple$1$live = true;
-  try {
-    if (shape.TAG === "Pair" || shape.TAG === "Triple") {
-      shape$Pair$1$live = false;
-      shape$Triple$1$live = false;
-      const m = shape._1;
-      let m$live = true;
+  let m$live = false;
+  let shape$1$live = true;
+  let shape$1$live$1 = true;
+  let result;
+  let m;
+  if (shape.TAG === "Pair") {
+    shape$1$live$1 = false;
+    m$live = true;
+    m = shape._1;
+  } else {
+    if (shape.TAG !== "Triple") {
       try {
-        console.log(`got ${m[0]}`);
-        m$live = false;
-        return m;
-      } finally {
-        if (m$live) {
-          loudDrop_drop(m);
+        console.log("none");
+      } catch (error) {
+        if (shape.TAG === "Pair") {
+          loudDrop_drop(shape._0);
+          if (shape$1$live$1) {
+            loudDrop_drop(shape._1);
+          }
+        } else if (shape.TAG === "Triple") {
+          loudDrop_drop(shape._0);
+          if (shape$1$live) {
+            loudDrop_drop(shape._1);
+          }
+          loudDrop_drop(shape._2);
         }
+        throw error;
       }
+      result = undefined;
+      if (shape.TAG === "Pair") {
+        loudDrop_drop(shape._0);
+        if (shape$1$live$1) {
+          loudDrop_drop(shape._1);
+        }
+      } else if (shape.TAG === "Triple") {
+        loudDrop_drop(shape._0);
+        if (shape$1$live) {
+          loudDrop_drop(shape._1);
+        }
+        loudDrop_drop(shape._2);
+      }
+      return result;
     }
-    console.log("none");
-    return;
-  } finally {
+    shape$1$live = false;
+    m$live = true;
+    m = shape._1;
+  }
+  try {
+    console.log(`got ${m[0]}`);
+  } catch (error) {
+    if (m$live) {
+      loudDrop_drop(m);
+    }
     if (shape.TAG === "Pair") {
       loudDrop_drop(shape._0);
-      if (shape$Pair$1$live) {
+      if (shape$1$live$1) {
         loudDrop_drop(shape._1);
       }
-    }
-    if (shape.TAG === "Triple") {
+    } else if (shape.TAG === "Triple") {
       loudDrop_drop(shape._0);
-      if (shape$Triple$1$live) {
+      if (shape$1$live) {
         loudDrop_drop(shape._1);
       }
       loudDrop_drop(shape._2);
     }
+    throw error;
   }
+  m$live = false;
+  result = m;
+  m$live = false;
+  if (shape.TAG === "Pair") {
+    loudDrop_drop(shape._0);
+    if (shape$1$live$1) {
+      loudDrop_drop(shape._1);
+    }
+  } else if (shape.TAG === "Triple") {
+    loudDrop_drop(shape._0);
+    loudDrop_drop(shape._2);
+  }
+  return result;
 }
 
 function name(shape) {
-  let shape$Pair$0$live = true;
-  let shape$Triple$2$live = true;
+  let shape$2$live = true;
+  let shape$0$live = true;
+  let result;
+  let first;
+  if (shape.TAG === "Pair") {
+    shape$0$live = false;
+    first = shape._0;
+  } else {
+    if (shape.TAG !== "Triple") {
+      result = "empty";
+      if (shape.TAG === "Pair") {
+        if (shape$0$live) {
+          loudDrop_drop(shape._0);
+        }
+        loudDrop_drop(shape._1);
+      } else if (shape.TAG === "Triple") {
+        loudDrop_drop(shape._0);
+        loudDrop_drop(shape._1);
+        if (shape$2$live) {
+          loudDrop_drop(shape._2);
+        }
+      }
+      return result;
+    }
+    shape$2$live = false;
+    first = shape._2;
+  }
   try {
-    if (!(shape.TAG === "Pair" || shape.TAG === "Triple")) {
-      return "empty";
-    }
-    shape$Pair$0$live = false;
-    shape$Triple$2$live = false;
-    const first = shape.TAG === "Pair" ? shape._0 : shape._2;
-    try {
-      console.log(`kept ${first[0]}`);
-      return first[0];
-    } finally {
-      loudDrop_drop(first);
-    }
-  } finally {
+    console.log(`kept ${first[0]}`);
+  } catch (error) {
+    loudDrop_drop(first);
     if (shape.TAG === "Pair") {
-      if (shape$Pair$0$live) {
+      if (shape$0$live) {
         loudDrop_drop(shape._0);
       }
       loudDrop_drop(shape._1);
-    }
-    if (shape.TAG === "Triple") {
+    } else if (shape.TAG === "Triple") {
       loudDrop_drop(shape._0);
       loudDrop_drop(shape._1);
-      if (shape$Triple$2$live) {
-        loudDrop_drop(shape._2);
-      }
     }
+    throw error;
   }
+  result = first[0];
+  try {
+    loudDrop_drop(first);
+  } catch (error) {
+    if (shape.TAG === "Pair") {
+      if (shape$0$live) {
+        loudDrop_drop(shape._0);
+      }
+      loudDrop_drop(shape._1);
+    } else if (shape.TAG === "Triple") {
+      loudDrop_drop(shape._0);
+      loudDrop_drop(shape._1);
+    }
+    throw error;
+  }
+  if (shape.TAG === "Pair") {
+    if (shape$0$live) {
+      loudDrop_drop(shape._0);
+    }
+    loudDrop_drop(shape._1);
+  } else if (shape.TAG === "Triple") {
+    loudDrop_drop(shape._0);
+    loudDrop_drop(shape._1);
+  }
+  return result;
 }
 
 function main() {
   const a = Mapped.earliest({ TAG: "Ambiguous", _0: ["a1"], _1: ["a2"] }, loudDrop_drop);
+  const value = (l) => l[0];
   try {
-    console.log(`earliest ${a?.[0] ?? "none"}`);
-    const b = Mapped.latest({ TAG: "Ambiguous", _0: ["b1"], _1: ["b2"] }, loudDrop_drop);
-    try {
-      console.log(`latest ${b?.[0] ?? "none"}`);
-      const c = Mapped.earliest({ TAG: "Single", _0: ["c"] }, loudDrop_drop);
-      try {
-        console.log(`single ${c?.[0] ?? "none"}`);
-        const n = Mapped.latest("None", loudDrop_drop);
-        try {
-          console.log(`none ${!n}`);
-          const numbers = Mapped.latest({ TAG: "Ambiguous", _0: 1, _1: 2 });
-          console.log(`numbers ${numbers == null ? "None" : `Some(${numbers})`}`);
-          const m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
-          try {
-            console.log(`middle ${m?.[0] ?? "none"}`);
-            const p = middle({ TAG: "Pair", _0: ["p1"], _1: ["p2"] });
-            try {
-              console.log(`middle ${p?.[0] ?? "none"}`);
-              const option = middle("Empty");
-              try {
-                console.log(`middle none ${!option}`);
-              } finally {
-                if (option != null) {
-                  loudDrop_drop(option);
-                }
-              }
-              console.log(`name ${name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] })}`);
-              console.log(`name ${name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] })}`);
-              console.log(`name ${name("Empty")}`);
-              console.log("end");
-            } finally {
-              if (p != null) {
-                loudDrop_drop(p);
-              }
-            }
-          } finally {
-            if (m != null) {
-              loudDrop_drop(m);
-            }
-          }
-        } finally {
-          if (n != null) {
-            loudDrop_drop(n);
-          }
-        }
-      } finally {
-        if (c != null) {
-          loudDrop_drop(c);
-        }
-      }
-    } finally {
-      if (b != null) {
-        loudDrop_drop(b);
-      }
-    }
-  } finally {
+    console.log(`earliest ${a != null ? value(a) : "none"}`);
+  } catch (error) {
     if (a != null) {
       loudDrop_drop(a);
     }
+    throw error;
+  }
+  let b;
+  try {
+    b = Mapped.latest({ TAG: "Ambiguous", _0: ["b1"], _1: ["b2"] }, loudDrop_drop);
+  } catch (error) {
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  const value$1 = (l) => l[0];
+  try {
+    console.log(`latest ${b != null ? value$1(b) : "none"}`);
+  } catch (error) {
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let c;
+  try {
+    c = Mapped.earliest({ TAG: "Single", _0: ["c"] }, loudDrop_drop);
+  } catch (error) {
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  const value$2 = (l) => l[0];
+  try {
+    console.log(`single ${c != null ? value$2(c) : "none"}`);
+  } catch (error) {
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let n;
+  try {
+    n = Mapped.latest("None", loudDrop_drop);
+  } catch (error) {
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`none ${!n}`);
+  } catch (error) {
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let numbers;
+  try {
+    numbers = Mapped.latest({ TAG: "Ambiguous", _0: 1, _1: 2 });
+  } catch (error) {
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`numbers ${numbers == null ? "None" : `Some(${numbers})`}`);
+  } catch (error) {
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let m;
+  try {
+    m = middle({ TAG: "Triple", _0: ["t1"], _1: ["t2"], _2: ["t3"] });
+  } catch (error) {
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  const value$3 = (l) => l[0];
+  try {
+    console.log(`middle ${m != null ? value$3(m) : "none"}`);
+  } catch (error) {
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let p;
+  try {
+    p = middle({ TAG: "Pair", _0: ["p1"], _1: ["p2"] });
+  } catch (error) {
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  const value$4 = (l) => l[0];
+  try {
+    console.log(`middle ${p != null ? value$4(p) : "none"}`);
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = middle("Empty");
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`middle none ${!tmp}`);
+  } catch (error) {
+    if (tmp != null) {
+      loudDrop_drop(tmp);
+    }
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    if (tmp != null) {
+      loudDrop_drop(tmp);
+    }
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = name({ TAG: "Triple", _0: ["x1"], _1: ["x2"], _2: ["x3"] });
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`name ${tmp$1}`);
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let tmp$2;
+  try {
+    tmp$2 = name({ TAG: "Pair", _0: ["y1"], _1: ["y2"] });
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`name ${tmp$2}`);
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  let tmp$3;
+  try {
+    tmp$3 = name("Empty");
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log(`name ${tmp$3}`);
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    console.log("end");
+  } catch (error) {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    if (p != null) {
+      loudDrop_drop(p);
+    }
+  } catch (error) {
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    if (m != null) {
+      loudDrop_drop(m);
+    }
+  } catch (error) {
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    if (n != null) {
+      loudDrop_drop(n);
+    }
+  } catch (error) {
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    if (c != null) {
+      loudDrop_drop(c);
+    }
+  } catch (error) {
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  try {
+    if (b != null) {
+      loudDrop_drop(b);
+    }
+  } catch (error) {
+    if (a != null) {
+      loudDrop_drop(a);
+    }
+    throw error;
+  }
+  if (a != null) {
+    loudDrop_drop(a);
   }
 }
 //# sourceMappingURL=case.js.map

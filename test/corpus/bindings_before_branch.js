@@ -7,12 +7,7 @@ export function entry() {
 function pick(a) {
   const x = (a + 1) >>> 0;
   const z = Math.imul(x, 3) >>> 0;
-  let y;
-  if (x > 3) {
-    y = Math.imul(x, 2) >>> 0;
-  } else {
-    y = (x + 1) >>> 0;
-  }
+  const y = x > 3 ? Math.imul(x, 2) >>> 0 : (x + 1) >>> 0;
   return (((y + z) >>> 0) + x) >>> 0;
 }
 

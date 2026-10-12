@@ -25,16 +25,19 @@ export function area(s) {
 }
 
 export function classify(s) {
-  if (s.TAG === "Circle" && s._0 > 10) {
-    return 3;
-  }
-  if (s.TAG === "Circle") {
+  if (s.TAG !== "Circle") {
+    if (s !== "Empty") {
+      if (s.w !== 0) {
+        return 1;
+      }
+    }
+  } else {
+    if (s._0 > 10) {
+      return 3;
+    }
     return 2;
   }
-  if ((s.TAG === "Rect" && s.w === 0) || s === "Empty") {
-    return 0;
-  }
-  return 1;
+  return 0;
 }
 
 export function is_round(s) {
@@ -78,28 +81,23 @@ export function checked_div(a, b) {
 }
 
 export function div_or(a, b, fallback) {
-  const match = checked_div(a, b);
-  if (match.TAG === "Ok") {
-    return match._0;
-  }
-  return fallback;
+  const value = checked_div(a, b);
+  return value.TAG === "Ok" ? value._0 : fallback;
 }
 
 export function discriminants(i) {
   let level;
-  const match = i % 3;
-  if (match === 0) {
+  if (i % 3 === 0) {
     level = "Low";
-  } else if (match === 1) {
+  } else if (i % 3 === 1) {
     level = "Mid";
   } else {
     level = "High";
   }
   let status;
-  const match$1 = i % 3;
-  if (match$1 === 0) {
+  if (i % 3 === 0) {
     status = "Ok";
-  } else if (match$1 === 1) {
+  } else if (i % 3 === 1) {
     status = "NotFound";
   } else {
     status = "Teapot";
@@ -114,9 +112,11 @@ export function discriminants(i) {
 function grow(f) {
   if (f.value !== "Dot") {
     if (f.value.TAG === "Poly") {
-      f.value._0.push(0);
+      const points = f.value._0;
+      points.push(0);
     } else {
-      f.value.r *= 2;
+      const value = f.value;
+      value.r *= 2;
     }
   }
 }

@@ -47,17 +47,18 @@ function main() {
   const key = (x) => (x.value / 10) >>> 0;
   $dedupByCells(tens, (a, b) => key(a) === key(b));
   console.log(`[${tens.map((item) => String(item)).join(", ")}]`);
+  let s;
   const words = ["a", "A", "b", "B", "b"].map((s) => s).slice();
   $dedupByCells(words, (a, b) => a.value.toLowerCase() === b.value.toLowerCase());
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
-  const s = [1, 2, 3];
+  s = [1, 2, 3];
   s.push(...$copyRange(s, 1));
   console.log(`[${s.map((item) => String(item)).join(", ")}]`);
-  const removed = $splice(s, 1, 3, [7, 8, 9]).slice();
+  const removed = Iterator.from($splice(s, 1, 3, [7, 8, 9])).toArray();
   console.log(
     `[${removed.map((item) => String(item)).join(", ")}] [${s.map((item) => String(item)).join(", ")}]`,
   );
-  $splice(s, 0, 1, []);
+  Iterator.from($splice(s, 0, 1, []));
   console.log(`[${s.map((item) => String(item)).join(", ")}]`);
   const top = $popIfCell(s, (x) => x.value > 5);
   const kept = $popIfCell(s, (x) => x.value > 100);
@@ -88,8 +89,8 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const item = [0];
-  const points = Array.from({ length: 1 }, () => item.slice());
+  const value = [0];
+  const points = Array.from({ length: 1 }, () => value.slice());
   $resize(points, 3, [1], (item) => item.slice());
   $index(points, 1).push(2);
   console.log(

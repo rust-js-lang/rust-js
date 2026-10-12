@@ -7,17 +7,18 @@ import {
   $dedup,
   $extend,
   $insertAt,
+  $iter,
+  $lazySkipWhile,
+  $lazyTakeWhile,
+  $lazyZip,
   $maxBy,
   $minBy,
   $partition,
   $range,
   $removeAt,
-  $skipWhile,
   $swap,
-  $takeWhile,
   $truncate,
   $windows,
-  $zip,
 } from "@rust-js/runtime";
 
 function half(n) {
@@ -64,10 +65,13 @@ export function more_options(n) {
 
 export function results(c) {
   const r = parse(c);
-  const arg = r.TAG === "Ok" ? { TAG: "Ok", _0: Math.imul(r._0, 10) >>> 0 } : r;
-  const tmp = arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`;
-  const arg$1 = r.TAG === "Err" ? { TAG: "Err", _0: Array.from(r._0).length } : r;
-  const tmp$1 = arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${arg$1._0})`;
+  const value = ((result) =>
+    result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugStr(result._0)})`)(
+    r.TAG === "Ok" ? { TAG: "Ok", _0: Math.imul(r._0, 10) >>> 0 } : r,
+  );
+  const value$1 = ((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
+    r.TAG === "Err" ? { TAG: "Err", _0: Array.from(r._0).length } : r,
+  );
   const then = (x) => {
     if (x > 1) {
       return { TAG: "Ok", _0: x };
@@ -76,8 +80,8 @@ export function results(c) {
   };
   const result = r.TAG === "Ok" ? then(r._0) : r;
   return [
-    tmp,
-    tmp$1,
+    value,
+    value$1,
     result.TAG === "Ok" ? result._0 : 0,
     r.TAG === "Ok" ? r._0 : Array.from(r._0).length,
     r.TAG === "Err" ? r._0 : undefined,
@@ -88,12 +92,17 @@ export function results(c) {
 export function iters(n) {
   const v = $range(0, n);
   return [
-    v.map((x) => half(x)).filter((item) => item != null),
-    v.flatMap((x) => [x, x]),
-    $zip(v, ["a", "b", "c"]),
-    [...v, 100, 200],
-    $takeWhile(v, (x) => x < 3),
-    $skipWhile(v, (x) => x < 3).filter((_, i) => i % 2 === 0),
+    v.map(half).filter((item) => item != null),
+    v
+      .values()
+      .flatMap((x) => [x, x])
+      .toArray(),
+    Iterator.from($lazyZip($iter(v), ["a", "b", "c"])).toArray(),
+    [...$iter(v), 100, 200],
+    Iterator.from($lazyTakeWhile($iter(v), (x) => x < 3)).toArray(),
+    Iterator.from($lazySkipWhile($iter(v), (x) => x < 3))
+      .filter((_, i) => i % 2 === 0)
+      .toArray(),
   ];
 }
 
@@ -107,7 +116,7 @@ export function consumers(n) {
       return $cmp(left[0], right[0]) || $cmp(left[1], right[1]);
     }),
     $minBy(v, (a, b) => $cmp(b, a)),
-    v.reduce((a, b) => Math.imul(a, b) >>> 0, 1),
+    v.reduce((a, b) => (a * b) >>> 0, 1),
     v[2],
     v
       .map((x) => {
@@ -117,7 +126,7 @@ export function consumers(n) {
         return;
       })
       .find((item) => item != null),
-    $partition(v, (x) => x % 2 === 0),
+    $partition(v.slice(), (x) => x % 2 === 0),
   ];
 }
 
@@ -132,7 +141,7 @@ export function vecs(n) {
   $truncate(v, 6);
   const w = $windows(v, 2).map((w) => w.slice());
   const c = $chunks(v, 4).map((c) => c.slice());
-  return [has, v, removed, w, c, [1, 2, 3]];
+  return [has, v, removed, w, c, [[1, 2], [3]].flat()];
 }
 
 export function panics(i) {
@@ -172,33 +181,26 @@ export function label_or_else(named) {
 export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {
-    const arg = options(n);
-    const arg$1 = more_options(n);
-    out += `(${arg[0]}, ${arg[1]}, ${arg[2]}, ${arg[3] == null ? "None" : `Some(${arg[3]})`}, ${arg[4] == null ? "None" : `Some(${arg[4]})`}, ${arg[5]}) (${$debugStr(arg$1[0])}, ${$debugStr(arg$1[1])}, ${arg$1[2] == null ? "None" : `Some(${arg$1[2]})`}, ${arg$1[3]}, ${arg$1[4]})\n`;
+    const value = options(n);
+    out += `(${value[0]}, ${value[1]}, ${value[2]}, ${value[3] == null ? "None" : `Some(${value[3]})`}, ${value[4] == null ? "None" : `Some(${value[4]})`}, ${value[5]}) ${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])}, ${tuple[2] == null ? "None" : `Some(${tuple[2]})`}, ${tuple[3]}, ${tuple[4]})`)(more_options(n))}\n`;
   }
   for (const c of ["1", "2", "x"]) {
-    const arg = results(c);
-    out += `(${$debugStr(arg[0])}, ${$debugStr(arg[1])}, ${arg[2]}, ${arg[3]}, ${arg[4] == null ? "None" : `Some(${$debugStr(arg[4])})`}, ${arg[5]})\n`;
+    out += `${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])}, ${tuple[2]}, ${tuple[3]}, ${tuple[4] == null ? "None" : `Some(${$debugStr(tuple[4])})`}, ${tuple[5]})`)(results(c))}\n`;
   }
   for (const n of [0, 5]) {
-    const arg = iters(n);
-    const arg$1 = consumers(n);
-    const arg$2 = vecs(n);
-    out += `([${arg[0].map((item) => String(item)).join(", ")}], [${arg[1].map((item) => String(item)).join(", ")}], [${arg[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${arg[3].map((item) => String(item)).join(", ")}], [${arg[4].map((item) => String(item)).join(", ")}], [${arg[5].map((item) => String(item)).join(", ")}]) (${arg$1[0] == null ? "None" : `Some(${arg$1[0]})`}, ${arg$1[1] == null ? "None" : `Some(${arg$1[1]})`}, ${arg$1[2]}, ${arg$1[3] == null ? "None" : `Some(${arg$1[3]})`}, ${arg$1[4] == null ? "None" : `Some(${arg$1[4]})`}, ([${arg$1[5][0].map((item) => String(item)).join(", ")}], [${arg$1[5][1].map((item) => String(item)).join(", ")}])) (${arg$2[0]}, [${arg$2[1].map((item) => String(item)).join(", ")}], ${arg$2[2]}, [${arg$2[3].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$2[4].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${arg$2[5].map((item) => String(item)).join(", ")}])\n`;
+    const value = iters(n);
+    const value$1 = consumers(n);
+    out += `([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}], [${value[2].map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}], [${value[3].map((item) => String(item)).join(", ")}], [${value[4].map((item) => String(item)).join(", ")}], [${value[5].map((item) => String(item)).join(", ")}]) (${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}, ${value$1[2]}, ${value$1[3] == null ? "None" : `Some(${value$1[3]})`}, ${value$1[4] == null ? "None" : `Some(${value$1[4]})`}, ([${value$1[5][0].map((item) => String(item)).join(", ")}], [${value$1[5][1].map((item) => String(item)).join(", ")}])) ${((tuple) => `(${tuple[0]}, [${tuple[1].map((item) => String(item)).join(", ")}], ${tuple[2]}, [${tuple[3].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${tuple[4].map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}], [${tuple[5].map((item) => String(item)).join(", ")}])`)(vecs(n))}\n`;
     out += `[${joined([1, n], (n + 1) >>> 0)
       .map((item) => String(item))
       .join(", ")}]\n`;
-    const arg$3 = bumped(n > 0, [1, n]);
-    out += `${arg$3 == null ? "None" : `Some([${arg$3.map((item) => String(item)).join(", ")}])`}\n`;
-    const arg$4 = shifted(n, [1, n]);
-    out += `${arg$4 == null ? "None" : `Some([${arg$4.map((item) => String(item)).join(", ")}])`}\n`;
+    out += `${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(bumped(n > 0, [1, n]))}\n`;
+    out += `${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(shifted(n, [1, n]))}\n`;
     const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
-    const arg$5 = name_of(named);
-    const arg$6 = name_of(undefined);
-    out += `${arg$5 == null ? "None" : `Some(${$debugStr(arg$5)})`} ${arg$6 == null ? "None" : `Some(${$debugStr(arg$6)})`}\n`;
-    const arg$7 = other_name(undefined, named);
-    const arg$8 = other_name(n, named);
-    out += `${arg$7 == null ? "None" : `Some(${$debugStr(arg$7)})`} ${arg$8 == null ? "None" : `Some(${$debugStr(arg$8)})`}\n`;
+    const value$2 = name_of(named);
+    out += `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(name_of(undefined))}\n`;
+    const value$3 = other_name(undefined, named);
+    out += `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(other_name(n, named))}\n`;
     out += `${$debugStr(label_of(named))} ${$debugStr(label_of(undefined))}\n`;
     out += `${$debugStr(label_or_else(named))} ${$debugStr(label_or_else(undefined))}\n`;
   }

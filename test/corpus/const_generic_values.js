@@ -12,8 +12,7 @@ function filled(x, N) {
 
 function total(values, N) {
   let sum = 0;
-  const end = N;
-  for (let i = 0; i < end; i++) {
+  for (let i = 0; i < N; i++) {
     sum = (sum + $index(values, i)) >>> 0;
   }
   return Math.imul(sum, N) >>> 0;

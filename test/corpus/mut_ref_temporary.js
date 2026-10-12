@@ -11,16 +11,19 @@ function bump(x) {
 }
 
 function main() {
-  let x = 1;
-  x = (x + 1) | 0;
-  const x$1 = { value: x };
+  let tmp = 1;
+  tmp = (tmp + 1) | 0;
+  const x = { value: tmp };
+  bump(x);
+  tmp = x.value;
+  console.log(`${tmp}`);
+  let tmp$1 = 42;
+  tmp$1 = Math.imul(tmp$1, 2);
+  console.log(`${tmp$1}`);
+  let tmp$2 = 5;
+  const x$1 = { value: tmp$2 };
   bump(x$1);
-  x = x$1.value;
-  console.log(`${x}`);
-  let y = 42;
-  y = Math.imul(y, 2);
-  console.log(`${y}`);
-  bump({ value: 5 });
+  tmp$2 = x$1.value;
   let opt = 1;
   if (opt != null) {
     opt = (opt + 10) | 0;
@@ -32,14 +35,14 @@ function main() {
   console.log(
     `${opt == null ? "None" : `Some(${opt})`} ${words == null ? "None" : `Some(${$debugStr(words)})`}`,
   );
-  let value = 3;
-  if (value != null) {
-    value = (value + 1) | 0;
-    console.log(`${value}`);
+  let tmp$3 = 3;
+  if (tmp$3 != null) {
+    tmp$3 = (tmp$3 + 1) | 0;
+    console.log(`${tmp$3}`);
   }
-  const match = [1, 2];
-  match[0] = (match[0] + 10) | 0;
-  match[1] = (match[1] + 20) | 0;
-  console.log(`${match[0]} ${match[1]}`);
+  const value = [1, 2];
+  value[0] = (value[0] + 10) | 0;
+  value[1] = (value[1] + 20) | 0;
+  console.log(`${value[0]} ${value[1]}`);
 }
 //# sourceMappingURL=case.js.map

@@ -16,7 +16,13 @@ function main() {
     [0, 0, 0],
   ];
   const row = grid[0].slice();
+  if (!(0 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 0");
+  }
   grid[0][1] = 5;
+  if (!(1 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 1");
+  }
   grid[1][2] = (grid[1][2] + 7) | 0;
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${row.map((item) => String(item)).join(", ")}]`,
@@ -25,11 +31,18 @@ function main() {
     [0, 0],
     [0, 0],
   ];
-  $index(rows, 1)[0] = 3;
+  const items = $index(rows, 1);
+  items[0] = 3;
   console.log(
     `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   const cells = [[{ value: 1 }, { value: 2 }]];
+  if (!(0 < 1)) {
+    throw new Error("index out of bounds: the len is 1 but the index is 0");
+  }
+  if (!(1 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 1");
+  }
   cells[0][1].value = Math.imul(cells[0][1].value, 10);
   console.log(
     `[${cells.map((item) => `[${item.map((item) => cellDebug_fmt(item)).join(", ")}]`).join(", ")}]`,
@@ -45,8 +58,19 @@ function main() {
       [0, 0],
     ],
   ];
-  const items = $index(deep, i)[0];
-  items[$at(items, i)] = 9;
+  if (!(i < 2)) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${i}`);
+  }
+  if (!(0 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 0");
+  }
+  deep[i][0][$at(deep[i][0], i)] = 9;
+  if (!(1 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 1");
+  }
+  if (!(0 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 0");
+  }
   console.log(
     `[${deep.map((item) => `[${item.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`).join(", ")}] ${deep[1][0][1]}`,
   );

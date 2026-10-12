@@ -7,9 +7,9 @@ export function entry() {
 }
 
 function first_word(s) {
-  const match = $find(s, " ");
-  if (match != null) {
-    return $strSlice(s, 0, match);
+  const at = $find(s, " ");
+  if (at != null) {
+    return $strSlice(s, 0, at);
   }
   return s;
 }
@@ -20,31 +20,31 @@ function main() {
   }
   const s = "héllo wörld";
   console.log(`${$byteLen(s)}`);
-  console.log(
-    `[${$strSlice(s, 0, 1)}] [${$strSlice(s, 1, 3)}] [${$strSlice(s, 7)}] [${$strSlice(s, 0, 6)}] [${s}]`,
-  );
+  const value = $strSlice(s, 0, 1);
+  const value$1 = $strSlice(s, 1, 3);
+  const value$2 = $strSlice(s, 7);
+  console.log(`[${value}] [${value$1}] [${value$2}] [${$strSlice(s, 0, 6)}] [${s}]`);
   console.log(`${first_word(s)}`);
-  const arg = $find(s, "ö");
-  const arg$1 = $find(s, "wör");
-  const arg$2 = $find(s, "z");
+  const value$3 = $find(s, "ö");
+  const value$4 = $find(s, "wör");
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${((value) => (value == null ? "None" : `Some(${value})`))($find(s, "z"))}`,
   );
-  const arg$3 = $rfind(s, "l");
-  const arg$4 = $rfind("a🦀b🦀", "🦀");
+  const value$5 = $rfind(s, "l");
   console.log(
-    `${arg$3 == null ? "None" : `Some(${arg$3})`} ${arg$4 == null ? "None" : `Some(${arg$4})`}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${value})`))($rfind("a🦀b🦀", "🦀"))}`,
   );
-  const arg$5 = $find("abc", "");
-  const arg$6 = $rfind("abc", "");
+  const value$6 = $find("abc", "");
   console.log(
-    `${arg$5 == null ? "None" : `Some(${arg$5})`} ${arg$6 == null ? "None" : `Some(${arg$6})`}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${((value) => (value == null ? "None" : `Some(${value})`))($rfind("abc", ""))}`,
   );
   for (const [i, c] of $charIndices("a日🦀b")) {
     console.log(`${i} ${c}`);
   }
   const crab = "🦀🦀";
-  console.log(`${$strSlice(crab, 4)} ${$strSlice(crab, 0, 4)} ${$strSlice(crab, 8)}`);
+  const value$7 = $strSlice(crab, 4);
+  const value$8 = $strSlice(crab, 0, 4);
+  console.log(`${value$7} ${value$8} ${$strSlice(crab, 8)}`);
   let text = "";
   while ($byteLen(text) < 9) {
     text += "é";
@@ -54,7 +54,8 @@ function main() {
   console.log(`${$strSlice(s, range.start, range.end)}`);
   const at = $find(s, "w");
   if (at != null) {
-    const [left, right] = [$strSlice(s, 0, at), $strSlice(s, at)];
+    const left = $strSlice(s, 0, at);
+    const right = $strSlice(s, at);
     console.log(`${left}|${right} ${($byteLen(left) + $byteLen(right)) >>> 0}`);
   }
 }

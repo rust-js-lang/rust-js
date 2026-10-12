@@ -29,9 +29,9 @@ function main() {
       .join(", ")}]`,
   );
   const it = [1];
-  const arg = countIterator_next(it);
+  const value = countIterator_next(it);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} [${$iterator(it, countIterator_next)
+    `${value == null ? "None" : `Some(${value})`} [${$iterator(it, countIterator_next)
       .toArray()
       .map((item) => String(item))
       .join(", ")}]`,

@@ -14,7 +14,12 @@ function noisyDrop_drop(noisy) {
 
 const Wrapper = {
   replace(wrapper, value, dropT) {
-    dropT?.(wrapper.inner);
+    try {
+      dropT?.(wrapper.inner);
+    } catch (error) {
+      wrapper.inner = value;
+      throw error;
+    }
     wrapper.inner = value;
     console.log("replaced");
   },
@@ -23,9 +28,11 @@ const Wrapper = {
 function consume(value, dropT) {
   try {
     console.log("consume");
-  } finally {
+  } catch (error) {
     dropT?.(value);
+    throw error;
   }
+  dropT?.(value);
 }
 
 function keep(value) {
@@ -36,9 +43,11 @@ function made(TDefault, dropT) {
   const _value = TDefault.default();
   try {
     console.log("made");
-  } finally {
+  } catch (error) {
     dropT?.(_value);
+    throw error;
   }
+  dropT?.(_value);
 }
 
 export function noisyDefault() {
@@ -53,13 +62,19 @@ function noisyDefault_default() {
 }
 
 function first(items, TClone, dropT) {
+  let result;
   try {
-    return TClone.clone($index(items, 0));
-  } finally {
+    result = TClone.clone($index(items, 0));
+  } catch (error) {
     for (const item of items) {
       dropT?.(item);
     }
+    throw error;
   }
+  for (const item of items) {
+    dropT?.(item);
+  }
+  return result;
 }
 
 function relay(value, dropU) {
@@ -68,11 +83,15 @@ function relay(value, dropU) {
 }
 
 function shown(x, Display, dropDisplay) {
+  let tmp;
   try {
-    return `<${Display.fmt(x)}>`;
-  } finally {
+    tmp = `<${Display.fmt(x)}>`;
+  } catch (error) {
     dropDisplay?.(x);
+    throw error;
   }
+  dropDisplay?.(x);
+  return tmp;
 }
 
 export function noisyDisplay() {
@@ -92,27 +111,93 @@ function main() {
   made(noisyDefault(), noisyDrop_drop);
   made({ default: () => 0 });
   const kept = keep(["b"]);
+  const value = [["c"], ["d"]];
+  let copy;
   try {
-    const copy = first([["c"], ["d"]], { clone: (value) => value }, noisyDrop_drop);
-    try {
-      relay(["e"], noisyDrop_drop);
-      relay("text");
-      consume({ a: ["p"], b: 1 }, (pair) => {
-        noisyDrop_drop(pair.a);
-      });
-      const wrapper = { inner: ["w1"] };
-      try {
-        Wrapper.replace(wrapper, ["w2"], noisyDrop_drop);
-        console.log(`${shown(["s"], noisyDisplay(), noisyDrop_drop)} ${shown(7, { fmt: String })}`);
-        console.log(`${kept[0]} ${copy[0]} ${wrapper.inner[0]} end`);
-      } finally {
-        noisyDrop_drop(wrapper.inner);
-      }
-    } finally {
-      noisyDrop_drop(copy);
-    }
-  } finally {
+    copy = first(value, { clone: (value) => value }, noisyDrop_drop);
+  } catch (error) {
     noisyDrop_drop(kept);
+    throw error;
   }
+  try {
+    relay(["e"], noisyDrop_drop);
+  } catch (error) {
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    relay("text");
+  } catch (error) {
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    consume({ a: ["p"], b: 1 }, (pair) => {
+      noisyDrop_drop(pair.a);
+    });
+  } catch (error) {
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  const wrapper = { inner: ["w1"] };
+  try {
+    Wrapper.replace(wrapper, ["w2"], noisyDrop_drop);
+  } catch (error) {
+    noisyDrop_drop(wrapper.inner);
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = shown(["s"], noisyDisplay(), noisyDrop_drop);
+  } catch (error) {
+    noisyDrop_drop(wrapper.inner);
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = [undefined, shown(7, { fmt: String })];
+  } catch (error) {
+    noisyDrop_drop(wrapper.inner);
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    console.log(`${tmp} ${tmp$1[1]}`);
+  } catch (error) {
+    noisyDrop_drop(wrapper.inner);
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    console.log(`${kept[0]} ${copy[0]} ${wrapper.inner[0]} end`);
+  } catch (error) {
+    noisyDrop_drop(wrapper.inner);
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    noisyDrop_drop(wrapper.inner);
+  } catch (error) {
+    noisyDrop_drop(copy);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    noisyDrop_drop(copy);
+  } catch (error) {
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  noisyDrop_drop(kept);
 }
 //# sourceMappingURL=case.js.map

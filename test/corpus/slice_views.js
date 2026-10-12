@@ -10,6 +10,7 @@ import {
   $index,
   $iter,
   $mutAt,
+  $mutItems,
   $rchunksMut,
   $rotateLeft,
   $sliceSplitAt,
@@ -27,8 +28,8 @@ export function entry() {
 }
 
 function bump_all(part) {
-  for (let i = 0; i < part.length; i++) {
-    part[i] = (part[i] + 100) | 0;
+  for (const x of $mutItems(part)) {
+    x.value = (x.value + 100) | 0;
   }
 }
 
@@ -54,8 +55,8 @@ function main() {
   console.log(`${part.length} [${v.map((item) => String(item)).join(", ")}]`);
   bump_all($view(v, 0, 2));
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-  const items = tail(v);
-  items[$at(items, 0)] = -1;
+  const value$1 = tail(v);
+  value$1[$at(value$1, 0)] = -1;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const result = $view($view(v, 1, 5), 1, 3);
   $rotateLeft(result, 1, "mid");
@@ -64,9 +65,10 @@ function main() {
   all[$at(all, 5)] = 6;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const [left, right] = $splitAtMut(v, 3);
-  const value = $index(right, 0);
-  left[$at(left, 0)] = value;
-  right[$at(right, 2)] = left.length | 0;
+  const value$2 = $index(right, 0);
+  left[$at(left, 0)] = value$2;
+  const length = left.length;
+  right[$at(right, 2)] = length | 0;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   console.log(`${!$splitAtMut(v, 7, true)}`);
   const [a, b] = $sliceSplitAt(v, 4);
@@ -74,25 +76,34 @@ function main() {
     `[${a.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}]`,
   );
   const [, b$1] = $splitAtMut(v, 5);
-  b$1[$at(b$1, 0)] = (b$1[$at(b$1, 0)] + 1) | 0;
-  const value$1 = $splitAtMut(v, 6, true);
-  if (value$1) {
-    value$1[0][$at(value$1[0], 0)] = value$1[1].length | 0;
+  const value = (b$1[$at(b$1, 0)] + 1) | 0;
+  b$1[0] = value;
+  const value$3 = $splitAtMut(v, 6, true);
+  if (value$3) {
+    const a = value$3[0];
+    const b = value$3[1];
+    const length = b.length;
+    a[$at(a, 0)] = length | 0;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-  const value$2 = $splitEndMut(v, false, true);
-  if (value$2) {
-    value$2[0].value = 10;
-    value$2[1][$at(value$2[1], 0)] = 11;
+  const value$4 = $splitEndMut(v, false, true);
+  if (value$4) {
+    const first = value$4[0];
+    const rest = value$4[1];
+    first.value = 10;
+    rest[$at(rest, 0)] = 11;
   }
-  const value$3 = $splitEndMut(v, true, true);
-  if (value$3) {
-    value$3[0].value = value$3[1].length | 0;
-    value$3[1][$at(value$3[1], 0)] = 20;
+  const value$5 = $splitEndMut(v, true, true);
+  if (value$5) {
+    const last = value$5[0];
+    const rest = value$5[1];
+    last.value = rest.length | 0;
+    rest[$at(rest, 0)] = 20;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   for (const chunk of $chunksMut(v, 4)) {
-    chunk[$at(chunk, 0)] = Math.imul(chunk[$at(chunk, 0)], 2);
+    const value$1 = Math.imul(chunk[$at(chunk, 0)], 2);
+    chunk[0] = value$1;
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const exact = $iter($chunksExactMut(v, 4));
@@ -102,8 +113,8 @@ function main() {
   exact.items.remainder[$at(exact.items.remainder, 0)] = 0;
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   for (const chunk of $rchunksMut(v, 4, false)) {
-    const value = -$index(chunk, 0) | 0;
-    chunk[$at(chunk, 0)] = value;
+    const value = $index(chunk, 0);
+    chunk[$at(chunk, 0)] = -value | 0;
   }
   for (const chunk of $rchunksMut(v, 5, true)) {
     chunk[$at(chunk, 4)] = 99;
@@ -119,8 +130,8 @@ function main() {
   }
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
   for (const part of $sliceSplitByMut(words, (x) => x === 0, 2, false, false)) {
-    const value = -$index(part, 0) | 0;
-    part[$at(part, 0)] = value;
+    const value = $index(part, 0);
+    part[$at(part, 0)] = -value | 0;
   }
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
   for (const part of $sliceSplitByMut(words, (x) => x === 0, undefined, true, false)) {
@@ -140,8 +151,8 @@ function main() {
   }
   console.log(`${!$viewGet(words, 5, 9)} [${words.map((item) => String(item)).join(", ")}]`);
   $view(words, 0, 2).fill(6);
-  const cell = $mutAt(words, 2);
-  cell.value = (cell.value + 1) | 0;
+  const value$6 = $mutAt(words, 2);
+  value$6.value = (value$6.value + 1) | 0;
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
   const head = words.length >= 2 ? $view(words, 0, 2) : undefined;
   if (head) {
@@ -152,13 +163,17 @@ function main() {
     end[0] = 0;
   }
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
-  const value$4 = $splitChunkMut(words, 2, false);
-  if (value$4) {
-    value$4[0][0] = value$4[1].length | 0;
+  const value$7 = $splitChunkMut(words, 2, false);
+  if (value$7) {
+    const head = value$7[0];
+    const rest = value$7[1];
+    head[0] = rest.length | 0;
   }
-  const value$5 = $splitChunkMut(words, 2, true);
-  if (value$5) {
-    value$5[1][1] = value$5[0].length | 0;
+  const value$8 = $splitChunkMut(words, 2, true);
+  if (value$8) {
+    const rest = value$8[0];
+    const end = value$8[1];
+    end[1] = rest.length | 0;
   }
   console.log(`[${words.map((item) => String(item)).join(", ")}]`);
   const runs = [1, 1, 2, 3, 3, 3];
@@ -168,8 +183,8 @@ function main() {
   }
   console.log(`[${runs.map((item) => String(item)).join(", ")}]`);
   console.log(
-    `[${$chunkBy(runs, (a, b) => a <= b)
-      .slice()
+    `[${Iterator.from($chunkBy(runs, (a, b) => a <= b))
+      .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
@@ -180,8 +195,12 @@ function main() {
   console.log(`[${runs.map((item) => String(item)).join(", ")}]`);
   const points = [{ x: 1 }, { x: 2 }, { x: 3 }];
   const [head$2, tail$1] = $splitAtMut(points, 1);
-  const value$6 = $index(tail$1, 1).x;
-  $index(head$2, 0).x = value$6;
+  const x = $index(tail$1, 1).x;
+  const length$1 = head$2.length;
+  if (!(0 < length$1)) {
+    throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
+  }
+  head$2[0].x = x;
   tail$1[$at(tail$1, 0)] = { x: 0 };
   const result$1 = $view(points, 1);
   $swap(result$1, 0, 1);

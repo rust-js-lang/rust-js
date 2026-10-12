@@ -44,15 +44,23 @@ function counted() {
 }
 
 function main() {
-  console.log(`${pointDebug_fmt(moved(5))} ${pointDebug_fmt(ORIGIN)} ${pointDebug_fmt(moved(-2))}`);
-  console.log(`${LIMIT} ${GREETING} ${NAMES.join(",")}`);
+  const value = moved(5);
+  const value$1 = [undefined, ORIGIN, moved(-2)];
   console.log(
-    `[${PRIMES.map((item) => String(item)).join(", ")}] ${PRIMES.reduce((a, b) => (a + b) >>> 0, 0)} [${EMPTY.map((item) => String(item)).join(", ")}]`,
+    `${pointDebug_fmt(value)} ${pointDebug_fmt(value$1[1])} ${pointDebug_fmt(value$1[2])}`,
+  );
+  const arg = NAMES.join(",");
+  console.log(`${LIMIT} ${GREETING} ${arg}`);
+  const value$2 = PRIMES.reduce((a, b) => (a + b) >>> 0, 0);
+  console.log(
+    `[${PRIMES.map((item) => String(item)).join(", ")}] ${value$2} [${EMPTY.map((item) => String(item)).join(", ")}]`,
   );
   console.log(
     `[${LEVELS.map((item) => levelDebug_fmt(item)).join(", ")}] ${MAYBE == null ? "None" : `Some(${$debugStr(MAYBE, "'")})`} (${PAIR[0]}, ${$debugF64(PAIR[1])})`,
   );
-  console.log(`${(BOXED.x + BOXED.y) | 0} ${COMPUTED} ${counted()}`);
+  const value$3 = (BOXED.x + BOXED.y) | 0;
+  const value$4 = [undefined, COMPUTED, counted()];
+  console.log(`${value$3} ${value$4[1]} ${value$4[2]}`);
   console.log(
     `${pointDebug_fmt(CORNER)} [${SIDES.map((item) => String(item)).join(", ")}] ${NAME}`,
   );

@@ -16,11 +16,9 @@ function double(n) {
 
 function main() {
   const numbers = [1, 2, 3];
+  const value = numbers.map((n) => (n + 1) | 0);
   console.log(
-    `[${numbers
-      .map((n) => (n + 1) | 0)
-      .map((item) => String(item))
-      .join(", ")}] [${numbers
+    `[${value.map((item) => String(item)).join(", ")}] [${numbers
       .map(double)
       .map((item) => String(item))
       .join(", ")}]`,

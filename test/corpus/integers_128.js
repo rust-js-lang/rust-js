@@ -41,10 +41,8 @@ function fnv(bytes) {
 
 function main() {
   const max = 340282366920938463463374607431768211455n;
-  const [min, top] = [
-    -170141183460469231731687303715884105728n,
-    170141183460469231731687303715884105727n,
-  ];
+  const min = -170141183460469231731687303715884105728n;
+  const top = 170141183460469231731687303715884105727n;
   console.log(`${max} ${min} ${top}`);
   console.log(`${max.toString(16)} 0b${5n.toString(2)} ${-7n}`);
   console.log(`${fnv([114, 117, 115, 116, 45, 106, 115])}`);
@@ -57,103 +55,88 @@ function main() {
   );
   console.log(`${big >> 99n} ${BigInt.asUintN(128, big << 27n) >> 100n} ${max % 1000000007n}`);
   console.log(`${min / 7n} ${min % 7n}`);
-  const arg = $bigChecked(max + 1n, 0n, 340282366920938463463374607431768211455n);
-  const arg$1 = $bigChecked(big * 4n, 0n, 340282366920938463463374607431768211455n);
-  const arg$2 = $bigChecked(
-    -top,
+  const value$2 = $bigChecked(max + 1n, 0n, 340282366920938463463374607431768211455n);
+  const value$3 = $bigChecked(big * 4n, 0n, 340282366920938463463374607431768211455n);
+  console.log(
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))($bigChecked(-top, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n))}`,
+  );
+  const value$4 = $bigClamp(max + 9n, 0n, 340282366920938463463374607431768211455n);
+  const value$5 = $bigClamp(
+    min - 1n,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
+  console.log(`${value$4} ${value$5} ${BigInt.asUintN(128, $bigPow(3n, 80, 128))}`);
+  const value$6 = $bigLeadingZeros(big, 128);
+  const value$7 = $bigTrailingZeros(big, 128);
+  console.log(`${value$6} ${value$7} ${$bigCountOnes(max, 128)}`);
+  const value$8 = $bigAbs(min);
+  const value$9 = BigInt.asIntN(128, $bigAbs(-5n));
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
-  );
-  console.log(
-    `${$bigClamp(max + 9n, 0n, 340282366920938463463374607431768211455n)} ${$bigClamp(min - 1n, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${BigInt.asUintN(128, $bigPow(3n, 80, 128))}`,
-  );
-  console.log(
-    `${$bigLeadingZeros(big, 128)} ${$bigTrailingZeros(big, 128)} ${$bigCountOnes(max, 128)}`,
-  );
-  console.log(
-    `${$bigAbs(min)} ${BigInt.asIntN(128, $bigAbs(-5n))} ${$bigRemEuclid(-5n, 3n, -170141183460469231731687303715884105728n)}`,
+    `${value$8} ${value$9} ${$bigRemEuclid(-5n, 3n, -170141183460469231731687303715884105728n)}`,
   );
   console.log(`${big !== 0n && (big & (big - 1n)) === 0n} ${$bigMax(max, big)}`);
   const exact = top + 1n;
-  const arg$3 = $overflowing(
+  const value$10 = $overflowing(
     BigInt.asIntN(128, exact),
     exact,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const arg$4 = 130 < 128 ? BigInt.asUintN(128, big << 2n) : undefined;
-  const arg$5 = 100 < 128 ? BigInt.asUintN(128, 1n << 100n) : undefined;
+  const value$11 = 130 < 128 ? BigInt.asUintN(128, big << 2n) : undefined;
+  const value = 100 < 128 ? BigInt.asUintN(128, 1n << 100n) : undefined;
   console.log(
-    `(${arg$3[0]}, ${arg$3[1]}) ${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`}`,
+    `(${value$10[0]}, ${value$10[1]}) ${value$11 == null ? "None" : `Some(${value$11})`} ${value == null ? "None" : `Some(${value})`}`,
   );
+  const value$12 = $rotateBits(BigInt.asUintN(128, big), 30, 128, true);
+  const value$13 = BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, -2n), 1, 128, false));
+  console.log(`${value$12} ${value$13} ${128 - $bigCountOnes(big, 128)}`);
+  const value$14 = $toBytes(258n, 16, true);
   console.log(
-    `${$rotateBits(BigInt.asUintN(128, big), 30, 128, true)} ${BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, -2n), 1, 128, false))} ${128 - $bigCountOnes(big, 128)}`,
+    `[${value$14.map((item) => String(item)).join(", ")}] ${$fromBytes(new Array(16).fill(1), 16, false, false)}`,
   );
-  console.log(
-    `[${$toBytes(258n, 16, true)
-      .map((item) => String(item))
-      .join(", ")}] ${$fromBytes(new Array(16).fill(1), 16, false, false)}`,
-  );
-  console.log(
-    `${$fromBytes($toBytes(-3n, 16, true), 16, true, true)} ${$displayF32($bigToF32(big))}`,
-  );
+  const value$15 = $fromBytes($toBytes(-3n, 16, true), 16, true, true);
+  console.log(`${value$15} ${$displayF32($bigToF32(big))}`);
   const x = 18446744073709551615n;
   console.log(
     `${BigInt.asUintN(128, x * 3n)} ${BigInt.asUintN(64, max)} ${340282366920938463463374607431768211455n}`,
   );
   console.log(
-    `${$displayF64(Number(big))} ${$f64ToBig(1e40, 0n, 340282366920938463463374607431768211455n)} ${$f64ToBig(-1e40, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)}`,
+    `${$displayF64(Number(big))} ${340282366920938463463374607431768211455n} ${-170141183460469231731687303715884105728n}`,
   );
-  console.log(
-    `${Number(BigInt.asUintN(8, BigInt.asUintN(128, big + 300n)))} ${BigInt.asUintN(128, BigInt(7) + x)}`,
+  const value$16 = Number(BigInt.asUintN(8, BigInt.asUintN(128, big + 300n)));
+  console.log(`${value$16} ${BigInt.asUintN(128, BigInt(7) + x)}`);
+  const small = $f64ToInt(Math.fround(3.9), 0, 255);
+  const wide = $f64ToBig(
+    -750000000000000000000,
+    -170141183460469231731687303715884105728n,
+    170141183460469231731687303715884105727n,
   );
-  const [small, wide] = [
-    $f64ToInt(Math.fround(3.9), 0, 255),
-    $f64ToBig(
-      -750000000000000000000,
-      -170141183460469231731687303715884105728n,
-      170141183460469231731687303715884105727n,
-    ),
-  ];
   console.log(`${small} ${wide}`);
   const result = $tryFromInt(big, 0n, 18446744073709551615n);
-  const tmp = result.TAG === "Ok" ? result._0 : undefined;
+  const value$17 = result.TAG === "Ok" ? result._0 : undefined;
   const result$1 = $tryFromInt(
     max,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const tmp$1 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  const value$18 = result$1.TAG === "Ok" ? result$1._0 : undefined;
   const result$2 = $tryFromInt(200n, 0, 255);
-  const arg$6 = result$2.TAG === "Ok" ? result$2._0 : undefined;
+  const value$1 = result$2.TAG === "Ok" ? result$2._0 : undefined;
   console.log(
-    `${tmp == null ? "None" : `Some(${tmp})`} ${tmp$1 == null ? "None" : `Some(${tmp$1})`} ${arg$6 == null ? "None" : `Some(${arg$6})`}`,
-  );
-  const arg$7 = $parseBig(
-    "340282366920938463463374607431768211455",
-    0n,
-    340282366920938463463374607431768211455n,
+    `${value$17 == null ? "None" : `Some(${value$17})`} ${value$18 == null ? "None" : `Some(${value$18})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   console.log(
-    `${arg$7.TAG === "Ok" ? `Ok(${arg$7._0})` : `Err(${$debugParseError(arg$7._0, "ParseIntError")})`}`,
+    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($parseBig("340282366920938463463374607431768211455", 0n, 340282366920938463463374607431768211455n))}`,
   );
   console.log(
     `${$parseBig("340282366920938463463374607431768211456", 0n, 340282366920938463463374607431768211455n).TAG !== "Ok"}`,
   );
-  const arg$8 = $parseBig(
-    "-170141183460469231731687303715884105728",
-    -170141183460469231731687303715884105728n,
-    170141183460469231731687303715884105727n,
+  console.log(
+    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($parseBig("-170141183460469231731687303715884105728", -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n))}`,
   );
   console.log(
-    `${arg$8.TAG === "Ok" ? `Ok(${arg$8._0})` : `Err(${$debugParseError(arg$8._0, "ParseIntError")})`}`,
-  );
-  const arg$9 = $parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16);
-  console.log(
-    `${arg$9.TAG === "Ok" ? `Ok(${arg$9._0})` : `Err(${$debugParseError(arg$9._0, "ParseIntError")})`}`,
+    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($parseBig("ff", 0n, 340282366920938463463374607431768211455n, 16))}`,
   );
   let size;
   if (big === 0n) {

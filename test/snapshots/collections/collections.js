@@ -11,8 +11,12 @@ import {
   $debugStr,
   $index,
   $insert,
+  $iter,
+  $mutGet,
+  $next,
   $orInsert,
   $orInsertWith,
+  $rangeNext,
   $remove,
   $retain,
   $sortedEntries,
@@ -43,10 +47,15 @@ export function end_once(n) {
 
 export function mut_counter(n) {
   let total = 0;
-  for (let i = 0; i < n; i++) {
-    let i$1 = i;
-    i$1 = Math.imul(i$1, 10);
-    total = (total + i$1) | 0;
+  const iter = { start: 0, end: n };
+  while (true) {
+    const value = $rangeNext(iter);
+    if (value == null) {
+      break;
+    }
+    let i = value;
+    i = Math.imul(i, 10);
+    total = (total + i) | 0;
   }
   return total;
 }
@@ -101,8 +110,9 @@ export function labeled(n) {
       }
       if (Math.imul(i, j) >>> 0 > 20) {
         break outer;
+      } else {
+        found = (found + 1) >>> 0;
       }
-      found = (found + 1) >>> 0;
     }
   }
   return found;
@@ -141,27 +151,55 @@ export function toggled(n) {
 export function cell(times) {
   const c = { value: 0 };
   for (let i = 0; i < times; i++) {
-    const cell = $borrowMut(c);
-    cell.value = (cell.value + 2) | 0;
+    const value = $borrowMut(c, true);
+    const value$1 = value;
+    value$1.value = (value$1.value + 2) | 0;
+    $unborrow(value);
   }
-  return ($borrow(c).value + 1) | 0;
+  const value = $borrow(c, true);
+  const result = (value.value + 1) | 0;
+  $unborrow(value);
+  return result;
 }
 
 export function shared(times) {
   const log = { value: [] };
   const writer = log;
   for (let i = 0; i < times; i++) {
-    $borrowMut(writer).value.push(Math.imul(i, i));
+    const value = $borrowMut(writer, true);
+    const value$1 = Math.imul(i, i);
+    try {
+      value.value.push(value$1);
+    } catch (error) {
+      $unborrow(value);
+      throw error;
+    }
+    $unborrow(value);
   }
   const v = $borrow(log, true);
   let total = 0;
+  let iter;
   try {
-    for (const x of v.value) {
-      total = (total + x) | 0;
-    }
-    return [total, v.value.length];
-  } finally {
+    iter = $iter(v.value);
+  } catch (error) {
     $unborrow(v);
+    throw error;
+  }
+  while (true) {
+    let tmp;
+    try {
+      tmp = $next(iter);
+    } catch (error) {
+      $unborrow(v);
+      throw error;
+    }
+    if (tmp == null) {
+      const result = [total, v.value.length];
+      $unborrow(v);
+      return result;
+    }
+    const x = tmp;
+    total = (total + x) | 0;
   }
 }
 
@@ -175,15 +213,17 @@ export function indexed(i) {
   const v = [10, 20, 30];
   const read = $index(v, i);
   v[$at(v, i)] = (read + 1) >>> 0;
-  v[$at(v, 0)] = (v[$at(v, 0)] + 5) >>> 0;
+  v[$at(v, 0)] = (v[0] + 5) >>> 0;
   const slice = v;
-  slice[$at(slice, 2)] = Math.imul(slice[$at(slice, 2)], 2) >>> 0;
+  const value = Math.imul(slice[$at(slice, 2)], 2) >>> 0;
+  slice[2] = value;
   return [read, $index(v, i), v];
 }
 
 export function element_fields(i) {
   const cells = [{ hits: 0 }, { hits: 0 }];
-  $index(cells, i).hits = ($index(cells, i).hits + 1) >>> 0;
+  const value = $index(cells, i);
+  value.hits = (value.hits + 1) >>> 0;
   const before = { ...$index(cells, i) };
   const r = $index(cells, i);
   r.hits = 10;
@@ -219,8 +259,8 @@ export function map_basics(n) {
   for (const [, v] of m) {
     total = (total + v) >>> 0;
   }
-  const current = $unwrap(m.get("a"));
-  m.set("a", (current + 10) >>> 0);
+  const value = $unwrap($mutGet(m, "a"));
+  value.value = (value.value + 10) >>> 0;
   return [
     old,
     first,
@@ -283,17 +323,16 @@ export function sorted_maps(text) {
     ["Gold", 3],
     ["Bronze", 1],
   ]);
-  const tmp = $sortedEntries(counts, $cmp);
-  const tmp$1 = order;
+  const value = $sortedEntries(counts, $cmp);
   const arg = $sortedKeys(set, $cmp).toReversed();
-  const tmp$2 = `{${Array.from($sortedKeys(set, $cmp))
+  const value$1 = `{${Array.from($sortedKeys(set, $cmp))
     .map((item) => String(item))
     .join(", ")}} [${arg.map((item) => String(item)).join(", ")}]`;
   const arg$1 = $unwrap(tiers.get("Bronze"), "no entry found for key");
   return [
-    tmp,
-    tmp$1,
-    tmp$2,
+    value,
+    order,
+    value$1,
     `{${Array.from($sortedEntries(tiers, (a, b) => $cmpIn(["Gold", "Bronze", "Silver"], a, b)))
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}} ${arg$1}`,

@@ -7,14 +7,14 @@ export function entry() {
   main();
 }
 
-const NEXT_ID = { value: 1 };
-const READY = { value: false };
-const BIG = { value: 18446744073709551614n };
-const SMALL = { value: 120 };
+let NEXT_ID = 1;
+let READY = false;
+let BIG = 18446744073709551614n;
+let SMALL = 120;
 
 function next_id() {
-  const previous = NEXT_ID.value;
-  NEXT_ID.value = (previous + 1) >>> 0;
+  const previous = NEXT_ID;
+  NEXT_ID = (previous + 1) >>> 0;
   return previous;
 }
 
@@ -24,68 +24,75 @@ function order(seen, name) {
 }
 
 function main() {
-  console.log(`${next_id()} ${next_id()} ${NEXT_ID.value}`);
-  READY.value = true;
-  const tmp = READY.value;
-  const previous = READY.value;
-  READY.value = false;
-  console.log(`${tmp} ${previous}`);
-  const previous$1 = READY.value;
-  READY.value = !!(previous$1 | true);
-  const tmp$1 = previous$1;
-  const previous$2 = READY.value;
-  READY.value = !!(previous$2 & false);
-  console.log(`${tmp$1} ${previous$2}`);
-  const previous$3 = READY.value;
-  READY.value = previous$3 !== true;
-  console.log(`${previous$3} ${READY.value}`);
-  const previous$4 = BIG.value;
-  BIG.value = BigInt.asUintN(64, previous$4 + 3n);
-  console.log(`${previous$4} ${BIG.value}`);
-  const previous$5 = SMALL.value;
-  SMALL.value = ((previous$5 + 10) << 24) >> 24;
-  const tmp$2 = previous$5;
-  const previous$6 = SMALL.value;
-  SMALL.value = ((previous$6 - -100) << 24) >> 24;
-  console.log(`${tmp$2} ${previous$6}`);
-  console.log(`${SMALL.value}`);
-  const previous$7 = NEXT_ID.value;
-  NEXT_ID.value = previous$7 > 10 ? previous$7 : 10;
-  const tmp$3 = previous$7;
-  const previous$8 = NEXT_ID.value;
-  NEXT_ID.value = previous$8 < 4 ? previous$8 : 4;
-  console.log(`${tmp$3} ${previous$8}`);
-  const previous$9 = NEXT_ID.value;
-  NEXT_ID.value = (previous$9 ^ 6) >>> 0;
-  console.log(`${previous$9} ${NEXT_ID.value}`);
-  const previous$10 = NEXT_ID.value;
+  const value = next_id();
+  const value$1 = next_id();
+  console.log(`${value} ${value$1} ${NEXT_ID}`);
+  READY = true;
+  const value$2 = READY;
+  const previous = READY;
+  READY = false;
+  console.log(`${value$2} ${previous}`);
+  const previous$1 = READY;
+  READY = !!(previous$1 | true);
+  const previous$2 = READY;
+  READY = !!(previous$2 & false);
+  console.log(`${previous$1} ${previous$2}`);
+  const previous$3 = READY;
+  READY = previous$3 !== true;
+  console.log(`${previous$3} ${READY}`);
+  const previous$4 = BIG;
+  BIG = BigInt.asUintN(64, previous$4 + 3n);
+  console.log(`${previous$4} ${BIG}`);
+  const previous$5 = SMALL;
+  SMALL = ((previous$5 + 10) << 24) >> 24;
+  const previous$6 = SMALL;
+  SMALL = ((previous$6 - -100) << 24) >> 24;
+  console.log(`${previous$5} ${previous$6}`);
+  console.log(`${SMALL}`);
+  const previous$7 = NEXT_ID;
+  NEXT_ID = previous$7 > 10 ? previous$7 : 10;
+  const previous$8 = NEXT_ID;
+  NEXT_ID = previous$8 < 4 ? previous$8 : 4;
+  console.log(`${previous$7} ${previous$8}`);
+  const previous$9 = NEXT_ID;
+  NEXT_ID = (previous$9 ^ 6) >>> 0;
+  console.log(`${previous$9} ${NEXT_ID}`);
+  const previous$10 = NEXT_ID;
   const exchanged = previous$10 === 2;
   if (exchanged) {
-    NEXT_ID.value = 9;
+    NEXT_ID = 9;
   }
-  const arg = exchanged ? { TAG: "Ok", _0: previous$10 } : { TAG: "Err", _0: previous$10 };
-  console.log(`${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${arg._0})`}`);
-  const previous$11 = NEXT_ID.value;
+  console.log(
+    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
+      exchanged ? { TAG: "Ok", _0: previous$10 } : { TAG: "Err", _0: previous$10 },
+    )}`,
+  );
+  const previous$11 = NEXT_ID;
   const exchanged$1 = previous$11 === 3;
   if (exchanged$1) {
-    NEXT_ID.value = 9;
+    NEXT_ID = 9;
   }
-  const arg$1 = exchanged$1 ? { TAG: "Ok", _0: previous$11 } : { TAG: "Err", _0: previous$11 };
-  console.log(`${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${arg$1._0})`}`);
-  const previous$12 = NEXT_ID.value;
+  console.log(
+    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
+      exchanged$1 ? { TAG: "Ok", _0: previous$11 } : { TAG: "Err", _0: previous$11 },
+    )}`,
+  );
+  const previous$12 = NEXT_ID;
   const exchanged$2 = previous$12 === 3;
   if (exchanged$2) {
-    NEXT_ID.value = 1;
+    NEXT_ID = 1;
   }
-  const arg$2 = exchanged$2 ? { TAG: "Ok", _0: previous$12 } : { TAG: "Err", _0: previous$12 };
-  console.log(`${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${arg$2._0})`} ${NEXT_ID.value}`);
-  console.log(`${hit()} ${hit()} ${HITS.value}`);
+  const value$3 = exchanged$2 ? { TAG: "Ok", _0: previous$12 } : { TAG: "Err", _0: previous$12 };
+  console.log(`${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`} ${NEXT_ID}`);
+  const value$4 = hit();
+  const value$5 = hit();
+  console.log(`${value$4} ${value$5} ${HITS.value}`);
   const seen = [];
-  const local = { value: 5 };
+  let local = 5;
   order(seen, "load");
-  const operand = Math.imul(local.value, 2) >>> 0;
+  const operand = Math.imul(local, 2) >>> 0;
   order(seen, "store");
-  local.value = operand;
-  console.log(`${local.value} [${seen.map((item) => $debugStr(item)).join(", ")}] 0`);
+  local = operand;
+  console.log(`${local} [${seen.map((item) => $debugStr(item)).join(", ")}] 0`);
 }
 //# sourceMappingURL=case.js.map

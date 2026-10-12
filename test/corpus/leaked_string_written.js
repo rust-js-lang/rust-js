@@ -14,7 +14,7 @@ function noisyDebug_fmt(noisy) {
   return "Noisy";
 }
 
-function noisyDrop_drop(self) {
+function noisyDrop_drop(noisy) {
   console.log("dropped");
 }
 
@@ -23,15 +23,15 @@ function bump(n) {
 }
 
 function main() {
-  const shout = { value: "ab" };
-  shout.value = $asciiCase(shout.value, true);
-  console.log(`${shout.value}`);
+  let shout = "ab";
+  shout = $asciiCase(shout, true);
+  console.log(`${shout}`);
   const other = keep({ value: "cd" });
   other.value = $asciiCase(other.value, true);
   console.log(`${other.value}`);
   const kept = [{ value: "ef" }];
-  const cell = $index(kept, 0);
-  cell.value = $asciiCase(cell.value, true);
+  const part = $index(kept, 0);
+  part.value = $asciiCase(part.value, true);
   kept.push({ value: "gh" });
   console.log(`[${kept.map((item) => $debugStr(item.value)).join(", ")}]`);
   const read = "ij";
@@ -41,14 +41,14 @@ function main() {
     text.value = $asciiCase(text.value, true);
     console.log(`${text.value}`);
   }
-  const noisy = {};
-  console.log(`${noisyDebug_fmt(noisy.value)} kept`);
-  const r = { value: 5 };
-  r.value = (r.value + 1) | 0;
-  const n = { value: r.value };
+  let noisy;
+  console.log(`${noisyDebug_fmt(noisy)} kept`);
+  let r = 5;
+  r = (r + 1) | 0;
+  const n = { value: r };
   bump(n);
-  r.value = n.value;
-  console.log(`${r.value}`);
+  r = n.value;
+  console.log(`${r}`);
   const counts = [{ value: 1 }];
   for (const count of counts) {
     count.value = (count.value + 1) | 0;

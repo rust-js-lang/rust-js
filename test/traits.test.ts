@@ -275,7 +275,7 @@ for (const [name, source, diagnostic, mirDiagnostic] of [
   test(`${name} produces a diagnostic instead of incomplete JS`, () => {
     const dir = fixture("trait-rejection");
     writeFileSync(join(dir, "lib.rs"), source);
-    for (const [expected, env] of [[diagnostic, {}], [mirDiagnostic === undefined ? diagnostic : mirDiagnostic, { RUST_JS_MIR: "1" }]] as const) {
+    for (const [expected, env] of [[diagnostic, { RUST_JS_MIR: "0" }], [mirDiagnostic === undefined ? diagnostic : mirDiagnostic, { RUST_JS_MIR: "1" }]] as const) {
       const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { env: { ...process.env, ...env } });
       expect(result.stderr.toString()).not.toContain("panicked");
       if (expected === null) {

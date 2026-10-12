@@ -11,35 +11,58 @@ function noisyDrop_drop(noisy) {
 function by_value(n) {
   try {
     console.log(`by value ${n[0]}`);
-  } finally {
+  } catch (error) {
     noisyDrop_drop(n);
+    throw error;
   }
+  noisyDrop_drop(n);
 }
 
-function by_ref(n) {
+function by_ref(_1) {
+  const n = _1;
   try {
     console.log(`by ref ${n[0]}`);
-  } finally {
-    noisyDrop_drop(n);
+  } catch (error) {
+    noisyDrop_drop(_1);
+    throw error;
   }
+  noisyDrop_drop(_1);
 }
 
-function ignored(_) {
+function ignored(_1) {
   try {
     console.log("ignored");
-  } finally {
-    noisyDrop_drop(_);
+  } catch (error) {
+    noisyDrop_drop(_1);
+    throw error;
   }
+  noisyDrop_drop(_1);
 }
 
-function both(a, _, b) {
+function both(_1, _2, b) {
+  const a = _1;
   try {
     console.log(`both ${a[0]} ${b[0]}`);
-  } finally {
+  } catch (error) {
     noisyDrop_drop(b);
-    noisyDrop_drop(_);
-    noisyDrop_drop(a);
+    noisyDrop_drop(_2);
+    noisyDrop_drop(_1);
+    throw error;
   }
+  try {
+    noisyDrop_drop(b);
+  } catch (error) {
+    noisyDrop_drop(_2);
+    noisyDrop_drop(_1);
+    throw error;
+  }
+  try {
+    noisyDrop_drop(_2);
+  } catch (error) {
+    noisyDrop_drop(_1);
+    throw error;
+  }
+  noisyDrop_drop(_1);
 }
 
 function main() {
@@ -53,11 +76,33 @@ function main() {
   const keptToo = ["i"];
   try {
     console.log(`${kept[0]} ${borrowed[0]}`);
-    console.log("end");
-  } finally {
+  } catch (error) {
     noisyDrop_drop(keptToo);
     noisyDrop_drop(same);
     noisyDrop_drop(kept);
+    throw error;
   }
+  try {
+    console.log("end");
+  } catch (error) {
+    noisyDrop_drop(keptToo);
+    noisyDrop_drop(same);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    noisyDrop_drop(keptToo);
+  } catch (error) {
+    noisyDrop_drop(same);
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  try {
+    noisyDrop_drop(same);
+  } catch (error) {
+    noisyDrop_drop(kept);
+    throw error;
+  }
+  noisyDrop_drop(kept);
 }
 //# sourceMappingURL=case.js.map

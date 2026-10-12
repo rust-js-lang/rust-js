@@ -91,13 +91,10 @@ function small_sum(a, b) {
 }
 
 export function converted(a, b) {
-  const match = small_sum(a, b);
-  if (match.TAG === "Ok") {
-    return `ok ${match._0}`;
+  const value = small_sum(a, b);
+  if (value.TAG === "Err") {
+    return value._0.TAG === "Parse" ? `parse: ${value._0._0}` : `too big: ${value._0._0}`;
   }
-  if (match.TAG === "Err" && match._0.TAG === "Parse") {
-    return `parse: ${match._0._0}`;
-  }
-  return `too big: ${match._0._0}`;
+  return `ok ${value._0}`;
 }
 //# sourceMappingURL=results.js.map

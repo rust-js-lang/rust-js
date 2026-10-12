@@ -41,14 +41,11 @@ function main() {
   const x$1 = { value: x };
   via(x$1);
   x = x$1.value;
-  let unit;
   const _t = { value: x };
-  const result = pass(_t);
+  const value = pass(_t);
   x = _t.value;
-  const tmp = result;
-  const _t$1 = { value: unit };
-  const result$1 = pass(_t$1);
-  unit = _t$1.value;
-  console.log(`${x} ${tmp} ${result$1}`);
+  const _t$1 = {};
+  const arg = pass(_t$1);
+  console.log(`${x} ${value} ${arg}`);
 }
 //# sourceMappingURL=case.js.map

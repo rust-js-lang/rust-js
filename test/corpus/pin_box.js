@@ -46,8 +46,7 @@ function main() {
   console.log(`${Counter.bump(counter)} ${counter.count}`);
   const list = [1, 2, 3];
   console.log(`${total(list)}`);
-  const boxed = "pinned";
-  const text = boxed;
+  const text = "pinned";
   console.log(`${text} ${$byteLen(text)}`);
   let number = 7;
   const pin = {
@@ -64,15 +63,7 @@ function main() {
   const pair = { count: 1, name: "pair" };
   const name = pair.name;
   console.log(`${$byteLen(name)}`);
-  const count = {
-    get value() {
-      return pair.count;
-    },
-    set value(value) {
-      pair.count = value;
-    },
-  };
-  count.value = (count.value + 9) >>> 0;
+  pair.count = (pair.count + 9) >>> 0;
   console.log(`${pair.count} ${pair.name}`);
   let seven = 7;
   const shown = {
@@ -84,13 +75,12 @@ function main() {
     },
   };
   console.log(`${shown.value} ${shown.value}`);
-  const [a, b] = [
-    [1, 2],
-    [1, 3],
-  ];
+  const a = [1, 2];
+  const b = [1, 3];
   const copy = a.slice();
+  const value = $eq(a, copy);
   console.log(
-    `${$eq(a, copy)} ${$cmpItems(a, b, $cmp) < 0} [${copy.map((item) => String(item)).join(", ")}]`,
+    `${value} ${$cmpItems(a, b, $cmp) < 0} [${copy.map((item) => String(item)).join(", ")}]`,
   );
   const changed = a.slice();
   changed.push(9);
@@ -100,10 +90,13 @@ function main() {
   const _noisy = [1];
   try {
     console.log("pinned");
-  } finally {
+  } catch (error) {
     noisyDrop_drop(_noisy);
+    throw error;
   }
-  console.log(`${anyPartialEq_eq(undefined)} ${anyPartialEq_eq(undefined)}`);
+  noisyDrop_drop(_noisy);
+  const value$1 = anyPartialEq_eq(undefined);
+  console.log(`${value$1} ${anyPartialEq_eq(undefined)}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

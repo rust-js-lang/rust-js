@@ -59,64 +59,62 @@ const CHARS = [
 
 function main() {
   for (const c of CHARS) {
-    const arg = /^\p{Alphabetic}$/u.test(c);
-    const arg$1 = /^\p{N}$/u.test(c);
-    const arg$2 = /^[\p{Alphabetic}\p{N}]$/u.test(c);
-    const arg$3 = /^\p{White_Space}$/u.test(c);
-    const arg$4 = /^\p{Uppercase}$/u.test(c);
-    const arg$5 = /^\p{Lowercase}$/u.test(c);
-    const arg$6 = /^\p{Cc}$/u.test(c);
-    const arg$7 = c.charCodeAt(0) < 128;
-    const arg$8 = /^[0-9]$/.test(c);
-    const arg$9 = /^[0-9A-Fa-f]$/.test(c);
-    const arg$10 = /^[A-Za-z]$/.test(c);
-    const arg$11 = /^[A-Za-z0-9]$/.test(c);
-    const arg$12 = /^[A-Z]$/.test(c);
-    const arg$13 = /^[a-z]$/.test(c);
-    const arg$14 = /^[!-\/:-@[-`{-~]$/.test(c);
-    const arg$15 = /^[!-~]$/.test(c);
-    const arg$16 = /^[ \t\n\f\r]$/.test(c);
-    const arg$17 = /^[\0-\x1f\x7f]$/.test(c);
-    const arg$18 = $toDigit(c, 8) !== undefined;
+    const value = /^\p{Alphabetic}$/u.test(c);
+    const value$1 = /^\p{N}$/u.test(c);
+    const value$2 = /^[\p{Alphabetic}\p{N}]$/u.test(c);
+    const value$3 = /^\p{White_Space}$/u.test(c);
+    const value$4 = /^\p{Uppercase}$/u.test(c);
+    const value$5 = /^\p{Lowercase}$/u.test(c);
+    const value$6 = /^\p{Cc}$/u.test(c);
+    const value$7 = c.charCodeAt(0) < 128;
+    const value$8 = /^[0-9]$/.test(c);
+    const value$9 = /^[0-9A-Fa-f]$/.test(c);
+    const value$10 = /^[A-Za-z]$/.test(c);
+    const value$11 = /^[A-Za-z0-9]$/.test(c);
+    const value$12 = /^[A-Z]$/.test(c);
+    const value$13 = /^[a-z]$/.test(c);
+    const value$14 = /^[!-\/:-@[-`{-~]$/.test(c);
+    const value$15 = /^[!-~]$/.test(c);
+    const value$16 = /^[ \t\n\f\r]$/.test(c);
+    const value$17 = /^[\0-\x1f\x7f]$/.test(c);
+    const arg = $toDigit(c, 8) !== undefined;
     console.log(
-      `${$debugStr(c, "'")}: is ${arg} ${arg$1} ${arg$2} ${arg$3} ${arg$4} ${arg$5} ${arg$6} ascii ${arg$7} ${arg$8} ${arg$9} ${arg$10} ${arg$11} ${arg$12} ${arg$13} ${arg$14} ${arg$15} ${arg$16} ${arg$17} ${arg$18}`,
+      `${$debugStr(c, "'")}: is ${value} ${value$1} ${value$2} ${value$3} ${value$4} ${value$5} ${value$6} ascii ${value$7} ${value$8} ${value$9} ${value$10} ${value$11} ${value$12} ${value$13} ${value$14} ${value$15} ${value$16} ${value$17} ${arg}`,
     );
-    const arg$19 = c.toUpperCase();
-    const arg$20 = c.toLowerCase();
-    const arg$21 = c.replace(/[a-z]/, (letter) => letter.toUpperCase());
-    const arg$22 = c.replace(/[A-Z]/, (letter) => letter.toLowerCase());
-    const arg$23 = $toDigit(c, 10);
-    const arg$24 = $toDigit(c, 16);
-    const arg$25 = $toDigit(c, 36);
-    const arg$26 = $byteLen(c);
-    const arg$27 = c.length;
-    const arg$28 = c.codePointAt(0);
-    const arg$29 = c.codePointAt(0) & 255;
-    const arg$30 = String.fromCharCode(c.codePointAt(0) & 255);
-    const arg$31 = $fromU32((c.codePointAt(0) + 1) >>> 0);
-    const arg$32 = $byteLen(c);
+    const value$18 = c.toUpperCase();
+    const value$19 = c.toLowerCase();
+    const value$20 = c.replace(/[a-z]/, (letter) => letter.toUpperCase());
+    const value$21 = c.replace(/[A-Z]/, (letter) => letter.toLowerCase());
+    const value$22 = $toDigit(c, 10);
+    const value$23 = $toDigit(c, 16);
+    const value$24 = $toDigit(c, 36);
+    const value$25 = $byteLen(c);
+    const value$26 = c.codePointAt(0);
+    const value$27 = c.codePointAt(0) & 255;
+    const value$28 = String.fromCharCode(c.codePointAt(0) & 255);
+    const value$29 = $fromU32((c.codePointAt(0) + 1) >>> 0);
+    const arg$1 = $byteLen(c);
     console.log(
-      `${$debugStr(c, "'")}: case ${$debugStr(arg$19)} ${$debugStr(arg$20)} ${$debugStr(arg$21, "'")} ${$debugStr(arg$22, "'")} digit ${arg$23 == null ? "None" : `Some(${arg$23})`} ${arg$24 == null ? "None" : `Some(${arg$24})`} ${arg$25 == null ? "None" : `Some(${arg$25})`} len ${arg$26} ${arg$27} as ${arg$28} ${arg$29} ${$debugStr(arg$30, "'")} ${arg$31 == null ? "None" : `Some(${$debugStr(arg$31, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${arg$32}`,
+      `${$debugStr(c, "'")}: case ${$debugStr(value$18)} ${$debugStr(value$19)} ${$debugStr(value$20, "'")} ${$debugStr(value$21, "'")} digit ${value$22 == null ? "None" : `Some(${value$22})`} ${value$23 == null ? "None" : `Some(${value$23})`} ${value$24 == null ? "None" : `Some(${value$24})`} len ${value$25} ${c.length} as ${value$26} ${value$27} ${$debugStr(value$28, "'")} ${value$29 == null ? "None" : `Some(${$debugStr(value$29, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${arg$1}`,
     );
     for (const d of CHARS) {
-      const arg = $cmp(c, d);
-      const arg$1 = $cmp(c, d) < 0;
-      const arg$2 = $cmp(c, d) > 0 ? c : d;
-      const arg$3 = c === d;
-      const arg$4 = $asciiCase(c) === $asciiCase(d);
+      const value = $cmp(c, d);
+      const value$1 = $cmp(c, d) < 0;
+      const value$2 = $cmp(c, d) > 0 ? c : d;
+      const arg = $asciiCase(c) === $asciiCase(d);
       console.log(
         `${$debugStr(c, "'")} ${$debugStr(d, "'")}: ${
-          ["Less", "Equal", "Greater"][arg + 1]
-        } ${arg$1} ${arg$2} ${arg$3} ${arg$4}`,
+          ["Less", "Equal", "Greater"][value + 1]
+        } ${value$1} ${value$2} ${c === d} ${arg}`,
       );
     }
   }
   for (const n of [0, 7, 9, 10, 15, 35, 36]) {
-    const arg = $fromDigit(n, 10);
-    const arg$1 = $fromDigit(n, 16);
-    const arg$2 = $fromDigit(n, 36);
+    const value = $fromDigit(n, 10);
+    const value$1 = $fromDigit(n, 16);
+    const arg = $fromDigit(n, 36);
     console.log(
-      `${n}: ${arg == null ? "None" : `Some(${$debugStr(arg, "'")})`} ${arg$1 == null ? "None" : `Some(${$debugStr(arg$1, "'")})`} ${arg$2 == null ? "None" : `Some(${$debugStr(arg$2, "'")})`}`,
+      `${n}: ${value == null ? "None" : `Some(${$debugStr(value, "'")})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`} ${arg == null ? "None" : `Some(${$debugStr(arg, "'")})`}`,
     );
   }
 }

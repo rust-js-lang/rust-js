@@ -24,11 +24,9 @@ function blinkerIterator_next(blinker) {
 
 function main() {
   console.log(
-    `${
-      $iterator([5], countdownIterator_next)
-        .filter((n) => n % 2 === 0)
-        .toArray().length
-    }`,
+    `${$iterator([5], countdownIterator_next)
+      .filter((n) => n % 2 === 0)
+      .reduce((n) => n + 1, 0)}`,
   );
   const all = $iterator([4], countdownIterator_next)
     .map((n) => Math.imul(n, 10) >>> 0)

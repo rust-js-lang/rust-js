@@ -23,22 +23,42 @@ function main() {
     log.push(i);
     return i;
   };
-  const items = $index(grid, at(1));
-  const index = $at(items, at(0));
-  items[index] = (items[index] + 10) | 0;
-  const value = at(3) | 0;
-  const items$1 = $index(grid, at(0));
-  const index$1 = $at(items$1, at(1));
-  items$1[index$1] = Math.imul(items$1[index$1], value);
-  const item = $index(ps, at(1));
-  item.x = (item.x + 5) | 0;
-  const value$1 = at(2) | 0;
-  const item$1 = $index(arr, at(0));
-  item$1.x = (item$1.x - value$1) | 0;
-  const index$2 = $at(v, at(2));
-  v[index$2] = (v[index$2] + 1) | 0;
-  const value$2 = at(7) | 0;
-  v[$at(v, 1)] = (v[$at(v, 1)] + value$2) | 0;
+  const value$2 = at(1);
+  if (!(value$2 < 2)) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${value$2}`);
+  }
+  const value$3 = at(0);
+  const value = (grid[value$2][$at(grid[value$2], value$3)] + 10) | 0;
+  grid[value$2][value$3] = value;
+  const value$4 = at(3) | 0;
+  const value$5 = at(0);
+  if (!(value$5 < 2)) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${value$5}`);
+  }
+  const value$6 = at(1);
+  const value$1 = Math.imul(grid[value$5][$at(grid[value$5], value$6)], value$4);
+  grid[value$5][value$6] = value$1;
+  const value$7 = $index(ps, at(1));
+  value$7.x = (value$7.x + 5) | 0;
+  const value$8 = at(2) | 0;
+  const value$9 = at(0);
+  if (!(value$9 < 2)) {
+    throw new Error(`index out of bounds: the len is 2 but the index is ${value$9}`);
+  }
+  arr[value$9].x = (arr[value$9].x - value$8) | 0;
+  const index = at(2);
+  $index(v, index);
+  const value$10 = {
+    get value() {
+      return v[index];
+    },
+    set value(value) {
+      v[index] = value;
+    },
+  };
+  value$10.value = (value$10.value + 1) | 0;
+  const value$11 = at(7) | 0;
+  v[$at(v, 1)] = (v[1] + value$11) | 0;
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${ps.map((item) => pDebug_fmt(item)).join(", ")}] [${arr.map((item) => pDebug_fmt(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
   );

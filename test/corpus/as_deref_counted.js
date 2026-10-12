@@ -8,43 +8,127 @@ export function entry() {
 
 function main() {
   const counted = { value: [1, 2], strong: 1, weak: 0 };
+  let again;
   try {
-    const again = counted == null ? counted : $rcClone(counted);
-    try {
-      console.log(
-        `${counted?.value == null ? "None" : `Some([${counted?.value.map((item) => String(item)).join(", ")}])`} ${$unwrap(again).strong}`,
-      );
-      const nested = { value: { value: "in", strong: 1, weak: 0 }, strong: 1, weak: 0 };
-      try {
-        const inner = nested?.value;
-        console.log(
-          `${inner?.strong == null ? "None" : `Some(${inner?.strong})`} ${$unwrap(nested).strong}`,
-        );
-        const countedOk = { TAG: "Ok", _0: { value: [3], strong: 1, weak: 0 } };
-        try {
-          const arg = countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk;
-          console.log(
-            `${arg.TAG === "Ok" ? `Ok([${arg._0.map((item) => String(item)).join(", ")}])` : `Err(${arg._0})`}`,
-          );
-        } finally {
-          if (countedOk.TAG === "Ok") {
-            $rcDrop(countedOk._0);
-          }
-        }
-      } finally {
-        if (nested != null) {
-          $rcDrop(nested, $rcDrop);
-        }
-      }
-    } finally {
-      if (again != null) {
-        $rcDrop(again);
-      }
-    }
-  } finally {
+    again = counted == null ? counted : $rcClone(counted);
+  } catch (error) {
     if (counted != null) {
       $rcDrop(counted);
     }
+    throw error;
+  }
+  const value = counted?.value;
+  try {
+    console.log(
+      `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${$unwrap(again).strong}`,
+    );
+  } catch (error) {
+    if (again != null) {
+      $rcDrop(again);
+    }
+    if (counted != null) {
+      $rcDrop(counted);
+    }
+    throw error;
+  }
+  const nested = { value: { value: "in", strong: 1, weak: 0 }, strong: 1, weak: 0 };
+  const inner = nested?.value;
+  const value$1 = (rc) => rc.strong;
+  let tmp;
+  try {
+    tmp = inner ? value$1(inner) : undefined;
+  } catch (error) {
+    if (nested != null) {
+      $rcDrop(nested, $rcDrop);
+    }
+    if (again != null) {
+      $rcDrop(again);
+    }
+    if (counted != null) {
+      $rcDrop(counted);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${tmp == null ? "None" : `Some(${tmp})`} ${$unwrap(nested).strong}`);
+  } catch (error) {
+    if (nested != null) {
+      $rcDrop(nested, $rcDrop);
+    }
+    if (again != null) {
+      $rcDrop(again);
+    }
+    if (counted != null) {
+      $rcDrop(counted);
+    }
+    throw error;
+  }
+  const countedOk = { TAG: "Ok", _0: { value: [3], strong: 1, weak: 0 } };
+  try {
+    console.log(
+      `${((result) =>
+        result.TAG === "Ok"
+          ? `Ok([${result._0.map((item) => String(item)).join(", ")}])`
+          : `Err(${result._0})`)(
+        countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk,
+      )}`,
+    );
+  } catch (error) {
+    if (countedOk.TAG === "Ok") {
+      $rcDrop(countedOk._0);
+    }
+    if (nested != null) {
+      $rcDrop(nested, $rcDrop);
+    }
+    if (again != null) {
+      $rcDrop(again);
+    }
+    if (counted != null) {
+      $rcDrop(counted);
+    }
+    throw error;
+  }
+  try {
+    if (countedOk.TAG === "Ok") {
+      $rcDrop(countedOk._0);
+    }
+  } catch (error) {
+    if (nested != null) {
+      $rcDrop(nested, $rcDrop);
+    }
+    if (again != null) {
+      $rcDrop(again);
+    }
+    if (counted != null) {
+      $rcDrop(counted);
+    }
+    throw error;
+  }
+  try {
+    if (nested != null) {
+      $rcDrop(nested, $rcDrop);
+    }
+  } catch (error) {
+    if (again != null) {
+      $rcDrop(again);
+    }
+    if (counted != null) {
+      $rcDrop(counted);
+    }
+    throw error;
+  }
+  try {
+    if (again != null) {
+      $rcDrop(again);
+    }
+  } catch (error) {
+    if (counted != null) {
+      $rcDrop(counted);
+    }
+    throw error;
+  }
+  if (counted != null) {
+    $rcDrop(counted);
   }
 }
 //# sourceMappingURL=case.js.map

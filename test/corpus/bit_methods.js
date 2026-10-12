@@ -18,40 +18,38 @@ export function entry() {
 }
 
 function main() {
+  const value = $edgeOnes(227, 8);
+  const value$1 = $edgeOnes(227, 8, true);
+  const value$2 = $edgeOnes(-1, 16);
+  console.log(`${value} ${value$1} ${value$2} ${$edgeOnes(0n, 64, true)}`);
+  const value$3 = $swapBytes(4660, 16, false);
+  const value$4 = $swapBytes(-2, 32, true);
+  console.log(`${value$3} ${value$4} ${$swapBytes(72623859790382856n, 64, false)}`);
+  const value$5 = $reverseBits(1, 8, false);
+  const value$6 = $reverseBits(-128, 8, true);
+  console.log(`${value$5} ${value$6} ${$reverseBits(6n, 128, false)}`);
+  const value$7 = $swapBytes(4660, 16, false);
+  console.log(`${value$7} ${$swapBytes(1, 32, false)} ${7n} -5`);
+  const value$8 = $checkedEuclid(7, -2, -2147483648, false);
+  const value$9 = $checkedEuclid(-7, 2, -2147483648, true);
   console.log(
-    `${$edgeOnes(227, 8)} ${$edgeOnes(227, 8, true)} ${$edgeOnes(-1, 16)} ${$edgeOnes(0n, 64, true)}`,
+    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedEuclid(-128, -1, -128, false))}`,
   );
+  const value$10 = $checkedEuclid(5n, 0n, undefined, false);
+  const value$11 = $checkedEuclid(-7n, 2n, -9223372036854775808n, false);
   console.log(
-    `${$swapBytes(4660, 16, false)} ${$swapBytes(-2, 32, true)} ${$swapBytes(72623859790382856n, 64, false)}`,
-  );
-  console.log(
-    `${$reverseBits(1, 8, false)} ${$reverseBits(-128, 8, true)} ${$reverseBits(6n, 128, false)}`,
-  );
-  console.log(`${$swapBytes(4660, 16, false)} ${$swapBytes(1, 32, false)} ${7n} -5`);
-  const arg = $checkedEuclid(7, -2, -2147483648, false);
-  const arg$1 = $checkedEuclid(-7, 2, -2147483648, true);
-  const arg$2 = $checkedEuclid(-128, -1, -128, false);
-  console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`} ${arg$2 == null ? "None" : `Some(${arg$2})`}`,
-  );
-  const arg$3 = $checkedEuclid(5n, 0n, undefined, false);
-  const arg$4 = $checkedEuclid(-7n, 2n, -9223372036854775808n, false);
-  const arg$5 = $checkedEuclid(9n, 4n, undefined, true);
-  console.log(
-    `${arg$3 == null ? "None" : `Some(${arg$3})`} ${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedEuclid(9n, 4n, undefined, true))}`,
   );
   console.log(`${$displayF64(1 / 4)} ${$displayF32(Math.fround(1 / 3))} ${$displayF64(1 / 0)}`);
+  const value$12 = $toBytes($floatToBits(1.5, 4), 4, true);
   console.log(
-    `[${$toBytes($floatToBits(1.5, 4), 4, true)
-      .map((item) => String(item))
-      .join(", ")}] [${$toBytes($floatToBits(-2, 8), 8, false)
+    `[${value$12.map((item) => String(item)).join(", ")}] [${$toBytes($floatToBits(-2, 8), 8, false)
       .map((item) => String(item))
       .join(", ")}]`,
   );
+  const value$13 = $floatFromBits($fromBytes([64, 73, 15, 219], 4, false, false), 4);
   console.log(
-    `${$displayF32(
-      $floatFromBits($fromBytes([64, 73, 15, 219], 4, false, false), 4),
-    )} ${$displayF64($floatFromBits($fromBytes($toBytes($floatToBits(0.1, 8), 8, true), 8, true, false), 8))}`,
+    `${$displayF32(value$13)} ${$displayF64($floatFromBits($fromBytes($toBytes($floatToBits(0.1, 8), 8, true), 8, true, false), 8))}`,
   );
 }
 //# sourceMappingURL=case.js.map

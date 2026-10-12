@@ -28,24 +28,83 @@ function adversary(n, select) {
   const compare = (x, y) => {
     asked = (asked + 1) >>> 0;
     const v = $borrowMut(values, true);
+    let tmp;
     try {
-      if ($index(v.value, x) === gas && $index(v.value, y) === gas) {
+      tmp = $index(v.value, x) === gas;
+    } catch (error) {
+      $unborrow(v);
+      throw error;
+    }
+    if (tmp) {
+      let tmp;
+      try {
+        tmp = $index(v.value, y) === gas;
+      } catch (error) {
+        $unborrow(v);
+        throw error;
+      }
+      if (tmp) {
         if (x === candidate) {
-          v.value[$at(v.value, x)] = solid;
+          let tmp;
+          try {
+            tmp = solid;
+            $index(v.value, x);
+          } catch (error) {
+            $unborrow(v);
+            throw error;
+          }
+          v.value[x] = tmp;
         } else {
-          v.value[$at(v.value, y)] = solid;
+          let tmp;
+          try {
+            tmp = solid;
+            $index(v.value, y);
+          } catch (error) {
+            $unborrow(v);
+            throw error;
+          }
+          v.value[y] = tmp;
         }
         solid = (solid + 1) >>> 0;
       }
-      if ($index(v.value, x) === gas) {
-        candidate = x;
-      } else if ($index(v.value, y) === gas) {
+    }
+    let tmp$1;
+    try {
+      tmp$1 = $index(v.value, x) === gas;
+    } catch (error) {
+      $unborrow(v);
+      throw error;
+    }
+    if (tmp$1) {
+      candidate = x;
+    } else {
+      let tmp;
+      try {
+        tmp = $index(v.value, y) === gas;
+      } catch (error) {
+        $unborrow(v);
+        throw error;
+      }
+      if (tmp) {
         candidate = y;
       }
-      return $cmp($index(v.value, x), $index(v.value, y));
-    } finally {
-      $unborrow(v);
     }
+    let tmp$2;
+    try {
+      tmp$2 = $index(v.value, x);
+    } catch (error) {
+      $unborrow(v);
+      throw error;
+    }
+    let result;
+    try {
+      result = $cmp(tmp$2, $index(v.value, y));
+    } catch (error) {
+      $unborrow(v);
+      throw error;
+    }
+    $unborrow(v);
+    return result;
   };
   const items = $range(0, n);
   if (select != null) {

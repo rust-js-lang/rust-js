@@ -11,27 +11,42 @@ function noisyDrop_drop(noisy) {
 function take(n) {
   try {
     console.log(`took ${n[0]}`);
-  } finally {
+  } catch (error) {
     noisyDrop_drop(n);
+    throw error;
   }
+  noisyDrop_drop(n);
 }
 
 function main() {
+  let n$live = false;
   for (let i = 0; i < 2; i++) {
     const give = i === 0;
+    n$live = true;
     const n = [give ? "given" : "kept"];
-    let n$live = true;
-    try {
-      if (give) {
-        n$live = false;
+    if (give) {
+      n$live = false;
+      try {
         take(n);
+      } catch (error) {
+        if (n$live) {
+          noisyDrop_drop(n);
+        }
+        throw error;
       }
+    }
+    try {
       console.log(`end of ${give}`);
-    } finally {
+    } catch (error) {
       if (n$live) {
         noisyDrop_drop(n);
       }
+      throw error;
     }
+    if (n$live) {
+      noisyDrop_drop(n);
+    }
+    n$live = false;
   }
 }
 //# sourceMappingURL=case.js.map

@@ -11,12 +11,12 @@ function Card(p) {
 
 export function App() {
   const __jsx0 = 3;
-  const match = globalThis.record(1);
-  const match$1 = globalThis.record(2);
-  const match$2 = globalThis.record(__jsx0);
+  const title = globalThis.record(1);
+  const key = globalThis.record(2);
+  const children = globalThis.record(__jsx0);
   return (
-    <Card title={match} key={match$1}>
-      {match$2}
+    <Card title={title} key={key}>
+      {children}
     </Card>
   );
 }

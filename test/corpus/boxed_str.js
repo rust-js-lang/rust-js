@@ -15,10 +15,9 @@ function itemDebug_fmt(item) {
 
 const Item = {
   to_owned(item) {
-    if (item.TAG === "Literal") {
-      return { TAG: "OwnedLiteral", _0: item._0 };
-    }
-    return { TAG: "OwnedLiteral", _0: item._0 };
+    return item.TAG === "Literal"
+      ? { TAG: "OwnedLiteral", _0: item._0 }
+      : { TAG: "OwnedLiteral", _0: item._0 };
   },
   text(item) {
     return item.TAG === "Literal" ? item._0 : item._0;
@@ -27,15 +26,15 @@ const Item = {
 
 function main() {
   const owned = Item.to_owned({ TAG: "Literal", _0: "abc" });
-  const arg = Item.text(owned);
-  const arg$1 = $byteLen(Item.text(owned));
-  console.log(`${itemDebug_fmt(owned)} ${arg} ${arg$1}`);
+  const value = Item.text(owned);
+  const arg = $byteLen(Item.text(owned));
+  console.log(`${itemDebug_fmt(owned)} ${value} ${arg}`);
   console.log(`${$eq(owned, { TAG: "OwnedLiteral", _0: "abc" })}`);
   const fromString = "héllo";
   const into = "into";
-  const arg$2 = $byteLen(fromString);
-  const arg$3 = into.toUpperCase();
-  console.log(`${fromString} ${arg$2} ${$debugStr(into)} ${arg$3}`);
+  const value$1 = $byteLen(fromString);
+  const arg$1 = into.toUpperCase();
+  console.log(`${fromString} ${value$1} ${$debugStr(into)} ${arg$1}`);
   const copy = fromString;
   console.log(`${copy === fromString} ${copy === "héllo"}`);
 }

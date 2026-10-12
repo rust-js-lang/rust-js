@@ -2,12 +2,12 @@
 
 import {
   $assign,
-  $at,
   $debugF64,
   $debugStr,
   $eq,
   $exchange,
   $index,
+  $mutItems,
   $take,
 } from "@rust-js/runtime";
 
@@ -79,8 +79,8 @@ function lightDebug_fmt(light) {
 }
 
 const Light = {
-  toggle(self) {
-    self.value = self.value === "Off" ? { TAG: "On", level: 5 } : "Off";
+  toggle(light) {
+    light.value = light.value === "Off" ? { TAG: "On", level: 5 } : "Off";
   },
 };
 
@@ -90,7 +90,8 @@ function set(l, level) {
 
 function brighter(l) {
   if (l.value.TAG === "On") {
-    l.value.level = (l.value.level + 1) & 255;
+    const value = l.value;
+    value.level = (value.level + 1) & 255;
   }
 }
 
@@ -102,13 +103,7 @@ function shapeDebug_fmt(shape) {
 }
 
 function flip(s) {
-  let tmp;
-  if (s.TAG === "Circle") {
-    tmp = { TAG: "Square", side: s.r * 2 };
-  } else {
-    tmp = { TAG: "Circle", r: s.side };
-  }
-  $assign(s, tmp);
+  $assign(s, s.TAG === "Circle" ? { TAG: "Square", side: s.r * 2 } : { TAG: "Circle", r: s.side });
 }
 
 function shout(s) {
@@ -176,14 +171,15 @@ function main() {
   const arg = $eq(l, { TAG: "On", level: 9 });
   console.log(`${lightDebug_fmt(l)} ${arg}`);
   const lights = ["Off", { TAG: "On", level: 1 }];
-  for (let i = 0; i < lights.length; i++) {
-    const self = { value: lights[i] };
+  for (const light of $mutItems(lights)) {
+    const self = { value: light.value };
     Light.toggle(self);
-    lights[i] = self.value;
+    light.value = self.value;
   }
-  const l$3 = { value: $index(lights, 0) };
+  $index(lights, 0);
+  const l$3 = { value: lights[0] };
   brighter(l$3);
-  lights[$at(lights, 0)] = l$3.value;
+  lights[0] = l$3.value;
   console.log(`[${lights.map((item) => lightDebug_fmt(item)).join(", ")}]`);
   const s = { TAG: "Circle", r: 1.5 };
   flip(s);

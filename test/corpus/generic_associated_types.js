@@ -4,6 +4,7 @@ import {
   $byteLen,
   $checked,
   $debugStr,
+  $iter,
   $nextSome,
   $someAt,
   $someValue,
@@ -31,7 +32,7 @@ function shelfContainer() {
 }
 
 function shelfContainer_items(shelf) {
-  return shelf.books;
+  return $iter(shelf.books);
 }
 
 function countsContainer() {
@@ -49,7 +50,7 @@ function countsContainer() {
 }
 
 function countsContainer_items(counts) {
-  return counts[0];
+  return $iter(counts[0]);
 }
 
 function countdownContainer() {
@@ -67,20 +68,22 @@ function countdownContainer() {
 }
 
 function countdownContainer_items(countdown) {
-  return $successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295));
+  return Iterator.from($successors(countdown[0], (n) => $checked(n - 1, 0, 4294967295)));
 }
 
 function count(c, CContainer) {
-  return Iterator.from(CContainer.items(c)).toArray().length;
+  return CContainer.items(c).reduce((n) => n + 1, 0);
 }
 
 function first(c, CContainer) {
-  return $nextSome(Iterator.from(CContainer.items(c)));
+  return $nextSome(CContainer.items(c));
 }
 
 function show(c, CContainer) {
-  const arg = CContainer.last(c);
-  return arg == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(arg))})`;
+  return ((value) =>
+    value == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(value))})`)(
+    CContainer.last(c),
+  );
 }
 
 function byteFilled() {
@@ -97,34 +100,33 @@ function byteFilled_filled(byte, N) {
 function main() {
   const shelf = { books: ["Dune", "Emma"] };
   const counts = [[3, 1, 4]];
-  const arg = shelfContainer().last(shelf);
-  const arg$1 = countsContainer().last(counts);
+  const value = shelfContainer().last(shelf);
   console.log(
-    `${arg == null ? "None" : `Some(${$debugStr(arg)})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
+    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${((value) => (value == null ? "None" : `Some(${value})`))(countsContainer().last(counts))}`,
   );
+  const value$1 = count(shelf, shelfContainer());
+  const value$2 = count(counts, countsContainer());
+  console.log(`${value$1} ${value$2} ${count([3], countdownContainer())}`);
+  const value$3 = countdownContainer().last([2]);
+  const value$4 = show(shelf, shelfContainer());
   console.log(
-    `${count(shelf, shelfContainer())} ${count(counts, countsContainer())} ${count([3], countdownContainer())}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4} ${show([1], countdownContainer())}`,
   );
-  const arg$2 = countdownContainer().last([2]);
+  const value$5 = first(shelf, shelfContainer());
+  const value$6 = first(counts, countsContainer());
   console.log(
-    `${arg$2 == null ? "None" : `Some(${arg$2})`} ${show(shelf, shelfContainer())} ${show([1], countdownContainer())}`,
-  );
-  const arg$3 = first(shelf, shelfContainer());
-  const arg$4 = first(counts, countsContainer());
-  const arg$5 = first([5], countdownContainer());
-  console.log(
-    `${arg$3 == null ? "None" : `Some(${$debugStr(arg$3)})`} ${arg$4 == null ? "None" : `Some(${arg$4})`} ${arg$5 == null ? "None" : `Some(${arg$5})`}`,
+    `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first([5], countdownContainer()))}`,
   );
   console.log(
     `[${shelfContainer_items(shelf)
       .map((b) => $byteLen(b))
+      .toArray()
       .map((item) => String(item))
       .join(", ")}]`,
   );
+  const value$7 = byteFilled_filled([7], 3);
   console.log(
-    `[${byteFilled_filled([7], 3)
-      .map((item) => String(item))
-      .join(", ")}] [${byteFilled_filled([1], 0)
+    `[${value$7.map((item) => String(item)).join(", ")}] [${byteFilled_filled([1], 0)
       .map((item) => String(item))
       .join(", ")}]`,
   );

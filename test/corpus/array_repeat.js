@@ -18,21 +18,27 @@ function made(name, n) {
 function main() {
   const zeros = new Array(1024).fill(0);
   const flags = [true, true, true];
-  console.log(
-    `${zeros.length} ${zeros.map((b) => b).reduce((a, b) => (a + b) >>> 0, 0)} [${flags.map((item) => String(item)).join(", ")}]`,
-  );
+  const arg = zeros.map((b) => b).reduce((a, b) => (a + b) >>> 0, 0);
+  console.log(`${zeros.length} ${arg} [${flags.map((item) => String(item)).join(", ")}]`);
   const item = [0, 0, 0];
   const grid = Array.from({ length: 4 }, () => item.slice());
+  if (!(1 < 4)) {
+    throw new Error("index out of bounds: the len is 4 but the index is 1");
+  }
   grid[1][2] = 7;
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   const item$1 = { x: 1 };
   const points = Array.from({ length: 3 }, () => ({ ...item$1 }));
+  if (!(0 < 3)) {
+    throw new Error("index out of bounds: the len is 3 but the index is 0");
+  }
   points[0].x = 5;
   console.log(`[${points.map((item) => pDebug_fmt(item)).join(", ")}]`);
   const once = new Array(3).fill(made("once", 4));
-  const none = new Array(0).fill(made("none", 9));
+  made("none", 9);
+  const none = [];
   console.log(`[${once.map((item) => String(item)).join(", ")}] ${none.length}`);
   const options = [2, 2];
   console.log(`[${options.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}]`);
@@ -40,6 +46,9 @@ function main() {
   row[1] = 5;
   const item$2 = [0, 0, 0];
   const pair = Array.from({ length: 2 }, () => item$2.slice());
+  if (!(0 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 0");
+  }
   pair[0][1] = 5;
   console.log(
     `[${row.map((item) => String(item)).join(", ")}] [${pair.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,

@@ -43,7 +43,8 @@ function main() {
     return next;
   });
   console.log(`[${nums.map((item) => String(item)).join(", ")}]`);
-  const cells = Array.from({ length: 2 }, () => ({ n: 0 }));
+  const item = { n: 0 };
+  const cells = Array.from({ length: 2 }, () => ({ ...item }));
   $fill(cells, { n: 3 }, (value) => ({ ...value }));
   $index(cells, 0).n = 9;
   console.log(`[${cells.map((item) => cellDebug_fmt(item)).join(", ")}]`);
@@ -65,19 +66,13 @@ function main() {
     `[${left.map((item) => String(item)).join(", ")}] [${right.map((item) => String(item)).join(", ")}] [${shifted.map((item) => String(item)).join(", ")}]`,
   );
   const sorted = [1, 2, 2, 5];
-  console.log(
-    `${$isSortedBy([1, NaN], (a, b) => a <= b)} ${$isSortedBy([0.5, 1.5], (a, b) => a <= b)}`,
-  );
-  console.log(
-    `${$isSortedBy(sorted, (a, b) => a <= b)} ${$isSortedBy([3, 1], (a, b) => a <= b)} ${$isSortedBy(sorted, (a, b) => a <= b)}`,
-  );
-  console.log(
-    `${$isSortedByKey(
-      ["a", "bb", "c"],
-      (s) => $byteLen(s),
-      $cmp,
-    )} ${$partitionPoint(sorted, (x) => x < 3)}`,
-  );
+  const value = $isSortedBy([1, NaN], (a, b) => a <= b);
+  console.log(`${value} ${$isSortedBy([0.5, 1.5], (a, b) => a <= b)}`);
+  const value$1 = $isSortedBy(sorted, (a, b) => a <= b);
+  const value$2 = $isSortedBy([3, 1], (a, b) => a <= b);
+  console.log(`${value$1} ${value$2} ${$isSortedBy(sorted, (a, b) => a <= b)}`);
+  const value$3 = $isSortedByKey(["a", "bb", "c"], (s) => $byteLen(s), $cmp);
+  console.log(`${value$3} ${$partitionPoint(sorted, (x) => x < 3)}`);
   const items = [1, 2, 3, 4, 5, 6, 7];
   console.log(
     `[${$chunksExact(items, 3)
@@ -89,26 +84,25 @@ function main() {
       .remainder.map((item) => String(item))
       .join(", ")}]`,
   );
+  const value$4 = Iterator.from($rchunks(items, 3, false)).toArray();
   console.log(
-    `[${$rchunks(items, 3, false)
-      .slice()
-      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
-      .join(", ")}] [${$rchunks(items, 2, true)
-      .slice()
+    `[${value$4.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${Iterator.from(
+      $rchunks(items, 2, true),
+    )
+      .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
-  const arg = items.length >= 2 ? items.slice(0, 2) : undefined;
-  const arg$1 = items.length >= 3 ? items.slice(-3) : undefined;
-  const arg$2 = items.length >= 9 ? items.slice(0, 9) : undefined;
+  const value$5 = items.length >= 2 ? items.slice(0, 2) : undefined;
+  const value$6 = items.length >= 3 ? items.slice(-3) : undefined;
   console.log(
-    `${arg == null ? "None" : `Some([${arg.map((item) => String(item)).join(", ")}])`} ${arg$1 == null ? "None" : `Some([${arg$1.map((item) => String(item)).join(", ")}])`} ${arg$2 == null ? "None" : `Some([${arg$2.map((item) => String(item)).join(", ")}])`}`,
+    `${value$5 == null ? "None" : `Some([${value$5.map((item) => String(item)).join(", ")}])`} ${value$6 == null ? "None" : `Some([${value$6.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(items.length >= 9 ? items.slice(0, 9) : undefined)}`,
   );
-  console.log(`${$sliceStartsWith(items, [1, 2])} ${$sliceStartsWith(items, [6], true)}`);
-  const arg$3 = $sliceStrip(items, [1], false);
-  const arg$4 = $sliceStrip(items, [9], true);
+  const value$7 = $sliceStartsWith(items, [1, 2]);
+  console.log(`${value$7} ${$sliceStartsWith(items, [6], true)}`);
+  const value$8 = $sliceStrip(items, [1], false);
   console.log(
-    `${arg$3 == null ? "None" : `Some([${arg$3.map((item) => String(item)).join(", ")}])`} ${arg$4 == null ? "None" : `Some([${arg$4.map((item) => String(item)).join(", ")}])`}`,
+    `${value$8 == null ? "None" : `Some([${value$8.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($sliceStrip(items, [9], true))}`,
   );
   console.log(
     `[${$repeatItems([1, 2], 3)
@@ -116,32 +110,32 @@ function main() {
       .join(", ")}]`,
   );
   console.log(
-    `[${$sliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false)
-      .slice()
+    `[${Iterator.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, false, false))
+      .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$sliceSplitBy([1, 3], (x) => x % 3 === 0, undefined, false, false)
-      .slice()
+    `[${Iterator.from($sliceSplitBy([1, 3], (x) => x % 3 === 0, undefined, false, false))
+      .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$sliceSplitBy(items, (x) => x % 2 === 0, 2, false, false)
-      .slice()
+    `[${Iterator.from($sliceSplitBy(items, (x) => x % 2 === 0, 2, false, false))
+      .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$sliceSplitBy(items, (x) => x === 4, undefined, false, true)
-      .slice()
+    `[${Iterator.from($sliceSplitBy(items, (x) => x === 4, undefined, false, true))
+      .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
   console.log(
-    `[${$sliceSplitBy(items, (x) => x % 3 === 0, undefined, true, false)
-      .slice()
+    `[${Iterator.from($sliceSplitBy(items, (x) => x % 3 === 0, undefined, true, false))
+      .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
@@ -157,8 +151,9 @@ function main() {
   );
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}] ${calls}`);
   const bytes = [72, 101, 108, 108, 111, 33];
+  const value$9 = bytes.every((b) => b < 128);
   console.log(
-    `${bytes.every((b) => b < 128)} [${$asciiBytes(bytes, true)
+    `${value$9} [${$asciiBytes(bytes, true)
       .map((item) => String(item))
       .join(", ")}]`,
   );

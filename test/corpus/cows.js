@@ -20,8 +20,8 @@ function main() {
   const owned = { ...hey }._0;
   console.log(`${owned} ${hi._0}`);
   const text = shout("wow!");
-  const cell = $cowMut(text);
-  cell.value += "!!";
+  const value = $cowMut(text);
+  value.value += "!!";
   console.log(`${text._0} ${text.TAG === "Owned"}`);
   const items = [1, 2, 3];
   const list = { TAG: "Borrowed", _0: items };

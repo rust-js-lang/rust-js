@@ -109,20 +109,23 @@ function main() {
   const shown = { value: counter, impl: counterDisplay() };
   counter[0].value = 2;
   console.log(`${shown.impl.fmt(shown.value)}`);
-  const match = lookup("one");
-  if (match.TAG === "Ok") {
-    console.log(`found ${match._0}`);
+  const value = lookup("one");
+  if (value.TAG === "Ok") {
+    const n = value._0;
+    console.log(`found ${n}`);
   } else {
-    console.log(`error ${match._0.impl.Display().fmt(match._0.value)}`);
+    const e = value._0;
+    console.log(`error ${e.impl.Display().fmt(e.value)}`);
   }
-  const match$1 = lookup("two");
-  if (match$1.TAG === "Ok") {
-    console.log(`found ${match$1._0}`);
+  const value$1 = lookup("two");
+  if (value$1.TAG === "Ok") {
+    const n = value$1._0;
+    console.log(`found ${n}`);
   } else {
-    const arg = match$1._0.impl.Display().fmt(match$1._0.value);
-    const arg$1 = !match$1._0.impl.source(match$1._0.value);
+    const e = value$1._0;
+    const value = [e.impl.Display().fmt(e.value), !e.impl.source(e.value), e];
     console.log(
-      `error ${match$1._0.impl.Display().fmt(match$1._0.value)} / ${match$1._0.impl.Debug().fmt(match$1._0.value)} / ${arg} / ${arg$1}`,
+      `error ${value[2].impl.Display().fmt(value[2].value)} / ${value[2].impl.Debug().fmt(value[2].value)} / ${value[0]} / ${value[1]}`,
     );
   }
   const fromString = { value: "made", impl: $stringError() };

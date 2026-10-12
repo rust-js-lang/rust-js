@@ -11,32 +11,43 @@ function describe(xs) {
     return "empty";
   }
   if (xs.length === 1) {
-    return `one: ${xs[0]}`;
+    const one = xs[0];
+    return `one: ${one}`;
   }
   if (xs.length === 2) {
-    return `two: ${xs[0]} ${xs[1]}`;
+    const [first, second] = xs;
+    return `two: ${first} ${second}`;
   }
-  if (xs.length >= 3 && xs[0] === 1 && xs[2] === 3) {
-    const n = xs[1];
-    const rest = xs.slice(3);
-    return `one, ${n}, three, then [${rest.map((item) => String(item)).join(", ")}]`;
+  if (xs.length >= 3) {
+    if (xs[0] === 1) {
+      if (xs[2] === 3) {
+        const n = xs[1];
+        const rest = xs.slice(3);
+        return `one, ${n}, three, then [${rest.map((item) => String(item)).join(", ")}]`;
+      }
+    }
   }
   const first = xs[0];
-  const last = xs[xs.length - 1];
   const middle = xs.slice(1, xs.length - 1);
+  const last = xs[xs.length - 1];
   return `${first} .. ${last} around [${middle.map((item) => String(item)).join(", ")}]`;
 }
 
 function greet(words) {
-  if (words.length === 2 && words[0] === "hello") {
-    return `hi ${words[1]}`;
+  if (words.length === 2) {
+    if (words[0] === "hello") {
+      const name = words[1];
+      return `hi ${name}`;
+    }
   }
-  if (words.length >= 1 && words[0] === "hello") {
-    const names = words.slice(1);
-    return `hi all ${names.length}`;
-  }
-  if (words.length >= 1 && words[words.length - 1] === "bye") {
-    return "goodbye";
+  if (words.length >= 1) {
+    if (words[0] === "hello") {
+      const names = words.slice(1);
+      return `hi all ${names.length}`;
+    }
+    if (words[words.length - 1] === "bye") {
+      return "goodbye";
+    }
   }
   return "?";
 }
@@ -60,20 +71,24 @@ function main() {
   }
   const found = [1, undefined, 3];
   if (found[0] != null && found[1] == null && found[2] != null) {
-    console.log(`${found[0]} ${found[2]}`);
+    const [a, , b] = found;
+    console.log(`${a} ${b}`);
   }
   const pairs = [
     [1, "a"],
     [2, "b"],
   ];
-  console.log(`${pairs[0][0]} ${pairs[0][1]}`);
-  const [a, b, c] = [10, 20, 30];
-  const tmp = [1, 2, 3, 4];
-  const first = tmp[0];
-  const rest = tmp.slice(1);
-  console.log(
-    `${a} ${b} ${c} ${first} [${rest.map((item) => String(item)).join(", ")}] ${rest[2]}`,
-  );
+  const n = pairs[0][0];
+  const c = pairs[0][1];
+  console.log(`${n} ${c}`);
+  const a = 10;
+  const b = 20;
+  const c$1 = 30;
+  const value = [1, 2, 3, 4];
+  const first = value[0];
+  const rest = value.slice(1, 4);
+  const last = rest[2];
+  console.log(`${a} ${b} ${c$1} ${first} [${rest.map((item) => String(item)).join(", ")}] ${last}`);
   console.log(`${sum3([1, 2, 3])}`);
   for (const p of [
     [0, 0],
@@ -82,19 +97,17 @@ function main() {
     if (p[0] === 0 && p[1] === 0) {
       console.log("origin");
     } else {
-      console.log(`${p[0]} ${p[1]}`);
+      const [x, y] = p;
+      console.log(`${x} ${y}`);
     }
   }
   const grid = [1, 2, 3];
-  if (true) {
-    grid[0] = (grid[0] + 10) | 0;
-    grid[2] = Math.imul(grid[2], 2);
-  }
+  grid[0] = (grid[0] + 10) | 0;
+  grid[2] = Math.imul(grid[2], 2);
   console.log(`[${grid.map((item) => String(item)).join(", ")}]`);
   const names = ["x", "y"];
-  const value = names;
-  if (value.length >= 1) {
-    value[0] = value[0] + "!";
+  if (names.length >= 1) {
+    names[0] = names[0] + "!";
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 }

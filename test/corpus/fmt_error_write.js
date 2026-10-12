@@ -83,27 +83,29 @@ function main() {
   });
   console.log(`${r !== undefined} ${r === undefined} ${$debugStr(t)}`);
   let u = "";
-  const arg = $fmtTry(() => {
-    try {
-      u += hoursDisplay_fmt([5]);
-    } catch (error) {
-      u += $fmtPartial(error);
-      throw error;
-    }
-  });
-  console.log(`${arg === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(u)}`);
+  console.log(
+    `${
+      $fmtTry(() => {
+        try {
+          u += hoursDisplay_fmt([5]);
+        } catch (error) {
+          u += $fmtPartial(error);
+          throw error;
+        }
+      }) === undefined
+        ? "Ok(())"
+        : "Err(Error)"
+    } ${$debugStr(u)}`,
+  );
   let v = "";
   const s = { value: v };
-  const arg$1 = [7];
-  const result = $fmtTry(() => show(s, arg$1));
+  const value = $fmtTry(() => show(s, [7]));
   v = s.value;
-  const tmp = result;
   const s$1 = { value: v };
-  const arg$2 = [70];
-  const result$1 = $fmtTry(() => show(s$1, arg$2));
+  const value$1 = $fmtTry(() => show(s$1, [70]));
   v = s$1.value;
   console.log(
-    `${tmp === undefined ? "Ok(())" : "Err(Error)"} ${result$1 === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(v)}`,
+    `${value === undefined ? "Ok(())" : "Err(Error)"} ${value$1 === undefined ? "Ok(())" : "Err(Error)"} ${$debugStr(v)}`,
   );
   let text = "";
   try {

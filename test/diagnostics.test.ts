@@ -176,7 +176,7 @@ for (const [name, source, message, crate] of [
     writeFileSync(input, source);
     const crates = crate === "js" ? (buildWebapi(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
     const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crates.length ? ["--", ...crates] : [])];
-    for (const [expected, mode] of [[message, {}], [name in fromMir ? fromMir[name] : message, { RUST_JS_MIR: "1" }]] as const) {
+    for (const [expected, mode] of [[message, { RUST_JS_MIR: "0" }], [name in fromMir ? fromMir[name] : message, { RUST_JS_MIR: "1" }]] as const) {
       const env = { ...process.env, ...mode };
       rmSync(output, { force: true });
       rmSync(output + ".map", { force: true });

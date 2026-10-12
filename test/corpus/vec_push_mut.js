@@ -18,14 +18,14 @@ function main() {
   first.value = Math.imul(first.value, 3);
   console.log(`[${counts.map((item) => String(item)).join(", ")}]`);
   const entries = [{ hits: 0 }];
-  const item = $pushMut(entries, { hits: 4 });
-  item.hits = (item.hits + 1) >>> 0;
-  const item$1 = $insertMut(entries, 1, { hits: 9 });
-  item$1.hits = (item$1.hits - 2) >>> 0;
+  const value$1 = $pushMut(entries, { hits: 4 });
+  value$1.hits = (value$1.hits + 1) >>> 0;
+  const value$2 = $insertMut(entries, 1, { hits: 9 });
+  value$2.hits = (value$2.hits - 2) >>> 0;
   console.log(`[${entries.map((item) => entryDebug_fmt(item)).join(", ")}]`);
   const names = [];
-  const cell = $pushMut(names, "a", true);
-  cell.value += "b";
+  const value = $pushMut(names, "a", true);
+  value.value += "b";
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -905,14 +905,14 @@ function outerDebug_fmt(outer) {
 
 export function report() {
   let out = "";
-  const match = $fromJson(
+  const value = $fromJson(
     '{"items":[1,2],"nextItem":3,"total":2}',
     $json.with(pageDeserialize_deserialize, $json.u32),
   );
-  if (match.TAG === "Ok") {
-    out += `ok ${pageDebug_fmt(match._0, { fmt: (value) => String(value) })} -> ${$unwrapOk(
+  if (value.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match._0,
+        value._0,
         (value, json) => {
           pageSerialize_serialize(value, json, (value, json) => {
             json.int(value);
@@ -922,18 +922,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pageDebug_fmt(value._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match._0)}\n`;
+    out += `err ${$displayJsonError(value._0)}\n`;
   }
-  const match$1 = $fromJson(
+  const value$1 = $fromJson(
     '{"items":[],"nextItem":null,"total":0}',
     $json.with(pageDeserialize_deserialize, $json.u32),
   );
-  if (match$1.TAG === "Ok") {
-    out += `ok ${pageDebug_fmt(match$1._0, { fmt: (value) => String(value) })} -> ${$unwrapOk(
+  if (value$1.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$1._0,
+        value$1._0,
         (value, json) => {
           pageSerialize_serialize(value, json, (value, json) => {
             json.int(value);
@@ -943,18 +944,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pageDebug_fmt(value$1._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$1._0)}\n`;
+    out += `err ${$displayJsonError(value$1._0)}\n`;
   }
-  const match$2 = $fromJson(
+  const value$2 = $fromJson(
     '{"items":["x"],"total":1}',
     $json.with(pageDeserialize_deserialize, $json.u32),
   );
-  if (match$2.TAG === "Ok") {
-    out += `ok ${pageDebug_fmt(match$2._0, { fmt: (value) => String(value) })} -> ${$unwrapOk(
+  if (value$2.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$2._0,
+        value$2._0,
         (value, json) => {
           pageSerialize_serialize(value, json, (value, json) => {
             json.int(value);
@@ -964,18 +966,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pageDebug_fmt(value$2._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$2._0)}\n`;
+    out += `err ${$displayJsonError(value$2._0)}\n`;
   }
-  const match$3 = $fromJson(
+  const value$3 = $fromJson(
     '{"items":[{"name":"a","age":3}],"nextItem":null,"total":1}',
     $json.with(pageDeserialize_deserialize, userDeserialize_deserialize),
   );
-  if (match$3.TAG === "Ok") {
-    out += `ok ${pageDebug_fmt(match$3._0, userDebug())} -> ${$unwrapOk(
+  if (value$3.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$3._0,
+        value$3._0,
         (value, json) => {
           pageSerialize_serialize(value, json, userSerialize_serialize);
         },
@@ -983,18 +986,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pageDebug_fmt(value$3._0, userDebug())} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$3._0)}\n`;
+    out += `err ${$displayJsonError(value$3._0)}\n`;
   }
-  const match$4 = $fromJson(
+  const value$4 = $fromJson(
     '{"items":[{"name":"a"}],"total":1}',
     $json.with(pageDeserialize_deserialize, userDeserialize_deserialize),
   );
-  if (match$4.TAG === "Ok") {
-    out += `ok ${pageDebug_fmt(match$4._0, userDebug())} -> ${$unwrapOk(
+  if (value$4.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$4._0,
+        value$4._0,
         (value, json) => {
           pageSerialize_serialize(value, json, userSerialize_serialize);
         },
@@ -1002,18 +1006,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pageDebug_fmt(value$4._0, userDebug())} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$4._0)}\n`;
+    out += `err ${$displayJsonError(value$4._0)}\n`;
   }
-  const match$5 = $fromJson(
+  const value$5 = $fromJson(
     '{"items":[{"items":[1],"total":1}],"nextItem":{"items":[],"total":0},"total":1}',
     $json.with(pageDeserialize_deserialize, $json.with(pageDeserialize_deserialize, $json.u8)),
   );
-  if (match$5.TAG === "Ok") {
-    out += `ok ${pageDebug_fmt(match$5._0, pageDebug({ fmt: (value) => String(value) }))} -> ${$unwrapOk(
+  if (value$5.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$5._0,
+        value$5._0,
         (value, json) => {
           pageSerialize_serialize(value, json, (value, json) => {
             pageSerialize_serialize(value, json, (value, json) => {
@@ -1025,18 +1030,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pageDebug_fmt(value$5._0, pageDebug({ fmt: (value) => String(value) }))} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$5._0)}\n`;
+    out += `err ${$displayJsonError(value$5._0)}\n`;
   }
-  const match$6 = $fromJson(
+  const value$6 = $fromJson(
     '{"items":[null,1],"nextItem":null,"total":2}',
     $json.with(pageDeserialize_deserialize, $json.option($json.u8)),
   );
-  if (match$6.TAG === "Ok") {
-    out += `ok ${pageDebug_fmt(match$6._0, { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} -> ${$unwrapOk(
+  if (value$6.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$6._0,
+        value$6._0,
         (value, json) => {
           pageSerialize_serialize(value, json, (value, json) => {
             if (value == null) {
@@ -1050,18 +1056,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pageDebug_fmt(value$6._0, { fmt: (value) => (value == null ? "None" : `Some(${value})`) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$6._0)}\n`;
+    out += `err ${$displayJsonError(value$6._0)}\n`;
   }
-  const match$7 = $fromJson(
+  const value$7 = $fromJson(
     '{"left":"l","right":1.5,"by_name":{"a":2}}',
     $json.with(pairDeserialize_deserialize, $json.string, $json.f64),
   );
-  if (match$7.TAG === "Ok") {
-    out += `ok ${pairDebug_fmt(match$7._0, { fmt: (value) => $debugStr(value) }, { fmt: (value) => $debugF64(value) })} -> ${$unwrapOk(
+  if (value$7.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$7._0,
+        value$7._0,
         (value, json) => {
           pairSerialize_serialize(
             value,
@@ -1078,18 +1085,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pairDebug_fmt(value$7._0, { fmt: (value) => $debugStr(value) }, { fmt: (value) => $debugF64(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$7._0)}\n`;
+    out += `err ${$displayJsonError(value$7._0)}\n`;
   }
-  const match$8 = $fromJson(
+  const value$8 = $fromJson(
     '{"left":1,"right":1.5,"by_name":{}}',
     $json.with(pairDeserialize_deserialize, $json.string, $json.f64),
   );
-  if (match$8.TAG === "Ok") {
-    out += `ok ${pairDebug_fmt(match$8._0, { fmt: (value) => $debugStr(value) }, { fmt: (value) => $debugF64(value) })} -> ${$unwrapOk(
+  if (value$8.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$8._0,
+        value$8._0,
         (value, json) => {
           pairSerialize_serialize(
             value,
@@ -1106,18 +1114,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${pairDebug_fmt(value$8._0, { fmt: (value) => $debugStr(value) }, { fmt: (value) => $debugF64(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$8._0)}\n`;
+    out += `err ${$displayJsonError(value$8._0)}\n`;
   }
-  const match$9 = $fromJson(
+  const value$9 = $fromJson(
     '{"Ok":{"name":"b","age":4}}',
     $json.with(replyDeserialize_deserialize, userDeserialize_deserialize),
   );
-  if (match$9.TAG === "Ok") {
-    out += `ok ${replyDebug_fmt(match$9._0, userDebug())} -> ${$unwrapOk(
+  if (value$9.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$9._0,
+        value$9._0,
         (value, json) => {
           replySerialize_serialize(value, json, userSerialize_serialize);
         },
@@ -1125,18 +1134,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${replyDebug_fmt(value$9._0, userDebug())} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$9._0)}\n`;
+    out += `err ${$displayJsonError(value$9._0)}\n`;
   }
-  const match$10 = $fromJson(
+  const value$10 = $fromJson(
     '{"Err":{"message":"no"}}',
     $json.with(replyDeserialize_deserialize, userDeserialize_deserialize),
   );
-  if (match$10.TAG === "Ok") {
-    out += `ok ${replyDebug_fmt(match$10._0, userDebug())} -> ${$unwrapOk(
+  if (value$10.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$10._0,
+        value$10._0,
         (value, json) => {
           replySerialize_serialize(value, json, userSerialize_serialize);
         },
@@ -1144,18 +1154,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${replyDebug_fmt(value$10._0, userDebug())} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$10._0)}\n`;
+    out += `err ${$displayJsonError(value$10._0)}\n`;
   }
-  const match$11 = $fromJson(
+  const value$11 = $fromJson(
     '"Empty"',
     $json.with(replyDeserialize_deserialize, userDeserialize_deserialize),
   );
-  if (match$11.TAG === "Ok") {
-    out += `ok ${replyDebug_fmt(match$11._0, userDebug())} -> ${$unwrapOk(
+  if (value$11.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$11._0,
+        value$11._0,
         (value, json) => {
           replySerialize_serialize(value, json, userSerialize_serialize);
         },
@@ -1163,18 +1174,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${replyDebug_fmt(value$11._0, userDebug())} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$11._0)}\n`;
+    out += `err ${$displayJsonError(value$11._0)}\n`;
   }
-  const match$12 = $fromJson(
+  const value$12 = $fromJson(
     '{"Ok":5}',
     $json.with(replyDeserialize_deserialize, userDeserialize_deserialize),
   );
-  if (match$12.TAG === "Ok") {
-    out += `ok ${replyDebug_fmt(match$12._0, userDebug())} -> ${$unwrapOk(
+  if (value$12.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$12._0,
+        value$12._0,
         (value, json) => {
           replySerialize_serialize(value, json, userSerialize_serialize);
         },
@@ -1182,18 +1194,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${replyDebug_fmt(value$12._0, userDebug())} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$12._0)}\n`;
+    out += `err ${$displayJsonError(value$12._0)}\n`;
   }
-  const match$13 = $fromJson(
+  const value$13 = $fromJson(
     '{"status":"done","data":[1,2]}',
     $json.with(statusDeserialize_deserialize, $json.vec($json.u8)),
   );
-  if (match$13.TAG === "Ok") {
-    out += `ok ${statusDebug_fmt(match$13._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${$unwrapOk(
+  if (value$13.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$13._0,
+        value$13._0,
         (value, json) => {
           statusSerialize_serialize(value, json, (value, json) => {
             json.beginArray();
@@ -1208,18 +1221,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${statusDebug_fmt(value$13._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$13._0)}\n`;
+    out += `err ${$displayJsonError(value$13._0)}\n`;
   }
-  const match$14 = $fromJson(
+  const value$14 = $fromJson(
     '{"status":"failed","reason":"x"}',
     $json.with(statusDeserialize_deserialize, $json.vec($json.u8)),
   );
-  if (match$14.TAG === "Ok") {
-    out += `ok ${statusDebug_fmt(match$14._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${$unwrapOk(
+  if (value$14.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$14._0,
+        value$14._0,
         (value, json) => {
           statusSerialize_serialize(value, json, (value, json) => {
             json.beginArray();
@@ -1234,18 +1248,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${statusDebug_fmt(value$14._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$14._0)}\n`;
+    out += `err ${$displayJsonError(value$14._0)}\n`;
   }
-  const match$15 = $fromJson(
+  const value$15 = $fromJson(
     '{"data":[1],"status":"done"}',
     $json.with(statusDeserialize_deserialize, $json.vec($json.u8)),
   );
-  if (match$15.TAG === "Ok") {
-    out += `ok ${statusDebug_fmt(match$15._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${$unwrapOk(
+  if (value$15.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$15._0,
+        value$15._0,
         (value, json) => {
           statusSerialize_serialize(value, json, (value, json) => {
             json.beginArray();
@@ -1260,18 +1275,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${statusDebug_fmt(value$15._0, { fmt: (value) => `[${value.map((item) => String(item)).join(", ")}]` })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$15._0)}\n`;
+    out += `err ${$displayJsonError(value$15._0)}\n`;
   }
-  const match$16 = $fromJson(
+  const value$16 = $fromJson(
     '{"status":"done","data":{"name":"c","age":5}}',
     $json.with(statusDeserialize_deserialize, userDeserialize_deserialize),
   );
-  if (match$16.TAG === "Ok") {
-    out += `ok ${statusDebug_fmt(match$16._0, userDebug())} -> ${$unwrapOk(
+  if (value$16.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$16._0,
+        value$16._0,
         (value, json) => {
           statusSerialize_serialize(value, json, userSerialize_serialize);
         },
@@ -1279,18 +1295,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${statusDebug_fmt(value$16._0, userDebug())} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$16._0)}\n`;
+    out += `err ${$displayJsonError(value$16._0)}\n`;
   }
-  const match$17 = $fromJson(
+  const value$17 = $fromJson(
     '{"t":"One","c":true}',
     $json.with(taggedDeserialize_deserialize, $json.bool),
   );
-  if (match$17.TAG === "Ok") {
-    out += `ok ${taggedDebug_fmt(match$17._0, { fmt: (value) => String(value) })} -> ${$unwrapOk(
+  if (value$17.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$17._0,
+        value$17._0,
         (value, json) => {
           taggedSerialize_serialize(value, json, (value, json) => {
             json.bool(value);
@@ -1300,18 +1317,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${taggedDebug_fmt(value$17._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$17._0)}\n`;
+    out += `err ${$displayJsonError(value$17._0)}\n`;
   }
-  const match$18 = $fromJson(
+  const value$18 = $fromJson(
     '{"c":[true,false],"t":"Many"}',
     $json.with(taggedDeserialize_deserialize, $json.bool),
   );
-  if (match$18.TAG === "Ok") {
-    out += `ok ${taggedDebug_fmt(match$18._0, { fmt: (value) => String(value) })} -> ${$unwrapOk(
+  if (value$18.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$18._0,
+        value$18._0,
         (value, json) => {
           taggedSerialize_serialize(value, json, (value, json) => {
             json.bool(value);
@@ -1321,18 +1339,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${taggedDebug_fmt(value$18._0, { fmt: (value) => String(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$18._0)}\n`;
+    out += `err ${$displayJsonError(value$18._0)}\n`;
   }
-  const match$19 = $fromJson(
+  const value$19 = $fromJson(
     "5",
     $json.with(eitherDeserialize_deserialize, $json.u8, $json.string),
   );
-  if (match$19.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$19._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${$unwrapOk(
+  if (value$19.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$19._0,
+        value$19._0,
         (value, json) => {
           eitherSerialize_serialize(
             value,
@@ -1349,18 +1368,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${eitherDebug_fmt(value$19._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$19._0)}\n`;
+    out += `err ${$displayJsonError(value$19._0)}\n`;
   }
-  const match$20 = $fromJson(
+  const value$20 = $fromJson(
     '"s"',
     $json.with(eitherDeserialize_deserialize, $json.u8, $json.string),
   );
-  if (match$20.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$20._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${$unwrapOk(
+  if (value$20.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$20._0,
+        value$20._0,
         (value, json) => {
           eitherSerialize_serialize(
             value,
@@ -1377,18 +1397,19 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${eitherDebug_fmt(value$20._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$20._0)}\n`;
+    out += `err ${$displayJsonError(value$20._0)}\n`;
   }
-  const match$21 = $fromJson(
+  const value$21 = $fromJson(
     "true",
     $json.with(eitherDeserialize_deserialize, $json.u8, $json.string),
   );
-  if (match$21.TAG === "Ok") {
-    out += `ok ${eitherDebug_fmt(match$21._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${$unwrapOk(
+  if (value$21.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$21._0,
+        value$21._0,
         (value, json) => {
           eitherSerialize_serialize(
             value,
@@ -1405,21 +1426,22 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${eitherDebug_fmt(value$21._0, { fmt: (value) => String(value) }, { fmt: (value) => $debugStr(value) })} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$21._0)}\n`;
+    out += `err ${$displayJsonError(value$21._0)}\n`;
   }
-  const match$22 = $fromJson(
+  const value$22 = $fromJson(
     '{"left":1,"right":2,"by_name":{"k":3}}',
     $json.with(
       wrapDeserialize_deserialize,
       $json.with(pairDeserialize_deserialize, $json.u8, $json.u8),
     ),
   );
-  if (match$22.TAG === "Ok") {
-    out += `ok ${wrapDebug_fmt(match$22._0, pairDebug({ fmt: (value) => String(value) }, { fmt: (value) => String(value) }))} -> ${$unwrapOk(
+  if (value$22.TAG === "Ok") {
+    const arg = $unwrapOk(
       $toJson(
-        match$22._0,
+        value$22._0,
         (value, json) => {
           wrapSerialize_serialize(value, json, (value, json) => {
             pairSerialize_serialize(
@@ -1438,9 +1460,10 @@ export function report() {
       ),
       undefined,
       $debugJsonError,
-    )}\n`;
+    );
+    out += `ok ${wrapDebug_fmt(value$22._0, pairDebug({ fmt: (value) => String(value) }, { fmt: (value) => String(value) }))} -> ${arg}\n`;
   } else {
-    out += `err ${$displayJsonError(match$22._0)}\n`;
+    out += `err ${$displayJsonError(value$22._0)}\n`;
   }
   const page = { items: [{ name: "z", age: 9 }], total: 1 };
   out += $unwrapOk(
@@ -1462,11 +1485,16 @@ export function report() {
     '{"result":{"Maybe":1},"all":[]}',
     '{"result":{"Ok":"x"},"all":[]}',
   ]) {
-    const match = $fromJson(text, outcomeDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${outcomeDebug_fmt(match._0)} -> ${$unwrapOk($toJson(match._0, outcomeSerialize_serialize, false), undefined, $debugJsonError)}\n`;
+    const value = $fromJson(text, outcomeDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      const arg = $unwrapOk(
+        $toJson(value._0, outcomeSerialize_serialize, false),
+        undefined,
+        $debugJsonError,
+      );
+      out += `ok ${outcomeDebug_fmt(value._0)} -> ${arg}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   for (const text of [
@@ -1476,19 +1504,19 @@ export function report() {
     '{"email":"a@b","temp":{"celsius":21.5},"even":4}',
     '{"email":5,"temp":{"c":1},"even":4}',
   ]) {
-    const match = $fromJson(text, contactDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${contactDebug_fmt(match._0)}\n`;
+    const value = $fromJson(text, contactDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      out += `ok ${contactDebug_fmt(value._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   for (const text of ['"x@y"', '"xy"']) {
-    const match = $fromJson(text, emailDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${emailDebug_fmt(match._0)}\n`;
+    const value = $fromJson(text, emailDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      out += `ok ${emailDebug_fmt(value._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   const temp = { celsius: -3 };
@@ -1557,193 +1585,193 @@ export function report() {
     });
   });
   out += "\n";
-  const match$23 = $fromJson(
+  const value$23 = $fromJson(
     '{"name":"a","page":1,"total":9,"x":5}',
     listingDeserialize_deserialize,
   );
-  if (match$23.TAG === "Ok") {
-    const match = $toJson(match$23._0, listingSerialize_serialize, false);
-    out += `ok ${listingDebug_fmt(match$23._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  if (value$23.TAG === "Ok") {
+    const value = $toJson(value$23._0, listingSerialize_serialize, false);
+    out += `ok ${listingDebug_fmt(value$23._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$23._0)}\n`;
+    out += `err ${$displayJsonError(value$23._0)}\n`;
   }
-  const match$24 = $fromJson('{"page":1,"name":"a","total":9}', listingDeserialize_deserialize);
-  if (match$24.TAG === "Ok") {
-    const match = $toJson(match$24._0, listingSerialize_serialize, false);
-    out += `ok ${listingDebug_fmt(match$24._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$24 = $fromJson('{"page":1,"name":"a","total":9}', listingDeserialize_deserialize);
+  if (value$24.TAG === "Ok") {
+    const value = $toJson(value$24._0, listingSerialize_serialize, false);
+    out += `ok ${listingDebug_fmt(value$24._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$24._0)}\n`;
+    out += `err ${$displayJsonError(value$24._0)}\n`;
   }
-  const match$25 = $fromJson('{"name":"a","page":1}', listingDeserialize_deserialize);
-  if (match$25.TAG === "Ok") {
-    const match = $toJson(match$25._0, listingSerialize_serialize, false);
-    out += `ok ${listingDebug_fmt(match$25._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$25 = $fromJson('{"name":"a","page":1}', listingDeserialize_deserialize);
+  if (value$25.TAG === "Ok") {
+    const value = $toJson(value$25._0, listingSerialize_serialize, false);
+    out += `ok ${listingDebug_fmt(value$25._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$25._0)}\n`;
+    out += `err ${$displayJsonError(value$25._0)}\n`;
   }
-  const match$26 = $fromJson(
+  const value$26 = $fromJson(
     '{"name":"a","page":1,"total":2,"x":"y"}',
     listingDeserialize_deserialize,
   );
-  if (match$26.TAG === "Ok") {
-    const match = $toJson(match$26._0, listingSerialize_serialize, false);
-    out += `ok ${listingDebug_fmt(match$26._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  if (value$26.TAG === "Ok") {
+    const value = $toJson(value$26._0, listingSerialize_serialize, false);
+    out += `ok ${listingDebug_fmt(value$26._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$26._0)}\n`;
+    out += `err ${$displayJsonError(value$26._0)}\n`;
   }
-  const match$27 = $fromJson('["a"]', listingDeserialize_deserialize);
-  if (match$27.TAG === "Ok") {
-    const match = $toJson(match$27._0, listingSerialize_serialize, false);
-    out += `ok ${listingDebug_fmt(match$27._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$27 = $fromJson('["a"]', listingDeserialize_deserialize);
+  if (value$27.TAG === "Ok") {
+    const value = $toJson(value$27._0, listingSerialize_serialize, false);
+    out += `ok ${listingDebug_fmt(value$27._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$27._0)}\n`;
+    out += `err ${$displayJsonError(value$27._0)}\n`;
   }
-  const match$28 = $fromJson('{"name":"a","page":"1","total":2}', listingDeserialize_deserialize);
-  if (match$28.TAG === "Ok") {
-    const match = $toJson(match$28._0, listingSerialize_serialize, false);
-    out += `ok ${listingDebug_fmt(match$28._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$28 = $fromJson('{"name":"a","page":"1","total":2}', listingDeserialize_deserialize);
+  if (value$28.TAG === "Ok") {
+    const value = $toJson(value$28._0, listingSerialize_serialize, false);
+    out += `ok ${listingDebug_fmt(value$28._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$28._0)}\n`;
+    out += `err ${$displayJsonError(value$28._0)}\n`;
   }
-  const match$29 = $fromJson(
+  const value$29 = $fromJson(
     '{"name":"a","page":1,"total":2}',
     strictListingDeserialize_deserialize,
   );
-  if (match$29.TAG === "Ok") {
-    const match = $toJson(match$29._0, strictListingSerialize_serialize, false);
-    out += `ok ${strictListingDebug_fmt(match$29._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  if (value$29.TAG === "Ok") {
+    const value = $toJson(value$29._0, strictListingSerialize_serialize, false);
+    out += `ok ${strictListingDebug_fmt(value$29._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$29._0)}\n`;
+    out += `err ${$displayJsonError(value$29._0)}\n`;
   }
-  const match$30 = $fromJson(
+  const value$30 = $fromJson(
     '{"name":"a","page":1,"total":2,"z":0}',
     strictListingDeserialize_deserialize,
   );
-  if (match$30.TAG === "Ok") {
-    const match = $toJson(match$30._0, strictListingSerialize_serialize, false);
-    out += `ok ${strictListingDebug_fmt(match$30._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  if (value$30.TAG === "Ok") {
+    const value = $toJson(value$30._0, strictListingSerialize_serialize, false);
+    out += `ok ${strictListingDebug_fmt(value$30._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$30._0)}\n`;
+    out += `err ${$displayJsonError(value$30._0)}\n`;
   }
-  const match$31 = $fromJson('{"id":1,"page":1,"total":2}', withOptionDeserialize_deserialize);
-  if (match$31.TAG === "Ok") {
-    const match = $toJson(match$31._0, withOptionSerialize_serialize, false);
-    out += `ok ${withOptionDebug_fmt(match$31._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$31 = $fromJson('{"id":1,"page":1,"total":2}', withOptionDeserialize_deserialize);
+  if (value$31.TAG === "Ok") {
+    const value = $toJson(value$31._0, withOptionSerialize_serialize, false);
+    out += `ok ${withOptionDebug_fmt(value$31._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$31._0)}\n`;
+    out += `err ${$displayJsonError(value$31._0)}\n`;
   }
-  const match$32 = $fromJson('{"id":1,"page":1}', withOptionDeserialize_deserialize);
-  if (match$32.TAG === "Ok") {
-    const match = $toJson(match$32._0, withOptionSerialize_serialize, false);
-    out += `ok ${withOptionDebug_fmt(match$32._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$32 = $fromJson('{"id":1,"page":1}', withOptionDeserialize_deserialize);
+  if (value$32.TAG === "Ok") {
+    const value = $toJson(value$32._0, withOptionSerialize_serialize, false);
+    out += `ok ${withOptionDebug_fmt(value$32._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$32._0)}\n`;
+    out += `err ${$displayJsonError(value$32._0)}\n`;
   }
-  const match$33 = $fromJson('{"id":1}', withOptionDeserialize_deserialize);
-  if (match$33.TAG === "Ok") {
-    const match = $toJson(match$33._0, withOptionSerialize_serialize, false);
-    out += `ok ${withOptionDebug_fmt(match$33._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$33 = $fromJson('{"id":1}', withOptionDeserialize_deserialize);
+  if (value$33.TAG === "Ok") {
+    const value = $toJson(value$33._0, withOptionSerialize_serialize, false);
+    out += `ok ${withOptionDebug_fmt(value$33._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$33._0)}\n`;
+    out += `err ${$displayJsonError(value$33._0)}\n`;
   }
-  const match$34 = $fromJson('{"id":1,"Book":{"pages":3}}', itemDeserialize_deserialize);
-  if (match$34.TAG === "Ok") {
-    const match = $toJson(match$34._0, itemSerialize_serialize, false);
-    out += `ok ${itemDebug_fmt(match$34._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$34 = $fromJson('{"id":1,"Book":{"pages":3}}', itemDeserialize_deserialize);
+  if (value$34.TAG === "Ok") {
+    const value = $toJson(value$34._0, itemSerialize_serialize, false);
+    out += `ok ${itemDebug_fmt(value$34._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$34._0)}\n`;
+    out += `err ${$displayJsonError(value$34._0)}\n`;
   }
-  const match$35 = $fromJson('{"Film":7,"id":2}', itemDeserialize_deserialize);
-  if (match$35.TAG === "Ok") {
-    const match = $toJson(match$35._0, itemSerialize_serialize, false);
-    out += `ok ${itemDebug_fmt(match$35._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$35 = $fromJson('{"Film":7,"id":2}', itemDeserialize_deserialize);
+  if (value$35.TAG === "Ok") {
+    const value = $toJson(value$35._0, itemSerialize_serialize, false);
+    out += `ok ${itemDebug_fmt(value$35._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$35._0)}\n`;
+    out += `err ${$displayJsonError(value$35._0)}\n`;
   }
-  const match$36 = $fromJson('{"id":3,"Other":null}', itemDeserialize_deserialize);
-  if (match$36.TAG === "Ok") {
-    const match = $toJson(match$36._0, itemSerialize_serialize, false);
-    out += `ok ${itemDebug_fmt(match$36._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$36 = $fromJson('{"id":3,"Other":null}', itemDeserialize_deserialize);
+  if (value$36.TAG === "Ok") {
+    const value = $toJson(value$36._0, itemSerialize_serialize, false);
+    out += `ok ${itemDebug_fmt(value$36._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$36._0)}\n`;
+    out += `err ${$displayJsonError(value$36._0)}\n`;
   }
-  const match$37 = $fromJson('{"id":4,"Pair":[1,2]}', itemDeserialize_deserialize);
-  if (match$37.TAG === "Ok") {
-    const match = $toJson(match$37._0, itemSerialize_serialize, false);
-    out += `ok ${itemDebug_fmt(match$37._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$37 = $fromJson('{"id":4,"Pair":[1,2]}', itemDeserialize_deserialize);
+  if (value$37.TAG === "Ok") {
+    const value = $toJson(value$37._0, itemSerialize_serialize, false);
+    out += `ok ${itemDebug_fmt(value$37._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$37._0)}\n`;
+    out += `err ${$displayJsonError(value$37._0)}\n`;
   }
-  const match$38 = $fromJson('{"id":5}', itemDeserialize_deserialize);
-  if (match$38.TAG === "Ok") {
-    const match = $toJson(match$38._0, itemSerialize_serialize, false);
-    out += `ok ${itemDebug_fmt(match$38._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$38 = $fromJson('{"id":5}', itemDeserialize_deserialize);
+  if (value$38.TAG === "Ok") {
+    const value = $toJson(value$38._0, itemSerialize_serialize, false);
+    out += `ok ${itemDebug_fmt(value$38._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$38._0)}\n`;
+    out += `err ${$displayJsonError(value$38._0)}\n`;
   }
-  const match$39 = $fromJson('{"id":6,"Nope":1}', itemDeserialize_deserialize);
-  if (match$39.TAG === "Ok") {
-    const match = $toJson(match$39._0, itemSerialize_serialize, false);
-    out += `ok ${itemDebug_fmt(match$39._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$39 = $fromJson('{"id":6,"Nope":1}', itemDeserialize_deserialize);
+  if (value$39.TAG === "Ok") {
+    const value = $toJson(value$39._0, itemSerialize_serialize, false);
+    out += `ok ${itemDebug_fmt(value$39._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$39._0)}\n`;
+    out += `err ${$displayJsonError(value$39._0)}\n`;
   }
-  const match$40 = $fromJson(
+  const value$40 = $fromJson(
     '{"name":"d","type":"Circle","r":1.5}',
     drawingDeserialize_deserialize,
   );
-  if (match$40.TAG === "Ok") {
-    const match = $toJson(match$40._0, drawingSerialize_serialize, false);
-    out += `ok ${drawingDebug_fmt(match$40._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  if (value$40.TAG === "Ok") {
+    const value = $toJson(value$40._0, drawingSerialize_serialize, false);
+    out += `ok ${drawingDebug_fmt(value$40._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$40._0)}\n`;
+    out += `err ${$displayJsonError(value$40._0)}\n`;
   }
-  const match$41 = $fromJson(
+  const value$41 = $fromJson(
     '{"type":"Square","side":2,"name":"e"}',
     drawingDeserialize_deserialize,
   );
-  if (match$41.TAG === "Ok") {
-    const match = $toJson(match$41._0, drawingSerialize_serialize, false);
-    out += `ok ${drawingDebug_fmt(match$41._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  if (value$41.TAG === "Ok") {
+    const value = $toJson(value$41._0, drawingSerialize_serialize, false);
+    out += `ok ${drawingDebug_fmt(value$41._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$41._0)}\n`;
+    out += `err ${$displayJsonError(value$41._0)}\n`;
   }
-  const match$42 = $fromJson('{"name":"f","type":"Hex"}', drawingDeserialize_deserialize);
-  if (match$42.TAG === "Ok") {
-    const match = $toJson(match$42._0, drawingSerialize_serialize, false);
-    out += `ok ${drawingDebug_fmt(match$42._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$42 = $fromJson('{"name":"f","type":"Hex"}', drawingDeserialize_deserialize);
+  if (value$42.TAG === "Ok") {
+    const value = $toJson(value$42._0, drawingSerialize_serialize, false);
+    out += `ok ${drawingDebug_fmt(value$42._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$42._0)}\n`;
+    out += `err ${$displayJsonError(value$42._0)}\n`;
   }
-  const match$43 = $fromJson('{"name":"g"}', drawingDeserialize_deserialize);
-  if (match$43.TAG === "Ok") {
-    const match = $toJson(match$43._0, drawingSerialize_serialize, false);
-    out += `ok ${drawingDebug_fmt(match$43._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$43 = $fromJson('{"name":"g"}', drawingDeserialize_deserialize);
+  if (value$43.TAG === "Ok") {
+    const value = $toJson(value$43._0, drawingSerialize_serialize, false);
+    out += `ok ${drawingDebug_fmt(value$43._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$43._0)}\n`;
+    out += `err ${$displayJsonError(value$43._0)}\n`;
   }
-  const match$44 = $fromJson(
+  const value$44 = $fromJson(
     '{"name":"n","page":1,"total":2,"flag":true,"q":3}',
     nestedDeserialize_deserialize,
   );
-  if (match$44.TAG === "Ok") {
-    const match = $toJson(match$44._0, nestedSerialize_serialize, false);
-    out += `ok ${nestedDebug_fmt(match$44._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  if (value$44.TAG === "Ok") {
+    const value = $toJson(value$44._0, nestedSerialize_serialize, false);
+    out += `ok ${nestedDebug_fmt(value$44._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$44._0)}\n`;
+    out += `err ${$displayJsonError(value$44._0)}\n`;
   }
-  const match$45 = $fromJson('{"id":1,"n":2}', badDeserialize_deserialize);
-  if (match$45.TAG === "Ok") {
-    const match = $toJson(match$45._0, badSerialize_serialize, false);
-    out += `ok ${badDebug_fmt(match$45._0)} -> ${match.TAG === "Ok" ? match._0 : `err ${$displayJsonError(match._0)}`}\n`;
+  const value$45 = $fromJson('{"id":1,"n":2}', badDeserialize_deserialize);
+  if (value$45.TAG === "Ok") {
+    const value = $toJson(value$45._0, badSerialize_serialize, false);
+    out += `ok ${badDebug_fmt(value$45._0)} -> ${value.TAG === "Ok" ? value._0 : `err ${$displayJsonError(value._0)}`}\n`;
   } else {
-    out += `err ${$displayJsonError(match$45._0)}\n`;
+    out += `err ${$displayJsonError(value$45._0)}\n`;
   }
-  const match$46 = $toJson({ id: 1, n: 2 }, badSerialize_serialize, false);
-  out += match$46.TAG === "Ok" ? match$46._0 : $displayJsonError(match$46._0);
+  const value$46 = $toJson({ id: 1, n: 2 }, badSerialize_serialize, false);
+  out += value$46.TAG === "Ok" ? value$46._0 : $displayJsonError(value$46._0);
   out += "\n";
-  const match$47 = $toJson({ items: [1] }, badSeqSerialize_serialize, false);
-  out += match$47.TAG === "Ok" ? match$47._0 : $displayJsonError(match$47._0);
+  const value$47 = $toJson({ items: [1] }, badSeqSerialize_serialize, false);
+  out += value$47.TAG === "Ok" ? value$47._0 : $displayJsonError(value$47._0);
   out += "\n";
   const listing = { name: "p", meta: { page: 2, total: 3 }, extra: new Map() };
   out += $unwrapOk(
@@ -1758,11 +1786,16 @@ export function report() {
     '{"name":"x","tags":["é"],"note":"n"}',
     '{"name":5,"tags":[],"note":null}',
   ]) {
-    const match = $fromJson(text, reqDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${reqDebug_fmt(match._0)} -> ${$unwrapOk($toJson(match._0, reqSerialize_serialize, false), undefined, $debugJsonError)}\n`;
+    const value = $fromJson(text, reqDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      const arg = $unwrapOk(
+        $toJson(value._0, reqSerialize_serialize, false),
+        undefined,
+        $debugJsonError,
+      );
+      out += `ok ${reqDebug_fmt(value._0)} -> ${arg}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   for (const text of [
@@ -1770,27 +1803,27 @@ export function report() {
     '{"kind":"Say","text":"h\\ti"}',
     '{"kind":"Quit"}',
   ]) {
-    const match = $fromJson(text, cmdDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${cmdDebug_fmt(match._0)}\n`;
+    const value = $fromJson(text, cmdDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      out += `ok ${cmdDebug_fmt(value._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   for (const text of ['"plain"', '"esc\\"aped"', "1"]) {
-    const match = $fromJson(text, wordDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${wordDebug_fmt(match._0)}\n`;
+    const value = $fromJson(text, wordDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      out += `ok ${wordDebug_fmt(value._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   for (const text of ['{"id":1,"label":"l"}', '{"id":1,"label":"\\/"}']) {
-    const match = $fromJson(text, outerDeserialize_deserialize);
-    if (match.TAG === "Ok") {
-      out += `ok ${outerDebug_fmt(match._0)}\n`;
+    const value = $fromJson(text, outerDeserialize_deserialize);
+    if (value.TAG === "Ok") {
+      out += `ok ${outerDebug_fmt(value._0)}\n`;
     } else {
-      out += `err ${$displayJsonError(match._0)}\n`;
+      out += `err ${$displayJsonError(value._0)}\n`;
     }
   }
   return out;

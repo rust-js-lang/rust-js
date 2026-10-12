@@ -13,37 +13,29 @@ function pick(x) {
 }
 
 function main() {
-  if (false) {
-    const _never = conjure();
-  }
   let n = 0;
-  let doubled;
+  let m;
   while (true) {
     n = (n + 1) | 0;
     if (n === 3) {
-      doubled = Math.imul(n, 2);
-      break;
-    }
-  }
-  let found;
-  outer: while (true) {
-    for (let i = 0; i < 100; i++) {
-      if (Math.imul(i, i) > 20) {
-        found = i;
-        break outer;
+      const doubled = Math.imul(n, 2);
+      while (true) {
+        for (let i = 0; i < 100; i++) {
+          if (Math.imul(i, i) > 20) {
+            const found = i;
+            m = 0;
+            while (true) {
+              m = (m + 1) & 255;
+              if (m > 2) {
+                const given = pick(m);
+                console.log(`${doubled} ${found} ${given}`);
+                return;
+              }
+            }
+          }
+        }
       }
     }
   }
-  let m = 0;
-  let tmp;
-  while (true) {
-    m = (m + 1) & 255;
-    if (m > 2) {
-      tmp = m;
-      break;
-    }
-  }
-  const given = pick(tmp);
-  console.log(`${doubled} ${found} ${given}`);
 }
 //# sourceMappingURL=case.js.map

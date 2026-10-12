@@ -22,10 +22,11 @@ function main() {
       `${$debugStr(chunk.valid)} [${chunk.invalid.map((item) => String(item)).join(", ")}]`,
     );
   }
-  const text = $utf8Chunks([99, 97, 102, 195, 169, 195])
+  const text = Iterator.from($utf8Chunks([99, 97, 102, 195, 169, 195]))
     .map((c) => c.valid)
+    .toArray()
     .join("");
-  const arg$1 = $utf8Chunks([]).length;
+  const arg$1 = Iterator.from($utf8Chunks([])).reduce((n) => n + 1, 0);
   console.log(`${text} ${arg$1}`);
 }
 //# sourceMappingURL=case.js.map

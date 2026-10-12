@@ -8,8 +8,10 @@ import {
   $debugStr,
   $downgrade,
   $eq,
+  $iter,
   $makeMut,
   $newCyclic,
+  $next,
   $rcClone,
   $rcDrop,
   $tryUnwrap,
@@ -38,245 +40,1871 @@ function count(rc) {
 }
 
 function main() {
+  let shared$live = false;
+  let me$live = false;
+  let w$live = false;
+  let two$live = false;
   const noisy = { value: ["a"], strong: 1, weak: 0 };
   let noisy$live = true;
+  let again;
   try {
-    const again = $rcClone(noisy);
-    let again$live = true;
-    try {
-      noisy$live = false;
-      $rcDrop(noisy, noisyDrop_drop);
-      console.log(`one left: ${again.strong}`);
-      again$live = false;
-      $rcDrop(again, noisyDrop_drop);
-      console.log("none left");
-      const rc = { value: "rust", strong: 1, weak: 0 };
-      let rc$live = true;
-      let doc;
-      try {
-        rc$live = false;
-        doc = { title: rc, pages: { value: [1, 2], strong: 1, weak: 0 } };
-      } finally {
-        if (rc$live) {
-          $rcDrop(rc);
-        }
-      }
-      try {
-        const copy = { ...doc, title: $rcClone(doc.title), pages: $rcClone(doc.pages) };
-        try {
-          const arg = count(doc.title);
-          const arg$1 =
-            copy.title.value === doc.title.value && $eq(copy.pages.value, doc.pages.value);
-          const arg$2 =
-            $cmp(copy.title.value, doc.title.value) ||
-            $cmpItems(copy.pages.value, doc.pages.value, $cmp);
-          console.log(
-            `${arg} ${arg$1} ${
-              arg$2 == null ? "None" : `Some(${["Less", "Equal", "Greater"][arg$2 + 1]})`
-            }`,
-          );
-          const rc = { value: "rust", strong: 1, weak: 0 };
-          let rc$1$live = true;
-          let fresh;
-          try {
-            rc$1$live = false;
-            fresh = { title: rc, pages: { value: [1, 2], strong: 1, weak: 0 } };
-          } finally {
-            if (rc$1$live) {
-              $rcDrop(rc);
-            }
-          }
-          try {
-            const tmp$1 =
-              fresh.title.value === doc.title.value && $eq(fresh.pages.value, doc.pages.value);
-            const rc = { value: 1, strong: 1, weak: 0 };
-            let tmp;
-            let rc$1;
-            try {
-              tmp = rc;
-              rc$1 = { value: 1, strong: 1, weak: 0 };
-              try {
-                console.log(`${tmp$1} ${tmp.value === rc$1.value}`);
-              } finally {
-                $rcDrop(rc$1);
-              }
-            } finally {
-              $rcDrop(rc);
-            }
-            copy.pages = $makeMut(copy.pages, (value) => value.slice());
-            copy.pages.value.push(3);
-            console.log(`${docDebug_fmt(doc)} ${docDebug_fmt(copy)} ${count(doc.pages)}`);
-            const lists = [[1], [2, 3]].map((x) => ({ value: x, strong: 1, weak: 0 }));
-            let total = 0;
-            try {
-              for (const list of lists) {
-                for (const item of list.value) {
-                  total = (total + item) & 255;
-                }
-              }
-              const arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
-              console.log(`${total} ${arg}`);
-              const shared = { value: { value: [1] }, strong: 1, weak: 0 };
-              let shared$live = true;
-              try {
-                const other = $rcClone(shared);
-                try {
-                  $borrowMut(other.value).value.push(2);
-                  const ref = $borrow(shared.value, true);
-                  try {
-                    console.log(
-                      `[${ref.value.map((item) => String(item)).join(", ")}] ${count(shared)}`,
-                    );
-                  } finally {
-                    $unborrow(ref);
-                  }
-                  shared$live = false;
-                  const owned = $unwrapOrClone(shared, (value) => ({
-                    value: $borrow(value).value.slice(),
-                  })).value;
-                  const ref$1 = $borrow(other.value, true);
-                  let arg;
-                  try {
-                    arg = count(other);
-                    console.log(
-                      `[${owned.map((item) => String(item)).join(", ")}] [${ref$1.value.map((item) => String(item)).join(", ")}] ${arg}`,
-                    );
-                  } finally {
-                    $unborrow(ref$1);
-                  }
-                  const owner = $newCyclic((me) => ({ me: $weakClone(me), name: "self" }));
-                  try {
-                    const me = $unwrap($upgrade(owner.value.me));
-                    let me$live = true;
-                    try {
-                      console.log(`${me.value.name} ${owner.strong} ${owner.weak}`);
-                      me$live = false;
-                      $rcDrop(me, (value) => {
-                        $weakDrop(value.me);
-                      });
-                      const tmp = owner.strong;
-                      const arc = $unwrap($upgrade(owner.value.me));
-                      try {
-                        console.log(`${tmp} ${owner === arc}`);
-                      } finally {
-                        $rcDrop(arc, (value) => {
-                          $weakDrop(value.me);
-                        });
-                      }
-                      const defaulted = { value: 0, strong: 1, weak: 0 };
-                      try {
-                        const rc = { value: 5, strong: 1, weak: 0 };
-                        let arg;
-                        try {
-                          arg = $cmp(rc.value, defaulted.value) > 0;
-                          console.log(`${defaulted.value} ${arg}`);
-                        } finally {
-                          $rcDrop(rc);
-                        }
-                        const w = $downgrade(defaulted);
-                        let w$live = true;
-                        try {
-                          console.log(`${defaulted.weak}`);
-                          w$live = false;
-                          $weakDrop(w);
-                          console.log(`${defaulted.weak}`);
-                          const two = { value: 2, strong: 1, weak: 0 };
-                          let two$live = true;
-                          try {
-                            const also = $rcClone(two);
-                            try {
-                              two$live = false;
-                              const result = $tryUnwrap(two);
-                              try {
-                                console.log(
-                                  `${result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0.value})`}`,
-                                );
-                              } finally {
-                                if (result.TAG === "Err") {
-                                  $rcDrop(result._0);
-                                }
-                              }
-                              console.log(`${also.strong}`);
-                              const counter = { value: { value: 0 }, strong: 1, weak: 0 };
-                              try {
-                                console.log(`${counter.strong}`);
-                                const cell = { value: { value: 1 }, strong: 1, weak: 0 };
-                                try {
-                                  const alias = $rcClone(cell);
-                                  try {
-                                    alias.value.value = 5;
-                                    console.log(`${cell.value.value}`);
-                                  } finally {
-                                    $rcDrop(alias);
-                                  }
-                                } finally {
-                                  $rcDrop(cell);
-                                }
-                              } finally {
-                                $rcDrop(counter);
-                              }
-                            } finally {
-                              $rcDrop(also);
-                            }
-                          } finally {
-                            if (two$live) {
-                              $rcDrop(two);
-                            }
-                          }
-                        } finally {
-                          if (w$live) {
-                            $weakDrop(w);
-                          }
-                        }
-                      } finally {
-                        $rcDrop(defaulted);
-                      }
-                    } finally {
-                      if (me$live) {
-                        $rcDrop(me, (value) => {
-                          $weakDrop(value.me);
-                        });
-                      }
-                    }
-                  } finally {
-                    $rcDrop(owner, (value) => {
-                      $weakDrop(value.me);
-                    });
-                  }
-                } finally {
-                  $rcDrop(other);
-                }
-              } finally {
-                if (shared$live) {
-                  $rcDrop(shared);
-                }
-              }
-            } finally {
-              for (const item of lists) {
-                $rcDrop(item);
-              }
-            }
-          } finally {
-            $rcDrop(fresh.title);
-            $rcDrop(fresh.pages);
-          }
-        } finally {
-          $rcDrop(copy.title);
-          $rcDrop(copy.pages);
-        }
-      } finally {
-        $rcDrop(doc.title);
-        $rcDrop(doc.pages);
-      }
-    } finally {
-      if (again$live) {
-        $rcDrop(again, noisyDrop_drop);
-      }
-    }
-  } finally {
+    again = $rcClone(noisy);
+  } catch (error) {
     if (noisy$live) {
       $rcDrop(noisy, noisyDrop_drop);
     }
+    throw error;
+  }
+  let again$live = true;
+  noisy$live = false;
+  try {
+    $rcDrop(noisy, noisyDrop_drop);
+  } catch (error) {
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    console.log(`one left: ${again.strong}`);
+  } catch (error) {
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  again$live = false;
+  try {
+    $rcDrop(again, noisyDrop_drop);
+  } catch (error) {
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    console.log("none left");
+  } catch (error) {
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  const doc = {
+    title: { value: "rust", strong: 1, weak: 0 },
+    pages: { value: [1, 2], strong: 1, weak: 0 },
+  };
+  let copy;
+  try {
+    copy = { ...doc, title: $rcClone(doc.title), pages: $rcClone(doc.pages) };
+  } catch (error) {
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let tmp;
+  try {
+    tmp = count(doc.title);
+  } catch (error) {
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let tmp$1;
+  try {
+    tmp$1 = copy.title.value === doc.title.value && $eq(copy.pages.value, doc.pages.value);
+  } catch (error) {
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    console.log(
+      `${tmp} ${tmp$1} ${((value) =>
+        value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
+        $cmp(copy.title.value, doc.title.value) ||
+          $cmpItems(copy.pages.value, doc.pages.value, $cmp),
+      )}`,
+    );
+  } catch (error) {
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  const fresh = {
+    title: { value: "rust", strong: 1, weak: 0 },
+    pages: { value: [1, 2], strong: 1, weak: 0 },
+  };
+  let tmp$2;
+  let tmp$3;
+  try {
+    tmp$2 = fresh.title.value === doc.title.value && $eq(fresh.pages.value, doc.pages.value);
+    tmp$3 = { value: 1, strong: 1, weak: 0 };
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  const value = { value: 1, strong: 1, weak: 0 };
+  try {
+    console.log(`${tmp$2} ${tmp$3.value === value.value}`);
+  } catch (error) {
+    $rcDrop(value);
+    $rcDrop(tmp$3);
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    $rcDrop(value);
+  } catch (error) {
+    $rcDrop(tmp$3);
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    $rcDrop(tmp$3);
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    copy.pages = $makeMut(copy.pages, (value) => value.slice());
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  try {
+    copy.pages.value.push(3);
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  const value$1 = copy;
+  try {
+    console.log(`${docDebug_fmt(doc)} ${docDebug_fmt(value$1)} ${count(doc.pages)}`);
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  const value$2 = [[1], [2, 3]];
+  let tmp$4;
+  try {
+    tmp$4 = $iter(value$2);
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let tmp$5;
+  try {
+    tmp$5 = tmp$4.map((x) => ({ value: x, strong: 1, weak: 0 }));
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let lists;
+  try {
+    lists = tmp$5.toArray();
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let total = 0;
+  let iter;
+  try {
+    iter = $iter(lists);
+  } catch (error) {
+    for (const item of lists) {
+      $rcDrop(item);
+    }
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    if (again$live) {
+      $rcDrop(again, noisyDrop_drop);
+    }
+    if (noisy$live) {
+      $rcDrop(noisy, noisyDrop_drop);
+    }
+    throw error;
+  }
+  let iter$1;
+  let tmp$6;
+  let me;
+  let w;
+  bb71: while (true) {
+    let tmp;
+    try {
+      tmp = $next(iter);
+    } catch (error) {
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    if (tmp) {
+      const list = tmp;
+      try {
+        iter$1 = $iter(list.value);
+      } catch (error) {
+        for (const item of lists) {
+          $rcDrop(item);
+        }
+        $rcDrop(fresh.title);
+        $rcDrop(fresh.pages);
+        $rcDrop(copy.title);
+        $rcDrop(copy.pages);
+        $rcDrop(doc.title);
+        $rcDrop(doc.pages);
+        if (again$live) {
+          $rcDrop(again, noisyDrop_drop);
+        }
+        if (noisy$live) {
+          $rcDrop(noisy, noisyDrop_drop);
+        }
+        throw error;
+      }
+      while (true) {
+        let tmp;
+        try {
+          tmp = $next(iter$1);
+        } catch (error) {
+          for (const item of lists) {
+            $rcDrop(item);
+          }
+          $rcDrop(fresh.title);
+          $rcDrop(fresh.pages);
+          $rcDrop(copy.title);
+          $rcDrop(copy.pages);
+          $rcDrop(doc.title);
+          $rcDrop(doc.pages);
+          if (again$live) {
+            $rcDrop(again, noisyDrop_drop);
+          }
+          if (noisy$live) {
+            $rcDrop(noisy, noisyDrop_drop);
+          }
+          throw error;
+        }
+        if (tmp == null) {
+          continue bb71;
+        } else {
+          const item = tmp;
+          total = (total + item) & 255;
+        }
+      }
+    }
+    const arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);
+    try {
+      console.log(`${total} ${arg}`);
+    } catch (error) {
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const shared = { value: { value: [1] }, strong: 1, weak: 0 };
+    shared$live = true;
+    let other;
+    try {
+      other = $rcClone(shared);
+    } catch (error) {
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      tmp$6 = $borrowMut(other.value, true);
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      tmp$6.value.push(2);
+    } catch (error) {
+      $unborrow(tmp$6);
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $unborrow(tmp$6);
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    let tmp$1;
+    try {
+      tmp$1 = $borrow(shared.value, true);
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      console.log(`[${tmp$1.value.map((item) => String(item)).join(", ")}] ${count(shared)}`);
+    } catch (error) {
+      $unborrow(tmp$1);
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $unborrow(tmp$1);
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    shared$live = false;
+    let tmp$2;
+    try {
+      tmp$2 = $unwrapOrClone(shared, (value) => ({ value: $borrow(value).value.slice() }));
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const owned = tmp$2.value;
+    let tmp$3;
+    try {
+      tmp$3 = $borrow(other.value, true);
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const arg$1 = count(other);
+    try {
+      console.log(
+        `[${owned.map((item) => String(item)).join(", ")}] [${tmp$3.value.map((item) => String(item)).join(", ")}] ${arg$1}`,
+      );
+    } catch (error) {
+      $unborrow(tmp$3);
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $unborrow(tmp$3);
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const value = (me) => ({ me: $weakClone(me), name: "self" });
+    let owner;
+    try {
+      owner = $newCyclic(value);
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    let tmp$4;
+    try {
+      tmp$4 = $upgrade(owner.value.me);
+    } catch (error) {
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      me = $unwrap(tmp$4);
+    } catch (error) {
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    me$live = true;
+    const strong = owner.strong;
+    try {
+      console.log(`${me.value.name} ${strong} ${owner.weak}`);
+    } catch (error) {
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    me$live = false;
+    try {
+      $rcDrop(me, (value) => {
+        $weakDrop(value.me);
+      });
+    } catch (error) {
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const strong$1 = owner.strong;
+    let tmp$5;
+    try {
+      tmp$5 = $upgrade(owner.value.me);
+    } catch (error) {
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    let tmp$7;
+    try {
+      tmp$7 = $unwrap(tmp$5);
+    } catch (error) {
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      console.log(`${strong$1} ${owner === tmp$7}`);
+    } catch (error) {
+      $rcDrop(tmp$7, (value) => {
+        $weakDrop(value.me);
+      });
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(tmp$7, (value) => {
+        $weakDrop(value.me);
+      });
+    } catch (error) {
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const defaulted = { value: 0, strong: 1, weak: 0 };
+    const value$1 = { value: 5, strong: 1, weak: 0 };
+    const arg$2 = $cmp(value$1.value, defaulted.value) > 0;
+    try {
+      console.log(`${defaulted.value} ${arg$2}`);
+    } catch (error) {
+      $rcDrop(value$1);
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(value$1);
+    } catch (error) {
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      w = $downgrade(defaulted);
+    } catch (error) {
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    w$live = true;
+    try {
+      console.log(`${defaulted.weak}`);
+    } catch (error) {
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    w$live = false;
+    try {
+      $weakDrop(w);
+    } catch (error) {
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      console.log(`${defaulted.weak}`);
+    } catch (error) {
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const two = { value: 2, strong: 1, weak: 0 };
+    two$live = true;
+    let also;
+    try {
+      also = $rcClone(two);
+    } catch (error) {
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    two$live = false;
+    let tmp$8;
+    try {
+      tmp$8 = $tryUnwrap(two);
+    } catch (error) {
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      console.log(`${tmp$8.TAG === "Ok" ? `Ok(${tmp$8._0})` : `Err(${tmp$8._0.value})`}`);
+    } catch (error) {
+      if (tmp$8.TAG === "Err") {
+        $rcDrop(tmp$8._0);
+      }
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      if (tmp$8.TAG === "Err") {
+        $rcDrop(tmp$8._0);
+      }
+    } catch (error) {
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      console.log(`${also.strong}`);
+    } catch (error) {
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const counter = { value: { value: 0 }, strong: 1, weak: 0 };
+    try {
+      console.log(`${counter.strong}`);
+    } catch (error) {
+      $rcDrop(counter);
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    const cell = { value: { value: 1 }, strong: 1, weak: 0 };
+    let alias;
+    try {
+      alias = $rcClone(cell);
+    } catch (error) {
+      $rcDrop(cell);
+      $rcDrop(counter);
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    alias.value.value = 5;
+    try {
+      console.log(`${cell.value.value}`);
+    } catch (error) {
+      $rcDrop(alias);
+      $rcDrop(cell);
+      $rcDrop(counter);
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(alias);
+    } catch (error) {
+      $rcDrop(cell);
+      $rcDrop(counter);
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(cell);
+    } catch (error) {
+      $rcDrop(counter);
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(counter);
+    } catch (error) {
+      $rcDrop(also);
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(also);
+    } catch (error) {
+      if (two$live) {
+        $rcDrop(two);
+      }
+      if (w$live) {
+        $weakDrop(w);
+      }
+      $rcDrop(defaulted);
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    two$live = false;
+    w$live = false;
+    try {
+      $rcDrop(defaulted);
+    } catch (error) {
+      if (me$live) {
+        $rcDrop(me, (value) => {
+          $weakDrop(value.me);
+        });
+      }
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    me$live = false;
+    try {
+      $rcDrop(owner, (value) => {
+        $weakDrop(value.me);
+      });
+    } catch (error) {
+      $rcDrop(other);
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(other);
+    } catch (error) {
+      if (shared$live) {
+        $rcDrop(shared);
+      }
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    shared$live = false;
+    try {
+      for (const item of lists) {
+        $rcDrop(item);
+      }
+    } catch (error) {
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(fresh.title);
+      $rcDrop(fresh.pages);
+    } catch (error) {
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(copy.title);
+      $rcDrop(copy.pages);
+    } catch (error) {
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    try {
+      $rcDrop(doc.title);
+      $rcDrop(doc.pages);
+    } catch (error) {
+      if (again$live) {
+        $rcDrop(again, noisyDrop_drop);
+      }
+      if (noisy$live) {
+        $rcDrop(noisy, noisyDrop_drop);
+      }
+      throw error;
+    }
+    again$live = false;
+    return;
   }
 }
 //# sourceMappingURL=case.js.map

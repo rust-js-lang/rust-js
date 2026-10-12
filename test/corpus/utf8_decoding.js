@@ -16,12 +16,13 @@ export function entry() {
 }
 
 function show(bytes) {
-  const match = $fromUtf8(bytes);
-  if (match.TAG === "Ok") {
-    console.log(`ok ${$debugStr(match._0)} ${$byteLen(match._0)}`);
+  const value = $fromUtf8(bytes);
+  if (value.TAG === "Ok") {
+    const arg = $byteLen(value._0);
+    console.log(`ok ${$debugStr(value._0)} ${arg}`);
   } else {
     console.log(
-      `err ${$utf8ErrorMessage(match._0)} | ${$debugUtf8Error(match._0)} | ${match._0.valid_up_to} ${match._0.error_len == null ? "None" : `Some(${match._0.error_len})`}`,
+      `err ${$utf8ErrorMessage(value._0)} | ${$debugUtf8Error(value._0)} | ${value._0.valid_up_to} ${value._0.error_len == null ? "None" : `Some(${value._0.error_len})`}`,
     );
   }
 }
@@ -44,18 +45,20 @@ function main() {
   for (const bytes of inputs) {
     show(bytes);
   }
-  const match = $fromUtf8([104, 105, 255, 33], true);
-  if (match.TAG === "Ok") {
-    console.log(`${match._0}`);
+  const value = $fromUtf8([104, 105, 255, 33], true);
+  if (value.TAG === "Ok") {
+    console.log(`${value._0}`);
   } else {
     console.log(
-      `${$utf8ErrorMessage(match._0.error)} | ${$debugUtf8Error(match._0, true)} | ${$debugUtf8Error(match._0.error)}`,
+      `${$utf8ErrorMessage(value._0.error)} | ${$debugUtf8Error(value._0, true)} | ${$debugUtf8Error(value._0.error)}`,
     );
-    console.log(`[${match._0.bytes.map((item) => String(item)).join(", ")}]`);
+    console.log(`[${value._0.bytes.map((item) => String(item)).join(", ")}]`);
   }
-  const arg = $fromUtf8([240, 159, 146, 150], true);
   console.log(
-    `${arg.TAG === "Ok" ? `Ok(${$debugStr(arg._0)})` : `Err(${$debugUtf8Error(arg._0, true)})`}`,
+    `${((result) =>
+      result.TAG === "Ok"
+        ? `Ok(${$debugStr(result._0)})`
+        : `Err(${$debugUtf8Error(result._0, true)})`)($fromUtf8([240, 159, 146, 150], true))}`,
   );
   const lossy = [
     [102, 105, 110, 101],

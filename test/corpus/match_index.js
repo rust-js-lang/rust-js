@@ -31,15 +31,7 @@ function picked(i) {
 }
 
 function crossed(kind) {
-  let tmp;
-  if (kind === "note") {
-    tmp = VARIANTS.pitfall;
-  } else if (kind === "pitfall") {
-    tmp = VARIANTS.note;
-  } else {
-    tmp = VARIANTS.rsc;
-  }
-  return tmp;
+  return kind === "note" ? VARIANTS.pitfall : kind === "pitfall" ? VARIANTS.note : VARIANTS.rsc;
 }
 
 const OTHER = {
@@ -49,22 +41,16 @@ const OTHER = {
 };
 
 function mixed(kind) {
-  let tmp;
-  if (kind === "note") {
-    tmp = VARIANTS.note;
-  } else if (kind === "pitfall") {
-    tmp = OTHER.pitfall;
-  } else {
-    tmp = VARIANTS.rsc;
-  }
-  return tmp;
+  return kind === "note" ? VARIANTS.note : kind === "pitfall" ? OTHER.pitfall : VARIANTS.rsc;
 }
 
 function main() {
   for (const kind of ["note", "pitfall", "rsc"]) {
     const v = variant(kind);
-    console.log(`${v.title} ${v.depth} ${crossed(kind).title} ${mixed(kind).title}`);
+    const title = crossed(kind).title;
+    console.log(`${v.title} ${v.depth} ${title} ${mixed(kind).title}`);
   }
-  console.log(`${picked(4).title} ${titled("rsc")}`);
+  const title = picked(4).title;
+  console.log(`${title} ${titled("rsc")}`);
 }
 //# sourceMappingURL=case.js.map

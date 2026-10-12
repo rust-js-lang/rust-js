@@ -126,14 +126,46 @@ function main() {
   const lent = [["lent"]];
   try {
     console.log(`${peeked(lent, wrapPeek({ clone: (value) => value }, loudDrop_drop))}`);
-    take([["taken by a default"]], wrapTake(loudDrop_drop));
-    take([["first of a pair"], ["second of a pair"]], pairTake(loudDrop_drop, loudDrop_drop));
-    take(["taken itself"], loudTake());
-    wrapPass(loudDrop_drop).pass([["passed to a helper"]]);
-    console.log(`${valued(1, rcValue())}`);
-    console.log("end");
-  } finally {
+  } catch (error) {
     loudDrop_drop(lent[0]);
+    throw error;
   }
+  try {
+    take([["taken by a default"]], wrapTake(loudDrop_drop));
+  } catch (error) {
+    loudDrop_drop(lent[0]);
+    throw error;
+  }
+  try {
+    take([["first of a pair"], ["second of a pair"]], pairTake(loudDrop_drop, loudDrop_drop));
+  } catch (error) {
+    loudDrop_drop(lent[0]);
+    throw error;
+  }
+  try {
+    take(["taken itself"], loudTake());
+  } catch (error) {
+    loudDrop_drop(lent[0]);
+    throw error;
+  }
+  try {
+    wrapPass(loudDrop_drop).pass([["passed to a helper"]]);
+  } catch (error) {
+    loudDrop_drop(lent[0]);
+    throw error;
+  }
+  try {
+    console.log(`${valued(1, rcValue())}`);
+  } catch (error) {
+    loudDrop_drop(lent[0]);
+    throw error;
+  }
+  try {
+    console.log("end");
+  } catch (error) {
+    loudDrop_drop(lent[0]);
+    throw error;
+  }
+  loudDrop_drop(lent[0]);
 }
 //# sourceMappingURL=case.js.map

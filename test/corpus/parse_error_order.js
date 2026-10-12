@@ -19,12 +19,12 @@ function main() {
     "922337203685477581x",
     "1844674407370955162x",
   ]) {
-    const arg = $parseInt(s, 0, 255);
-    const arg$1 = $parseInt(s, -128, 127);
-    const arg$2 = $parseBig(s, -9223372036854775808n, 9223372036854775807n);
-    const arg$3 = $parseBig(s, 0n, 18446744073709551615n);
+    const value = $parseInt(s, 0, 255);
+    const value$1 = $parseInt(s, -128, 127);
+    const value$2 = $parseBig(s, -9223372036854775808n, 9223372036854775807n);
+    const arg = $parseBig(s, 0n, 18446744073709551615n);
     console.log(
-      `${s}: ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugStr(arg$1._0)})`} ${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${$debugStr(arg$2._0)})`} ${arg$3.TAG === "Ok" ? `Ok(${arg$3._0})` : `Err(${$debugStr(arg$3._0)})`}`,
+      `${s}: ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${$debugStr(value$1._0)})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${$debugStr(value$2._0)})`} ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`}`,
     );
   }
 }

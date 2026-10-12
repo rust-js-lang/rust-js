@@ -1,4 +1,3 @@
-//@ ignore-rust-js: THIR's lowering refuses an entry's `&mut` kept in a variable, and an entry kept before it's filled
 // An entry's value kept as a `&mut` in a variable, and an entry kept in a
 // variable before it's filled: each writes the map.
 use std::collections::HashMap;

@@ -137,7 +137,7 @@ test("module-load statements resolve imports around their local bindings", async
     }
     pub fn ready() -> u32 { util::value(1) }
   `);
-  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+  for (const [out, env] of [["lib.js", { RUST_JS_MIR: "0" }], ["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out),
       "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     const code = readFileSync(join(dir, out), "utf8");

@@ -16,9 +16,10 @@ export function entry() {
 
 function main() {
   const d = $durationNew(5n, 1500000000);
-  console.log(
-    `${d / 1000000000n} ${Number(d % 1000000000n)} ${Number((d % 1000000000n) / 1000000n)} ${Number((d % 1000000000n) / 1000n)}`,
-  );
+  const value$1 = d / 1000000000n;
+  const value$2 = Number(d % 1000000000n);
+  const value$3 = Number((d % 1000000000n) / 1000000n);
+  console.log(`${value$1} ${value$2} ${value$3} ${Number((d % 1000000000n) / 1000n)}`);
   console.log(`${d / 1000000n} ${d / 1000n} ${d}`);
   const made = [
     90n * 1000000000n,
@@ -36,23 +37,20 @@ function main() {
   );
   const a = 1500n * 1000000n;
   const b = 700n * 1000000n;
-  const tmp = $durationAdd(a, b);
-  const tmp$1 = $durationSub(a, b);
+  const value$4 = $durationAdd(a, b);
   const b$1 = 2n * 1000000000n;
-  const arg = a < b$1 ? undefined : a - b$1;
+  const value$5 = $durationSub(a, b);
+  const value = a < b$1 ? undefined : a - b$1;
   console.log(
-    `${$debugDuration(tmp)} ${$debugDuration(tmp$1)} ${arg == null ? "None" : `Some(${$debugDuration(arg)})`}`,
+    `${$debugDuration(value$4)} ${$debugDuration(value$5)} ${value == null ? "None" : `Some(${$debugDuration(value)})`}`,
   );
-  const arg$1 = $durationChecked(18446744073709551615999999999n + $durationNew(0n, 1));
-  const arg$2 = $durationChecked(a + b);
+  const value$6 = $durationChecked(18446744073709551615999999999n + $durationNew(0n, 1));
   console.log(
-    `${arg$1 == null ? "None" : `Some(${$debugDuration(arg$1)})`} ${arg$2 == null ? "None" : `Some(${$debugDuration(arg$2)})`}`,
+    `${value$6 == null ? "None" : `Some(${$debugDuration(value$6)})`} ${((value) => (value == null ? "None" : `Some(${$debugDuration(value)})`))($durationChecked(a + b))}`,
   );
-  console.log(
-    `${a > b} ${a === $durationNew(1n, 500000000)} ${$bigMax(a, b) === a} ${
-      ["Less", "Equal", "Greater"][$cmp(a, b) + 1]
-    }`,
-  );
+  const value$7 = a === $durationNew(1n, 500000000);
+  const value$8 = $bigMax(a, b) === a;
+  console.log(`${a > b} ${value$7} ${value$8} ${["Less", "Equal", "Greater"][$cmp(a, b) + 1]}`);
   const v = [a, b, 0n, 1n * 1000000000n];
   v.sort($cmp);
   console.log(`[${v.map((item) => $debugDuration(item)).join(", ")}]`);

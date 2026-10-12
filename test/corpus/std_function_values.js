@@ -69,10 +69,12 @@ function main() {
     const key = n % 2 === 0;
     $orInsertWith(groups, key, () => []).push(n);
   }
+  const value = $unwrap(groups.get(true), "no entry found for key");
   console.log(
-    `[${$unwrap(groups.get(true), "no entry found for key")
-      .map((item) => String(item))
-      .join(", ")}] [${$unwrap(groups.get(false), "no entry found for key")
+    `[${value.map((item) => String(item)).join(", ")}] [${$unwrap(
+      groups.get(false),
+      "no entry found for key",
+    )
       .map((item) => String(item))
       .join(", ")}]`,
   );
@@ -85,12 +87,6 @@ function main() {
   console.log(
     `${highest} ${lowest} ${$displayF64(widest)} [${sorted.map((item) => String(item)).join(", ")}] [${distances.map((item) => String(item)).join(", ")}]`,
   );
-  const measure = (s) => $byteLen(s);
-  const fresh = () => [];
-  console.log(
-    `${measure("日本")} [${fresh()
-      .map((item) => String(item))
-      .join(", ")}]`,
-  );
+  console.log(`${$byteLen("日本")} [${[].map((item) => String(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

@@ -14,10 +14,12 @@ function signed(s) {
 
 function main() {
   for (const b of ["Small", "Past", "Max"]) {
-    console.log(`${big(b)} ${Number(BigInt.asUintN(8, big(b)))}`);
+    const value = big(b);
+    console.log(`${value} ${Number(BigInt.asUintN(8, big(b)))}`);
   }
   for (const s of ["Low", "Odd", "Zero"]) {
-    console.log(`${signed(s)} ${Number(BigInt.asIntN(32, signed(s)))}`);
+    const value = signed(s);
+    console.log(`${value} ${Number(BigInt.asIntN(32, signed(s)))}`);
   }
 }
 //# sourceMappingURL=case.js.map

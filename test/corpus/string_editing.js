@@ -48,21 +48,21 @@ function main() {
     .join("");
   console.log(`${$debugStr(s)}`);
   s = "";
-  const tmp = !s;
+  const value = !s;
   const popped$2 = $strPop(s);
   s = popped$2[0];
+  const value$1 = [value, popped$2[1], s];
   console.log(
-    `${$debugStr(s)} ${tmp} ${popped$2[1] == null ? "None" : `Some(${$debugStr(popped$2[1], "'")})`}`,
+    `${$debugStr(value$1[2])} ${value$1[0]} ${value$1[1] == null ? "None" : `Some(${$debugStr(value$1[1], "'")})`}`,
   );
   let t = " a b c ";
   const s$1 = { value: t };
-  const result = tidy(s$1);
+  const last = tidy(s$1);
   t = s$1.value;
-  const last = result;
   console.log(`${last == null ? "None" : `Some(${$debugStr(last, "'")})`} ${$debugStr(t)}`);
   const words = ["one", "two"];
-  words[$at(words, 1)] = $insertStr(words[$at(words, 1)], 0, "2");
-  words[$at(words, 0)] = $strTruncate(words[$at(words, 0)], 1);
+  words[$at(words, 1)] = $insertStr(words[1], 0, "2");
+  words[$at(words, 0)] = $strTruncate(words[0], 1);
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

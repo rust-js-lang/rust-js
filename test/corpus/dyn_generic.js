@@ -116,11 +116,9 @@ function main() {
   console.log(`${shout(shown, { fmt: (value) => value.impl.fmt(value.value) })}`);
   const up = [0];
   const counter = { value: up, impl: upCounter() };
-  const result = two(
-    { value: counter },
-    { next_item: (object) => object.value.impl.next_item(object.value) },
+  console.log(
+    `${two({ value: counter }, { next_item: (object) => object.value.impl.next_item(object.value) })}`,
   );
-  console.log(`${result}`);
   console.log(`${up[0]}`);
 }
 //# sourceMappingURL=case.js.map

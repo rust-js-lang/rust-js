@@ -4,6 +4,7 @@ import {
   $cmp,
   $debugStr,
   $extractIf,
+  $lazyRange,
   $mapExtractIf,
   $next,
   $range,
@@ -17,12 +18,14 @@ export function entry() {
 }
 
 function main() {
-  const v = $range(1, 10 + 1);
-  const evens = $extractIf(v, 0, undefined, (x) => x.value % 2 === 0, true).toArray();
+  const v = $range(1, 11);
+  const evens = Iterator.from(
+    $extractIf(v, 0, undefined, (x) => x.value % 2 === 0, true),
+  ).toArray();
   console.log(
     `[${evens.map((item) => String(item)).join(", ")}] [${v.map((item) => String(item)).join(", ")}]`,
   );
-  const w = $range(1, 10 + 1);
+  const w = $range(1, 11);
   for (const x of $extractIf(
     w,
     2,
@@ -40,13 +43,17 @@ function main() {
   }
   console.log(`[${w.map((item) => String(item)).join(", ")}]`);
   const names = ["ann", "bob", "al"];
-  const a = $extractIf(names, 0, undefined, (n) => n.value.startsWith("a"), true).toArray();
+  const a = Iterator.from(
+    $extractIf(names, 0, undefined, (n) => n.value.startsWith("a"), true),
+  ).toArray();
   console.log(
     `[${a.map((item) => $debugStr(item)).join(", ")}] [${names.map((item) => $debugStr(item)).join(", ")}]`,
   );
-  console.log(`${$extractIf(w, 1, 1, () => true, true).toArray().length}`);
-  const list = $range(1, 6 + 1);
-  const odd = $extractIf(list, 0, undefined, (x) => x.value % 2 === 1, true).toArray();
+  console.log(`${Iterator.from($extractIf(w, 1, 1, () => true, true)).reduce((n) => n + 1, 0)}`);
+  const list = $range(1, 7);
+  const odd = Iterator.from(
+    $extractIf(list, 0, undefined, (x) => x.value % 2 === 1, true),
+  ).toArray();
   console.log(
     `[${odd.map((item) => String(item)).join(", ")}] [${list.map((item) => String(item)).join(", ")}]`,
   );
@@ -56,15 +63,17 @@ function main() {
     ["c", 3],
     ["d", 40],
   ]);
-  const high = $mapExtractIf(
-    scores,
-    (_, v) => {
-      v.value = (v.value + 1) | 0;
-      return v.value > 10;
-    },
-    scores,
-    true,
-    false,
+  const high = Iterator.from(
+    $mapExtractIf(
+      scores,
+      (_, v) => {
+        v.value = (v.value + 1) | 0;
+        return v.value > 10;
+      },
+      scores,
+      true,
+      false,
+    ),
   ).toArray();
   high.sort((a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]));
   const left = Array.from(scores);
@@ -72,20 +81,22 @@ function main() {
   console.log(
     `[${high.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}] [${left.map((item) => `(${$debugStr(item[0])}, ${item[1]})`).join(", ")}]`,
   );
-  const set = new Set($range(1, 7));
-  const small = $mapExtractIf(set, (x) => x < 3, set, false, true).toArray();
+  const set = new Set($lazyRange(1, 7));
+  const small = Iterator.from($mapExtractIf(set, (x) => x < 3, set, false, true)).toArray();
   small.sort((a, b) => a - b);
   console.log(`[${small.map((item) => String(item)).join(", ")}] ${set.size}`);
-  const tree = new Map($range(1, 8 + 1).map((i) => [i, String(i)]));
-  const taken = $mapExtractIf(
-    tree,
-    (k, v) => {
-      v.value += "!";
-      return k % 2 === 0;
-    },
-    $treeRange(tree, $cmp, false, "BTreeMap", true, 3, true, 6, true, false),
-    true,
-    false,
+  const tree = new Map($lazyRange(1, 9).map((i) => [i, String(i)]));
+  const taken = Iterator.from(
+    $mapExtractIf(
+      tree,
+      (k, v) => {
+        v.value += "!";
+        return k % 2 === 0;
+      },
+      $treeRange(tree, $cmp, false, "BTreeMap", true, 3, true, 6, true, false),
+      true,
+      false,
+    ),
   ).toArray();
   console.log(
     `[${taken.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}] {${Array.from(
@@ -95,20 +106,21 @@ function main() {
       .join(", ")}}`,
   );
   console.log(
-    `${$mapExtractIf(tree, () => true, $treeRange(tree, $cmp, false, "BTreeMap", true, 6, true, 2, false, false), true, false).toArray().length}`,
+    `${Iterator.from($mapExtractIf(tree, () => true, $treeRange(tree, $cmp, false, "BTreeMap", true, 6, true, 2, false, false), true, false)).reduce((n) => n + 1, 0)}`,
   );
-  const keys = new Set($range(1, 9));
-  const firsts = $mapExtractIf(
-    keys,
-    (k) => k > 2,
-    $treeRange(keys, $cmp, true, "BTreeSet", false, undefined, false, undefined, false, false),
-    false,
-    true,
+  const keys = new Set($lazyRange(1, 9));
+  const firsts = Iterator.from(
+    $mapExtractIf(
+      keys,
+      (k) => k > 2,
+      $treeRange(keys, $cmp, true, "BTreeSet", false, undefined, false, undefined, false, false),
+      false,
+      true,
+    ),
   );
-  const arg = $next(firsts);
-  const arg$1 = $next(firsts);
+  const value = $next(firsts);
   console.log(
-    `${arg == null ? "None" : `Some(${arg})`} ${arg$1 == null ? "None" : `Some(${arg$1})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${((value) => (value == null ? "None" : `Some(${value})`))($next(firsts))}`,
   );
   console.log(
     `{${Array.from($sortedKeys(keys, $cmp))

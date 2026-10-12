@@ -35,8 +35,8 @@ function main() {
     .forEach((s) => {
       s.value = (s.value + 1) | 0;
     });
-  for (const item of $mutItems(scores).entries()) {
-    item[1].value = (item[1].value + (item[0] | 0)) | 0;
+  for (const [i, s] of $mutItems(scores).entries()) {
+    s.value = (s.value + (i | 0)) | 0;
   }
   console.log(`[${scores.map((item) => String(item)).join(", ")}]`);
   const names = ["ann", "bo"];
@@ -51,9 +51,9 @@ function main() {
   for (const n of $mutValues(stock)) {
     n.value = (n.value + 1) | 0;
   }
-  for (const item of $mutEntries(stock)) {
-    if (item[0].startsWith("a")) {
-      item[1].value = Math.imul(item[1].value, 2);
+  for (const [name, n] of $mutEntries(stock)) {
+    if (name.startsWith("a")) {
+      n.value = Math.imul(n.value, 2);
     }
   }
   const sorted = Array.from(stock).map(([k, v]) => [k, v]);
@@ -63,18 +63,20 @@ function main() {
     [2, 0.5],
     [1, 1.5],
   ]);
-  $mutValues(ordered, $sortedEntries(ordered, $cmp)).forEach((x) => {
+  Iterator.from($mutValues(ordered, $sortedEntries(ordered, $cmp))).forEach((x) => {
     x.value *= 2;
   });
-  for (const item of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
-    item[1].value = item[1].value + 0.25;
+  for (const [, x] of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
+    x.value += 0.25;
   }
   const visited = [];
-  for (const item of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
-    visited.push(item[0]);
-    item[1].value = item[1].value - 0.5;
+  for (const [k, x] of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
+    visited.push(k);
+    x.value -= 0.5;
   }
-  const halves = $mutValues(ordered, $sortedEntries(ordered, $cmp)).map((x) => x.value / 2);
+  const halves = Iterator.from($mutValues(ordered, $sortedEntries(ordered, $cmp)))
+    .map((x) => x.value / 2)
+    .toArray();
   console.log(
     `{${Array.from($sortedEntries(ordered, $cmp))
       .map(([key, value]) => `${key}: ${$debugF64(value)}`)
@@ -87,7 +89,9 @@ function main() {
   const a = $mutGet(counts, "a");
   if (a != null) {
     a.value = (a.value + 1) | 0;
-    bump(a);
+    const n = { value: a.value };
+    bump(n);
+    a.value = n.value;
   }
   const row = [5, 6];
   const last = $unwrap($mutAt(row, -1));
@@ -95,7 +99,9 @@ function main() {
   bump($unwrap($mutAt(row, 0)));
   const x = $mutAt(row, 1);
   if (x != null) {
-    bump(x);
+    const n = { value: x.value };
+    bump(n);
+    x.value = n.value;
   }
   console.log(
     `{${Array.from(counts)

@@ -11,7 +11,8 @@ function main() {
     [1, "a"],
     [2, "b"],
   ]);
-  const [start, end] = [5, 2];
+  const start = 5;
+  const end = 2;
   console.log(`${$treeRange(tree, $cmp, false, "BTreeMap", true, start, true, end, false).length}`);
 }
 //# sourceMappingURL=case.js.map

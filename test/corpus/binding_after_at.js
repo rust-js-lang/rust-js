@@ -5,20 +5,16 @@ export function entry() {
 }
 
 function main() {
-  const tmp = { a: 10, b: { c: 20 } };
-  const x = tmp;
-  const b = { ...tmp.b };
+  const x = { a: 10, b: { c: 20 } };
+  const b = { ...x.b };
   x.b.c = 30;
   console.log(`${x.a} ${x.b.c} ${b.c}`);
-  const match = { a: 1, b: { c: 2 } };
-  const y = match;
-  const inner = { ...match.b };
+  const y = { a: 1, b: { c: 2 } };
+  const inner = { ...y.b };
   y.b.c = 9;
   console.log(`${y.b.c} ${inner.c}`);
-  const tmp$1 = { a: 5, b: { c: 6 } };
-  const whole = tmp$1;
-  const part = { ...tmp$1.b };
-  const moved = whole;
+  const moved = { a: 5, b: { c: 6 } };
+  const part = { ...moved.b };
   moved.b.c = 7;
   console.log(`${moved.b.c} ${part.c}`);
 }

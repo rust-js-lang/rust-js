@@ -70,9 +70,7 @@ function give(f, loud) {
 }
 
 function sizes(TSize, TAlign) {
-  const size = () => TSize;
-  const align = () => TAlign;
-  return [size(), align()];
+  return [TSize, TAlign];
 }
 
 function main() {
@@ -88,31 +86,23 @@ function main() {
   const pairs = [[1, 2], undefined];
   const sums = pairs.map((p) => (10 + (p ? (p[0] + p[1]) | 0 : 0)) | 0);
   const words = ["a", "bb"];
-  const first = (1 + Array.from(words[0]).length) >>> 0;
+  const first$1 = words[0];
+  const first = (1 + Array.from(first$1).length) >>> 0;
   console.log(
     `${missing} [${items.map((item) => String(item)).join(", ")}] (${pair[0]}, ${pair[1]}) [${sums.map((item) => String(item)).join(", ")}] ${first}`,
   );
-  console.log(
-    `${$displayF64(
-      radius_plus_one({ TAG: "Circle", _0: 2 }),
-    )} ${$displayF64(radius_plus_one("Dot"))}`,
-  );
+  const value = radius_plus_one({ TAG: "Circle", _0: 2 });
+  console.log(`${$displayF64(value)} ${$displayF64(radius_plus_one("Dot"))}`);
   const shapes = [
     { TAG: "Circle", _0: 1 },
     { TAG: "Square", side: 2 },
   ];
-  const areas = shapes.map(shapeArea_area);
-  const make = shapeArea_unit;
-  const size = () => 2;
-  const isSome = (x) => x != null;
+  const areas = shapes.map((item) => shapeArea_area(item));
   const dropped = [1, 2, 3].map((value) => {}).length;
   console.log(
-    `[${areas.map((item) => $debugF64(item)).join(", ")}] ${shapeDebug_fmt(make())} ${size()} ${isSome(maybe)} ${dropped}`,
+    `[${areas.map((item) => $debugF64(item)).join(", ")}] ${shapeDebug_fmt(shapeArea_unit())} 2 ${maybe != null} ${dropped}`,
   );
-  const quiet = (value) => {
-    loudDrop_drop(value);
-  };
-  quiet([1]);
+  loudDrop_drop([1]);
   give(
     (value) => {
       loudDrop_drop(value);
@@ -121,8 +111,9 @@ function main() {
   );
   give((value) => {}, [3]);
   console.log(`${Marker.is_marker(Marker.new())}`);
-  const arg = sizes(4, 4);
-  const arg$1 = sizes(4, 2);
-  console.log(`(${arg[0]}, ${arg[1]}) (${arg$1[0]}, ${arg$1[1]})`);
+  const value$1 = sizes(4, 4);
+  console.log(
+    `(${value$1[0]}, ${value$1[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(sizes(4, 2))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

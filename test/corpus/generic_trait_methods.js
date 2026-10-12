@@ -32,8 +32,7 @@ function circleShape_scaled(circle, f) {
 }
 
 function circleShape_tagged(circle, a, b, AClone, ADebug, BDisplay) {
-  const arg = AClone.clone(a);
-  return `circle ${ADebug.fmt(arg)} ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
+  return `circle ${ADebug.fmt(AClone.clone(a))} ${BDisplay.fmt(b)} ${ADebug.fmt(a)}`;
 }
 
 function squareShape() {
@@ -88,13 +87,18 @@ function everything(s, SShape) {
 function main() {
   const c = [1];
   const s = [2];
+  const value = circleShape().describe(c, "c", { fmt: (value) => value });
+  const value$1 = squareShape_describe(s, 3.5, { fmt: $displayF64 });
   console.log(
-    `${circleShape().describe(c, "c", { fmt: (value) => value })} | ${squareShape_describe(s, 3.5, { fmt: $displayF64 })} | ${circleShape_tagged(c, "a", 1, { clone: (value) => value }, { fmt: (value) => $debugStr(value) }, { fmt: String })}`,
+    `${value} | ${value$1} | ${circleShape_tagged(c, "a", 1, { clone: (value) => value }, { fmt: (value) => $debugStr(value) }, { fmt: String })}`,
   );
-  console.log(`${report(c, circleShape())} | ${report(s, squareShape())}`);
-  const arg = everything(c, circleShape());
-  console.log(`(${$debugStr(arg[0])}, ${$debugF64(arg[1])}, ${$debugStr(arg[2])})`);
-  const arg$1 = everything(s, squareShape());
-  console.log(`(${$debugStr(arg$1[0])}, ${$debugF64(arg$1[1])}, ${$debugStr(arg$1[2])})`);
+  const value$2 = report(c, circleShape());
+  console.log(`${value$2} | ${report(s, squareShape())}`);
+  console.log(
+    `${((tuple) => `(${$debugStr(tuple[0])}, ${$debugF64(tuple[1])}, ${$debugStr(tuple[2])})`)(everything(c, circleShape()))}`,
+  );
+  console.log(
+    `${((tuple) => `(${$debugStr(tuple[0])}, ${$debugF64(tuple[1])}, ${$debugStr(tuple[2])})`)(everything(s, squareShape()))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

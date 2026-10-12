@@ -27,11 +27,8 @@ function reduce(todos, action) {
     next.push({ id: (todos.length + 1) >>> 0, text: action._0, done: false });
     return next;
   }
-  return todos.map((t) => ({
-    id: t.id,
-    text: t.text,
-    done: t.id === action._0 ? !t.done : t.done,
-  }));
+  const captured = action._0;
+  return todos.map((t) => ({ id: t.id, text: t.text, done: t.id === captured ? !t.done : t.done }));
 }
 
 export function Todos() {
@@ -45,7 +42,7 @@ export function Todos() {
       setDraft("");
     }
   };
-  const items = todos.map((t) => (
+  const children = todos.map((t) => (
     <li
       key={t.id}
       className={t.done ? "done" : ""}
@@ -71,7 +68,7 @@ export function Todos() {
         <button className="add" onClick={add}>
           Add
         </button>
-        <ul>{items}</ul>
+        <ul>{children}</ul>
         {todos.length === 0 && <p className="empty">Nothing to do</p>}
         {t && <p className="latest">{t.text}</p>}
         <span className="left">{left} left</span>

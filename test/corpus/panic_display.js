@@ -5,10 +5,10 @@ export function entry() {
 }
 
 function pick(v, msg) {
-  if (v != null) {
-    return v;
+  if (v == null) {
+    throw new Error(msg);
   }
-  throw new Error(msg);
+  return v;
 }
 
 function main() {

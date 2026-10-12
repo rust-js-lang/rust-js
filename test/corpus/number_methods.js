@@ -25,43 +25,64 @@ export function entry() {
 }
 
 function main() {
+  const value = $clamp(17, 0, 10);
+  const value$1 = $clamp(-3n, -2n, 2n);
+  const value$2 = $clamp(200, 1, 100);
+  const value$3 = $clampFloat(1.5, 0, 1, $debugF64);
   console.log(
-    `${$clamp(17, 0, 10)} ${$clamp(-3n, -2n, 2n)} ${$clamp(200, 1, 100)} ${$displayF64($clampFloat(1.5, 0, 1, $debugF64))} ${$displayF64($clampFloat(NaN, 0, 1, $debugF64))}`,
+    `${value} ${value$1} ${value$2} ${$displayF64(value$3)} ${$displayF64($clampFloat(NaN, 0, 1, $debugF64))}`,
   );
   const level = 7;
   console.log(`${Math.imul($clamp(level, 1, 5), 2) >>> 0}`);
-  const arg = $parseInt("-ff", -2147483648, 2147483647, 16);
-  const arg$1 = $parseInt("11111111", 0, 255, 2);
-  const arg$2 = $parseBig("777", 0n, 18446744073709551615n, 8);
-  const arg$3 = $parseBig("Zz", -9223372036854775808n, 9223372036854775807n, 36);
+  const value$4 = $parseInt("-ff", -2147483648, 2147483647, 16);
+  const value$5 = $parseInt("11111111", 0, 255, 2);
+  const value$6 = $parseBig("777", 0n, 18446744073709551615n, 8);
   console.log(
-    `${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugParseError(arg._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`} ${arg$2.TAG === "Ok" ? `Ok(${arg$2._0})` : `Err(${$debugParseError(arg$2._0, "ParseIntError")})`} ${arg$3.TAG === "Ok" ? `Ok(${arg$3._0})` : `Err(${$debugParseError(arg$3._0, "ParseIntError")})`}`,
+    `${value$4.TAG === "Ok" ? `Ok(${value$4._0})` : `Err(${$debugParseError(value$4._0, "ParseIntError")})`} ${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugParseError(value$5._0, "ParseIntError")})`} ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${$debugParseError(value$6._0, "ParseIntError")})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugParseError(result._0, "ParseIntError")})`))($parseBig("Zz", -9223372036854775808n, 9223372036854775807n, 36))}`,
   );
   for (const s of ["", "+", "-1", "1g", "100000000", "-80000000", "+7f"]) {
-    const arg = $parseInt(s, 0, 4294967295, 16);
-    const arg$1 = $parseInt(s, -2147483648, 2147483647, 16);
+    const value = $parseInt(s, 0, 4294967295, 16);
+    const arg = $parseInt(s, -2147483648, 2147483647, 16);
     console.log(
-      `${$debugStr(s)}: ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugStr(arg$1._0)})`}`,
+      `${$debugStr(s)}: ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`} ${arg.TAG === "Ok" ? `Ok(${arg._0})` : `Err(${$debugStr(arg._0)})`}`,
     );
   }
-  console.log(`${$divCeil(7, 2)} ${$divCeil(8, 2)} ${$divCeil(0, 3)} ${$divCeil(10n, 3n)}`);
+  const value$7 = $divCeil(7, 2);
+  const value$8 = $divCeil(8, 2);
+  const value$9 = $divCeil(0, 3);
+  console.log(`${value$7} ${value$8} ${value$9} ${$divCeil(10n, 3n)}`);
   for (const x of [-2.5, 0, -0, 3.75]) {
+    const value = $signum(x);
+    const value$1 = x - Math.trunc(x);
+    const value$2 = $signNegative(x);
+    const value$3 = !$signNegative(x);
     console.log(
-      `${$displayF64($signum(x))} ${$displayF64(x - Math.trunc(x))} ${$signNegative(x)} ${!$signNegative(x)} ${$displayF64(x * (Math.PI / 180))}`,
+      `${$displayF64(value)} ${$displayF64(value$1)} ${value$2} ${value$3} ${$displayF64(x * (Math.PI / 180))}`,
     );
   }
-  console.log(`${Number.isNaN($signum(NaN))} ${$displayF64(3.141592653589793 * (180 / Math.PI))}`);
+  const value$10 = Number.isNaN($signum(NaN));
+  console.log(`${value$10} ${$displayF64(3.141592653589793 * (180 / Math.PI))}`);
   console.log(
     `${$displayF32(Math.fround(45 * 0.01745329238474369))} ${$displayF32(Math.fround(1 * 57.295780181884766))} ${$displayF32(-0.5 - Math.trunc(-0.5))}`,
   );
-  console.log(`${$ilog(1000, 10)} ${$ilog(999, 10)} ${$ilog(8, 2)} ${$ilog(255, 2)}`);
-  console.log(`${$ilog(1n, 10)} ${$ilog(18446744073709551615n, 2)} ${$ilog(12345n, 10)}`);
+  const value$11 = $ilog(1000, 10);
+  const value$12 = $ilog(999, 10);
+  const value$13 = $ilog(8, 2);
+  console.log(`${value$11} ${value$12} ${value$13} ${$ilog(255, 2)}`);
+  const value$14 = $ilog(1n, 10);
+  const value$15 = $ilog(18446744073709551615n, 2);
+  console.log(`${value$14} ${value$15} ${$ilog(12345n, 10)}`);
+  const value$16 = $isqrt(17);
+  const value$17 = $isqrt(0);
+  const value$18 = $isqrt(99);
   console.log(
-    `${$isqrt(17)} ${$isqrt(0)} ${$isqrt(99)} ${$isqrt(BigInt.asUintN(64, $bigPow(10n, 18)))}`,
+    `${value$16} ${value$17} ${value$18} ${$isqrt(BigInt.asUintN(64, $bigPow(10n, 18)))}`,
   );
   console.log(
     `${Math.trunc((3 + 8) / 2)} ${Math.trunc((-7 + 0) / 2)} ${Math.trunc((0 + -7) / 2)} ${Math.trunc((255 + 253) / 2)} ${(-9223372036854775808n + -1n) / 2n}`,
   );
-  console.log(`${8 - $countOnes(5)} ${32 - $countOnes(-1)} ${64 - $bigCountOnes(0n)}`);
+  const value$19 = 8 - $countOnes(5);
+  const value$20 = 32 - $countOnes(-1);
+  console.log(`${value$19} ${value$20} ${64 - $bigCountOnes(0n)}`);
 }
 //# sourceMappingURL=case.js.map

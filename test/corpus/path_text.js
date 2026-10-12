@@ -34,8 +34,7 @@ function main() {
   console.log(
     `${owned == null ? "None" : `Some(${$debugStr(owned)})`} ${borrowed == null ? "None" : `Some(${$debugStr(borrowed)})`}`,
   );
-  const copy = owned;
-  const asPath = copy;
+  const asPath = owned;
   console.log(`${asPath}`);
   console.log(`${describe({ path: "data/x.csv" })}`);
   console.log("");

@@ -36,124 +36,130 @@ function reset(c) {
 
 function set(r) {
   const value$1 = value("through a reference", 8);
-  r[$at(r, index("through a reference", 0))] = value$1;
+  const value$2 = index("through a reference", 0);
+  r[$at(r, value$2)] = value$1;
 }
 
 function main() {
   const v = [0, 0];
-  const value$1 = value("vec =", 1);
-  v[$at(v, index("vec =", 0))] = value$1;
-  const value$2 = value("vec +=", 2);
-  const index$1 = $at(v, index("vec +=", 1));
-  v[index$1] = (v[index$1] + value$2) | 0;
+  const value$2 = value("vec =", 1);
+  const index$1 = index("vec =", 0);
+  v[$at(v, index$1)] = value$2;
+  const value$3 = value("vec +=", 2);
+  const index$2 = index("vec +=", 1);
+  $index(v, index$2);
+  const value$4 = {
+    get value() {
+      return v[index$2];
+    },
+    set value(value) {
+      v[index$2] = value;
+    },
+  };
+  value$4.value = (value$4.value + value$3) | 0;
   const a = [0, 0];
-  const value$3 = value("array =", 3);
-  a[$at(a, index("array =", 0))] = value$3;
-  const value$4 = value("array +=", 4);
-  const index$2 = $at(a, index("array +=", 1));
-  a[index$2] = (a[index$2] + value$4) | 0;
+  const value$5 = value("array =", 3);
+  const value$6 = index("array =", 0);
+  a[$at(a, value$6)] = value$5;
+  const value$7 = value("array +=", 4);
+  const value$8 = index("array +=", 1);
+  const value$1 = (a[$at(a, value$8)] + value$7) | 0;
+  a[value$8] = value$1;
   const ps = [{ x: 0 }];
-  const value$5 = value("field =", 5);
-  $index(ps, index("field =", 0)).x = value$5;
-  const value$6 = value("field +=", 6);
-  const item = $index(ps, index("field +=", 0));
-  item.x = (item.x + value$6) | 0;
+  const value$9 = value("field =", 5);
+  $index(ps, index("field =", 0)).x = value$9;
+  const value$10 = value("field +=", 6);
+  const value$11 = $index(ps, index("field +=", 0));
+  value$11.x = (value$11.x + value$10) | 0;
   const totals = [[0]];
   totalAddAssignI32_add_assign($index(totals, index("AddAssign", 0)), value("AddAssign", 7));
   set(a);
   const rows = [[0, 0]];
-  const value$7 = value("rows", 9);
+  const value$12 = value("rows", 9);
   const items = $index(rows, index("rows row", 0));
-  items[$at(items, index("rows column", 1))] = value$7;
-  const arg = $index(ps, 0).x;
-  const arg$1 = $index(totals, 0);
+  const index$3 = index("rows column", 1);
+  items[$at(items, index$3)] = value$12;
+  const x$1 = $index(ps, 0).x;
+  const arg = $index(totals, 0);
   console.log(
-    `[${v.map((item) => String(item)).join(", ")}] [${a.map((item) => String(item)).join(", ")}] ${arg} ${totalDebug_fmt(arg$1)} [${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
+    `[${v.map((item) => String(item)).join(", ")}] [${a.map((item) => String(item)).join(", ")}] ${x$1} ${totalDebug_fmt(arg)} [${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   let x = 1;
   const one = [0];
-  const value$8 = x;
+  const value$13 = x;
   x = 2;
-  one[0] = value$8;
+  one[0] = value$13;
   let y = 1;
   const w = [0];
-  const value$9 = y;
+  const value$14 = y;
   y = 2;
-  w[$at(w, 0)] = value$9;
+  w[$at(w, 0)] = value$14;
   let z = 1;
   const u = [0];
-  const value$10 = z;
+  const value$15 = z;
   z = 2;
-  u[$at(u, 0)] = (u[$at(u, 0)] + value$10) | 0;
+  u[$at(u, 0)] = (u[0] + value$15) | 0;
   const c = { n: 1 };
   const t = [0];
-  const value$11 = c.n;
-  t[$at(t, bump(c))] = value$11;
-  const arg$2 = one[0];
-  const arg$3 = $index(w, 0);
-  const arg$4 = $index(u, 0);
-  const arg$5 = $index(t, 0);
-  console.log(`${arg$2} ${x} ${arg$3} ${y} ${arg$4} ${z} ${arg$5} ${c.n}`);
+  const n = c.n;
+  const index$4 = bump(c);
+  t[$at(t, index$4)] = n;
+  const value$16 = one[0];
+  const value$17 = [undefined, $index(w, 0), $index(u, 0), $index(t, 0), c.n, x, y, z];
+  console.log(
+    `${value$16} ${value$17[5]} ${value$17[1]} ${value$17[6]} ${value$17[2]} ${value$17[7]} ${value$17[3]} ${value$17[4]}`,
+  );
   const d = { n: 1 };
-  const value$12 = reset(d);
-  d.n = (d.n + value$12) | 0;
+  const value$18 = reset(d);
+  d.n = (d.n + value$18) | 0;
   let e = 1;
   const inc = () => {
     e = (e + 10) | 0;
     return 2;
   };
-  const value$13 = inc();
-  e = (e + value$13) | 0;
+  const value$19 = inc();
+  e = (e + value$19) | 0;
   console.log(`${d.n} ${e}`);
-  let [a$1, b] = [
-    [1, 2],
-    [10, 20],
-  ];
+  const a$1 = [1, 2];
+  const b = [10, 20];
   let cur = a$1;
-  const tmp = cur;
+  const value$20 = cur;
   cur = b;
-  tmp[$at(tmp, 0)] = (tmp[$at(tmp, 0)] + 1) | 0;
+  value$20[$at(value$20, 0)] = (value$20[0] + 1) | 0;
   console.log(
     `[${a$1.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}]`,
   );
-  let [a$2, b$1] = [
-    [1, 2],
-    [10, 20],
-  ];
+  const a$2 = [1, 2];
+  const b$1 = [10, 20];
   let cur$1 = a$2;
-  const tmp$1 = cur$1;
+  const value$21 = cur$1;
   cur$1 = b$1;
-  tmp$1[$at(tmp$1, 0)] = 7;
+  value$21[$at(value$21, 0)] = 7;
   console.log(
     `[${a$2.map((item) => String(item)).join(", ")}] [${b$1.map((item) => String(item)).join(", ")}]`,
   );
-  let [a$3, b$2] = [
-    [1, 2],
-    [10, 20],
-  ];
+  const a$3 = [1, 2];
+  const b$2 = [10, 20];
   let cur$2 = a$3;
-  const tmp$2 = cur$2;
+  const value$22 = cur$2;
   cur$2 = b$2;
-  const at = $at(tmp$2, 0);
-  tmp$2[at] = (tmp$2[at] + 1) | 0;
+  value$22[$at(value$22, 0)] = (value$22[0] + 1) | 0;
   console.log(
     `[${a$3.map((item) => String(item)).join(", ")}] [${b$2.map((item) => String(item)).join(", ")}]`,
   );
-  const tmp$3 = [
-    [1, 2],
-    [10, 20],
-  ];
-  const a$4 = tmp$3[0].slice();
-  const b$3 = tmp$3[1].slice();
-  let cur$3 = a$4;
-  cur$3 = b$3;
-  const o = cur$3;
-  o[0] = (o[0] + 1) | 0;
+  const a$4 = [1, 2].slice();
+  const b$3 = [10, 20].slice();
+  const cur$3 = b$3;
+  if (!(0 < 2)) {
+    throw new Error("index out of bounds: the len is 2 but the index is 0");
+  }
+  cur$3[0] = (cur$3[0] + 1) | 0;
   console.log(
     `[${a$4.map((item) => String(item)).join(", ")}] [${b$3.map((item) => String(item)).join(", ")}]`,
   );
   const empty = [];
-  const value$14 = (value("out of bounds", 8) << 24) >> 24;
-  empty[$at(empty, index("out of bounds", 0))] = value$14;
+  const value$23 = value("out of bounds", 8);
+  const index$5 = index("out of bounds", 0);
+  empty[$at(empty, index$5)] = (value$23 << 24) >> 24;
 }
 //# sourceMappingURL=case.js.map

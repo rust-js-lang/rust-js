@@ -4,11 +4,11 @@ import {
   $debugStr,
   $insertStr,
   $iter,
+  $lent,
   $mutItems,
   $next,
   $nextBack,
   $range,
-  $rest,
   $unwrap,
   $view,
 } from "@rust-js/runtime";
@@ -22,7 +22,7 @@ function pointDebug_fmt(point) {
 }
 
 function main() {
-  const v = $range(1, 6 + 1);
+  const v = $range(1, 7);
   const it = $iter($mutItems(v));
   const first = $next(it);
   if (first != null) {
@@ -33,10 +33,10 @@ function main() {
     last.value = Math.imul(last.value, 10);
   }
   console.log(`${it.end - it.at}`);
-  for (const x of Iterator.from(it).take(2)) {
+  for (const x of $lent($lent(it)).take(2)) {
     x.value = (x.value + 100) | 0;
   }
-  console.log(`${$rest(it).length}`);
+  console.log(`${it.reduce((n) => n + 1, 0)}`);
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
   const part = $iter($mutItems($view(v, 2)));
   while (true) {
@@ -44,31 +44,31 @@ function main() {
     if (x != null) {
       x.value = -x.value | 0;
     } else {
-      break;
+      console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+      const names = ["a", "b", "c"];
+      const each = $iter($mutItems(names));
+      const value = $unwrap($next(each));
+      value.value += "!";
+      const rest = each.toArray();
+      for (const name of rest) {
+        name.value = $insertStr(name.value, 0, ">");
+      }
+      console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
+      const points = [{ x: 1 }, { x: 2 }];
+      const walk = $iter(points);
+      $unwrap($nextBack(walk)).x = 9;
+      console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
+      const queue = [1, 2, 3];
+      queue.unshift(0);
+      const q = Iterator.from($mutItems(queue));
+      const value$1 = $unwrap($next(q));
+      value$1.value = (value$1.value + 10) & 255;
+      for (const x of q) {
+        x.value = (x.value * 2) & 255;
+      }
+      console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
+      return;
     }
   }
-  console.log(`[${v.map((item) => String(item)).join(", ")}]`);
-  const names = ["a", "b", "c"];
-  const each = $iter($mutItems(names));
-  const cell = $unwrap($next(each));
-  cell.value += "!";
-  const rest = $rest(each);
-  for (const name of rest) {
-    name.value = $insertStr(name.value, 0, ">");
-  }
-  console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
-  const points = [{ x: 1 }, { x: 2 }];
-  const walk = $iter(points);
-  $unwrap($nextBack(walk)).x = 9;
-  console.log(`[${points.map((item) => pointDebug_fmt(item)).join(", ")}]`);
-  const queue = [1, 2, 3];
-  queue.unshift(0);
-  const q = $iter($mutItems(queue));
-  const cell$1 = $unwrap($next(q));
-  cell$1.value = (cell$1.value + 10) & 255;
-  for (const x of q) {
-    x.value = (x.value * 2) & 255;
-  }
-  console.log(`[${queue.map((item) => String(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

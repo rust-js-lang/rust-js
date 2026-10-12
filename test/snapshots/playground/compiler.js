@@ -128,16 +128,18 @@ function directoryOf(sources) {
   const top = new Map();
   for (const [path, text] of sources) {
     let folder = top;
+    const value = $rsplitOnce(path, "/");
     let name;
-    const match = $rsplitOnce(path, "/");
-    if (match) {
-      for (const part of match[0].split("/")) {
+    if (value) {
+      const folders = value[0];
+      const name$1 = value[1];
+      for (const part of folders.split("/")) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));
         }
         folder = $unwrap(folder.get(part), "no entry found for key").contents;
       }
-      name = match[1];
+      name = name$1;
     } else {
       name = path;
     }
@@ -167,10 +169,24 @@ export async function compile(loaded, sources, rootFile, test) {
   const fds = [
     new OpenFile(new File([])),
     ConsoleStdout.lineBuffered((line) => {
-      $borrowMut(stdoutLines).value.push(line);
+      const value = $borrowMut(stdoutLines, true);
+      try {
+        value.value.push(line);
+      } catch (error) {
+        $unborrow(value);
+        throw error;
+      }
+      $unborrow(value);
     }),
     ConsoleStdout.lineBuffered((line) => {
-      $borrowMut(stderrLines).value.push(line);
+      const value = $borrowMut(stderrLines, true);
+      try {
+        value.value.push(line);
+      } catch (error) {
+        $unborrow(value);
+        throw error;
+      }
+      $unborrow(value);
     }),
     new PreopenDirectory("/in", directoryOf(sources)),
     outDir,
@@ -187,8 +203,8 @@ export async function compile(loaded, sources, rootFile, test) {
       ]),
     ),
   ];
-  const match = $stripSuffix(rootFile, ".rs");
-  const outFile = match != null ? `/out/${match}.js` : `/out/${rootFile}`;
+  const stem = $stripSuffix(rootFile, ".rs");
+  const outFile = stem != null ? `/out/${stem}.js` : `/out/${rootFile}`;
   const args = ["rust-js"];
   if (test) {
     args.push("--test");
@@ -222,29 +238,34 @@ export async function compile(loaded, sources, rootFile, test) {
   const started = $try(() => wasi.start(instance));
   const t2 = performance.now();
   const ok = started.TAG === "Ok" && started._0 === 0;
-  const exit =
-    started.TAG === "Ok"
-      ? String(started._0)
-      : `trap (${started._0 instanceof Error ? started._0.message : String(started._0)})`;
+  let exit;
+  if (started.TAG === "Ok") {
+    const code = started._0;
+    exit = String(code);
+  } else {
+    const e = started._0;
+    exit = `trap (${e instanceof Error ? e.message : String(e)})`;
+  }
   const files = [];
   if (ok) {
     jsFilesIn(outDir.dir, "", files);
   }
   const memory = instance.exports.memory.buffer;
-  const files$1 = new Map(files);
-  const ref = $borrow(stderr, true);
+  const value = new Map(files);
+  const value$1 = $borrow(stderr, true);
+  let tmp;
+  let tmp$1;
+  let tmp$2;
   try {
-    return {
-      exit,
-      ok,
-      files: files$1,
-      stderr: ref.value.join("\n"),
-      instantiate: t1 - t0,
-      run: t2 - t1,
-      memory: memory.byteLength,
-    };
-  } finally {
-    $unborrow(ref);
+    tmp = value$1.value.join("\n");
+    tmp$1 = t1 - t0;
+    tmp$2 = t2 - t1;
+  } catch (error) {
+    $unborrow(value$1);
+    throw error;
   }
+  const memory$1 = memory.byteLength;
+  $unborrow(value$1);
+  return { exit, ok, files: value, stderr: tmp, instantiate: tmp$1, run: tmp$2, memory: memory$1 };
 }
 //# sourceMappingURL=compiler.js.map

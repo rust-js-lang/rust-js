@@ -11,72 +11,73 @@ function bump(x) {
 }
 
 function main() {
-  const [t, f] = [true, false];
+  const t = true;
+  const f = false;
   let y = 10;
-  let tmp = t;
-  if (!tmp) {
+  let a;
+  if (t) {
+    a = true;
+  } else {
     const x = { value: y };
-    const result = bump(x);
+    a = bump(x);
     y = x.value;
-    tmp = result;
   }
-  const a = tmp;
   console.log(`${a} ${y}`);
-  let tmp$1 = t;
-  if (!tmp$1) {
+  let tmp;
+  if (t) {
+    tmp = true;
+  } else {
     const x = { value: y };
-    const result = bump(x);
+    tmp = bump(x);
     y = x.value;
-    tmp$1 = result;
   }
-  console.log(`${tmp$1}`);
-  let tmp$2 = t;
-  if (!tmp$2) {
-    const x = { value: y };
-    const result = bump(x);
-    y = x.value;
-    tmp$2 = result;
-  }
-  if (tmp$2) {
+  console.log(`${tmp}`);
+  bb23: {
+    if (!t) {
+      const x = { value: y };
+      const value = bump(x);
+      y = x.value;
+      if (!value) {
+        break bb23;
+      }
+    }
     console.log("if ||");
   }
-  let tmp$3 = f;
-  if (tmp$3) {
+  if (f) {
     const x = { value: y };
-    const result = bump(x);
+    const value = bump(x);
     y = x.value;
-    tmp$3 = result;
+    if (value) {
+      console.log("never");
+    }
   }
-  if (tmp$3) {
-    console.log("never");
-  }
-  let tmp$4 = f;
-  if (!tmp$4) {
+  let b;
+  if (f) {
+    b = true;
+  } else {
     const x = { value: y };
-    const result = bump(x);
+    b = bump(x);
     y = x.value;
-    tmp$4 = result;
   }
-  const b = tmp$4;
   console.log(`${b} ${y}`);
   let n = 0;
   while (true) {
-    let tmp = n < 2;
-    if (tmp) {
-      let tmp$1 = f;
-      if (!tmp$1) {
-        const x = { value: y };
-        const result = bump(x);
-        y = x.value;
-        tmp$1 = !result;
+    bb49: {
+      if (n < 2) {
+        if (!f) {
+          const x = { value: y };
+          const value = bump(x);
+          y = x.value;
+          if (value) {
+            break bb49;
+          }
+        }
+        n = (n + 1) | 0;
+        continue;
       }
-      tmp = tmp$1;
     }
-    if (!tmp) {
-      break;
-    }
-    n = (n + 1) | 0;
+    console.log(`${y} ${n}`);
+    return;
   }
-  console.log(`${y} ${n}`);
 }
 //# sourceMappingURL=case.js.map
