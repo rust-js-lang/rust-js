@@ -1388,7 +1388,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `iterator_call` says so in `lazy`.
             IterComb::Zip if lazy => {
                 self.runtime.insert(Helper::LazyZip);
-                Expr::call(Expr::var("$lazyZip"), vec![items, next()])
+                let other = next();
+                // Of two arrays, which MIR's eager chains pair as one,
+                // `$zip(a, b)`, whose import goes where nothing reads it.
+                if super::iterators::is_stepped_items(&items) && super::iterators::is_stepped_items(&other) {
+                    self.runtime.insert(Helper::Zip);
+                }
+                Expr::call(Expr::var("$lazyZip"), vec![items, other])
             }
             IterComb::Zip => {
                 self.runtime.insert(Helper::Zip);

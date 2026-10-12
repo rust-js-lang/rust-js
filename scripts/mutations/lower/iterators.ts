@@ -781,4 +781,16 @@ export const mutations: Mutation[] = [
       "iterator chains from MIR are array methods"
     ]
   },
+  {
+    "name": "eager-zip-lazy",
+    "breaks": "two arrays zipped and collected from MIR stay `Iterator.from($lazyZip($iter(a), $iter(b)))\u2026toArray()`",
+    "file": "src/lower/iterators.rs",
+    "find": "matches!(&zip.kind, js::ExprKind::Var(f) if f == \"$lazyZip\")",
+    "replace": "false",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];

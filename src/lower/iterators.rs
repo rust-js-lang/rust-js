@@ -1703,8 +1703,21 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     let js::ExprKind::Call(_, args) = &at.kind else {
         return None;
     };
-    let ([source], true) = (&args[..], is_stepped_items(at)) else {
-        return None;
+    // Of an array, `$iter(xs)`; or two side by side, `$lazyZip` of each's,
+    // `$zip(a, b)`, whose items pairing them make nothing else do.
+    let source = match &args[..] {
+        [source] if is_stepped_items(at) => source.clone(),
+        [zipped]
+            if is_iterator_from(at)
+                && let js::ExprKind::Call(zip, sides) = &zipped.kind
+                && matches!(&zip.kind, js::ExprKind::Var(f) if f == "$lazyZip")
+                && let [a, b] = &sides[..]
+                && is_stepped_items(a)
+                && is_stepped_items(b) =>
+        {
+            Expr::call(Expr::var("$zip"), vec![iterated(a.clone()), iterated(b.clone())])
+        }
+        _ => return None,
     };
     // Each item's items an array too, all of them, in turn, as Rust's
     // `flat_map` steps each before the next: `xs.flatMap((x) => x.map(g))`.
@@ -1741,7 +1754,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         return None;
     }
     let count = stages.len();
-    let items = (stages.into_iter().rev()).fold(source.clone(), |items, (name, f)| match name {
+    let items = (stages.into_iter().rev()).fold(source, |items, (name, f)| match name {
         "take" => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), f.clone()]),
         "drop" => Expr::call(Expr::member(items, "slice"), vec![f.clone()]),
         "flatMap" => array_method(items, name, flattened.next().expect("made")),
