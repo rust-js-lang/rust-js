@@ -9368,3 +9368,44 @@ pub fn odd_squares(n: u32) -> Vec<u32> {
     if (out === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
   }
 });
+
+// A closure that calls only a method named as a slice's that only reads,
+// `at`, isn't therefore one that does nothing: the crate's own `at`,
+// `P.at(p)`, may print. Its chain runs item by item, as Rust's does; a
+// \`str\`'s, as Rust's types tell, is the array's own methods.
+test("a crate's method named as a slice's reader still runs item by item", async () => {
+  const dir = fixture("named-reader");
+  writeFileSync(join(dir, "lib.rs"), `pub struct P;
+impl P {
+    pub fn at(&self) -> u32 {
+        println!("at");
+        1
+    }
+}
+pub fn run() -> usize {
+    let p = P;
+    let v: Vec<u32> = vec![1, 2];
+    let w: Vec<u32> = v.iter().map(|&x| x + p.at()).filter(|&x| { println!("f{x}"); true }).collect();
+    w.len()
+}
+pub fn a_names(names: Vec<String>) -> usize {
+    let w: Vec<&String> = names.iter().filter(|n| n.starts_with("a")).inspect(|n| println!("{n}")).collect();
+    w.len()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    const logs: string[] = [];
+    const log = console.log;
+    console.log = (line: string) => logs.push(line);
+    try {
+      expect([lib.run(), lib.a_names(["ab", "b", "ac"])]).toEqual([2, 2]);
+    } finally {
+      console.log = log;
+    }
+    expect(logs).toEqual(["at", "f2", "at", "f3", "ab", "ac"]);
+    // A \`str\`'s \`starts_with\` only reads: the array's own \`filter\`.
+    if (out === "mir.js") expect(readFileSync(join(dir, out), "utf8")).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
+  }
+});

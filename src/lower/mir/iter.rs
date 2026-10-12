@@ -572,6 +572,10 @@ fn from_iterator(e: Expr) -> Result<Expr, Expr> {
         {
             Ok(args.pop().expect("one"))
         }
-        kind => Err(Expr { kind, span: e.span }),
+        kind => Err(Expr {
+            reads: false,
+            kind,
+            span: e.span,
+        }),
     }
 }

@@ -924,7 +924,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if matches!(name, "replaceAll" | "replace") {
                     rest[1] = replacement(rest[1].clone());
                 }
-                Expr::call(Expr::member(this, name), rest)
+                Expr::read(this, name, rest)
             }
             Std::StripPrefix | Std::StripSuffix | Std::SplitOnce | Std::RsplitOnce => {
                 let (helper, name) = match known {

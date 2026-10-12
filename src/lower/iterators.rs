@@ -1450,6 +1450,7 @@ pub(super) fn passed_on(f: &Expr) -> Option<Expr> {
             .zip(&names)
             .all(|(a, n)| matches!(&a.kind, js::ExprKind::Var(v) if v == n));
     passed.then(|| Expr {
+        reads: false,
         kind: js::ExprKind::Var(g.clone()),
         span: f.span,
     })
@@ -1856,26 +1857,10 @@ fn counts(f: &Expr) -> bool {
 pub(super) fn does(f: &Expr) -> bool {
     // `Math`'s functions, `Math.imul(x, 2)` of a `u32`'s `*`, do nothing
     // but give their value; not `Math.random()`, which steps its state.
-    // A string's or an array's methods that only read it, `s.indexOf(t)`,
-    // and the runtime's that only read, `$find(s, t)`: their operands'.
-    const READS: &[&str] = &[
-        "indexOf",
-        "lastIndexOf",
-        "includes",
-        "startsWith",
-        "endsWith",
-        "at",
-        "charAt",
-        "charCodeAt",
-        "codePointAt",
-        "slice",
-        "substring",
-        "toUpperCase",
-        "toLowerCase",
-        "trim",
-        "trimStart",
-        "trimEnd",
-    ];
+    // A `str`'s or a slice's methods that only read it, `s.startsWith(t)`,
+    // as Rust's types tell (`Expr::read`), not a crate's own `at`, `P.at(p)`; and
+    // the runtime's that only read, `$find(s, t)`: their operands'.
+    const READS: &[&str] = &["startsWith", "endsWith", "includes", "toUpperCase", "toLowerCase", "at"];
     fn acts(e: &Expr) -> bool {
         let mut e = e.clone();
         e.each_mut(&mut |part| {
@@ -1884,7 +1869,7 @@ pub(super) fn does(f: &Expr) -> bool {
                     js::ExprKind::Member(math, name) if matches!(&math.kind, js::ExprKind::Var(v) if v == "Math") => {
                         name != "random"
                     }
-                    js::ExprKind::Member(_, name) => READS.contains(&name.as_str()),
+                    js::ExprKind::Member(_, name) => part.reads && READS.contains(&name.as_str()),
                     js::ExprKind::Var(helper) => matches!(helper.as_str(), "$find" | "$rfind" | "$byteLen"),
                     _ => false,
                 };
@@ -1962,6 +1947,10 @@ pub(super) fn iterated(e: Expr) -> Expr {
         {
             args.pop().expect("one")
         }
-        kind => Expr { kind, span: e.span },
+        kind => Expr {
+            reads: false,
+            kind,
+            span: e.span,
+        },
     }
 }

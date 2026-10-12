@@ -709,6 +709,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let hole = js::ExprKind::FunctionHole(def_id.index.as_u32());
                 out.push(
                     StmtKind::Expr(Expr {
+                        reads: false,
                         kind: hole,
                         span: js::Span::NONE,
                     })

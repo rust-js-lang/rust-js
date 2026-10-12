@@ -320,6 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 var,
                 Var {
                     place: Expr {
+                        reads: false,
                         kind: js::ExprKind::Function(Box::new(function)),
                         span,
                     },

@@ -29,7 +29,7 @@ pub(in crate::lower) fn flattened_read_values(known: Std, values: Vec<Expr>) -> 
             let items = value();
             Expr::index(items, value())
         }
-        Std::SliceLast => Expr::call(Expr::member(value(), "at"), vec![Expr::int(-1)]),
+        Std::SliceLast => Expr::read(value(), "at", vec![Expr::int(-1)]),
         _ => unreachable!("`reads_flattened`'s"),
     }
 }
@@ -113,7 +113,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = arg();
                 Expr::index(items, arg())
             }
-            Std::SliceLast => Expr::call(Expr::member(arg(), "at"), vec![Expr::int(-1)]),
+            Std::SliceLast => Expr::read(arg(), "at", vec![Expr::int(-1)]),
             // A copy, unless it's an array just written: `vec![3, 4].into()`.
             // Of what it borrows, `to_vec()`'s, each item a clone too.
             Std::ToVec => match arg() {

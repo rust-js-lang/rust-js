@@ -38,6 +38,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         Expr {
+            reads: false,
             kind: js::ExprKind::Object(flat),
             span: made.span,
         }

@@ -35,6 +35,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A function a block makes and gives: itself, there (ADR 0296).
         if self.krate.named_expressions.contains(&def_id) {
             return Expr {
+                reads: false,
                 kind: js::ExprKind::FunctionHole(def_id.index.as_u32()),
                 span: js::Span::NONE,
             };
@@ -46,6 +47,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let export = target.owner.as_ref().unwrap_or(&target.name);
         let reference = if target.module != self.module {
             Expr {
+                reads: false,
                 kind: js::ExprKind::Symbol(super::module_symbol(target.module, export)),
                 span: js::Span::NONE,
             }

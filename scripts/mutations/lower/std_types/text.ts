@@ -256,4 +256,16 @@ export const mutations: Mutation[] = [
       "replacen replaces as many"
     ]
   },
+  {
+    "name": "str-method-unmarked-read",
+    "breaks": "a `str`'s `starts_with` isn't marked as only reading it, and its chain stays an iterator's",
+    "file": "src/lower/std_types/text.rs",
+    "find": "                Expr::read(this, name, rest)",
+    "replace": "                Expr::call(Expr::member(this, name), rest)",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "named as a slice's reader"
+    ]
+  },
 ];

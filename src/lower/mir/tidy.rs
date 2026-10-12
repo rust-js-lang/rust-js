@@ -238,6 +238,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
                         false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, (**test).clone())),
                     };
                     *child = Expr {
+                        reads: false,
                         span: child.span,
                         kind: ExprKind::Binary(Op::And, Box::new(test), shown.clone()),
                     };
@@ -473,7 +474,11 @@ fn unarrayed(e: Expr) -> Expr {
         {
             args.pop().expect("one")
         }
-        kind => Expr { kind, span: e.span },
+        kind => Expr {
+            reads: false,
+            kind,
+            span: e.span,
+        },
     }
 }
 
@@ -2589,7 +2594,11 @@ fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
         }
         ExprKind::Unary(UnaryOp::Not, x) if is_boolean(&x, booleans) => *x,
         ExprKind::Unary(UnaryOp::Not, x) => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, *x)),
-        kind => negate(Expr { kind, span: e.span }),
+        kind => negate(Expr {
+            reads: false,
+            kind,
+            span: e.span,
+        }),
     }
 }
 
@@ -3245,7 +3254,15 @@ fn returned_consts(stmts: &mut Vec<Stmt>, result: &str) {
 fn or_all(a: Expr, b: Expr) -> Expr {
     match b.kind {
         ExprKind::Binary(Op::Or, x, y) => Expr::bin(Op::Or, or_all(a, *x), *y),
-        kind => Expr::bin(Op::Or, a, Expr { kind, span: b.span }),
+        kind => Expr::bin(
+            Op::Or,
+            a,
+            Expr {
+                reads: false,
+                kind,
+                span: b.span,
+            },
+        ),
     }
 }
 
@@ -3258,7 +3275,14 @@ fn not(e: Expr) -> Expr {
             Expr::bin(flipped, not(*a), not(*b))
         }
         ExprKind::Unary(UnaryOp::Not, inner) => *inner,
-        kind => Expr::unary(UnaryOp::Not, Expr { kind, span: e.span }),
+        kind => Expr::unary(
+            UnaryOp::Not,
+            Expr {
+                reads: false,
+                kind,
+                span: e.span,
+            },
+        ),
     }
 }
 
@@ -3373,7 +3397,11 @@ fn truth_of(e: Expr) -> Expr {
         ExprKind::Cond(_, yes, _) => *yes,
         ExprKind::Binary(Op::Or, a, b) => Expr::bin(Op::Or, *a, truth_of(*b)),
         ExprKind::Binary(Op::Coalesce, a, b) => Expr::bin(Op::Or, truth_of(*a), truth_of(*b)),
-        kind => Expr { kind, span },
+        kind => Expr {
+            reads: false,
+            kind,
+            span,
+        },
     }
 }
 
@@ -4354,6 +4382,7 @@ fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>) {
                     && let Some(function) = function.take()
                 {
                     *e = Expr {
+                        reads: false,
                         kind: ExprKind::Function(Box::new(function)),
                         span: e.span,
                     };

@@ -651,6 +651,10 @@ impl StmtKind {
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
+    /// A call of a method of a `str` or a slice, as Rust's types tell,
+    /// `s.startsWith(t)`: never a crate's or a binding's of the same
+    /// name, `P.at(p)`, which may do anything.
+    pub reads: bool,
 }
 
 /// A cross-module reference, resolved before preparation or printing.
@@ -820,7 +824,19 @@ pub enum Op {
 
 impl Expr {
     fn new(kind: ExprKind) -> Expr {
-        Expr { kind, span: Span::NONE }
+        Expr {
+            kind,
+            span: Span::NONE,
+            reads: false,
+        }
+    }
+
+    /// `of.method(args)`, of a `str` or a slice `of` as Rust's types tell.
+    pub fn read(of: Expr, method: &str, args: Vec<Expr>) -> Expr {
+        Expr {
+            reads: true,
+            ..Expr::call(Expr::member(of, method), args)
+        }
     }
 
     pub fn num(n: impl Into<f64>) -> Expr {
@@ -990,6 +1006,7 @@ impl Expr {
                 _ => Op::LooseEq,
             };
             return Expr {
+                reads: false,
                 kind: ExprKind::Binary(ne, a.clone(), b.clone()),
                 span: arg.span,
             };
@@ -1433,7 +1450,11 @@ impl Expr {
             | ExprKind::Import(_)
             | ExprKind::Regex(_) => self.kind.clone(),
         };
-        Some(Expr { kind, span: self.span })
+        Some(Expr {
+            reads: false,
+            kind,
+            span: self.span,
+        })
     }
 
     /// Does this name the variable `name` anywhere in it?
@@ -1503,12 +1524,14 @@ impl Expr {
                 let span = self.span;
                 kept.into_iter()
                     .reduce(|a, b| Expr {
+                        reads: false,
                         kind: ExprKind::Binary(Op::And, Box::new(a), Box::new(b)),
                         span,
                     })
                     .expect("a part")
             }
             ExprKind::Binary(op @ Op::Or, a, b) => Expr {
+                reads: false,
                 kind: ExprKind::Binary(*op, Box::new(a.tested()), Box::new(b.tested())),
                 span: self.span,
             },

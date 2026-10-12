@@ -1174,6 +1174,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let ends = matches!(out.last(), Some(s) if matches!(s.kind, StmtKind::Return(_)));
             let i = after.unwrap_or(out.len() - usize::from(ends));
             let hole = Expr {
+                reads: false,
                 kind: js::ExprKind::FunctionHole(id.index.as_u32()),
                 span: js::Span::NONE,
             };
@@ -4683,7 +4684,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (map, key)
                 }
                 kind => {
-                    let entry = self.spill("entry", Expr { kind, span: entry.span }, out);
+                    let entry = self.spill(
+                        "entry",
+                        Expr {
+                            reads: false,
+                            kind,
+                            span: entry.span,
+                        },
+                        out,
+                    );
                     let parts = Expr::member(entry, "_0");
                     (
                         Expr::index(parts.clone(), Expr::int(0)),

@@ -538,6 +538,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let drop = Expr::member(Expr::member(value.clone(), "impl"), "$drop");
                 out.push(
                     StmtKind::Expr(Expr {
+                        reads: false,
                         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![Expr::member(value, "value")]),
                         span: js_span,
                     })
@@ -551,6 +552,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let js_span = self.js_span(span);
                 out.push(
                     StmtKind::Expr(Expr {
+                        reads: false,
                         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
                         span: js_span,
                     })
@@ -561,6 +563,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Alias(..) if let Some(drop) = self.item_drop(ty) => {
                 out.push(
                     StmtKind::Expr(Expr {
+                        reads: false,
                         kind: js::ExprKind::OptionalCall(Box::new(drop), vec![value]),
                         span: js_span,
                     })
