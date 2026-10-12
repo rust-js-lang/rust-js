@@ -1148,6 +1148,10 @@ pub fn ends() -> u32 {
     let [first, .., last] = [1, 2, 3, 4];
     first * 10 + last
 }
+pub fn made(n: u32) -> u32 {
+    let (x, y) = (pair(n).1, n + 1);
+    x * y
+}
 pub struct Q { pub dir: Option<u32>, pub name: Option<String> }
 fn join(a: Option<&str>, b: Option<&str>) -> String { format!("{a:?}{b:?}") }
 pub fn label(q: &Q) -> String {
@@ -1165,8 +1169,9 @@ pub fn label(q: &Q) -> String {
     expect(js).toContain("  const dir = q.dir;\n  return join(q.name, ");
     // Of an array made for them, each part itself.
     if (out === "mir.js") expect(js).toContain("  const first = 1;\n  const last = 4;\n");
+    if (out === "mir.js") expect(js).toContain("  const x = pair(n)[1];\n  const y = (n + 1) >>> 0;\n");
     const lib = await import(join(dir, out));
-    expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 }), lib.ends()]).toEqual([6, 8, 3, 14]);
+    expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 }), lib.ends(), lib.made(2)]).toEqual([6, 8, 3, 14, 9]);
   }
 });
 
