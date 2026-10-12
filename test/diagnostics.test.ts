@@ -1,9 +1,29 @@
 import { beforeAll, expect, test } from "bun:test";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildCompiler, buildSerde, buildWebapi, compiler, fixture, root, target } from "./support";
 
 beforeAll(buildCompiler, 600_000);
+
+// From MIR (ADR 0364): what it words otherwise, or `null` where it lowers
+// it as Rust runs it, which a `thir-compile-fail` corpus case checks.
+const fromMir: Record<string, string | null> = {
+  "a ref mut bound at two places of a | pattern": null,
+  "a guard of a | pattern binding at two places": null,
+  "next() of a RangeInclusive kept as a value": null,
+  "a temporary with a destructor": null,
+  "an or-pattern whose alternatives move parts no variant tells apart": null,
+  "len of a Peekable": null,
+  "a writer of the crate's that fails": null,
+  "next() of an iterator in a field": null,
+  "a std &mut to a number bound and kept": null,
+  "lending an iterator kept in a field": null,
+  "last of owned items": "`last` of items with a destructor",
+  "len of a chain whose closure prints": "`len()` of a lazy or generic `std::iter::Map`",
+  "size_hint of an iterator whose hint isn't exact": "`size_hint()` of a `std::str::Chars<'_>`",
+  "peekable of a lazy iterator": "`peekable` of a `C`",
+  "assigning to a Value's key": "`std::ops::IndexMut::index_mut`",
+};
 
 for (const [name, source, message, crate] of [
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
@@ -152,17 +172,27 @@ for (const [name, source, message, crate] of [
     writeFileSync(input, source);
     const crates = crate === "js" ? (buildWebapi(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
     const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crates.length ? ["--", ...crates] : [])];
-    const rejected = Bun.spawnSync(args);
-    expect(rejected.exitCode).not.toBe(0);
-    expect(rejected.stderr.toString()).toContain(message);
-    expect(rejected.stderr.toString()).toContain("lib.rs:");
-    expect(existsSync(output)).toBe(false);
-    expect(existsSync(manifest)).toBe(false);
-    writeFileSync(output, "last successful build");
-    writeFileSync(output + ".map", "previous map");
-    expect(Bun.spawnSync(args).exitCode).not.toBe(0);
-    expect(readFileSync(output, "utf8")).toBe("last successful build");
-    expect(readFileSync(output + ".map", "utf8")).toBe("previous map");
+    for (const [expected, mode] of [[message, {}], [name in fromMir ? fromMir[name] : message, { RUST_JS_MIR: "1" }]] as const) {
+      const env = { ...process.env, ...mode };
+      rmSync(output, { force: true });
+      rmSync(output + ".map", { force: true });
+      rmSync(manifest, { force: true });
+      const rejected = Bun.spawnSync(args, { env });
+      if (expected === null) {
+        expect(rejected.exitCode, rejected.stderr.toString()).toBe(0);
+        continue;
+      }
+      expect(rejected.exitCode).not.toBe(0);
+      expect(rejected.stderr.toString()).toContain(expected);
+      expect(rejected.stderr.toString()).toContain("lib.rs:");
+      expect(existsSync(output)).toBe(false);
+      expect(existsSync(manifest)).toBe(false);
+      writeFileSync(output, "last successful build");
+      writeFileSync(output + ".map", "previous map");
+      expect(Bun.spawnSync(args, { env }).exitCode).not.toBe(0);
+      expect(readFileSync(output, "utf8")).toBe("last successful build");
+      expect(readFileSync(output + ".map", "utf8")).toBe("previous map");
+    }
   });
 }
 

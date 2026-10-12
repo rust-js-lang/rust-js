@@ -339,6 +339,16 @@ temporaries_taken_apart.rs
 text_aliases.rs
 text_edits.rs
 text_predicates.rs
+thir_refused_failing_writer.rs
+thir_refused_field_iterator_next.rs
+thir_refused_kept_std_mut_number.rs
+thir_refused_lent_field_iterator.rs
+thir_refused_let_chain_temporary_drop.rs
+thir_refused_or_pattern_guard.rs
+thir_refused_or_pattern_moved_part.rs
+thir_refused_or_pattern_ref_mut.rs
+thir_refused_peekable_len.rs
+thir_refused_range_inclusive_next.rs
 thread_local_borrow_inside.rs
 thread_local_syntax.rs
 trait_default_bounds.rs

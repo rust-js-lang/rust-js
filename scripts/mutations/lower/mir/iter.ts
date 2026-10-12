@@ -582,4 +582,12 @@ export const mutations: Mutation[] = [
     replace: "        match self.range_kind(ty) {\n",
     tests: ["test/lowering.test.ts","-t","takes the crate's own from behind"],
   },
+  {
+    name: "mir-len-closure-type-shown",
+    breaks: "MIR's refused `len()` names its closures' types, where they're written",
+    file: "src/lower/mir/iter.rs",
+    find: "                        ty::Adt(adt, _) => self.tcx.def_path_str(adt.did()),\n",
+    replace: "",
+    tests: ["test/diagnostics.test.ts","-t","len of a chain whose closure prints"],
+  },
 ];

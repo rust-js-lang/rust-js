@@ -252,6 +252,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         for param in &self.thir.params {
             self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;
         }
+        // A trait's method is called through a dictionary, whose `&mut` to a
+        // generic iterator is a handle on it, not what it steps (ADRs 0071,
+        // 0099): refused, as THIR refuses it; a range so given threw.
+        if self.tcx.trait_of_assoc(def_id).is_some() || self.tcx.trait_impl_of_assoc(def_id).is_some() {
+            for param in &self.thir.params {
+                if let ty::Ref(_, inner, ty::Mutability::Mut) = *param.ty.kind()
+                    && self.is_generic_iter(inner)
+                {
+                    let message = format!("`&mut` to a `{inner}` of a trait's method");
+                    return Err(self.unsupported(param.ty_span.unwrap_or(span), &message));
+                }
+            }
+        }
         // Its dictionaries, for its bounds, after its parameters (ADR 0049).
         let evidence = self.evidence_params(def_id);
         let (mut params, mut out) = self.mir_function(mir, None)?;
@@ -342,6 +355,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mir_body = &mir.body;
         // What THIR refuses of its closures holding what has a destructor.
         self.check_closure_drops()?;
+        // `std::ptr::eq` of a Rust value, whose pointer MIR makes first,
+        // refused as THIR refuses it (ADR 0285).
+        for e in self.thir.exprs.iter() {
+            if let thir::ExprKind::Call { fun, .. } = e.kind
+                && let Some((id, args)) = fn_def(self.thir[fun].ty)
+                && self.recognition().classify(id, args) == Some(Std::PtrEq)
+                && let Some(of) = args.types().next()
+                && !self.is_js_object(of)
+            {
+                return Err(self.tcx.dcx().span_err(e.span, super::calls::ptr_eq_refused(of)));
+            }
+        }
         let outer_falsy = std::mem::take(&mut self.locals.falsy);
         let outer_tested = std::mem::take(&mut self.locals.tested);
         let outer_captured = std::mem::take(&mut self.locals.captured);
@@ -3656,6 +3681,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A borrow only for a slice's length, a slice pattern's test: the
             // slice, whose `PtrMetadata` is its `length`.
             Rvalue::RawPtr(mir::RawPtrKind::FakeForPtrMetadata, place) => self.mir_place(state, *place, span, out)?,
+            // A pointer to a JS object, `std::ptr::eq`'s: the object (ADR 0285).
+            Rvalue::RawPtr(_, place) if self.is_js_object(place.ty(decls, tcx).ty) => {
+                self.mir_place(state, *place, span, out)?
+            }
             _ => return Err(self.unsupported(span, "this value, from its MIR")),
         }))
     }
@@ -5902,6 +5931,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Number(NumOp::ToIntUnchecked) => {
                 let value = self.value_expr(values.next().expect("the float"), span)?;
                 self.cast(value, arg_tys[0], output, span)?
+            }
+            // Whether two JS objects are one, `a === b` (ADR 0285); of a Rust
+            // value, refused before (`mir_function`).
+            Std::PtrEq => {
+                let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?.into_iter();
+                let (a, b) = (exprs.next().expect("a"), exprs.next().expect("b"));
+                Expr::bin(Op::Eq, a, b)
             }
             // What was there, taken out, as THIR's.
             Std::DequeRemove => {

@@ -36,6 +36,13 @@ pub(super) struct Call<'c, 'tcx> {
     pub(super) span: Span,
 }
 
+/// Why `std::ptr::eq` of a Rust value, `of`, is refused (ADR 0285).
+pub(super) fn ptr_eq_refused(of: Ty<'_>) -> String {
+    format!(
+        "`std::ptr::eq` of a `{of}`: rust-js shares a copy no one changes and writes a number as its value, so where a Rust value is has no JS counterpart; compare the values, or references to JS objects"
+    )
+}
+
 /// Arguments given to JS: a trailing `undefined` is one it's given, which
 /// no pass leaves out, as what it calls may count its arguments,
 /// `Math.max(1, undefined)` (ADR 0330).
@@ -369,12 +376,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// number is its value, so a place's address isn't anything of JS's.
     fn ptr_eq(&mut self, of: Ty<'tcx>, args: &[ExprId], span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         if !self.is_js_object(of) {
-            return Err(self.tcx.dcx().span_err(
-                span,
-                format!(
-                    "`std::ptr::eq` of a `{of}`: rust-js shares a copy no one changes and writes a number as its value, so where a Rust value is has no JS counterpart; compare the values, or references to JS objects"
-                ),
-            ));
+            return Err(self.tcx.dcx().span_err(span, ptr_eq_refused(of)));
         }
         let a = self.expr(self.pointed_to(args[0]), out)?;
         let b = self.expr(self.pointed_to(args[1]), out)?;

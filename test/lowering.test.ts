@@ -893,11 +893,13 @@ pub fn made() -> (bool, bool) {
     (core::ptr::eq(a, a), std::ptr::eq(a as *const Date, b))
 }
 `);
-  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
-  expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain("return a === b;");
-  const lib = await import(join(dir, "lib.js"));
-  const d = new Date(0);
-  expect([lib.same(d, d), lib.same(d, new Date(0)), ...lib.made()]).toEqual([true, false, true, false]);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain("return a === b;");
+    const lib = await import(join(dir, out));
+    const d = new Date(0);
+    expect([lib.same(d, d), lib.same(d, new Date(0)), ...lib.made()]).toEqual([true, false, true, false]);
+  }
 });
 
 // ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's

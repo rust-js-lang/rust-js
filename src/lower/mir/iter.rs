@@ -181,9 +181,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::call(Expr::member(Expr::var("Math"), "max"), vec![count, Expr::int(0)])
                 }
                 _ => {
+                    // Its type's name, not its closures', which name where they're written.
+                    let shown = match iter_ty.kind() {
+                        ty::Adt(adt, _) => self.tcx.def_path_str(adt.did()),
+                        _ => iter_ty.to_string(),
+                    };
                     return Err(self.unsupported(
                         span,
-                        &format!("`{name}()` of a lazy or generic `{iter_ty}`, from its MIR"),
+                        &format!("`{name}()` of a lazy or generic `{shown}`, from its MIR"),
                     ));
                 }
             }));
