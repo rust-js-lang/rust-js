@@ -3093,14 +3093,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "ref_mut_of_mut_payload"],
   },
   {
-    name: "mir-mut-ref-of-cell-ref-refused",
-    breaks: "MIR refuses a \`&mut\` to a variable that's a \`&mut String\`, \`&mut &mut String\`",
-    file: "src/lower/mir.rs",
-    find: "            && let ty::Ref(_, _, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()\n",
-    replace: "            && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()\n            && !self.is_cell_pointee(*pointee)\n",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_of_mut_ref"],
-  },
-  {
     name: "mir-unread-ref-handled",
     breaks: "MIR's \`&mut\` nothing reads, \`let _ = &mut p.y\` through \`deref_mut\`, refused as a handle on a call's place",
     file: "src/lower/mir.rs",

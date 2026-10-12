@@ -2374,7 +2374,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && state.locals.writes[place.local] == 1
             && let Rvalue::Ref(_, BorrowKind::Mut { .. }, target) = rvalue
             && target.projection.is_empty()
-            && let ty::Ref(_, _, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
+            && let ty::Ref(_, pointee, ty::Mutability::Mut) = state.body.local_decls[target.local].ty.kind()
+            && !self.is_cell_pointee(*pointee)
         {
             let list = self.mir_place(state, *target, span, out)?;
             if matches!(list.kind, js::ExprKind::Var(_)) {

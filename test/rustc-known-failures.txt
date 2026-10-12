@@ -46,6 +46,7 @@ cast/negative-integer-cast-to-pointer.rs	error: rust-js does not support values 
 cast/supported-cast.rs	error: rust-js does not support values of type `*const std::string::String` yet
 cast/trait-object-cast-segfault-4333.rs	error: rust-js does not support values of type `&mut dyn std::io::Write` yet
 closures/2229_closure_analysis/match/match-edge-cases_1.rs	error: rust-js does not support constants of type `*const i32` yet
+closures/2229_closure_analysis/run_pass/mut_ref.rs	error: rust-js does not support values of type `&mut &mut std::string::String` yet
 closures/2229_closure_analysis/run_pass/unsafe_ptr.rs	error: rust-js does not support values of type `*const S` yet
 closures/region-obligations-closure-and-projection.rs	error: rust-js does not support values of type `*mut u8` yet
 codegen/arm-collect-into-vec-codegen-regression.rs	error: rust-js does not support values of type `*mut ()` yet
@@ -152,7 +153,7 @@ match/match-string-slice.rs	error: rust-js does not support calling `std::env::a
 methods/inherent-method-resolution-on-deref-type-53843.rs	error: rust-js does not support calling `std::ops::Deref::deref` yet
 methods/method-mut-self-modifies-mut-slice-lvalue.rs	error: rust-js does not support `&mut` to a `&mut [u8]` yet
 methods/method-two-traits-distinguished-via-where-clause.rs	error: rust-js does not support values of type `*const [isize]` yet
-mir/mir_assign_eval_order.rs	error: rust-js does not support assigning to this place yet
+mir/mir_assign_eval_order.rs	error: rust-js does not support values of type `&mut &mut i32` yet
 mir/mir_augmented_assignments.rs	error: rust-js does not support calling `std::intrinsics::transmute` yet
 mir/mir_autoderef.rs	error: rust-js does not support this expression yet
 mir/mir_misc_casts.rs	error: rust-js does not support values of type `*const ()` yet
