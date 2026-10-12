@@ -21,8 +21,8 @@ pub(super) struct Hints<'h> {
     /// Where the program writes each `if`'s condition, twice, and each
     /// `match` of a guarded arm and its guard.
     pub(super) conditions: &'h [(js::Span, js::Span)],
-    /// Where each loop is written, and whether as a `while`.
-    pub(super) loops: &'h [(js::Span, bool)],
+    /// Where each loop is written, whether as a `while`, and its label.
+    pub(super) loops: &'h [(js::Span, bool, Option<String>)],
     /// Where each `if` the program wrote of a `continue` tests: one alone,
     /// or one that ends what it does.
     pub(super) continues: &'h [js::Span],
@@ -260,6 +260,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
             }
         }
     });
+    js::statement_lists(body, &mut |stmts| named_labels(stmts, written));
     // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
     // `Expr::unary` makes it, `t !== "pre"`.
     js::each_expr_mut(body, &mut |e| {
@@ -322,6 +323,8 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
     let StmtKind::While { label, cond, body } = &looped.kind else {
         return None;
     };
+    // Where the program wrote it, which names its label (`named_labels`).
+    let span = looped.span;
     if !matches!(cond.kind, ExprKind::Bool(true)) {
         return None;
     }
@@ -352,11 +355,18 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
     {
         return None;
     }
+    // The other shape inside a block, `l: { if (t != null) { body } } exit`,
+    // whose `break l` in the body goes to the exit: the loop's own `break`,
+    // which the exit follows, labeled `l`, as a `break 'outer` is written.
+    let (second, block) = match &second.kind {
+        StmtKind::Labeled(l, within) if let [only] = within.as_slice() => (only, Some(l.clone())),
+        _ => (second, None),
+    };
     // When it's done, the exit; else, the body, which in the other shape goes
     // on to the exit, out of the loop.
     let (exit, mut inner, falls_out) = match &second.kind {
-        StmtKind::If(test, then, None) if absent(test, item) => (then.clone(), rest.to_vec(), false),
-        StmtKind::If(test, then, Some(other)) if absent(test, item) && rest.is_empty() => {
+        StmtKind::If(test, then, None) if absent(test, item) && block.is_none() => (then.clone(), rest.to_vec(), false),
+        StmtKind::If(test, then, Some(other)) if absent(test, item) && rest.is_empty() && block.is_none() => {
             (then.clone(), other.clone(), false)
         }
         StmtKind::If(test, then, None) if present(test, item) => (rest.to_vec(), then.clone(), true),
@@ -365,9 +375,19 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
     if !exit.last().is_some_and(ends) || breaks(&inner, label.as_deref()) {
         return None;
     }
-    if falls_out {
+    // Going on to the exit where it ends, unless it leaves already, a
+    // `continue` say: a `break`.
+    if falls_out && !inner.last().is_some_and(ends) {
         inner.push(StmtKind::Break(None).at(js::Span::NONE));
     }
+    let label = match (label, block) {
+        (Some(own), Some(block)) => {
+            relabeled(&mut inner, &block, own);
+            Some(own.clone())
+        }
+        (label, block) => label.clone().or(block),
+    };
+    let label = &label;
     let (pattern, mutable, taken) = binding(&inner, item)?;
     let body = inner[taken..].to_vec();
     if js::mentions_in(&body, item) > 0 || js::mentions_in(&exit, item) > 0 {
@@ -426,12 +446,12 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
                 .into_iter()
                 .map(|(n, e)| StmtKind::Const(n, e).at(js::Span::NONE))
                 .collect();
-            out.push(looped.at(js::Span::NONE));
+            out.push(looped.at(span));
             out.extend(exit);
             return Some(out);
         }
     };
-    let mut out = vec![looped.at(js::Span::NONE)];
+    let mut out = vec![looped.at(span)];
     out.extend(exit);
     Some(out)
 }
@@ -455,15 +475,10 @@ fn unarrayed(e: Expr) -> Expr {
 /// `while (true) { if (t) { exit } rest }`, `exit` leaving, and nothing in
 /// `rest` leaving the loop: `while (!t) { rest } exit`, as the program
 /// wrote it; of an `exit` that ends with the loop's `break`, without it.
-fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool)]) {
+fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Option<String>)]) {
     // The loop the program wrote that starts where it does, innermost, a
     // `while`: not a `loop` it wrote, which stays `while (true)`.
-    let written_while = |span: js::Span| {
-        (loops.iter())
-            .filter(|(l, _)| !span.is_none() && l.lo <= span.lo && span.hi <= l.hi)
-            .min_by_key(|(l, _)| l.hi - l.lo)
-            .is_some_and(|&(_, w)| w)
-    };
+    let written_while = |span: js::Span| written_loop(loops, span).is_some_and(|&(_, w, _)| w);
     let mut i = 0;
     while i < stmts.len() {
         if !written_while(stmts[i].span) {
@@ -1677,6 +1692,23 @@ fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::
 /// for an iterator helper alone, which nothing else steps: `xs.values()
 /// .filter(f)`, the array's own iterator.
 fn array_values(e: &mut Expr) {
+    // Each item with its index, `enumerate()`'s `.map((x, i) => [i, x])`:
+    // the array's `entries()`, as THIR's.
+    if let ExprKind::Call(callee, args) = &e.kind
+        && let ExprKind::Member(it, name) = &callee.kind
+        && name == "map"
+        && let [pair] = &args[..]
+        && pairs_index(pair)
+        && crate::lower::iterators::is_stepped_items(it)
+        && let ExprKind::Call(_, items) = &it.kind
+        && let [items] = &items[..]
+    {
+        *e = Expr {
+            span: e.span,
+            ..Expr::call(Expr::member(items.clone(), "entries"), Vec::new())
+        };
+        return;
+    }
     if let ExprKind::Call(callee, _) = &mut e.kind
         && let ExprKind::Member(it, name) = &mut callee.kind
         && matches!(
@@ -1690,6 +1722,29 @@ fn array_values(e: &mut Expr) {
         let items = args.pop().expect("one");
         **it = Expr::call(Expr::member(items, "values"), Vec::new());
     }
+}
+
+/// Whether `f` is `(x, i) => [i, x]`, an item paired with its index.
+fn pairs_index(f: &Expr) -> bool {
+    let var = |e: &Expr| match &e.kind {
+        ExprKind::Var(v) => Some(v.clone()),
+        _ => None,
+    };
+    if let ExprKind::Arrow(params, body) = &f.kind
+        && let [x, i] = &params[..]
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(pair)),
+                ..
+            },
+        ] = &body[..]
+        && let ExprKind::Array(items) = &pair.kind
+        && let [first, second] = &items[..]
+    {
+        return x.name().is_some_and(|x| var(second).as_deref() == Some(x))
+            && i.name().is_some_and(|i| var(first).as_deref() == Some(i));
+    }
+    false
 }
 
 /// `let t; try { t = a; } catch { t = b; } x = t;`, a temporary each way
@@ -4628,6 +4683,57 @@ fn drop_tail(stmts: &mut Vec<Stmt>, jump: &StmtKind) {
         }
         _ => {}
     }
+}
+
+/// Each `break from` and `continue from` in `stmts`, however deep, `to`'s.
+fn relabeled(stmts: &mut Vec<Stmt>, from: &str, to: &str) {
+    js::statement_lists(stmts, &mut |list| {
+        for stmt in list.iter_mut() {
+            if let StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) = &mut stmt.kind
+                && l == from
+            {
+                *l = to.to_string();
+            }
+        }
+    });
+}
+
+/// The loop the program wrote that starts where `span` does, innermost.
+fn written_loop(
+    loops: &[(js::Span, bool, Option<String>)],
+    span: js::Span,
+) -> Option<&(js::Span, bool, Option<String>)> {
+    (loops.iter())
+        .filter(|(l, ..)| !span.is_none() && l.lo <= span.lo && span.hi <= l.hi)
+        .min_by_key(|(l, ..)| l.hi - l.lo)
+}
+
+/// A loop MIR labels by its block, `bb2: for (…)`, the program labeled:
+/// its label, `rows: for (…)`, where no loop around it has that one.
+fn named_labels(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)]) {
+    fn walk(stmts: &mut [Stmt], loops: &[(js::Span, bool, Option<String>)], around: &mut Vec<String>) {
+        for stmt in stmts.iter_mut() {
+            let span = stmt.span;
+            let (label, body) = match &mut stmt.kind {
+                StmtKind::While { label, body, .. }
+                | StmtKind::ForOf { label, body, .. }
+                | StmtKind::For { label, body, .. } => (label, body),
+                _ => continue,
+            };
+            if let Some(from) = label.clone()
+                && from.starts_with("bb")
+                && let Some((_, _, Some(to))) = written_loop(loops, span)
+                && !around.contains(to)
+            {
+                relabeled(body, &from, to);
+                *label = Some(to.clone());
+            }
+            around.push(label.clone().unwrap_or_default());
+            walk(body, loops, around);
+            around.pop();
+        }
+    }
+    walk(stmts, loops, &mut Vec::new());
 }
 
 /// A label nothing breaks to or continues: a block's statements in its

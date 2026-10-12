@@ -1558,8 +1558,8 @@ export const mutations: Mutation[] = [
     "name": "array-values-kept-stepped",
     "breaks": "an array's `$iter` an adapter alone steps stays `$iter(xs).filter(..)`, not `xs.values().filter(..)`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "        && crate::lower::iterators::is_stepped_items(it)\n",
-    "replace": "        && false\n",
+    "find": "        && crate::lower::iterators::is_stepped_items(it)\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
+    "replace": "        && false\n        && let ExprKind::Call(_, args) = &mut it.kind\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -1708,6 +1708,66 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "division by a constant from MIR"
+    ]
+  },
+  {
+    "name": "mir-enumerate-mapped",
+    "breaks": "`iter().enumerate()` of a slice from MIR is `xs.values().map((x, i) => [i, x])`, not `xs.entries()`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        && pairs_index(pair)\n",
+    "replace": "        && false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
+    ]
+  },
+  {
+    "name": "mir-labels-by-block",
+    "breaks": "a loop the program labeled `'rows` from MIR is labeled by its block, `bb2`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    js::statement_lists(body, &mut |stmts| named_labels(stmts, written));\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
+    ]
+  },
+  {
+    "name": "mir-for-of-span-lost",
+    "breaks": "a `for\u2026of` made of MIR's loop has no span, so its label isn't the program's",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    let mut out = vec![looped.at(span)];\n",
+    "replace": "    let mut out = vec![looped.at(js::Span::NONE)];\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
+    ]
+  },
+  {
+    "name": "mir-labeled-break-loop-kept",
+    "breaks": "a `break 'outer` out of an inner loop from MIR leaves the outer a `while (true)` of `$next`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        StmtKind::Labeled(l, within) if let [only] = within.as_slice() => (only, Some(l.clone())),\n",
+    "replace": "        StmtKind::Labeled(_, within) if let [_] = within.as_slice() => (second, None::<String>),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
+    ]
+  },
+  {
+    "name": "mir-for-of-break-after-leaving",
+    "breaks": "a `for\u2026of` body from MIR that ends leaving, `continue`, gets a `break` after it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    if falls_out && !inner.last().is_some_and(ends) {\n",
+    "replace": "    if falls_out {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
     ]
   },
 ];

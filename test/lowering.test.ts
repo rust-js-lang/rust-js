@@ -6264,6 +6264,67 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }
 });
 
+// A slice's items with their indices, `iter().enumerate()`, from MIR are
+// the array's `entries()`, as THIR's, and a loop's label the program's
+// own; a `break 'outer` out of the loop inside keeps both loops.
+test("nested loops from MIR read as written: entries, labels, and a labeled break", async () => {
+  const dir = fixture("mir-nested-loops");
+  writeFileSync(join(dir, "lib.rs"), `pub fn place(grid: &[Vec<u32>]) -> Option<(usize, usize)> {
+    for (r, row) in grid.iter().enumerate() {
+        for (c, &v) in row.iter().enumerate() {
+            if v == 4 {
+                return Some((r, c));
+            }
+        }
+    }
+    None
+}
+pub fn skip(grid: &[Vec<u32>]) -> u32 {
+    let mut n = 0;
+    'rows: for row in grid {
+        for &v in row {
+            if v == 0 {
+                continue 'rows;
+            }
+            n += v;
+        }
+    }
+    n
+}
+pub fn first(grid: &[Vec<u32>]) -> Option<u32> {
+    let mut found = None;
+    'outer: for row in grid {
+        for &v in row {
+            if v > 3 {
+                found = Some(v);
+                break 'outer;
+            }
+        }
+    }
+    found
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("  for (const [r, row] of grid.entries()) {\n    for (const [c, v] of row.entries()) {\n");
+    expect(js).toContain("  rows: for (const row of grid) {");
+    expect(js).toContain("        continue rows;");
+    expect(js).toContain(`  outer: for (const row of grid) {
+    for (const v of row) {
+      if (v > 3) {
+        found = v;
+        break outer;
+      }
+    }
+  }
+  return found;`);
+    const lib = await import(join(dir, out));
+    const grid = [[1, 2], [0, 5], [3, 4]];
+    expect([lib.place(grid), lib.place([[1]]), lib.skip(grid), lib.first(grid), lib.first([[1]])]).toEqual([[2, 1], undefined, 10, 5, undefined]);
+  }
+});
+
 // MIR's checks of a `%` or `/`, `2 === -1` of a constant divisor, are
 // none: the division checks what can fail, `$rem(a, b, min)`, as THIR's.
 test("a division by a constant from MIR has no overflow check, as THIR's", async () => {
