@@ -166,6 +166,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
     returned_in_branches(body, result);
+    // A block a loop's body ends in, the function's value made in it, `?`'s.
+    js::statement_lists(body, &mut |stmts| returned_from_block(stmts, result));
     // Each `let` where it's first named, a `const` where it's written once.
     js::statement_lists(body, &mut sunk_lets);
     declarations(body);
@@ -303,6 +305,14 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
+    // Its jumps then, of the loop they're now in, unnamed.
+    let mut headed = false;
+    js::statement_lists(body, &mut |stmts| headed |= while_heads(stmts));
+    if headed {
+        js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
+        js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
+        js::statement_lists(body, &mut unlabeled);
+    }
     // For the source map: a `return` given the value it returns, at MIR's
     // end of the body, which the map has nothing of, where that value was
     // written; an `if`, where its test says, `if c` or its arm's pattern.
@@ -1309,6 +1319,70 @@ fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
             label.is_some_and(|l| names_break(body, l))
         }
         StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => breaks(a, label) || breaks(b, label),
+        _ => false,
+    })
+}
+
+/// `while (true) { if (c) { body; continue; } rest }`, a loop MIR tests at
+/// its head whose `rest`, what's after it, always leaves elsewhere: `while
+/// (c) { body } rest`, as THIR writes it, where nothing else jumps in it
+/// to the loop, as `rest`'s jumps would go to another once it's outside.
+fn while_heads(stmts: &mut Vec<Stmt>) -> bool {
+    let mut headed = false;
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::While { label, cond, body } = &stmts[i].kind
+            && matches!(cond.kind, ExprKind::Bool(true))
+            && let [first, rest @ ..] = body.as_slice()
+            && let StmtKind::If(test, then, None) = &first.kind
+            && let [then @ .., last] = then.as_slice()
+            && matches!(&last.kind, StmtKind::Continue(l) if l.is_none() || l == label)
+            && !own_jumps(then, label.as_deref())
+            && !own_jumps(rest, label.as_deref())
+            && rest.last().is_some_and(ends)
+        {
+            let span = stmts[i].span;
+            let looped = StmtKind::While {
+                label: label.clone(),
+                cond: test.clone(),
+                body: then.to_vec(),
+            };
+            let rest = rest.to_vec();
+            stmts.splice(i..=i, std::iter::once(looped.at(span)).chain(rest));
+            headed = true;
+        }
+        i += 1;
+    }
+    headed
+}
+
+/// Whether `stmts` jump for loop `label`: an unnamed `break` or `continue`
+/// of its own, or one that names it, however deep.
+fn own_jumps(stmts: &[Stmt], label: Option<&str>) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(None) | StmtKind::Continue(None) => true,
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => Some(l.as_str()) == label,
+        StmtKind::If(_, a, b) => own_jumps(a, label) || b.as_deref().is_some_and(|b| own_jumps(b, label)),
+        StmtKind::Labeled(_, body) => own_jumps(body, label),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => own_jumps(a, label) || own_jumps(b, label),
+        // In a loop of its own, one that names it.
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            label.is_some_and(|l| names_jump(body, l))
+        }
+        _ => false,
+    })
+}
+
+/// Whether a `break` or a `continue` in `stmts`, however deep, names `label`.
+fn names_jump(stmts: &[Stmt], label: &str) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(Some(l)) | StmtKind::Continue(Some(l)) => l == label,
+        StmtKind::If(_, a, b) => names_jump(a, label) || b.as_deref().is_some_and(|b| names_jump(b, label)),
+        StmtKind::While { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::Labeled(_, body) => names_jump(body, label),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_jump(a, label) || names_jump(b, label),
         _ => false,
     })
 }
@@ -4702,6 +4776,10 @@ fn made_at_ends(stmts: &[Stmt], result: &str) -> bool {
     match stmts.last().map(|s| &s.kind) {
         Some(StmtKind::Assign(target, _)) => matches!(&target.kind, ExprKind::Var(r) if r == result),
         Some(StmtKind::Return(_) | StmtKind::Throw(_)) => true,
+        // Or that never goes on: a loop it never leaves.
+        Some(StmtKind::While { cond, body, label }) => {
+            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
+        }
         Some(StmtKind::If(_, then, Some(otherwise))) => made_at_ends(then, result) && made_at_ends(otherwise, result),
         _ => false,
     }

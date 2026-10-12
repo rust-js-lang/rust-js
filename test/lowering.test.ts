@@ -5539,6 +5539,71 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
+// A `?` and a `return` in a loop, and a `while` in it: each `return` where
+// it's written, and the `while` tested at its head, as THIR writes them,
+// not MIR's one exit, a labeled block, nor a `while (true)`.
+test("returns in a loop are where they're written", async () => {
+  const dir = fixture("loop-returns");
+  writeFileSync(join(dir, "lib.rs"), `pub fn numbers(src: &str) -> Result<Vec<f64>, String> {
+    let chars: Vec<char> = src.chars().collect();
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        if c == ' ' {
+            i += 1;
+            continue;
+        }
+        if c.is_ascii_digit() {
+            let start = i;
+            while i < chars.len() && chars[i].is_ascii_digit() {
+                i += 1;
+            }
+            let text: String = chars[start..i].iter().collect();
+            out.push(text.parse::<f64>().map_err(|_| format!("bad {text}"))?);
+            continue;
+        }
+        return Err(format!("unexpected {c}"));
+    }
+    Ok(out)
+}
+
+pub fn scan(v: &[u32]) -> u32 {
+    let mut i = 0;
+    let mut again = true;
+    for &x in v {
+        'inner: loop {
+            if i < x {
+                i += 1;
+                continue;
+            }
+            for _ in 0..2 {
+                if again {
+                    again = false;
+                    i = 0;
+                    continue 'inner;
+                }
+            }
+            return i * 10 + x;
+        }
+    }
+    0
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    const numbers = js.slice(0, js.indexOf("function scan"));
+    expect(numbers).not.toMatch(/\bbb\d+\b/);
+    expect(numbers).not.toContain("while (true)");
+    expect(js).toContain("while (i < chars.length && /^[0-9]$/.test($index(chars, i))) {");
+    const lib = await import(join(dir, out));
+    expect([lib.numbers("12 3"), lib.numbers("1x")]).toEqual([{ TAG: "Ok", _0: [12, 3] }, { TAG: "Err", _0: "unexpected x" }]);
+    // A loop whose rest jumps to it, from a loop of its own, stays one.
+    expect([lib.scan([3]), lib.scan([])]).toEqual([33, 0]);
+  }
+});
+
 // `into()` an untagged enum, whose `from` is the variant of its argument,
 // is the value (ADR 0214), from MIR as from THIR.
 test("into an untagged enum is the value", async () => {
