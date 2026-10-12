@@ -5170,6 +5170,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
                 self.range_edit(op, range, rest)
             }
+            // A standard stream's, `writeln!(io::stderr(), ..)`, THIR's.
+            Std::Stream(op) => {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.flush(state, out)?;
+                self.stream_values(op, exprs, span, out)
+            }
             // A `Wrapping`'s operator, `a * Wrapping(2)`, `w += x`, THIR's.
             Std::WrappingOp(op, assign) => {
                 let target = match (assign, values.next().expect("the `Wrapping`")) {

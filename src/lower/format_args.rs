@@ -6,6 +6,7 @@ use super::calls::Call;
 use super::display::{Pretty, append_written};
 use super::fn_def;
 use super::format_spec::Spec;
+use super::recognition::StreamOp;
 use super::{FnCx, R, Std};
 use crate::js;
 use crate::js::StmtKind;
@@ -431,6 +432,40 @@ pub(super) fn decode_template(template: &[u8]) -> Option<Vec<Piece>> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A standard stream's, of its arguments' values: it holds nothing JS
+    /// needs, and a write to one is `print!`'s (ADR 0132). THIR's and MIR's.
+    pub(in crate::lower) fn stream_values(
+        &mut self,
+        op: StreamOp,
+        values: Vec<Expr>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> Expr {
+        let mut values = values.into_iter();
+        if op != StreamOp::Open
+            && let Some(on) = values.next()
+            && on.has_effects()
+        {
+            out.push(StmtKind::Expr(on).at(self.js_span(span)));
+        }
+        match op {
+            StreamOp::Write { error } => {
+                let text = values.next().expect("a write's text");
+                match without_newline(text) {
+                    Ok(line) => Expr::call(
+                        Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
+                        vec![line],
+                    ),
+                    Err(text) => {
+                        self.runtime.insert(Helper::Print);
+                        Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text])
+                    }
+                }
+            }
+            _ => Expr::undefined(),
+        }
+    }
+
     /// `format!`, `to_string()` and `print!` of what may fail (ADR 0187): what
     /// each writes, in a `try`. A `fmt::Error` is std's panic, each its own,
     /// and `print!` writes what was written before it, as std's does.

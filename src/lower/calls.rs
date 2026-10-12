@@ -4,7 +4,7 @@ use super::bindings::{JsForm, is_binding, is_omitted, js_form, nullable_params};
 use super::display::append_written;
 use super::fn_def;
 use super::recognition::{
-    Catching, FmtResultAnswer, Std, StdItem, StreamOp, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
+    Catching, FmtResultAnswer, Std, StdItem, TypeFact, fmt_result_answer, is_std_def, std_item, trait_method,
 };
 use super::std_types::number::NumOp;
 use super::{Dest, FnCx, R};
@@ -18,8 +18,6 @@ use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-
-use super::format_args::without_newline;
 
 /// A call being lowered: what's called, which function that is, its
 /// arguments, and whether its value is used.
@@ -540,29 +538,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A standard stream holds nothing JS needs, and a write to one is
         // `print!`'s (ADR 0132).
         if let Std::Stream(op) = known {
-            let mut values = self.operands(args, out)?.into_iter();
-            if op != StreamOp::Open
-                && let Some(on) = values.next()
-                && on.has_effects()
-            {
-                out.push(StmtKind::Expr(on).at(self.js_span(span)));
-            }
-            return match op {
-                StreamOp::Write { error } => {
-                    let text = values.next().expect("a write's text");
-                    Ok(match without_newline(text) {
-                        Ok(line) => Expr::call(
-                            Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
-                            vec![line],
-                        ),
-                        Err(text) => {
-                            self.runtime.insert(Helper::Print);
-                            Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text])
-                        }
-                    })
-                }
-                _ => Ok(Expr::undefined()),
-            };
+            let values = self.operands(args, out)?;
+            return Ok(self.stream_values(op, values, span, out));
         }
         // rustc's name for the type, as a string; of a type parameter, the
         // one its caller gave (ADR 0145).

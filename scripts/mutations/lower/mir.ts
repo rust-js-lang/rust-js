@@ -2314,4 +2314,16 @@ export const mutations: Mutation[] = [
       "wrapping_type"
     ]
   },
+  {
+    "name": "mir-stream-refused",
+    "breaks": "`writeln!(io::stderr(), ..)` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Stream(op) => {\n",
+    "replace": "            Std::Stream(op) if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "std_odds"
+    ]
+  },
 ];

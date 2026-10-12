@@ -283,6 +283,7 @@ std_function_value_panic.rs
 std_function_values.rs
 std_methods.rs
 std_mut_items.rs
+std_odds.rs
 std_struct_const.rs
 stepped_nested.rs
 stock_orders.rs
