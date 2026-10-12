@@ -1267,6 +1267,29 @@ pub fn diffs(v: &[i32]) -> Vec<i32> {
 pub fn pairs(a: &[&str], b: &[u32]) -> Vec<String> {
     a.iter().zip(b.iter()).map(|(s, n)| format!("{s}{n}")).collect()
 }
+// Closures that only read, a string's \`find\`, or set their own
+// variables, beside one that calls out, as react.dev's console filters its
+// logs: arrays' methods still.
+fn marked(s: &str) -> String {
+    format!("<{s}>")
+}
+pub fn logs(lines: &[&str]) -> Vec<String> {
+    lines.iter().filter(|l| l.find("error").is_none()).map(|l| marked(l)).collect()
+}
+pub fn signs(xs: &[i32]) -> Vec<String> {
+    xs.iter()
+        .map(|&x| {
+            let sign;
+            if x < 0 {
+                sign = "-";
+            } else {
+                sign = "+";
+            }
+            sign
+        })
+        .map(|s| marked(s))
+        .collect()
+}
 pub fn order(items: &[u32]) -> Vec<String> {
     let log = RefCell::new(Vec::new());
     let _ = items
@@ -1328,6 +1351,8 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect(js).toContain("words.map((s) => $byteLen(s))");
     expect(js).toContain("  return $windows(v, 2).map(");
     expect(js).toContain("  return $zip(a, b).map(");
+    if (out === "mir.js") expect(js).toMatch(/return lines\s*\.filter\(/);
+    if (out === "mir.js") expect(js).toMatch(/return xs\s*\.map\(/);
     const lib = await import(join(dir, out));
     expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
     expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);
@@ -1335,6 +1360,7 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect([lib.mid([1, 2, 3, 4, 5, 6]), lib.mid([1]), lib.up("ß")]).toEqual([[3, 4, 5], [], "SS"]);
     expect(lib.diffs([1, 4, 9])).toEqual([3, 5]);
     expect(lib.pairs(["x", "y", "z"], [1, 2])).toEqual(["x1", "y2"]);
+    expect([lib.logs(["ok", "an error", "fine"]), lib.signs([1, -2])]).toEqual([["<ok>", "<fine>"], ["<+>", "<->"]]);
     const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
     expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
     expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
@@ -6552,6 +6578,144 @@ pub fn root(n: u32) -> u32 {
   }
 });
 
+// An \`else if\` the program wrote at a loop's end, after an \`if\` it ended
+// with a \`continue\`, stays an \`else if\` from MIR, as THIR's: not a
+// \`continue\` of its own and an \`if\` after, as react.dev's llms.txt
+// sections its routes.
+test("an else-if at a loop's end from MIR stays one past a written continue", async () => {
+  const dir = fixture("mir-else-if-after-continue");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case, dead_code)]
+struct RouteItem {
+    title: Option<String>,
+    path: Option<String>,
+    routes: Option<Vec<RouteItem>>,
+    has_section_header: Option<bool>,
+    section_header: Option<String>,
+}
+
+struct Sidebar {
+    title: String,
+    routes: Vec<RouteItem>,
+}
+
+struct Page {
+    title: String,
+    url: String,
+}
+
+struct SubGroup {
+    heading: String,
+    pages: Vec<Page>,
+}
+
+struct Section {
+    heading: Option<String>,
+    pages: Vec<Page>,
+    sub_groups: Vec<SubGroup>,
+}
+
+// Clean up section header names (remove version placeholders)
+fn cleanSectionHeader(header: &str) -> String { header.trim().to_string() }
+pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Section> {
+    let mut sections: Vec<Section> = Vec::new();
+    let mut currentSection: Option<Section> = None;
+
+    for route in routes {
+        // Skip external links
+        if route.path.as_ref().is_some_and(|path| path.starts_with("http")) {
+            continue;
+        }
+
+        // Start a new section when we hit a section header
+        if route.has_section_header == Some(true)
+            && let Some(sectionHeader) = &route.section_header
+        {
+            if let Some(section) = currentSection {
+                sections.push(section);
+            }
+            currentSection = Some(Section {
+                heading: Some(cleanSectionHeader(sectionHeader)),
+                pages: Vec::new(),
+                sub_groups: Vec::new(),
+            });
+            continue;
+        }
+
+        // If no section started yet, skip
+        let Some(currentSection) = &mut currentSection else {
+            continue;
+        };
+
+        // Route with children - create a sub-group
+        if let Some(title) = &route.title
+            && let Some(children) = &route.routes
+            && !children.is_empty()
+        {
+            let mut subGroup = SubGroup {
+                heading: title.clone(),
+                pages: Vec::new(),
+            };
+
+            // Include parent page if it has a path
+            if let Some(path) = &route.path {
+                subGroup.pages.push(Page {
+                    title: title.clone(),
+                    url: format!("{baseUrl}{path}.md"),
+                });
+            }
+
+            // Add child pages
+            for child in children {
+                if let Some(childTitle) = &child.title
+                    && let Some(childPath) = &child.path
+                    && !childPath.starts_with("http")
+                {
+                    subGroup.pages.push(Page {
+                        title: childTitle.clone(),
+                        url: format!("{baseUrl}{childPath}.md"),
+                    });
+                }
+            }
+
+            if !subGroup.pages.is_empty() {
+                currentSection.sub_groups.push(subGroup);
+            }
+        }
+        // Single page without children
+        else if let Some(title) = &route.title
+            && let Some(path) = &route.path
+        {
+            currentSection.pages.push(Page {
+                title: title.clone(),
+                url: format!("{baseUrl}{path}.md"),
+            });
+        }
+    }
+
+    // Don't forget the last section
+    if let Some(section) = currentSection {
+        sections.push(section);
+    }
+
+    sections
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("    } else if (route.title != null && route.path != null) {\n");
+    // Nor a \`continue\` where the body ends anyway.
+    expect(js).not.toMatch(/\n      continue;\n    } else if/);
+    const lib = await import(join(dir, out));
+    const routes = [
+      { has_section_header: true, section_header: "A" },
+      { title: "t", path: "/p" },
+      { title: "g", routes: [{ title: "c", path: "/c" }] },
+    ];
+    expect(lib.extractSectionedRoutes(routes, "x").map((s: { heading: string; pages: unknown[]; sub_groups: unknown[] }) => [s.heading, s.pages.length, s.sub_groups.length])).toEqual([["A", 1, 1]]);
+  }
+});
+
 // A \`match\`'s arms from MIR are tested in the order they're written, an
 // arm that tests a field first, \`Done { ok: true }\`, where it's written,
 // not where its test is spanned, the \`match\`.
@@ -6683,13 +6847,28 @@ pub fn class(k: Kind) -> String {
     };
     format!("{cls}!")
 }
+// Of a value MIR holds, \`tmp\`, its first branch doing more than giving
+// it, as react.dev's CodeDiagram picks a child.
+pub fn pick(x: i32) -> String {
+    let shown: Box<dyn std::fmt::Display> = if x > 5 {
+        let m = x * 2;
+        Box::new(m + 1)
+    } else if x < 0 {
+        Box::new("neg")
+    } else {
+        Box::new(x)
+    };
+    shown.to_string()
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain('  if (k === "Note") {\n    cls = "note";\n  } else if (k.TAG === "Warn") {\n    cls = "warn";\n  } else {\n    cls = "tip";\n  }\n');
+    expect(js).toMatch(/} else if \(x < 0\) {\n    \w+ = /);
     const lib = await import(join(dir, out));
     expect([lib.class$("Note"), lib.class$({ TAG: "Warn", level: 1 }), lib.class$({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
+    expect([lib.pick(6), lib.pick(-1), lib.pick(2)]).toEqual(["13", "neg", "2"]);
   }
 });
 
@@ -9061,6 +9240,10 @@ pub fn down(n: u32) -> Vec<u32> {
 pub fn upto(n: u32) -> Vec<u32> {
     (1..=n).collect()
 }
+// Filtered too, as react.dev's table of contents finds its anchors.
+pub fn odd_squares(n: u32) -> Vec<u32> {
+    (0..n).filter(|i| i % 2 == 1).map(|i| i * i).collect()
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
@@ -9069,9 +9252,11 @@ pub fn upto(n: u32) -> Vec<u32> {
     if (out === "mir.js") expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
     if (out === "mir.js") expect(js).toContain("return $range(0, n).toReversed();");
     if (out === "mir.js") expect(js).toContain("return $range(1, n + 1);");
+    if (out === "mir.js") expect(js).toContain("return $range(0, n)\n    .filter(");
     const lib = await import(join(dir, out));
     expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
     expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
+    expect(lib.odd_squares(6)).toEqual([1, 9, 25]);
     if (out === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
   }
 });

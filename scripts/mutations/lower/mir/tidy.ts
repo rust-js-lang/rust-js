@@ -1878,4 +1878,40 @@ export const mutations: Mutation[] = [
       "a count kept in a map from MIR"
     ]
   },
+  {
+    "name": "mir-temp-chain-half-folded",
+    "breaks": "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": " || is_temporary(x) && then.len() > 1)",
+    "replace": ")",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a variable's value of three arms from MIR"
+    ]
+  },
+  {
+    "name": "mir-loop-end-block-continues",
+    "breaks": "an `else if` at a loop's end from MIR is a `continue` and an `if` after",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    ending(&mut inner, &block);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an else-if at a loop's end from MIR"
+    ]
+  },
+  {
+    "name": "mir-loop-tail-continue-kept",
+    "breaks": "a branch ending a loop's body from MIR keeps a `continue` that does nothing",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        ends_going_on(body, &looped);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an else-if at a loop's end from MIR"
+    ]
+  },
 ];

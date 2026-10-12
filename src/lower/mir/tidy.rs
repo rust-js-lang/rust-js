@@ -1011,6 +1011,10 @@ fn continued(stmts: &mut [Stmt], guards: &[js::Span]) {
                     else {
                         unreachable!("matched")
                     };
+                    // Its branches first, `if (c) { s; break l; } t` an `else`,
+                    // as `branch_ends` has them: a `continue` the program
+                    // wrote, which ends one, comes back (below).
+                    ending(&mut inner, &block);
                     let clashes = declared(&inner).any(|name| declared(body).any(|n| n == name));
                     if clashes || continues(&mut inner, &block, looped.as_deref(), false).is_none() {
                         body.push(StmtKind::Labeled(block, inner).at(span));
@@ -1056,6 +1060,24 @@ fn continued(stmts: &mut [Stmt], guards: &[js::Span]) {
                 _ => break,
             }
         }
+        // A `continue` where the body ends anyway, in the branches that end
+        // it: none.
+        fn ends_going_on(stmts: &mut Vec<Stmt>, looped: &Option<String>) {
+            let more = stmts.len() > 1;
+            match stmts.last_mut().map(|s| &mut s.kind) {
+                Some(StmtKind::Continue(l)) if (l.is_none() || l == looped) && more => {
+                    stmts.pop();
+                }
+                Some(StmtKind::If(_, then, otherwise)) => {
+                    ends_going_on(then, looped);
+                    if let Some(otherwise) = otherwise {
+                        ends_going_on(otherwise, looped);
+                    }
+                }
+                _ => {}
+            }
+        }
+        ends_going_on(body, &looped);
     }
 }
 
@@ -2122,10 +2144,16 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
             }
             StmtKind::If(test, then, Some(otherwise)) if otherwise.is_empty() => StmtKind::If(test, then, None),
             // A chain of more arms, its last two folded first, `if (a) { x = p; }
-            // else { x = b ? q : r; }`: the chain, as it's written.
+            // else { x = b ? q : r; }`: the chain, as it's written; of a
+            // temporary, where its first arm does more than give it, so the
+            // whole is no conditional either.
             StmtKind::If(ref test, ref then, Some(ref otherwise))
-                if let Some((x, _)) = assigned_only(then)
-                    && !is_temporary(x)
+                if let Some(Stmt {
+                    kind: StmtKind::Assign(target, _),
+                    ..
+                }) = then.last()
+                    && let ExprKind::Var(x) = &target.kind
+                    && (!is_temporary(x) && then.len() == 1 || is_temporary(x) && then.len() > 1)
                     && let Some((y, folded)) = assigned_only(otherwise)
                     && x == y
                     && let ExprKind::Cond(t, q, r) = &folded.kind
@@ -2133,7 +2161,7 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
                     && small(r) =>
             {
                 let at = otherwise[0].span;
-                let arm = |value: &Expr| vec![StmtKind::Assign(Expr::var(x), value.clone()).at(at)];
+                let arm = |value: &Expr| vec![StmtKind::Assign(Expr::var(y), value.clone()).at(at)];
                 let chained = StmtKind::If((**t).clone(), arm(q), Some(arm(r))).at(at);
                 StmtKind::If(test.clone(), then.clone(), Some(vec![chained]))
             }

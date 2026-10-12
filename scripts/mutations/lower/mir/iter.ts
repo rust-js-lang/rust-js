@@ -274,4 +274,16 @@ export const mutations: Mutation[] = [
       "a float's sum from MIR keeps the sign"
     ]
   },
+  {
+    "name": "mir-range-filter-lazy",
+    "breaks": "a range filtered and collected from MIR stays a lazy `$iterator(\u2026)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "(name == \"map\" || name == \"filter\")",
+    "replace": "name == \"map\"",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
 ];

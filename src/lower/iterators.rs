@@ -1856,15 +1856,45 @@ fn counts(f: &Expr) -> bool {
 pub(super) fn does(f: &Expr) -> bool {
     // `Math`'s functions, `Math.imul(x, 2)` of a `u32`'s `*`, do nothing
     // but give their value; not `Math.random()`, which steps its state.
+    // A string's or an array's methods that only read it, `s.indexOf(t)`,
+    // and the runtime's that only read, `$find(s, t)`: their operands'.
+    const READS: &[&str] = &[
+        "indexOf",
+        "lastIndexOf",
+        "includes",
+        "startsWith",
+        "endsWith",
+        "at",
+        "charAt",
+        "charCodeAt",
+        "codePointAt",
+        "slice",
+        "substring",
+        "toUpperCase",
+        "toLowerCase",
+        "trim",
+        "trimStart",
+        "trimEnd",
+    ];
     fn acts(e: &Expr) -> bool {
         let mut e = e.clone();
         e.each_mut(&mut |part| {
-            if let js::ExprKind::Call(callee, args) = &part.kind
-                && let js::ExprKind::Member(math, name) = &callee.kind
-                && matches!(&math.kind, js::ExprKind::Var(v) if v == "Math")
-                && name != "random"
-            {
-                *part = Expr::array(args.clone());
+            if let js::ExprKind::Call(callee, args) = &part.kind {
+                let reads = match &callee.kind {
+                    js::ExprKind::Member(math, name) if matches!(&math.kind, js::ExprKind::Var(v) if v == "Math") => {
+                        name != "random"
+                    }
+                    js::ExprKind::Member(_, name) => READS.contains(&name.as_str()),
+                    js::ExprKind::Var(helper) => matches!(helper.as_str(), "$find" | "$rfind" | "$byteLen"),
+                    _ => false,
+                };
+                if reads {
+                    let mut operands = args.clone();
+                    if let js::ExprKind::Member(of, _) = &callee.kind {
+                        operands.push((**of).clone());
+                    }
+                    *part = Expr::array(operands);
+                }
             }
         });
         e.has_effects()
@@ -1877,7 +1907,7 @@ pub(super) fn does(f: &Expr) -> bool {
             StmtKind::Destructure { value, .. } => acts(value),
             StmtKind::Let(_, None) | StmtKind::Return(None) => false,
             StmtKind::If(test, then, otherwise) => {
-                test.has_effects() || body_does(then) || otherwise.as_deref().is_some_and(body_does)
+                acts(test) || body_does(then) || otherwise.as_deref().is_some_and(body_does)
             }
             _ => true,
         })

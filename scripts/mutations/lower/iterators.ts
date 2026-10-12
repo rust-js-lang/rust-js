@@ -617,20 +617,20 @@ export const mutations: Mutation[] = [
     "name": "math-call-does",
     "breaks": "a stage of `Math.imul(x, 2)` does something, so its chain stays lazy",
     "file": "src/lower/iterators.rs",
-    "find": "                *part = Expr::array(args.clone());\n",
+    "find": "                    *part = Expr::array(operands);\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
       "-t",
-      "a lazy chain from MIR spread once"
+      "a lazy chain from MIR spread once|iterator chains from MIR are array methods"
     ]
   },
   {
     "name": "math-random-pure",
     "breaks": "a stage of `Math.random()` does nothing, so it runs where its chain is made",
     "file": "src/lower/iterators.rs",
-    "find": "                && name != \"random\"\n",
-    "replace": "",
+    "find": "                        name != \"random\"\n",
+    "replace": "                        true\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -803,6 +803,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "sets and maps from MIR"
+    ]
+  },
+  {
+    "name": "does-reading-helper",
+    "breaks": "a closure reading a string with `$find` counts as doing something, its chain lazy",
+    "file": "src/lower/iterators.rs",
+    "find": "matches!(helper.as_str(), \"$find\" | \"$rfind\" | \"$byteLen\")",
+    "replace": "false",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
     ]
   },
 ];

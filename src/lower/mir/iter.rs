@@ -411,8 +411,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `$iterator({ start: a, end: b }, $rangeNext).map(f)`, a range of
-    /// numbers `iter_ty` steps, each item mapped, all collected: its array
-    /// mapped, `$range(a, b).map(f)`, as THIR's, made as big as what's
+    /// numbers `iter_ty` steps, each item mapped or filtered, all collected:
+    /// its array's, `$range(a, b).map(f)`, as THIR's, made as big as what's
     /// collected anyway; what more than one map does in Rust's order, one
     /// item through them all at a time, only lazily. Of `a..=b`, `$range(a,
     /// b + 1)`; stepped from its end, `.rev()`, `.toReversed()` first.
@@ -421,10 +421,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut at = it;
         while let js::ExprKind::Call(callee, args) = &at.kind
             && let js::ExprKind::Member(source, name) = &callee.kind
-            && name == "map"
+            && (name == "map" || name == "filter")
             && let [f] = &args[..]
         {
-            maps.push(f.clone());
+            maps.push((name.clone(), f.clone()));
             at = source;
         }
         let js::ExprKind::Call(callee, args) = &at.kind else {
@@ -455,7 +455,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if iterator != "$iterator"
             || (s.as_str(), e.as_str()) != ("start", "end")
             || !numbers
-            || maps.iter().filter(|f| crate::lower::iterators::does(f)).count() > 1 && maps.len() > 1
+            || maps.iter().filter(|(_, f)| crate::lower::iterators::does(f)).count() > 1 && maps.len() > 1
         {
             return None;
         }
@@ -467,11 +467,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if back {
             items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
         }
-        Some(
-            maps.into_iter()
-                .rev()
-                .fold(items, |items, f| Expr::call(Expr::member(items, "map"), vec![f])),
-        )
+        Some(maps.into_iter().rev().fold(items, |items, (name, f)| {
+            Expr::call(Expr::member(items, &name), vec![f])
+        }))
     }
 
     /// Whether `ty` is an iterator: one whose `Item` is a type.
