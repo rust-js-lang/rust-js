@@ -236,7 +236,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Some(self.helper(Helper::SizeHint, "$sizeHint", vec![it])));
         }
-        if !is_std_def(tcx, trait_id, StdItem::Iterator) || self.is_user_iterator(iter_ty) {
+        // Of the crate's iterator, its own `next` and what its impl writes
+        // itself are its trait's; the rest, `map`, `fuse`, `collect`, std's
+        // of a JS iterator its `next` steps (`as_js_iterator`), as THIR's.
+        let own = self.is_user_iterator(iter_ty)
+            && (name == "next" || self.recognition().user_impl_defines(trait_id, iter_ty, name));
+        if !is_std_def(tcx, trait_id, StdItem::Iterator) || own {
             return Ok(None);
         }
         let mut values = values.into_iter();

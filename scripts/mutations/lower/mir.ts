@@ -2254,4 +2254,16 @@ export const mutations: Mutation[] = [
       "a vec's range pushed again or replaced"
     ]
   },
+  {
+    "name": "mir-combinator-user-iterator-fields",
+    "breaks": "the crate's iterator given to `chain` from MIR is its fields, `[0]`, not its items",
+    "file": "src/lower/mir.rs",
+    "find": "                    .map(|(e, &ty)| match self.is_user_iterator(ty) {\n",
+    "replace": "                    .map(|(e, &ty)| match false && self.is_user_iterator(ty) {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "the crate's iterator from MIR"
+    ]
+  },
 ];

@@ -9996,3 +9996,30 @@ pub fn replaced(mut v: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect([lib.doubled([1, 2]), lib.tail_again([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
   }
 });
+
+// An iterator of the crate's from MIR: what its impl writes itself, its
+// own `count`, is its; what it takes from `Iterator`, `map`, `fuse` or
+// `collect`, std's over its own `next`; and given to another's `chain`, its
+// items, not its fields.
+test("the crate's iterator from MIR: its own methods, std's, and given on", async () => {
+  const dir = fixture("user-iterator-methods");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Counter(pub u32);
+impl Iterator for Counter {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        if self.0 < 3 { self.0 += 1; Some(self.0) } else { None }
+    }
+    fn count(self) -> usize { 99 }
+}
+pub fn run() -> (usize, Vec<u32>, Vec<u32>) {
+    let own = Counter(0).count();
+    let mapped: Vec<u32> = Counter(0).map(|n| n * 10).fuse().collect();
+    let chained: Vec<u32> = [7].into_iter().chain(Counter(1)).collect();
+    (own, mapped, chained)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect((await import(join(dir, out))).run()).toEqual([99, [10, 20, 30], [7, 2, 3]]);
+  }
+});

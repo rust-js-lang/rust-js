@@ -130,6 +130,7 @@ format_width_arguments.rs
 formatter_asked.rs
 formatter_queries.rs
 function_values.rs
+fused_iterator.rs
 generic_as_ref.rs
 generic_associated_types.rs
 generic_bitwise_operators.rs
@@ -159,6 +160,7 @@ integers_128.rs
 iter_flatten.rs
 iterator_back_ends.rs
 iterator_clones.rs
+iterator_sources.rs
 iterator_stepped_by_hand.rs
 kept_element_ref.rs
 kept_generic_iterators.rs
@@ -319,6 +321,7 @@ user_deref.rs
 user_fmt_traits.rs
 user_from_str.rs
 user_hash.rs
+user_into_iter.rs
 utf8_unwrap_panic.rs
 value_keys.rs
 vec_edits.rs

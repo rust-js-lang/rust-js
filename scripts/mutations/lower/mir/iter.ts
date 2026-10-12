@@ -430,4 +430,28 @@ export const mutations: Mutation[] = [
       "btree_range_mut"
     ]
   },
+  {
+    "name": "mir-user-iterator-std-methods-refused",
+    "breaks": "`map`, `fuse` or `collect` of the crate's iterator from MIR, which its impl takes from `Iterator`, is refused",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            && (name == \"next\" || self.recognition().user_impl_defines(trait_id, iter_ty, name));\n",
+    "replace": ";\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "the crate's iterator from MIR"
+    ]
+  },
+  {
+    "name": "mir-user-iterator-own-method-std",
+    "breaks": "what the crate's iterator writes itself, its own `count`, from MIR is std's",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            && (name == \"next\" || self.recognition().user_impl_defines(trait_id, iter_ty, name));\n",
+    "replace": "            && name == \"next\";\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "the crate's iterator from MIR"
+    ]
+  },
 ];

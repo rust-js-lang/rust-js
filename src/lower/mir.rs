@@ -4948,6 +4948,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => self.lent_iterator(it),
                     false => it,
                 };
+                // Another iterator it's given, `chain(Counter(0))`'s, the
+                // crate's: stepped by its own `next`, not its fields.
+                let exprs = (exprs.into_iter().zip(&arg_tys[1..]))
+                    .map(|(e, &ty)| match self.is_user_iterator(ty) {
+                        true => self.as_js_iterator(e, ty.peel_refs(), span),
+                        false => Ok(e),
+                    })
+                    .collect::<R<Vec<_>>>()?;
                 self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
             }
             // `v.sort()`, `v.sort_by_key(key)`: in place, THIR's.
