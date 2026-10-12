@@ -119,8 +119,8 @@ export const mutations: Mutation[] = [
     name: "extend-from-within-unspread",
     breaks: "`extend_from_within` pushes the range as one item, not its items",
     file: "src/lower/std_types/text.rs",
-    find: "                    vec![Expr::spread(Expr::call(Expr::var(\"$copyRange\"), list))],\n",
-    replace: "                    vec![Expr::call(Expr::var(\"$copyRange\"), list)],\n",
+    find: "                vec![Expr::spread(Expr::call(Expr::var(\"$copyRange\"), list))],\n",
+    replace: "                vec![Expr::call(Expr::var(\"$copyRange\"), list)],\n",
     tests: ["test/corpus.test.ts","-t","vec_edits"],
   },
   {
@@ -266,6 +266,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "named as a slice's reader"
+    ]
+  },
+  {
+    "name": "range-edit-of-all-crashes",
+    "breaks": "`v.extend_from_within(..)`, all of it, which reads the `Vec` itself, crashes the compiler",
+    "file": "src/lower/std_types/text.rs",
+    "find": "            js::ExprKind::Call(_, list) => list,\n            kind => vec![\n",
+    "replace": "            js::ExprKind::Call(_, list) => list,\n            _ => unreachable!(\"a range's read is a helper's call\"),\n            #[allow(unreachable_patterns)]\n            kind => vec![\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a vec's range pushed again or replaced"
     ]
   },
 ];

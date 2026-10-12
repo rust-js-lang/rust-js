@@ -2242,4 +2242,16 @@ export const mutations: Mutation[] = [
       "btree_range_mut"
     ]
   },
+  {
+    "name": "mir-range-edit-refused",
+    "breaks": "`v.extend_from_within(a..b)` and `v.splice(a..b, items)` from MIR are refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) => {\n",
+    "replace": "            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) if false => {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a vec's range pushed again or replaced"
+    ]
+  },
 ];

@@ -337,30 +337,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // replaced, `$splice(v, a, b, items)`, or pushed again,
         // `v.push(...$slice(v, a, b))` (ADR 0315).
         if matches!(op, TextOp::Splice | TextOp::ExtendFromWithin) {
-            let read = if op == TextOp::Splice {
-                TextOp::Drain
-            } else {
-                TextOp::Slice
-            };
-            let range = self.slice_range(read, &args[..2], span, out)?;
-            let js::ExprKind::Call(_, mut list) = range.kind else {
-                unreachable!("a range's read is a helper's call");
-            };
-            let items = list[0].clone();
-            // Checked as `slice::range` checks it, its end first, not as
-            // `&v[a..b]` is: `v.push(...$copyRange(v, a, b))`.
-            if op == TextOp::ExtendFromWithin {
-                return Ok(Expr::call(
-                    Expr::member(items, "push"),
-                    vec![Expr::spread(Expr::call(Expr::var("$copyRange"), list))],
-                ));
-            }
-            if list.len() == 2 {
-                list.push(Expr::member(items, "length"));
-            }
-            list.extend(self.operands(&args[2..], out)?);
-            self.runtime.insert(Helper::Splice);
-            return Ok(Expr::call(Expr::var("$splice"), list));
+            let range = self.slice_range(range_read(op), &args[..2], span, out)?;
+            let rest = self.operands(&args[2..], out)?;
+            return Ok(self.range_edit(op, range, rest));
         }
         if matches!(
             op,
@@ -713,6 +692,40 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, &format!("`parse` to a `{target}`")))
     }
 
+    /// A `Vec`'s range, read as `range_read` reads it, `range`, replaced by
+    /// `rest`, `$splice(v, a, b, items)`, or pushed again, `v.push(
+    /// ...$copyRange(v, a, b))` (ADR 0315): THIR's and MIR's. Of all of it,
+    /// `..`, `range` is the `Vec` itself.
+    pub(in crate::lower) fn range_edit(&mut self, op: TextOp, range: Expr, rest: Vec<Expr>) -> Expr {
+        let mut list = match range.kind {
+            js::ExprKind::Call(_, list) => list,
+            kind => vec![
+                Expr {
+                    kind,
+                    span: range.span,
+                    reads: false,
+                },
+                Expr::int(0),
+            ],
+        };
+        let items = list[0].clone();
+        // Checked as `slice::range` checks it, its end first, not as
+        // `&v[a..b]` is: `v.push(...$copyRange(v, a, b))`.
+        if op == TextOp::ExtendFromWithin {
+            self.runtime.insert(Helper::SliceRange);
+            return Expr::call(
+                Expr::member(items, "push"),
+                vec![Expr::spread(Expr::call(Expr::var("$copyRange"), list))],
+            );
+        }
+        if list.len() == 2 {
+            list.push(Expr::member(items, "length"));
+        }
+        list.extend(rest);
+        self.runtime.insert(Helper::Splice);
+        Expr::call(Expr::var("$splice"), list)
+    }
+
     /// `&v[a..b]`, `&v[a..]`, `&v[..b]`: a copy, which a shared slice can
     /// be, since nothing changes `v` while it's borrowed; `&v[..]`, all of
     /// it, `v` itself, as `&s[..]` of a string is. Out of bounds, it panics,
@@ -989,5 +1002,14 @@ fn replacement(to: Expr) -> Expr {
     match &to.kind {
         js::ExprKind::Str(text) => Expr::str(text.replace('$', "$$")),
         _ => Expr::arrow(Vec::new(), vec![js::StmtKind::Return(Some(to)).at(js::Span::NONE)]),
+    }
+}
+
+/// What a `Vec`'s range is read as for `range_edit`: `splice`'s taken out,
+/// as `drain`'s, `extend_from_within`'s copied, as `&v[a..b]`'s.
+pub(in crate::lower) fn range_read(op: TextOp) -> TextOp {
+    match op {
+        TextOp::Splice => TextOp::Drain,
+        _ => TextOp::Slice,
     }
 }

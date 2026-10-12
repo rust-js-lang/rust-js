@@ -9971,3 +9971,28 @@ pub fn stepped(v: &[u32]) -> (Vec<u32>, Vec<u32>) {
     expect([lib.rest([1, 2, 3]), lib.stepped([1, 2, 3, 4, 5])]).toEqual([[3], [[1, 2], [5]]]);
   }
 });
+
+// A `Vec`'s range pushed again, `extend_from_within`, or replaced,
+// `splice`, from MIR as from THIR, all of it too: `..` reads the `Vec`
+// itself, no range helper's call, which THIR's lowering crashed on.
+test("a vec's range pushed again or replaced, all of it too", async () => {
+  const dir = fixture("vec-range-edits");
+  writeFileSync(join(dir, "lib.rs"), `pub fn doubled(mut v: Vec<u32>) -> Vec<u32> {
+    v.extend_from_within(..);
+    v
+}
+pub fn tail_again(mut v: Vec<u32>) -> Vec<u32> {
+    v.extend_from_within(1..);
+    v
+}
+pub fn replaced(mut v: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
+    let old: Vec<u32> = v.splice(.., [9, 8]).collect();
+    (v, old)
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.doubled([1, 2]), lib.tail_again([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
+  }
+});

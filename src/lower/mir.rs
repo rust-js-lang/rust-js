@@ -41,7 +41,7 @@ use super::std_types::map::MapOp;
 use super::std_types::number::NumOp;
 use super::std_types::rc::RcOp;
 use super::std_types::slice::SliceOp;
-use super::std_types::text::{StringEdit, TextOp};
+use super::std_types::text::{StringEdit, TextOp, range_read};
 use super::{Body, FnCx, LoweredFn, R, Shape, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::names::js_ident;
@@ -5151,6 +5151,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `s.insert(i, c)` and the rest: `s` given its new text, as THIR's
             // `string_edit` writes it; what it took out, its value.
+            // A `Vec`'s range replaced, `splice`, or pushed again,
+            // `extend_from_within`: THIR's `range_edit`.
+            Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) => {
+                let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                let rest = exprs.split_off(2);
+                let [items, range]: [Expr; 2] = exprs.try_into().ok().expect("the items and a range");
+                let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
+                self.range_edit(op, range, rest)
+            }
             Std::StringEdit(edit) => {
                 let place = match values.next().expect("the string") {
                     Value::Ref(place) if fixed_place(&place) => place,

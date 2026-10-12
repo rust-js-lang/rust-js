@@ -110,6 +110,7 @@ evidence_paths.rs
 exact_len_unknown.rs
 exp_format.rs
 expression_values.rs
+extend_within_past_len.rs
 extract_if.rs
 extract_if_past_len.rs
 f32.rs
@@ -320,6 +321,7 @@ user_from_str.rs
 user_hash.rs
 utf8_unwrap_panic.rs
 value_keys.rs
+vec_edits.rs
 vec_push_mut.rs
 wrapping.rs
 wrapping_rem_zero.rs
