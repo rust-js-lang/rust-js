@@ -302,7 +302,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![a.into(), b.into()],
                     vec![StmtKind::Return(Some(total)).at(js::Span::NONE)],
                 );
-                method("reduce", it, vec![f, num.literal(start)])
+                // Rust's float `Sum` starts at -0.0, an empty sum's and one of
+                // negative zeros' sign kept, as THIR's.
+                let start = match (name, num.float()) {
+                    ("sum", true) => Expr::num(-0.0),
+                    _ => num.literal(start),
+                };
+                method("reduce", it, vec![f, start])
             }
             "copied" => it,
             "cloned" => match item {

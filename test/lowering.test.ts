@@ -6329,6 +6329,24 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
+// A float's sum from MIR starts at -0.0, as Rust's does: an empty sum and
+// one of negative zeros are -0.0, not 0.
+test("a float's sum from MIR keeps the sign of zero", async () => {
+  const dir = fixture("mir-float-sum");
+  writeFileSync(join(dir, "lib.rs"), `pub fn total(xs: &[f64]) -> f64 {
+    xs.iter().sum()
+}
+pub fn owned(xs: Vec<f64>) -> f64 {
+    xs.into_iter().sum()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([Object.is(lib.total([]), -0), Object.is(lib.total([-0]), -0), Object.is(lib.owned([-0, -0]), -0), lib.total([1, 2])]).toEqual([true, true, true, 3]);
+  }
+});
+
 // A nested pattern of an item a closure reads of what it captured, from
 // MIR, takes it apart once, as THIR's and as react.dev's Preview reads its
 // first lint error: \`const { line, column, message } = errors[0];\`.

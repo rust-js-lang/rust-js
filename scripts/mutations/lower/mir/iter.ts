@@ -262,4 +262,16 @@ export const mutations: Mutation[] = [
       "iterator chains from MIR are array methods"
     ]
   },
+  {
+    "name": "mir-float-sum-from-zero",
+    "breaks": "a float's sum from MIR starts at 0, an empty sum `0`, not Rust's -0.0",
+    "file": "src/lower/mir/iter.rs",
+    "find": "(\"sum\", true) => Expr::num(-0.0),",
+    "replace": "(\"sum\", true) => Expr::num(0.0),",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a float's sum from MIR keeps the sign"
+    ]
+  },
 ];
