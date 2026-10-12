@@ -70,8 +70,8 @@ export const mutations: Mutation[] = [
     name: "collected-literal-copied",
     breaks: "`std::iter::empty().collect()` is `[].slice()`, a copy of a new array",
     file: "src/lower/iterators.rs",
-    find: "        js::ExprKind::Array(_) => true,\n",
-    replace: "",
+    find: "    match &items.kind {\n        js::ExprKind::Array(_) => true,\n",
+    replace: "    match &items.kind {\n",
     tests: ["test/corpus.test.ts","-t","iterator_sources"],
     snapshots: true,
   },
@@ -710,18 +710,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "iterator-from-chain-kept",
-    "breaks": "`Iterator.from($iter(xs).filter(f)).toArray()` of a `flatten()` stays, not `xs.filter(f)`",
-    "file": "src/lower/iterators.rs",
-    "find": "    if is_iterator_from(at)\n        && let js::ExprKind::Call(_, of) = &at.kind\n    {\n        at = &of[0];\n    }\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "flattened options collected from MIR"
-    ]
-  },
-  {
     "name": "mir-next-stepped",
     "breaks": "`next()` of an array's fresh iterator from MIR is `$next($iter(keys))`, not `keys[0]`",
     "file": "src/lower/iterators.rs",
@@ -751,18 +739,6 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators.rs",
     "find": "[\"$max\", \"$min\", \"$maxBy\", \"$minBy\"].contains(&v.as_str())",
     "replace": "[\"$none\"].contains(&v.as_str())",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
-  },
-  {
-    "name": "eager-from-fresh-lazy",
-    "breaks": "a chain of an array just made, `Iterator.from(xs.filter(f)).map(g).toArray()`, stays lazy",
-    "file": "src/lower/iterators.rs",
-    "find": "is_stepped_items(at) || is_iterator_from(at) && fresh(&args[0])",
-    "replace": "is_stepped_items(at)",
     "tests": [
       "test/lowering.test.ts",
       "-t",

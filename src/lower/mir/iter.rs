@@ -12,6 +12,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, StmtKind};
+use crate::lower::iterators::made_array;
 use crate::lower::recognition::{StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
@@ -538,21 +539,6 @@ fn is_js_iterator(e: &Expr) -> bool {
             js::ExprKind::Var(v) if v == "Iterator" => name == "from",
             _ if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") => is_js_iterator(object),
             _ => matches!(name.as_str(), "values" | "keys" | "entries"),
-        },
-        _ => false,
-    }
-}
-
-/// Whether `e` is an array as it's made: `[a, b]`, `Array.from(x)`, or a
-/// string's `split`.
-fn made_array(e: &Expr) -> bool {
-    match &e.kind {
-        js::ExprKind::Array(_) => true,
-        js::ExprKind::Call(callee, _) => match &callee.kind {
-            js::ExprKind::Member(object, name) => {
-                name == "split" || (name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Array"))
-            }
-            _ => false,
         },
         _ => false,
     }

@@ -1682,12 +1682,6 @@ pub(super) fn eager_spreads(stmts: &mut [Stmt]) {
 fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr, usize)> {
     let mut stages = Vec::new();
     let mut at = unlent(chain);
-    // `Iterator.from(it)` of what's a JS iterator already, `flatten()`'s: it.
-    if is_iterator_from(at)
-        && let js::ExprKind::Call(_, of) = &at.kind
-    {
-        at = &of[0];
-    }
     while let js::ExprKind::Call(callee, args) = &at.kind
         && let js::ExprKind::Member(source, name) = &callee.kind
         && matches!(name.as_str(), "map" | "filter" | "take" | "drop" | "flatMap")
@@ -1709,11 +1703,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     let js::ExprKind::Call(_, args) = &at.kind else {
         return None;
     };
-    // Of an array, `$iter(xs)`'s, or one just made, `Iterator.from(xs.filter(f))`'s.
-    let ([source], true) = (
-        &args[..],
-        is_stepped_items(at) || is_iterator_from(at) && fresh(&args[0]),
-    ) else {
+    let ([source], true) = (&args[..], is_stepped_items(at)) else {
         return None;
     };
     // Each item's items an array too, all of them, in turn, as Rust's
@@ -1879,6 +1869,27 @@ pub(super) fn does(f: &Expr) -> bool {
     match &f.kind {
         js::ExprKind::Arrow(_, body) => body_does(body),
         _ => true,
+    }
+}
+
+/// Whether `e` is an array as it's made: `[a, b]`, `Array.from(x)`, or a
+/// string's `split`, and through an array's methods that make one,
+/// `.filter(f)`, not an iterator's of the same names, `$iter(xs).filter(f)`.
+pub(super) fn made_array(e: &Expr) -> bool {
+    match &e.kind {
+        js::ExprKind::Array(_) => true,
+        js::ExprKind::Call(callee, _) => match &callee.kind {
+            js::ExprKind::Member(object, name) => match name.as_str() {
+                "split" => true,
+                "from" => matches!(&object.kind, js::ExprKind::Var(v) if v == "Array"),
+                "map" | "filter" | "slice" | "toReversed" | "toSorted" | "concat" | "flat" | "flatMap" => {
+                    made_array(object)
+                }
+                _ => false,
+            },
+            _ => false,
+        },
+        _ => false,
     }
 }
 
