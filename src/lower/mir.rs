@@ -345,7 +345,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 name: self.krate.fns[&def_id].name.clone(),
                 params,
                 body: out,
-                export: self.tcx.visibility(def_id).is_public()
+                // A constant's initializer, its module's `const`'s value, isn't
+                // a function anyone calls.
+                export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)
+                    && self.tcx.visibility(def_id).is_public()
                     && (self.tcx.def_kind(def_id) != rustc_hir::def::DefKind::AssocFn
                         || self.tcx.inherent_impl_of_assoc(def_id).is_some()),
                 is_async,
@@ -450,10 +453,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state.null_nones = self.mir_null_nones(mir_body, &state.locals);
         // A writer's `Formatter`: no parameter, but the string it writes to,
         // `let f = ""`, which it gives back, its `fmt::Result` nothing.
-        let formatter = (captures.is_none() && mir_body.coroutine.is_none())
-            .then(|| self.formatter_param(mir_body.source.def_id()))
-            .flatten()
-            .map(|i| Local::from_usize(i + 1));
+        let formatter = (captures.is_none()
+            && mir_body.coroutine.is_none()
+            && matches!(
+                self.tcx.def_kind(mir_body.source.def_id()),
+                DefKind::Fn | DefKind::AssocFn
+            ))
+        .then(|| self.formatter_param(mir_body.source.def_id()))
+        .flatten()
+        .map(|i| Local::from_usize(i + 1));
         if let Some(param) = formatter {
             if let Some((span, what)) = self.writer_refusal(mir_body, param.as_usize() - 1) {
                 return Err(self.unsupported(span, &what));
@@ -3463,9 +3471,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(self.fn_ref(def_id));
             }
         }
-        let value = (self.mir_const_value(c.const_, ty, c.span))
-            .and_then(|value| const_js(tcx, value))
-            .ok_or_else(|| self.unsupported(c.span, "this constant, from its MIR"))?;
+        let value = match (self.mir_const_value(c.const_, ty, c.span)).and_then(|value| const_js(tcx, value)) {
+            Some(value) => value,
+            // A promoted value rustc's can't say as JS's, `&[("double",
+            // double)]` of functions: its MIR, lowered as code.
+            None if let Const::Unevaluated(uv, _) = c.const_
+                && let Some(promoted) = uv.promoted =>
+            {
+                let mir = Mir::new(tcx, state.promoted[promoted].clone(), IndexVec::new());
+                let (_, stmts) = self.mir_function(&mir, Some(Vec::new()))?;
+                return Ok(match stmts.as_slice() {
+                    [
+                        Stmt {
+                            kind: StmtKind::Return(Some(value)),
+                            ..
+                        },
+                    ] => value.clone(),
+                    _ => Expr::call(Expr::arrow(Vec::new(), stmts), Vec::new()),
+                });
+            }
+            None => return Err(self.unsupported(c.span, "this constant, from its MIR")),
+        };
         // One written across lines keeps them, a template literal, as THIR's.
         Ok(match &value.kind {
             js::ExprKind::Str(text) if text.contains('\n') && super::literal_across_lines(tcx, c.span) => {

@@ -3082,4 +3082,20 @@ export const mutations: Mutation[] = [
     replace: "if false {",
     tests: ["test/corpus.test.ts","-t","generic_writers"],
   },
+  {
+    name: "mir-promoted-functions-refused",
+    breaks: "MIR refuses a promoted value of functions, `&[(\"double\", double)]`",
+    file: "src/lower/mir.rs",
+    find: "            None if let Const::Unevaluated(uv, _) = c.const_\n",
+    replace: "            None if false && let Const::Unevaluated(uv, _) = c.const_\n",
+    tests: ["test/corpus.test.ts","-t","static_fns"],
+  },
+  {
+    name: "mir-initializer-asked-visibility",
+    breaks: "MIR asks a `const { .. }` block's visibility, which rustc has none of",
+    file: "src/lower/mir.rs",
+    find: "                export: matches!(self.tcx.def_kind(def_id), DefKind::Fn | DefKind::AssocFn)\n",
+    replace: "                export: true\n",
+    tests: ["test/corpus.test.ts","-t","const_block_values"],
+  },
 ];

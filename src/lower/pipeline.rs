@@ -307,7 +307,10 @@ pub fn lower_crate<'tcx>(
         };
         let initializer = initialized.iter().any(|body| body.def_id.to_def_id() == def_id);
         let result = match body {
-            Some(body) if initializer => cx.lower_initializer(body),
+            Some(body) if initializer => match &body.mir {
+                Some(mir) => cx.lower_fn_mir(body, mir),
+                None => cx.lower_initializer(body),
+            },
             Some(body) if let Some(mir) = &body.mir => cx.lower_fn_mir(body, mir),
 
             Some(body) => cx.lower_fn(body),

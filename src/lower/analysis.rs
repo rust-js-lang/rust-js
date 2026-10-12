@@ -112,7 +112,12 @@ pub fn collect_mir<'tcx>(tcx: TyCtxt<'tcx>, bodies: &mut [Body<'tcx>]) {
     for body in bodies {
         if !matches!(
             tcx.def_kind(body.def_id),
-            DefKind::Fn | DefKind::AssocFn | DefKind::Closure
+            DefKind::Fn
+                | DefKind::AssocFn
+                | DefKind::Closure
+                | DefKind::Const { .. }
+                | DefKind::Static { .. }
+                | DefKind::AnonConst
         ) {
             continue;
         }

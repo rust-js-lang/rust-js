@@ -177,10 +177,12 @@ impl Callbacks for RustJs {
         let serde_attrs = lower::serde_attributes(tcx);
         // 1. Copy each function's THIR. MIR building (for borrowck) steals it.
         let mut bodies = lower::collect_bodies(tcx);
-        let initializers = lower::collect_initializers(tcx);
-        // Then, read from their MIR, what runs (ADR 0364).
+        let mut initializers = lower::collect_initializers(tcx);
+        // Then, read from their MIR, what runs (ADR 0364): the initializers
+        // lowered as code too.
         if lower::mir_mode() {
             lower::collect_mir(tcx, &mut bodies);
+            lower::collect_mir(tcx, &mut initializers);
         }
 
         // 2. Run rustc's full analysis: type check, borrow check, lints.
