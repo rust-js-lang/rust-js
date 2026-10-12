@@ -146,6 +146,7 @@ generic_mut_map.rs
 generic_mut_ref.rs
 generic_operators.rs
 generic_traits.rs
+generic_writers.rs
 guard_statements.rs
 guarded_bindings.rs
 heap_methods.rs
@@ -326,6 +327,7 @@ user_as_mut.rs
 user_collections.rs
 user_deref.rs
 user_fmt_traits.rs
+user_fmt_write.rs
 user_from_str.rs
 user_hash.rs
 user_into_iter.rs

@@ -4236,7 +4236,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && (rust_impl
                 || (super::recognition::operational(tcx, self.krate.foreign, trait_id)
-                    && (!gives_ref || self.is_rust_trait(trait_id))))
+                    && (!gives_ref
+                        || self.is_rust_trait(trait_id)
+                        // A type parameter's, its dictionary's, `W::write_char(w, c)`
+                        // of a generic writer (ADR 0180).
+                        || generic_args.types().next().is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_))))))
         {
             let exprs = self.boxed_args(state, (def_id, generic_args), values.clone(), span, out)?;
             if let Some(call) = self.trait_call(def_id, generic_args, exprs, span, out)? {
@@ -5169,6 +5173,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let [items, range]: [Expr; 2] = exprs.try_into().ok().expect("the items and a range");
                 let range = self.slice_range_values(range_read(op), items, (range, arg_tys[1]), span, out)?;
                 self.range_edit(op, range, rest)
+            }
+            // A writer of the crate's own: what `write!` and `write_char` give
+            // its `write_str` (ADR 0166), THIR's.
+            Std::UserWrite => {
+                let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                let trait_id = tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
+                let write_str = trait_method(tcx, trait_id, "write_str");
+                self.flush(state, out)?;
+                self.trait_call(write_str, generic_args, exprs, span, out)?
+                    .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))?
             }
             // A standard stream's, `writeln!(io::stderr(), ..)`, THIR's.
             Std::Stream(op) => {

@@ -2326,4 +2326,28 @@ export const mutations: Mutation[] = [
       "std_odds"
     ]
   },
+  {
+    "name": "mir-user-write-refused",
+    "breaks": "`writeln!(out, ..)` to a writer of the crate's own from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "            Std::UserWrite => {\n",
+    "replace": "            Std::UserWrite if false => {\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "user_fmt_write"
+    ]
+  },
+  {
+    "name": "mir-param-dictionary-of-ref-refused",
+    "breaks": "`w.write_char(c)` of a generic writer from MIR, its dictionary's, is refused",
+    "file": "src/lower/mir.rs",
+    "find": "                        || generic_args.types().next().is_some_and(|t| matches!(t.peel_refs().kind(), ty::Param(_))))))\n",
+    "replace": "                        || false)))\n",
+    "tests": [
+      "test/mir.test.ts",
+      "-t",
+      "generic_writers"
+    ]
+  },
 ];
