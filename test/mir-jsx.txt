@@ -169,3 +169,5 @@ what an element reads, made before a branch in its tree, is read where it's writ
 what elements read before branches, each a call, is read where it's written
 JSX attributes and children read in place around a borrowed one
 JSX reads what's made before a matches! child's block
+what elements made ahead of a branch read is read where it's written, past a let's read
+a shared capture of a let reads alike, past an element's key

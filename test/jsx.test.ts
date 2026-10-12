@@ -4904,7 +4904,7 @@ pub fn Page(home: bool, title: &'static str, path: String) -> JSX::Element {
             <Seo
                 title={title}
                 image={
-                    if home {
+                    if home || title.is_empty() || path.starts_with("/errors") {
                         format!("/og-{}.png", path)
                     } else {
                         format!("/og/{}.png", path.replace('/', "-"))
@@ -4919,10 +4919,154 @@ pub fn Page(home: bool, title: &'static str, path: String) -> JSX::Element {
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  // No temporary held, `_14` or what it's named after, `value`.
-  expect(jsx).not.toMatch(/\bconst (_\d|value\b)/);
+  // No temporary held, `_14` or what it's named after, `image`.
+  expect(jsx).not.toMatch(/\bconst (_\d|value\b|image\b)/);
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Page(false, "T", "a/b"))).toBe('<div><span title="T">/og/a-b.png</span></div>');
+});
+
+// ADR 0364: what elements made ahead of a branch read, a call each, is read
+// where it's written, past what reads a \`let\` no closure sets, as
+// react.dev's Page gives Seo its image and its divs their \`cn(..)\`.
+test("what elements made ahead of a branch read is read where it's written, past a let's read", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+mod seo {
+    use react::{JSX, MemoExoticComponent, jsx, memo};
+    pub struct SeoProps<'a> {
+        pub title: &'a str,
+        pub title_for_title_tag: Option<&'a str>,
+        pub image: &'a str,
+        pub search_order: Option<i32>,
+    }
+    fn Inner(SeoProps { title, title_for_title_tag, image, search_order }: SeoProps) -> JSX::Element {
+        jsx! { <span title={title}>{title_for_title_tag}{image}{search_order}</span> }
+    }
+    thread_local! {
+        pub static Seo: MemoExoticComponent<SeoProps<'static>> = memo(Inner);
+    }
+}
+use seo::{Seo, SeoProps};
+pub struct Meta<'a> {
+    pub title_for_title_tag: Option<&'a str>,
+}
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub fn Top() -> JSX::Element {
+    jsx! { <nav>{"t"}</nav> }
+}
+pub fn Page(home: bool, blog: bool, title: &'static str, meta: &Meta<'static>, path: String, order: Option<i32>) -> JSX::Element {
+    let mut has_columns = true;
+    if home || blog {
+        has_columns = false;
+    }
+    let mut search_order = None;
+    if !home {
+        search_order = order;
+    }
+    jsx! {
+        <>
+            <Seo
+                title={title}
+                title_for_title_tag={meta.title_for_title_tag}
+                image={
+                    if home || title.is_empty() || path.starts_with("/errors") {
+                        format!("/og-{}.png", path)
+                    } else {
+                        format!("/og/{}.png", path.replace('/', "-"))
+                    }
+                    .as_str()
+                }
+                search_order={search_order}
+            />
+            {(home || blog).then(|| jsx! { <b>{"rss"}</b> })}
+            <Top />
+            <div className={cn(&[has_columns.then_some("grid")])}>
+                <article>{"c"}</article>
+                <div className={cn(&[Some("self"), home.then_some("wash")])}>
+                    {(!home).then(|| jsx! { <hr /> })}
+                    <div className={cn(&[Some("py"), home.then_some("pt")])}>{"f"}</div>
+                </div>
+            </div>
+        </>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).not.toMatch(/\bconst (_\d|value\b|image\b|className)/);
+  expect(jsx).toContain('      <div className={cn([hasColumns ? "grid" : undefined])}>\n');
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page(false, false, "T", { title_for_title_tag: "tt" }, "a/b", 3))).toBe(
+    '<span title="T">tt/og/a-b.png3</span><nav>t</nav><div class="grid"><article>c</article><div class="self"><hr/><div class="py">f</div></div></div>',
+  );
+});
+
+// ADR 0364: a \`let\` a closure shares a reference to reads alike while it
+// runs, so an element's \`key\` is read first, where it's written, as
+// react.dev's TopNav gives SidebarRouteTree its key and its routeTree.
+test("a shared capture of a let reads alike, past an element's key", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx, use_state};
+#[derive(Clone, Copy, PartialEq)]
+pub enum Section {
+    Learn,
+    Blog,
+}
+pub struct TreeProps<'a> {
+    pub items: &'a [&'a str],
+    pub crumbs: &'a [&'a str],
+    pub expanded: bool,
+}
+pub fn Tree(TreeProps { items, crumbs, expanded }: TreeProps) -> JSX::Element {
+    jsx! { <ul data-expanded={expanded}>{(items.len() + crumbs.len()).to_string()}</ul> }
+}
+pub struct ItemProps {
+    pub active: bool,
+}
+pub fn Item(ItemProps { active }: ItemProps) -> JSX::Element {
+    jsx! { <li>{active.to_string()}</li> }
+}
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub struct TopNavProps<'a> {
+    pub items: &'a [&'a str],
+    pub crumbs: &'a [&'a str],
+    pub section: Option<Section>,
+}
+pub fn TopNav(TopNavProps { mut items, crumbs, section }: TopNavProps) -> JSX::Element {
+    let (&open, set_open) = use_state(true);
+    if items.len() > 2 {
+        items = &items[1..];
+    }
+    jsx! {
+        <>
+            <button onClick={move |_| set_open.set(!open)}>{"m"}</button>
+            {open.then(|| jsx! {
+                <aside className={cn(&[Some("a"), Some(if open { "block" } else { "hidden" })])}>
+                    <Item active={section == Some(Section::Learn)} />
+                    <Item active={section == Some(Section::Blog)} />
+                    <Tree
+                        key={if open { "mobile" } else { "desktop" }}
+                        items={items}
+                        crumbs={crumbs}
+                        expanded={open}
+                    />
+                </aside>
+            })}
+        </>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('<Tree key={open ? "mobile" : "desktop"} items={items}');
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.TopNav, { items: ["a", "b", "c"], crumbs: ["x"], section: "Learn" }))).toBe(
+    '<button>m</button><aside class="a block"><li>true</li><li>false</li><ul data-expanded="true">3</ul></aside>',
+  );
 });
 
 // ADR 0364: a struct update of a flattened props rest, `..props.html` and
