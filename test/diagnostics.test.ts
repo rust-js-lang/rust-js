@@ -135,6 +135,10 @@ for (const [name, source, message, crate] of [
   // A generic iterator lent as `&mut` is the lender's, which must know where it is (ADR 0071): a field's doesn't.
   // A trait's method is called through a dictionary, whose `&mut self` is a handle (ADR 0099).
   ["a &mut to a generic iterator in a trait's method", 'pub trait Step { fn step(&mut self) -> Option<u32>; }\nimpl<I: Iterator<Item = u32>> Step for I { fn step(&mut self) -> Option<u32> { self.next() } }', "of a trait's method"],
+  // A generic iterator a struct of the crate's holds, which a range given
+  // it isn't a JS iterator of, stepped through a `&mut` to the field: from
+  // MIR as from THIR, refused (rustc's iter-map-fold-type-length threw).
+  ["a &mut to a generic iterator in a field", "pub struct Iter<I>(I);\nimpl<I: Iterator> Iterator for Iter<I> { type Item = I::Item; fn next(&mut self) -> Option<I::Item> { self.0.next() } }\npub fn f() -> usize { Iter(0..3).count() }", "`&mut` to a `I`"],
   ["lending an iterator kept in a field", 'pub struct P { pub v: std::vec::IntoIter<u32> }\nfn first<I: Iterator<Item = u32>>(it: &mut I) -> Option<u32> { it.next() }\npub fn f(p: &mut P) -> Option<u32> { first(&mut p.v) }', "lending an iterator that isn't a local"],
   ["{:.2e}", 'pub fn f(x: f64) -> String { format!("{:.2e}", x) }', "`{:.2e}` and the like"],
   ["malformed import", '#[rust_js::import("./style.css")]\nconst _: () = ();\npub fn f() {}', "write it"],

@@ -78,6 +78,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         forwarding,
         concise,
     } = *hints;
+    // What branches make a value of: the function's, and where an `if` is written.
+    let made = (result, conditions);
     // A guard of a handle made for it alone: the place it's a handle on.
     unguarded(body);
     // Twice: what a block's statements, in its place, are followed by, and
@@ -91,12 +93,12 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         js::statement_lists(body, &mut |stmts| written_first(stmts));
         js::statement_lists(body, &mut |stmts| branch_ends(stmts));
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-        bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
+        bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
         js::statement_lists(body, &mut unlabeled);
     }
     bottom_up(body, &mut pattern_tests);
     bottom_up(body, &mut or_tests);
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     let mut read = HashSet::new();
     js::visit_stmts(body, &mut |name| {
         read.insert(name.to_string());
@@ -125,7 +127,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
     // A chain of tests a loop ended, its body now ending where the chain's does.
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     js::statement_lists(body, &mut unlabeled);
     js::statement_lists(body, &mut |stmts| {
         logical_returns(stmts, logicals, conditions, returns, booleans)
@@ -190,7 +192,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     js::statement_lists(body, &mut |stmts| guarded_lets(stmts, captured));
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
-    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans));
+    bottom_up(body, &mut |stmts| branch_values(stmts, returns, booleans, made));
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
@@ -1709,7 +1711,7 @@ type Part = (Result<usize, String>, String, bool, Option<Expr>);
 /// The parts of `name` the first of `stmts` read, each a `const` or a
 /// `let` of one, `const a = name[0];` or `const b = name.b;`.
 fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
-    let mut parts = Vec::new();
+    let mut parts: Vec<Part> = Vec::new();
     for stmt in stmts {
         let (bound, value, mutable) = match &stmt.kind {
             StmtKind::Const(bound, value) => (bound, value, false),
@@ -1744,6 +1746,11 @@ fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
             }
             _ => break,
         };
+        // One part read again, `const a = x[0]; const b = x[0];`: two names
+        // a pattern can't give it, so it's where they end.
+        if parts.iter().any(|(p, ..)| *p == part) {
+            break;
+        }
         parts.push((part, bound.clone(), mutable, default));
     }
     parts
@@ -2317,7 +2324,15 @@ fn bottom_up(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
 /// { s }` is `if (!c) { s }`; `if (c) { x = a; } else { x = b; }` is `x =
 /// c ? a : b;`, of two branches; and `l: { if (a) { if (b) { x = t; break l; } } x = f; }`,
 /// `matches!`'s, is `x = a && b ? t : f;`.
-fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet<String>) {
+fn branch_values(
+    stmts: &mut Vec<Stmt>,
+    returns: &[js::Span],
+    booleans: &HashSet<String>,
+    (result, conditions): (&str, &[(js::Span, js::Span)]),
+) {
+    // An `if` the program wrote, where its condition is.
+    let written_if =
+        |s: js::Span| !s.is_none() && conditions.iter().any(|(c, g)| c == g && c.lo <= s.lo && s.hi <= c.hi);
     for stmt in stmts.iter_mut() {
         let span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
@@ -2380,7 +2395,10 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
                     // A temporary's, an `if` the program wrote as a value, is one.
                     && ((small(yes) && small(no)) || is_temporary(x))
                     // Nor each adding to it, `out += a`, as written.
-                    && !(updates(x, yes) && updates(x, no)) =>
+                    && !(updates(x, yes) && updates(x, no))
+                    // Nor the function's value an `if` makes, which each returns, as
+                    // THIR's; a `match`'s is one value.
+                    && !(x == result && written_if(span)) =>
             {
                 // The value the program wrote first, first: `a || b ? x : y` of
                 // `if a || b { x } else { y }` MIR tests `!a && !b` of.

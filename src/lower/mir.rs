@@ -3441,6 +3441,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     return Err(self.unsupported(span, "a `&mut` to part of a slice, from its MIR"));
                 }
+                // A generic iterator a field holds, stepped through a `&mut` to
+                // it: what it's given, a range say, may be no JS iterator, as
+                // a caller's argument is made one; refused, as THIR refuses it.
+                let borrowed = place.ty(decls, tcx).ty;
+                if matches!(kind, BorrowKind::Mut { .. })
+                    && place.projection.iter().any(|elem| matches!(elem, PlaceElem::Field(..)))
+                    && self.is_generic_iter(borrowed)
+                {
+                    return Err(self.unsupported(span, &format!("`&mut` to a `{borrowed}`")));
+                }
                 // `&(*(_5.0))`, the reference `_5.0` is, a list's item.
                 if matches!(kind, BorrowKind::Shared)
                     && let Some(item) = self.take_field(state, place, out)?

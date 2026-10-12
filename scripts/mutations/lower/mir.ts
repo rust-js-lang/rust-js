@@ -2946,4 +2946,12 @@ export const mutations: Mutation[] = [
     replace: "                return Err(self.unsupported(span, if a.reads_same() && b.reads_same() { \"ptr::eq\" } else { \"ptr::eq of these\" }));\n            }\n            // What was there, taken out, as THIR's.\n",
     tests: ["test/lowering.test.ts","-t","ptr::eq of JS objects"],
   },
+  {
+    name: "mir-generic-iter-field-lent",
+    breaks: "MIR's generic iterator a field holds is stepped through a `&mut`, a range given it throwing",
+    file: "src/lower/mir.rs",
+    find: "                    && place.projection.iter().any(|elem| matches!(elem, PlaceElem::Field(..)))\n",
+    replace: "                    && false\n",
+    tests: ["test/diagnostics.test.ts","-t","a &mut to a generic iterator in a field"],
+  },
 ];

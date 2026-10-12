@@ -1675,6 +1675,8 @@ impl Expr {
                     "$jsonNumberText",
                     "$debugJsonValue",
                     "$debugJsonNumber",
+                    "$displayJsonError",
+                    "$debugJsonError",
                     "$jsonValueAs",
                     "$jsonGet",
                     "$jsonIndex",

@@ -5563,6 +5563,52 @@ pub fn both(a: u8, b: u8) -> bool {
   }
 });
 
+// Two references to one field, `let a = &x.0; let b = &x.0;`: each its
+// own name, not one taken apart, `const [b] = x`, which lost `a` (rustc's
+// borrow-tuple-fields).
+test("two names of one field are each kept", async () => {
+  const dir = fixture("same-field-twice");
+  writeFileSync(join(dir, "lib.rs"), `pub fn both(x: (i32, i32)) -> i32 {
+    let a = &x.0;
+    let b = &x.0;
+    *a + *b
+}
+
+pub fn each(pairs: Vec<(i32, i32)>) -> i32 {
+    let mut total = 0;
+    for p in pairs {
+        let a = p.0;
+        let b = p.0;
+        total += a * b;
+    }
+    total
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.both([3, 4]), lib.each([[2, 0], [3, 1]])]).toEqual([6, 13]);
+  }
+});
+
+// A function's tail `if` of a call's test: each branch returned, as THIR
+// writes it (rust-js's form, accepted of react.dev), not one conditional.
+test("a tail if returns each branch", async () => {
+  const dir = fixture("tail-if-returns");
+  writeFileSync(join(dir, "lib.rs"), `pub struct Email(pub String);
+
+pub fn email(s: String) -> Result<Email, String> {
+    if s.contains('@') { Ok(Email(s)) } else { Err(format!("{s} is not an email")) }
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    expect(readFileSync(join(dir, out), "utf8")).toContain('  if (s.includes("@")) {\n    return { TAG: "Ok", _0: [s] };\n  }\n  return');
+    const lib = await import(join(dir, out));
+    expect([lib.email("a@b"), lib.email("x")]).toEqual([{ TAG: "Ok", _0: ["a@b"] }, { TAG: "Err", _0: "x is not an email" }]);
+  }
+});
+
 // Each branch adding to a variable, `out += a`: the branches, as written,
 // from MIR as from THIR, not `out = c ? out + a : out + b`.
 test("branches that each add to a variable stay branches", async () => {
