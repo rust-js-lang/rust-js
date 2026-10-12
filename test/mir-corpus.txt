@@ -230,6 +230,7 @@ panic_display.rs
 parse_error_order.rs
 path_text.rs
 pin_box.rs
+prepared_places.rs
 pretty_debug.rs
 pretty_debug_derived.rs
 print.rs

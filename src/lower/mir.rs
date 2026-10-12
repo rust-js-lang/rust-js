@@ -4378,9 +4378,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && let Some(op) = super::recognition::assign_operator(tcx, trait_id)
             && let [place, rhs] = &values[..]
-            && let Value::Ref(place) = place
+            && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))
         {
             let ty = arg_tys[0].peel_refs();
+            // Through a handle a call gave, `or_insert(10)`'s: its `value`,
+            // the handle held where it's made, before what's added is.
+            let place = match place.clone() {
+                Value::Ref(place) => place,
+                cell => {
+                    let cell = self.value_expr(cell, span)?;
+                    let cell = match cell.reads_same() {
+                        true => cell,
+                        false => {
+                            self.flush(state, out)?;
+                            self.spill("cell", cell, out)
+                        }
+                    };
+                    Expr::member(cell, "value")
+                }
+            };
+            let place = &place;
             let rhs = self.value_expr(rhs.clone(), span)?;
             let rhs = super::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);
             let value = if self.is_lang_adt(ty, LangItem::String) && op == BinOp::Add {

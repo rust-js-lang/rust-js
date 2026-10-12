@@ -2574,4 +2574,12 @@ export const mutations: Mutation[] = [
     replace: "                if false {\n",
     tests: ["test/lowering.test.ts", "-t", "type JS can't hold is refused from MIR"],
   },
+  {
+    name: "mir-assign-op-handle-refused",
+    breaks: "MIR's `*m.entry(k).or_insert(10) += &v`, through a handle a call gave, is refused",
+    file: "src/lower/mir.rs",
+    find: "            && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))\n",
+    replace: "            && matches!(place, Value::Ref(_))\n",
+    tests: ["test/mir.test.ts", "-t", "prepared_places"],
+  },
 ];
