@@ -9474,3 +9474,32 @@ test("a slice to a computed end from MIR is THIR's", async () => {
     expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
   }
 });
+
+// A slice's `iter_mut()` is an array's items, from MIR as from THIR: its
+// chain the array's own methods, `v.find(f)`, `$mutItems(v).filter(f)`,
+// not a JS iterator's of it, `$lent(Iterator.from(v)).find(f)`.
+test("iter_mut chains from MIR are array methods", async () => {
+  const dir = fixture("iter-mut-chains");
+  writeFileSync(join(dir, "lib.rs"), `pub fn count(v: &mut Vec<(u32, u32)>, w: u32) {
+    if let Some(e) = v.iter_mut().find(|(k, _)| *k == w) {
+        e.1 += 1;
+    } else {
+        v.push((w, 1));
+    }
+}
+pub fn big(v: &mut [u32]) -> usize {
+    v.iter_mut().filter(|x| **x > 2).count()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("const e = v.find(([k]) => k === w);");
+    expect(js).toContain("return $mutItems(v).filter((x) => x.value > 2).length;");
+    const lib = await import(join(dir, out));
+    const v = [[1, 1]];
+    lib.count(v, 1);
+    lib.count(v, 2);
+    expect([v, lib.big([1, 3, 5])]).toEqual([[[1, 2], [2, 1]], 2]);
+  }
+});

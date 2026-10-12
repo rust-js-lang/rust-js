@@ -2851,6 +2851,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         (self.is_std_type(ty, StdItem::ArrayIntoIter) || vec_into_iter).then_some(true)
     }
 
+    /// A slice's `iter_mut()`'s, over its array's items, or handles on
+    /// them (ADR 0099).
+    pub(super) fn is_slice_iter_mut(&self, ty: Ty<'tcx>) -> bool {
+        let ty = self.reveal(ty);
+        matches!(ty.kind(), ty::Adt(adt, _) if std_path(self.tcx, adt.did()) == "std::slice::IterMut")
+    }
+
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
     pub(super) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);

@@ -4682,7 +4682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let receiver = arg_tys.first().map_or(tcx.types.unit, |t| t.peel_refs());
             if let Some(handles) = self.item_handles_of(known, exprs, receiver, span, out)? {
                 return Ok(Value::Expr(match self.implements_iterator(output) {
-                    true => self.js_iterator(handles),
+                    true => self.std_iterator(handles, output),
                     false => handles,
                 }));
             }

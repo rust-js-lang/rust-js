@@ -2002,4 +2002,16 @@ export const mutations: Mutation[] = [
       "a B-tree's range from MIR"
     ]
   },
+  {
+    "name": "mir-item-handles-a-js-iterator",
+    "breaks": "`iter_mut()`'s handles from MIR are `Iterator.from($mutItems(v))`, its count a `reduce`, not `$mutItems(v).filter(f).length`",
+    "file": "src/lower/mir.rs",
+    "find": "                    true => self.std_iterator(handles, output),\n",
+    "replace": "                    true => self.js_iterator(handles),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iter_mut chains from MIR"
+    ]
+  },
 ];

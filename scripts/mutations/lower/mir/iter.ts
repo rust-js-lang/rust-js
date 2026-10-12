@@ -142,8 +142,8 @@ export const mutations: Mutation[] = [
     name: "mir-made-array-iterator-from",
     breaks: "a `split`'s array MIR steps is `Iterator.from(…)`, so its chain stays a JS iterator's",
     file: "src/lower/mir/iter.rs",
-    find: "            None if made_array(&value) || self.recognition().is_deque_iter(ty) => self.stepped_items(value),\n",
-    replace: "            None if self.recognition().is_deque_iter(ty) => self.stepped_items(value),\n",
+    find: "            None if made_array(&value)\n                || self.recognition().is_deque_iter(ty)\n",
+    replace: "            None if false\n                || self.recognition().is_deque_iter(ty)\n",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },
   {
@@ -296,6 +296,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "iterators compared equal from MIR"
+    ]
+  },
+  {
+    "name": "mir-iter-mut-a-js-iterator",
+    "breaks": "a slice's `iter_mut()` from MIR is `Iterator.from(v)`, its chain lazy, `$lent(Iterator.from(v)).find(f)`, not `v.find(f)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                || self.recognition().is_slice_iter_mut(ty) =>\n",
+    "replace": "                || false =>\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iter_mut chains from MIR"
     ]
   },
 ];
