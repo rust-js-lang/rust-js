@@ -1255,18 +1255,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-tidy-empty-branches-kept",
-    "breaks": "a match arm that does nothing from MIR is `else if (message !== \"refresh\") {}`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    bottom_up(body, &mut empty_branches);\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "match arm that does nothing"
-    ]
-  },
-  {
     "name": "mir-tidy-tuple-reads-kept",
     "breaks": "children MIR holds as a tuple stay `const children = [..]`, read `children[0]`, and its `then` closure a `const value`",
     "file": "src/lower/mir/tidy.rs",

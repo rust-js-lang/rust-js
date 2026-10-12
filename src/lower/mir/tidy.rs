@@ -222,7 +222,6 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // `const result = e; return result;` of what the function gives: `return e;`.
     js::statement_lists(body, &mut |stmts| returned_consts(stmts, result));
     // And their arms that do nothing.
-    bottom_up(body, &mut empty_branches);
     // A cell only its `value` is read and set of, by name: its variable.
     plain_cells(body);
     js::statement_lists(body, &mut |stmts| named_callbacks(stmts, callbacks));
@@ -2978,19 +2977,6 @@ fn in_closure(stmts: &[Stmt], name: &str) -> bool {
         }
     });
     found
-}
-
-/// `else if (t) {}`, an arm that does nothing, a match's `_ => {}`, of a
-/// test that does nothing: nothing, nor its `else` then.
-fn empty_branches(stmts: &mut Vec<Stmt>) {
-    for stmt in stmts.iter_mut() {
-        if let StmtKind::If(_, _, otherwise) = &mut stmt.kind
-            && otherwise.as_ref().is_some_and(|o| o.is_empty())
-        {
-            *otherwise = None;
-        }
-    }
-    stmts.retain(|s| !matches!(&s.kind, StmtKind::If(test, then, None) if then.is_empty() && !test.has_effects()));
 }
 
 /// `const children = [" ", c ? a : b];`, a tuple MIR holds, read only item

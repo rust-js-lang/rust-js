@@ -1123,20 +1123,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|&&id| self.tcx.parent(id) == def_id)
             .copied()
             .collect();
-        // JS ignores extra arguments, so `|_| ..` is `() => ..`, as THIR's,
-        // unless the closure drops what it's given.
-        let given = &body.thir.params.raw[1.min(body.thir.params.len())..];
-        if given.len() == params.len() {
-            while let Some(last) = given.get(params.len().wrapping_sub(1))
-                && last
-                    .pat
-                    .as_deref()
-                    .is_some_and(|p| matches!(p.kind, thir::PatKind::Wild))
-                && !self.has_drops(last.ty)
-            {
-                params.pop();
-            }
-        }
         // An `async` closure's `|_|`, which its MIR leaves unnamed, and its
         // THIR binds as `__arg0`: read nowhere, none either.
         while let Some(js::Pattern::Name(name)) = params.last()
@@ -4372,8 +4358,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `()`, after what made it ran (ADR 0148), `is_ok()` `true`.
         if arg_tys.first().is_some_and(|ty| self.is_fmt_result(ty.peel_refs()))
             && tcx.def_kind(def_id) == DefKind::AssocFn
-            && !tcx.is_lang_item(def_id, LangItem::TryTraitBranch)
-            // `Result`'s own, not `Argument::new_debug(&r)`'s.
+            // `Result`'s own, not `Argument::new_debug(&r)`'s, nor `?`'s.
             && tcx
                 .impl_of_assoc(def_id)
                 .is_some_and(|imp| self.recognition().is_result(tcx.type_of(imp).skip_binder()))

@@ -659,14 +659,6 @@ export const mutations: Mutation[] = [
     tests: ["test/mir.test.ts","-t","type_facts"],
   },
   {
-    name: "mir-try-fmt-result-refused",
-    breaks: "`writeln!(out, ..)?` of a `fmt::Result` is refused as one of its methods",
-    file: "src/lower/mir.rs",
-    find: "            && !tcx.is_lang_item(def_id, LangItem::TryTraitBranch)\n",
-    replace: "",
-    tests: ["test/mir.test.ts","-t","write_to_string"],
-  },
-  {
     name: "mir-index-from-end-front",
     breaks: "`[.., last]` of a slice reads its item counted from the front",
     file: "src/lower/mir.rs",
@@ -1097,22 +1089,6 @@ export const mutations: Mutation[] = [
     find: "        matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
     replace: "        false && matches!(msg, mir::AssertKind::BoundsCheck { .. })\n",
     tests: ["test/lowering.test.ts","-t","early returns and index loops from MIR"],
-  },
-  {
-    name: "mir-closure-wild-params-kept",
-    breaks: "a closure's last `_` parameters are written, `(_2) => ..`",
-    file: "src/lower/mir.rs",
-    find: "                params.pop();\n",
-    replace: "                break;\n",
-    tests: ["test/lowering.test.ts","-t","last `_` parameters"],
-  },
-  {
-    name: "mir-closure-dropped-param-left-out",
-    breaks: "a closure's last `_` parameter it drops is left out, and what it drops is undefined",
-    file: "src/lower/mir.rs",
-    find: "                && !self.has_drops(last.ty)\n            {\n                params.pop();\n",
-    replace: "            {\n                params.pop();\n",
-    tests: ["test/lowering.test.ts","-t","last `_` parameters"],
   },
   {
     name: "mir-bool-switch-negated-first",
