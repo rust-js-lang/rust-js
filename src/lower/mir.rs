@@ -2034,7 +2034,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Ref(ref place)
                 if let js::ExprKind::Member(holder, field) = &place.kind
                     && field == "value"
-                    && matches!(holder.kind, js::ExprKind::Var(_) | js::ExprKind::Call(..)) =>
+                    && matches!(
+                        holder.kind,
+                        js::ExprKind::Var(_) | js::ExprKind::Call(..) | js::ExprKind::Object(_)
+                    ) =>
             {
                 (**holder).clone()
             }
@@ -3178,6 +3181,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Ok(item);
                 }
                 let pointee = place.ty(decls, tcx).ty;
+                // `&mut *r`, a reborrow of a cell, `leak()`'s `{ value: s }`
+                // too: that cell's `value`, the cell kept, not `s`.
+                if matches!(kind, BorrowKind::Mut { .. })
+                    && place.projection.as_slice() == [PlaceElem::Deref]
+                    && self.is_cell(decls[place.local].ty)
+                {
+                    match self.read_local_value(state, place.local, out)? {
+                        Value::Expr(cell) => {
+                            let place = match cell.kind {
+                                js::ExprKind::Object(_) => {
+                                    let kind = js::ExprKind::Member(Box::new(cell), "value".into());
+                                    Expr {
+                                        kind,
+                                        ..Expr::undefined()
+                                    }
+                                }
+                                _ => Expr::member(cell, "value"),
+                            };
+                            return Ok(Value::Ref(place));
+                        }
+                        aliased @ Value::Ref(_) => return Ok(aliased),
+                        _ => return Err(self.unsupported(span, "this reborrow, from its MIR")),
+                    }
+                }
                 if matches!(kind, BorrowKind::Mut { .. }) && self.is_cell_pointee(pointee) {
                     return Ok(Value::Ref(self.mir_place(state, *place, span, out)?));
                 }

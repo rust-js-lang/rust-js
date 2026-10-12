@@ -2418,8 +2418,8 @@ export const mutations: Mutation[] = [
     name: "mir-call-cell-refused",
     breaks: "MIR's `&mut` a call gives the cell of, `&mut s[7..]` returned, is refused",
     file: "src/lower/mir.rs",
-    find: "                    && matches!(holder.kind, js::ExprKind::Var(_) | js::ExprKind::Call(..)) =>\n",
-    replace: "                    && matches!(holder.kind, js::ExprKind::Var(_)) =>\n",
+    find: "                        js::ExprKind::Var(_) | js::ExprKind::Call(..) | js::ExprKind::Object(_)\n",
+    replace: "                        js::ExprKind::Var(_) | js::ExprKind::Object(_)\n",
     tests: ["test/mir.test.ts", "-t", "str_mut"],
   },
   {
@@ -2429,5 +2429,21 @@ export const mutations: Mutation[] = [
     find: "!pointee.is_sized(self.tcx, self.typing_env) && !pointee.is_str())",
     replace: "!pointee.is_sized(self.tcx, self.typing_env))",
     tests: ["test/mir.test.ts", "-t", "str_mut"],
+  },
+  {
+    name: "mir-reborrow-cell-folded",
+    breaks: "MIR's `&mut *s` of `leak()`'s cell is its text, `\"cd\"`, not the cell",
+    file: "src/lower/mir.rs",
+    find: "                                    let kind = js::ExprKind::Member(Box::new(cell), \"value\".into());\n                                    Expr {\n                                        kind,\n                                        ..Expr::undefined()\n                                    }\n",
+    replace: "                                    Expr::member(cell, \"value\")\n",
+    tests: ["test/mir.test.ts", "-t", "leaked_string_written"],
+  },
+  {
+    name: "mir-object-cell-refused",
+    breaks: "MIR's cell made where it's kept, `vec![s.leak()]`'s, is refused",
+    file: "src/lower/mir.rs",
+    find: "                        js::ExprKind::Var(_) | js::ExprKind::Call(..) | js::ExprKind::Object(_)\n",
+    replace: "                        js::ExprKind::Var(_) | js::ExprKind::Call(..)\n",
+    tests: ["test/mir.test.ts", "-t", "leaked_string_written"],
   },
 ];
