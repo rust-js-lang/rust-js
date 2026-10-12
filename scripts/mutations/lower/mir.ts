@@ -2558,4 +2558,20 @@ export const mutations: Mutation[] = [
     replace: "                match false {\n",
     tests: ["test/mir.test.ts", "-t", "mut_ref_compare"],
   },
+  {
+    name: "mir-binding-type-unchecked",
+    breaks: "MIR's variable of a struct of a `&mut &mut [i32]` compiles, `*h.s = ..` changing a copy",
+    file: "src/lower/mir.rs",
+    find: "            if state.locals.user[local] && !inlined(state.body, local) && !self.implements_iterator(ty) {\n",
+    replace: "            if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "type JS can't hold is refused from MIR"],
+  },
+  {
+    name: "mir-declared-binding-type-unchecked",
+    breaks: "MIR's variable assigned again, of a struct of a `&mut &mut [i32]`, compiles",
+    file: "src/lower/mir.rs",
+    find: "                if state.locals.user[local] && !inlined(mir_body, local) && !self.implements_iterator(ty) {\n",
+    replace: "                if false {\n",
+    tests: ["test/lowering.test.ts", "-t", "type JS can't hold is refused from MIR"],
+  },
 ];

@@ -5302,6 +5302,57 @@ test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
   }
 });
 
+// A variable of a type JS can't hold, a struct of a \`&mut\` to a \`&mut [i32]\`,
+// is refused from MIR as THIR refuses its binding: \`*h.s = &mut ys\` would
+// change a copy, leaving \`rest\` on \`xs\`.
+test("a variable of a type JS can't hold is refused from MIR", () => {
+  const dir = fixture("mut-slice-ref-held");
+  writeFileSync(join(dir, "lib.rs"), `struct Holder<'a, 'b> {
+    s: &'a mut &'b mut [i32],
+}
+pub fn run() -> Vec<i32> {
+    let mut xs = vec![1, 2];
+    let mut ys = vec![9];
+    let mut rest: &mut [i32] = &mut xs;
+    let h = Holder { s: &mut rest };
+    *h.s = &mut ys;
+    rest[0] = 5;
+    xs
+}
+`);
+  for (const env of [{}, { RUST_JS_MIR: "1" }]) {
+    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+      cwd: root,
+      stderr: "pipe",
+      env: { ...process.env, ...env },
+    });
+    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
+  }
+  // And one assigned again, which MIR declares first.
+  writeFileSync(join(dir, "lib.rs"), `struct Holder<'a, 'b> {
+    s: &'a mut &'b mut [i32],
+}
+pub fn run(again: bool) -> Vec<i32> {
+    let mut xs = vec![1, 2];
+    let mut ys = vec![9];
+    let mut rest: &mut [i32] = &mut xs;
+    let mut h = Holder { s: &mut rest };
+    if again {
+        h = Holder { s: h.s };
+    }
+    *h.s = &mut ys;
+    rest[0] = 5;
+    xs
+}
+`);
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+    cwd: root,
+    stderr: "pipe",
+    env: { ...process.env, RUST_JS_MIR: "1" },
+  });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
+});
+
 // MIR's cell only its function uses is a plain variable (tidy's
 // \`plain_cells\`), but not where a callback's parameter of its name reads
 // a \`value\` of its own, \`{:?}\`'s of a \`Vec<&mut str>\`.

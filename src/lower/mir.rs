@@ -545,6 +545,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !state.locals.names[local].is_empty()
                 && (state.locals.writes[local] > 1 || flagged[local.as_usize()])
             {
+                let ty = mir_body.local_decls[local].ty;
+                if state.locals.user[local] && !inlined(mir_body, local) && !self.implements_iterator(ty) {
+                    self.check_value_ty(ty, def_span)?;
+                }
                 out.push(StmtKind::Let(state.locals.names[local].clone(), None).at(js::Span::NONE));
                 state.locals.declared[local] = true;
             }
@@ -2345,6 +2349,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         if place.projection.is_empty() && !state.locals.declared[local] {
+            // A variable of a type JS can't hold, refused as THIR's binding.
+            let ty = state.body.local_decls[local].ty;
+            if state.locals.user[local] && !inlined(state.body, local) && !self.implements_iterator(ty) {
+                self.check_value_ty(ty, span)?;
+            }
             self.flush(state, out)?;
             state.locals.declared[local] = true;
             let name = state.locals.names[local].clone();
@@ -6341,6 +6350,13 @@ fn str_part_of(place: &Expr) -> Option<(Expr, Vec<Expr>)> {
     };
     let bounds = args[1..].to_vec();
     (fixed_place(whole) && bounds.iter().all(|b| !b.has_effects())).then(|| ((**whole).clone(), bounds))
+}
+
+/// Whether `local` is of a function MIR put in this body, std's, not the
+/// program's own.
+fn inlined(body: &mir::Body<'_>, local: Local) -> bool {
+    let scope = &body.source_scopes[body.local_decls[local].source_info.scope];
+    scope.inlined.is_some() || scope.inlined_parent_scope.is_some()
 }
 
 fn fixed_place(place: &Expr) -> bool {
