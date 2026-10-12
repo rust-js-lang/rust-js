@@ -5539,6 +5539,31 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
+// Each branch adding to a variable, `out += a`: the branches, as written,
+// from MIR as from THIR, not `out = c ? out + a : out + b`.
+test("branches that each add to a variable stay branches", async () => {
+  const dir = fixture("branch-updates");
+  writeFileSync(join(dir, "lib.rs"), `pub fn report(results: Vec<Result<u32, String>>) -> String {
+    let mut out = String::new();
+    for r in results {
+        match r {
+            Ok(n) => out += &format!("ok {n}\\n"),
+            Err(e) => out += &format!("err {e}\\n"),
+        }
+    }
+    out
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("out += `ok ${");
+    expect(js).toContain("out += `err ${");
+    const lib = await import(join(dir, out));
+    expect(lib.report([{ TAG: "Ok", _0: 1 }, { TAG: "Err", _0: "x" }])).toBe("ok 1\nerr x\n");
+  }
+});
+
 // A `?` and a `return` in a loop, and a `while` in it: each `return` where
 // it's written, and the `while` tested at its head, as THIR writes them,
 // not MIR's one exit, a labeled block, nor a `while (true)`.

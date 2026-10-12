@@ -2297,7 +2297,9 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
                     && x == y
                     // Not one of more branches, which reads best as they are.
                     // A temporary's, an `if` the program wrote as a value, is one.
-                    && ((small(yes) && small(no)) || is_temporary(x)) =>
+                    && ((small(yes) && small(no)) || is_temporary(x))
+                    // Nor each adding to it, `out += a`, as written.
+                    && !(updates(x, yes) && updates(x, no)) =>
             {
                 // The value the program wrote first, first: `a || b ? x : y` of
                 // `if a || b { x } else { y }` MIR tests `!a && !b` of.
@@ -2492,6 +2494,11 @@ fn small(e: &Expr) -> bool {
             ExprKind::Cond(..) | ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) | ExprKind::Function(_)
         ),
     }
+}
+
+/// Whether `value`, given `x`, is `x` changed, `x + a`: `x += a`.
+fn updates(x: &str, value: &Expr) -> bool {
+    matches!(&value.kind, ExprKind::Binary(_, of, _) if matches!(&of.kind, ExprKind::Var(v) if v == x))
 }
 
 /// The variable `stmts` only assign, and what to: `x = a;`.

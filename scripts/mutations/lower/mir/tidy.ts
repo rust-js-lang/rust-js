@@ -270,8 +270,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-temporary-ternary-kept",
     breaks: "an `if` the program wrote as a value, of an element, stays a `let` assigned in branches, not a conditional child",
     file: "src/lower/mir/tidy.rs",
-    find: "                    && ((small(yes) && small(no)) || is_temporary(x)) =>\n",
-    replace: "                    && small(yes) && small(no) =>\n",
+    find: "                    && ((small(yes) && small(no)) || is_temporary(x))\n",
+    replace: "                    && small(yes) && small(no)\n",
     tests: ["test/mir.test.ts","-t","JSX tests"],
   },
   {
@@ -2081,5 +2081,13 @@ export const mutations: Mutation[] = [
     find: "    if headed {\n",
     replace: "    if headed && false {\n",
     tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+  },
+  {
+    name: "mir-tidy-updates-folded",
+    breaks: "MIR's branches each adding to a variable are `x = c ? x + a : x + b`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    && !(updates(x, yes) && updates(x, no)) =>\n",
+    replace: "                    && !(updates(x, yes) && updates(x, no) && false) =>\n",
+    tests: ["test/lowering.test.ts","-t","branches that each add"],
   },
 ];
