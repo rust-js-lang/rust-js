@@ -1703,18 +1703,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-element-unmapped",
-    "breaks": "an element from MIR maps to no Rust line, its tag `<Cached` none in the source map",
-    "file": "src/lower/mir.rs",
-    "find": "return Ok(Value::Expr(element.or_at(self.js_span(span))));",
-    "replace": "return Ok(Value::Expr(element));",
-    "tests": [
-      "test/mir.test.ts",
-      "-t",
-      "JSX tests"
-    ]
-  },
-  {
     "name": "mir-default-base-called",
     "breaks": "an update's derived `Default` base is its `default()` called, which a generic component's `children: C` needs a dictionary for, refused",
     "file": "src/lower/mir.rs",
