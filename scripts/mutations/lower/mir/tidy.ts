@@ -1782,4 +1782,16 @@ export const mutations: Mutation[] = [
       "a count kept in a map from MIR"
     ]
   },
+  {
+    "name": "mir-chain-tail-folded",
+    "breaks": "a variable's value of three arms from MIR has its last two folded, `else { cls = w ? \"warn\" : \"tip\"; }`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    && let Some((y, folded)) = assigned_only(otherwise)\n",
+    "replace": "                    && let Some((y, folded)) = assigned_only(otherwise).filter(|_| false)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a variable's value of three arms from MIR"
+    ]
+  },
 ];

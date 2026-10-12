@@ -6264,6 +6264,30 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }
 });
 
+// A match of three arms or more giving a variable its value, from MIR, is
+// the chain of them, as THIR's: not its last two folded, \`c ? a : b\`.
+test("a variable's value of three arms from MIR is their chain", async () => {
+  const dir = fixture("mir-three-arms");
+  writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
+pub enum Kind { Note, Warn { level: u8 }, Tip(&'static str) }
+pub fn class(k: Kind) -> String {
+    let cls = match k {
+        Kind::Note => "note",
+        Kind::Warn { .. } => "warn",
+        Kind::Tip(_) => "tip",
+    };
+    format!("{cls}!")
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain('  if (k === "Note") {\n    cls = "note";\n  } else if (k.TAG === "Warn") {\n    cls = "warn";\n  } else {\n    cls = "tip";\n  }\n');
+    const lib = await import(join(dir, out));
+    expect([lib.class$("Note"), lib.class$({ TAG: "Warn", level: 1 }), lib.class$({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
+  }
+});
+
 // A count kept in a map, `*m.entry(k).or_insert(0) += 1`, from MIR is the
 // value there or put in, then set, as THIR's: no handle on the key's value.
 test("a count kept in a map from MIR is its value, then set", async () => {

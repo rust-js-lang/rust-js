@@ -2117,6 +2117,22 @@ fn branch_values(stmts: &mut Vec<Stmt>, returns: &[js::Span], booleans: &HashSet
             // A test of two numbers that fails, a check of a constant
             // divisor's, `if (2 === 0)`: nothing.
             StmtKind::If(test, _, None) if never(&test) => StmtKind::Expr(Expr::undefined()),
+            // A chain of more arms, its last two folded first, `if (a) { x = p; }
+            // else { x = b ? q : r; }`: the chain, as it's written.
+            StmtKind::If(ref test, ref then, Some(ref otherwise))
+                if let Some((x, _)) = assigned_only(then)
+                    && !is_temporary(x)
+                    && let Some((y, folded)) = assigned_only(otherwise)
+                    && x == y
+                    && let ExprKind::Cond(t, q, r) = &folded.kind
+                    && small(q)
+                    && small(r) =>
+            {
+                let at = otherwise[0].span;
+                let arm = |value: &Expr| vec![StmtKind::Assign(Expr::var(x), value.clone()).at(at)];
+                let chained = StmtKind::If((**t).clone(), arm(q), Some(arm(r))).at(at);
+                StmtKind::If(test.clone(), then.clone(), Some(vec![chained]))
+            }
             StmtKind::If(test, ref then, Some(ref otherwise))
                 if let Some((x, yes)) = assigned_only(then)
                     && let Some((y, no)) = assigned_only(otherwise)
