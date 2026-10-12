@@ -430,17 +430,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `$iterator({ start: a, end: b }, $rangeNext).map(f)`, a range of
-    /// numbers `iter_ty` steps, each item mapped or filtered, all collected:
-    /// its array's, `$range(a, b).map(f)`, as THIR's, made as big as what's
-    /// collected anyway; what more than one map does in Rust's order, one
-    /// item through them all at a time, only lazily. Of `a..=b`, `$range(a,
-    /// b + 1)`; stepped from its end, `.rev()`, `.toReversed()` first.
+    /// numbers `iter_ty` steps, each item mapped, all collected: its array's,
+    /// `$range(a, b).map(f)`, as THIR's, made as big as what's collected
+    /// anyway; what more than one map does in Rust's order, one item through
+    /// them all at a time, only lazily. Not filtered, which may keep few of
+    /// many, `$lazyRange(a, b).filter(f)` (`range_items`). Of `a..=b`,
+    /// `$range(a, b + 1)`; stepped from its end, `.rev()`, `.toReversed()`
+    /// first.
     fn mapped_range(&mut self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
         let mut maps = Vec::new();
         let mut at = it;
         while let js::ExprKind::Call(callee, args) = &at.kind
             && let js::ExprKind::Member(source, name) = &callee.kind
-            && (name == "map" || name == "filter")
+            && name == "map"
             && let [f] = &args[..]
         {
             maps.push((name.clone(), f.clone()));

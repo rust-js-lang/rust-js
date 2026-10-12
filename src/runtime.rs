@@ -92,7 +92,7 @@ helpers! {
     BigMinMax,
     ParseBig,
     BigRange,
-    RangeFrom,
+    LazyRange,
     RangeNext,
     RangeInclusiveNext,
     RangeNextBack,
@@ -361,9 +361,10 @@ impl Helper {
     fn dependencies(self) -> &'static [Helper] {
         match self {
             Helper::DebugF64 => &[Helper::DisplayF64],
-            Helper::RangeNext | Helper::RangeInclusiveNext | Helper::RangeNextBack | Helper::RangeInclusiveNextBack => {
-                &[Helper::CharStep]
-            }
+            // A range of numbers made where it's stepped is its numbers,
+            // made as they're stepped, `$lazyRange(a, b)` (`range_items`).
+            Helper::RangeNext | Helper::RangeInclusiveNext => &[Helper::CharStep, Helper::LazyRange],
+            Helper::RangeNextBack | Helper::RangeInclusiveNextBack => &[Helper::CharStep],
             Helper::FmtError => &[Helper::Print],
             Helper::DisplayF32 => &[Helper::F32Digits],
             Helper::LowerExp => &[Helper::F32Digits],
@@ -528,11 +529,11 @@ impl Helper {
             Helper::TryFromInt => include_str!("runtime/try_from_int.js"),
             // `a..b` of `i64`s or `u64`s, collected (ADR 0086).
             // `a..`, which never ends (ADR 0129): `++` steps a BigInt too.
-            Helper::RangeFrom => include_str!("runtime/range_from.js"),
+            Helper::LazyRange => include_str!("runtime/lazy_range.js"),
             // A `Range`'s `next()` and `next_back()` move its bounds, as Rust's do.
             Helper::RangeNext => include_str!("runtime/range_next.js"),
             Helper::RangeInclusiveNext => include_str!("runtime/range_inclusive_next.js"),
-            // `a..`'s `next()`: past its type's end it counts on, as `$rangeFrom` does.
+            // `a..`'s `next()`: past its type's end it counts on, as `$lazyRange` does.
             Helper::RangeFromNext => include_str!("runtime/range_from_next.js"),
             // A range of `char`s, which skips the surrogates no `char` is, as Rust's does.
             Helper::CharRange => include_str!("runtime/char_range.js"),

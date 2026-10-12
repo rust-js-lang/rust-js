@@ -275,18 +275,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-range-filter-lazy",
-    "breaks": "a range filtered and collected from MIR stays a lazy `$iterator(\u2026)`",
-    "file": "src/lower/mir/iter.rs",
-    "find": "(name == \"map\" || name == \"filter\")",
-    "replace": "name == \"map\"",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected"
-    ]
-  },
-  {
     "name": "mir-iter-eq-refused",
     "breaks": "`a.eq(b)` of two iterators from MIR is refused",
     "file": "src/lower/mir/iter.rs",
@@ -308,6 +296,18 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "iter_mut chains from MIR"
+    ]
+  },
+  {
+    "name": "mir-mapped-range-filtered",
+    "breaks": "`(0..n).filter(f).collect()` from MIR is `$range(0, n).filter(f)`, an array of all n numbers made to keep few",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            && name == \"map\"\n",
+    "replace": "            && (name == \"map\" || name == \"filter\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range made where it's stepped"
     ]
   },
 ];

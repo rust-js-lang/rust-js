@@ -905,8 +905,8 @@ export function $bigRange(start, end) {
   return items;
 }
 
-export function* $rangeFrom(start) {
-  for (let i = start; ; i++) {
+export function* $lazyRange(start, end = Infinity) {
+  for (let i = start; i < end; i++) {
     yield i;
   }
 }

@@ -158,8 +158,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-eager-chains-off",
     breaks: "`$iter(xs).map(f).toArray()` stays, not `xs.map(f)`",
     file: "src/lower/mir/tidy.rs",
-    find: "    named_temporaries(body);\n    eager_chains(body);\n",
-    replace: "    named_temporaries(body);\n",
+    find: "    js::each_expr_mut(body, &mut range_items);\n    eager_chains(body);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
+    replace: "    js::each_expr_mut(body, &mut range_items);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
     tests: ["test/lowering.test.ts","-t","iterator chains from MIR|a lazy chain from MIR spread once"],
   },
   {
@@ -890,8 +890,8 @@ export const mutations: Mutation[] = [
     "name": "late-eager-chains-off",
     "breaks": "an array's iterator read in place late stays `$lent($iter(xs)).some(f)`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    // $iter(xs);`: the array's, as THIR's.\n    eager_chains(body);\n",
-    "replace": "    // $iter(xs);`: the array's, as THIR's.\n",
+    "find": "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut range_items);\n    eager_chains(body);\n",
+    "replace": "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut range_items);\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -1924,6 +1924,42 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a match reading a table from MIR"
+    ]
+  },
+  {
+    "name": "mir-tidy-range-items-eager",
+    "breaks": "`(0..n).find(f)` from MIR is `$range(0, n).find(f)`, an array of all n numbers made before the first is tried",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    Some(Expr::call(Expr::var(\"$lazyRange\"), vec![start.clone(), end]))\n",
+    "replace": "    Some(Expr::call(Expr::var(\"$iter\"), vec![Expr::call(Expr::var(\"$range\"), vec![start.clone(), end])]))\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range made where it's stepped"
+    ]
+  },
+  {
+    "name": "mir-tidy-range-items-chars",
+    "breaks": "a range of `char`s made where it's stepped is `$lazyRange(\"a\", \"e\")`, which counts text as numbers",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "|| !matches!(start.kind, ExprKind::Num(_))",
+    "replace": "|| false",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range made where it's stepped"
+    ]
+  },
+  {
+    "name": "mir-tidy-range-items-lent",
+    "breaks": "a range made where it's stepped stays lent, `$lent($lazyRange(0, n)).find(f)`, though nothing else steps it",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "    if let Some(made) = lazy_range(iterators::unlent(e)) {\n",
+    "replace": "    if let Some(made) = lazy_range(e) {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range made where it's stepped"
     ]
   },
 ];

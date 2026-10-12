@@ -7,10 +7,10 @@ import {
   $debugStr,
   $drain,
   $eq,
+  $lazyRange,
   $lazyZip,
   $print,
   $range,
-  $rangeFrom,
   $rangeFromNext,
   $rangeNext,
   $rangeNextBack,
@@ -82,8 +82,8 @@ function main() {
       .map((x) => Math.imul(x, 2))
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
-  const ids = $rangeFrom(1).take(3).toArray();
-  const numbered = $lazyZip($rangeFrom(1), Array.from("abc")).toArray();
+  const ids = $lazyRange(1).take(3).toArray();
+  const numbered = $lazyZip($lazyRange(1), Array.from("abc")).toArray();
   console.log(
     `[${ids.map((item) => String(item)).join(", ")}] [${numbered.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${first_square_over(50)}`,
   );
@@ -136,7 +136,7 @@ function main() {
   const tmp = sum_all($range(1, 4));
   const range = r_of(3);
   console.log(
-    `${tmp} ${sum_all($range(range.start, range.end))} ${sum_all($rangeFrom(1).take(3))}`,
+    `${tmp} ${sum_all($range(range.start, range.end))} ${sum_all($lazyRange(1).take(3))}`,
   );
   console.log(
     `${shown_twice(

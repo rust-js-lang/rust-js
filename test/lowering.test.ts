@@ -9374,7 +9374,8 @@ pub fn down(n: u32) -> Vec<u32> {
 pub fn upto(n: u32) -> Vec<u32> {
     (1..=n).collect()
 }
-// Filtered too, as react.dev's table of contents finds its anchors.
+// Filtered, its numbers made as they're stepped, which a filter may keep
+// few of: no array of them all.
 pub fn odd_squares(n: u32) -> Vec<u32> {
     (0..n).filter(|i| i % 2 == 1).map(|i| i * i).collect()
 }
@@ -9386,7 +9387,7 @@ pub fn odd_squares(n: u32) -> Vec<u32> {
     if (out === "mir.js") expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
     if (out === "mir.js") expect(js).toContain("return $range(0, n).toReversed();");
     if (out === "mir.js") expect(js).toContain("return $range(1, n + 1);");
-    if (out === "mir.js") expect(js).toContain("return $range(0, n)\n    .filter(");
+    if (out === "mir.js") expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
     const lib = await import(join(dir, out));
     expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
     expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
@@ -9770,4 +9771,42 @@ pub fn getSyntaxHighlight(theme: &Theme) -> &'static HighlightStyle {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain('    { tag: tags.keyword, class: classNameToken("keyword") },\n');
   }
+});
+
+// A range of numbers made where it's stepped, `(0..n).find(f)`, is its
+// numbers made as they're stepped from MIR, `$lazyRange(0, n).find(f)`, which
+// stops where Rust's does: not an array of all of them made first, which a
+// big range can't be, nor a range object stepped by `$rangeNext`. Kept lazy,
+// as react.dev's getHeaderAnchors keeps a chain whose closure may panic, too.
+// Of \`char\`s, a range stays one.
+test("a range made where it's stepped from MIR is its numbers, made lazily", async () => {
+  const dir = fixture("range-items");
+  writeFileSync(join(dir, "lib.rs"), `pub fn first(n: u32, f: impl Fn(u32) -> bool) -> Option<u32> {
+    (0..n).find(|&i| f(i))
+}
+pub fn picked(v: &[Option<u32>]) -> Vec<u32> {
+    (0..v.len()).filter_map(|i| v[i]).filter(|x| x.checked_sub(1).unwrap() > 0).collect()
+}
+pub fn letter(f: impl Fn(char) -> bool) -> Option<char> {
+    ('a'..'e').find(|&c| f(c))
+}
+pub fn evens(n: u32) -> Vec<u32> {
+    (0..n).filter(|i| i % 2 == 0).collect()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.first(5, (i: number) => i > 2), lib.first(2, () => false), lib.picked([3, undefined, 2])]).toEqual([3, undefined, [3, 2]]);
+    expect([lib.letter((c: string) => c > "b"), lib.letter(() => false)]).toEqual(["c", undefined]);
+    expect(lib.evens(5)).toEqual([0, 2, 4]);
+  }
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  // Of a filter, which may keep few of many, no array of them all either.
+  expect(js).toContain("return $lazyRange(0, n)\n    .filter((i) => i % 2 === 0)\n    .toArray();");
+  expect(js).toContain("return $lazyRange(0, n).find(f);");
+  expect(js).toContain("return $lazyRange(0, v.length)\n    .map(");
+  // A billion numbers, the first that holds the third: as quick as Rust's.
+  const { first } = await import(join(dir, "mir.js"));
+  expect(first(1_000_000_000, (i: number) => i === 2)).toBe(2);
 });

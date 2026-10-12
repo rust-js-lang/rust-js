@@ -119,7 +119,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A range's items: `$range(r.start, r.end)`, `$range(a, b + 1)` of
-    /// `a..=b`, and `$rangeFrom(a)` of `a..`, a JS iterator that never ends.
+    /// `a..=b`, and `$lazyRange(a)` of `a..`, a JS iterator that never ends.
     pub(in crate::lower) fn range_items(
         &mut self,
         range: Expr,
@@ -158,8 +158,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::var(name), vec![start.clone(), end])
             }
             (RangeKind::From, [start]) => {
-                self.runtime.insert(Helper::RangeFrom);
-                Expr::call(Expr::var("$rangeFrom"), vec![start.clone()])
+                self.runtime.insert(Helper::LazyRange);
+                Expr::call(Expr::var("$lazyRange"), vec![start.clone()])
             }
             _ => return Err(self.unsupported(span, &format!("iterating over `{ty}`"))),
         })

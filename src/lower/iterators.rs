@@ -1802,7 +1802,7 @@ fn is_iterator_from(e: &Expr) -> bool {
 
 /// What `$lent(e)` lends, `e`, made for this call alone, which no one else
 /// steps; or `e` itself.
-fn unlent(e: &Expr) -> &Expr {
+pub(super) fn unlent(e: &Expr) -> &Expr {
     match &e.kind {
         js::ExprKind::Call(lent, of) if matches!(&lent.kind, js::ExprKind::Var(v) if v == "$lent") && of.len() == 1 => {
             &of[0]

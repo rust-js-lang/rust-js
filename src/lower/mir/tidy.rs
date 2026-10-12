@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
+use crate::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
 
 use super::negate;
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
@@ -159,6 +159,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
     named_temporaries(body);
+    js::each_expr_mut(body, &mut range_items);
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
     returned_in_branches(body, result);
@@ -189,7 +190,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
     js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
-    // $iter(xs);`: the array's, as THIR's.
+    // $iter(xs);`: the array's, as THIR's; and a range made there, its
+    // numbers made as they're stepped.
+    js::each_expr_mut(body, &mut range_items);
     eager_chains(body);
     // Of each, a callback that passes what it's given on to Rust's function,
     // `(x, i) => f(x, i)`: `f` itself, as THIR's.
@@ -4054,6 +4057,50 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
         }
         i += 1;
     }
+}
+
+/// A range made where it's stepped, `$iterator({ start: 0, end: n },
+/// $rangeNext)`, which nothing else steps, nor lends: its numbers, made as
+/// they're stepped, `$lazyRange(0, n)`, so `.find(f)` stops where Rust's
+/// does; of `a..=b`, `$lazyRange(a, b + 1)`. Of a number it starts at, as a
+/// `char`'s range starts at text.
+fn range_items(e: &mut Expr) {
+    if let Some(made) = lazy_range(iterators::unlent(e)) {
+        *e = made;
+    }
+}
+
+/// `$lazyRange(a, b)` of `$iterator({ start: a, end: b }, $rangeNext)`, `a` a
+/// number (`range_items`).
+fn lazy_range(e: &Expr) -> Option<Expr> {
+    let ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let (ExprKind::Var(iterator), [range, next]) = (&callee.kind, &args[..]) else {
+        return None;
+    };
+    let (ExprKind::Object(bounds), ExprKind::Var(next)) = (&range.kind, &next.kind) else {
+        return None;
+    };
+    let [Prop::Field(s, start), Prop::Field(f, end)] = &bounds[..] else {
+        return None;
+    };
+    let inclusive = match next.as_str() {
+        "$rangeNext" => false,
+        "$rangeInclusiveNext" => true,
+        _ => return None,
+    };
+    if iterator != "$iterator"
+        || (s.as_str(), f.as_str()) != ("start", "end")
+        || !matches!(start.kind, ExprKind::Num(_))
+    {
+        return None;
+    }
+    let end = match inclusive {
+        true => Expr::bin(Op::Add, end.clone(), Expr::int(1)),
+        false => end.clone(),
+    };
+    Some(Expr::call(Expr::var("$lazyRange"), vec![start.clone(), end]))
 }
 
 /// A handle made only to read or write its value there, `Cell::set` of
