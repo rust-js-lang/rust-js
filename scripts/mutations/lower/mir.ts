@@ -880,7 +880,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            true => awaits::awaits(tcx, &mut body),\n",
     replace: "            true => Default::default(),\n",
-    tests: ["test/compiler.test.ts","-t","async code becomes"],
+    tests: ["test/lowering.test.ts", "-t", "an awaited reference given to a generic function is awaited|an async fn"],
   },
   {
     name: "mir-await-unawaited",
@@ -920,7 +920,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())\n",
     replace: "                || false)\n",
-    tests: ["test/compiler.test.ts","-t","async code becomes"],
+    tests: ["test/lowering.test.ts", "-t", "an async closure"],
   },
   {
     name: "mir-on-load-returns",

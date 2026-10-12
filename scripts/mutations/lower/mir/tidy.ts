@@ -1782,11 +1782,7 @@ export const mutations: Mutation[] = [
     "file": "src/lower/mir/tidy.rs",
     "find": "    handles_in_place(body);\n",
     "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a handle used in place"
-    ]
+    tests: ["test/lowering.test.ts", "-t", "a handle used in place from MIR is its place"],
   },
   {
     "name": "mir-tidy-turn-let-branches-unseen",

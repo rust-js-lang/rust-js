@@ -10434,11 +10434,22 @@ pub fn run() -> u32 {
     t.bump();
     t.bump()
 }
+pub fn pair() -> String {
+    match &mut (1, 2) {
+        (a, b) => {
+            *a += 10;
+            *b += 20;
+            format!("{a} {b}")
+        }
+    }
+}
 `);
   for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     expect(readFileSync(join(dir, out), "utf8")).toContain("  bump(t) {\n    t.n = (t.n + 1) >>> 0;\n    return t.n;\n  },");
+    expect(readFileSync(join(dir, out), "utf8")).toContain("  return `${value[0]} ${value[1]}`;");
     expect((await import(join(dir, out))).run()).toBe(2);
+    expect((await import(join(dir, out))).pair()).toBe("11 22");
   }
 });
 

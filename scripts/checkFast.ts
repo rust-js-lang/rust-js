@@ -93,8 +93,8 @@ const failed = results.filter((r) => r.code !== 0);
 for (const { name, log } of failed) console.log(`\n── ${name} ──\n${log.slice(-3000)}`);
 // From its start, its build too.
 const total = elapsed();
-const scope = shared ? "check:fast" : "check:fast, MIR only";
+const scope = shared ? "check:fast" : "check:fast, the change's";
 console.log(
-  `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}${shared ? "" : " (THIR's corpus, JSX, snapshots and diagnostics skipped)"}`,
+  `\n${failed.length === 0 ? `all passed: ${timed(scope, total)}` : `${failed.length} failed in ${total.toFixed(0)}s`}${shared ? "" : " (JSX, snapshots and diagnostics skipped)"}`,
 );
 process.exit(failed.length === 0 ? 0 : 1);

@@ -10,14 +10,20 @@ export function ContactPage({ id }) {
     const signal = controller.signal;
     setLoaded("Loading");
     (async () => {
-      const match = await contact(id, signal);
-      if (match.TAG === "Ok") {
-        setLoaded({ TAG: "Contact", _0: match._0 });
-      } else if (!(match.TAG === "Err" && match._0 === "Aborted")) {
-        if (match.TAG === "Err" && match._0.TAG === "Refused" && match._0._0 === 404) {
-          setLoaded({ TAG: "Failed", _0: `There's no contact ${id}.` });
+      const value = await contact(id, signal);
+      bb40: {
+        if (value.TAG === "Err") {
+          if (value._0 === "Aborted") {
+            break bb40;
+          } else if (value._0.TAG === "Refused") {
+            if (value._0._0 === 404) {
+              setLoaded({ TAG: "Failed", _0: `There's no contact ${id}.` });
+              break bb40;
+            }
+          }
+          setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
         } else {
-          setLoaded({ TAG: "Failed", _0: Failure.message(match._0) });
+          setLoaded({ TAG: "Contact", _0: value._0 });
         }
       }
     })();

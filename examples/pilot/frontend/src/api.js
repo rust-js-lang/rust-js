@@ -30,23 +30,21 @@ export const Failure = {
 
 async function call(url, init, ok) {
   const signal = init.signal;
-  let response;
-  const match = await $settle(window.fetch(url, init));
-  if (match.TAG === "Ok") {
-    response = match._0;
-  } else if (match.TAG === "Err" && signal != null && signal.aborted) {
-    return { TAG: "Err", _0: "Aborted" };
-  } else {
-    return { TAG: "Err", _0: "Network" };
+  const value = await $settle(window.fetch(url, init));
+  if (value.TAG === "Ok") {
+    const response = value._0;
+    const status = response.status;
+    const text = await response.text();
+    if (status === ok) {
+      return { TAG: "Ok", _0: text };
+    }
+    const result = $fromJson(text, problemDeserialize_deserialize);
+    const problem = result.TAG === "Ok" ? result._0 : Problem.new(`the server answered ${status}`);
+    return { TAG: "Err", _0: { TAG: "Refused", _0: status, _1: problem } };
   }
-  const status = response.status;
-  const text = await response.text();
-  if (status === ok) {
-    return { TAG: "Ok", _0: text };
-  }
-  const result = $fromJson(text, problemDeserialize_deserialize);
-  const problem = result.TAG === "Ok" ? result._0 : Problem.new(`the server answered ${status}`);
-  return { TAG: "Err", _0: { TAG: "Refused", _0: status, _1: problem } };
+  return signal != null && signal.aborted
+    ? { TAG: "Err", _0: "Aborted" }
+    : { TAG: "Err", _0: "Network" };
 }
 
 function get(signal) {
@@ -55,32 +53,32 @@ function get(signal) {
 
 export async function contacts(query, signal) {
   const result = await call(`/api/contacts?q=${encodeURIComponent(query)}`, get(signal), 200);
-  if (result.TAG === "Err") {
-    return result;
+  if (result.TAG !== "Err") {
+    const text = result._0;
+    const result$1 = $fromJson(text, $json.vec(contactDeserialize_deserialize));
+    return result$1.TAG === "Err"
+      ? {
+          TAG: "Err",
+          _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
+        }
+      : result$1;
   }
-  const text = result._0;
-  const result$1 = $fromJson(text, $json.vec(contactDeserialize_deserialize));
-  return result$1.TAG === "Err"
-    ? {
-        TAG: "Err",
-        _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
-      }
-    : result$1;
+  return result;
 }
 
 export async function contact(id, signal) {
   const result = await call(`/api/contacts/${id}`, get(signal), 200);
-  if (result.TAG === "Err") {
-    return result;
+  if (result.TAG !== "Err") {
+    const text = result._0;
+    const result$1 = $fromJson(text, contactDeserialize_deserialize);
+    return result$1.TAG === "Err"
+      ? {
+          TAG: "Err",
+          _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
+        }
+      : result$1;
   }
-  const text = result._0;
-  const result$1 = $fromJson(text, contactDeserialize_deserialize);
-  return result$1.TAG === "Err"
-    ? {
-        TAG: "Err",
-        _0: { TAG: "Refused", _0: 200, _1: Problem.new($displayJsonError(result$1._0)) },
-      }
-    : result$1;
+  return result;
 }
 
 export async function create(new$) {
@@ -93,16 +91,16 @@ export async function create(new$) {
   );
   const init = { method: "POST", headers: json, body };
   const result = await call("/api/contacts", init, 201);
-  if (result.TAG === "Err") {
-    return result;
+  if (result.TAG !== "Err") {
+    const text = result._0;
+    const result$1 = $fromJson(text, contactDeserialize_deserialize);
+    return result$1.TAG === "Err"
+      ? {
+          TAG: "Err",
+          _0: { TAG: "Refused", _0: 201, _1: Problem.new($displayJsonError(result$1._0)) },
+        }
+      : result$1;
   }
-  const text = result._0;
-  const result$1 = $fromJson(text, contactDeserialize_deserialize);
-  return result$1.TAG === "Err"
-    ? {
-        TAG: "Err",
-        _0: { TAG: "Refused", _0: 201, _1: Problem.new($displayJsonError(result$1._0)) },
-      }
-    : result$1;
+  return result;
 }
 //# sourceMappingURL=api.js.map

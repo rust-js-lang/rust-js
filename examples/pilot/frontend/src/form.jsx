@@ -34,18 +34,14 @@ export function NewContactForm() {
     setErrors([]);
     setSending(true);
     (async () => {
-      const match = await create(new$);
-      if (match.TAG === "Ok") {
-        toast(`Added ${match._0.name}`);
-        go(`#/contacts/${match._0.id}`);
-      } else if (
-        match.TAG === "Err" &&
-        match._0.TAG === "Refused" &&
-        match._0._1.errors.length !== 0
-      ) {
-        setErrors(match._0._1.errors);
+      const value = await create(new$);
+      if (value.TAG !== "Err") {
+        toast(`Added ${value._0.name}`);
+        go(`#/contacts/${value._0.id}`);
+      } else if (value._0.TAG === "Refused" && value._0._1.errors.length !== 0) {
+        setErrors(value._0._1.errors);
       } else {
-        toast(Failure.message(match._0));
+        toast(Failure.message(value._0));
       }
       setSending(false);
     })();

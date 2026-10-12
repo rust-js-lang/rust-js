@@ -13,11 +13,11 @@ export function ContactList() {
     const query$1 = query;
     setLoaded("Loading");
     (async () => {
-      const match = await contacts(query$1, signal);
-      if (match.TAG === "Ok") {
-        setLoaded({ TAG: "Contacts", _0: match._0 });
-      } else if (!(match.TAG === "Err" && match._0 === "Aborted")) {
-        setLoaded({ TAG: "Failed", _0: Failure.message(match._0) });
+      const value = await contacts(query$1, signal);
+      if (value.TAG !== "Err") {
+        setLoaded({ TAG: "Contacts", _0: value._0 });
+      } else if (value._0 !== "Aborted") {
+        setLoaded({ TAG: "Failed", _0: Failure.message(value._0) });
       }
     })();
     return () => {
@@ -34,7 +34,7 @@ export function ContactList() {
         <button onClick={() => setAttempt((n) => (n + 1) | 0)}>Try again</button>
       </div>
     );
-  } else if (loaded.TAG === "Contacts" && loaded._0.length === 0) {
+  } else if (loaded._0.length === 0) {
     results = <p className="status">No contacts match.</p>;
   } else {
     results = (

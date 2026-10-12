@@ -171,14 +171,13 @@ export function validate(contact) {
 }
 
 export function is_email(text) {
-  const match = $splitOnce(text, "@");
-  if (match) {
+  const value = $splitOnce(text, "@");
+  if (value) {
+    const user = value[0];
+    const domain = value[1];
     return (
-      !!match[0] &&
-      !match[1].includes("@") &&
-      match[1].includes(".") &&
-      !match[1].startsWith(".") &&
-      !match[1].endsWith(".")
+      !!(user && !domain.includes("@") && domain.includes(".") && !domain.startsWith(".")) &&
+      !domain.endsWith(".")
     );
   }
   return false;
@@ -187,8 +186,7 @@ export function is_email(text) {
 export function matches(contact, query) {
   const query$1 = $trim(query).toLowerCase();
   return (
-    !query$1 ||
-    contact.name.toLowerCase().includes(query$1) ||
+    !!(!query$1 || contact.name.toLowerCase().includes(query$1)) ||
     contact.email.toLowerCase().includes(query$1)
   );
 }

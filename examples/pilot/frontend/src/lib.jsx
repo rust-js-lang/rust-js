@@ -7,13 +7,13 @@ import { ContactList } from "./list.jsx";
 import { use_route } from "./route.js";
 
 export function App() {
+  const value = use_route();
   let page;
-  const match = use_route();
-  if (match === "List") {
+  if (value === "List") {
     page = <ContactList />;
-  } else if (match.TAG === "Contact") {
-    page = <ContactPage key={match._0} id={match._0} />;
-  } else if (match === "New") {
+  } else if (value.TAG === "Contact") {
+    page = <ContactPage id={value._0} key={value._0} />;
+  } else if (value === "New") {
     page = <NewContactForm />;
   } else {
     page = <p className="error">There's no such page.</p>;

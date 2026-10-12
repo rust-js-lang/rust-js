@@ -4,21 +4,21 @@ import { useEffect, useState } from "react";
 import { $parseInt, $stripPrefix } from "@rust-js/runtime";
 
 export function parse(hash) {
-  const match = $stripPrefix(hash, "#") ?? hash;
-  if (match === "" || match === "/") {
+  const path = $stripPrefix(hash, "#") ?? hash;
+  if (path === "" || path === "/") {
     return "List";
   }
-  if (match === "/new") {
+  if (path === "/new") {
     return "New";
   }
-  const option = $stripPrefix(match, "/contacts/");
+  const option = $stripPrefix(path, "/contacts/");
   const then = (id) => {
     const result = $parseInt(id, 0, 4294967295);
     return result.TAG === "Ok" ? result._0 : undefined;
   };
-  const match$1 = option != null ? then(option) : undefined;
-  if (match$1 != null) {
-    return { TAG: "Contact", _0: match$1 };
+  const id = option != null ? then(option) : undefined;
+  if (id != null) {
+    return { TAG: "Contact", _0: id };
   }
   return "NotFound";
 }
