@@ -1701,7 +1701,7 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     // does nothing.
     let counted = |name: &str| matches!(name, "take" | "drop");
     if let Some(last) = stages.iter().position(|(name, _)| counted(name))
-        && stages[last + 1..].iter().any(|(_, f)| does(f))
+        && stages[last + 1..].iter().any(|(name, f)| !counted(name) && does(f))
     {
         return None;
     }

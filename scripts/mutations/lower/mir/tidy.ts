@@ -1794,4 +1794,16 @@ export const mutations: Mutation[] = [
       "iterator chains from MIR are array methods"
     ]
   },
+  {
+    "name": "mir-capital-chars-joined",
+    "breaks": "`c.to_uppercase().collect::<String>()` from MIR is `Array.from(c.toUpperCase()).join(\"\")`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "if m == \"toUpperCase\" || m == \"toLowerCase\"))",
+    "replace": "if m == \"none\"))",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];

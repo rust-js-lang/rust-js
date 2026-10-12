@@ -1654,6 +1654,24 @@ fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::
 /// for an iterator helper alone, which nothing else steps: `xs.values()
 /// .filter(f)`, the array's own iterator.
 fn array_values(e: &mut Expr) {
+    // A string's characters joined, `Array.from(c.toUpperCase()).join("")`,
+    // a `char`'s capital collected: the string.
+    if let ExprKind::Call(callee, args) = &e.kind
+        && let ExprKind::Member(chars, join) = &callee.kind
+        && join == "join"
+        && matches!(&args[..], [Expr { kind: ExprKind::Str(sep), .. }] if sep.is_empty())
+        && let ExprKind::Call(from, of) = &chars.kind
+        && matches!(&from.kind, ExprKind::Member(array, f) if f == "from" && matches!(&array.kind, ExprKind::Var(a) if a == "Array"))
+        && let [text] = &of[..]
+        && matches!(&text.kind, ExprKind::Call(case, _)
+            if matches!(&case.kind, ExprKind::Member(_, m) if m == "toUpperCase" || m == "toLowerCase"))
+    {
+        *e = Expr {
+            span: e.span,
+            ..text.clone()
+        };
+        return;
+    }
     // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
     // all of them, `cs.join("")`, as THIR's.
     if let ExprKind::Call(callee, args) = &e.kind

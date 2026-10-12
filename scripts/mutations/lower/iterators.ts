@@ -553,7 +553,7 @@ export const mutations: Mutation[] = [
     name: "iter-eager-take-after-doing",
     breaks: "a stage that does something before `take` runs over every item, as arrays",
     file: "src/lower/iterators.rs",
-    find: "        && stages[last + 1..].iter().any(|(_, f)| does(f))\n",
+    find: "        && stages[last + 1..].iter().any(|(name, f)| !counted(name) && does(f))\n",
     replace: "        && false\n",
     tests: ["test/lowering.test.ts","-t","iterator chains from MIR"],
   },
@@ -775,6 +775,18 @@ export const mutations: Mutation[] = [
     "file": "src/lower/iterators.rs",
     "find": "\"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")",
     "replace": "\"map\" | \"filter\" | \"take\" | \"drop\")",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
+  {
+    "name": "eager-count-of-count-lazy",
+    "breaks": "`skip(2).take(3)` collected from MIR stays lazy, `drop`'s count read as a closure that does something",
+    "file": "src/lower/iterators.rs",
+    "find": "iter().any(|(name, f)| !counted(name) && does(f))",
+    "replace": "iter().any(|(_, f)| does(f))",
     "tests": [
       "test/lowering.test.ts",
       "-t",
