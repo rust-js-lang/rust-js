@@ -4924,6 +4924,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let values: Vec<Value<'tcx>> = values.collect();
                 return self.mir_swap_or_replace(state, (known, def_id), values, arg_tys, span, out);
             }
+            // `v.sort_unstable_by(f)` and a selection, THIR's (ADR 0342).
+            Std::Slice(op @ (SliceOp::SortUnstable { with } | SliceOp::SelectNth { with })) => {
+                let values = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.unstable_sort_values(op, with, values, generic_args, span, out)?
+            }
+            // The rest of a slice's own that their operands say all of, THIR's:
+            // not one giving a `&mut`, a view, nor `remainder`, which asks
+            // whether its iterator is stepped.
+            Std::Slice(op)
+                if !matches!(
+                    op,
+                    SliceOp::Remainder
+                        | SliceOp::View { .. }
+                        | SliceOp::DequeRangeMut
+                        | SliceOp::ExtractIf { .. }
+                        | SliceOp::SplitOff { .. }
+                        | SliceOp::UninitWrite { .. }
+                        | SliceOp::UninitDrop
+                        | SliceOp::CopyWithin
+                ) && !output.walk().any(|arg| {
+                    arg.as_type()
+                        .is_some_and(|t| matches!(t.kind(), ty::Ref(_, _, ty::Mutability::Mut)))
+                }) =>
+            {
+                let values = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.slice_values(op, values, false, generic_args, span, out)?
+            }
             // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items, THIR's (ADR 0335).
             Std::Slice(SliceOp::View { checked }) => {
                 let items = self.value_expr(values.next().expect("the items"), span)?;

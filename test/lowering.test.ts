@@ -6329,6 +6329,50 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
+// An unstable sort and a selection from MIR as from THIR (ADR 0342).
+test("an unstable sort from MIR sorts as THIR's", async () => {
+  const dir = fixture("mir-unstable-sort");
+  writeFileSync(join(dir, "lib.rs"), `pub fn down(mut v: Vec<i32>) -> Vec<i32> {
+    v.sort_unstable_by(|a, b| b.cmp(a));
+    v
+}
+pub fn by_len(mut v: Vec<&'static str>) -> Vec<&'static str> {
+    v.sort_unstable_by_key(|s| s.len());
+    v
+}
+pub fn third(mut v: Vec<u32>) -> u32 {
+    *v.select_nth_unstable(2).1
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.down([3, 1, 2]), lib.by_len(["ccc", "a", "bb"]), lib.third([5, 1, 4, 2, 3])]).toEqual([[3, 2, 1], ["a", "bb", "ccc"], 3]);
+  }
+});
+
+// A slice's own methods from MIR as from THIR: split by a test, filled,
+// checked sorted, searched, cut in chunks.
+test("a slice's own methods from MIR are THIR's", async () => {
+  const dir = fixture("mir-slice-methods");
+  writeFileSync(join(dir, "lib.rs"), `pub fn parts(v: &[i32]) -> Vec<usize> {
+    v.split(|&x| x < 0).map(|p| p.len()).collect()
+}
+pub fn zeroed(mut v: Vec<i32>) -> Vec<i32> {
+    v.fill(0);
+    v
+}
+pub fn facts(v: &[i32]) -> (bool, usize, usize) {
+    (v.is_sorted(), v.partition_point(|&x| x < 3), v.chunks_exact(2).count())
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const lib = await import(join(dir, out));
+    expect([lib.parts([3, -1, 4, 5, -2, 6]), lib.zeroed([1, 2]), lib.facts([1, 2, 3, 4, 5])]).toEqual([[1, 2, 1], [0, 0], [true, 2, 2]]);
+  }
+});
+
 // A float's sum from MIR starts at -0.0, as Rust's does: an empty sum and
 // one of negative zeros are -0.0, not 0.
 test("a float's sum from MIR keeps the sign of zero", async () => {

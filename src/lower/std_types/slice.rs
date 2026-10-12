@@ -292,6 +292,60 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .ok_or_else(|| self.unsupported(span, "a chunk of a length only a caller knows"))
     }
 
+    /// An unstable sort or a selection, `v.sort_unstable_by(f)`, of its
+    /// operands as JS: JS's stable sort where ties can't be told apart, else
+    /// std's own, picked by the item's type (ADR 0342). THIR's and MIR's.
+    pub(in crate::lower) fn unstable_sort_values(
+        &mut self,
+        op: SliceOp,
+        with: SortWith,
+        values: Vec<Expr>,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let item = generic_args.type_at(0);
+        let kind = self.sort_kind(item, span)?;
+        let mut values = values.into_iter();
+        let mut next = || values.next().expect("rustc checked the arguments");
+        let items = next();
+        let index = matches!(op, SliceOp::SelectNth { .. }).then(&mut next);
+        let mut body = Vec::new();
+        let (a, b) = (Expr::var("a"), Expr::var("b"));
+        let less = match with {
+            SortWith::Order => self.less_value(a, b, item, span, &mut body)?,
+            // `(a, b) => $cmp(b, a) < 0` of a closure of one expression.
+            SortWith::By => {
+                let compare = next();
+                if let js::ExprKind::Arrow(params, stmts) = &compare.kind
+                    && params.len() == 2
+                    && let [
+                        Stmt {
+                            kind: StmtKind::Return(Some(order)),
+                            ..
+                        },
+                    ] = stmts.as_slice()
+                {
+                    let less = Expr::bin(Op::Lt, order.clone(), Expr::int(0));
+                    let returned = vec![StmtKind::Return(Some(less)).at(js::Span::NONE)];
+                    let is_less = Expr::arrow(params.clone(), returned);
+                    return Ok(self.unstable_sort_call(op, items, index, is_less, kind, item));
+                }
+                let compare = self.named_once("compare", compare, out);
+                Expr::bin(Op::Lt, Expr::call(compare, vec![a, b]), Expr::int(0))
+            }
+            SortWith::Key => {
+                let key = self.named_once("key", next(), out);
+                let key_ty = generic_args.type_at(1);
+                let (a, b) = (Expr::call(key.clone(), vec![a]), Expr::call(key, vec![b]));
+                self.less_value(a, b, key_ty, span, &mut body)?
+            }
+        };
+        body.push(StmtKind::Return(Some(less)).at(js::Span::NONE));
+        let is_less = Expr::arrow(vec!["a".into(), "b".into()], body);
+        Ok(self.unstable_sort_call(op, items, index, is_less, kind, item))
+    }
+
     /// One of `SliceOp`'s, of `args`, with the call's `generic_args`.
     pub(in crate::lower) fn slice_call(
         &mut self,
@@ -369,46 +423,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `$sortUnstable(v, isLess, kind)`: std's `is_less` and what std
             // picks by the item's type (ADR 0342).
             SliceOp::SortUnstable { with } | SliceOp::SelectNth { with } => {
-                let item = generic_args.type_at(0);
-                let kind = self.sort_kind(item, span)?;
-                let mut values = self.operands(args, out)?.into_iter();
-                let mut next = || values.next().expect("rustc checked the arguments");
-                let items = next();
-                let index = matches!(op, SliceOp::SelectNth { .. }).then(&mut next);
-                let mut body = Vec::new();
-                let (a, b) = (Expr::var("a"), Expr::var("b"));
-                let less = match with {
-                    SortWith::Order => self.less_value(a, b, item, span, &mut body)?,
-                    // `(a, b) => $cmp(b, a) < 0` of a closure of one expression.
-                    SortWith::By => {
-                        let compare = next();
-                        if let js::ExprKind::Arrow(params, stmts) = &compare.kind
-                            && params.len() == 2
-                            && let [
-                                Stmt {
-                                    kind: StmtKind::Return(Some(order)),
-                                    ..
-                                },
-                            ] = stmts.as_slice()
-                        {
-                            let less = Expr::bin(Op::Lt, order.clone(), Expr::int(0));
-                            let returned = vec![StmtKind::Return(Some(less)).at(js::Span::NONE)];
-                            let is_less = Expr::arrow(params.clone(), returned);
-                            return Ok(self.unstable_sort_call(op, items, index, is_less, kind, item));
-                        }
-                        let compare = self.named_once("compare", compare, out);
-                        Expr::bin(Op::Lt, Expr::call(compare, vec![a, b]), Expr::int(0))
-                    }
-                    SortWith::Key => {
-                        let key = self.named_once("key", next(), out);
-                        let key_ty = generic_args.type_at(1);
-                        let (a, b) = (Expr::call(key.clone(), vec![a]), Expr::call(key, vec![b]));
-                        self.less_value(a, b, key_ty, span, &mut body)?
-                    }
-                };
-                body.push(StmtKind::Return(Some(less)).at(js::Span::NONE));
-                let is_less = Expr::arrow(vec!["a".into(), "b".into()], body);
-                self.unstable_sort_call(op, items, index, is_less, kind, item)
+                let values = self.operands(args, out)?;
+                self.unstable_sort_values(op, with, values, generic_args, span, out)?
             }
             SliceOp::ExtractIf { range } => {
                 let items = self.operands(&args[..1], out)?.remove(0);
@@ -454,315 +470,335 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
             _ => {
-                let mut values = self.operands(args, out)?.into_iter();
-                let mut arg = || values.next().expect("rustc checked the arguments");
-                match op {
-                    // A clone of the value in each but the last, as std's is.
-                    SliceOp::Fill => {
-                        let (items, value) = (arg(), arg());
-                        match self.needs_clone(item()) {
-                            true => {
-                                let clone = self.clone_arg(item(), span)?;
-                                helper(self, "$fill", vec![items, value, clone])
-                            }
-                            false => Expr::call(Expr::member(items, "fill"), vec![value]),
-                        }
-                    }
-                    SliceOp::FillWith => helper(self, "$fillWith", vec![arg(), arg()]),
-                    SliceOp::CopyFromSlice => helper(self, "$copyFromSlice", vec![arg(), arg()]),
-                    // Each by its type's own `clone_from` where it has one, as
-                    // std's calls it.
-                    SliceOp::CloneFromSlice if self.recognition().own_clone_from(item()) => {
-                        let (items, source) = (arg(), arg());
-                        let place = Expr::index(Expr::var("items"), Expr::var("i"));
-                        let target = match self.is_boxable(item()) {
-                            true => Expr::handle(place),
-                            false => place,
-                        };
-                        let clone_from = trait_method(self.tcx, self.clone_trait(), "clone_from");
-                        let args = self.args_of(self.clone_trait(), item());
-                        let called = self.impl_call(clone_from, args, vec![target, Expr::var("from")], span)?;
-                        let f = Expr::arrow(
-                            vec!["items".into(), "i".into(), "from".into()],
-                            vec![StmtKind::Expr(called).at(js::Span::NONE)],
-                        );
-                        helper(self, "$cloneFromSlice", vec![items, source, Expr::undefined(), f])
-                    }
-                    SliceOp::CloneFromSlice if self.recognition().reaches_clone_from(item()) => {
-                        return Err(self.unsupported(
-                            span,
-                            "`clone_from_slice` of items whose `clone_from` may be the crate's, inside them or generic",
-                        ));
-                    }
-                    SliceOp::CloneFromSlice => {
-                        let (items, source) = (arg(), arg());
+                let stepping = matches!(op, SliceOp::Remainder) && self.is_stepping(args[0]);
+                let values = self.operands(args, out)?;
+                self.slice_values(op, values, stepping, generic_args, span, out)?
+            }
+        })
+    }
+
+    /// One of `SliceOp`'s that its operands, as JS, say all of, `values`:
+    /// THIR's and MIR's; `stepping`, of `Remainder`, whether what it's
+    /// called on is stepped through a `&mut`, a `$iter`.
+    pub(in crate::lower) fn slice_values(
+        &mut self,
+        op: SliceOp,
+        values: Vec<Expr>,
+        stepping: bool,
+        generic_args: ty::GenericArgsRef<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let helper = |cx: &mut Self, name: &str, list: Vec<Expr>| {
+            cx.runtime.insert(Helper::SliceOps);
+            Expr::call(Expr::var(name), list)
+        };
+        let item = || generic_args.type_at(0);
+        let mut values = values.into_iter();
+        let mut arg = || values.next().expect("rustc checked the arguments");
+        Ok(match op {
+            // A clone of the value in each but the last, as std's is.
+            SliceOp::Fill => {
+                let (items, value) = (arg(), arg());
+                match self.needs_clone(item()) {
+                    true => {
                         let clone = self.clone_arg(item(), span)?;
-                        helper(self, "$cloneFromSlice", vec![items, source, clone])
+                        helper(self, "$fill", vec![items, value, clone])
                     }
-                    SliceOp::SwapWithSlice => helper(self, "$swapWithSlice", vec![arg(), arg()]),
-                    // Each two in a row, by their `PartialOrd`.
-                    // A number's is JS's `<=`, `false` of a NaN as `partial_cmp`'s is.
-                    SliceOp::IsSorted => {
-                        let items = arg();
-                        let (a, b) = (Expr::var("a"), Expr::var("b"));
-                        let le = match Num::of(item()) {
-                            Some(_) => Expr::bin(Op::Le, a, b),
-                            None => {
-                                let cmp = self.cmp_fn(item(), true, span)?;
-                                Expr::bin(Op::Le, Expr::call(cmp, vec![a, b]), Expr::int(0))
-                            }
-                        };
-                        let in_order = Expr::arrow(
-                            vec!["a".into(), "b".into()],
-                            vec![crate::js::StmtKind::Return(Some(le)).at(crate::js::Span::NONE)],
-                        );
-                        helper(self, "$isSortedBy", vec![items, in_order])
-                    }
-                    SliceOp::IsSortedBy => helper(self, "$isSortedBy", vec![arg(), arg()]),
-                    SliceOp::IsSortedByKey => {
-                        let (items, key) = (arg(), arg());
-                        // `is_sorted_by_key<'a, F, K>`: its key, the third type.
-                        let key_ty = generic_args.types().nth(2).expect("its key's type");
-                        let cmp = self.cmp_fn(key_ty, true, span)?;
-                        helper(self, "$isSortedByKey", vec![items, key, cmp])
-                    }
-                    SliceOp::PartitionPoint => helper(self, "$partitionPoint", vec![arg(), arg()]),
-                    SliceOp::ChunksExact { mutable: false } => helper(self, "$chunksExact", vec![arg(), arg()]),
-                    SliceOp::Rchunks { exact, mutable: false } => {
-                        helper(self, "$rchunks", vec![arg(), arg(), Expr::bool(exact)])
-                    }
-                    SliceOp::ChunksMut => self.view_call("$chunksMut", vec![arg(), arg()]),
-                    SliceOp::ChunksExact { mutable: true } => self.view_call("$chunksExactMut", vec![arg(), arg()]),
-                    SliceOp::Rchunks { exact, mutable: true } => {
-                        self.view_call("$rchunksMut", vec![arg(), arg(), Expr::bool(exact)])
-                    }
-                    SliceOp::SplitAtMut { checked } => {
-                        let mut list = vec![arg(), arg()];
-                        if checked {
-                            list.push(Expr::bool(true));
-                        }
-                        self.view_call("$splitAtMut", list)
-                    }
-                    SliceOp::SplitEndMut { last } => {
-                        let mut list = vec![arg(), Expr::bool(last)];
-                        if self.is_boxable(item()) {
-                            list.push(Expr::bool(true));
-                        }
-                        self.view_call("$splitEndMut", list)
-                    }
-                    SliceOp::ChunkBy { mutable: false } => helper(self, "$chunkBy", vec![arg(), arg()]),
-                    SliceOp::ChunkBy { mutable: true } => self.view_call("$chunkByMut", vec![arg(), arg()]),
-                    SliceOp::SplitChunk { last, mutable } => {
-                        let n = self.chunk_length(generic_args, span)?;
-                        let list = vec![arg(), Expr::int(n as i128), Expr::bool(last)];
-                        match mutable {
-                            false => helper(self, "$splitChunk", list),
-                            true => self.view_call("$splitChunkMut", list),
-                        }
-                    }
-                    SliceOp::View { .. }
-                    | SliceOp::DequeRangeMut
-                    | SliceOp::ExtractIf { .. }
-                    | SliceOp::SortUnstable { .. }
-                    | SliceOp::SelectNth { .. }
-                    | SliceOp::SplitOff { .. }
-                    | SliceOp::UninitWrite { .. }
-                    | SliceOp::UninitDrop => unreachable!("lowered above"),
-                    // Each index's item, a handle on a number or text, or each
-                    // range's view, `$getDisjointMut(v, [0, 5], true)`.
-                    SliceOp::GetDisjointMut { unchecked } => {
-                        let index = generic_args.type_at(1);
-                        let mut list = vec![arg(), arg()];
-                        let handle = index.is_usize() && self.is_boxable(item());
-                        let inclusive = self.range_kind(index) == Some(RangeKind::Inclusive);
-                        if handle || inclusive {
-                            list.push(Expr::bool(handle));
-                        }
-                        if inclusive {
-                            list.push(Expr::bool(true));
-                        }
-                        let result = self.view_call("$getDisjointMut", list);
-                        match unchecked {
-                            true => Expr::member(result, "_0"),
-                            false => result,
-                        }
-                    }
-                    SliceOp::AsArray => {
-                        let n = self.chunk_length(generic_args, span)?;
-                        let items = arg();
-                        let items = if items.reads_same() {
-                            items
-                        } else {
-                            self.spill("items", items, out)
-                        };
-                        let length = Expr::member(items.clone(), "length");
-                        Expr::cond(
-                            Expr::bin(Op::Eq, length, Expr::int(n as i128)),
-                            items,
-                            Expr::undefined(),
-                        )
-                    }
-                    SliceOp::ArrayWindows => {
-                        let n = self.chunk_length(generic_args, span)?;
-                        self.runtime.insert(Helper::Windows);
-                        Expr::call(Expr::var("$windows"), vec![arg(), Expr::int(n as i128)])
-                    }
-                    SliceOp::AsChunks {
-                        back,
-                        mutable,
-                        unchecked,
-                    } => {
-                        let n = self.chunk_length(generic_args, span)?;
-                        let mut list = vec![arg(), Expr::int(n as i128)];
-                        if back {
-                            list.push(Expr::bool(true));
-                        }
-                        let pair = match mutable {
-                            false => helper(self, "$asChunks", list),
-                            true => self.view_call("$asChunksMut", list),
-                        };
-                        match unchecked {
-                            true => Expr::index(pair, Expr::int(0)),
-                            false => pair,
-                        }
-                    }
-                    SliceOp::Flattened { mutable: false } => Expr::call(Expr::member(arg(), "flat"), Vec::new()),
-                    SliceOp::Flattened { mutable: true } => {
-                        let n = self.chunk_length(generic_args, span)?;
-                        self.view_call("$flatView", vec![arg(), Expr::int(n as i128)])
-                    }
-                    // Of one stepped through a `&mut`, which is `$iter`'s, of its
-                    // `items` (ADR 0071).
-                    SliceOp::Remainder if self.is_stepping(args[0]) => {
-                        Expr::member(Expr::member(arg(), "items"), "remainder")
-                    }
-                    SliceOp::Remainder => Expr::member(arg(), "remainder"),
-                    // `Some` of its first `N`, or its last, if it has as many:
-                    // a copy, or a view (`mutable`).
-                    SliceOp::Chunk { last, mutable } => {
-                        let n = self.chunk_length(generic_args, span)?;
-                        let items = arg();
-                        let items = if items.reads_same() {
-                            items
-                        } else {
-                            self.spill("items", items, out)
-                        };
-                        let length = Expr::member(items.clone(), "length");
-                        let chunk = match (last, mutable) {
-                            (false, false) => {
-                                Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), Expr::int(n as i128)])
-                            }
-                            (true, false) => Expr::call(Expr::member(items, "slice"), vec![Expr::int(-(n as i128))]),
-                            (false, true) => self.view_call("$view", vec![items, Expr::int(0), Expr::int(n as i128)]),
-                            (true, true) => {
-                                let start = Expr::bin(Op::Sub, length.clone(), Expr::int(n as i128));
-                                self.view_call("$view", vec![items, start])
-                            }
-                        };
-                        let chunk = match (n, last) {
-                            // `slice(-0)` is all of it.
-                            (0, true) => Expr::array(Vec::new()),
-                            _ => chunk,
-                        };
-                        Expr::cond(
-                            Expr::bin(Op::Ge, length, Expr::int(n as i128)),
-                            chunk,
-                            Expr::undefined(),
-                        )
-                    }
-                    SliceOp::SplitBy {
-                        limited,
-                        inclusive,
-                        back,
-                        mutable,
-                    } => {
-                        let items = arg();
-                        let limit = if limited { arg() } else { Expr::undefined() };
-                        let predicate = arg();
-                        let list = vec![items, predicate, limit, Expr::bool(inclusive), Expr::bool(back)];
-                        match mutable {
-                            false => helper(self, "$sliceSplitBy", list),
-                            true => self.view_call("$sliceSplitByMut", list),
-                        }
-                    }
-                    SliceOp::SortByCachedKey => {
-                        let (items, key) = (arg(), arg());
-                        // `sort_by_cached_key<K, F>`: its key, the second type.
-                        let cmp = self.cmp_fn(generic_args.type_at(1), false, span)?;
-                        helper(self, "$sortByCachedKey", vec![items, key, cmp])
-                    }
-                    SliceOp::AsciiCase { upper, in_place } => {
-                        let name = if in_place { "$makeAsciiBytes" } else { "$asciiBytes" };
-                        helper(self, name, vec![arg(), Expr::bool(upper)])
-                    }
-                    SliceOp::IsAscii => {
-                        let byte = Expr::arrow(
-                            vec!["b".into()],
-                            vec![
-                                crate::js::StmtKind::Return(Some(Expr::bin(Op::Lt, Expr::var("b"), Expr::int(128))))
-                                    .at(crate::js::Span::NONE),
-                            ],
-                        );
-                        Expr::call(Expr::member(arg(), "every"), vec![byte])
-                    }
-                    SliceOp::TrimAscii { start, end } => {
-                        helper(self, "$trimAsciiBytes", vec![arg(), Expr::bool(start), Expr::bool(end)])
-                    }
-                    SliceOp::Strip { suffix, circumfix } => {
-                        let mut list = vec![arg(), arg()];
-                        let name = match circumfix {
-                            true => {
-                                list.push(arg());
-                                "$sliceStripCircumfix"
-                            }
-                            false => {
-                                list.push(Expr::bool(suffix));
-                                "$sliceStrip"
-                            }
-                        };
-                        list.extend(self.item_eq(item(), span)?);
-                        helper(self, name, list)
-                    }
-                    SliceOp::Repeat => helper(self, "$repeatItems", vec![arg(), arg()]),
-                    SliceOp::PushMut { at } => {
-                        let mut given = vec![arg(), arg()];
-                        if at {
-                            given.push(arg());
-                        }
-                        if self.is_boxable(item()) {
-                            given.push(Expr::bool(true));
-                        }
-                        helper(self, if at { "$insertMut" } else { "$pushMut" }, given)
-                    }
-                    SliceOp::PushFrontMut => {
-                        let mut given = vec![arg(), arg()];
-                        if self.is_boxable(item()) {
-                            given.push(Expr::bool(true));
-                        }
-                        helper(self, "$pushFrontMut", given)
-                    }
-                    SliceOp::DequeInsert { mutable } => {
-                        let mut given = vec![arg(), arg(), arg()];
-                        if mutable && self.is_boxable(item()) {
-                            given.push(Expr::bool(true));
-                        }
-                        helper(self, "$dequeInsert", given)
-                    }
-                    SliceOp::DequeSwapRemove { front } => {
-                        helper(self, "$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)])
-                    }
-                    SliceOp::RetainMut | SliceOp::PopFrontIf => {
-                        let handles = self.is_boxable(item());
-                        let name = if op == SliceOp::RetainMut {
-                            "$retainMut"
-                        } else {
-                            "$popFrontIf"
-                        };
-                        helper(self, name, vec![arg(), arg(), Expr::bool(handles)])
-                    }
-                    SliceOp::CopyWithin => unreachable!("lowered above"),
+                    false => Expr::call(Expr::member(items, "fill"), vec![value]),
                 }
             }
+            SliceOp::FillWith => helper(self, "$fillWith", vec![arg(), arg()]),
+            SliceOp::CopyFromSlice => helper(self, "$copyFromSlice", vec![arg(), arg()]),
+            // Each by its type's own `clone_from` where it has one, as
+            // std's calls it.
+            SliceOp::CloneFromSlice if self.recognition().own_clone_from(item()) => {
+                let (items, source) = (arg(), arg());
+                let place = Expr::index(Expr::var("items"), Expr::var("i"));
+                let target = match self.is_boxable(item()) {
+                    true => Expr::handle(place),
+                    false => place,
+                };
+                let clone_from = trait_method(self.tcx, self.clone_trait(), "clone_from");
+                let args = self.args_of(self.clone_trait(), item());
+                let called = self.impl_call(clone_from, args, vec![target, Expr::var("from")], span)?;
+                let f = Expr::arrow(
+                    vec!["items".into(), "i".into(), "from".into()],
+                    vec![StmtKind::Expr(called).at(js::Span::NONE)],
+                );
+                helper(self, "$cloneFromSlice", vec![items, source, Expr::undefined(), f])
+            }
+            SliceOp::CloneFromSlice if self.recognition().reaches_clone_from(item()) => {
+                return Err(self.unsupported(
+                    span,
+                    "`clone_from_slice` of items whose `clone_from` may be the crate's, inside them or generic",
+                ));
+            }
+            SliceOp::CloneFromSlice => {
+                let (items, source) = (arg(), arg());
+                let clone = self.clone_arg(item(), span)?;
+                helper(self, "$cloneFromSlice", vec![items, source, clone])
+            }
+            SliceOp::SwapWithSlice => helper(self, "$swapWithSlice", vec![arg(), arg()]),
+            // Each two in a row, by their `PartialOrd`.
+            // A number's is JS's `<=`, `false` of a NaN as `partial_cmp`'s is.
+            SliceOp::IsSorted => {
+                let items = arg();
+                let (a, b) = (Expr::var("a"), Expr::var("b"));
+                let le = match Num::of(item()) {
+                    Some(_) => Expr::bin(Op::Le, a, b),
+                    None => {
+                        let cmp = self.cmp_fn(item(), true, span)?;
+                        Expr::bin(Op::Le, Expr::call(cmp, vec![a, b]), Expr::int(0))
+                    }
+                };
+                let in_order = Expr::arrow(
+                    vec!["a".into(), "b".into()],
+                    vec![crate::js::StmtKind::Return(Some(le)).at(crate::js::Span::NONE)],
+                );
+                helper(self, "$isSortedBy", vec![items, in_order])
+            }
+            SliceOp::IsSortedBy => helper(self, "$isSortedBy", vec![arg(), arg()]),
+            SliceOp::IsSortedByKey => {
+                let (items, key) = (arg(), arg());
+                // `is_sorted_by_key<'a, F, K>`: its key, the third type.
+                let key_ty = generic_args.types().nth(2).expect("its key's type");
+                let cmp = self.cmp_fn(key_ty, true, span)?;
+                helper(self, "$isSortedByKey", vec![items, key, cmp])
+            }
+            SliceOp::PartitionPoint => helper(self, "$partitionPoint", vec![arg(), arg()]),
+            SliceOp::ChunksExact { mutable: false } => helper(self, "$chunksExact", vec![arg(), arg()]),
+            SliceOp::Rchunks { exact, mutable: false } => {
+                helper(self, "$rchunks", vec![arg(), arg(), Expr::bool(exact)])
+            }
+            SliceOp::ChunksMut => self.view_call("$chunksMut", vec![arg(), arg()]),
+            SliceOp::ChunksExact { mutable: true } => self.view_call("$chunksExactMut", vec![arg(), arg()]),
+            SliceOp::Rchunks { exact, mutable: true } => {
+                self.view_call("$rchunksMut", vec![arg(), arg(), Expr::bool(exact)])
+            }
+            SliceOp::SplitAtMut { checked } => {
+                let mut list = vec![arg(), arg()];
+                if checked {
+                    list.push(Expr::bool(true));
+                }
+                self.view_call("$splitAtMut", list)
+            }
+            SliceOp::SplitEndMut { last } => {
+                let mut list = vec![arg(), Expr::bool(last)];
+                if self.is_boxable(item()) {
+                    list.push(Expr::bool(true));
+                }
+                self.view_call("$splitEndMut", list)
+            }
+            SliceOp::ChunkBy { mutable: false } => helper(self, "$chunkBy", vec![arg(), arg()]),
+            SliceOp::ChunkBy { mutable: true } => self.view_call("$chunkByMut", vec![arg(), arg()]),
+            SliceOp::SplitChunk { last, mutable } => {
+                let n = self.chunk_length(generic_args, span)?;
+                let list = vec![arg(), Expr::int(n as i128), Expr::bool(last)];
+                match mutable {
+                    false => helper(self, "$splitChunk", list),
+                    true => self.view_call("$splitChunkMut", list),
+                }
+            }
+            SliceOp::View { .. }
+            | SliceOp::DequeRangeMut
+            | SliceOp::ExtractIf { .. }
+            | SliceOp::SortUnstable { .. }
+            | SliceOp::SelectNth { .. }
+            | SliceOp::SplitOff { .. }
+            | SliceOp::UninitWrite { .. }
+            | SliceOp::UninitDrop => unreachable!("lowered above"),
+            // Each index's item, a handle on a number or text, or each
+            // range's view, `$getDisjointMut(v, [0, 5], true)`.
+            SliceOp::GetDisjointMut { unchecked } => {
+                let index = generic_args.type_at(1);
+                let mut list = vec![arg(), arg()];
+                let handle = index.is_usize() && self.is_boxable(item());
+                let inclusive = self.range_kind(index) == Some(RangeKind::Inclusive);
+                if handle || inclusive {
+                    list.push(Expr::bool(handle));
+                }
+                if inclusive {
+                    list.push(Expr::bool(true));
+                }
+                let result = self.view_call("$getDisjointMut", list);
+                match unchecked {
+                    true => Expr::member(result, "_0"),
+                    false => result,
+                }
+            }
+            SliceOp::AsArray => {
+                let n = self.chunk_length(generic_args, span)?;
+                let items = arg();
+                let items = if items.reads_same() {
+                    items
+                } else {
+                    self.spill("items", items, out)
+                };
+                let length = Expr::member(items.clone(), "length");
+                Expr::cond(
+                    Expr::bin(Op::Eq, length, Expr::int(n as i128)),
+                    items,
+                    Expr::undefined(),
+                )
+            }
+            SliceOp::ArrayWindows => {
+                let n = self.chunk_length(generic_args, span)?;
+                self.runtime.insert(Helper::Windows);
+                Expr::call(Expr::var("$windows"), vec![arg(), Expr::int(n as i128)])
+            }
+            SliceOp::AsChunks {
+                back,
+                mutable,
+                unchecked,
+            } => {
+                let n = self.chunk_length(generic_args, span)?;
+                let mut list = vec![arg(), Expr::int(n as i128)];
+                if back {
+                    list.push(Expr::bool(true));
+                }
+                let pair = match mutable {
+                    false => helper(self, "$asChunks", list),
+                    true => self.view_call("$asChunksMut", list),
+                };
+                match unchecked {
+                    true => Expr::index(pair, Expr::int(0)),
+                    false => pair,
+                }
+            }
+            SliceOp::Flattened { mutable: false } => Expr::call(Expr::member(arg(), "flat"), Vec::new()),
+            SliceOp::Flattened { mutable: true } => {
+                let n = self.chunk_length(generic_args, span)?;
+                self.view_call("$flatView", vec![arg(), Expr::int(n as i128)])
+            }
+            // Of one stepped through a `&mut`, which is `$iter`'s, of its
+            // `items` (ADR 0071).
+            SliceOp::Remainder if stepping => Expr::member(Expr::member(arg(), "items"), "remainder"),
+            SliceOp::Remainder => Expr::member(arg(), "remainder"),
+            // `Some` of its first `N`, or its last, if it has as many:
+            // a copy, or a view (`mutable`).
+            SliceOp::Chunk { last, mutable } => {
+                let n = self.chunk_length(generic_args, span)?;
+                let items = arg();
+                let items = if items.reads_same() {
+                    items
+                } else {
+                    self.spill("items", items, out)
+                };
+                let length = Expr::member(items.clone(), "length");
+                let chunk = match (last, mutable) {
+                    (false, false) => {
+                        Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), Expr::int(n as i128)])
+                    }
+                    (true, false) => Expr::call(Expr::member(items, "slice"), vec![Expr::int(-(n as i128))]),
+                    (false, true) => self.view_call("$view", vec![items, Expr::int(0), Expr::int(n as i128)]),
+                    (true, true) => {
+                        let start = Expr::bin(Op::Sub, length.clone(), Expr::int(n as i128));
+                        self.view_call("$view", vec![items, start])
+                    }
+                };
+                let chunk = match (n, last) {
+                    // `slice(-0)` is all of it.
+                    (0, true) => Expr::array(Vec::new()),
+                    _ => chunk,
+                };
+                Expr::cond(
+                    Expr::bin(Op::Ge, length, Expr::int(n as i128)),
+                    chunk,
+                    Expr::undefined(),
+                )
+            }
+            SliceOp::SplitBy {
+                limited,
+                inclusive,
+                back,
+                mutable,
+            } => {
+                let items = arg();
+                let limit = if limited { arg() } else { Expr::undefined() };
+                let predicate = arg();
+                let list = vec![items, predicate, limit, Expr::bool(inclusive), Expr::bool(back)];
+                match mutable {
+                    false => helper(self, "$sliceSplitBy", list),
+                    true => self.view_call("$sliceSplitByMut", list),
+                }
+            }
+            SliceOp::SortByCachedKey => {
+                let (items, key) = (arg(), arg());
+                // `sort_by_cached_key<K, F>`: its key, the second type.
+                let cmp = self.cmp_fn(generic_args.type_at(1), false, span)?;
+                helper(self, "$sortByCachedKey", vec![items, key, cmp])
+            }
+            SliceOp::AsciiCase { upper, in_place } => {
+                let name = if in_place { "$makeAsciiBytes" } else { "$asciiBytes" };
+                helper(self, name, vec![arg(), Expr::bool(upper)])
+            }
+            SliceOp::IsAscii => {
+                let byte = Expr::arrow(
+                    vec!["b".into()],
+                    vec![
+                        crate::js::StmtKind::Return(Some(Expr::bin(Op::Lt, Expr::var("b"), Expr::int(128))))
+                            .at(crate::js::Span::NONE),
+                    ],
+                );
+                Expr::call(Expr::member(arg(), "every"), vec![byte])
+            }
+            SliceOp::TrimAscii { start, end } => {
+                helper(self, "$trimAsciiBytes", vec![arg(), Expr::bool(start), Expr::bool(end)])
+            }
+            SliceOp::Strip { suffix, circumfix } => {
+                let mut list = vec![arg(), arg()];
+                let name = match circumfix {
+                    true => {
+                        list.push(arg());
+                        "$sliceStripCircumfix"
+                    }
+                    false => {
+                        list.push(Expr::bool(suffix));
+                        "$sliceStrip"
+                    }
+                };
+                list.extend(self.item_eq(item(), span)?);
+                helper(self, name, list)
+            }
+            SliceOp::Repeat => helper(self, "$repeatItems", vec![arg(), arg()]),
+            SliceOp::PushMut { at } => {
+                let mut given = vec![arg(), arg()];
+                if at {
+                    given.push(arg());
+                }
+                if self.is_boxable(item()) {
+                    given.push(Expr::bool(true));
+                }
+                helper(self, if at { "$insertMut" } else { "$pushMut" }, given)
+            }
+            SliceOp::PushFrontMut => {
+                let mut given = vec![arg(), arg()];
+                if self.is_boxable(item()) {
+                    given.push(Expr::bool(true));
+                }
+                helper(self, "$pushFrontMut", given)
+            }
+            SliceOp::DequeInsert { mutable } => {
+                let mut given = vec![arg(), arg(), arg()];
+                if mutable && self.is_boxable(item()) {
+                    given.push(Expr::bool(true));
+                }
+                helper(self, "$dequeInsert", given)
+            }
+            SliceOp::DequeSwapRemove { front } => {
+                helper(self, "$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)])
+            }
+            SliceOp::RetainMut | SliceOp::PopFrontIf => {
+                let handles = self.is_boxable(item());
+                let name = if op == SliceOp::RetainMut {
+                    "$retainMut"
+                } else {
+                    "$popFrontIf"
+                };
+                helper(self, name, vec![arg(), arg(), Expr::bool(handles)])
+            }
+            SliceOp::CopyWithin => unreachable!("lowered above"),
         })
     }
 }
