@@ -273,6 +273,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(drops) = &state.drops else {
             return Ok(());
         };
+        // Of what drops only as its type parameters do, `I::Item`: nothing,
+        // its callers giving none (ADR 0190).
+        let ty = place.ty(&state.body.local_decls, self.tcx).ty;
+        if matches!(self.drops(ty), Drops::Unsupported(..)) && self.require_no_drops(ty) {
+            return Ok(());
+        }
         match drops.move_data.rev_lookup.find(place.as_ref()) {
             LookupResult::Exact(path) => self.elaborate_drop(state, block, (place, path), cleanup, span, out),
             // Behind a pointer, which borrowck says is there.

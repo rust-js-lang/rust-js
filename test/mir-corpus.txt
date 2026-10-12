@@ -148,8 +148,10 @@ generic_fmt_traits.rs
 generic_from_str.rs
 generic_impl_consts.rs
 generic_into.rs
+generic_iterator_items.rs
 generic_iterator_map_lazy.rs
 generic_iterator_rest_lazy.rs
+generic_method_drops.rs
 generic_mut_map.rs
 generic_mut_ref.rs
 generic_mut_ref_kept.rs

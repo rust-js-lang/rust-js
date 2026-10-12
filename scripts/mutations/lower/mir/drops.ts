@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "            _ => self.mir_place(state, place, span, out)?,\n",
     tests: ["test/mir.test.ts", "-t", "question_drops"],
   },
+  {
+    name: "mir-drop-param-items-refused",
+    breaks: "MIR's drop of a generic iterator's item, `items.next();`, is refused, where its callers give none with a destructor",
+    file: "src/lower/mir/drops.rs",
+    find: "        if matches!(self.drops(ty), Drops::Unsupported(..)) && self.require_no_drops(ty) {\n",
+    replace: "        if false {\n",
+    tests: ["test/mir.test.ts", "-t", "generic_iterator_items"],
+  },
 ];
