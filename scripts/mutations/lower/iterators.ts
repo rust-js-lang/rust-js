@@ -745,4 +745,16 @@ export const mutations: Mutation[] = [
       "next of a fresh iterator of an array"
     ]
   },
+  {
+    "name": "extreme-of-copy",
+    "breaks": "`max()` of a copied slice from MIR is `$max(xs.slice())`, a copy for a read",
+    "file": "src/lower/iterators.rs",
+    "find": "[\"$max\", \"$min\", \"$maxBy\", \"$minBy\"].contains(&v.as_str())",
+    "replace": "[\"$none\"].contains(&v.as_str())",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "iterator chains from MIR are array methods"
+    ]
+  },
 ];

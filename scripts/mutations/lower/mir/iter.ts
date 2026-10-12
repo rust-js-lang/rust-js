@@ -202,4 +202,40 @@ export const mutations: Mutation[] = [
       "a range mapped and collected is its array mapped"
     ]
   },
+  {
+    "name": "mir-range-inclusive-lazy",
+    "breaks": "`(1..=n).collect()` from MIR stays `$iterator(\u2026, $rangeInclusiveNext).toArray()`, not `$range(1, n + 1)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            \"$rangeInclusiveNext\" => (true, false),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
+  {
+    "name": "mir-range-back-forward",
+    "breaks": "`(0..n).rev().collect()` from MIR is `$range(0, n)`, forwards",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        if back {\n",
+    "replace": "        if !back {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
+  {
+    "name": "mir-range-unmapped-lazy",
+    "breaks": "a range collected unmapped from MIR stays a lazy `$iterator(\u2026).toArray()`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "            || (s.as_str(), e.as_str()) != (\"start\", \"end\")\n",
+    "replace": "            || maps.is_empty()\n            || (s.as_str(), e.as_str()) != (\"start\", \"end\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
 ];

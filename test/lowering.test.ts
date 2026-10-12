@@ -1230,6 +1230,10 @@ pub fn total(items: &[u32]) -> u32 {
 pub fn any_big(items: &[u32]) -> bool {
     items.iter().any(|x| *x > 9)
 }
+// Read alone, not copied.
+pub fn top(items: &[u32]) -> u32 {
+    items.iter().copied().max().unwrap_or(0)
+}
 pub fn order(items: &[u32]) -> Vec<String> {
     let log = RefCell::new(Vec::new());
     let _ = items
@@ -1281,7 +1285,9 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     expect(js).toContain("  return items.filter((c) => !c.hide);\n");
     expect(js).toContain("  return items.reduce((a, b) => (a + b) >>> 0, 0);\n");
     expect(js).toContain("  return items.some((x) => x > 9);\n");
+    expect(js).toContain("  return $max(items) ?? 0;\n");
     const lib = await import(join(dir, out));
+    expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
     const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
     expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
     expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
@@ -8473,13 +8479,27 @@ pub fn few() -> Vec<u32> {
 pub fn wide(n: i64) -> Vec<i64> {
     (0..n).map(|i| i * 2).collect()
 }
+// Its last included, backwards, or not mapped at all.
+pub fn stars(n: usize) -> Vec<String> {
+    (1..=n).rev().map(|k| "*".repeat(k)).collect()
+}
+pub fn down(n: u32) -> Vec<u32> {
+    (0..n).rev().collect()
+}
+pub fn upto(n: u32) -> Vec<u32> {
+    (1..=n).collect()
+}
 `);
   for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
     expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
+    if (out === "mir.js") expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
+    if (out === "mir.js") expect(js).toContain("return $range(0, n).toReversed();");
+    if (out === "mir.js") expect(js).toContain("return $range(1, n + 1);");
     const lib = await import(join(dir, out));
     expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
+    expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
     if (out === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
   }
 });

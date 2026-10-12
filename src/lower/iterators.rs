@@ -1566,6 +1566,24 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             };
             return;
         }
+        // What reads every item alone, `$max`'s: of the array itself, not a
+        // copy, `$max(xs)`, as THIR's; `$maxBy`'s compares as each comes.
+        if matches!(&callee.kind, js::ExprKind::Var(v) if ["$max", "$min", "$maxBy", "$minBy"].contains(&v.as_str()))
+            && let Some(first) = args.first()
+            && let js::ExprKind::Call(to_array, none) = &first.kind
+            && none.is_empty()
+            && let js::ExprKind::Member(chain, name) = &to_array.kind
+            && name == "toArray"
+            && let Some((items, _)) = eager_items(chain, true, args.get(1))
+        {
+            let mut args = args.clone();
+            args[0] = items;
+            *e = Expr {
+                span: e.span,
+                ..Expr::call((**callee).clone(), args)
+            };
+            return;
+        }
         // `$position`'s, of the array, lent or not: what it steps has no
         // `return` to close.
         if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$position")

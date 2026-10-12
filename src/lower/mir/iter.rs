@@ -401,7 +401,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// numbers `iter_ty` steps, each item mapped, all collected: its array
     /// mapped, `$range(a, b).map(f)`, as THIR's, made as big as what's
     /// collected anyway; what more than one map does in Rust's order, one
-    /// item through them all at a time, only lazily.
+    /// item through them all at a time, only lazily. Of `a..=b`, `$range(a,
+    /// b + 1)`; stepped from its end, `.rev()`, `.toReversed()` first.
     fn mapped_range(&mut self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
         let mut maps = Vec::new();
         let mut at = it;
@@ -427,20 +428,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let numbers = (iter_ty.walk())
             .filter_map(|arg| arg.as_type())
-            .find(|&t| self.range_kind(t) == Some(RangeKind::Exclusive))
+            .find(|&t| matches!(self.range_kind(t), Some(RangeKind::Exclusive | RangeKind::Inclusive)))
             .and_then(|t| self.range_index(t))
             .and_then(Num::of)
             .is_some_and(|num| !num.big());
+        let (inclusive, back) = match next.as_str() {
+            "$rangeNext" => (false, false),
+            "$rangeNextBack" => (false, true),
+            "$rangeInclusiveNext" => (true, false),
+            "$rangeInclusiveNextBack" => (true, true),
+            _ => return None,
+        };
         if iterator != "$iterator"
-            || next != "$rangeNext"
             || (s.as_str(), e.as_str()) != ("start", "end")
-            || maps.is_empty()
             || !numbers
             || maps.iter().filter(|f| crate::lower::iterators::does(f)).count() > 1 && maps.len() > 1
         {
             return None;
         }
-        let items = self.helper(Helper::Range, "$range", vec![start.clone(), end.clone()]);
+        let end = match inclusive {
+            true => Expr::bin(js::Op::Add, end.clone(), Expr::int(1)),
+            false => end.clone(),
+        };
+        let mut items = self.helper(Helper::Range, "$range", vec![start.clone(), end]);
+        if back {
+            items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
+        }
         Some(
             maps.into_iter()
                 .rev()
