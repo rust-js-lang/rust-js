@@ -1427,7 +1427,8 @@ fn written_order_steps(stmts: &mut [Stmt]) {
 }
 
 /// `const x = [loud(1), 2]` nothing reads: each part that does something, in
-/// turn, `loud(1);`, as the array, made here, is never seen.
+/// turn, `loud(1);`, as the array, made here, is never seen; and `const x =
+/// f()`, what a call gave, its `fmt::Result` say: `f();`.
 fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -1444,6 +1445,12 @@ fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
             stmts.splice(i..=i, done);
             i += count;
             continue;
+        }
+        if let StmtKind::Const(name, value) = &stmts[i].kind
+            && !mentions.contains_key(name)
+            && matches!(value.kind, ExprKind::Call(..))
+        {
+            stmts[i].kind = StmtKind::Expr(value.clone());
         }
         i += 1;
     }
@@ -5531,6 +5538,7 @@ fn returned_unwritten(stmts: &mut Vec<Stmt>, name: &str) {
     while i < stmts.len() {
         let returned = matches!(stmts.get(i + 1).map(|s| &s.kind), Some(StmtKind::Return(Some(r))) if is_name(r));
         let mentioned = js::mentions_in(std::slice::from_ref(&stmts[i]), name) > 0;
+        let next = stmts.get(i + 1).cloned();
         match &mut stmts[i].kind {
             StmtKind::Assign(target, value)
                 if is_name(target)
@@ -5546,6 +5554,13 @@ fn returned_unwritten(stmts: &mut Vec<Stmt>, name: &str) {
             StmtKind::Return(Some(r)) if is_name(r) => {
                 *r = Expr::str("");
                 return;
+            }
+            // An `if` and `else` the `return f` after ends: each its own.
+            StmtKind::If(_, then, Some(els)) if returned && let Some(back) = next => {
+                then.push(back.clone());
+                els.push(back);
+                stmts.remove(i + 1);
+                continue;
             }
             StmtKind::If(_, then, els) => {
                 returned_unwritten(then, name);

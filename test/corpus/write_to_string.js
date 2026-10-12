@@ -38,7 +38,7 @@ function main() {
   );
   let s = "";
   const out = { value: s };
-  const value = table(out, 2);
+  table(out, 2);
   s = out.value;
   console.log(`${s}`);
   let t = "x";

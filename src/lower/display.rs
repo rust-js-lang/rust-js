@@ -702,38 +702,70 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "DebugStruct" | "DebugTuple" => Some(values.next().expect("a type's name")),
             _ => None,
         };
+        let steps = (steps.into_iter())
+            .map(|(name, args, generic_args)| {
+                let typed = args[1..]
+                    .iter()
+                    .map(|&a| (values.next().expect("a part"), self.thir[a].ty))
+                    .collect();
+                (name, typed, generic_args)
+            })
+            .collect();
+        let written = self.builder_written(kind, type_name, steps, non_exhaustive, span, out)?;
+        let target = Expr::var(&written_to);
+        let js_span = self.js_span(span);
+        out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target, written)).at(js_span));
+        Ok(Some(Expr::undefined()))
+    }
+
+    /// What a `Debug` builder of `kind`, `"DebugStruct"` say, writes as
+    /// its `finish` (ADR 0136): its type's name, then each step, `field`,
+    /// `entry` or `entries`, of its arguments but the builder, and their
+    /// types, as pretty as this writer is (ADR 0137).
+    #[allow(clippy::type_complexity)]
+    pub(super) fn builder_written(
+        &mut self,
+        kind: &str,
+        type_name: Option<Expr>,
+        steps: Vec<(String, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>)>,
+        non_exhaustive: bool,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let pretty = self.writer_pretty();
         #[derive(Clone)]
         enum Part {
             One(Expr),
             Many(Expr),
         }
         let mut parts = Vec::new();
-        for (name, args, generic_args) in &steps {
+        for (name, values, generic_args) in &steps {
             // A `&dyn Debug` is the string it shows already (ADR 0060).
-            let debug_of = |this: &mut Self, value: Expr, at: ExprId| -> R<Expr> {
-                match this.is_dyn_debug(this.thir[at].ty) {
+            let debug_of = |this: &mut Self, (value, ty): (Expr, Ty<'tcx>)| -> R<Expr> {
+                match this.is_dyn_debug(ty) {
                     true => Ok(value),
-                    false => this.debug_string(value, this.thir[at].ty, span),
+                    false => this.debug_string(value, ty, span),
                 }
             };
+            let mut values = values.iter().cloned();
             let part = match (kind, name.as_str()) {
                 ("DebugStruct", "field") => {
                     let (field, value) = (values.next().expect("a name"), values.next().expect("a value"));
-                    let shown = debug_of(self, value, args[2])?;
-                    Part::One(join(vec![field, Expr::str(": "), shown]))
+                    let shown = debug_of(self, value)?;
+                    Part::One(join(vec![field.0, Expr::str(": "), shown]))
                 }
                 ("DebugTuple", "field") | ("DebugList" | "DebugSet", "entry") => {
                     let value = values.next().expect("a value");
-                    Part::One(debug_of(self, value, args[1])?)
+                    Part::One(debug_of(self, value)?)
                 }
                 ("DebugMap", "entry") => {
                     let (key, value) = (values.next().expect("a key"), values.next().expect("a value"));
-                    let key = debug_of(self, key, args[1])?;
-                    let value = debug_of(self, value, args[2])?;
+                    let key = debug_of(self, key)?;
+                    let value = debug_of(self, value)?;
                     Part::One(join(vec![key, Expr::str(": "), value]))
                 }
                 ("DebugList" | "DebugSet" | "DebugMap", "entries") => {
-                    let items = values.next().expect("the entries");
+                    let items = values.next().expect("the entries").0;
                     let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
                     let iterable = *tys.last().expect("the entries' type");
                     let items = self.iter_source(items, iterable, span, out)?;
@@ -875,10 +907,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 pretty.choose(pretty_form, written)
             }
         };
-        let target = Expr::var(&written_to);
-        let js_span = self.js_span(span);
-        out.push(StmtKind::Assign(target.clone(), Expr::bin(Op::Add, target, written)).at(js_span));
-        Ok(Some(Expr::undefined()))
+        Ok(written)
     }
 
     /// The JS string a place is, if it's the `Formatter` being written, `*f`:

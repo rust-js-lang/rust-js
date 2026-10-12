@@ -42,7 +42,7 @@ function first_long(items, BAsRefStr) {
 }
 
 function second(items) {
-  const value = $nextSome(items);
+  $nextSome(items);
   return $nextSome(items);
 }
 

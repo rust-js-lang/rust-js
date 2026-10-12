@@ -2134,4 +2134,20 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts","-t","a writer from its MIR returns the string it writes"],
   },
+  {
+    name: "mir-tidy-unread-call-kept",
+    breaks: "MIR's call whose value nothing reads is `const n = items.pop()`",
+    file: "src/lower/mir/tidy.rs",
+    find: "            && matches!(value.kind, ExprKind::Call(..))\n",
+    replace: "            && false\n",
+    tests: ["test/lowering.test.ts","-t","a block's const reuses a name where each read keeps its own"],
+  },
+  {
+    name: "mir-tidy-writer-branches-unreturned",
+    breaks: "MIR's writer writing once in an `if` and its `else` appends to `f` in each, then returns it",
+    file: "src/lower/mir/tidy.rs",
+    find: "StmtKind::If(_, then, Some(els)) if returned && let Some(back) = next => {",
+    replace: "StmtKind::If(_, then, Some(els)) if false && let Some(back) = next => {",
+    tests: ["test/lowering.test.ts","-t","a writer's Debug builder from its MIR is the string its chain writes"],
+  },
 ];

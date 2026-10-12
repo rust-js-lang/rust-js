@@ -27,20 +27,22 @@ export function probeDisplay() {
 }
 
 function probeDisplay_fmt(probe, options) {
-  let f = "";
+  const value = options?.align;
   let align;
-  const match = options?.align;
-  if (match === "Left") {
-    align = "left";
-  } else if (match === "Right") {
-    align = "right";
-  } else if (match === "Center") {
-    align = "center";
+  if (value != null) {
+    if (value === "Left") {
+      align = "left";
+    } else if (value === "Right") {
+      align = "right";
+    } else {
+      align = "center";
+    }
   } else {
     align = "none";
   }
-  f += `w=${options?.width == null ? "None" : `Some(${options?.width})`} p=${options?.precision == null ? "None" : `Some(${options?.precision})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;
-  return f;
+  const value$1 = options?.width;
+  const value$2 = options?.precision;
+  return `w=${value$1 == null ? "None" : `Some(${value$1})`} p=${value$2 == null ? "None" : `Some(${value$2})`} fill=${$debugStr(options?.fill ?? " ", "'")} align=${align} plus=${options?.plus === true} zero=${options?.zero === true} alt=${options?.alternate === true}`;
 }
 
 export function moneyDisplay() {
@@ -52,9 +54,9 @@ export function moneyDisplay() {
 
 function moneyDisplay_fmt(money, options) {
   const s = `$${money[0] / 100n}.${$zeroPad(String(money[0] % 100n), 2)}`;
-  const match = options?.width;
-  if (match != null) {
-    return $pad(s, match, ">");
+  const w = options?.width;
+  if (w != null) {
+    return $pad(s, w, ">");
   }
   return s;
 }

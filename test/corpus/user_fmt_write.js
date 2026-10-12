@@ -59,11 +59,8 @@ function pointDisplay_fmt(point) {
 }
 
 function describe(out, p) {
-  const result = collectorWrite_write_str(
-    out,
-    `at ${pointDisplay_fmt(p)} [${$pad("zoë", 6, ">")}]\n`,
-  );
-  const result$1 = collectorWrite_write_str(out, "é");
+  collectorWrite_write_str(out, `at ${pointDisplay_fmt(p)} [${$pad("zoë", 6, ">")}]\n`);
+  collectorWrite_write_str(out, "é");
   return collectorWrite_write_str(out, "!");
 }
 

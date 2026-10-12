@@ -7,7 +7,7 @@ export function entry() {
 }
 
 function greet(err) {
-  const result = console.error("to stderr 1");
+  console.error("to stderr 1");
   return;
 }
 
@@ -16,9 +16,9 @@ function table(rows) {
   while (true) {
     const row = $rangeNext(iter);
     if (row != null) {
-      const result = $print(`${Math.imul(row, row) >>> 0} `);
+      $print(`${Math.imul(row, row) >>> 0} `);
     } else {
-      const result = console.log("");
+      console.log("");
       return;
     }
   }

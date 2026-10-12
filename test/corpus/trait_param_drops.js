@@ -158,7 +158,7 @@ function main() {
   const w = [0];
   const value = wrapTakeNoisy({ default: () => 0 }).take(w, [5]);
   console.log(`${value} ${via(w, [6], wrapTakeNoisy({ default: () => 0 }))}`);
-  const _built = build([7], relayTakeA(wrapTakeNoisy({ default: () => 0 }), noisyDrop_drop));
+  build([7], relayTakeA(wrapTakeNoisy({ default: () => 0 }), noisyDrop_drop));
   console.log(`${sinkTakeA_take(undefined, [8], noisyDrop_drop)}`);
   const all = [
     { impl: sinkTakeA(noisyDrop_drop) },

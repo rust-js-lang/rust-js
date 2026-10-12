@@ -2283,7 +2283,7 @@ pub fn again(mut items: Vec<u32>) -> usize {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("  if (a) {\n    const n = 1;\n    return (n + 1) >>> 0;\n  }\n  const n = 2;\n  return Math.imul(n, 3) >>> 0;");
   expect(js).toContain("    const m = n;\n    const n$1 = 1;");
-  expect(js).toContain("  const n = items.pop();\n  const n$1 = ");
+  expect(js).toContain("  items.pop();\n  const n = items.length;");
   expect(js).toContain("    return n;\n  }\n  const n$1 = 2;");
   const lib = await import(join(dir, "lib.js"));
   expect([lib.twice(true), lib.twice(false), lib.both(true), lib.both(false), lib.again([1, 2]), lib.early(true, 4), lib.early(false, 4)]).toEqual([2, 6, 11, 10, 1, 5, 6]);
@@ -5694,6 +5694,104 @@ pub fn shown(p: &Point, n: &Name) -> String {
   expect(js).toContain("function nameDisplay_fmt(name, options) {\n  return $formatted(name[0], options);\n}");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.shown({ x: 1, y: 2 }, ["ab"])).toBe("Point {\n    x: 1,\n    y: 2,\n}|    ab|ab  |");
+});
+
+// ADRs 0137, 0143, from MIR: `f.alternate()` and `f.width()` are what the
+// writer's `Formatter` was given.
+test("a writer from its MIR answers what its Formatter is asked", async () => {
+  const dir = fixture("mir-writer-questions");
+  writeFileSync(join(dir, "lib.rs"), `use std::fmt;
+
+pub struct Size(pub u32);
+
+impl fmt::Display for Size {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if f.alternate() {
+            write!(f, "{} bytes", self.0)
+        } else {
+            match f.width() {
+                Some(w) => write!(f, "{}B/{w}", self.0),
+                None => write!(f, "{}B", self.0),
+            }
+        }
+    }
+}
+
+pub fn shown(s: &Size) -> String {
+    format!("{s} {s:#} {s:7}")
+}
+
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  if (options?.alternate === true) {\n    return `${size[0]} bytes`;\n  }\n  const w = options?.width;");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shown([5])).toBe("5B 5 bytes 5B/7");
+});
+
+// ADR 0136, from MIR: a `Debug` builder's chain is the string it writes, its
+// `entries(v.iter())` all of `v`; a writer writing once each way returns it.
+test("a writer's Debug builder from its MIR is the string its chain writes", async () => {
+  const dir = fixture("mir-writer-builders");
+  writeFileSync(join(dir, "lib.rs"), `use std::fmt;
+
+pub struct P {
+    pub x: i32,
+}
+
+impl fmt::Debug for P {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("P").field("x", &self.x).finish()
+    }
+}
+
+pub struct Bag(pub Vec<u32>);
+
+impl fmt::Debug for Bag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list().entry(&0).entries(self.0.iter()).finish()
+    }
+}
+
+pub struct Mark(pub bool);
+
+impl fmt::Display for Mark {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let shown = if self.0 { "yes" } else { "no" };
+        if self.0 {
+            f.write_str(shown)
+        } else {
+            f.write_str("-")
+        }
+    }
+}
+
+pub struct Flag(pub bool);
+
+impl fmt::Display for Flag {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.0 {
+            f.write_str("y")?;
+        } else {
+            f.write_str("n")?;
+        }
+        Ok(())
+    }
+}
+
+pub fn shown(p: &P, b: &Bag, m: &Mark) -> String {
+    format!("{p:?} {b:?} {m} {} {}", Flag(true), Flag(false))
+}
+
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("function pDebug_fmt(p) {\n  return `P { x: ${p.x} }`;\n}");
+  expect(js).toContain('return `[${["0"].concat(Array.from(bag[0], (entry) => String(entry))).join(", ")}]`;');
+  expect(js).toContain('  if (mark[0]) {\n    return shown;\n  }\n  return "-";\n}');
+  const lib = await import(join(dir, "lib.js"));
+  expect(js).toContain('function flagDisplay_fmt(flag) {\n  if (flag[0]) {\n    return "y";\n  }\n  return "n";\n}');
+  expect(lib.shown({ x: 1 }, [[2, 3]], [true])).toBe("P { x: 1 } [0, 2, 3] yes y n");
 });
 
 // A `Copy` value a function gives, a variable of its own: handed over, as
