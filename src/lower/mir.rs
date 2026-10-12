@@ -5044,6 +5044,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 self.extract_if_values(items, bounds, f, generic_args.type_at(0))
             }
+            // A slice of `MaybeUninit`s written from a slice, and each item
+            // dropped, THIR's (ADR 0332).
+            Std::Slice(SliceOp::UninitWrite { clone }) => {
+                let values = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
+                self.flush(state, out)?;
+                self.uninit_write_values(clone, values, generic_args.type_at(0), span, out)?
+            }
+            Std::Slice(SliceOp::UninitDrop) => {
+                let slots = self.value_expr(values.next().expect("the slots"), span)?;
+                let ty = Ty::new_slice(tcx, generic_args.type_at(0));
+                self.flush(state, out)?;
+                self.drop_value(slots, ty, span, out)?;
+                Expr::undefined()
+            }
             // `s.split_off(..n)` and the like: the slice's place given what's
             // left, THIR's (ADR 0338).
             Std::Slice(SliceOp::SplitOff { end, mutable }) => {

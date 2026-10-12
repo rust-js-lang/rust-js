@@ -364,6 +364,35 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var("$extractIf"), list)
     }
 
+    /// `slots.write_copy_of_slice(src)`, of `values`, the slots and the
+    /// source: `$copyFromSlice(slots, src)`, then `slots`; a clone of each
+    /// from `$writeCloneOfSlice`, whose `assert_eq!` says why it panics.
+    /// THIR's and MIR's.
+    pub(in crate::lower) fn uninit_write_values(
+        &mut self,
+        clone: bool,
+        values: Vec<Expr>,
+        item: ty::Ty<'tcx>,
+        span: Span,
+        out: &mut Vec<Stmt>,
+    ) -> R<Expr> {
+        let mut values = values.into_iter();
+        let (slots, source) = (values.next().expect("the slots"), values.next().expect("the source"));
+        let slots = if slots.reads_same() {
+            slots
+        } else {
+            self.spill("slots", slots, out)
+        };
+        self.runtime.insert(Helper::SliceOps);
+        if clone {
+            let clone = self.clone_arg(item, span)?;
+            return Ok(Expr::call(Expr::var("$writeCloneOfSlice"), vec![slots, source, clone]));
+        }
+        let copy = Expr::call(Expr::var("$copyFromSlice"), vec![slots.clone(), source]);
+        out.push(StmtKind::Expr(copy).at(self.js_span(span)));
+        Ok(slots)
+    }
+
     /// `s.split_off(..n)` and the like of a slice read as `read`, with the
     /// range's bounds, or `split_off_first`'s or `last`'s, `end`: a `const`
     /// of what's left, `[0]`, which the slice's place is given, and what it
@@ -447,21 +476,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `$copyFromSlice(slots, src)`, then `slots`; a clone of each from
             // `$writeCloneOfSlice`, whose `assert_eq!` says why it panics.
             SliceOp::UninitWrite { clone } => {
-                let mut values = self.operands(args, out)?.into_iter();
-                let (slots, source) = (values.next().expect("the slots"), values.next().expect("the source"));
-                let slots = if slots.reads_same() {
-                    slots
-                } else {
-                    self.spill("slots", slots, out)
-                };
-                self.runtime.insert(Helper::SliceOps);
-                if clone {
-                    let clone = self.clone_arg(generic_args.type_at(0), span)?;
-                    return Ok(Expr::call(Expr::var("$writeCloneOfSlice"), vec![slots, source, clone]));
-                }
-                let copy = Expr::call(Expr::var("$copyFromSlice"), vec![slots.clone(), source]);
-                out.push(StmtKind::Expr(copy).at(self.js_span(span)));
-                slots
+                let values = self.operands(args, out)?;
+                self.uninit_write_values(clone, values, item(), span, out)?
             }
             SliceOp::UninitDrop => {
                 let slots = self.operands(args, out)?.remove(0);

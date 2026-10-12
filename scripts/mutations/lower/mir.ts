@@ -2366,4 +2366,20 @@ export const mutations: Mutation[] = [
     replace: "                        if matches!(place.kind, js::ExprKind::Var(_)) =>\n",
     tests: ["test/lowering.test.ts", "-t", "split_off through a held"],
   },
+  {
+    name: "mir-uninit-drop-skipped",
+    breaks: "MIR's `assume_init_drop()` of a slice drops nothing",
+    file: "src/lower/mir.rs",
+    find: "                self.flush(state, out)?;\n                self.drop_value(slots, ty, span, out)?;\n",
+    replace: "                self.flush(state, out)?;\n",
+    tests: ["test/mir.test.ts", "-t", "slice_uninit"],
+  },
+  {
+    name: "mir-uninit-write-clone-copies",
+    breaks: "MIR's `write_clone_of_slice` copies, not clones",
+    file: "src/lower/mir.rs",
+    find: "                self.uninit_write_values(clone, values, generic_args.type_at(0), span, out)?\n",
+    replace: "                self.uninit_write_values(false, values, generic_args.type_at(0), span, out)?\n",
+    tests: ["test/mir.test.ts", "-t", "slice_uninit"],
+  },
 ];
