@@ -74,7 +74,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let it = values.into_iter().next().expect("the receiver");
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
-            let array = self.array_source(iter_ty).is_some();
+            // A string's `chars()`, a `$iter` of its array (`std_iterator`).
+            let array = self.array_source(iter_ty).is_some() || self.recognition().is_str_chars(iter_ty);
             return Ok(Some(match (name, self.range_kind(iter_ty)) {
                 ("next_back", Some(RangeKind::Exclusive)) => {
                     self.helper(Helper::RangeNextBack, "$rangeNextBack", vec![it])

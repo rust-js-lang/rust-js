@@ -4917,12 +4917,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.text_values(op, exprs, arg_tys, generic_args, span, out)?
             }
-            // A `Peekable`'s or a slice iterator's own: of a `$iter`, which
+            // A `Peekable`'s or a slice's or string's iterator's own: of a `$iter`, which
             // knows where it is (ADR 0071), as THIR's `step_call` of one.
-            Std::Step(op @ (StepOp::Peek | StepOp::NextIf | StepOp::NextIfEq | StepOp::AsSlice))
-                if arg_tys
-                    .first()
-                    .is_some_and(|t| self.array_source(t.peel_refs()).is_some() || self.is_peekable(t.peel_refs())) =>
+            Std::Step(op @ (StepOp::Peek | StepOp::NextIf | StepOp::NextIfEq | StepOp::AsSlice | StepOp::AsStr))
+                if op == StepOp::AsStr
+                    || arg_tys.first().is_some_and(|t| {
+                        self.array_source(t.peel_refs()).is_some() || self.is_peekable(t.peel_refs())
+                    }) =>
             {
                 let mut exprs = values
                     .map(|v| self.value_expr(v, span))
@@ -4932,6 +4933,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
                 match op {
                     StepOp::Peek if boxed => self.helper(Helper::PeekSome, "$peekSome", vec![it]),
+                    // A string's `chars()`' rest, as a string.
+                    StepOp::AsStr => self.helper(Helper::RestStr, "$restStr", vec![it]),
                     StepOp::Peek => self.helper(Helper::Peek, "$peek", vec![it]),
                     StepOp::NextIf => {
                         let f = exprs.next().expect("a test");

@@ -6264,6 +6264,38 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }
 });
 
+// What's left of a string's \`chars()\` once stepped, \`as_str()\`, from MIR
+// as from THIR: the rest of it, \`$restStr(c)\`.
+test("the rest of a string's chars from MIR is a string", async () => {
+  const dir = fixture("mir-chars-rest");
+  writeFileSync(join(dir, "lib.rs"), `pub fn cap(w: &str) -> String {
+    let mut c = w.chars();
+    match c.next() {
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+        None => String::new(),
+    }
+}
+// Stepped from its end, and not stepped at all.
+pub fn init(w: &str) -> String {
+    let mut c = w.chars();
+    c.next_back();
+    c.as_str().to_string()
+}
+pub fn whole(w: &str) -> String {
+    w.chars().as_str().to_string()
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain("$restStr(c)");
+    const lib = await import(join(dir, out));
+    expect([lib.cap("hello"), lib.cap(""), lib.cap("é!")]).toEqual(["Hello", "", "É!"]);
+    expect([lib.init("abc"), lib.init(""), lib.whole("abc")]).toEqual(["ab", "", "abc"]);
+    expect(js).toContain('  return Array.from(w).join("");\n');
+  }
+});
+
 // A match of three arms or more giving a variable its value, from MIR, is
 // the chain of them, as THIR's: not its last two folded, \`c ? a : b\`.
 test("a variable's value of three arms from MIR is their chain", async () => {

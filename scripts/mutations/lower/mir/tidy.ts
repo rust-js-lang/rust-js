@@ -1794,4 +1794,16 @@ export const mutations: Mutation[] = [
       "a variable's value of three arms from MIR"
     ]
   },
+  {
+    "name": "mir-rest-str-of-fresh",
+    "breaks": "`w.chars().as_str()` from MIR is `$restStr($iter(Array.from(w)))`, not `Array.from(w).join(\"\")`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        && matches!(&callee.kind, ExprKind::Var(f) if f == \"$restStr\")\n",
+    "replace": "        && matches!(&callee.kind, ExprKind::Var(f) if f == \"$none\")\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "the rest of a string's chars from MIR"
+    ]
+  },
 ];

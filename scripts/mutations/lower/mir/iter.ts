@@ -238,4 +238,16 @@ export const mutations: Mutation[] = [
       "a range mapped and collected"
     ]
   },
+  {
+    "name": "mir-chars-next-back-refused",
+    "breaks": "`next_back()` of a string's `chars()` from MIR is refused as a lazy iterator's",
+    "file": "src/lower/mir/iter.rs",
+    "find": "self.array_source(iter_ty).is_some() || self.recognition().is_str_chars(iter_ty);",
+    "replace": "self.array_source(iter_ty).is_some();",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "the rest of a string's chars from MIR"
+    ]
+  },
 ];

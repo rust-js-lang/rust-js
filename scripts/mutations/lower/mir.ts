@@ -1906,4 +1906,16 @@ export const mutations: Mutation[] = [
       "a match guard's binding from MIR"
     ]
   },
+  {
+    "name": "mir-chars-as-str-refused",
+    "breaks": "`c.as_str()` of a string's `chars()` from MIR is refused",
+    "file": "src/lower/mir.rs",
+    "find": "                if op == StepOp::AsStr\n",
+    "replace": "                if false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "the rest of a string's chars from MIR"
+    ]
+  },
 ];

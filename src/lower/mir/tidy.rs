@@ -1693,6 +1693,21 @@ fn logical_returns(stmts: &mut Vec<Stmt>, logicals: &[js::Span], returns: &[js::
 /// for an iterator helper alone, which nothing else steps: `xs.values()
 /// .filter(f)`, the array's own iterator.
 fn array_values(e: &mut Expr) {
+    // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
+    // all of them, `cs.join("")`, as THIR's.
+    if let ExprKind::Call(callee, args) = &e.kind
+        && matches!(&callee.kind, ExprKind::Var(f) if f == "$restStr")
+        && let [it] = &args[..]
+        && crate::lower::iterators::is_stepped_items(it)
+        && let ExprKind::Call(_, items) = &it.kind
+        && let [items] = &items[..]
+    {
+        *e = Expr {
+            span: e.span,
+            ..Expr::call(Expr::member(items.clone(), "join"), vec![Expr::str("")])
+        };
+        return;
+    }
     // Each item with its index, `enumerate()`'s `.map((x, i) => [i, x])`:
     // the array's `entries()`, as THIR's.
     if let ExprKind::Call(callee, args) = &e.kind
