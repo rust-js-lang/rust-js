@@ -1262,6 +1262,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // one made where the element is read.
                 TerminatorKind::Assert { msg, target, .. }
                     if self.known_in_bounds(msg, data.terminator().source_info.span)
+                        || checked_by_division(msg)
                         || deferred_check(body, msg, *target).is_some() => {}
                 TerminatorKind::Assert { cond, msg, .. } => {
                     count_operand(&mut locals, cond);
@@ -1594,7 +1595,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 msg,
                 target,
                 unwind,
-            } if self.known_in_bounds(msg, span) => {
+            } if self.known_in_bounds(msg, span) || checked_by_division(msg) => {
                 // `args[i]` THIR's facts know is in bounds, of `0..args.len()`:
                 // unchecked, as THIR writes it.
                 let _ = (cond, expected, unwind);
@@ -5376,6 +5377,18 @@ fn expr_bytes(e: &Expr) -> Option<Vec<u8>> {
             .collect(),
         _ => None,
     }
+}
+
+/// A check of a `%` or `/`, which the division makes itself where it can
+/// fail, `$rem(a, b, min)`, and can't where it's inline, `i % 2`: none, as
+/// THIR writes none.
+fn checked_by_division(msg: &mir::AssertMessage<'_>) -> bool {
+    matches!(
+        msg,
+        AssertKind::DivisionByZero(_)
+            | AssertKind::RemainderByZero(_)
+            | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)
+    )
 }
 
 fn assert_operands<'m, 'tcx>(msg: &'m AssertKind<Operand<'tcx>>) -> Vec<&'m Operand<'tcx>> {

@@ -6258,6 +6258,42 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
   }
 });
 
+// MIR's checks of a `%` or `/`, `2 === -1` of a constant divisor, are
+// none: the division checks what can fail, `$rem(a, b, min)`, as THIR's.
+test("a division by a constant from MIR has no overflow check, as THIR's", async () => {
+  const dir = fixture("mir-constant-divisor");
+  writeFileSync(join(dir, "lib.rs"), `pub fn odds(n: i32) -> Vec<i32> {
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < n {
+        i += 1;
+        if i % 2 == 0 {
+            continue;
+        }
+        out.push(i / 3);
+    }
+    out
+}
+pub fn by(a: i32, b: i32) -> i32 {
+    a % b
+}
+`);
+  for (const [out, env] of [["lib.js", {}], ["mir.js", { RUST_JS_MIR: "1" }]] as const) {
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
+    const js = readFileSync(join(dir, out), "utf8");
+    expect(js).toContain(`    if (i % 2 === 0) {
+      continue;
+    }
+    out.push((i / 3) | 0);`);
+    const lib = await import(join(dir, out));
+    expect(lib.odds(7)).toEqual([0, 1, 1, 2]);
+    // A divisor not known is checked where it divides, once.
+    expect(js).toContain("export function by(a, b) {\n  return $rem(a, b, -2147483648) | 0;\n}");
+    expect(() => lib.by(-2147483648, -1)).toThrow("remainder with overflow");
+    expect(() => lib.by(1, 0)).toThrow("divisor of zero");
+  }
+});
+
 test("a test from MIR that `x` is set and true reads `x`, as THIR's", async () => {
   const dir = fixture("mir-set-and-true");
   writeFileSync(join(dir, "lib.rs"), `pub enum Message {

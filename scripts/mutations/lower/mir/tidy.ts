@@ -254,7 +254,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-continue-guard-kept",
     breaks: "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
     file: "src/lower/mir/tidy.rs",
-    find: "                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect(\"matched\").span)) =>\n",
+    find: "                    if written(guards, body.last().expect(\"matched\").span) || (negated(test) && then.len() > 1) =>\n",
     replace: "                    if false =>\n",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
@@ -694,7 +694,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-written-continue-nested",
     breaks: "a `continue` the program wrote before one statement is the rest nested, `if (!c) { … }`",
     file: "src/lower/mir/tidy.rs",
-    find: "                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect(\"matched\").span)) =>\n",
+    find: "                    if written(guards, body.last().expect(\"matched\").span) || (negated(test) && then.len() > 1) =>\n",
     replace: "                    if negated(test) && then.len() > 1 =>\n",
     tests: ["test/lowering.test.ts","-t","continue.s from MIR are where"],
   },
@@ -1696,6 +1696,18 @@ export const mutations: Mutation[] = [
       "test/mir.test.ts",
       "-t",
       "JSX tests"
+    ]
+  },
+  {
+    "name": "mir-tidy-continue-written-negated-only",
+    "breaks": "a `continue` the program wrote is an `if (i % 2 !== 0) { \u2026 }` where MIR's test isn't a `!`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "                    if written(guards, body.last().expect(\"matched\").span) || (negated(test) && then.len() > 1) =>\n",
+    "replace": "                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect(\"matched\").span)) =>\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "division by a constant from MIR"
     ]
   },
 ];

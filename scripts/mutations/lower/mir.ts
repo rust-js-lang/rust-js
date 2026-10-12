@@ -1882,4 +1882,16 @@ export const mutations: Mutation[] = [
       "JSX tests"
     ]
   },
+  {
+    "name": "mir-division-checked-twice",
+    "breaks": "a `%` or `/` from MIR is checked before the division checks it, `if ((2 === -1) & \u2026) throw`",
+    "file": "src/lower/mir.rs",
+    "find": "        AssertKind::DivisionByZero(_)\n            | AssertKind::RemainderByZero(_)\n            | AssertKind::Overflow(BinOp::Div | BinOp::Rem, ..)\n",
+    "replace": "        AssertKind::Overflow(BinOp::Shl, ..)\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "division by a constant from MIR"
+    ]
+  },
 ];

@@ -1018,9 +1018,10 @@ fn continued(stmts: &mut [Stmt], guards: &[js::Span]) {
                     body.push(StmtKind::If(test, then, None).at(span));
                     body.extend(otherwise);
                 }
-                // Of one statement, where the program wrote the `continue`.
+                // Of one statement, where the program wrote the `continue`,
+                // whatever its test, `i % 2 !== 0` of `i % 2 == 0`.
                 Some(StmtKind::If(test, then, None))
-                    if negated(test) && (then.len() > 1 || written(guards, body.last().expect("matched").span)) =>
+                    if written(guards, body.last().expect("matched").span) || (negated(test) && then.len() > 1) =>
                 {
                     let Some(Stmt {
                         kind: StmtKind::If(test, then, None),
