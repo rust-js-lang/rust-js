@@ -52,7 +52,8 @@ if (value != null) {
 
 - `test/corpus/tuple_scrutinee_calls.rs` runs each case against native
   Rust: parts that call, a length read before a pop, a variable a guard
-  sets and one a closure in a guard sets.
+  sets, one a closure in a guard sets, and one a `&mut` chosen in a guard
+  sets through its handle.
 - A `format_args!` of many parts, `matrix_integers`'s, is a `const` for
   each that acts before the template, not one array read `value[22]`.
 - Not yet: a part held is named by tidy's rule for temporaries, `value`,

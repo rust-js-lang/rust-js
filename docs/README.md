@@ -464,6 +464,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0367 A state's setter is the function it is](decisions/0367-state-setter-is-a-function.md)
 - [0368 `util.promisify` of a callback function](decisions/0368-promisify.md)
 - [0369 A tuple's parts that act are each held, not an array](decisions/0369-tuple-parts-held-each.md)
+- [0370 A loop's exits come first, as a person writes them](decisions/0370-loop-exits-first.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

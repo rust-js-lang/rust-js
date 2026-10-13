@@ -157,18 +157,18 @@ const Parser = {
     let left = result$1._0;
     while (true) {
       const value = Parser.peek(parser);
-      if (value != null && value.TAG === "Op" && (value._0 === "+" || value._0 === "-")) {
-        Parser.next(parser);
-        const result$2 = Parser.term(parser);
-        if (result$2.TAG === "Err") {
-          return result$2;
-        }
-        const right = result$2._0;
-        left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
-        continue;
+      if (value == null || value.TAG !== "Op" || (value._0 !== "+" && value._0 !== "-")) {
+        break;
       }
-      return { TAG: "Ok", _0: left };
+      Parser.next(parser);
+      const result$2 = Parser.term(parser);
+      if (result$2.TAG === "Err") {
+        return result$2;
+      }
+      const right = result$2._0;
+      left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
     }
+    return { TAG: "Ok", _0: left };
   },
   term(parser) {
     const result$1 = Parser.power(parser);
@@ -178,18 +178,18 @@ const Parser = {
     let left = result$1._0;
     while (true) {
       const value = Parser.peek(parser);
-      if (value != null && value.TAG === "Op" && (value._0 === "*" || value._0 === "/")) {
-        Parser.next(parser);
-        const result$2 = Parser.power(parser);
-        if (result$2.TAG === "Err") {
-          return result$2;
-        }
-        const right = result$2._0;
-        left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
-        continue;
+      if (value == null || value.TAG !== "Op" || (value._0 !== "*" && value._0 !== "/")) {
+        break;
       }
-      return { TAG: "Ok", _0: left };
+      Parser.next(parser);
+      const result$2 = Parser.power(parser);
+      if (result$2.TAG === "Err") {
+        return result$2;
+      }
+      const right = result$2._0;
+      left = { TAG: "Bin", _0: left, _1: value._0, _2: right };
     }
+    return { TAG: "Ok", _0: left };
   },
   power(parser) {
     const result$1 = Parser.unary(parser);

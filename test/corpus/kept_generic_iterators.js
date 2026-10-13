@@ -23,13 +23,12 @@ function pairs(it) {
   while (true) {
     const value = $next(it);
     const value$1 = $next(it);
-    if (value != null && value$1 != null) {
-      const a = value;
-      const b = value$1;
-      out.push([a, b]);
-      continue;
+    if (value == null || value$1 == null) {
+      break;
     }
-    break;
+    const a = value;
+    const b = value$1;
+    out.push([a, b]);
   }
   return out;
 }

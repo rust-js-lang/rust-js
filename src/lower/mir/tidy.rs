@@ -126,6 +126,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A match's tree of tests, its arms reached through a block MIR made:
     // the chain of its arms, now that the loops are made.
     bottom_up(body, &mut decisions::decisions);
+    js::statement_lists(body, &mut early_returns);
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
@@ -243,6 +244,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| while_tests(stmts, written));
     // What those leave at the end, a `return;` the program didn't write.
     tail_returns(body, returns);
+    // A loop's early exits again, of what's taken its shape since.
+    js::statement_lists(body, &mut early_returns);
     // A chain's arms, as statements, in the order written.
     js::statement_lists(body, &mut |stmts| written_chains(stmts));
     // `const result = e; return result;` of what the function gives: `return e;`.
@@ -760,6 +763,113 @@ fn early_breaks(stmts: &mut [Stmt]) {
         body.push(StmtKind::If(not(test), vec![StmtKind::Break(None).at(span)], None).at(span));
         body.extend(then);
     }
+}
+
+/// A `while (true)` whose body ends `if (c) { a } return x;`, MIR's loop
+/// that returns where it ends, `while let Some(p) = it.next()` of a
+/// function that gives `None` after it, as a person writes an early exit:
+/// - `a` going on, `if (c) { a; continue; }`: `if (!c) { break; } a` and
+///   the `return x;` after the loop, as `early_breaks` makes of one that
+///   breaks; not where something else leaves the loop, nor of what it
+///   declares, which isn't seen after it.
+/// - `a` never going on past its own end: `if (!c) { return x; } a` (ADR 0370).
+fn early_returns(stmts: &mut Vec<Stmt>) {
+    let mut at = 0;
+    while at < stmts.len() {
+        while let Some(after) = early_return(&mut stmts[at]) {
+            if let Some(after) = after {
+                stmts.insert(at + 1, after);
+                break;
+            }
+        }
+        at += 1;
+    }
+}
+
+/// One of `early_returns`'s steps of `stmt`, if it takes one: the `return`
+/// it leaves after the loop, if it does. Its body's end, `if (c) { a }
+/// return x;`, or `if (c) { a } else { e }` of a lone exit `e`, `return;` as
+/// MIR's `?` is, or `break;`: `if (!c) { e } a`, as `a` goes on to the next
+/// time round where the body ends.
+fn early_return(stmt: &mut Stmt) -> Option<Option<Stmt>> {
+    let StmtKind::While { label, cond, body } = &mut stmt.kind else {
+        return None;
+    };
+    if !matches!(cond.kind, ExprKind::Bool(true)) {
+        return None;
+    }
+    let continues = |s: &Stmt| match &s.kind {
+        StmtKind::Continue(None) => true,
+        StmtKind::Continue(Some(l)) => Some(l) == label.as_ref(),
+        _ => false,
+    };
+    let is_return = |s: &Stmt| matches!(s.kind, StmtKind::Return(_));
+    let exits = |s: &Stmt| matches!(s.kind, StmtKind::Return(_) | StmtKind::Break(_) | StmtKind::Continue(_));
+    // Where the `if` is, and whether the exit is its `else`.
+    let (at, in_else) = match body.as_slice() {
+        [
+            ..,
+            Stmt {
+                kind: StmtKind::If(_, _, Some(otherwise)),
+                ..
+            },
+        ] if matches!(otherwise.as_slice(), [e] if exits(e)) => (body.len() - 1, true),
+        [
+            ..,
+            Stmt {
+                kind: StmtKind::If(_, _, None),
+                ..
+            },
+            last,
+        ] if is_return(last) => (body.len() - 2, false),
+        _ => return None,
+    };
+    let rest = &body[at..];
+    let StmtKind::If(_, then, otherwise) = &rest[0].kind else {
+        unreachable!("matched")
+    };
+    let exit = match otherwise {
+        Some(otherwise) => &otherwise[0],
+        None => &rest[1],
+    };
+    let mut inside = false;
+    if let StmtKind::Return(Some(value)) = &exit.kind {
+        value.visit_vars(&mut |v| inside |= declared(body).any(|d| d == v));
+    }
+    let goes_on = then.last().is_some_and(continues);
+    // The `return` after the loop: of no other way out of it, so nothing
+    // after it ran, nor of what it declares.
+    let after = goes_on && !in_else;
+    if after && (breaks(body, label.as_deref()) || inside) {
+        return None;
+    }
+    if !in_else && !goes_on && !then.last().is_some_and(ends) {
+        return None;
+    }
+    let mut tail = body.split_off(at).into_iter();
+    let Some(Stmt {
+        kind: StmtKind::If(test, mut then, otherwise),
+        span,
+    }) = tail.next()
+    else {
+        unreachable!("matched")
+    };
+    let exit = match otherwise {
+        Some(mut otherwise) => otherwise.pop(),
+        None => tail.next(),
+    }
+    .expect("matched");
+    if goes_on {
+        then.pop();
+    }
+    if after {
+        body.push(StmtKind::If(not(test), vec![StmtKind::Break(None).at(span)], None).at(span));
+        body.extend(then);
+        return Some(Some(exit));
+    }
+    body.push(StmtKind::If(not(test), vec![exit], None).at(span));
+    body.extend(then);
+    Some(None)
 }
 
 /// `if (a) { if (b) { s } }`, the tests of one condition the program wrote,
@@ -1459,7 +1569,9 @@ fn tried_first(stmts: &mut Vec<Stmt>) {
 
 /// A loop's body `if (t) { a; continue; } rest`, `a` written after `rest`,
 /// each of which always leaves: `if (!t) { rest } a`, in the order the
-/// program wrote them; `a`'s last `continue` goes on anyway.
+/// program wrote them; `a`'s last `continue` goes on anyway. Not of a lone
+/// exit, `if (!value) { return; }` of a `?`, written where the block it
+/// shares is: a guard first, as a person writes it.
 fn written_order_steps(stmts: &mut [Stmt]) {
     for stmt in stmts {
         let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) = &mut stmt.kind
@@ -1471,7 +1583,23 @@ fn written_order_steps(stmts: &mut [Stmt]) {
                 return false;
             };
             let rest = &body[i + 1..];
-            then.last().is_some_and(ends)
+            let lone = match then.as_slice() {
+                [
+                    Stmt {
+                        kind: StmtKind::Return(value),
+                        ..
+                    },
+                ] => value.as_ref().is_none_or(Expr::is_constant),
+                [
+                    Stmt {
+                        kind: StmtKind::Break(_) | StmtKind::Continue(_),
+                        ..
+                    },
+                ] => true,
+                _ => false,
+            };
+            !lone
+                && then.last().is_some_and(ends)
                 && rest.last().is_some_and(ends)
                 && matches!((first_written(rest), first_written(then)), (Some(r), Some(a)) if r < a)
         });
@@ -3889,14 +4017,22 @@ pub(super) fn field_path(e: &Expr) -> Option<String> {
 /// setter's handle's, `{ get value() { return n; }, set value(v) { n = v; } }`.
 fn set_elsewhere(body: &[Stmt]) -> HashSet<String> {
     let mut set = closures_set(body);
+    set.extend(handled(body));
+    set
+}
+
+/// The variables a getter's and setter's handle is made of, which what it's
+/// given may set.
+fn handled(body: &[Stmt]) -> HashSet<String> {
+    let mut handled = HashSet::new();
     js::each_expr_mut(&mut body.to_vec(), &mut |e| {
         if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind
             && let ExprKind::Var(name) = &place.kind
         {
-            set.insert(name.clone());
+            handled.insert(name.clone());
         }
     });
-    set
+    handled
 }
 
 /// The variables something may change: each `let`'s, and each assigned.
@@ -4411,13 +4547,7 @@ fn assigned(body: &mut Vec<Stmt>) -> HashSet<String> {
             }
         }
     });
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind
-            && let ExprKind::Var(name) = &place.kind
-        {
-            assigned.insert(name.clone());
-        }
-    });
+    assigned.extend(handled(body));
     assigned
 }
 

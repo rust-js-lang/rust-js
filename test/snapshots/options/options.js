@@ -184,12 +184,11 @@ export function chained_loop(n) {
   let count = 0;
   while (true) {
     const h = half(n);
-    if (h != null && h !== 0) {
-      n = h;
-      count = (count + 1) >>> 0;
-      continue;
+    if (h == null || h === 0) {
+      break;
     }
-    break;
+    n = h;
+    count = (count + 1) >>> 0;
   }
   return count;
 }

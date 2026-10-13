@@ -82,14 +82,13 @@ export function to_rpn(tokens) {
       } else {
         while (true) {
           const top = stack.pop();
-          if (top != null) {
-            if (top === "LParen") {
-              break bb49;
-            } else {
-              out.push(top);
-            }
-          } else {
+          if (top == null) {
             break bb49;
+          }
+          if (top === "LParen") {
+            break bb49;
+          } else {
+            out.push(top);
           }
         }
       }

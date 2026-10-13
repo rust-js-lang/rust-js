@@ -90,6 +90,48 @@ function bumped(v) {
   return 0;
 }
 
+function bump(n) {
+  n.value = (n.value + 10) >>> 0;
+  return false;
+}
+
+function bumped_by_ref(v, first) {
+  let x = 1;
+  let y = 2;
+  const value = v.pop();
+  const value$1 = x;
+  const value$2 = first
+    ? {
+        get value() {
+          return x;
+        },
+        set value(value) {
+          x = value;
+        },
+      }
+    : {
+        get value() {
+          return y;
+        },
+        set value(value) {
+          y = value;
+        },
+      };
+  const n = { value: value$2.value };
+  const value$3 = bump(n);
+  value$2.value = n.value;
+  if (!value$3) {
+    if (value != null) {
+      const b = value;
+      const a = value$1;
+      return ((((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0) + y) >>> 0;
+    }
+    const a = value$1;
+    return (((a + x) >>> 0) + y) >>> 0;
+  }
+  return 0;
+}
+
 function main() {
   const v = [4, 5];
   const value = popped(v, 5);
@@ -103,15 +145,17 @@ function main() {
   const value$4 = guarded(k);
   const value$5 = guarded(k);
   console.log(`${value$4} ${value$5} ${bumped([4])}`);
+  const value$6 = bumped_by_ref([4], true);
+  console.log(`${value$6} ${bumped_by_ref([], false)}`);
   const map = new Map();
   map.set("a", { TAG: "Circle", _0: 3 });
   map.set("b", { TAG: "Square", _0: 4 });
   const names = $iter(["a", "b", "a"]);
-  const value$6 = peeked(map, names);
   const value$7 = peeked(map, names);
   const value$8 = peeked(map, names);
+  const value$9 = peeked(map, names);
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${((value) => (value == null ? "None" : `Some(${value})`))(peeked(map, names))}`,
+    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${((value) => (value == null ? "None" : `Some(${value})`))(peeked(map, names))}`,
   );
 }
 //# sourceMappingURL=case.js.map

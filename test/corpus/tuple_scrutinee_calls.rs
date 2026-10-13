@@ -2,8 +2,9 @@
 // that acts held first, in order, `const value = v.pop();`, and what's read
 // before it with it, `v.len()` of `(v.len(), v.pop())`, read as it was
 // before the call; the rest read where the tuple's parts are. A variable
-// is read where its part is unless something sets it after, a guard or a
-// closure called in one: the tuple has it as it was.
+// is read where its part is unless something sets it after, a guard, a
+// closure called in one, or a `&mut` given in one: the tuple has it as it
+// was.
 use std::collections::HashMap;
 
 enum Shape {
@@ -65,6 +66,21 @@ fn bumped(v: &mut Vec<u32>) -> u32 {
     }
 }
 
+fn bump(n: &mut u32) -> bool {
+    *n += 10;
+    false
+}
+
+fn bumped_by_ref(v: &mut Vec<u32>, first: bool) -> u32 {
+    let mut x = 1;
+    let mut y = 2;
+    match (v.pop(), x) {
+        (_, _) if bump(if first { &mut x } else { &mut y }) => 0,
+        (Some(b), a) => a * 100 + b + x + y,
+        (None, a) => a + x + y,
+    }
+}
+
 fn main() {
     let mut v = vec![4, 5];
     println!("{} {} {}", popped(&mut v, 5), popped(&mut v, 1), popped(&mut v, 9));
@@ -72,6 +88,7 @@ fn main() {
     println!("{} {} {}", counted(&mut w), counted(&mut w), counted(&mut w));
     let mut k = vec![3];
     println!("{} {} {}", guarded(&mut k), guarded(&mut k), bumped(&mut vec![4]));
+    println!("{} {}", bumped_by_ref(&mut vec![4], true), bumped_by_ref(&mut vec![], false));
     let mut map = HashMap::new();
     map.insert("a".to_string(), Shape::Circle(3));
     map.insert("b".to_string(), Shape::Square(4));
