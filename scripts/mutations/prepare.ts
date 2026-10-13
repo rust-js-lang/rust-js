@@ -378,4 +378,36 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^std_errors_boxed.rs$"],
     snapshots: true,
   },
+  {
+    "name": "same-test-and-value-conditional",
+    "breaks": "`code ? code : null`, not `code || null`",
+    "file": "src/prepare.rs",
+    "find": "            if js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {\n",
+    "replace": "            if false && js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {\n",
+    "tests": ["test/lowering.test.ts", "-t", "nullable field's None is null"]
+  },
+  {
+    "name": "return-undefined-written",
+    "breaks": "a `return` of `undefined` says it, `return undefined;`, where JS writes `return;`",
+    "file": "src/prepare.rs",
+    "find": "        if let StmtKind::Let(_, value) | StmtKind::Return(value) = &mut stmt.kind\n",
+    "replace": "        if let StmtKind::Let(_, value) = &mut stmt.kind\n",
+    "tests": ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"]
+  },
+  {
+    "name": "test-double-negation-kept",
+    "breaks": "an `if`'s test of a value's truth keeps its `!!`, `if (!!x)`",
+    "file": "src/prepare.rs",
+    "find": "                *e = e.tested();\n",
+    "replace": "",
+    "tests": ["test/snapshots.test.ts"]
+  },
+  {
+    "name": "jsx-undefined-attribute-written",
+    "breaks": "a JSX attribute that's `undefined`, a `None`, is written, `title={undefined}`",
+    "file": "src/prepare.rs",
+    "find": "            jsx.props.retain(|p| {\n",
+    "replace": "            jsx.props.retain(|p| true || {\n",
+    "tests": ["test/jsx.test.ts"]
+  },
 ];

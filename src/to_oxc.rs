@@ -566,12 +566,6 @@ impl<'a> Cx<'a> {
         })
     }
 
-    /// A test, which JS makes a `bool` of itself: `!!a` is `a` there, and
-    /// in what `&&` and `||` test of it.
-    fn test(&self, e: &js::Expr) -> Expression<'a> {
-        self.expr(&e.tested())
-    }
-
     /// `stmts`, each pushed to `out`.
     fn push_stmts(&self, stmts: &[js::Stmt], out: &mut ArenaVec<'a, Statement<'a>>) {
         for s in stmts {
@@ -654,7 +648,7 @@ impl<'a> Cx<'a> {
                     ] => self.stmt(only),
                     _ => self.block(els),
                 });
-                Statement::new_if_statement(sp, self.test(cond), self.block(then), els, b)
+                Statement::new_if_statement(sp, self.expr(cond), self.block(then), els, b)
             }
             StmtKind::Labeled(label, body) => {
                 let block = Statement::new_block_statement(sp, self.stmts(body), b);
@@ -742,16 +736,7 @@ impl<'a> Cx<'a> {
                 Statement::new_continue_statement(sp, label.as_deref().map(|l| self.label(l)), b)
             }
             StmtKind::Throw(value) => Statement::new_throw_statement(sp, self.expr(value), b),
-            // `return;` of `undefined`, as JS ends a function with nothing to give
-            // (ADR 0299).
-            StmtKind::Return(value) => Statement::new_return_statement(
-                sp,
-                value
-                    .as_ref()
-                    .filter(|v| !matches!(v.kind, ExprKind::Undefined))
-                    .map(|v| self.expr(v)),
-                b,
-            ),
+            StmtKind::Return(value) => Statement::new_return_statement(sp, value.as_ref().map(|v| self.expr(v)), b),
         }
     }
 
@@ -1009,14 +994,8 @@ impl<'a> Cx<'a> {
                     Err(op) => Expression::new_logical_expression(sp, l, op, r, b),
                 }
             }
-            // `a ? a : b` is `a || b`: `a` where it's truthy, else `b`.
-            ExprKind::Cond(test, then, els)
-                if js::same_path(&test.tested(), then) && !matches!(els.kind, ExprKind::Undefined) =>
-            {
-                Expression::new_logical_expression(sp, self.expr(then), LogicalOperator::Or, self.expr(els), b)
-            }
             ExprKind::Cond(test, then, els) => {
-                Expression::new_conditional_expression(sp, self.test(test), self.expr(then), self.expr(els), b)
+                Expression::new_conditional_expression(sp, self.expr(test), self.expr(then), self.expr(els), b)
             }
             ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) => {
                 let is_async = matches!(e.kind, ExprKind::AsyncArrow(..));
@@ -1183,7 +1162,6 @@ impl<'a> Cx<'a> {
         };
         let sp = span(value.span);
         let value = match &value.kind {
-            ExprKind::Undefined => return None,
             ExprKind::Bool(true) => None,
             ExprKind::Str(s) if jsx_text_safe(s) && !s.contains('"') => {
                 Some(JSXAttributeValue::new_string_literal(sp, self.name(s), None, b))

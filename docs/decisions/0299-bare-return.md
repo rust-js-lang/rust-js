@@ -19,3 +19,12 @@ with nothing to give: react.dev's NavigationBar ends its effect with
 
 - **It's the JavaScript a person writes.**
 - **It's the same program**: `return;` gives `undefined`.
+
+## Since
+
+- **Preparation makes it**, before printing, as it makes the other
+  rewrites of how JS is written; an arrow whose body is the value it
+  gives keeps it, `() => undefined`. (Amended: the printer left the value
+  out, a rewrite the architecture keeps from it, as it wrote `a || b` of
+  `a ? a : b`, a test without its `!!`, and no JSX attribute of
+  `undefined`, which preparation makes now too.)

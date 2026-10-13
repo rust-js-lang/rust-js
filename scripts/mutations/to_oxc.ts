@@ -203,14 +203,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
-    name: "same-test-and-value-conditional",
-    breaks: "`code ? code : null`, not `code || null`",
-    file: "src/to_oxc.rs",
-    find: "                if js::same_path(&test.tested(), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
-    replace: "                if false && js::same_path(&test.tested(), then) && !matches!(els.kind, ExprKind::Undefined) =>\n",
-    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
-  },
-  {
     name: "object-key-unquoted",
     breaks: "an object's key that isn't a JS name, `data-marked`, is written bare, `{ data-marked: \"yes\" }`, which doesn't parse",
     file: "src/to_oxc.rs",
@@ -273,14 +265,6 @@ export const mutations: Mutation[] = [
     find: "        .map(|(_, _, line)| line)\n        .chain(effects)\n        .chain(runtime)",
     replace: "        .map(|(_, _, line)| line)\n        .chain(runtime)\n        .chain(effects)",
     tests: ["test/modules.test.ts", "-t", "imports are packages"],
-  },
-  {
-    name: "return-undefined-written",
-    breaks: "a `return` of `undefined` says it, `return undefined;`, where JS writes `return;`",
-    file: "src/to_oxc.rs",
-    find: "                    .filter(|v| !matches!(v.kind, ExprKind::Undefined))\n",
-    replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a return of undefined is a bare return"],
   },
   {
     name: "blank-lines-none",

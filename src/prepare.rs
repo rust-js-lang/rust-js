@@ -256,8 +256,10 @@ fn block(body: &mut Vec<Stmt>) {
             *els = None;
         }
         // `let timeout = undefined;` is `let timeout;`, as a person writes it:
-        // a `let` starts as `undefined`, each time it's run.
-        if let StmtKind::Let(_, value) = &mut stmt.kind
+        // a `let` starts as `undefined`, each time it's run; and `return
+        // undefined;` is `return;`, as JS ends a function with nothing to give
+        // (ADR 0299).
+        if let StmtKind::Let(_, value) | StmtKind::Return(value) = &mut stmt.kind
             && value.as_ref().is_some_and(|v| matches!(v.kind, ExprKind::Undefined))
         {
             *value = None;
@@ -276,6 +278,8 @@ fn block(body: &mut Vec<Stmt>) {
                 expr(b);
             }
             StmtKind::If(e, a, b) => {
+                // Its test as a test, `!!x` the `x` it tests.
+                *e = e.tested();
                 expr(e);
                 block(a);
                 if let Some(b) = b {
@@ -814,13 +818,39 @@ fn expr(e: &mut Expr) {
         e.kind = ExprKind::AsyncArrow(std::mem::take(params), std::mem::take(block));
     }
     match &mut e.kind {
-        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => block(body),
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => {
+            // `() => undefined`, the value it's given: its body is that value,
+            // not `return;`.
+            let concise = matches!(
+                body.as_slice(),
+                [Stmt {
+                    kind: StmtKind::Return(Some(_)),
+                    ..
+                }]
+            );
+            block(body);
+            if concise
+                && let [
+                    Stmt {
+                        kind: StmtKind::Return(value @ None),
+                        ..
+                    },
+                ] = body.as_mut_slice()
+            {
+                *value = Some(Expr::undefined());
+            }
+        }
         ExprKind::Function(function) => block(&mut function.body),
         ExprKind::Jsx(jsx) => {
             if let JsxTag::Component(e) = &mut jsx.tag {
                 expr(e);
             }
             let element = matches!(jsx.tag, JsxTag::Intrinsic(_));
+            // An attribute that's `undefined`, a `None` say, is none, as JSX
+            // leaves it out.
+            jsx.props.retain(|p| {
+                !matches!(p, Prop::Field(_, value) | Prop::Getter(_, value) if matches!(value.kind, ExprKind::Undefined))
+            });
             for prop in &mut jsx.props {
                 match prop {
                     Prop::Field(name, value) => {
@@ -858,9 +888,22 @@ fn expr(e: &mut Expr) {
             args.iter_mut().for_each(expr);
         }
         ExprKind::Cond(a, b, c) => {
+            // Its test as a test, `!!x` the `x` it tests.
+            **a = a.tested();
             expr(a);
             expr(b);
             expr(c);
+            // `a ? a : b` is `a || b`: `a` where it's truthy, else `b`.
+            if js::same_path(a, b) && !matches!(c.kind, ExprKind::Undefined) {
+                let (then, els) = (
+                    std::mem::replace(&mut **b, Expr::undefined()),
+                    std::mem::replace(&mut **c, Expr::undefined()),
+                );
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::bin(js::Op::Or, then, els)
+                };
+            }
         }
         ExprKind::Call(f, args) | ExprKind::New(f, args) => {
             expr(f);
