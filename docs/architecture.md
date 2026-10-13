@@ -277,6 +277,7 @@ outside its owner, and how much each module knows of the rest.
 | What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | The box of a `Some` that looks like `None` (ADR 0051) | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
 | When a value is copied | `copies.rs` | `copy_if_needed`, `contains_mutated` |
+| A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target` |
 | Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
@@ -474,7 +475,7 @@ architecture audit found the rest.
   after it's pushed; nothing refuses a commit that fails it.
 - **One owner for each concept lowering from MIR meets:** `mir.rs` writes
   places, the boxes of the `&mut`s it gives a call and their copies back,
-  writes to a `Formatter`, a static's cell and `Option`'s boxes itself,
+  writes to a `Formatter` and `Option`'s boxes itself,
   where the modules above own them; and `mir_call_values` and
   `mir_std_call` are held to their lengths until they're split.
 - **An iterator's method by `classify`:** `mir_iter_call` knows one by its

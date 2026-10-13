@@ -1187,14 +1187,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","captures a variable itself where nothing"],
   },
   {
-    name: "mir-statics-closure-set-unseen",
-    breaks: "a thread-local a closure sets is a `const`, which the closure can't set",
-    file: "src/lower/mir.rs",
-    find: "                js::each_block_mut(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    replace: "                js::statement_lists(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    tests: ["test/lowering.test.ts","-t","thread-local only its module"],
-  },
-  {
     "name": "mir-nullable-field-coalesced",
     "breaks": "a `#[rust_js::nullable]` field moved into another, `p.code`, is `p.code ?? null`",
     "file": "src/lower/mir.rs",
@@ -2725,30 +2717,6 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts","-t","a binding that can't throw"],
   },
   {
-    name: "mir-quiet-local-borrowed",
-    breaks: "MIR's quiet thread-local's borrows stay `$withBorrow`, its cell kept",
-    file: "src/lower/mir.rs",
-    find: "            && matches!(&key.kind, js::ExprKind::Var(v) if quiet.contains(v.as_str()))\n",
-    replace: "            && matches!(&key.kind, js::ExprKind::Var(v) if quiet.contains(v.as_str()) && false)\n",
-    tests: ["test/modules.test.ts","-t","thread-local only read and set"],
-  },
-  {
-    name: "mir-quiet-number-local-given-value",
-    breaks: "MIR's thread-local number changed by `with_borrow_mut` is given its value, a change lost",
-    file: "src/lower/mir.rs",
-    find: "            && let [key, _] = args.as_slice()\n",
-    replace: "            && let [key, ..] = args.as_slice()\n",
-    tests: ["test/modules.test.ts","-t","MIR's thread-local number"],
-  },
-  {
-    name: "mir-quiet-local-borrow-not-inlined",
-    breaks: "MIR's quiet thread-local's borrow stays a called arrow",
-    file: "src/lower/mir.rs",
-    find: "                ..super::calls::apply(f, vec![Expr::member(key, \"value\")])\n",
-    replace: "                ..Expr::call(f, vec![Expr::member(key, \"value\")])\n",
-    tests: ["test/modules.test.ts","-t","thread-local only read and set"],
-  },
-  {
     name: "mir-store-span-lost",
     breaks: "MIR's values map to no Rust in the source map",
     file: "src/lower/mir.rs",
@@ -3067,30 +3035,6 @@ export const mutations: Mutation[] = [
     find: "            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } => {\n",
     replace: "            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "slice_pattern_of_made_array"],
-  },
-  {
-    "name": "local-add-discarded-helper",
-    "breaks": "a thread-local set's insert, its answer unused, stays `$add(LIKED, id)`, not `LIKED.add(id)`",
-    "file": "src/lower/mir.rs",
-    "find": "                            (\"$add\", 2) => Some(\"add\"),\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "its answer unused"
-    ]
-  },
-  {
-    "name": "local-insert-discarded-helper",
-    "breaks": "a thread-local map's insert, its answer unused, stays `$insert(CACHE, key, n)`, not `CACHE.set(key, n)`",
-    "file": "src/lower/mir.rs",
-    "find": "                            (\"$insert\", 3) => Some(\"set\"),\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "its answer unused"
-    ]
   },
   {
     "name": "struct-update-index-fields",

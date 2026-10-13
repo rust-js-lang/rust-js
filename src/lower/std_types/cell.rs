@@ -1,6 +1,6 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
-use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
@@ -241,5 +241,143 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
+    }
+}
+
+/// A module's own `const X = { value: init }`, a thread-local's cell MIR reads
+/// by its `value`, that its module reads and sets only so, by name, and doesn't
+/// export: `let X = init`, `X` where it's read, `const` where nothing sets it
+/// (ADR 0270). One `quiet`, whose borrows ask nothing of borrows, gives the
+/// closure of each what it holds, an object's, which it shares (ADR 0328).
+pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::HashSet<&str>) {
+    js::each_item_expr_mut(items, &mut |e| {
+        if let js::ExprKind::Call(callee, args) = &mut e.kind
+            && matches!(&callee.kind, js::ExprKind::Var(f) if f == "$withBorrow" || f == "$withBorrowMut")
+            && let [key, _] = args.as_slice()
+            && matches!(&key.kind, js::ExprKind::Var(v) if quiet.contains(v.as_str()))
+        {
+            let (key, f) = (args.remove(0), args.remove(0));
+            *e = Expr {
+                span: e.span,
+                ..apply(f, vec![Expr::member(key, "value")])
+            };
+        }
+    });
+    // What a closure inlined so gave, its answer unused, `$add(set, x);`:
+    // JS's own, `set.add(x)`, as the insert's call is where it's discarded.
+    for item in items.iter_mut() {
+        for function in item.functions_mut() {
+            js::each_block_mut(&mut function.body, &mut |stmts| {
+                for stmt in stmts.iter_mut() {
+                    if let StmtKind::Expr(e) = &mut stmt.kind
+                        && let js::ExprKind::Call(callee, args) = &mut e.kind
+                        && let js::ExprKind::Var(helper) = &callee.kind
+                        && let Some(method) = match (helper.as_str(), args.len()) {
+                            ("$add", 2) => Some("add"),
+                            ("$insert", 3) => Some("set"),
+                            _ => None,
+                        }
+                    {
+                        let object = args.remove(0);
+                        *e = Expr {
+                            span: e.span,
+                            ..Expr::call(Expr::member(object, method), std::mem::take(args))
+                        };
+                    }
+                }
+            });
+        }
+    }
+    let cells: Vec<String> = (items.iter())
+        .filter_map(|item| match item {
+            js::Item::Const(c)
+                if !c.export
+                    && matches!(&c.value.kind, js::ExprKind::Object(props)
+                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == "value")) =>
+            {
+                Some(c.name.clone())
+            }
+            _ => None,
+        })
+        .collect();
+    for name in cells {
+        let (mut reads, mut values, mut sets) = (0, 0, 0);
+        js::each_item_expr_mut(items, &mut |e| match &e.kind {
+            js::ExprKind::Var(v) if *v == name => reads += 1,
+            js::ExprKind::Member(of, key)
+                if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name) =>
+            {
+                values += 1;
+            }
+            _ => {}
+        });
+        // A function's own of that name, or one it binds, may be read so.
+        let mut bound = false;
+        for item in items.iter_mut() {
+            for function in item.functions_mut() {
+                bound |= function.params.iter().any(|p| p.names().contains(&name.as_str()));
+                js::each_block_mut(&mut function.body, &mut |stmts| {
+                    for stmt in stmts.iter() {
+                        bound |= match &stmt.kind {
+                            StmtKind::Const(n, _) | StmtKind::Let(n, _) => *n == name,
+                            StmtKind::Destructure { pattern, .. } => pattern.names().contains(&name.as_str()),
+                            _ => false,
+                        };
+                    }
+                });
+                js::each_expr_mut(&mut function.body, &mut |e| {
+                    if let js::ExprKind::Arrow(params, _) | js::ExprKind::AsyncArrow(params, _) = &e.kind {
+                        bound |= params.iter().any(|p| p.names().contains(&name.as_str()));
+                    }
+                });
+            }
+        }
+        if bound || reads != values {
+            continue;
+        }
+        for item in items.iter_mut() {
+            for function in item.functions_mut() {
+                js::each_block_mut(&mut function.body, &mut |stmts| {
+                    for stmt in stmts.iter() {
+                        if let StmtKind::Assign(target, _) = &stmt.kind
+                            && matches!(&target.kind, js::ExprKind::Member(of, key)
+                                if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                        {
+                            sets += 1;
+                        }
+                    }
+                });
+            }
+        }
+        // A handle on it, lent, may set it too.
+        js::each_item_expr_mut(items, &mut |e| {
+            if let js::ExprKind::Handle(place) = &e.kind
+                && matches!(&place.kind, js::ExprKind::Member(of, key)
+                    if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+            {
+                sets += 1;
+            }
+        });
+        js::each_item_expr_mut(items, &mut |e| {
+            if let js::ExprKind::Member(of, key) = &e.kind
+                && key == "value"
+                && matches!(&of.kind, js::ExprKind::Var(v) if *v == name)
+            {
+                *e = Expr {
+                    span: e.span,
+                    ..Expr::var(&name)
+                };
+            }
+        });
+        for item in items.iter_mut() {
+            if let js::Item::Const(c) = item
+                && c.name == name
+                && let js::ExprKind::Object(props) = &mut c.value.kind
+                && let Some(js::Prop::Field(_, init)) = props.pop()
+            {
+                c.value = init;
+                c.mutable = sets > 0;
+            }
+        }
     }
 }
