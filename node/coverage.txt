@@ -1,5 +1,5 @@
 # The node crate against @types/node: bun test test/node-coverage.test.ts
-# exports: 156 of 1535 (10.2%)
+# exports: 160 of 1535 (10.4%)
 # not bound by design (x): 3, TypeScript's own
 # assert 0 of 28
 - assert#Assert
@@ -478,7 +478,7 @@ x type buffer#WithImplicitCoercion
 - events#on
 + events#once
 + events#setMaxListeners
-# fs 1 of 171
+# fs 4 of 171
 - type fs#_GlobOptions
 - fs#access
 - fs#accessSync
@@ -567,7 +567,7 @@ x type buffer#WithImplicitCoercion
 - fs#promises
 - fs#read
 - type fs#ReadAsyncOptions
-- fs#readdir
++ fs#readdir
 - fs#readdirSync
 - fs#readFile
 - type fs#ReadFileOptions
@@ -602,12 +602,12 @@ x type buffer#WithImplicitCoercion
 - fs#rmdirSync
 - type fs#RmOptions
 - fs#rmSync
-- fs#stat
++ fs#stat
 - fs#statfs
 - type fs#StatFsOptions
 - fs#statfsSync
 - type fs#StatOptions
-- fs#Stats
++ fs#Stats
 - type fs#StatsBase
 - fs#StatsFs
 - type fs#StatsFsBase
@@ -1281,7 +1281,7 @@ x type buffer#WithImplicitCoercion
 - url#urlToHttpOptions
 + type url#UrlWithParsedQuery
 + type url#UrlWithStringQuery
-# util 0 of 69
+# util 1 of 69
 - util#aborted
 - type util#ApplyOptionalModifiers
 - type util#BackgroundColors
@@ -1337,7 +1337,7 @@ x type buffer#WithImplicitCoercion
 - util#parseEnv
 - type util#PreciseParsedResults
 - type util#PreciseTokenForOptions
-- util#promisify
++ util#promisify
 - util#setTraceSigInt
 - util#stripVTControlCharacters
 - type util#Style

@@ -3,7 +3,7 @@
 // JS's own. Each test is a program of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
@@ -739,6 +739,37 @@ pub fn shouted(path: &str) -> String {
   expect([lib.twice(join(dir, "note.md")), lib.twice(join(dir, "none.md"))]).toEqual(["# Note# Note", "missingmissing"]);
   expect([lib.read_or(join(dir, "note.md"), "x"), lib.read_or(join(dir, "none.md"), "x")]).toEqual(["# Note", "x"]);
   expect([lib.shouted(join(dir, "note.md")), lib.shouted(join(dir, "none.md"))]).toEqual(["# Note!", "missing"]);
+});
+
+// A callback-taking function made one that gives a promise, `util.promisify`,
+// of `fs.readdir` and `fs.stat`, as react.dev's page route finds its Markdown
+// in `getStaticPaths`: `const readdir = promisify(fs.readdir)`.
+test("node's callback functions are promisified", async () => {
+  const dir = fixture("node-promisify");
+  run(["node/build.sh", "-o", join(dir, "libnode.rmeta")]);
+  writeFileSync(join(dir, "lib.rs"), `use node::{fs, path, util};
+
+pub async fn listed(dir: String) -> Vec<String> {
+    let readdir = util::promisify(fs::readdir);
+    let stat = util::promisify(fs::stat);
+    let mut kinds = Vec::new();
+    for subdir in readdir(&dir).await {
+        let res = path::resolve(&[&dir, &subdir]);
+        kinds.push(format!("{subdir}:{}", stat(&res).await.is_directory()));
+    }
+    kinds
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `node=${join(dir, "libnode.rmeta")}`, "-L", dir]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('import { promisify } from "util";');
+  expect(js).toContain("promisify(readdir)");
+  expect(js).toContain("promisify(stat)");
+  mkdirSync(join(dir, "tree", "sub"), { recursive: true });
+  writeFileSync(join(dir, "tree", "a.md"), "a");
+  const lib = await import(join(dir, "mir.js"));
+  expect((await lib.listed(join(dir, "tree"))).sort()).toEqual(["a.md:false", "sub:true"]);
+  await expect(lib.listed(join(dir, "none"))).rejects.toThrow("ENOENT");
 });
 
 // ADR 0272: `path`, each of @types/node's: its functions, its constants,

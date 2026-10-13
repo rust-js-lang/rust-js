@@ -34,6 +34,7 @@ pub mod path;
 pub mod process;
 pub mod querystring;
 pub mod url;
+pub mod util;
 
 pub use js;
 pub use webapi;

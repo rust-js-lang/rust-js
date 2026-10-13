@@ -10,6 +10,37 @@ unsafe extern "Rust" {
     /// say, an `Err`.
     #[link_name = "fs#readFileSync"]
     pub safe fn read_file_sync(path: &str, options: BufferEncoding) -> Result<String, &'static JsError>;
+
+    /// [`readdir(path, callback)`](https://nodejs.org/api/fs.html#fsreaddirpath-options-callback):
+    /// `callback` given the names in the directory `path`, or what failed.
+    #[link_name = "fs#readdir"]
+    pub safe static readdir: for<'a> fn(&'a str, Box<dyn FnOnce(Option<&'static JsError>, Vec<String>)>);
+
+    /// [`stat(path, callback)`](https://nodejs.org/api/fs.html#fsstatpath-options-callback):
+    /// `callback` given what `path` is, a file or a directory, or what failed.
+    #[link_name = "fs#stat"]
+    pub safe static stat: for<'a> fn(&'a str, Box<dyn FnOnce(Option<&'static JsError>, &'static Stats)>);
+}
+
+/// [`fs.Stats`](https://nodejs.org/api/fs.html#class-fsstats): what
+/// [`stat`] says of a path.
+#[cfg_attr(rust_js, rust_js::types = "fs#Stats")]
+pub struct Stats(core::marker::PhantomData<js::JsObject>);
+
+impl Stats {
+    /// [`stats.isDirectory()`](https://nodejs.org/api/fs.html#statsisdirectory):
+    /// whether it's a directory.
+    #[cfg_attr(rust_js, rust_js::link_name = "isDirectory")]
+    pub fn is_directory(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [`stats.isFile()`](https://nodejs.org/api/fs.html#statsisfile):
+    /// whether it's a file.
+    #[cfg_attr(rust_js, rust_js::link_name = "isFile")]
+    pub fn is_file(&self) -> bool {
+        unreachable!()
+    }
 }
 
 /// What a `PathLike` parameter, `string | Buffer | URL`, takes: each as it
