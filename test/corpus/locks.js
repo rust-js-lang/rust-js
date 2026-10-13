@@ -194,9 +194,8 @@ function main() {
     }
     throw error;
   }
-  const value$11 = [undefined, value$10, tmp$2];
   try {
-    console.log(`${r$1.value} ${value$11[1]} ${$displayF64(value$11[2].value)}`);
+    console.log(`${r$1.value} ${value$10} ${$displayF64(tmp$2.value)}`);
   } catch (error) {
     $unborrow(tmp$2);
     $unborrow(r$1);

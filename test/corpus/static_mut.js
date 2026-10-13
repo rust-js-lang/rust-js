@@ -42,12 +42,11 @@ function main() {
   const last = STATS.last;
   const slot = SLOTS[1];
   console.log(`${statsDebug_fmt(stats)} ${calls} ${last} ${slot}`);
-  const value = [SLOTS.slice(), WRAP];
-  const slots = value[0].slice();
-  const wrap = value[1];
+  const slots = SLOTS.slice().slice();
+  const wrap = WRAP;
   console.log(`[${slots.map((item) => String(item)).join(", ")}] ${wrap}`);
   LINES.value = 10;
-  const value$1 = line();
-  console.log(`${value$1} ${line()}`);
+  const value = line();
+  console.log(`${value} ${line()}`);
 }
 //# sourceMappingURL=case.js.map

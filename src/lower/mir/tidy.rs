@@ -189,7 +189,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| copied_bindings(stmts));
     // A tuple read item by item, `children[0]`: its items.
     let changing = self::changing(body);
-    js::statement_lists(body, &mut |stmts| tuple_reads(stmts, &changing, captured));
+    let set_elsewhere = set_elsewhere(body);
+    js::statement_lists(body, &mut |stmts| {
+        tuple_reads(stmts, &changing, &set_elsewhere, captured)
+    });
     // `dyn` values given to JS, `[{ value, impl }].map((item) => item.value)`: the values.
     js::statement_lists(body, &mut |stmts| unwrapped_values(stmts));
     let changed = self::changing(body);
@@ -3325,32 +3328,40 @@ fn in_closure(stmts: &[Stmt], name: &str) -> bool {
 /// `const children = [" ", c ? a : b];`, a tuple MIR holds, read only item
 /// by item, `children[0]`: each item where it's read, of items that do
 /// nothing and read what nothing changes, which read the same anywhere.
-fn tuple_reads(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &HashSet<String>) {
+/// One that does, `match (v.pop(), n > 3)`'s `v.pop()`, is held first, in
+/// order, as a person holds it: `const value = v.pop();`, and what's read
+/// before it with it (ADR 0369).
+fn tuple_reads(
+    stmts: &mut Vec<Stmt>,
+    changing: &HashSet<String>,
+    set_elsewhere: &HashSet<String>,
+    captured: &HashSet<String>,
+) {
+    let inert = |item: &Expr| {
+        let mut inert = !item.has_effects();
+        item.visit_vars(&mut |v| inert &= !changing.contains(v));
+        inert
+    };
     let mut i = 0;
     while i < stmts.len() {
         let found = match &stmts[i].kind {
             StmtKind::Const(t, value)
-                if (is_temporary(t) || captured.contains(t))
-                    && let ExprKind::Array(items) = &value.kind
-                    && items.iter().all(|item| {
-                        let mut inert = !item.has_effects();
-                        item.visit_vars(&mut |v| inert &= !changing.contains(v));
-                        inert
-                    }) =>
+                if let ExprKind::Array(items) = &value.kind
+                    && (is_temporary(t) || (captured.contains(t) && items.iter().all(inert))) =>
             {
                 Some((t.clone(), items.clone()))
             }
             _ => None,
         };
-        let Some((t, items)) = found else {
+        let Some((t, mut items)) = found else {
             i += 1;
             continue;
         };
+        let len = items.len();
         let item = |e: &Expr| match &e.kind {
-            ExprKind::Index(of, k) if matches!(&of.kind, ExprKind::Var(v) if *v == t) => k
-                .as_int()
-                .and_then(|k| usize::try_from(k).ok())
-                .filter(|&k| k < items.len()),
+            ExprKind::Index(of, k) if matches!(&of.kind, ExprKind::Var(v) if *v == t) => {
+                k.as_int().and_then(|k| usize::try_from(k).ok()).filter(|&k| k < len)
+            }
             _ => None,
         };
         let mut indexed = 0;
@@ -3360,12 +3371,58 @@ fn tuple_reads(stmts: &mut Vec<Stmt>, changing: &HashSet<String>, captured: &Has
             i += 1;
             continue;
         }
+        // What's read before the last that acts is held too, as it was
+        // read before it acted, `v.length` of `(v.len(), v.pop())`: all but
+        // what no call changes, `(a + b) | 0` of variables nothing sets again.
+        // A variable that changes, but not after it, `quotient`, nor by a
+        // closure or a handle, read where the tuple's part is.
+        let span = stmts[i].span;
+        let after = &stmts[i + 1..];
+        let acts = |item: &Expr| {
+            !inert(item) && !matches!(&item.kind, ExprKind::Var(v) if !assigns(after, v) && !set_elsewhere.contains(v))
+        };
+        let last = items.iter().rposition(acts);
+        let fixed = |item: &Expr| {
+            let math = |e: &Expr| matches!(&e.kind, ExprKind::Var(m) if m == "Math");
+            let mut fixed = inert(item);
+            item.clone().each_mut(&mut |e| {
+                fixed &= match &e.kind {
+                    ExprKind::Call(callee, _) => matches!(&callee.kind, ExprKind::Member(of, _) if math(of)),
+                    ExprKind::Member(of, _) => math(of),
+                    _ => !matches!(
+                        e.kind,
+                        ExprKind::OptionalMember(..)
+                            | ExprKind::Index(..)
+                            | ExprKind::OptionalIndex(..)
+                            | ExprKind::OptionalCall(..)
+                            | ExprKind::Handle(_)
+                            | ExprKind::New(..)
+                            | ExprKind::Array(_)
+                            | ExprKind::Object(_)
+                            | ExprKind::Jsx(_)
+                            | ExprKind::Arrow(..)
+                            | ExprKind::AsyncArrow(..)
+                            | ExprKind::Function(_)
+                    ),
+                }
+            });
+            fixed
+        };
+        let mut held = Vec::new();
+        for (k, item) in items.iter_mut().enumerate() {
+            if last.is_some_and(|last| k < last && !fixed(item) || k == last) {
+                let name = format!("{t}${k}");
+                held.push(StmtKind::Const(name.clone(), std::mem::replace(item, Expr::var(&name))).at(span));
+            }
+        }
         js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
             if let Some(k) = item(e) {
                 *e = items[k].clone();
             }
         });
-        stmts.remove(i);
+        let count = held.len();
+        stmts.splice(i..=i, held);
+        i += count;
     }
 }
 
@@ -3826,6 +3883,20 @@ pub(super) fn field_path(e: &Expr) -> Option<String> {
         }
         _ => None,
     }
+}
+
+/// The variables what's called may set: a closure's, and a getter's and
+/// setter's handle's, `{ get value() { return n; }, set value(v) { n = v; } }`.
+fn set_elsewhere(body: &[Stmt]) -> HashSet<String> {
+    let mut set = closures_set(body);
+    js::each_expr_mut(&mut body.to_vec(), &mut |e| {
+        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind
+            && let ExprKind::Var(name) = &place.kind
+        {
+            set.insert(name.clone());
+        }
+    });
+    set
 }
 
 /// The variables something may change: each `let`'s, and each assigned.

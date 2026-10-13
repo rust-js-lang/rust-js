@@ -83,14 +83,9 @@ function main() {
     `${first == null ? "None" : `Some(${first})`} ${last == null ? "None" : `Some(${last})`} ${steps.start}..${steps.end} ${Math.max(steps.end - steps.start, 0)}`,
   );
   const inclusive = { start: 1, end: 6 };
-  const value = [
-    undefined,
-    inclusive.start,
-    inclusive.end,
-    evens({ start: inclusive.start, end: inclusive.end }),
-  ];
+  const value = evens({ start: inclusive.start, end: inclusive.end });
   console.log(
-    `${inclusive.start}..=${inclusive.end} ${value[1]} ${value[2]} [${value[3].map((item) => String(item)).join(", ")}]`,
+    `${inclusive.start}..=${inclusive.end} ${inclusive.start} ${inclusive.end} [${value.map((item) => String(item)).join(", ")}]`,
   );
   const low = 3;
   const high = 9;

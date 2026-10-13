@@ -105,45 +105,45 @@ function main() {
   const index$4 = bump(c);
   t[$at(t, index$4)] = n;
   const value$16 = one[0];
-  const value$17 = [undefined, $index(w, 0), $index(u, 0), $index(t, 0), c.n, x, y, z];
-  console.log(
-    `${value$16} ${value$17[5]} ${value$17[1]} ${value$17[6]} ${value$17[2]} ${value$17[7]} ${value$17[3]} ${value$17[4]}`,
-  );
+  const value$17 = $index(w, 0);
+  const value$18 = $index(u, 0);
+  const value$19 = $index(t, 0);
+  console.log(`${value$16} ${x} ${value$17} ${y} ${value$18} ${z} ${value$19} ${c.n}`);
   const d = { n: 1 };
-  const value$18 = reset(d);
-  d.n = (d.n + value$18) | 0;
+  const value$20 = reset(d);
+  d.n = (d.n + value$20) | 0;
   let e = 1;
   const inc = () => {
     e = (e + 10) | 0;
     return 2;
   };
-  const value$19 = inc();
-  e = (e + value$19) | 0;
+  const value$21 = inc();
+  e = (e + value$21) | 0;
   console.log(`${d.n} ${e}`);
   const a$1 = [1, 2];
   const b = [10, 20];
   let cur = a$1;
-  const value$20 = cur;
+  const value$22 = cur;
   cur = b;
-  value$20[$at(value$20, 0)] = (value$20[0] + 1) | 0;
+  value$22[$at(value$22, 0)] = (value$22[0] + 1) | 0;
   console.log(
     `[${a$1.map((item) => String(item)).join(", ")}] [${b.map((item) => String(item)).join(", ")}]`,
   );
   const a$2 = [1, 2];
   const b$1 = [10, 20];
   let cur$1 = a$2;
-  const value$21 = cur$1;
+  const value$23 = cur$1;
   cur$1 = b$1;
-  value$21[$at(value$21, 0)] = 7;
+  value$23[$at(value$23, 0)] = 7;
   console.log(
     `[${a$2.map((item) => String(item)).join(", ")}] [${b$1.map((item) => String(item)).join(", ")}]`,
   );
   const a$3 = [1, 2];
   const b$2 = [10, 20];
   let cur$2 = a$3;
-  const value$22 = cur$2;
+  const value$24 = cur$2;
   cur$2 = b$2;
-  value$22[$at(value$22, 0)] = (value$22[0] + 1) | 0;
+  value$24[$at(value$24, 0)] = (value$24[0] + 1) | 0;
   console.log(
     `[${a$3.map((item) => String(item)).join(", ")}] [${b$2.map((item) => String(item)).join(", ")}]`,
   );
@@ -158,8 +158,8 @@ function main() {
     `[${a$4.map((item) => String(item)).join(", ")}] [${b$3.map((item) => String(item)).join(", ")}]`,
   );
   const empty = [];
-  const value$23 = value("out of bounds", 8);
+  const value$25 = value("out of bounds", 8);
   const index$5 = index("out of bounds", 0);
-  empty[$at(empty, index$5)] = (value$23 << 24) >> 24;
+  empty[$at(empty, index$5)] = (value$25 << 24) >> 24;
 }
 //# sourceMappingURL=case.js.map

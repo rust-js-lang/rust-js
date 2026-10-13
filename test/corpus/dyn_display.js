@@ -123,9 +123,10 @@ function main() {
     console.log(`found ${n}`);
   } else {
     const e = value$1._0;
-    const value = [e.impl.Display().fmt(e.value), !e.impl.source(e.value), e];
+    const value = e.impl.Display().fmt(e.value);
+    const value$2 = !e.impl.source(e.value);
     console.log(
-      `error ${value[2].impl.Display().fmt(value[2].value)} / ${value[2].impl.Debug().fmt(value[2].value)} / ${value[0]} / ${value[1]}`,
+      `error ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value} / ${value$2}`,
     );
   }
   const fromString = { value: "made", impl: $stringError() };

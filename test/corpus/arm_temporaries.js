@@ -64,24 +64,23 @@ const Mapped = {
       _14$1$0$live = true;
       _14$0$live = true;
       _14$0$0$live = true;
-      const value$1 = [value, tmp];
-      if (value$1[0] != null && value$1[1] != null) {
+      if (value != null && tmp != null) {
         _14$0$0$live = false;
-        const min = $someValue(value$1[0]);
+        const min = $someValue(value);
         _14$1$0$live = false;
-        const max = $someValue(value$1[1]);
+        const max = $someValue(tmp);
         result = { TAG: "Ambiguous", _0: min, _1: max };
       } else {
         result = "None";
       }
-      if (value$1[0] != null) {
+      if (value != null) {
         if (_14$0$0$live) {
-          dropU?.($someValue(value$1[0]));
+          dropU?.($someValue(value));
         }
       }
-      if (value$1[1] != null) {
+      if (tmp != null) {
         if (_14$1$0$live) {
-          dropU?.($someValue(value$1[1]));
+          dropU?.($someValue(tmp));
         }
       }
       _14$1$live = false;

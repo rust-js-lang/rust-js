@@ -45,10 +45,8 @@ function counted() {
 
 function main() {
   const value = moved(5);
-  const value$1 = [undefined, ORIGIN, moved(-2)];
-  console.log(
-    `${pointDebug_fmt(value)} ${pointDebug_fmt(value$1[1])} ${pointDebug_fmt(value$1[2])}`,
-  );
+  const value$1 = moved(-2);
+  console.log(`${pointDebug_fmt(value)} ${pointDebug_fmt(ORIGIN)} ${pointDebug_fmt(value$1)}`);
   const arg = NAMES.join(",");
   console.log(`${LIMIT} ${GREETING} ${arg}`);
   const value$2 = PRIMES.reduce((a, b) => (a + b) >>> 0, 0);
@@ -59,8 +57,8 @@ function main() {
     `[${LEVELS.map((item) => levelDebug_fmt(item)).join(", ")}] ${MAYBE == null ? "None" : `Some(${$debugStr(MAYBE, "'")})`} (${PAIR[0]}, ${$debugF64(PAIR[1])})`,
   );
   const value$3 = (BOXED.x + BOXED.y) | 0;
-  const value$4 = [undefined, COMPUTED, counted()];
-  console.log(`${value$3} ${value$4[1]} ${value$4[2]}`);
+  const value$4 = counted();
+  console.log(`${value$3} ${COMPUTED} ${value$4}`);
   console.log(
     `${pointDebug_fmt(CORNER)} [${SIDES.map((item) => String(item)).join(", ")}] ${NAME}`,
   );

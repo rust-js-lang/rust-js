@@ -51,9 +51,8 @@ function main() {
   const value = !s;
   const popped$2 = $strPop(s);
   s = popped$2[0];
-  const value$1 = [value, popped$2[1], s];
   console.log(
-    `${$debugStr(value$1[2])} ${value$1[0]} ${value$1[1] == null ? "None" : `Some(${$debugStr(value$1[1], "'")})`}`,
+    `${$debugStr(s)} ${value} ${popped$2[1] == null ? "None" : `Some(${$debugStr(popped$2[1], "'")})`}`,
   );
   let t = " a b c ";
   const s$1 = { value: t };

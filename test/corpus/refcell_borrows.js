@@ -60,9 +60,11 @@ function main() {
     $unborrow(a);
     throw error;
   }
-  const value = [a.value.length, tmp, tmp$1.TAG !== "Ok"];
+  const length = a.value.length;
+  const value = tmp;
+  const value$1 = tmp$1.TAG !== "Ok";
   try {
-    console.log(`${value[0]} ${value[1]} ${value[2]}`);
+    console.log(`${length} ${value} ${value$1}`);
   } catch (error) {
     if (tmp$1.TAG === "Ok") {
       $unborrow(tmp$1._0);
@@ -87,14 +89,14 @@ function main() {
     throw error;
   }
   $unborrow(a);
-  const value$1 = $borrowMut(cell, true);
+  const value$2 = $borrowMut(cell, true);
   try {
-    value$1.value.push(3);
+    value$2.value.push(3);
   } catch (error) {
-    $unborrow(value$1);
+    $unborrow(value$2);
     throw error;
   }
-  $unborrow(value$1);
+  $unborrow(value$2);
   const writing = $borrowMut(cell, true);
   let writing$live = true;
   let tmp$2;
@@ -106,9 +108,9 @@ function main() {
     }
     throw error;
   }
-  const value$2 = tmp$2.TAG !== "Ok";
+  const value$3 = tmp$2.TAG !== "Ok";
   try {
-    console.log(`${value$2} ${writing.value.length}`);
+    console.log(`${value$3} ${writing.value.length}`);
   } catch (error) {
     if (tmp$2.TAG === "Ok") {
       $unborrow(tmp$2._0);
@@ -169,10 +171,10 @@ function main() {
     }
     throw error;
   }
-  const value$3 = [undefined, tmp$6.TAG === "Ok"];
+  const value$4 = tmp$6.TAG === "Ok";
   try {
     console.log(
-      `${tmp$5.TAG === "Ok" ? `Ok(${tmp$5._0})` : `Err(${$debugParseError(tmp$5._0, "BorrowError")})`} ${value$3[1]}`,
+      `${tmp$5.TAG === "Ok" ? `Ok(${tmp$5._0})` : `Err(${$debugParseError(tmp$5._0, "BorrowError")})`} ${value$4}`,
     );
   } catch (error) {
     if (tmp$6.TAG === "Ok") {
@@ -193,11 +195,11 @@ function main() {
     }
     throw error;
   }
-  const value$4 = [7];
+  const value$5 = [7];
   let tmp$7;
   let tmp$8;
   try {
-    tmp$7 = value$4;
+    tmp$7 = value$5;
     tmp$8 = $borrowMut(cell, true);
   } catch (error) {
     if (writing$live) {
@@ -475,9 +477,9 @@ function main() {
         }
         throw error;
       }
-      const value = [undefined, $byteLen(tmp$1.value)];
+      const value = $byteLen(tmp$1.value);
       try {
-        console.log(`${tmp.value} ${value[1]}`);
+        console.log(`${tmp.value} ${value}`);
       } catch (error) {
         $unborrow(tmp$1);
         $unborrow(tmp);
@@ -632,10 +634,11 @@ function main() {
         }
         throw error;
       }
-      const value$1 = [undefined, reading, tmp$5.TAG !== "Ok"];
+      const value$1 = reading;
+      const value$2 = tmp$5.TAG !== "Ok";
       try {
         console.log(
-          `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(value$1[1].value)} ${value$1[2]}`,
+          `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(value$1.value)} ${value$2}`,
         );
       } catch (error) {
         if (tmp$5.TAG === "Ok") {

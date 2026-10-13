@@ -176,9 +176,10 @@ function main() {
     $unborrow(value);
     throw error;
   }
-  const value$1 = [value.value.length, tmp.TAG !== "Ok"];
+  const length = value.value.length;
+  const value$1 = tmp.TAG !== "Ok";
   try {
-    console.log(`${value$1[0]} ${value$1[1]}`);
+    console.log(`${length} ${value$1}`);
   } catch (error) {
     if (tmp.TAG === "Ok") {
       $unborrow(tmp._0);

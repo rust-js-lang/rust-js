@@ -49,7 +49,7 @@ function main() {
     console.log(`${MAYBE(1)}`);
   }
   const value$1 = GREETER.impl.hi(GREETER.value);
-  const value$2 = [undefined, SHOWN, ADD(1)];
-  console.log(`${value$1} ${value$2[1].impl.fmt(value$2[1].value)} ${value$2[2]}`);
+  const value$2 = ADD(1);
+  console.log(`${value$1} ${SHOWN.impl.fmt(SHOWN.value)} ${value$2}`);
 }
 //# sourceMappingURL=case.js.map

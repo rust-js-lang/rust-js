@@ -219,9 +219,11 @@ function main() {
     $unborrow(r1);
     throw error;
   }
-  const value$2 = [r1.value, r2.value, tmp$3.TAG !== "Ok"];
+  const value$2 = r1.value;
+  const value$3 = r2.value;
+  const value$4 = tmp$3.TAG !== "Ok";
   try {
-    console.log(`${value$2[0]} ${value$2[1]} ${value$2[2]}`);
+    console.log(`${value$2} ${value$3} ${value$4}`);
   } catch (error) {
     if (tmp$3.TAG === "Ok") {
       $unborrow(tmp$3._0);
@@ -256,11 +258,11 @@ function main() {
     throw error;
   }
   $unborrow(r1);
-  const value$3 = $unwrapOk($tryLock(l, true), undefined, (e) =>
+  const value$5 = $unwrapOk($tryLock(l, true), undefined, (e) =>
     e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"',
   );
-  value$3.value += "b";
-  $unborrow(value$3);
+  value$5.value += "b";
+  $unborrow(value$5);
   const w = $lock(l, true);
   let tmp$4;
   try {
@@ -276,10 +278,10 @@ function main() {
     $unborrow(w);
     throw error;
   }
-  const value$4 = [$byteLen(w.value), e];
+  const value$6 = $byteLen(w.value);
   try {
     console.log(
-      `${value$4[1] === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${value$4[1] === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${value$4[0]}`,
+      `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${value$6}`,
     );
   } catch (error) {
     if (e.TAG === "Poisoned") {
@@ -297,13 +299,13 @@ function main() {
     throw error;
   }
   $unborrow(w);
-  const value$5 = $lockRead(l, true);
+  const value$7 = $lockRead(l, true);
   try {
-    console.log(`${value$5.value}`);
+    console.log(`${value$7.value}`);
   } catch (error) {
-    $unborrow(value$5);
+    $unborrow(value$7);
     throw error;
   }
-  $unborrow(value$5);
+  $unborrow(value$7);
 }
 //# sourceMappingURL=case.js.map

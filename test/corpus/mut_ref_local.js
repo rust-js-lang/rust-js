@@ -14,17 +14,15 @@ function main() {
   let x = 5;
   x = (x + 2) | 0;
   console.log(`${x}`);
-  const value$1 = [
-    {
-      get value() {
-        return x;
-      },
-      set value(value) {
-        x = value;
-      },
+  const value$1 = {
+    get value() {
+      return x;
     },
-  ];
-  console.log(`${value$1[0].value} ${value$1[0].value}`);
+    set value(value) {
+      x = value;
+    },
+  };
+  console.log(`${value$1.value} ${value$1.value}`);
   const n = { value: x };
   bump(n);
   x = n.value;

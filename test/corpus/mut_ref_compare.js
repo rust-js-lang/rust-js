@@ -161,17 +161,15 @@ function main() {
   let w = 5;
   if (w != null) {
     w = (w + 1) | 0;
-    const value = [
-      {
-        get value() {
-          return w;
-        },
-        set value(value) {
-          w = value;
-        },
+    const value = {
+      get value() {
+        return w;
       },
-    ];
-    console.log(`${value[0].value} ${value[0].value}`);
+      set value(value) {
+        w = value;
+      },
+    };
+    console.log(`${value.value} ${value.value}`);
   }
 }
 //# sourceMappingURL=case.js.map

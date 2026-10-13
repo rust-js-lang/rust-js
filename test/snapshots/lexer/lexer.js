@@ -115,10 +115,11 @@ export function pairs(v) {
   const it = $iter(v);
   const out = [];
   while (true) {
-    const value = [$next(it), $next(it)];
-    if (value[0] != null && value[1] != null) {
-      const a = value[0];
-      const b = value[1];
+    const value = $next(it);
+    const value$1 = $next(it);
+    if (value != null && value$1 != null) {
+      const a = value;
+      const b = value$1;
       out.push([a, b]);
       continue;
     }

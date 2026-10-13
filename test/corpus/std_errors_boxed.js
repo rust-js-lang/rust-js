@@ -110,8 +110,8 @@ function tAsDyn_as_dyn(self, TError) {
 }
 
 function describe(e, EError) {
-  const value = [!!EError.source(e), e];
-  return `${EError.Display().fmt(value[1])} | ${EError.Debug().fmt(value[1])} | ${value[0]}`;
+  const value = !!EError.source(e);
+  return `${EError.Display().fmt(e)} | ${EError.Debug().fmt(e)} | ${value}`;
 }
 
 function main() {
@@ -122,9 +122,9 @@ function main() {
       console.log(`ok ${n}`);
     } else {
       const e = value._0;
-      const value$1 = [!e.impl.source(e.value), e];
+      const value$1 = !e.impl.source(e.value);
       console.log(
-        `err ${value$1[1].impl.Display().fmt(value$1[1].value)} / ${value$1[1].impl.Debug().fmt(value$1[1].value)} / ${value$1[0]}`,
+        `err ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value$1}`,
       );
     }
   }

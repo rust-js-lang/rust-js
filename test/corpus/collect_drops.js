@@ -135,9 +135,10 @@ function main() {
     }
     throw error;
   }
-  const value = [none.length, fragments.length];
+  const length = none.length;
+  const length$1 = fragments.length;
   try {
-    console.log(`none ${value[0]} ${value[1]}`);
+    console.log(`none ${length} ${length$1}`);
   } catch (error) {
     for (const item of none) {
       noisyDrop_drop(item);
@@ -153,11 +154,11 @@ function main() {
     }
     throw error;
   }
-  const value$1 = [["m1"], ["m2"]];
+  const value = [["m1"], ["m2"]];
   let tmp$6;
   let tmp$7;
   try {
-    tmp$6 = $iter(value$1);
+    tmp$6 = $iter(value);
     tmp$7 = (n) => {
       const result = n[0];
       noisyDrop_drop(n);
@@ -231,11 +232,11 @@ function main() {
     }
     throw error;
   }
-  const value$2 = [["p1"], ["p2"], ["p3"]];
+  const value$1 = [["p1"], ["p2"], ["p3"]];
   let tmp$9;
   let tmp$10;
   try {
-    tmp$9 = $iter(value$2);
+    tmp$9 = $iter(value$1);
     tmp$10 = (n) => n[0] !== "p2";
   } catch (error) {
     for (const item of none) {

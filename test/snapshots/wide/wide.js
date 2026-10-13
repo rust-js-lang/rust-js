@@ -160,12 +160,9 @@ export function report() {
     "Ok";
   out += `${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${$debugParseError(value$8._0, "TryFromIntError")})`} ${value$9} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
-  const value$10 = [
-    $unwrapErr($tryFromInt(300n, 0, 255)),
-    low === $unwrapErr($tryFromInt(300n, 0, 255)),
-    low,
-  ];
-  out += `${$debugParseError(value$10[2], "TryFromIntError")} ${value$10[2]} ${value$10[0]} ${value$10[1]}\n`;
+  const value$10 = $unwrapErr($tryFromInt(300n, 0, 255));
+  const value$11 = low === $unwrapErr($tryFromInt(300n, 0, 255));
+  out += `${$debugParseError(low, "TryFromIntError")} ${low} ${value$10} ${value$11}\n`;
   const stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
   stamps.sort($cmp);
   const total = stamps

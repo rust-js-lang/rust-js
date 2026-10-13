@@ -275,8 +275,8 @@ export function report() {
   for (const t of texts) {
     const value = $fromJson(t, $json.value);
     if (value.TAG === "Ok") {
-      const value$1 = [describe(value._0), value._0];
-      out += `${$jsonValueText(value$1[1], false)} | ${$debugJsonValue(value$1[1])} | ${value$1[0]}\n`;
+      const value$1 = describe(value._0);
+      out += `${$jsonValueText(value._0, false)} | ${$debugJsonValue(value._0)} | ${value$1}\n`;
     } else {
       out += `err ${$displayJsonError(value._0)}\n`;
     }

@@ -118,15 +118,15 @@ export function kind(s) {
 export function tagged(s) {
   const option = $splitOnce(s, "/");
   const top = option ? option[0] : undefined;
-  const value = [top, s.endsWith("/")];
+  const value = s.endsWith("/");
   let n = 4;
-  if (value[0] == null) {
+  if (top == null) {
     n = 3;
-  } else if (value[0] != null) {
-    if (value[0] === "ab") {
+  } else if (top != null) {
+    if (top === "ab") {
       n = 1;
-    } else if (value[1]) {
-      if (value[0] === "") {
+    } else if (value) {
+      if (top === "") {
         n = 2;
       }
     }

@@ -37,8 +37,8 @@ function checksum(bytes) {
 
 function main() {
   const get = [71, 69, 84];
-  const value = [undefined, get.length, method(get)];
-  console.log(`[${get.map((item) => String(item)).join(", ")}] ${value[1]} ${value[2]}`);
+  const value = method(get);
+  console.log(`[${get.map((item) => String(item)).join(", ")}] ${get.length} ${value}`);
   const value$1 = method([80, 79, 83, 84]);
   console.log(`${value$1} ${method([])}`);
   const raw = [97, 1, 255, 10, 92, 34];
@@ -53,8 +53,8 @@ function main() {
   const word = "héllo €";
   const bytes = Array.from(new TextEncoder().encode(word));
   const length = Array.from(word).length;
-  const value$2 = [undefined, bytes.length, $slice(bytes, 0, 3)];
-  console.log(`${length} ${value$2[1]} [${value$2[2].map((item) => String(item)).join(", ")}]`);
+  const value$2 = $slice(bytes, 0, 3);
+  console.log(`${length} ${bytes.length} [${value$2.map((item) => String(item)).join(", ")}]`);
   console.log(`${checksum(Array.from(new TextEncoder().encode("abc")))}`);
   console.log(`${method(Array.from(new TextEncoder().encode("GET")))}`);
 }

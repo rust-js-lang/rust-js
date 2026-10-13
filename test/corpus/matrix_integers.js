@@ -115,37 +115,27 @@ function main() {
         $checkedDiv(a, b, -128) == null
           ? "-"
           : `${($div(a, b, -128) << 24) >> 24} ${($rem(a, b, -128) << 24) >> 24}`;
-      const value = [
-        ((a + b) << 24) >> 24,
-        ((a - b) << 24) >> 24,
-        ((a * b) << 24) >> 24,
-        $checked(a + b, -128, 127),
-        $checked(a - b, -128, 127),
-        $checked(a * b, -128, 127),
-        $checkedDiv(a, b, -128),
-        $checkedRem(a, b, -128),
-        Math.min(Math.max(a + b, -128), 127),
-        Math.min(Math.max(a - b, -128), 127),
-        Math.min(Math.max(a * b, -128), 127) | 0,
-        $overflowing(((a + b) << 24) >> 24, a + b, -128, 127),
-        $overflowing(((a - b) << 24) >> 24, a - b, -128, 127),
-        $overflowing(((a * b) << 24) >> 24, a * b, -128, 127),
-        $checkedEuclid(a, b, -128, false),
-        $checkedEuclid(a, b, -128, true),
-        a < b,
-        a === b,
-        $cmp(a, b),
-        Math.min(a, b),
-        Math.max(a, b),
-        Math.abs(a - b),
-        a,
-        b,
-        quotient,
-      ];
+      const value = ((a + b) << 24) >> 24;
+      const value$1 = ((a - b) << 24) >> 24;
+      const value$2 = ((a * b) << 24) >> 24;
+      const value$3 = $checked(a + b, -128, 127);
+      const value$4 = $checked(a - b, -128, 127);
+      const value$5 = $checked(a * b, -128, 127);
+      const value$6 = $checkedDiv(a, b, -128);
+      const value$7 = $checkedRem(a, b, -128);
+      const value$8 = Math.min(Math.max(a + b, -128), 127);
+      const value$9 = Math.min(Math.max(a - b, -128), 127);
+      const value$10 = Math.min(Math.max(a * b, -128), 127) | 0;
+      const value$11 = $overflowing(((a + b) << 24) >> 24, a + b, -128, 127);
+      const value$12 = $overflowing(((a - b) << 24) >> 24, a - b, -128, 127);
+      const value$13 = $overflowing(((a * b) << 24) >> 24, a * b, -128, 127);
+      const value$14 = $checkedEuclid(a, b, -128, false);
+      const value$15 = $checkedEuclid(a, b, -128, true);
+      const value$16 = $cmp(a, b);
       console.log(
-        `i8 ${value[22]} ${value[23]}: wrap ${value[0]} ${value[1]} ${value[2]} chk ${value[3] == null ? "None" : `Some(${value[3]})`} ${value[4] == null ? "None" : `Some(${value[4]})`} ${value[5] == null ? "None" : `Some(${value[5]})`} ${value[6] == null ? "None" : `Some(${value[6]})`} ${value[7] == null ? "None" : `Some(${value[7]})`} sat ${value[8]} ${value[9]} ${value[10]} over (${value[11][0]}, ${value[11][1]}) (${value[12][0]}, ${value[12][1]}) (${value[13][0]}, ${value[13][1]}) div ${value[24]} euclid ${value[14] == null ? "None" : `Some(${value[14]})`} ${value[15] == null ? "None" : `Some(${value[15]})`} cmp ${value[16]} ${value[17]} ${
-          ["Less", "Equal", "Greater"][value[18] + 1]
-        } ${value[19]} ${value[20]} ${value[21]}`,
+        `i8 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
   }
@@ -206,37 +196,27 @@ function main() {
         $checkedDiv(a, b, -32768) == null
           ? "-"
           : `${($div(a, b, -32768) << 16) >> 16} ${($rem(a, b, -32768) << 16) >> 16}`;
-      const value = [
-        ((a + b) << 16) >> 16,
-        ((a - b) << 16) >> 16,
-        ((a * b) << 16) >> 16,
-        $checked(a + b, -32768, 32767),
-        $checked(a - b, -32768, 32767),
-        $checked(a * b, -32768, 32767),
-        $checkedDiv(a, b, -32768),
-        $checkedRem(a, b, -32768),
-        Math.min(Math.max(a + b, -32768), 32767),
-        Math.min(Math.max(a - b, -32768), 32767),
-        Math.min(Math.max(a * b, -32768), 32767) | 0,
-        $overflowing(((a + b) << 16) >> 16, a + b, -32768, 32767),
-        $overflowing(((a - b) << 16) >> 16, a - b, -32768, 32767),
-        $overflowing(((a * b) << 16) >> 16, a * b, -32768, 32767),
-        $checkedEuclid(a, b, -32768, false),
-        $checkedEuclid(a, b, -32768, true),
-        a < b,
-        a === b,
-        $cmp(a, b),
-        Math.min(a, b),
-        Math.max(a, b),
-        Math.abs(a - b),
-        a,
-        b,
-        quotient$1,
-      ];
+      const value = ((a + b) << 16) >> 16;
+      const value$1 = ((a - b) << 16) >> 16;
+      const value$2 = ((a * b) << 16) >> 16;
+      const value$3 = $checked(a + b, -32768, 32767);
+      const value$4 = $checked(a - b, -32768, 32767);
+      const value$5 = $checked(a * b, -32768, 32767);
+      const value$6 = $checkedDiv(a, b, -32768);
+      const value$7 = $checkedRem(a, b, -32768);
+      const value$8 = Math.min(Math.max(a + b, -32768), 32767);
+      const value$9 = Math.min(Math.max(a - b, -32768), 32767);
+      const value$10 = Math.min(Math.max(a * b, -32768), 32767) | 0;
+      const value$11 = $overflowing(((a + b) << 16) >> 16, a + b, -32768, 32767);
+      const value$12 = $overflowing(((a - b) << 16) >> 16, a - b, -32768, 32767);
+      const value$13 = $overflowing(((a * b) << 16) >> 16, a * b, -32768, 32767);
+      const value$14 = $checkedEuclid(a, b, -32768, false);
+      const value$15 = $checkedEuclid(a, b, -32768, true);
+      const value$16 = $cmp(a, b);
       console.log(
-        `i16 ${value[22]} ${value[23]}: wrap ${value[0]} ${value[1]} ${value[2]} chk ${value[3] == null ? "None" : `Some(${value[3]})`} ${value[4] == null ? "None" : `Some(${value[4]})`} ${value[5] == null ? "None" : `Some(${value[5]})`} ${value[6] == null ? "None" : `Some(${value[6]})`} ${value[7] == null ? "None" : `Some(${value[7]})`} sat ${value[8]} ${value[9]} ${value[10]} over (${value[11][0]}, ${value[11][1]}) (${value[12][0]}, ${value[12][1]}) (${value[13][0]}, ${value[13][1]}) div ${value[24]} euclid ${value[14] == null ? "None" : `Some(${value[14]})`} ${value[15] == null ? "None" : `Some(${value[15]})`} cmp ${value[16]} ${value[17]} ${
-          ["Less", "Equal", "Greater"][value[18] + 1]
-        } ${value[19]} ${value[20]} ${value[21]}`,
+        `i16 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$1} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
   }
@@ -298,37 +278,27 @@ function main() {
         $checkedDiv(a, b, -2147483648) == null
           ? "-"
           : `${$div(a, b, -2147483648) | 0} ${$rem(a, b, -2147483648) | 0}`;
-      const value = [
-        (a + b) | 0,
-        (a - b) | 0,
-        Math.imul(a, b),
-        $checked(a + b, -2147483648, 2147483647),
-        $checked(a - b, -2147483648, 2147483647),
-        $checked(a * b, -2147483648, 2147483647),
-        $checkedDiv(a, b, -2147483648),
-        $checkedRem(a, b, -2147483648),
-        Math.min(Math.max(a + b, -2147483648), 2147483647),
-        Math.min(Math.max(a - b, -2147483648), 2147483647),
-        Math.min(Math.max(a * b, -2147483648), 2147483647) | 0,
-        $overflowing((a + b) | 0, a + b, -2147483648, 2147483647),
-        $overflowing((a - b) | 0, a - b, -2147483648, 2147483647),
-        $overflowing(Math.imul(a, b), a * b, -2147483648, 2147483647),
-        $checkedEuclid(a, b, -2147483648, false),
-        $checkedEuclid(a, b, -2147483648, true),
-        a < b,
-        a === b,
-        $cmp(a, b),
-        Math.min(a, b),
-        Math.max(a, b),
-        Math.abs(a - b),
-        a,
-        b,
-        quotient$2,
-      ];
+      const value = (a + b) | 0;
+      const value$1 = (a - b) | 0;
+      const value$2 = Math.imul(a, b);
+      const value$3 = $checked(a + b, -2147483648, 2147483647);
+      const value$4 = $checked(a - b, -2147483648, 2147483647);
+      const value$5 = $checked(a * b, -2147483648, 2147483647);
+      const value$6 = $checkedDiv(a, b, -2147483648);
+      const value$7 = $checkedRem(a, b, -2147483648);
+      const value$8 = Math.min(Math.max(a + b, -2147483648), 2147483647);
+      const value$9 = Math.min(Math.max(a - b, -2147483648), 2147483647);
+      const value$10 = Math.min(Math.max(a * b, -2147483648), 2147483647) | 0;
+      const value$11 = $overflowing((a + b) | 0, a + b, -2147483648, 2147483647);
+      const value$12 = $overflowing((a - b) | 0, a - b, -2147483648, 2147483647);
+      const value$13 = $overflowing(Math.imul(a, b), a * b, -2147483648, 2147483647);
+      const value$14 = $checkedEuclid(a, b, -2147483648, false);
+      const value$15 = $checkedEuclid(a, b, -2147483648, true);
+      const value$16 = $cmp(a, b);
       console.log(
-        `i32 ${value[22]} ${value[23]}: wrap ${value[0]} ${value[1]} ${value[2]} chk ${value[3] == null ? "None" : `Some(${value[3]})`} ${value[4] == null ? "None" : `Some(${value[4]})`} ${value[5] == null ? "None" : `Some(${value[5]})`} ${value[6] == null ? "None" : `Some(${value[6]})`} ${value[7] == null ? "None" : `Some(${value[7]})`} sat ${value[8]} ${value[9]} ${value[10]} over (${value[11][0]}, ${value[11][1]}) (${value[12][0]}, ${value[12][1]}) (${value[13][0]}, ${value[13][1]}) div ${value[24]} euclid ${value[14] == null ? "None" : `Some(${value[14]})`} ${value[15] == null ? "None" : `Some(${value[15]})`} cmp ${value[16]} ${value[17]} ${
-          ["Less", "Equal", "Greater"][value[18] + 1]
-        } ${value[19]} ${value[20]} ${value[21]}`,
+        `i32 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$2} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
   }
@@ -444,37 +414,10 @@ function main() {
       const value$17 = $bigMin(a, b);
       const value$18 = $bigMax(a, b);
       const arg = $bigAbsDiff(a, b);
-      const value$19 = [
-        value,
-        value$1,
-        value$2,
-        value$3,
-        value$4,
-        value$5,
-        value$6,
-        value$7,
-        value$8,
-        value$9,
-        value$10,
-        value$11,
-        value$12,
-        value$13,
-        value$14,
-        value$15,
-        a < b,
-        a === b,
-        value$16,
-        value$17,
-        value$18,
-        arg,
-        undefined,
-        b,
-        quotient$3,
-      ];
       console.log(
-        `i64 ${a} ${value$19[23]}: wrap ${value$19[0]} ${value$19[1]} ${value$19[2]} chk ${value$19[3] == null ? "None" : `Some(${value$19[3]})`} ${value$19[4] == null ? "None" : `Some(${value$19[4]})`} ${value$19[5] == null ? "None" : `Some(${value$19[5]})`} ${value$19[6] == null ? "None" : `Some(${value$19[6]})`} ${value$19[7] == null ? "None" : `Some(${value$19[7]})`} sat ${value$19[8]} ${value$19[9]} ${value$19[10]} over (${value$19[11][0]}, ${value$19[11][1]}) (${value$19[12][0]}, ${value$19[12][1]}) (${value$19[13][0]}, ${value$19[13][1]}) div ${value$19[24]} euclid ${value$19[14] == null ? "None" : `Some(${value$19[14]})`} ${value$19[15] == null ? "None" : `Some(${value$19[15]})`} cmp ${value$19[16]} ${value$19[17]} ${
-          ["Less", "Equal", "Greater"][value$19[18] + 1]
-        } ${value$19[19]} ${value$19[20]} ${value$19[21]}`,
+        `i64 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$3} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${value$17} ${value$18} ${arg}`,
       );
     }
   }
@@ -632,37 +575,10 @@ function main() {
       const value$17 = $bigMin(a, b);
       const value$18 = $bigMax(a, b);
       const arg = $bigAbsDiff(a, b);
-      const value$19 = [
-        value,
-        value$1,
-        value$2,
-        value$3,
-        value$4,
-        value$5,
-        value$6,
-        value$7,
-        value$8,
-        value$9,
-        value$10,
-        value$11,
-        value$12,
-        value$13,
-        value$14,
-        value$15,
-        a < b,
-        a === b,
-        value$16,
-        value$17,
-        value$18,
-        arg,
-        undefined,
-        b,
-        quotient$4,
-      ];
       console.log(
-        `i128 ${a} ${value$19[23]}: wrap ${value$19[0]} ${value$19[1]} ${value$19[2]} chk ${value$19[3] == null ? "None" : `Some(${value$19[3]})`} ${value$19[4] == null ? "None" : `Some(${value$19[4]})`} ${value$19[5] == null ? "None" : `Some(${value$19[5]})`} ${value$19[6] == null ? "None" : `Some(${value$19[6]})`} ${value$19[7] == null ? "None" : `Some(${value$19[7]})`} sat ${value$19[8]} ${value$19[9]} ${value$19[10]} over (${value$19[11][0]}, ${value$19[11][1]}) (${value$19[12][0]}, ${value$19[12][1]}) (${value$19[13][0]}, ${value$19[13][1]}) div ${value$19[24]} euclid ${value$19[14] == null ? "None" : `Some(${value$19[14]})`} ${value$19[15] == null ? "None" : `Some(${value$19[15]})`} cmp ${value$19[16]} ${value$19[17]} ${
-          ["Less", "Equal", "Greater"][value$19[18] + 1]
-        } ${value$19[19]} ${value$19[20]} ${value$19[21]}`,
+        `i128 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$4} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${value$17} ${value$18} ${arg}`,
       );
     }
   }
@@ -712,37 +628,27 @@ function main() {
     console.log(`u8 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
     for (const b of values$5) {
       quotient$5 = $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 255} ${$rem(a, b) & 255}`;
-      const value = [
-        (a + b) & 255,
-        (a - b) & 255,
-        (a * b) & 255,
-        $checked(a + b, 0, 255),
-        $checked(a - b, 0, 255),
-        $checked(a * b, 0, 255),
-        $checkedDiv(a, b, 0),
-        $checkedRem(a, b, 0),
-        Math.min(a + b, 255),
-        Math.max(a - b, 0),
-        Math.min(a * b, 255),
-        $overflowing((a + b) & 255, a + b, 0, 255),
-        $overflowing((a - b) & 255, a - b, 0, 255),
-        $overflowing((a * b) & 255, a * b, 0, 255),
-        $checkedEuclid(a, b, undefined, false),
-        $checkedEuclid(a, b, undefined, true),
-        a < b,
-        a === b,
-        $cmp(a, b),
-        Math.min(a, b),
-        Math.max(a, b),
-        Math.abs(a - b),
-        a,
-        b,
-        quotient$5,
-      ];
+      const value = (a + b) & 255;
+      const value$1 = (a - b) & 255;
+      const value$2 = (a * b) & 255;
+      const value$3 = $checked(a + b, 0, 255);
+      const value$4 = $checked(a - b, 0, 255);
+      const value$5 = $checked(a * b, 0, 255);
+      const value$6 = $checkedDiv(a, b, 0);
+      const value$7 = $checkedRem(a, b, 0);
+      const value$8 = Math.min(a + b, 255);
+      const value$9 = Math.max(a - b, 0);
+      const value$10 = Math.min(a * b, 255);
+      const value$11 = $overflowing((a + b) & 255, a + b, 0, 255);
+      const value$12 = $overflowing((a - b) & 255, a - b, 0, 255);
+      const value$13 = $overflowing((a * b) & 255, a * b, 0, 255);
+      const value$14 = $checkedEuclid(a, b, undefined, false);
+      const value$15 = $checkedEuclid(a, b, undefined, true);
+      const value$16 = $cmp(a, b);
       console.log(
-        `u8 ${value[22]} ${value[23]}: wrap ${value[0]} ${value[1]} ${value[2]} chk ${value[3] == null ? "None" : `Some(${value[3]})`} ${value[4] == null ? "None" : `Some(${value[4]})`} ${value[5] == null ? "None" : `Some(${value[5]})`} ${value[6] == null ? "None" : `Some(${value[6]})`} ${value[7] == null ? "None" : `Some(${value[7]})`} sat ${value[8]} ${value[9]} ${value[10]} over (${value[11][0]}, ${value[11][1]}) (${value[12][0]}, ${value[12][1]}) (${value[13][0]}, ${value[13][1]}) div ${value[24]} euclid ${value[14] == null ? "None" : `Some(${value[14]})`} ${value[15] == null ? "None" : `Some(${value[15]})`} cmp ${value[16]} ${value[17]} ${
-          ["Less", "Equal", "Greater"][value[18] + 1]
-        } ${value[19]} ${value[20]} ${value[21]}`,
+        `u8 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$5} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
   }
@@ -795,37 +701,27 @@ function main() {
     for (const b of values$6) {
       quotient$6 =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 65535} ${$rem(a, b) & 65535}`;
-      const value = [
-        (a + b) & 65535,
-        (a - b) & 65535,
-        (a * b) & 65535,
-        $checked(a + b, 0, 65535),
-        $checked(a - b, 0, 65535),
-        $checked(a * b, 0, 65535),
-        $checkedDiv(a, b, 0),
-        $checkedRem(a, b, 0),
-        Math.min(a + b, 65535),
-        Math.max(a - b, 0),
-        Math.min(a * b, 65535),
-        $overflowing((a + b) & 65535, a + b, 0, 65535),
-        $overflowing((a - b) & 65535, a - b, 0, 65535),
-        $overflowing((a * b) & 65535, a * b, 0, 65535),
-        $checkedEuclid(a, b, undefined, false),
-        $checkedEuclid(a, b, undefined, true),
-        a < b,
-        a === b,
-        $cmp(a, b),
-        Math.min(a, b),
-        Math.max(a, b),
-        Math.abs(a - b),
-        a,
-        b,
-        quotient$6,
-      ];
+      const value = (a + b) & 65535;
+      const value$1 = (a - b) & 65535;
+      const value$2 = (a * b) & 65535;
+      const value$3 = $checked(a + b, 0, 65535);
+      const value$4 = $checked(a - b, 0, 65535);
+      const value$5 = $checked(a * b, 0, 65535);
+      const value$6 = $checkedDiv(a, b, 0);
+      const value$7 = $checkedRem(a, b, 0);
+      const value$8 = Math.min(a + b, 65535);
+      const value$9 = Math.max(a - b, 0);
+      const value$10 = Math.min(a * b, 65535);
+      const value$11 = $overflowing((a + b) & 65535, a + b, 0, 65535);
+      const value$12 = $overflowing((a - b) & 65535, a - b, 0, 65535);
+      const value$13 = $overflowing((a * b) & 65535, a * b, 0, 65535);
+      const value$14 = $checkedEuclid(a, b, undefined, false);
+      const value$15 = $checkedEuclid(a, b, undefined, true);
+      const value$16 = $cmp(a, b);
       console.log(
-        `u16 ${value[22]} ${value[23]}: wrap ${value[0]} ${value[1]} ${value[2]} chk ${value[3] == null ? "None" : `Some(${value[3]})`} ${value[4] == null ? "None" : `Some(${value[4]})`} ${value[5] == null ? "None" : `Some(${value[5]})`} ${value[6] == null ? "None" : `Some(${value[6]})`} ${value[7] == null ? "None" : `Some(${value[7]})`} sat ${value[8]} ${value[9]} ${value[10]} over (${value[11][0]}, ${value[11][1]}) (${value[12][0]}, ${value[12][1]}) (${value[13][0]}, ${value[13][1]}) div ${value[24]} euclid ${value[14] == null ? "None" : `Some(${value[14]})`} ${value[15] == null ? "None" : `Some(${value[15]})`} cmp ${value[16]} ${value[17]} ${
-          ["Less", "Equal", "Greater"][value[18] + 1]
-        } ${value[19]} ${value[20]} ${value[21]}`,
+        `u16 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$6} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
   }
@@ -879,37 +775,27 @@ function main() {
     console.log(`u32 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
     for (const b of values$7) {
       quotient$7 = $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) >>> 0} ${$rem(a, b) >>> 0}`;
-      const value = [
-        (a + b) >>> 0,
-        (a - b) >>> 0,
-        Math.imul(a, b) >>> 0,
-        $checked(a + b, 0, 4294967295),
-        $checked(a - b, 0, 4294967295),
-        $checked(a * b, 0, 4294967295),
-        $checkedDiv(a, b, 0),
-        $checkedRem(a, b, 0),
-        Math.min(a + b, 4294967295),
-        Math.max(a - b, 0),
-        Math.min(a * b, 4294967295),
-        $overflowing((a + b) >>> 0, a + b, 0, 4294967295),
-        $overflowing((a - b) >>> 0, a - b, 0, 4294967295),
-        $overflowing(Math.imul(a, b) >>> 0, a * b, 0, 4294967295),
-        $checkedEuclid(a, b, undefined, false),
-        $checkedEuclid(a, b, undefined, true),
-        a < b,
-        a === b,
-        $cmp(a, b),
-        Math.min(a, b),
-        Math.max(a, b),
-        Math.abs(a - b),
-        a,
-        b,
-        quotient$7,
-      ];
+      const value = (a + b) >>> 0;
+      const value$1 = (a - b) >>> 0;
+      const value$2 = Math.imul(a, b) >>> 0;
+      const value$3 = $checked(a + b, 0, 4294967295);
+      const value$4 = $checked(a - b, 0, 4294967295);
+      const value$5 = $checked(a * b, 0, 4294967295);
+      const value$6 = $checkedDiv(a, b, 0);
+      const value$7 = $checkedRem(a, b, 0);
+      const value$8 = Math.min(a + b, 4294967295);
+      const value$9 = Math.max(a - b, 0);
+      const value$10 = Math.min(a * b, 4294967295);
+      const value$11 = $overflowing((a + b) >>> 0, a + b, 0, 4294967295);
+      const value$12 = $overflowing((a - b) >>> 0, a - b, 0, 4294967295);
+      const value$13 = $overflowing(Math.imul(a, b) >>> 0, a * b, 0, 4294967295);
+      const value$14 = $checkedEuclid(a, b, undefined, false);
+      const value$15 = $checkedEuclid(a, b, undefined, true);
+      const value$16 = $cmp(a, b);
       console.log(
-        `u32 ${value[22]} ${value[23]}: wrap ${value[0]} ${value[1]} ${value[2]} chk ${value[3] == null ? "None" : `Some(${value[3]})`} ${value[4] == null ? "None" : `Some(${value[4]})`} ${value[5] == null ? "None" : `Some(${value[5]})`} ${value[6] == null ? "None" : `Some(${value[6]})`} ${value[7] == null ? "None" : `Some(${value[7]})`} sat ${value[8]} ${value[9]} ${value[10]} over (${value[11][0]}, ${value[11][1]}) (${value[12][0]}, ${value[12][1]}) (${value[13][0]}, ${value[13][1]}) div ${value[24]} euclid ${value[14] == null ? "None" : `Some(${value[14]})`} ${value[15] == null ? "None" : `Some(${value[15]})`} cmp ${value[16]} ${value[17]} ${
-          ["Less", "Equal", "Greater"][value[18] + 1]
-        } ${value[19]} ${value[20]} ${value[21]}`,
+        `u32 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$7} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
   }
@@ -1006,37 +892,10 @@ function main() {
       const value$17 = $bigMin(a, b);
       const value$18 = $bigMax(a, b);
       const arg = $bigAbsDiff(a, b);
-      const value$19 = [
-        value,
-        value$1,
-        value$2,
-        value$3,
-        value$4,
-        value$5,
-        value$6,
-        value$7,
-        value$8,
-        value$9,
-        value$10,
-        value$11,
-        value$12,
-        value$13,
-        value$14,
-        value$15,
-        a < b,
-        a === b,
-        value$16,
-        value$17,
-        value$18,
-        arg,
-        undefined,
-        b,
-        quotient$8,
-      ];
       console.log(
-        `u64 ${a} ${value$19[23]}: wrap ${value$19[0]} ${value$19[1]} ${value$19[2]} chk ${value$19[3] == null ? "None" : `Some(${value$19[3]})`} ${value$19[4] == null ? "None" : `Some(${value$19[4]})`} ${value$19[5] == null ? "None" : `Some(${value$19[5]})`} ${value$19[6] == null ? "None" : `Some(${value$19[6]})`} ${value$19[7] == null ? "None" : `Some(${value$19[7]})`} sat ${value$19[8]} ${value$19[9]} ${value$19[10]} over (${value$19[11][0]}, ${value$19[11][1]}) (${value$19[12][0]}, ${value$19[12][1]}) (${value$19[13][0]}, ${value$19[13][1]}) div ${value$19[24]} euclid ${value$19[14] == null ? "None" : `Some(${value$19[14]})`} ${value$19[15] == null ? "None" : `Some(${value$19[15]})`} cmp ${value$19[16]} ${value$19[17]} ${
-          ["Less", "Equal", "Greater"][value$19[18] + 1]
-        } ${value$19[19]} ${value$19[20]} ${value$19[21]}`,
+        `u64 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$8} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${value$17} ${value$18} ${arg}`,
       );
     }
   }
@@ -1140,37 +999,10 @@ function main() {
       const value$17 = $bigMin(a, b);
       const value$18 = $bigMax(a, b);
       const arg = $bigAbsDiff(a, b);
-      const value$19 = [
-        value,
-        value$1,
-        value$2,
-        value$3,
-        value$4,
-        value$5,
-        value$6,
-        value$7,
-        value$8,
-        value$9,
-        value$10,
-        value$11,
-        value$12,
-        value$13,
-        value$14,
-        value$15,
-        a < b,
-        a === b,
-        value$16,
-        value$17,
-        value$18,
-        arg,
-        undefined,
-        b,
-        quotient$9,
-      ];
       console.log(
-        `u128 ${a} ${value$19[23]}: wrap ${value$19[0]} ${value$19[1]} ${value$19[2]} chk ${value$19[3] == null ? "None" : `Some(${value$19[3]})`} ${value$19[4] == null ? "None" : `Some(${value$19[4]})`} ${value$19[5] == null ? "None" : `Some(${value$19[5]})`} ${value$19[6] == null ? "None" : `Some(${value$19[6]})`} ${value$19[7] == null ? "None" : `Some(${value$19[7]})`} sat ${value$19[8]} ${value$19[9]} ${value$19[10]} over (${value$19[11][0]}, ${value$19[11][1]}) (${value$19[12][0]}, ${value$19[12][1]}) (${value$19[13][0]}, ${value$19[13][1]}) div ${value$19[24]} euclid ${value$19[14] == null ? "None" : `Some(${value$19[14]})`} ${value$19[15] == null ? "None" : `Some(${value$19[15]})`} cmp ${value$19[16]} ${value$19[17]} ${
-          ["Less", "Equal", "Greater"][value$19[18] + 1]
-        } ${value$19[19]} ${value$19[20]} ${value$19[21]}`,
+        `u128 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$9} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$16 + 1]
+        } ${value$17} ${value$18} ${arg}`,
       );
     }
   }

@@ -27,12 +27,7 @@ function describe(shape) {
       text = `line ${shape._0}`;
     }
   } else if (shape.TAG === "Rect") {
-    if (shape.w === shape.h) {
-      text = `square ${shape.w}`;
-    } else {
-      const value = [shape.w, shape.h];
-      text = `rect ${value[0]}x${value[1]}`;
-    }
+    text = shape.w === shape.h ? `square ${shape.w}` : `rect ${shape.w}x${shape.h}`;
   } else {
     text = "dot";
   }

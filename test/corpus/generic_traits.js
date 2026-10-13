@@ -201,9 +201,9 @@ function main() {
   const value$8 = metersBoth().both(m);
   const value$9 = number(m, metersBoth());
   const value$10 = metersWrapF64().wrapped(m);
-  const value$11 = [undefined, undefined, undefined, labels(m, metersPairU32String()), x];
+  const value$11 = labels(m, metersPairU32String());
   console.log(
-    `(${value$8[0]}, ${$debugStr(value$8[1])}) ${value$9} [${value$10.map((item) => $debugF64(item)).join(", ")}] ${$displayF64(value$11[4])} (${value$11[3][0]}, ${$debugStr(value$11[3][1])})`,
+    `(${value$8[0]}, ${$debugStr(value$8[1])}) ${value$9} [${value$10.map((item) => $debugF64(item)).join(", ")}] ${$displayF64(x)} (${value$11[0]}, ${$debugStr(value$11[1])})`,
   );
   const g = { value: m, impl: metersGreeter() };
   console.log(`${g.impl.Greet().greet(g.value)}`);

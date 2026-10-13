@@ -1194,7 +1194,7 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-tuple-reads-kept",
     "breaks": "children MIR holds as a tuple stay `const children = [..]`, read `children[0]`, and its `then` closure a `const value`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    js::statement_lists(body, &mut |stmts| tuple_reads(stmts, &changing, captured));\n",
+    "find": "    js::statement_lists(body, &mut |stmts| {\n        tuple_reads(stmts, &changing, &set_elsewhere, captured)\n    });\n",
     "replace": "",
     "tests": [
       "test/jsx.test.ts"
@@ -2163,5 +2163,45 @@ export const mutations: Mutation[] = [
       "-t",
       "arrays of arrays flattened"
     ]
+  },
+  {
+    name: "tuple-acting-parts-unheld",
+    breaks: "a tuple matched whose part calls, `(v.pop(), n > 3)`, calls it where each part is read, more than once",
+    file: "src/lower/mir/tidy.rs",
+    find: "            if last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
+    replace: "            if false && last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
+    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
+  },
+  {
+    name: "tuple-earlier-reads-unheld",
+    breaks: "`v.len()` of `(v.len(), v.pop())` is read after the pop",
+    file: "src/lower/mir/tidy.rs",
+    find: "            if last.is_some_and(|last| k < last && !fixed(item) || k == last) {\n",
+    replace: "            if last.is_some_and(|last| k == last) {\n",
+    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
+  },
+  {
+    name: "tuple-part-member-fixed",
+    breaks: "a property read before a call, `v.length`, is taken for what no call changes",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    ExprKind::Member(of, _) => math(of),\n",
+    replace: "                    ExprKind::Member(..) => true,\n",
+    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
+  },
+  {
+    name: "tuple-part-set-after",
+    breaks: "a variable a guard sets after the tuple is made is read as the guard left it",
+    file: "src/lower/mir/tidy.rs",
+    find: "if !assigns(after, v) && !set_elsewhere.contains(v))",
+    replace: "if !set_elsewhere.contains(v))",
+    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
+  },
+  {
+    name: "tuple-part-set-by-closure",
+    breaks: "a variable a closure sets after the tuple is made is read as the closure left it",
+    file: "src/lower/mir/tidy.rs",
+    find: "if !assigns(after, v) && !set_elsewhere.contains(v))",
+    replace: "if !assigns(after, v))",
+    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls"],
   },
 ];

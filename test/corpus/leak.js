@@ -21,8 +21,8 @@ function kept() {
 function main() {
   const shared = titles();
   const also = shared;
-  const value = [undefined, also.length, $index(also, 1)];
-  console.log(`[${shared.map((item) => $debugStr(item)).join(", ")}] ${value[1]} ${value[2]}`);
+  const value = $index(also, 1);
+  console.log(`[${shared.map((item) => $debugStr(item)).join(", ")}] ${also.length} ${value}`);
   const titles$1 = kept();
   console.log(`${titlesDebug_fmt(titles$1)} ${($byteLen(titles$1.first) + titles$1.count) >>> 0}`);
 }

@@ -104,22 +104,15 @@ function main() {
   ]);
   const queue = [1, 2];
   const list = [7, 8];
-  const value$3 = [
-    undefined,
-    seen.size,
-    ages,
-    $unwrap(index.get("y"), "no entry found for key"),
-    queue,
-    list,
-  ];
+  const value$3 = $unwrap(index.get("y"), "no entry found for key");
   console.log(
     `{${Array.from($sortedKeys(tags, $cmp))
       .map((item) => $debugStr(item))
-      .join(", ")}} ${value$3[1]} {${Array.from($sortedEntries(value$3[2], $cmp))
+      .join(", ")}} ${seen.size} {${Array.from($sortedEntries(ages, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(
         ", ",
-      )}} ${value$3[3]} [${value$3[4].map((item) => String(item)).join(", ")}] [${value$3[5].map((item) => String(item)).join(", ")}]`,
+      )}} ${value$3} [${queue.map((item) => String(item)).join(", ")}] [${list.map((item) => String(item)).join(", ")}]`,
   );
   const count = { value: 5 };
   const old = $cellReplace(count, 6);
