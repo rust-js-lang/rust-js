@@ -130,13 +130,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = arg();
                 // What drops as JS can't drop it: refused, not dropped as nothing.
                 self.check_held_drops(ty, span)?;
-                // Nothing to drop, a `Vec` of numbers say: only what computing it does.
-                if !self.has_drops(ty) {
-                    if value.has_effects() {
-                        out.push(StmtKind::Expr(value).at(js_span));
-                    }
-                    return Ok(Some(Expr::undefined()));
-                }
                 let value = self.droppable(value, ty, out);
                 self.drop_value(value, ty, span, out)?;
                 Expr::undefined()

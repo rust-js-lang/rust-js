@@ -769,14 +769,7 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
                 let from = self.thir[source].ty;
                 let (to, from) = match (target.builtin_deref(true), from.builtin_deref(true)) {
                     (Some(to), Some(from)) => (to, from),
-                    _ => match (target.kind(), from.kind()) {
-                        (ty::Adt(_, to_args), ty::Adt(_, from_args)) => to_args
-                            .types()
-                            .zip(from_args.types())
-                            .find(|(to, _)| matches!(to.kind(), ty::Dynamic(..)))
-                            .unwrap_or((target, from)),
-                        _ => (target, from),
-                    },
+                    _ => (target, from),
                 };
                 // A reference owns nothing to drop. What owns one drops it
                 // through its dictionary's `$drop`, as Rust's vtable has it:

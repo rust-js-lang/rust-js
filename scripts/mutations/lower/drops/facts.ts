@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_drops"],
   },
   {
-    name: "rc-dyn-drop-unchecked",
-    breaks: "`Rc<dyn Send>` of a value with a destructor compiles, and the destructor never runs",
-    file: "src/lower/drops/facts.rs",
-    find: ".find(|(to, _)| matches!(to.kind(), ty::Dynamic(..)))",
-    replace: ".find(|_| false)",
-    tests: ["test/diagnostics.test.ts", "-t", "Rc<dyn> of a value with a destructor"],
-  },
-  {
     name: "temp-taken-apart-refused",
     breaks: "`let (x, _) = (make(3), make(4));` is refused",
     file: "src/lower/drops/facts.rs",

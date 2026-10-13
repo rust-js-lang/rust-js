@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "vacant-entry-unsupported",
     breaks: "a `VacantEntry` value is refused",
     file: "src/lower/support.rs",
-    find: "            || self.recognition().is_vacant_entry(ty)\n",
+    find: " || self.recognition().is_vacant_entry(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","map_entry_match"],
   },

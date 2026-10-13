@@ -251,14 +251,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
   {
-    name: "mir-tidy-for-tail-continue-kept",
-    breaks: "a `for` loop body's last `continue l;` stays",
-    file: "src/lower/mir/tidy.rs",
-    find: "            | StmtKind::ForOf {\n                label: Some(label),\n                body,\n                ..\n            }\n            | StmtKind::For {\n                label: Some(label),\n                body,\n                ..\n            } => drop_tail(body, &StmtKind::Continue(Some(label.clone()))),\n",
-    replace: "            => drop_tail(body, &StmtKind::Continue(Some(label.clone()))),\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
-  },
-  {
     name: "mir-tidy-innermost-jumps-labeled",
     breaks: "a `continue l` of the innermost loop keeps its label, and so the loop",
     file: "src/lower/mir/tidy.rs",

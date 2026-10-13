@@ -452,14 +452,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "size_hint"],
   },
   {
-    name: "size-hint-exact-unchecked",
-    breaks: "`size_hint()` of `chars()`, whose hint isn't exact, is given as exact",
-    file: "src/lower/recognition.rs",
-    find: "                && self.is_exact_size(ty.peel_refs())\n",
-    replace: "",
-    tests: ["test/diagnostics.test.ts", "-t", "size_hint"],
-  },
-  {
     name: "char-from-code-unknown",
     breaks: "`char::from_u32_unchecked(n)` is an error",
     file: "src/lower/recognition.rs",
@@ -1187,14 +1179,6 @@ export const mutations: Mutation[] = [
     find: "                | Std::OptionIterMut\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","option_result_mut"],
-  },
-  {
-    name: "extract-if-not-lazy",
-    breaks: "an `extract_if`'s iterator is refused",
-    file: "src/lower/recognition.rs",
-    find: "            && self.tcx.item_name(adt.did()).as_str() == \"ExtractIf\")",
-    replace: "            && self.tcx.item_name(adt.did()).as_str() == \"NotExtractIf\")",
-    tests: ["test/corpus.test.ts","-t","extract_if"],
   },
   {
     name: "vec-extract-if-unknown",

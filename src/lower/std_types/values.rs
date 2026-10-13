@@ -32,7 +32,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         drained: bool,
         span: Span,
     ) -> R<()> {
-        let holds_drops = |ty: Ty<'tcx>| self.drops(ty) != Drops::Nothing;
+        let holds_drops = |ty: Ty<'tcx>| self.drops(ty) == Drops::Runs;
         let takes_drops = tys.iter().any(|&ty| match *ty.kind() {
             ty::Ref(_, inner, Mutability::Mut) => holds_drops(inner),
             ty::Ref(..) => false,

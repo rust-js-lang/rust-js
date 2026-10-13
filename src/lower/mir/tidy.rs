@@ -5042,16 +5042,6 @@ fn tail_jumps(stmts: &mut [Stmt]) {
                 label: Some(label),
                 body,
                 ..
-            }
-            | StmtKind::ForOf {
-                label: Some(label),
-                body,
-                ..
-            }
-            | StmtKind::For {
-                label: Some(label),
-                body,
-                ..
             } => drop_tail(body, &StmtKind::Continue(Some(label.clone()))),
             _ => {}
         }

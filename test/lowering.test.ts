@@ -11292,3 +11292,38 @@ pub fn sums() -> Vec<f64> {
   expect(js).not.toMatch(/\bbb\d+:/);
   expect((await import(join(dir, "lib.js"))).sums()).toEqual([3, 7, 7]);
 });
+
+// What rustc promotes in generic code it can't evaluate, `&size_of::<T>()`,
+// `&None`, and a closure that captures nothing: made where they're used.
+test("promoted values of generic code are made where they're used", async () => {
+  const dir = fixture("promoted-generic");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
+fn size_ref<T>() -> usize {
+    let s: &usize = &std::mem::size_of::<T>();
+    *s
+}
+pub fn sizes() -> Vec<usize> {
+    vec![size_ref::<u8>(), size_ref::<u64>(), size_ref::<(u8, u32)>()]
+}
+fn none_ref<T: Clone>(v: Option<T>) -> Option<T> {
+    let n: &Option<T> = &None;
+    if v.is_some() { v } else { n.clone() }
+}
+pub fn nones() -> (Option<u32>, Option<u32>) {
+    (none_ref(Some(3)), none_ref(None))
+}
+thread_local! {
+    static LAST: Cell<u32> = const { Cell::new(0) };
+}
+fn apply(f: &dyn Fn(u32), n: u32) {
+    f(n)
+}
+pub fn last() -> u32 {
+    apply(&|n| LAST.with(|l| l.set(n)), 7);
+    LAST.with(|l| l.get())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.sizes(), lib.nones(), lib.last()]).toEqual([[1, 8, 8], [3, undefined], 7]);
+});

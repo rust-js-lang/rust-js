@@ -1711,6 +1711,10 @@ pub fn numbered(n: Option<u32>) -> String {
 pub fn kept(n: Option<u32>) -> String {
     plain(&[matches!(n, Some(1)).then_some("one"), matches!(n, Some(2)).then_some("two")])
 }
+// A test of a string's truth, read as it is, as react.dev's Footer.
+pub fn linked(href: Option<&str>) -> String {
+    cn(&[Some("a"), href.filter(|href| !href.is_empty()).map(|_| "hover")])
+}
 `);
   for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
@@ -1721,8 +1725,10 @@ pub fn kept(n: Option<u32>) -> String {
     expect(js).toContain('  const classes = cn(\n    d === "down" && "r0",\n    d === "left" && "r90",\n    d === "up" && "r180",\n    d === "right" && "r-90",\n    d === "start" && "s",\n    d === "end" && "e",\n    props.class_name,\n  );\n');
     expect(js).toContain('return cn(n === 1 && "one", n === 2 && "two", "c");');
     expect(js).toContain('return cn(n === 1 ? "one" : undefined, n === 2 ? "two" : undefined);');
+    expect(js).toContain('return cn("a", href && "hover");');
     const lib = await import(join(dir, out));
     expect([lib.classes(true, true), lib.classes(false, true), lib.classes(false, false), lib.listed(true), lib.flagged([1], false), lib.flagged(undefined, false), lib.numbered(2), lib.kept(1)]).toEqual(["a wide", "a tall", "a", "a wide", "a b", "a", "two c", "one"]);
+    expect([lib.linked("x"), lib.linked(""), lib.linked(undefined)]).toEqual(["a hover", "a", "a"]);
   }
 });
 

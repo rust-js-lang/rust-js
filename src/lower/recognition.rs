@@ -954,10 +954,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             ) {
                 return Some(Std::GenericSizeHint);
             }
-            if self.range_kind(ty.peel_refs()).is_none()
-                && self.is_array_iter(ty.peel_refs())
-                && self.is_exact_size(ty.peel_refs())
-            {
+            if self.range_kind(ty.peel_refs()).is_none() && self.is_array_iter(ty.peel_refs()) {
                 return Some(Std::SizeHint(true));
             }
         }
@@ -2302,21 +2299,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         !ty.walk()
             .any(|part| matches!(part.as_type().map(|p| *p.kind()), Some(ty::Ref(_, _, Mutability::Mut))))
             && (self.is_string_like(ty) || Num::of(ty).is_some() || ty.is_bool())
-    }
-
-    /// Is `ty` an `ExactSizeIterator`, whose `size_hint()` std makes exact?
-    fn is_exact_size(&self, ty: Ty<'tcx>) -> bool {
-        let Some(exact) = self
-            .tcx
-            .all_traits_including_private()
-            .find(|&id| is_iterator_extension(self.tcx, id) && self.tcx.item_name(id).as_str() == "ExactSizeIterator")
-        else {
-            return false;
-        };
-        let tr = ty::TraitRef::new(self.tcx, exact, [self.tcx.erase_and_anonymize_regions(ty)]);
-        self.tcx
-            .codegen_select_candidate(self.typing_env.as_query_input(tr))
-            .is_ok()
     }
 
     pub(super) fn double_ended_iterator(&self) -> Option<DefId> {
@@ -3894,13 +3876,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     pub(super) fn is_occupied_entry(&self, ty: ty::Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
             && self.tcx.item_name(adt.did()).as_str() == "OccupiedEntry")
-    }
-
-    /// An `extract_if`'s iterator, a JS one that takes out what it gives as
-    /// it's asked (ADR 0344).
-    pub(super) fn is_extract_if(&self, ty: ty::Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
-            && self.tcx.item_name(adt.did()).as_str() == "ExtractIf")
     }
 }
 

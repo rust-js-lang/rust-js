@@ -272,18 +272,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-next-split-stepped",
-    "breaks": "`next()` of a split from MIR is `$next(Iterator.from($splitBy(..)))`, not its `[0]`",
-    "file": "src/lower/iterators.rs",
-    "find": "eager_items(chain, false, None).or_else(|| split(chain))",
-    "replace": "eager_items(chain, false, None)",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "next of a fresh iterator of an array"
-    ]
-  },
-  {
     "name": "extreme-of-copy",
     "breaks": "`max()` of a copied slice from MIR is `$max(xs.slice())`, a copy for a read",
     "file": "src/lower/iterators.rs",

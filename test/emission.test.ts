@@ -66,6 +66,8 @@ test("source map points from fib.js back into fib.rs", async () => {
     ["$div(a, b, -2147483648) | 0", "a / b"],
     ['order === "Ascending"', "Order::Ascending"],
     ["fib_iter((20 - n) >>> 0)", "fib_iter(20 - n)"],
+    // A `return` where its value is written, not where the body ends.
+    ["return a;", "a"],
   ];
   for (const [jsText, rustText] of probes) {
     const line = js.findIndex((l, i) => i >= firstFunction && l.includes(jsText));

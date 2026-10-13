@@ -1742,13 +1742,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (None, false) => Some(self.read_local(state, ret, &mut out)?),
                 };
                 self.flush(state, &mut out)?;
-                // Where what it gives was written: MIR's `return` is where the
-                // body ends, which the source map has nothing of.
-                let span = match &value {
-                    Some(value) if !value.span.is_none() => value.span,
-                    _ => self.js_span(span),
-                };
-                out.push(StmtKind::Return(value).at(span));
+                out.push(StmtKind::Return(value).at(self.js_span(span)));
             }
             TerminatorKind::Unreachable => {
                 self.flush(state, &mut out)?;
@@ -3427,15 +3421,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 Ok(Value::Ref(Expr::member(self.fn_ref(def_id), "value")))
             }
-            // A promoted reference to a closure that captures nothing, `&|n|
-            // LAST.set(n)`: the closure, as a reference is what it refers to.
-            Operand::Constant(c)
-                if let Const::Unevaluated(uv, _) = c.const_
-                    && let Some(promoted) = uv.promoted
-                    && let Some(def_id) = referred_closure(&state.promoted[promoted]) =>
-            {
-                Ok(Value::Expr(self.mir_closure(state, def_id, Vec::new(), c.span, out)?))
-            }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
             #[allow(unreachable_patterns)]
             _ => Err(self.unsupported(Span::default(), "this operand, from its MIR")),
@@ -3472,33 +3457,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(self.fn_ref(named.def));
             }
             return self.mir_const(state, &referred);
-        }
-        // A promoted reference to a variant without fields, `&None` of generic
-        // code, which can't be evaluated: the variant, as it's made.
-        if let Const::Unevaluated(uv, _) = c.const_
-            && let Some(promoted) = uv.promoted
-            && let Some((made, variant)) = referred_variant(tcx, &state.promoted[promoted])
-        {
-            return self.adt_value(made, variant, Vec::new(), &[], c.span);
-        }
-        // A promoted reference to a call of nothing, `&size_of::<T>()` of
-        // generic code: the call, a std function's of nothing it's given, or
-        // the crate's const function's.
-        if let Const::Unevaluated(uv, _) = c.const_
-            && let Some(promoted) = uv.promoted
-            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted])
-        {
-            if self.is_rust_fn(def_id) {
-                let given = self.evidence_args(def_id, args, c.span)?;
-                return Ok(Expr::call(self.fn_ref(def_id), given));
-            }
-            if let Some(known) = self.recognition().classify(def_id, args) {
-                let mut made = Vec::new();
-                let value = self.std_by_values(known, def_id, args, &[], Vec::new(), output, c.span, &mut made)?;
-                if made.is_empty() {
-                    return Ok(value);
-                }
-            }
         }
         // A named constant (ADR 0031); a `const { .. }` block, its value, or as
         // one (ADR 0127).
@@ -7450,129 +7408,4 @@ fn split(locals: &Locals, local: Local) -> bool {
     distinct.sort();
     distinct.dedup();
     !fields.is_empty() && fields.len() == locals.reads[local] && distinct.len() == fields.len()
-}
-
-/// The variant without fields a promoted body refers to, `_1 =
-/// Option::<T>::None; _0 = &_1`, which generic code can't evaluate: its
-/// type and variant.
-fn referred_variant<'tcx>(tcx: ty::TyCtxt<'tcx>, body: &mir::Body<'tcx>) -> Option<(Ty<'tcx>, VariantIdx)> {
-    if body.basic_blocks.len() != 1 {
-        return None;
-    }
-    let mut made = None;
-    let mut referred = None;
-    for statement in &body.basic_blocks[mir::START_BLOCK].statements {
-        match &statement.kind {
-            StatementKind::Assign(assign) => match &**assign {
-                (place, Rvalue::Aggregate(kind, operands)) if place.projection.is_empty() && operands.is_empty() => {
-                    let AggregateKind::Adt(did, variant, args, _, _) = **kind else {
-                        return None;
-                    };
-                    made = Some((place.local, Ty::new_adt(tcx, tcx.adt_def(did), args), variant));
-                }
-                (place, Rvalue::Ref(_, BorrowKind::Shared, target))
-                    if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
-                {
-                    referred = Some(target.local);
-                }
-                _ => return None,
-            },
-            StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop => {}
-            _ => return None,
-        }
-    }
-    let (local, ty, variant) = made?;
-    (Some(local) == referred).then_some((ty, variant))
-}
-
-/// The closure that captures nothing a promoted body refers to, `_1 =
-/// {closure}; _0 = &_1`.
-fn referred_closure(body: &mir::Body<'_>) -> Option<rustc_span::def_id::DefId> {
-    if body.basic_blocks.len() != 1 {
-        return None;
-    }
-    let mut made = None;
-    let mut referred = None;
-    for statement in &body.basic_blocks[mir::START_BLOCK].statements {
-        match &statement.kind {
-            StatementKind::Assign(assign) => match &**assign {
-                (place, Rvalue::Aggregate(kind, operands)) if place.projection.is_empty() && operands.is_empty() => {
-                    let AggregateKind::Closure(def_id, _) = **kind else {
-                        return None;
-                    };
-                    made = Some((place.local, def_id));
-                }
-                (place, Rvalue::Ref(_, BorrowKind::Shared, target))
-                    if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
-                {
-                    referred = Some(target.local);
-                }
-                _ => return None,
-            },
-            StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop => {}
-            _ => return None,
-        }
-    }
-    let (local, def_id) = made?;
-    (Some(local) == referred).then_some(def_id)
-}
-
-/// The call of nothing a promoted body refers to the result of, `_1 =
-/// size_of::<T>() -> bb1; bb1: _0 = &_1`: its function, its arguments and
-/// what it gives.
-fn referred_call<'tcx>(
-    body: &mir::Body<'tcx>,
-) -> Option<(rustc_span::def_id::DefId, ty::GenericArgsRef<'tcx>, Ty<'tcx>)> {
-    if body.basic_blocks.len() != 2 {
-        return None;
-    }
-    let (first, second) = (
-        &body.basic_blocks[mir::START_BLOCK],
-        &body.basic_blocks[BasicBlock::from_usize(1)],
-    );
-    let quiet = |data: &mir::BasicBlockData<'_>| {
-        data.statements.iter().all(|s| {
-            matches!(
-                s.kind,
-                StatementKind::StorageLive(_) | StatementKind::StorageDead(_) | StatementKind::Nop
-            )
-        })
-    };
-    let TerminatorKind::Call {
-        func: Operand::Constant(func),
-        args,
-        destination,
-        target: Some(target),
-        ..
-    } = &first.terminator().kind
-    else {
-        return None;
-    };
-    let (def_id, generic_args) = fn_def(func.ty())?;
-    if !quiet(first) || !args.is_empty() || !destination.projection.is_empty() || target.as_usize() != 1 {
-        return None;
-    }
-    let referred = second.statements.iter().find_map(|s| match &s.kind {
-        StatementKind::Assign(assign) => match &**assign {
-            (place, Rvalue::Ref(_, BorrowKind::Shared, target))
-                if place.local == mir::RETURN_PLACE && target.projection.is_empty() =>
-            {
-                Some(target.local)
-            }
-            _ => None,
-        },
-        _ => None,
-    })?;
-    let only = second
-        .statements
-        .iter()
-        .filter(|s| matches!(s.kind, StatementKind::Assign(_)))
-        .count()
-        == 1;
-    let output = body.local_decls[destination.local].ty;
-    (only && referred == destination.local && matches!(second.terminator().kind, TerminatorKind::Return)).then_some((
-        def_id,
-        generic_args,
-        output,
-    ))
 }

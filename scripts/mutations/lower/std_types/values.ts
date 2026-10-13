@@ -3,22 +3,6 @@ import type { Mutation } from "../../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "option-as-mut-same",
-    breaks: "`list.next.as_mut()` of a handle on `list.next` is the handle, not the `Option`",
-    file: "src/lower/std_types/values.rs",
-    find: "            Std::Pointee => self.through_refs(arg(), tys[0]).0,\n",
-    replace: "            Std::Pointee => arg(),\n",
-    tests: ["test/corpus.test.ts","-t","generic_mut_ref_kept"],
-  },
-  {
-    name: "unfollowed-drops-taken",
-    breaks: "a std call takes an iterator whose destructors rust-js can't follow, and drops what it skips silently",
-    file: "src/lower/std_types/values.rs",
-    find: "        let holds_drops = |ty: Ty<'tcx>| self.drops(ty) != Drops::Nothing;\n",
-    replace: "        let holds_drops = |ty: Ty<'tcx>| self.drops(ty) == Drops::Runs;\n",
-    tests: ["test/diagnostics.test.ts","-t","last of owned items"],
-  },
-  {
     name: "ok-or-else-refused",
     breaks: "`ok_or_else` of a value with a destructor, bitflags' parser's, is an error",
     file: "src/lower/std_types/values.rs",
@@ -129,5 +113,13 @@ export const mutations: Mutation[] = [
     find: "                    | Std::OptionIter\n                    | Std::IterSource(IterSource::Once)\n",
     replace: "                    | Std::OptionIter\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
+  },
+  {
+    name: "option-as-mut-same",
+    breaks: "`list.next.as_mut()` of a handle on `list.next` is the handle, not the `Option`",
+    file: "src/lower/std_types/values.rs",
+    find: "            Std::Pointee => self.through_refs(arg(), tys[0]).0,\n",
+    replace: "            Std::Pointee => arg(),\n",
+    tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"],
   },
 ];

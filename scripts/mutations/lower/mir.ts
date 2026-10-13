@@ -563,14 +563,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","expression_values"],
   },
   {
-    name: "mir-promoted-variant-refused",
-    breaks: "`&None` of generic code, a promoted rustc can't evaluate, is refused",
-    file: "src/lower/mir.rs",
-    find: "            && let Some((made, variant)) = referred_variant(tcx, &state.promoted[promoted])\n",
-    replace: "            && let Some((made, variant)) = referred_variant(tcx, &state.promoted[promoted]).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts","-t","mut_ref_box_parts"],
-  },
-  {
     name: "mir-dyn-debug-made-early",
     breaks: "`{:#?}` of a `&dyn Debug` shows it as `{:?}` does, made before its spec is known",
     file: "src/lower/mir.rs",
@@ -641,14 +633,6 @@ export const mutations: Mutation[] = [
     find: "            Std::Rc(RcOp::MakeMut) => {\n",
     replace: "            Std::Rc(RcOp::MakeMut) if false => {\n",
     tests: ["test/corpus.test.ts","-t","rc_clone_sees_owners|rc_make_mut_clone_panics"],
-  },
-  {
-    name: "mir-promoted-call-refused",
-    breaks: "`&size_of::<T>()` of generic code, a promoted call rustc can't evaluate, is refused",
-    file: "src/lower/mir.rs",
-    find: "            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted])\n",
-    replace: "            && let Some((def_id, args, output)) = referred_call(&state.promoted[promoted]).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts","-t","type_facts"],
   },
   {
     name: "mir-type-name-refused",
@@ -1216,14 +1200,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                js::each_block_mut(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
     replace: "                js::statement_lists(&mut function.body, &mut |stmts| {\n                    for stmt in stmts.iter() {\n                        if let StmtKind::Assign(target, _) = &stmt.kind\n",
-    tests: ["test/lowering.test.ts","-t","thread-local only its module"],
-  },
-  {
-    name: "mir-promoted-closure-unsupported",
-    breaks: "a promoted reference to a closure that captures nothing, `&|n| LAST.set(n)`, is unsupported",
-    file: "src/lower/mir.rs",
-    find: "                    && let Some(def_id) = referred_closure(&state.promoted[promoted]) =>\n",
-    replace: "                    && let Some(def_id) = referred_closure(&state.promoted[promoted]).filter(|_| false) =>\n",
     tests: ["test/lowering.test.ts","-t","thread-local only its module"],
   },
   {
@@ -2786,14 +2762,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                e.span = self.js_span(span);\n",
     replace: "",
-    tests: ["test/modules.test.ts","-t","methods across modules"],
-  },
-  {
-    name: "mir-return-span-of-end",
-    breaks: "MIR's `return` maps to where the body ends, which the source map has nothing of",
-    file: "src/lower/mir.rs",
-    find: "                    Some(value) if !value.span.is_none() => value.span,\n",
-    replace: "                    Some(value) if false => value.span,\n",
     tests: ["test/modules.test.ts","-t","methods across modules"],
   },
   {

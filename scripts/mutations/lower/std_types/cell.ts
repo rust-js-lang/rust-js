@@ -11,15 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "atomics"],
   },
   {
-    name: "drop-of-nothing-kept",
-    breaks: "`drop(vec![..])` keeps an unused `const value = ..`: right, but not the JS a person writes",
-    file: "src/lower/std_types/cell.rs",
-    find: "                if !self.has_drops(ty) {",
-    replace: "                if false {",
-    tests: ["test/corpus.test.ts", "-t", "std_methods"],
-    snapshots: true,
-  },
-  {
     name: "cell-take-undefined",
     breaks: "`Cell::take()` of a number leaves `undefined`, not its default, `0`",
     file: "src/lower/std_types/cell.rs",
