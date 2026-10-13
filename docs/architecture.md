@@ -502,6 +502,10 @@ architecture audit found the rest.
   removed is tidying's, and one shadowed by its own value preparation's.
   Tidying runs first and leans on its own; each pair is one rule to make
   preparation's, as `let` to `const` is.
+- **The playground reads a manifest:** its host names the output,
+  `{stem}.js`, takes every JS file the compiler wrote, and finds `main`
+  by a regular expression over the JS; a manifest of it, which would say
+  whether the program has a `main`, is what build hosts read.
 - **Runtime helpers as symbols:** lowering asks for a helper and writes its
   name, `$cmp`, apart. One written and not asked for is refused as its
   module is planned, not a JS error where it runs; as a symbol the linker
