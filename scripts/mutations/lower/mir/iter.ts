@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     "name": "mir-range-unmapped-lazy",
     "breaks": "a range collected unmapped from MIR stays a lazy `$iterator(\u2026).toArray()`",
     "file": "src/lower/mir/iter.rs",
-    "find": "        if !numbers\n",
-    "replace": "        if maps.is_empty()\n            || !numbers\n",
+    "find": "        if !numbers || maps",
+    "replace": "        if maps.is_empty() || !numbers || maps",
     "tests": [
       "test/lowering.test.ts",
       "-t",

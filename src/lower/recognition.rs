@@ -3599,6 +3599,21 @@ pub(crate) fn is_js_object_deref(tcx: TyCtxt<'_>, id: DefId) -> bool {
             }))
 }
 
+/// Where a `Cell` or a `RefCell` keeps what it holds, its `UnsafeCell`
+/// field `value`: std's layout, of which a constant one is made.
+pub(crate) fn cell_value_field(adt: ty::AdtDef<'_>) -> Option<usize> {
+    adt.non_enum_variant().fields.iter().position(|f| f.name == sym::value)
+}
+
+/// An impl of `Deref`'s `Target`, the type it derefs to.
+pub(crate) fn deref_target(tcx: TyCtxt<'_>, imp: DefId) -> Option<DefId> {
+    let target = tcx
+        .associated_items(imp)
+        .filter_by_name_unhygienic(sym::Target)
+        .next()?;
+    Some(target.def_id)
+}
+
 /// A std item's path as std names it, `std::str::Chars`: a `#![no_std]`
 /// crate's rustc names it `core::str::Chars`, or `alloc::..`, which every
 /// path compared here would miss.

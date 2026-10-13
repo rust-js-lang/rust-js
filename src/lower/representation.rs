@@ -1,7 +1,7 @@
 //! Rust value representations, copying, and supported-type validation.
 
 use super::bindings::{field_key, unit_name};
-use super::recognition::{StdItem, is_std_def};
+use super::recognition::{StdItem, cell_value_field, is_std_def};
 use super::{FnCx, R, Shape};
 use crate::js;
 use crate::js::{Expr, Op, Prop};
@@ -14,7 +14,7 @@ use rustc_middle::ty;
 use rustc_middle::ty::Ty;
 use rustc_middle::ty::TyCtxt;
 use rustc_span::def_id::{DefId, LocalDefId};
-use rustc_span::{Span, Symbol, sym};
+use rustc_span::{Span, Symbol};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
@@ -747,11 +747,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 .into_iter()
                 .any(|item| is_std_def(tcx, adt.did(), item)) =>
         {
-            let at = adt
-                .non_enum_variant()
-                .fields
-                .iter()
-                .position(|f| f.name == sym::value)?;
+            let at = cell_value_field(*adt)?;
             let unsafe_cell = *children()?.get(at)?;
             let inner = match &*unsafe_cell.valtree {
                 ty::ValTreeKind::Branch(items) => items.first()?.try_to_value()?,

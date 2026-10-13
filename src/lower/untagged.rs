@@ -5,7 +5,7 @@
 
 use super::FnCx;
 use super::bindings;
-use super::recognition::{Recognition, StdItem, conversion_target, serde_impl, std_item};
+use super::recognition::{Recognition, StdItem, conversion_target, deref_target, serde_impl, std_item};
 use super::representation::{Num, is_fieldless_enum};
 use crate::js::{Expr, Op, UnaryOp};
 use rustc_hir as hir;
@@ -13,7 +13,6 @@ use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{CtorKind, CtorOf, DefKind, Res};
 use rustc_middle::ty::{self, AdtDef, GenericArgsRef, Ty, TyCtxt, VariantDef};
 use rustc_span::def_id::DefId;
-use rustc_span::sym;
 
 /// What JS can tell a value is.
 #[derive(Clone, PartialEq)]
@@ -213,16 +212,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if adt.did() != at {
                 return None;
             }
-            let target = tcx
-                .associated_items(imp)
-                .filter_by_name_unhygienic(sym::Target)
-                .next()?;
-            match tcx
-                .type_of(target.def_id)
-                .instantiate_identity()
-                .skip_normalization()
-                .kind()
-            {
+            let target = deref_target(tcx, imp)?;
+            match tcx.type_of(target).instantiate_identity().skip_normalization().kind() {
                 ty::Adt(parent, _) => Some(parent.did()),
                 _ => None,
             }

@@ -1225,4 +1225,20 @@ export const mutations: Mutation[] = [
     replace: "            \"std::cmp::max\" | \"core::cmp::max\" => None,",
     tests: ["test/corpus.test.ts","-t","std_methods"],
   },
+  {
+    name: "cell-value-field-unknown",
+    breaks: "a constant `Cell`'s `UnsafeCell` isn't found, and a `static` of one is refused",
+    file: "src/lower/recognition.rs",
+    find: "    adt.non_enum_variant().fields.iter().position(|f| f.name == sym::value)\n",
+    replace: "    adt.non_enum_variant().fields.iter().position(|f| f.name == sym::Target)\n",
+    tests: ["test/corpus.test.ts","-t","cell_const"],
+  },
+  {
+    name: "deref-target-unknown",
+    breaks: "a JS class's `Deref` to the class it extends isn't followed, and an untagged enum takes a subclass and its class both",
+    file: "src/lower/recognition.rs",
+    find: "        .filter_by_name_unhygienic(sym::Target)\n",
+    replace: "        .filter_by_name_unhygienic(sym::value)\n",
+    tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
+  },
 ];

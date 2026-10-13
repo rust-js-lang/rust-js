@@ -419,6 +419,10 @@ const identity: [string, RegExp][] = [
   ["a path compared", /def_path_str\([^)]*\)(?:\.as_str\(\))?\s*(?:==|\.starts_with|\.contains)/],
   ["a method's name compared", /item_name\([^)]*\)(?:\.as_str\(\))?\s*(?:==|\.starts_with|\.ends_with|\.contains)|match\s+(?:self\.)?tcx\.item_name\([^)]*\)\.as_str\(\)/],
   ["a std type by its name", /\bis_std_adt\s*\(/],
+  // A std item's own name, `sym::Target` of `Deref`'s, or std's layout,
+  // `sym::value` of a `Cell`'s field (the third architecture audit); a
+  // binding's attribute's, `link_name`, is the crate's.
+  ["a std name by rustc's symbol", /\bsym::(?!name\b|link_name\b)\w+/],
 ];
 test("only recognition spells std's names", () => {
   const strays: string[] = [];
