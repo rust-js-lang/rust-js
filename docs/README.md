@@ -88,7 +88,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 **Foundation**
 
 - [0001 Reuse rustc's front end](decisions/0001-reuse-rustc-front-end.md)
-- [0002 Generate JS from THIR, not MIR](decisions/0002-generate-from-thir.md)
+- [0002 Generate JS from THIR, not MIR](decisions/0002-generate-from-thir.md) *(superseded by 0364)*
 - [0003 Pin one nightly and link rustc's internals](decisions/0003-pin-nightly-toolchain.md)
 - [0004 Copy THIR before analysis, stop before codegen](decisions/0004-driver-hook.md)
 - [0005 One file in, one ES module out](decisions/0005-input-and-output.md)
@@ -106,7 +106,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 **Semantics**
 
 - [0011 Integers are JS numbers, wrapped like release Rust](decisions/0011-numbers.md)
-- [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md)
+- [0012 Panics throw, via runtime helpers emitted on demand](decisions/0012-panics-and-runtime-helpers.md) *(helpers' place replaced by 0103)*
 - [0013 Fieldless enum variants are strings](decisions/0013-fieldless-enums.md)
 - [0033 Enums with fields are ReScript's tagged objects](decisions/0033-enums-with-fields.md)
 - [0035 JS that throws is a `Result`; `?` returns early](decisions/0035-results-and-throwing-js.md)
@@ -231,7 +231,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0134 A `let` of a pattern without a value declares each of its variables](decisions/0134-let-patterns-without-values.md)
 - [0135 A trait's const parameter is its impl's, and a trait method's is given](decisions/0135-const-generic-traits.md)
 - [0136 Common std methods: `take`, `cmp::max`, ASCII case, and `Debug`'s builders](decisions/0136-common-std-methods.md)
-- [0137 `{:#?}` is pretty Debug, and a writer is told whether](decisions/0137-pretty-debug.md)
+- [0137 `{:#?}` is pretty Debug, and a writer is told whether](decisions/0137-pretty-debug.md) *(its `alternate` superseded by 0143)*
 - [0138 A string's length, slices and offsets count its UTF-8 bytes](decisions/0138-string-byte-counts.md)
 - [0139 A chain whose stages do what can be seen runs in Rust's order](decisions/0139-lazy-chains.md)
 - [0140 An iterator trait object is a JS iterator](decisions/0140-iterator-trait-objects.md)
@@ -400,12 +400,81 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0303 Top-level statements that span lines are set apart](decisions/0303-blank-lines.md)
 - [0304 `js::import!` of an item loads its module when it's asked for](decisions/0304-dynamic-import.md)
 - [0305 A binding marked `require` is read through `require(module)`](decisions/0305-require.md)
+- [0306 A module's items are where its Rust has them](decisions/0306-item-order.md)
+- [0307 A trait's binding method is read of the value itself](decisions/0307-binding-trait-methods.md)
+- [0308 A function written in a body is that body's](decisions/0308-local-functions.md)
+- [0309 A `match` that only gives a value is one expression](decisions/0309-value-matches.md)
+- [0310 Any value is read as JS reads it](decisions/0310-any-value-as-js-reads-it.md)
+- [0311 `.flatten()` of a read of items that may be `None` is the read](decisions/0311-flattened-reads.md)
+- [0312 `js::shown` is any value as a template shows it](decisions/0312-shown.md)
+- [0313 Loops, spreads and calls as a person writes them](decisions/0313-console-forms.md)
+- [0314 Each std data structure works or is refused, and coverage only grows](decisions/0314-std-data-structures.md)
+- [0315 A `Vec`'s capacity does nothing, and its edits are std's](decisions/0315-vec-capacity-and-edits.md)
+- [0316 A `LinkedList` is an array, as a `VecDeque` is](decisions/0316-linked-list.md)
+- [0317 A `OnceCell` is a `{ value }` of an `Option`, set once](decisions/0317-once-cells.md)
+- [0318 A `LazyCell` makes its value when it's first used, as Rust's does](decisions/0318-lazy-cells.md)
+- [0319 A `Cow` is its enum, made owned by a clone of what it borrowed](decisions/0319-cows.md)
+- [0320 An `Rc` whose counts are read is counted, as Rust counts it](decisions/0320-counted-rcs.md)
+- [0321 A map drops its values as Rust's does](decisions/0321-map-drops.md)
+- [0322 Text's and slices' methods by their other names, and a join of lists](decisions/0322-text-and-slice-names.md)
+- [0323 A `String`'s byte-range edits, and `str`'s searches from the end](decisions/0323-text-byte-ranges.md)
+- [0324 A slice's fills, copies, order checks, chunks and splits](decisions/0324-slice-methods.md)
+- [0325 Maps' and sets' own methods, a B-tree's in its keys' order](decisions/0325-map-and-set-methods.md)
+- [0326 `Option`'s and `Result`'s other methods, and an `Option`'s place filled](decisions/0326-option-and-result-methods.md)
+- [0327 Cells', locks', a `VecDeque`'s, `char`'s and arrays' other methods](decisions/0327-cell-deque-char-methods.md)
+- [0328 A `RefCell` counts its borrows, as std's does](decisions/0328-refcell-borrow-counts.md)
+- [0329 A `Pin` is its pointer](decisions/0329-pin.md)
+- [0330 An `undefined` given to JS is an argument](decisions/0330-undefined-given-to-js.md)
+- [0331 A `TypeId` is its type's name, and a `dyn Any` a pair](decisions/0331-dyn-any.md)
+- [0332 A `MaybeUninit` is its value, or `undefined` before it's written](decisions/0332-maybe-uninit.md)
+- [0333 A heap's `append`, `retain`, `drain` and `peek_mut`, and a `Vec`'s `push_mut`](decisions/0333-heap-and-vec-methods.md)
+- [0334 A `&mut str` is a cell of the text, written in place](decisions/0334-mut-str.md)
+- [0335 A `&mut` of part of a slice is a view of those items](decisions/0335-slice-views.md)
+- [0336 A slice's prefixes compare its items by their own `==`](decisions/0336-slice-prefixes-by-eq.md)
+- [0337 A slice as arrays of `N`, and arrays as one slice](decisions/0337-slice-as-arrays.md)
+- [0338 A slice's `split_off`, and a `&mut` to a shared reference](decisions/0338-slice-split-off.md)
+- [0339 `get_disjoint_mut`: a `&mut` to each, checked as std checks them](decisions/0339-get-disjoint-mut.md)
+- [0340 A slice of `MaybeUninit`s, and a `const` block of no JS value](decisions/0340-uninit-slices-and-coded-const-blocks.md)
+- [0341 A byte slice's `escape_ascii` and `utf8_chunks`](decisions/0341-byte-slice-text.md)
+- [0342 An unstable sort is std's own, where its ties can be told apart](decisions/0342-unstable-sort.md)
+- [0343 A `&mut` to what's in an `Option` or a `Result`](decisions/0343-option-result-mut.md)
+- [0344 `extract_if` is a lazy JS iterator](decisions/0344-extract-if.md)
+- [0345 A B-tree's `first_entry` and `last_entry`](decisions/0345-btree-end-entries.md)
+- [0346 The next crate binds all of Next.js, and coverage only grows](decisions/0346-next-coverage.md)
+- [0347 The react crate's types are measured against @types/react, and only grow](decisions/0347-react-coverage.md)
+- [0348 `unwrap_or_default()` of a call is its `??`](decisions/0348-unwrap-or-default-once.md)
+- [0349 A body's `js::directive!` is its function's or its closure's](decisions/0349-body-directives.md)
+- [0350 Next.js's metadata is typed as Next.js types it, its tagged unions one struct](decisions/0350-next-metadata.md)
+- [0351 The node crate is measured against @types/node, and only grows](decisions/0351-node-coverage.md)
+- [0352 A name given apart is the name where nothing it'd shadow is read](decisions/0352-reclaimed-names.md)
+- [0353 A component's `getInitialProps` is set on it](decisions/0353-get-initial-props.md)
+- [0354 An app's `next.config` is Rust](decisions/0354-next-config-in-rust.md) *(superseded)*
+- [0355 A default class's statics name its import after the class](decisions/0355-default-class-statics.md)
+- [0356 A `const` nothing reads is no statement](decisions/0356-unread-constants.md)
+- [0357 A local reuses a name where JS's scopes keep each read its own](decisions/0357-scoped-local-names.md)
+- [0358 A number from a `bool` or a `char` is its cast](decisions/0358-numbers-from-bool-and-char.md)
+- [0359 next/font: each Google Font a function, generated](decisions/0359-next-font.md)
+- [0360 The app's crate is a program: `RUST_JS_APP`, recorded for Cargo](decisions/0360-the-app-is-a-program.md)
+- [0361 Node's events are names of their own, typed by their emitters](decisions/0361-node-events.md)
+- [0362 A field's `RefCell` never counted is the value it holds](decisions/0362-refcell-fields-never-counted.md)
+- [0363 Children of any node are given by reference](decisions/0363-children-of-any-node.md)
+- [0364 Bodies are lowered from their MIR](decisions/0364-mir-lowering.md)
+- [0365 JS's Math where Rust's methods differ: `js::math`](decisions/0365-js-math-where-rust-differs.md)
+- [0366 A `NodeList` of its items' type, as TypeScript's `NodeListOf`](decisions/0366-nodelist-of-its-items.md)
+- [0367 A state's setter is the function it is](decisions/0367-state-setter-is-a-function.md)
+- [0368 `util.promisify` of a callback function](decisions/0368-promisify.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)
 - [0032 The playground is written in Rust, compiled by rust-js, a part at a time](decisions/0032-dogfooding-the-playground.md)
 - [0044 The playground on React, one component per file](decisions/0044-playground-on-react.md)
 - [0045 The playground is a Vite app, with React Compiler and Tailwind](decisions/0045-playground-on-vite.md)
+
+**Architecture boundaries**
+
+- [0073 Named imports for generated modules](decisions/0073-named-module-imports.md)
+- [0084 Owned compiler phases and explicit host boundaries](decisions/0084-owned-phases-and-host-boundaries.md)
+- [0085 Experimental scalar library linkage](decisions/0085-scalar-library-linkage.md) *(replaced by 0100)*
 
 ## Research
 
@@ -419,9 +488,7 @@ Explorations that aren't decisions yet:
 Copy the shape of an existing record: **Context → Decision → Why →
 Alternatives → Consequences**. Number it next in sequence. If a new decision
 replaces an old one, don't delete the old one. Set its status to
-`Superseded by NNNN`, so the history of *why* survives.
-
-**Architecture boundaries**
-
-- [0084 Owned compiler phases and explicit host boundaries](decisions/0084-owned-phases-and-host-boundaries.md)
-- [0085 Experimental scalar library linkage](decisions/0085-scalar-library-linkage.md)
+`Superseded by NNNN`, so the history of *why* survives. Link it from its
+group above, and mark the old one's link *(superseded by NNNN)*:
+`test/architecture.test.ts` checks that each is linked, and each
+superseded or replaced one marked.

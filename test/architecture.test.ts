@@ -370,6 +370,20 @@ test("each owner and question the architecture names is there", () => {
   expect(rows.flatMap(([, owner]) => names(owner)).filter(owner => !found(owner))).toEqual([]);
 });
 
+// Each decision is in the index, and one superseded or replaced, wholly or
+// in part, says so there: 64 weren't in it, and five didn't say so (the
+// third architecture audit).
+test("each decision is in the index, a superseded one marked", () => {
+  const index = read("docs/README.md");
+  const decisions = readdirSync(join(root, "docs/decisions")).filter(name => /^\d{4}-.*\.md$/.test(name));
+  expect(decisions.length).toBeGreaterThan(300);
+  expect(decisions.filter(name => !index.includes(`(decisions/${name})`))).toEqual([]);
+  const superseded = decisions.filter(name => /superseded|replaced by/i.test(read(`docs/decisions/${name}`).match(/^Status:.*$/m)?.[0] ?? ""));
+  const line = (name: string) => index.split("\n").find(l => l.includes(`(decisions/${name})`)) ?? "";
+  expect(superseded.length).toBeGreaterThan(4);
+  expect(superseded.filter(name => !/\*\([^)]*(?:superseded|replaced)[^)]*\)\*/.test(line(name)))).toEqual([]);
+});
+
 // A question recognition answers is asked of it, or through shortcuts.rs,
 // where each shortcut is one line, so where it's answered is plain. They
 // were in ten modules once, each looking like that module's own.
