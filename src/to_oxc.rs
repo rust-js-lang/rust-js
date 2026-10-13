@@ -106,16 +106,53 @@ pub fn emit(
     };
     let generated = Codegen::new().with_options(options).build(&program);
 
-    // The header, imports and runtime helpers are plain text above the
-    // generated code. None of them map to Rust.
+    // The header, imports and runtime helpers, plain text above the
+    // generated code, none of which maps to Rust.
+    let mut code = header(module);
+
+    // The generated code, each line after the header: where each ends up,
+    // to fix the map.
+    let header_lines = code.matches('\n').count() as u32;
+    let mut lines: Vec<u32> = Vec::new();
+    for (out_line, line) in (header_lines..).zip(generated.code.lines()) {
+        code.push_str(line);
+        code.push('\n');
+        lines.push(out_line);
+    }
+    // After everything it maps, so the map's lines stay where they are.
+    if let Some(function) = &module.default_export {
+        code.push_str(&format!("\nexport default {function};\n"));
+    }
+    let map = generated.map.expect("a source map, since source_map_path is set");
+    // The sources the map points into, and only those, named from here.
+    let source_of = |line: u32| sources.files.partition_point(|file| file.line <= line).checked_sub(1);
+    let used: std::collections::BTreeSet<usize> = primary
+        .into_iter()
+        .chain(
+            map.get_tokens()
+                .filter(|t| t.get_source_id().is_some())
+                .filter_map(|t| source_of(t.get_src_line())),
+        )
+        .collect();
+    let paths: std::collections::HashMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
+    let map = restore_sources(&map, sources, &paths, primary);
+    let map = crate::format::moved_lines(&map, &lines, js_file_name);
+    // Laid out as oxfmt lays it out, with the crate's options (ADR 0117).
+    let (code, map) = crate::format::laid_out(code, map, js_file_name, format);
+    Output { code, map }
+}
+
+/// What's above a module's code: its header, directives, imports, one block
+/// as a person orders it (ADR 0295), re-exports and caches. Layout, as
+/// `format::spaced`'s blank lines are, of what the module says.
+fn header(module: &Module) -> String {
     let mut code = format!("{}\n", module.header);
     for directive in &module.directives {
         code.push_str(&format!("\n{directive:?};\n"));
     }
     let packages = &module.packages;
-    let mut helpers: Vec<&str> = module.helpers.clone();
-    helpers.sort_unstable();
-    helpers.dedup();
+    // Sorted already, and each once, as the artifact planner chose them.
+    let helpers = &module.helpers;
     // One block, as a person orders it (ADR 0295): packages, then the
     // module's own relative ones, bindings and the crate's alike, each by
     // path; then what it imports for its effect, as written, its CSS after
@@ -202,37 +239,7 @@ pub fn emit(
         code.push_str(&format!("\nvar {};\n", module.caches.join(", ")));
     }
     code.push('\n');
-
-    // The generated code, each line after the header: where each ends up,
-    // to fix the map.
-    let header_lines = code.matches('\n').count() as u32;
-    let mut lines: Vec<u32> = Vec::new();
-    for (out_line, line) in (header_lines..).zip(generated.code.lines()) {
-        code.push_str(line);
-        code.push('\n');
-        lines.push(out_line);
-    }
-    // After everything it maps, so the map's lines stay where they are.
-    if let Some(function) = &module.default_export {
-        code.push_str(&format!("\nexport default {function};\n"));
-    }
-    let map = generated.map.expect("a source map, since source_map_path is set");
-    // The sources the map points into, and only those, named from here.
-    let source_of = |line: u32| sources.files.partition_point(|file| file.line <= line).checked_sub(1);
-    let used: std::collections::BTreeSet<usize> = primary
-        .into_iter()
-        .chain(
-            map.get_tokens()
-                .filter(|t| t.get_source_id().is_some())
-                .filter_map(|t| source_of(t.get_src_line())),
-        )
-        .collect();
-    let paths: std::collections::HashMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
-    let map = restore_sources(&map, sources, &paths, primary);
-    let map = crate::format::moved_lines(&map, &lines, js_file_name);
-    // Laid out as oxfmt lays it out, with the crate's options (ADR 0117).
-    let (code, map) = crate::format::laid_out(code, map, js_file_name, format);
-    Output { code, map }
+    code
 }
 
 struct Cx<'a> {
