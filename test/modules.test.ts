@@ -71,28 +71,26 @@ pub fn tick() {
     TICKS.set(TICKS.get() + 1);
 }
 `);
-  for (const [out, env] of [[join(dir, "mir"), {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(out, "lib.js")], 600_000, env);
-    expect(readFileSync(join(out, "counter.js"), "utf8")).toContain("export const TICKS = { value: 0 };");
-    const js = readFileSync(join(out, "lib.js"), "utf8");
-    expect(js).toContain("let COUNT = 0;");
-    expect(js).toContain("const LOG = [];");
-    expect(js).toContain("export const SHARED = { value: 0 };");
-    expect(js).toContain("COUNT = (COUNT + 1) >>> 0;");
-    expect(js).not.toContain("COUNT.value");
-    expect(js).not.toContain("LOG.value");
-    expect(js).toContain("  return LOG.length;\n");
-    // One made by a `const { .. }` is too, by its own name.
-    expect(js).not.toContain("__RUST_STD_INTERNAL_INIT");
-    expect(js).toContain("let SEEN;\n");
-    expect(js).toContain("  SEEN ??= n;\n");
-    const { seen } = await import(join(out, "lib.js"));
-    expect([seen(3), seen(4)]).toEqual([3, 3]);
-    const { unseen } = await import(join(out, "lib.js"));
-    expect(unseen(5)).toBe(0);
-    const { bump, note, shared, ticked } = await import(join(out, "lib.js"));
-    expect([bump(), bump(), note("a"), note("b"), shared(), shared(), ticked()]).toEqual([1, 2, 1, 2, 2, 4, 1]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
+  expect(readFileSync(join(join(dir, "mir"), "counter.js"), "utf8")).toContain("export const TICKS = { value: 0 };");
+  const js = readFileSync(join(join(dir, "mir"), "lib.js"), "utf8");
+  expect(js).toContain("let COUNT = 0;");
+  expect(js).toContain("const LOG = [];");
+  expect(js).toContain("export const SHARED = { value: 0 };");
+  expect(js).toContain("COUNT = (COUNT + 1) >>> 0;");
+  expect(js).not.toContain("COUNT.value");
+  expect(js).not.toContain("LOG.value");
+  expect(js).toContain("  return LOG.length;\n");
+  // One made by a `const { .. }` is too, by its own name.
+  expect(js).not.toContain("__RUST_STD_INTERNAL_INIT");
+  expect(js).toContain("let SEEN;\n");
+  expect(js).toContain("  SEEN ??= n;\n");
+  const { seen } = await import(join(join(dir, "mir"), "lib.js"));
+  expect([seen(3), seen(4)]).toEqual([3, 3]);
+  const { unseen } = await import(join(join(dir, "mir"), "lib.js"));
+  expect(unseen(5)).toBe(0);
+  const { bump, note, shared, ticked } = await import(join(join(dir, "mir"), "lib.js"));
+  expect([bump(), bump(), note("a"), note("b"), shared(), shared(), ticked()]).toEqual([1, 2, 1, 2, 2, 4, 1]);
 });
 
 // A thread-local `RefCell` of a number that `with_borrow_mut` changes is a
@@ -239,30 +237,28 @@ pub fn tally_of_four() -> u32 {
     Tally(4).doubled()
 }
 `);
-  for (const [out, env] of [[join(dir, "mir"), {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(out, "lib.js")], 600_000, env);
-    const lib = await Bun.file(join(out, "lib.js")).text();
-    const shapes = await Bun.file(join(out, "shapes.js")).text();
-    expect(lib).toContain("const SIDE = Square.sideLength(Square.new(3));");
-    expect(lib).toContain("  return Square.area(Square.new(side));");
-    expect(shapes).toContain("export const Square = {\n  new(side) {");
-    expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.sideLength(square), Square.sideLength(square)) >>> 0;");
-    expect(shapes).toContain("\nconst Tally = {\n  doubled(tally) {\n    return Math.imul(tally[0], 2) >>> 0;\n  },\n};\n\nexport function tallyOfFour() {");
-    // Laid out on lines of its own, a lone method still maps back to its Rust.
-    const { decodeMappings, lookup } = await import("./sourcemap.ts");
-    const segments = decodeMappings((await Bun.file(join(out, "shapes.js.map")).json()).mappings);
-    const jsLines = shapes.split("\n");
-    const rsLines = (await Bun.file(join(dir, "shapes.rs")).text()).split("\n");
-    for (const [jsText, rustText] of [["return Math.imul(tally[0], 2)", "self.0 * 2"], ["Math.imul(tally[0], 2)", "self.0 * 2"], ["doubled(tally) {", "doubled(&self)"]]) {
-      const line = jsLines.findIndex((l) => l.includes(jsText));
-      const hit = lookup(segments, line, jsLines[line].indexOf(jsText));
-      expect([jsText, hit && rsLines[hit.srcLine].slice(hit.srcCol).startsWith(rustText)]).toEqual([jsText, true]);
-    }
-    const module = await import(join(out, "lib.js"));
-    expect(module.areaOf(4)).toBe(16);
-    expect(module.firstSide()).toBe(3);
-    expect((await import(join(out, "shapes.js"))).tallyOfFour()).toBe(8);
+  run([compiler, join(dir, "lib.rs"), "-o", join(join(dir, "mir"), "lib.js")]);
+  const lib = await Bun.file(join(join(dir, "mir"), "lib.js")).text();
+  const shapes = await Bun.file(join(join(dir, "mir"), "shapes.js")).text();
+  expect(lib).toContain("const SIDE = Square.sideLength(Square.new(3));");
+  expect(lib).toContain("  return Square.area(Square.new(side));");
+  expect(shapes).toContain("export const Square = {\n  new(side) {");
+  expect(shapes).toContain("  area(square) {\n    return Math.imul(Square.sideLength(square), Square.sideLength(square)) >>> 0;");
+  expect(shapes).toContain("\nconst Tally = {\n  doubled(tally) {\n    return Math.imul(tally[0], 2) >>> 0;\n  },\n};\n\nexport function tallyOfFour() {");
+  // Laid out on lines of its own, a lone method still maps back to its Rust.
+  const { decodeMappings, lookup } = await import("./sourcemap.ts");
+  const segments = decodeMappings((await Bun.file(join(join(dir, "mir"), "shapes.js.map")).json()).mappings);
+  const jsLines = shapes.split("\n");
+  const rsLines = (await Bun.file(join(dir, "shapes.rs")).text()).split("\n");
+  for (const [jsText, rustText] of [["return Math.imul(tally[0], 2)", "self.0 * 2"], ["Math.imul(tally[0], 2)", "self.0 * 2"], ["doubled(tally) {", "doubled(&self)"]]) {
+    const line = jsLines.findIndex((l) => l.includes(jsText));
+    const hit = lookup(segments, line, jsLines[line].indexOf(jsText));
+    expect([jsText, hit && rsLines[hit.srcLine].slice(hit.srcCol).startsWith(rustText)]).toEqual([jsText, true]);
   }
+  const module = await import(join(join(dir, "mir"), "lib.js"));
+  expect(module.areaOf(4)).toBe(16);
+  expect(module.firstSide()).toBe(3);
+  expect((await import(join(join(dir, "mir"), "shapes.js"))).tallyOfFour()).toBe(8);
 });
 
 // ADR 0019: a module is imported when anything of it is used, a `const` or
@@ -386,26 +382,23 @@ pub fn spawned() -> impl Fn() {
     .await
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...extern], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    const statements = js.split("\n").filter((line) => line && !line.startsWith("//"));
-    expect(statements[0]).toBe("export async function cached(n) {");
-    expect(js).toContain('export async function cached(n) {\n  "use cache";\n  return (n + 1) >>> 0;\n}');
-    expect(js).toContain('export function plain() {\n  "use strict";\n  return 2;\n}');
-    expect(js).toContain('return async (n) => {\n    "use server";\n    return (n + step) >>> 0;\n  };');
-    expect(js).toContain('return (n) => {\n    "use strict";\n    return (n + step) >>> 0;\n  };');
-    expect(js).toContain('return () => {\n    "use server";\n    (async () => {})();\n  };');
-    const lib = await import(join(dir, out));
-    expect([await lib.cached(1), lib.plain(), await lib.action(2)(3)]).toEqual([2, 2, 5]);
-    const block = Bun.spawnSync([compiler, join(dir, "block.rs"), "-o", join(dir, "block.js"), ...extern], {
-      cwd: root,
-      stderr: "pipe",
-      env: { ...process.env, ...env },
-    });
-    expect(block.exitCode).not.toBe(0);
-    expect(block.stderr.toString()).toContain("a directive is a module's, a function's or a closure's");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), ...extern]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const statements = js.split("\n").filter((line) => line && !line.startsWith("//"));
+  expect(statements[0]).toBe("export async function cached(n) {");
+  expect(js).toContain('export async function cached(n) {\n  "use cache";\n  return (n + 1) >>> 0;\n}');
+  expect(js).toContain('export function plain() {\n  "use strict";\n  return 2;\n}');
+  expect(js).toContain('return async (n) => {\n    "use server";\n    return (n + step) >>> 0;\n  };');
+  expect(js).toContain('return (n) => {\n    "use strict";\n    return (n + step) >>> 0;\n  };');
+  expect(js).toContain('return () => {\n    "use server";\n    (async () => {})();\n  };');
+  const lib = await import(join(dir, "mir.js"));
+  expect([await lib.cached(1), lib.plain(), await lib.action(2)(3)]).toEqual([2, 2, 5]);
+  const block = Bun.spawnSync([compiler, join(dir, "block.rs"), "-o", join(dir, "block.js"), ...extern], {
+    cwd: root,
+    stderr: "pipe",
+  });
+  expect(block.exitCode).not.toBe(0);
+  expect(block.stderr.toString()).toContain("a directive is a module's, a function's or a closure's");
 });
 
 test("a namespace import is named as the module of its bindings", async () => {

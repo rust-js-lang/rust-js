@@ -79,15 +79,13 @@ pub fn parsed(xs: &[String]) -> Vec<f64> {
     xs.iter().map(|x| parse_float(x)).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return xs.map(double);");
-    expect(js).toContain("return xs.map(f);");
-    expect(js).toContain("return xs.map((x) => parseFloat(x));");
-    const lib = await import(join(dir, out));
-    expect([lib.doubled([1, 2]), lib.rendered([5, 6], (x: number, i: number) => x + i), lib.parsed(["1.5", "2"])]).toEqual([[2, 4], [5, 7], [1.5, 2]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return xs.map(double);");
+  expect(js).toContain("return xs.map(f);");
+  expect(js).toContain("return xs.map((x) => parseFloat(x));");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.doubled([1, 2]), lib.rendered([5, 6], (x: number, i: number) => x + i), lib.parsed(["1.5", "2"])]).toEqual([[2, 4], [5, 7], [1.5, 2]]);
 });
 
 // An `else` of nothing, of only comments in Rust, which rust-js doesn't
@@ -209,17 +207,15 @@ test("a string written across lines keeps its lines", async () => {
     "}",
     "",
   ].join("\n"));
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  return `<div>\n  \\`\\${x}\\` \\\\ \"q\"\n</div>`;");
-    expect(js).toContain("  return `a\nb`;");
-    expect(js).toContain('  return "a\\nb";');
-    // A `\` ending a line leaves its break out: the one there is `\n`.
-    expect(js).toMatch(/export function continued\(\) \{\n  return "a\\nb";/);
-    const lib = await import(join(dir, out));
-    expect([lib.page(), lib.cooked(), lib.escaped(), lib.continued()]).toEqual(['<div>\n  `${x}` \\ "q"\n</div>', "a\nb", "a\nb", "a\nb"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  return `<div>\n  \\`\\${x}\\` \\\\ \"q\"\n</div>`;");
+  expect(js).toContain("  return `a\nb`;");
+  expect(js).toContain('  return "a\\nb";');
+  // A `\` ending a line leaves its break out: the one there is `\n`.
+  expect(js).toMatch(/export function continued\(\) \{\n  return "a\\nb";/);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.page(), lib.cooked(), lib.escaped(), lib.continued()]).toEqual(['<div>\n  `${x}` \\ "q"\n</div>', "a\nb", "a\nb", "a\nb"]);
 });
 
 // A field whose JS name isn't a name, `#[rust_js::name = "worker-bundle"]`,
@@ -940,13 +936,11 @@ pub fn made() -> (bool, bool) {
     (core::ptr::eq(a, a), std::ptr::eq(a as *const Date, b))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("return a === b;");
-    const lib = await import(join(dir, out));
-    const d = new Date(0);
-    expect([lib.same(d, d), lib.same(d, new Date(0)), ...lib.made()]).toEqual([true, false, true, false]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return a === b;");
+  const lib = await import(join(dir, "mir.js"));
+  const d = new Date(0);
+  expect([lib.same(d, d), lib.same(d, new Date(0)), ...lib.made()]).toEqual([true, false, true, false]);
 });
 
 // ADR 0225: a JS value of unknown shape is a `js::Unknown`, as TypeScript's
@@ -1097,20 +1091,18 @@ pub fn guard(a: u32, s: &str) -> bool {
     if a > 1 { s == "x" } else { false }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return a > 1 && b > 2;");
-    expect(js).toContain("return a > 1 || b > 2;");
-    expect(js).toContain('return n === "x";');
-    expect(js).toContain('n < 0 ? "-" : "+"');
-    expect(js).not.toContain("2 === 0");
-    expect(js).toContain('  if (home || index) {\n    toc = false;\n  } else if (section === "blog") {\n');
-    // A branch of `false`, `&&`: as MIR has it, tighter than an `if`.
-    if (out === "mir.js") expect(js).toContain('return a > 1 && s === "x";');
-    const lib = await import(join(dir, out));
-    expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return a > 1 && b > 2;");
+  expect(js).toContain("return a > 1 || b > 2;");
+  expect(js).toContain('return n === "x";');
+  expect(js).toContain('n < 0 ? "-" : "+"');
+  expect(js).not.toContain("2 === 0");
+  expect(js).toContain('  if (home || index) {\n    toc = false;\n  } else if (section === "blog") {\n');
+  // A branch of `false`, `&&`: as MIR has it, tighter than an `if`.
+  if ("mir.js" === "mir.js") expect(js).toContain('return a > 1 && s === "x";');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
 });
 
 // A `for` loop from MIR (ADR 0364) is the `for…of` or counted `for` a
@@ -1159,19 +1151,17 @@ pub fn stops(items: &[u32]) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      n = ");
-    expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      return x;\n");
-    expect(js).toContain("  for (const [a, b] of items) {\n");
-    expect(js).toContain("  for (let i = 0; i < k; i++) {\n");
-    expect(js).toContain("    if (x === 0) {\n      break;\n    }\n");
-    expect(js).not.toContain("while (true)");
-    expect(js).not.toContain("$iter");
-    const lib = await import(join(dir, out));
-    expect([lib.counted([1, 3, 4]), lib.found([1, 3]), lib.found([1]), lib.pairs([[1, 2], [3, 4]]), lib.upto(4), lib.stops([1, 2, 0, 5])]).toEqual([2, 3, undefined, 14, 6, 3]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      n = ");
+  expect(js).toContain("  for (const x of items) {\n    if (x > 2) {\n      return x;\n");
+  expect(js).toContain("  for (const [a, b] of items) {\n");
+  expect(js).toContain("  for (let i = 0; i < k; i++) {\n");
+  expect(js).toContain("    if (x === 0) {\n      break;\n    }\n");
+  expect(js).not.toContain("while (true)");
+  expect(js).not.toContain("$iter");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.counted([1, 3, 4]), lib.found([1, 3]), lib.found([1]), lib.pairs([[1, 2], [3, 4]]), lib.upto(4), lib.stops([1, 2, 0, 5])]).toEqual([2, 3, undefined, 14, 6, 3]);
 });
 
 // A pattern's bindings from MIR (ADR 0364), each a part read on its own
@@ -1208,20 +1198,18 @@ pub fn label(q: &Q) -> String {
     join(q.name.as_deref(), matches!(dir, Some(1)).then_some("one"))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const [a, b] = pair(n);\n");
-    expect(js).toContain("  const [a, b] = t;\n");
-    expect(js).toContain("  const { a, b } = p;\n");
-    // A part read where it's used isn't one a pattern names.
-    expect(js).toContain("  const dir = q.dir;\n  return join(q.name, ");
-    // Of an array made for them, each part itself.
-    if (out === "mir.js") expect(js).toContain("  const first = 1;\n  const last = 4;\n");
-    if (out === "mir.js") expect(js).toContain("  const x = pair(n)[1];\n  const y = (n + 1) >>> 0;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 }), lib.ends(), lib.made(2)]).toEqual([6, 8, 3, 14, 9]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const [a, b] = pair(n);\n");
+  expect(js).toContain("  const [a, b] = t;\n");
+  expect(js).toContain("  const { a, b } = p;\n");
+  // A part read where it's used isn't one a pattern names.
+  expect(js).toContain("  const dir = q.dir;\n  return join(q.name, ");
+  // Of an array made for them, each part itself.
+  if ("mir.js" === "mir.js") expect(js).toContain("  const first = 1;\n  const last = 4;\n");
+  if ("mir.js" === "mir.js") expect(js).toContain("  const x = pair(n)[1];\n  const y = (n + 1) >>> 0;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 }), lib.ends(), lib.made(2)]).toEqual([6, 8, 3, 14, 9]);
 });
 
 // A temporary MIR (ADR 0364) makes of a variable nothing changes, or of a
@@ -1245,18 +1233,16 @@ pub fn small(n: u32) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  return `${TName} ${TSize}`;\n");
-    expect(js).toContain("  if (n !== 6) {\n    ");
-    expect(js).toContain("  }\n  return n;\n");
-    expect(js).toContain("  if (n > 9) {\n    ");
-    const lib = await import(join(dir, out));
-    expect(lib.checked(6)).toBe(6);
-    expect(() => lib.checked(7)).toThrow();
-    expect(lib.small(9)).toBe(9);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  return `${TName} ${TSize}`;\n");
+  expect(js).toContain("  if (n !== 6) {\n    ");
+  expect(js).toContain("  }\n  return n;\n");
+  expect(js).toContain("  if (n > 9) {\n    ");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.checked(6)).toBe(6);
+  expect(() => lib.checked(7)).toThrow();
+  expect(lib.small(9)).toBe(9);
 });
 
 // An iterator chain of an array MIR (ADR 0364) makes as Rust runs it, item
@@ -1383,40 +1369,38 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     (kept, items)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  return items.map((c, i) => `${i}:${c.title}`);\n");
-    expect(js).toContain("  return items.filter((c) => !c.hide);\n");
-    expect(js).toContain("  return items.reduce((a, b) => (a + b) >>> 0, 0);\n");
-    expect(js).toContain("  return items.some((x) => x > 9);\n");
-    expect(js).toContain("  return $max(items) ?? 0;\n");
-    expect(js).toContain("  return items.toReversed().slice(0, 2);\n");
-    expect(js).toContain("  return groups.flatMap((g) => g.map((x) => Math.imul(x, 10) >>> 0));\n");
-    expect(js).toContain(".filter((word) => word !== \"\")\n    .map((w) => w.toUpperCase())\n    .join(\" \");");
-    expect(js).toContain("  return v.slice(2).slice(0, 3);\n");
-    expect(js).toContain("  return c.toUpperCase();\n");
-    expect(js).toContain("  return groups.map((x) => x.length);\n");
-    expect(js).toContain("words.map((s) => $byteLen(s))");
-    expect(js).toContain("  return $windows(v, 2).map(");
-    expect(js).toContain("  return $zip(a, b).map(");
-    if (out === "mir.js") expect(js).toMatch(/return lines\s*\.filter\(/);
-    if (out === "mir.js") expect(js).toMatch(/return xs\s*\.map\(/);
-    const lib = await import(join(dir, out));
-    expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
-    expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);
-    expect([lib.flat([[1, 2], [], [3]]), lib.words(" a  b ")]).toEqual([[10, 20, 30], "A B"]);
-    expect([lib.mid([1, 2, 3, 4, 5, 6]), lib.mid([1]), lib.up("ß")]).toEqual([[3, 4, 5], [], "SS"]);
-    expect(lib.diffs([1, 4, 9])).toEqual([3, 5]);
-    expect(lib.pairs(["x", "y", "z"], [1, 2])).toEqual(["x1", "y2"]);
-    expect([lib.logs(["ok", "an error", "fine"]), lib.signs([1, -2])]).toEqual([["<ok>", "<fine>"], ["<+>", "<->"]]);
-    const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
-    expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
-    expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
-    expect(lib.stops([1, 2, 3])).toEqual(["a1", "a2"]);
-    expect(lib.taken([1, 2, 3])).toEqual(["a1"]);
-    expect(lib.copied([1])).toEqual([[1], [1, 9]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  return items.map((c, i) => `${i}:${c.title}`);\n");
+  expect(js).toContain("  return items.filter((c) => !c.hide);\n");
+  expect(js).toContain("  return items.reduce((a, b) => (a + b) >>> 0, 0);\n");
+  expect(js).toContain("  return items.some((x) => x > 9);\n");
+  expect(js).toContain("  return $max(items) ?? 0;\n");
+  expect(js).toContain("  return items.toReversed().slice(0, 2);\n");
+  expect(js).toContain("  return groups.flatMap((g) => g.map((x) => Math.imul(x, 10) >>> 0));\n");
+  expect(js).toContain(".filter((word) => word !== \"\")\n    .map((w) => w.toUpperCase())\n    .join(\" \");");
+  expect(js).toContain("  return v.slice(2).slice(0, 3);\n");
+  expect(js).toContain("  return c.toUpperCase();\n");
+  expect(js).toContain("  return groups.map((x) => x.length);\n");
+  expect(js).toContain("words.map((s) => $byteLen(s))");
+  expect(js).toContain("  return $windows(v, 2).map(");
+  expect(js).toContain("  return $zip(a, b).map(");
+  if ("mir.js" === "mir.js") expect(js).toMatch(/return lines\s*\.filter\(/);
+  if ("mir.js" === "mir.js") expect(js).toMatch(/return xs\s*\.map\(/);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
+  expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);
+  expect([lib.flat([[1, 2], [], [3]]), lib.words(" a  b ")]).toEqual([[10, 20, 30], "A B"]);
+  expect([lib.mid([1, 2, 3, 4, 5, 6]), lib.mid([1]), lib.up("ß")]).toEqual([[3, 4, 5], [], "SS"]);
+  expect(lib.diffs([1, 4, 9])).toEqual([3, 5]);
+  expect(lib.pairs(["x", "y", "z"], [1, 2])).toEqual(["x1", "y2"]);
+  expect([lib.logs(["ok", "an error", "fine"]), lib.signs([1, -2])]).toEqual([["<ok>", "<fine>"], ["<+>", "<->"]]);
+  const crumbs = [{ title: "a", hide: false }, { title: "b", hide: true }];
+  expect([lib.titles(crumbs), lib.shown(crumbs), lib.total([1, 2]), lib.any_big([3, 10])]).toEqual([["0:a", "1:b"], [crumbs[0]], 3, true]);
+  expect(lib.order([1, 2])).toEqual(["a1", "b1", "a2", "b2"]);
+  expect(lib.stops([1, 2, 3])).toEqual(["a1", "a2"]);
+  expect(lib.taken([1, 2, 3])).toEqual(["a1"]);
+  expect(lib.copied([1])).toEqual([[1], [1, 9]]);
 });
 
 // `if let`s chained with `&&`, and loops, from MIR (ADR 0364), as written:
@@ -1551,10 +1535,9 @@ pub fn chained(nodes: &[Node]) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`  for (const route of routes) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`  for (const route of routes) {
     if (route.title != null && route.routes && route.routes.length !== 0) {
       out.push(\`\${route.title}:\${route.routes.length}\`);
     } else if (route.title != null && route.path != null) {
@@ -1562,7 +1545,7 @@ pub fn chained(nodes: &[Node]) -> u32 {
     }
   }
 `);
-    expect(js).toContain(`  for (const route of routes) {
+  expect(js).toContain(`  for (const route of routes) {
     if (route.path != null && route.path.startsWith("http")) {
       continue;
     }
@@ -1579,25 +1562,24 @@ pub fn chained(nodes: &[Node]) -> u32 {
     }
   }
 `);
-    expect(js).toContain("  if (a != null) {\n    if (b) {\n");
-    expect(js).toContain("    if (node.seen && node.count != null && node.count > 1) {\n");
-    expect(js).not.toContain("let iter");
-    expect(js).not.toMatch(/bb\d+:/);
-    expect(js).toMatch(/r\.title != null && r\.path != null/);
-    expect(js).toContain("    if (node.title != null && $byteLen(node.title) > 1) {\n      out.push(node.title);\n");
-    const lib = await import(join(dir, out));
-    const routes = [
-      { title: "a", path: "x", routes: [{ title: "c" }] },
-      { title: "b", path: "y", routes: [] },
-      { path: "http://z" },
-    ];
-    expect([lib.pages(routes), lib.sections(routes), lib.nested(3, true), lib.nested(3, false)]).toEqual([["a:1", "b=y"], ["a/c", "y"], 3, 0]);
-    const nodes = () => [{ count: 3, items: [1, 2], seen: true }, { count: undefined, items: [5], seen: false }];
-    expect([lib.counts(nodes()), lib.totals(nodes()), lib.chained(nodes())]).toEqual([4, 8, 10]);
-    expect(lib.joined(routes)).toEqual(["ax", "by", ""]);
-    expect(lib.titled([{ title: "ab", seen: false }, { title: "a", seen: false }])).toEqual(["ab"]);
-    expect(lib.kept([{ kind: "pre", valid: true }, { kind: "pre", valid: false }, { kind: "p", valid: true }])).toBe(2);
-  }
+  expect(js).toContain("  if (a != null) {\n    if (b) {\n");
+  expect(js).toContain("    if (node.seen && node.count != null && node.count > 1) {\n");
+  expect(js).not.toContain("let iter");
+  expect(js).not.toMatch(/bb\d+:/);
+  expect(js).toMatch(/r\.title != null && r\.path != null/);
+  expect(js).toContain("    if (node.title != null && $byteLen(node.title) > 1) {\n      out.push(node.title);\n");
+  const lib = await import(join(dir, "mir.js"));
+  const routes = [
+    { title: "a", path: "x", routes: [{ title: "c" }] },
+    { title: "b", path: "y", routes: [] },
+    { path: "http://z" },
+  ];
+  expect([lib.pages(routes), lib.sections(routes), lib.nested(3, true), lib.nested(3, false)]).toEqual([["a:1", "b=y"], ["a/c", "y"], 3, 0]);
+  const nodes = () => [{ count: 3, items: [1, 2], seen: true }, { count: undefined, items: [5], seen: false }];
+  expect([lib.counts(nodes()), lib.totals(nodes()), lib.chained(nodes())]).toEqual([4, 8, 10]);
+  expect(lib.joined(routes)).toEqual(["ax", "by", ""]);
+  expect(lib.titled([{ title: "ab", seen: false }, { title: "a", seen: false }])).toEqual(["ab"]);
+  expect(lib.kept([{ kind: "pre", valid: true }, { kind: "pre", valid: false }, { kind: "p", valid: true }])).toBe(2);
 });
 
 // What a loop's recovery (ADR 0364) no longer shows: an iterator stepped by
@@ -1630,13 +1612,11 @@ pub fn zero(a: u64, b: u64) -> bool {
     if let Some(x) = d { x.as_secs() == 0 } else { false }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    if (out === "mir.js") expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
-    const lib = await import(join(dir, out));
-    expect([lib.moved(), lib.second("ab"), lib.first_of([4, 5]), lib.zero(5n, 5n), lib.zero(4n, 5n)]).toEqual([12, 98, 4, true, false]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  if ("mir.js" === "mir.js") expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.moved(), lib.second("ab"), lib.first_of([4, 5]), lib.zero(5n, 5n), lib.zero(4n, 5n)]).toEqual([12, 98, 4, true, false]);
 });
 
 // A function that returns nothing, from MIR (ADR 0364), returns where the
@@ -1671,10 +1651,9 @@ pub fn one(n: u32, v: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function explicit(x, v) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function explicit(x, v) {
   if (x) {
     return;
   }
@@ -1703,13 +1682,12 @@ export function one(n, v) {
   }
 }
 `);
-    const lib = await import(join(dir, out));
-    const [v, w, x]: unknown[][] = [[], [], []];
-    lib.explicit(false, v);
-    lib.nested(3, true, w);
-    lib.guarded(true, "abc", x);
-    expect([v, w, x]).toEqual([[1], [3], ["abc"]]);
-  }
+  const lib = await import(join(dir, "mir.js"));
+  const [v, w, x]: unknown[][] = [[], [], []];
+  lib.explicit(false, v);
+  lib.nested(3, true, w);
+  lib.guarded(true, "abc", x);
+  expect([v, w, x]).toEqual([[1], [3], ["abc"]]);
 });
 
 // A string's parts from MIR (ADR 0364) are an array: its adapters, \`take\`
@@ -1752,20 +1730,18 @@ pub fn pick(c: bool, n: u32) -> u32 {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  return group\n    .split(",")\n    .map((g) => $trim(g))\n    .filter(Boolean);\n');
-    expect(js).toContain('  const parts = group.split(",");\n  if (parts.length === 0) {\n    return;\n  }\n  return \`\${parts[0]} and ');
-    expect(js).toContain('  return s.split(",").toReversed().slice(0, 2);\n');
-    expect(js).toContain("v[0]");
-    // A \`return\` the program wrote stays one, the smaller branch first.
-    expect(js).toContain("  if (!group) {\n    return;\n  }\n  return $trim(");
-    expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return Math.imul(n, 2) >>> 0;\n");
-    expect(js).not.toContain("$index");
-    const lib = await import(join(dir, out));
-    expect([lib.groups("a, b,"), lib.second("x,y"), lib.badge("p,q"), lib.last_two("1,2,3"), lib.heads([[], [7]]), lib.shown("ab"), lib.pick(false, 3)]).toEqual([["a", "b"], "y", "p and 1 more of P,Q", ["3", "2"], [0, 7], "ababab", 6]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  return group\n    .split(",")\n    .map((g) => $trim(g))\n    .filter(Boolean);\n');
+  expect(js).toContain('  const parts = group.split(",");\n  if (parts.length === 0) {\n    return;\n  }\n  return \`\${parts[0]} and ');
+  expect(js).toContain('  return s.split(",").toReversed().slice(0, 2);\n');
+  expect(js).toContain("v[0]");
+  // A \`return\` the program wrote stays one, the smaller branch first.
+  expect(js).toContain("  if (!group) {\n    return;\n  }\n  return $trim(");
+  expect(js).toContain("  if (c) {\n    return (n + 1) >>> 0;\n  }\n  return Math.imul(n, 2) >>> 0;\n");
+  expect(js).not.toContain("$index");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.groups("a, b,"), lib.second("x,y"), lib.badge("p,q"), lib.last_two("1,2,3"), lib.heads([[], [7]]), lib.shown("ab"), lib.pick(false, 3)]).toEqual([["a", "b"], "y", "p and 1 more of P,Q", ["3", "2"], [0, 7], "ababab", 6]);
 });
 
 // ADR 0212: a props field's default, \`#[rust_js::default]\`, is where JS
@@ -1785,13 +1761,11 @@ pub fn describe(props: &CodeProps) -> String {
     format!("{class_name}:{}:{}", code.len(), meta.unwrap_or("-"))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  const { class_name: className = "language-js", children: code = "", meta } = props;\n');
-    const lib = await import(join(dir, out));
-    expect([lib.describe({}), lib.describe({ class_name: "css", children: "ab", meta: "m" })]).toEqual(["language-js:0:-", "css:2:m"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  const { class_name: className = "language-js", children: code = "", meta } = props;\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.describe({}), lib.describe({ class_name: "css", children: "ab", meta: "m" })]).toEqual(["language-js:0:-", "css:2:m"]);
 });
 
 // What \`if let Some(x) = e\` binds, from MIR (ADR 0364), is named as the
@@ -1818,18 +1792,16 @@ pub fn first_over(items: &[u32], k: u32, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const found = find(items, k);\n  if (found != null) {\n    out.push(found);\n");
-    expect(js).toContain("    const current = r.current;\n");
-    expect(js).not.toMatch(/\b_\d+\b/);
-    const lib = await import(join(dir, out));
-    const [a, b]: unknown[][] = [[], []];
-    lib.scrolled(true, { current: 3 }, a);
-    lib.first_over([1, 5], 2, b);
-    expect([a, b]).toEqual([[3], [5, 6]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const found = find(items, k);\n  if (found != null) {\n    out.push(found);\n");
+  expect(js).toContain("    const current = r.current;\n");
+  expect(js).not.toMatch(/\b_\d+\b/);
+  const lib = await import(join(dir, "mir.js"));
+  const [a, b]: unknown[][] = [[], []];
+  lib.scrolled(true, { current: 3 }, a);
+  lib.first_over([1, 5], 2, b);
+  expect([a, b]).toEqual([[3], [5, 6]]);
 });
 
 // A \`let … else\` from MIR (ADR 0364), its tests each leaving to one panic,
@@ -1879,22 +1851,20 @@ pub fn first_id(items: &[Title]) -> u32 {
     first.id + first.id
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).not.toMatch(/bb\d+:/);
-    expect(js).toContain("    throw new Error(`${kind} is missing a title`);\n  }\n");
-    expect(js).toContain('  const hash = path.split("#")[1] ?? "";\n');
-    expect(js).toContain("  const first = items[0];\n");
-    if (out === "mir.js") {
-      expect(js).toContain('  const first = parts[0];\n  if (first == null || typeof first !== "object") {\n    return 0;\n  }\n');
-    }
-    // A \`vec!\` a branch gives back, its box made, then filled: the array.
-    expect(js).toContain('  if (titled) {\n    return [{ TAG: "Element", _0: { kind: "h4", id: 3 } }];\n  }\n  return [{ TAG: "Text", _0: "t" }];\n');
-    const lib = await import(join(dir, out));
-    expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.first_id([{ kind: "p", id: 4 }]), lib.first_id([]), lib.element_id([{ kind: "p", id: 5 }]), lib.element_id(["t"])]).toEqual([8, 8, 0, 10, 0]);
-    expect(() => lib.heading(lib.sample(false), "k", "")).toThrow("k is missing a title");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).not.toMatch(/bb\d+:/);
+  expect(js).toContain("    throw new Error(`${kind} is missing a title`);\n  }\n");
+  expect(js).toContain('  const hash = path.split("#")[1] ?? "";\n');
+  expect(js).toContain("  const first = items[0];\n");
+  if ("mir.js" === "mir.js") {
+    expect(js).toContain('  const first = parts[0];\n  if (first == null || typeof first !== "object") {\n    return 0;\n  }\n');
   }
+  // A \`vec!\` a branch gives back, its box made, then filled: the array.
+  expect(js).toContain('  if (titled) {\n    return [{ TAG: "Element", _0: { kind: "h4", id: 3 } }];\n  }\n  return [{ TAG: "Text", _0: "t" }];\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.heading(lib.sample(true), "k", "a#bc"), lib.first_id([{ kind: "p", id: 4 }]), lib.first_id([]), lib.element_id([{ kind: "p", id: 5 }]), lib.element_id(["t"])]).toEqual([8, 8, 0, 10, 0]);
+  expect(() => lib.heading(lib.sample(false), "k", "")).toThrow("k is missing a title");
 });
 
 // Loops one after another from MIR (ADR 0364), the second in what the
@@ -1920,10 +1890,9 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
     (highlighted.len() + starts.len()) as u32
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function decorate(lines, inline) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function decorate(lines, inline) {
   const highlighted = new Map();
   for (const decorator of lines) {
     highlighted.set(decorator.line, decorator.class_name);
@@ -1937,9 +1906,8 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
   }
   return (highlighted.size + starts.size) >>> 0;
 }`);
-    const lib = await import(join(dir, out));
-    expect(lib.decorate([{ line: 1, class_name: "a" }], [{ line: 2, class_name: "b" }])).toBe(2);
-  }
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.decorate([{ line: 1, class_name: "a" }], [{ line: 2, class_name: "b" }])).toBe(2);
 });
 
 // From MIR (ADR 0364): a \`return\` the program wrote first, as written; a
@@ -1965,14 +1933,12 @@ pub fn joined(args: &[String], mut formatted: String) -> String {
     formatted
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (message === "warn") {\n    return "warning";\n  }\n  return "error";\n');
-    expect(js).toContain("    for (let i = 0; i < args.length; i++) {\n      formatted += ` ${args[i]}`;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.get_type("warn"), lib.get_type("x"), lib.joined(["a", "b"], "f")]).toEqual(["warning", "error", "f a b"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (message === "warn") {\n    return "warning";\n  }\n  return "error";\n');
+  expect(js).toContain("    for (let i = 0; i < args.length; i++) {\n      formatted += ` ${args[i]}`;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.get_type("warn"), lib.get_type("x"), lib.joined(["a", "b"], "f")]).toEqual(["warning", "error", "f a b"]);
 });
 
 // ADR 0250: a struct update of a base nothing changes is that base spread,
@@ -1996,14 +1962,12 @@ pub fn reread<'a>(link: &Link<'a>, title: &'a str) -> Attrs<'a> {
     Attrs { title: Some(title), ..link.attrs }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return { ...attrs, title };");
-    const lib = await import(join(dir, out));
-    expect(Object.keys(lib.retitled({ id: "a" }, "t"))).toEqual(["id", "title"]);
-    expect(lib.reread({ attrs: { rel: "r" } }, "t")).toEqual({ rel: "r", title: "t" });
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return { ...attrs, title };");
+  const lib = await import(join(dir, "mir.js"));
+  expect(Object.keys(lib.retitled({ id: "a" }, "t"))).toEqual(["id", "title"]);
+  expect(lib.reread({ attrs: { rel: "r" } }, "t")).toEqual({ rel: "r", title: "t" });
 });
 
 // ADR 0308: a function written in a body is declared there, where what
@@ -2024,11 +1988,9 @@ test("a function written in a body is declared in it", async () => {
     apply(twice)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.doubled(3), lib.doubled(11)]).toEqual([6, 1000]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.doubled(3), lib.doubled(11)]).toEqual([6, 1000]);
 });
 
 // ADR 0204: a struct with flattened fields made outside JSX is one object of
@@ -2048,11 +2010,9 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
     Files { template, files }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
 
 // ADR 0364: `for` over what `Object.keys` gives, a `Vec`, steps through
@@ -2073,12 +2033,10 @@ pub fn first(o: &js::Unknown) -> Option<String> {
     keys.next()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.listed({ a: 1, b: 2 }), lib.listed({})]).toEqual([2, 0]);
-    expect([lib.first({ a: 1, b: 2 }), lib.first({})]).toEqual(["a", undefined]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.listed({ a: 1, b: 2 }), lib.listed({})]).toEqual([2, 0]);
+  expect([lib.first({ a: 1, b: 2 }), lib.first({})]).toEqual(["a", undefined]);
 });
 
 // ADR 0364: an `on_load!` body from MIR, which ends a loop by its end, is
@@ -2106,12 +2064,10 @@ pub fn ready() -> u32 {
   const globals = globalThis as typeof globalThis & { onLoadLooped?: (n: number) => void };
   globals.onLoadLooped = (n) => seen.push(n);
   try {
-    for (const [out, env] of [["mir.js", {}]] as const) {
-      run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-      seen.length = 0;
-      expect((await import(join(dir, out))).ready()).toBe(1);
-      expect(seen).toEqual([1, 2]);
-    }
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+    seen.length = 0;
+    expect((await import(join(dir, "mir.js"))).ready()).toBe(1);
+    expect(seen).toEqual([1, 2]);
   } finally {
     delete globals.onLoadLooped;
   }
@@ -2207,19 +2163,17 @@ pub fn plain() -> String {
     )
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return `<p>\n${code}\n</p>`;");
-    expect(js).toContain("return `<p>\\n${code}\\n</p>`;");
-    expect(js).toContain('return `<a href="x">\n${code}\n</a>`;');
-    // A line a `\` continues isn't one: its `\n` is written so.
-    expect(js).toContain("return `<p>\\n${code}</p>`;");
-    expect(js).toContain("console.log(`<p>\n${code}\n</p>`);");
-    expect(js).toContain("return `<p>\n</p>`;");
-    const lib = await import(join(dir, out));
-    expect([lib.page("x"), lib.escaped("x"), lib.raw("x")]).toEqual(["<p>\nx\n</p>", "<p>\nx\n</p>", '<a href="x">\nx\n</a>']);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return `<p>\n${code}\n</p>`;");
+  expect(js).toContain("return `<p>\\n${code}\\n</p>`;");
+  expect(js).toContain('return `<a href="x">\n${code}\n</a>`;');
+  // A line a `\` continues isn't one: its `\n` is written so.
+  expect(js).toContain("return `<p>\\n${code}</p>`;");
+  expect(js).toContain("console.log(`<p>\n${code}\n</p>`);");
+  expect(js).toContain("return `<p>\n</p>`;");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.page("x"), lib.escaped("x"), lib.raw("x")]).toEqual(["<p>\nx\n</p>", "<p>\nx\n</p>", '<a href="x">\nx\n</a>']);
 });
 
 // ADR 0031: a constant borrowed, `&XS`, is the one there is, as nothing can
@@ -2837,20 +2791,18 @@ pub fn moved(p: Props) -> Props {
     Props { code: p.code, message: Some(p.title.unwrap_or_default()), title: None }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return { code: null, message: "m" };');
-    expect(js).toContain("return { code: code ?? null, message: null };");
-    expect(js).toContain("return { code, message };");
-    // A conditional of `Some` or `None` is one of the value or `null`.
-    expect(js).toContain("return { code: code || null, message: null };");
-    expect(js).toContain('return { code: p.code, message: p.title ?? "" };');
-    const lib = await import(join(dir, out));
-    expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null }, { code: "1", message: null }]);
-    expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
-    expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return { code: null, message: "m" };');
+  expect(js).toContain("return { code: code ?? null, message: null };");
+  expect(js).toContain("return { code, message };");
+  // A conditional of `Some` or `None` is one of the value or `null`.
+  expect(js).toContain("return { code: code || null, message: null };");
+  expect(js).toContain('return { code: p.code, message: p.title ?? "" };');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.given(undefined), lib.given("1")]).toEqual([{ code: null, message: null }, { code: "1", message: null }]);
+  expect(JSON.stringify(lib.passed(lib.given(undefined)))).toBe('{"code":null,"message":null}');
+  expect([lib.chosen("1").code, lib.chosen("").code, lib.chosen(undefined).code]).toEqual(["1", null, null]);
 });
 
 // ADR 0277: `let n = n;`, a variable shadowed by its own value, is `n`
@@ -3188,15 +3140,13 @@ pub fn handler() -> Box<dyn Fn()> {
 }
 `);
   const { copied } = await import(join(dir, "copy.js"));
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
-    const lib = await import(join(dir, out));
-    copied.length = 0;
-    await lib.handler()();
-    expect(copied).toEqual(["#58C4DC"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return async () => {\n    await copy("#58C4DC");\n  };');
+  const lib = await import(join(dir, "mir.js"));
+  copied.length = 0;
+  await lib.handler()();
+  expect(copied).toEqual(["#58C4DC"]);
 });
 
 // ADR 0266: text is falsy in JS only where it's empty, so text an option
@@ -3890,14 +3840,12 @@ pub fn all_made(objects: Vec<&'static js::JsObject>) -> Vec<Message> {
 }
 `);
   // From MIR too (ADR 0364).
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const lib = await import(join(dir, out));
-    const done = { type: "done", compilatonError: false };
-    expect([lib.described({ type: "resize", height: 3 }), lib.described({ type: "start", firstLoad: true }), lib.described(done)])
-      .toEqual(["resize 3", "start true", "other"]);
-    expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.all_made([done])[0] === done]).toEqual([true, false, true, true]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const lib = await import(join(dir, "mir.js"));
+  const done = { type: "done", compilatonError: false };
+  expect([lib.described({ type: "resize", height: 3 }), lib.described({ type: "start", firstLoad: true }), lib.described(done)])
+    .toEqual(["resize 3", "start true", "other"]);
+  expect([lib.other(done), lib.other({ type: "resize", height: 1 }), lib.made(done) === done, lib.all_made([done])[0] === done]).toEqual([true, false, true, true]);
 });
 
 // ADR 0287: a `Cell`, or an `Rc` of one, that only its function and its
@@ -5186,19 +5134,17 @@ pub fn popped(mut items: Vec<Option<u32>>) -> Option<u32> {
 }
 `);
   // From MIR too (ADR 0364).
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("const first = args.shift();");
-    expect(js).toContain("const last = args.pop();");
-    expect(js).toContain("return [items[0], items[i], items.at(-1)];");
-    expect(js).toContain("return items.pop();");
-    expect(js).not.toContain("$someValue");
-    const lib = await import(join(dir, out));
-    expect([lib.shifted([1, undefined, 3]), lib.shifted([undefined]), lib.shifted([])]).toEqual([[1, 3, 1], [undefined, undefined, 0], [undefined, undefined, 0]]);
-    expect([lib.read([undefined, 2], 1), lib.read([], 0)]).toEqual([[undefined, 2, 2], [undefined, undefined, undefined]]);
-    expect([lib.popped([1, undefined]), lib.popped([]), lib.popped([4])]).toEqual([undefined, undefined, 4]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("const first = args.shift();");
+  expect(js).toContain("const last = args.pop();");
+  expect(js).toContain("return [items[0], items[i], items.at(-1)];");
+  expect(js).toContain("return items.pop();");
+  expect(js).not.toContain("$someValue");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.shifted([1, undefined, 3]), lib.shifted([undefined]), lib.shifted([])]).toEqual([[1, 3, 1], [undefined, undefined, 0], [undefined, undefined, 0]]);
+  expect([lib.read([undefined, 2], 1), lib.read([], 0)]).toEqual([[undefined, 2, 2], [undefined, undefined, undefined]]);
+  expect([lib.popped([1, undefined]), lib.popped([]), lib.popped([4])]).toEqual([undefined, undefined, 4]);
 });
 
 // ADR 0313: what react.dev's Console writes, as a person writes it: `!x` of
@@ -5364,14 +5310,11 @@ test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
     *s = other;
 }
 `);
-  for (const env of [{}]) {
-    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-      cwd: root,
-      stderr: "pipe",
-      env: { ...process.env, ...env },
-    });
-    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
-  }
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+    cwd: root,
+    stderr: "pipe",
+  });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
 });
 
 // A variable of a type JS can't hold, a struct of a \`&mut\` to a \`&mut [i32]\`,
@@ -5392,14 +5335,11 @@ pub fn run() -> Vec<i32> {
     xs
 }
 `);
-  for (const env of [{}]) {
-    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-      cwd: root,
-      stderr: "pipe",
-      env: { ...process.env, ...env },
-    });
-    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
-  }
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+    cwd: root,
+    stderr: "pipe",
+  });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
   // And one assigned again, which MIR declares first.
   writeFileSync(join(dir, "lib.rs"), `struct Holder<'a, 'b> {
     s: &'a mut &'b mut [i32],
@@ -5417,12 +5357,11 @@ pub fn run(again: bool) -> Vec<i32> {
     xs
 }
 `);
-  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+  const again = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
     cwd: root,
     stderr: "pipe",
-    env: process.env,
   });
-  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
+  expect([again.exitCode === 0, again.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support values of type `&mut &mut [i32]` yet")]);
 });
 
 // An iterator adapter over items with a destructor, \`v.into_iter().map(f)\`
@@ -5441,14 +5380,11 @@ pub fn run() {
     drop(v.into_iter().map(|n| n));
 }
 `);
-  for (const env of [{}]) {
-    const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
-      cwd: root,
-      stderr: "pipe",
-      env: { ...process.env, ...env },
-    });
-    expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("with a destructor")]);
-  }
+  const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
+    cwd: root,
+    stderr: "pipe",
+  });
+  expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("with a destructor")]);
 });
 
 // What JS can't do soundly is refused: each compiled to output that ran
@@ -5469,7 +5405,6 @@ for (const [name, source, message] of [
     const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
       cwd: root,
       stderr: "pipe",
-      env: process.env,
     });
     expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining(message)]);
   });
@@ -5487,11 +5422,9 @@ test("a cell a callback's parameter shadows stays a cell", async () => {
     format!("{item} {v:?}")
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect(lib.show()).toBe('6 ["a"]');
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.show()).toBe('6 ["a"]');
 });
 
 // \`v.iter().map(f).next_back()\` maps the last item alone, as Rust's
@@ -5526,15 +5459,13 @@ test("a string's part changed in place gives the string its text", async () => {
     name
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("name = $asciiCase(name, true, 2, 4);");
-    expect(js).toContain("name = $asciiCase(name, false);");
-    expect(js).toContain("name = $asciiCase(name, true, 2);");
-    const lib = await import(join(dir, out));
-    expect(lib.shout("élan Vital")).toBe("éLAN VITAL");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("name = $asciiCase(name, true, 2, 4);");
+  expect(js).toContain("name = $asciiCase(name, false);");
+  expect(js).toContain("name = $asciiCase(name, true, 2);");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.shout("élan Vital")).toBe("éLAN VITAL");
 });
 
 // A loop over an iterator of the crate's own that holds a value with a
@@ -5603,12 +5534,10 @@ pub fn sum(v: Vec<i32>) -> i32 {
     v.iter().fold(0, add)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("return v.reduce(add, 0);");
-    const lib = await import(join(dir, out));
-    expect([lib.sum([1, 2, 3]), lib.sum([])]).toEqual([6, 0]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return v.reduce(add, 0);");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.sum([1, 2, 3]), lib.sum([])]).toEqual([6, 0]);
 });
 
 // A function's `if` of an `||` as its value: each branch returned; an `&&`
@@ -5623,14 +5552,12 @@ pub fn both(a: u8, b: u8) -> bool {
     a > 1 && b > 1
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (op === "+" || op === "-") {\n    return 1;\n  }\n  return 2;');
-    expect(js).toContain("return a > 1 && b > 1;");
-    const lib = await import(join(dir, out));
-    expect([lib.prec("+"), lib.prec("*"), lib.both(2, 2), lib.both(2, 0)]).toEqual([1, 2, true, false]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (op === "+" || op === "-") {\n    return 1;\n  }\n  return 2;');
+  expect(js).toContain("return a > 1 && b > 1;");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.prec("+"), lib.prec("*"), lib.both(2, 2), lib.both(2, 0)]).toEqual([1, 2, true, false]);
 });
 
 // Two references to one field, `let a = &x.0; let b = &x.0;`: each its
@@ -5654,11 +5581,9 @@ pub fn each(pairs: Vec<(i32, i32)>) -> i32 {
     total
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.both([3, 4]), lib.each([[2, 0], [3, 1]])]).toEqual([6, 13]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.both([3, 4]), lib.each([[2, 0], [3, 1]])]).toEqual([6, 13]);
 });
 
 // ADR 0054, from MIR (ADR 0364): a writer returns the string it writes,
@@ -5913,12 +5838,10 @@ pub fn email(s: String) -> Result<Email, String> {
     if s.contains('@') { Ok(Email(s)) } else { Err(format!("{s} is not an email")) }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain('  if (s.includes("@")) {\n    return { TAG: "Ok", _0: [s] };\n  }\n  return');
-    const lib = await import(join(dir, out));
-    expect([lib.email("a@b"), lib.email("x")]).toEqual([{ TAG: "Ok", _0: ["a@b"] }, { TAG: "Err", _0: "x is not an email" }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain('  if (s.includes("@")) {\n    return { TAG: "Ok", _0: [s] };\n  }\n  return');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.email("a@b"), lib.email("x")]).toEqual([{ TAG: "Ok", _0: ["a@b"] }, { TAG: "Err", _0: "x is not an email" }]);
 });
 
 // Each branch adding to a variable, `out += a`: the branches, as written,
@@ -5936,14 +5859,12 @@ test("branches that each add to a variable stay branches", async () => {
     out
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("out += `ok ${");
-    expect(js).toContain("out += `err ${");
-    const lib = await import(join(dir, out));
-    expect(lib.report([{ TAG: "Ok", _0: 1 }, { TAG: "Err", _0: "x" }])).toBe("ok 1\nerr x\n");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("out += `ok ${");
+  expect(js).toContain("out += `err ${");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.report([{ TAG: "Ok", _0: 1 }, { TAG: "Err", _0: "x" }])).toBe("ok 1\nerr x\n");
 });
 
 // A `?` and a `return` in a loop, and a `while` in it: each `return` where
@@ -6021,27 +5942,25 @@ pub fn scan(v: &[u32]) -> u32 {
     0
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    const numbers = js.slice(0, js.indexOf("function tokens"));
-    // What the program wrote first, first.
-    const tokens = js.slice(js.indexOf("function tokens"), js.indexOf("function scan"));
-    expect(tokens).toContain('if (/^[0-9]$/.test(c) || c === "_") {\n      const start = i;');
-    expect(numbers).not.toMatch(/\bbb\d+\b/);
-    expect(numbers).not.toContain("while (true)");
-    // In the program's order, its `?` a guard.
-    expect(numbers).toContain('if (/^[0-9]$/.test(c)) {\n      const start = i;');
-    expect(numbers).toContain('      if (result$1.TAG === "Err") {\n        return result$1;\n      }\n      out.push(result$1._0);\n');
-    expect(js).toContain("while (i < chars.length && /^[0-9]$/.test($index(chars, i))) {");
-    const lib = await import(join(dir, out));
-    expect([lib.numbers("12 3"), lib.numbers("1x")]).toEqual([{ TAG: "Ok", _0: [12, 3] }, { TAG: "Err", _0: "unexpected x" }]);
-    expect([lib.tokens("12+3"), lib.tokens("1-")]).toEqual([{ TAG: "Ok", _0: [12, 0, 3] }, { TAG: "Err", _0: "unexpected -" }]);
-    // A loop whose rest jumps to it, from a loop of its own, stays one, by
-    // the label the program gave it.
-    expect(js).toContain("inner: while (true) {");
-    expect([lib.scan([3]), lib.scan([])]).toEqual([33, 0]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const numbers = js.slice(0, js.indexOf("function tokens"));
+  // What the program wrote first, first.
+  const tokens = js.slice(js.indexOf("function tokens"), js.indexOf("function scan"));
+  expect(tokens).toContain('if (/^[0-9]$/.test(c) || c === "_") {\n      const start = i;');
+  expect(numbers).not.toMatch(/\bbb\d+\b/);
+  expect(numbers).not.toContain("while (true)");
+  // In the program's order, its `?` a guard.
+  expect(numbers).toContain('if (/^[0-9]$/.test(c)) {\n      const start = i;');
+  expect(numbers).toContain('      if (result$1.TAG === "Err") {\n        return result$1;\n      }\n      out.push(result$1._0);\n');
+  expect(js).toContain("while (i < chars.length && /^[0-9]$/.test($index(chars, i))) {");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.numbers("12 3"), lib.numbers("1x")]).toEqual([{ TAG: "Ok", _0: [12, 3] }, { TAG: "Err", _0: "unexpected x" }]);
+  expect([lib.tokens("12+3"), lib.tokens("1-")]).toEqual([{ TAG: "Ok", _0: [12, 0, 3] }, { TAG: "Err", _0: "unexpected -" }]);
+  // A loop whose rest jumps to it, from a loop of its own, stays one, by
+  // the label the program gave it.
+  expect(js).toContain("inner: while (true) {");
+  expect([lib.scan([3]), lib.scan([])]).toEqual([33, 0]);
 });
 
 // `into()` an untagged enum, whose `from` is the variant of its argument,
@@ -6068,12 +5987,10 @@ pub fn from(s: &str) -> Src<'_> {
     Src::from(s)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("export function text(s) {\n  return s;\n}");
-    expect(js).toContain("export function from(s) {\n  return s;\n}");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("export function text(s) {\n  return s;\n}");
+  expect(js).toContain("export function from(s) {\n  return s;\n}");
 });
 
 // A range's count the body doesn't read, `for _ in 0..n`: `i`.
@@ -6087,12 +6004,10 @@ test("an unread count of a range is i", async () => {
     out
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("for (let i = 0; i < times; i++) {");
-    const lib = await import(join(dir, out));
-    expect([lib.repeat("ab", 3), lib.repeat("x", 0)]).toEqual(["ababab", ""]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("for (let i = 0; i < times; i++) {");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.repeat("ab", 3), lib.repeat("x", 0)]).toEqual(["ababab", ""]);
 });
 
 // A shared cell, `Rc<Cell<bool>>`, cloned in a closure that sets it: its
@@ -6120,14 +6035,12 @@ pub fn toggles() -> (bool, bool) {
     (start(), running.get())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("let running = false;");
-    expect(js).not.toContain(".value");
-    const lib = await import(join(dir, out));
-    expect(lib.toggles()).toEqual([true, false]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("let running = false;");
+  expect(js).not.toContain(".value");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.toggles()).toEqual([true, false]);
 });
 
 // A function's tail `loop` that `break a` gives its value: `return a` where
@@ -6149,12 +6062,10 @@ test("a tail loop's break with a value returns it", async () => {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("    if (i === n) {\n      return a;\n    }");
-    const lib = await import(join(dir, out));
-    expect([lib.fib_loop(0), lib.fib_loop(10)]).toEqual([0, 55]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("    if (i === n) {\n      return a;\n    }");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.fib_loop(0), lib.fib_loop(10)]).toEqual([0, 55]);
 });
 
 // A division by a named constant that isn't zero, nor a signed -1, can't
@@ -6172,15 +6083,13 @@ pub fn negated(x: i32) -> i32 {
     x / NEGATIVE
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return (x / HALVES) >>> 0;");
-    expect(js).toContain("$div(x, NEGATIVE, -2147483648)");
-    const lib = await import(join(dir, out));
-    expect([lib.half(7), lib.negated(6)]).toEqual([3, -6]);
-    expect(() => lib.negated(-2147483648)).toThrow("attempt to divide with overflow");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return (x / HALVES) >>> 0;");
+  expect(js).toContain("$div(x, NEGATIVE, -2147483648)");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.half(7), lib.negated(6)]).toEqual([3, -6]);
+  expect(() => lib.negated(-2147483648)).toThrow("attempt to divide with overflow");
 });
 
 // A generic iterator is stepped as JS's, `Iterator.from(items)`, as an
@@ -6219,12 +6128,10 @@ pub fn mapped(n: u32) -> u32 {
     countdown(n).map(|x| x + 1).sum()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("return Iterator.from(items).drop(1).take(k).toArray();");
-    const lib = await import(join(dir, out));
-    expect([lib.of_countdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return Iterator.from(items).drop(1).take(k).toArray();");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.of_countdown(5), lib.middle([7, 8, 9, 10], 2), lib.mapped(3)]).toEqual([[3, 2], [8, 9], 6]);
 });
 
 // `rev()` of an array's items skipped and taken from, which no closure
@@ -6235,12 +6142,10 @@ test("rev of skipped and taken items is the slice reversed", async () => {
     v.iter().skip(1).take(2).rev().copied().collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("return v.slice(1).slice(0, 2).toReversed();");
-    const lib = await import(join(dir, out));
-    expect([lib.middle([1, 2, 3, 4]), lib.middle([1, 2]), lib.middle([])]).toEqual([[3, 2], [2], []]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("return v.slice(1).slice(0, 2).toReversed();");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.middle([1, 2, 3, 4]), lib.middle([1, 2]), lib.middle([])]).toEqual([[3, 2], [2], []]);
 });
 
 // A long function, each call a block of its MIR: lowered block by block,
@@ -6249,12 +6154,10 @@ test("a long function is lowered block by block", async () => {
   const dir = fixture("long-function");
   const pushes = Array.from({ length: 3000 }, (_, i) => `    v.push(n + ${i});`).join("\n");
   writeFileSync(join(dir, "lib.rs"), `pub fn long(n: u32) -> Vec<u32> {\n    let mut v = Vec::new();\n${pushes}\n    v\n}\n`);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    const items = lib.long(1);
-    expect([items.length, items[0], items[2999]]).toEqual([3000, 1, 3000]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  const items = lib.long(1);
+  expect([items.length, items[0], items[2999]]).toEqual([3000, 1, 3000]);
 });
 
 // `VecDeque::remove` is `$removeOpt`; of items that may look like `None`,
@@ -6275,13 +6178,11 @@ pub fn removed(mut d: VecDeque<Option<u32>>) -> Option<Option<u32>> {
     d.remove(0)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.removed([1, 2, 3], 1), lib.removed([1], 5)]).toEqual([[2, [1, 3]], [undefined, [1]]]);
-    const refused = Bun.spawnSync([compiler, join(dir, "options.rs"), "-o", join(dir, "options.js")], { env: { ...process.env, ...env }, stderr: "pipe" });
-    expect(refused.exitCode).not.toBe(0);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.removed([1, 2, 3], 1), lib.removed([1], 5)]).toEqual([[2, [1, 3]], [undefined, [1]]]);
+  const refused = Bun.spawnSync([compiler, join(dir, "options.rs"), "-o", join(dir, "options.js")], { stderr: "pipe" });
+  expect(refused.exitCode).not.toBe(0);
 });
 
 // MIR's `rest.split_off_mut(..n)` gives `rest` what's left; through `r`,
@@ -6302,7 +6203,6 @@ test("MIR's split_off through a held `&mut` is refused", () => {
   const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
     cwd: root,
     stderr: "pipe",
-    env: process.env,
   });
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("rust-js does not support splitting this slice yet")]);
 });
@@ -6646,14 +6546,12 @@ pub fn dropped(n: u32) -> u32 {
     h(Loud(3))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`const f = () => (n + 1) >>> 0;`);
-    expect(js).toContain(`const g = (a) => Math.imul(a, 2) >>> 0;`);
-    // What it's given and drops, it's given.
-    expect(js).toMatch(/const h = \(_\d*\) =>/);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`const f = () => (n + 1) >>> 0;`);
+  expect(js).toContain(`const g = (a) => Math.imul(a, 2) >>> 0;`);
+  // What it's given and drops, it's given.
+  expect(js).toMatch(/const h = \(_\d*\) =>/);
 });
 
 test("a value returned after a loop, the function returning early before it, is returned once", async () => {
@@ -6673,10 +6571,9 @@ test("a value returned after a loop, the function returning early before it, is 
     args
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function parse(search) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function parse(search) {
   if (!search) {
     return [];
   }
@@ -6690,7 +6587,6 @@ test("a value returned after a loop, the function returning early before it, is 
   }
   return args;
 }`);
-  }
 });
 
 test("a function's value of two branches is returned from each", async () => {
@@ -6743,34 +6639,33 @@ pub fn colors(message: &str) -> &'static str {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function two(s) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function two(s) {
   if (s === "a") {
     return 1;
   }
   return 2;
 }`);
-    expect(js).toContain(`export function cond(s) {
+  expect(js).toContain(`export function cond(s) {
   if (s === "a") {
     return 1;
   }
   return 2;
 }`);
-    expect(js).toContain(`export function bools(b) {
+  expect(js).toContain(`export function bools(b) {
   if (b) {
     return 1;
   }
   return 2;
 }`);
-    expect(js).toContain(`export function opt(o) {
+  expect(js).toContain(`export function opt(o) {
   if (o != null) {
     return o;
   }
   return 0;
 }`);
-    expect(js).toContain(`export function colors(message) {
+  expect(js).toContain(`export function colors(message) {
   if (message === "warn") {
     return "yellow";
   }
@@ -6779,16 +6674,15 @@ pub fn colors(message: &str) -> &'static str {
   }
   return "gray";
 }`);
-    expect(js).toContain("  return a || b;\n");
-    // A `return` the program wrote stays where it wrote it.
-    expect(js).toContain("export function early(g, x) {\n  if (!g) {\n    return false;\n  }\n  return x > 1;\n}");
-    // An arm a macro begins is in its place too.
-    expect(js).toContain("export function shown(o) {\n  if (o != null) {\n");
-    // A `bool` of what's not one, `!!o`.
-    expect(js).toContain("  return !!o || r;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.either({ n: 1 }, false), lib.either(undefined, false)]).toEqual([true, false]);
-  }
+  expect(js).toContain("  return a || b;\n");
+  // A `return` the program wrote stays where it wrote it.
+  expect(js).toContain("export function early(g, x) {\n  if (!g) {\n    return false;\n  }\n  return x > 1;\n}");
+  // An arm a macro begins is in its place too.
+  expect(js).toContain("export function shown(o) {\n  if (o != null) {\n");
+  // A `bool` of what's not one, `!!o`.
+  expect(js).toContain("  return !!o || r;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.either({ n: 1 }, false), lib.either(undefined, false)]).toEqual([true, false]);
 });
 
 test("an `if !c` from MIR, which MIR tests as `c`, keeps its branch first", async () => {
@@ -6805,10 +6699,9 @@ pub fn either(active: bool) -> u32 {
     if !active { 1 } else { 2 }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function guard(active, v) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function guard(active, v) {
   if (!active) {
     v.push(0);
     return;
@@ -6816,13 +6709,12 @@ pub fn either(active: bool) -> u32 {
   v.push(1);
   v.push(2);
 }`);
-    expect(js).toContain(`export function either(active) {
+  expect(js).toContain(`export function either(active) {
   if (!active) {
     return 1;
   }
   return 2;
 }`);
-  }
 });
 
 test("a `match` of an `Option`'s strings from MIR is the `else if` chain a person writes", async () => {
@@ -6853,10 +6745,9 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function flagged(flag, arg) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function flagged(flag, arg) {
   if (flag === "s") {
     arg += "";
   } else if (flag === "d" || flag === "i") {
@@ -6866,7 +6757,7 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
   }
   return arg;
 }`);
-    expect(js).toContain(`export function named(flag, v) {
+  expect(js).toContain(`export function named(flag, v) {
   if (flag === "s") {
     v.push(1);
   } else if (flag === "d") {
@@ -6875,7 +6766,7 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
     v.push(3);
   }
 }`);
-    expect(js).toContain(`export function nested(flag, v) {
+  expect(js).toContain(`export function nested(flag, v) {
   if (flag != null) {
     if (flag === "s") {
       v.push(1);
@@ -6884,16 +6775,15 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
     }
   }
 }`);
-    const lib = await import(join(dir, out));
-    expect([lib.flagged("d", " x "), lib.flagged("f", "x"), lib.flagged(undefined, "y"), lib.flagged("q", "z")]).toEqual(["x", "X", "y", "z"]);
-    // A guard its chain's last `else` doesn't say stays.
-    const pushed: number[] = [];
-    lib.nested(undefined, pushed);
-    lib.nested("q", pushed);
-    lib.named(undefined, pushed);
-    lib.named("d", pushed);
-    expect(pushed).toEqual([2, 3, 2]);
-  }
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.flagged("d", " x "), lib.flagged("f", "x"), lib.flagged(undefined, "y"), lib.flagged("q", "z")]).toEqual(["x", "X", "y", "z"]);
+  // A guard its chain's last `else` doesn't say stays.
+  const pushed: number[] = [];
+  lib.nested(undefined, pushed);
+  lib.nested("q", pushed);
+  lib.named(undefined, pushed);
+  lib.named("d", pushed);
+  expect(pushed).toEqual([2, 3, 2]);
 });
 
 test("a let-else of what `filter` keeps from MIR tests the value", async () => {
@@ -6905,10 +6795,9 @@ test("a let-else of what `filter` keeps from MIR tests the value", async () => {
     if h.starts_with("x") { "a".to_string() } else { h.to_string() }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function filtered(href) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function filtered(href) {
   if (!href) {
     return "none";
   }
@@ -6917,9 +6806,8 @@ test("a let-else of what `filter` keeps from MIR tests the value", async () => {
   }
   return href;
 }`);
-    const lib = await import(join(dir, out));
-    expect([lib.filtered(undefined), lib.filtered(""), lib.filtered("xy"), lib.filtered("q")]).toEqual(["none", "none", "a", "q"]);
-  }
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.filtered(undefined), lib.filtered(""), lib.filtered("xy"), lib.filtered("q")]).toEqual(["none", "none", "a", "q"]);
 });
 
 test("tests and values from MIR read as a person writes them: De Morgan's, and `filter` then `or`", async () => {
@@ -6943,17 +6831,15 @@ pub fn page_title(meta: &Meta, route: Option<&Route>) -> &'static str {
     meta.title.filter(|t| !t.is_empty()).or(route.and_then(|r| r.title).filter(|t| !t.is_empty())).unwrap_or("")
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (section === "learn" || (section === "blog" && !isBlogIndex)) {\n');
-    expect(js).toContain('  return meta.title || route || "";\n');
-    expect(js).toContain('  return route?.title || "";\n');
-    expect(js).toContain('  return meta.title || route?.title || "";\n');
-    const lib = await import(join(dir, out));
-    expect([lib.search("learn", true, 1), lib.search("blog", true, 2), lib.search("blog", false, 3), lib.search("x", false, 4)]).toEqual([1, undefined, 3, undefined]);
-    expect([lib.title({ title: "" }, "r"), lib.title({ title: "t" }, "r"), lib.title({ title: undefined }, ""), lib.title({}, undefined)]).toEqual(["r", "t", "", ""]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (section === "learn" || (section === "blog" && !isBlogIndex)) {\n');
+  expect(js).toContain('  return meta.title || route || "";\n');
+  expect(js).toContain('  return route?.title || "";\n');
+  expect(js).toContain('  return meta.title || route?.title || "";\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.search("learn", true, 1), lib.search("blog", true, 2), lib.search("blog", false, 3), lib.search("x", false, 4)]).toEqual([1, undefined, 3, undefined]);
+  expect([lib.title({ title: "" }, "r"), lib.title({ title: "t" }, "r"), lib.title({ title: undefined }, ""), lib.title({}, undefined)]).toEqual(["r", "t", "", ""]);
 });
 
 test("a closure from MIR names its `&x` parameter and knows the `bool`s it captures", async () => {
@@ -6962,13 +6848,11 @@ test("a closure from MIR names its `&x` parameter and knows the `bool`s it captu
     items.iter().map(|&n| force || n > 2).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  return items.map((n) => force || n > 2);\n");
-    const lib = await import(join(dir, out));
-    expect([lib.flags(false, [1, 3]), lib.flags(true, [1])]).toEqual([[false, true], [true]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  return items.map((n) => force || n > 2);\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.flags(false, [1, 3]), lib.flags(true, [1])]).toEqual([[false, true], [true]]);
 });
 
 test("a `let` from MIR is declared where it's first named", async () => {
@@ -6988,10 +6872,9 @@ test("a `let` from MIR is declared where it's first named", async () => {
     item
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function label(path, crumbs, force) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function label(path, crumbs, force) {
   const selected = path === "x";
   let item;
   if (path == null) {
@@ -7005,7 +6888,6 @@ test("a `let` from MIR is declared where it's first named", async () => {
   }
   return item;
 }`);
-  }
 });
 
 test("an index from MIR nothing proves in bounds is checked where it's read or written", async () => {
@@ -7021,17 +6903,15 @@ pub fn set(xs: &mut [u32], i: usize) {
     xs[i] = 3;
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  return crumbs.length > 1 && $index(crumbs, (crumbs.length - 1) >>> 0).path == path;\n");
-    expect(js).toContain("  return ($index(xs, 1) + 1) >>> 0;\n");
-    expect(js).toContain("  xs[$at(xs, i)] = 3;\n");
-    const lib = await import(join(dir, out));
-    expect(() => lib.second([1])).toThrow("index out of bounds: the len is 1 but the index is 1");
-    expect(() => lib.set([1], 4)).toThrow("index out of bounds: the len is 1 but the index is 4");
-    expect([lib.second([1, 2]), lib.last_is([{}, { path: "a" }], "a")]).toEqual([3, true]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  return crumbs.length > 1 && $index(crumbs, (crumbs.length - 1) >>> 0).path == path;\n");
+  expect(js).toContain("  return ($index(xs, 1) + 1) >>> 0;\n");
+  expect(js).toContain("  xs[$at(xs, i)] = 3;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(() => lib.second([1])).toThrow("index out of bounds: the len is 1 but the index is 1");
+  expect(() => lib.set([1], 4)).toThrow("index out of bounds: the len is 1 but the index is 4");
+  expect([lib.second([1, 2]), lib.last_is([{}, { path: "a" }], "a")]).toEqual([3, true]);
 });
 
 test("a `let` pattern of one field from MIR destructures", async () => {
@@ -7047,12 +6927,10 @@ pub fn field(n: u32) -> u32 {
     get_props + 1
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const { get_props: getProps } = use_collapse(n);\n");
-    expect(js).toContain("  const getProps = use_collapse(n).get_props;\n");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const { get_props: getProps } = use_collapse(n);\n");
+  expect(js).toContain("  const getProps = use_collapse(n).get_props;\n");
 });
 
 test("an `if … else if` given as a value from MIR is a conditional where it's read", async () => {
@@ -7070,11 +6948,9 @@ test("an `if … else if` given as a value from MIR is a conditional where it's 
     )
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  return `[${href.startsWith("https://") ? "ext" : href.startsWith("#") ? "hash" : href}]`;\n');
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  return `[${href.startsWith("https://") ? "ext" : href.startsWith("#") ? "hash" : href}]`;\n');
 });
 
 test("a let-else from MIR whose rest is long, and drops what it owns, is a guard first", async () => {
@@ -7086,16 +6962,14 @@ test("a let-else from MIR whose rest is long, and drops what it owns, is a guard
     format!("[{}{}]", if href.starts_with("x") { "a" } else { href }, items.len())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function named(href, items) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function named(href, items) {
   if (!href) {
     return \`none\${items.length}\`;
   }
   return \`[\${href.startsWith("x") ? "a" : href}\${items.length}]\`;
 }`);
-  }
 });
 
 test("a function's value from MIR that branches assign is returned from each, its guards first", async () => {
@@ -7111,10 +6985,9 @@ test("a function's value from MIR that branches assign is returned from each, it
     format!("<next {href} {classes}>")
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function footer(href, children) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function footer(href, children) {
   const classes = \`c\${children.length}\`;
   if (!href) {
     return \`<div \${classes}>\`;
@@ -7124,7 +6997,6 @@ test("a function's value from MIR that branches assign is returned from each, it
   }
   return \`<next \${href} \${classes}>\`;
 }`);
-  }
 });
 
 test("a range loop from MIR whose end is a call holds it first, and a slice of `i..i + 1` reads its bounds", async () => {
@@ -7148,14 +7020,12 @@ pub fn sliced(code: &str) -> u32 {
     n
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const end = $byteLen(code);\n  for (let i = 0; i < end; i++) {\n");
-    expect(js).toContain('    if ($strSlice(code, i, (i + 1) >>> 0) === "a") {\n');
-    const lib = await import(join(dir, out));
-    expect([lib.plain("abcdef"), lib.sliced("aba")]).toEqual([3, 2]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const end = $byteLen(code);\n  for (let i = 0; i < end; i++) {\n");
+  expect(js).toContain('    if ($strSlice(code, i, (i + 1) >>> 0) === "a") {\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.plain("abcdef"), lib.sliced("aba")]).toEqual([3, 2]);
 });
 
 test("a `format!`'s arguments read out of order, and a string's `chars()` iterated, from MIR read as written", async () => {
@@ -7177,14 +7047,12 @@ test("a `format!`'s arguments read out of order, and a string's `chars()` iterat
     final_output
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  for (const c of code) {\n");
-    expect(js).toContain('      const arg = lineOutput.join("");\n      finalOutput.push(`${current}:${arg}`);\n');
-    const lib = await import(join(dir, out));
-    expect(lib.lines("ab\ncd\n")).toEqual(["0:ab", "1:cd"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  for (const c of code) {\n");
+  expect(js).toContain('      const arg = lineOutput.join("");\n      finalOutput.push(`${current}:${arg}`);\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.lines("ab\ncd\n")).toEqual(["0:ab", "1:cd"]);
 });
 
 test("a cell from MIR only its function reads and sets is its variable", async () => {
@@ -7211,28 +7079,26 @@ pub fn lent() -> u32 {
     c.get()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`export function counter(f) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`export function counter(f) {
   let n = 0;
   f(() => {
     n = (n + 1) >>> 0;
   });
   return n;
 }`);
-    expect(js).toContain(`export function local(f) {
+  expect(js).toContain(`export function local(f) {
   let active = true;
   f(() => {
     active = false;
   });
   return active;
 }`);
-    // One given whole is a cell.
-    expect(js).toContain("  const c = { value: 1 };\n  bump(c);\n");
-    const lib = await import(join(dir, out));
-    expect([lib.counter((g: () => void) => { g(); g(); }), lib.local((g: () => void) => g()), lib.lent()]).toEqual([2, false, 2]);
-  }
+  // One given whole is a cell.
+  expect(js).toContain("  const c = { value: 1 };\n  bump(c);\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.counter((g: () => void) => { g(); g(); }), lib.local((g: () => void) => g()), lib.lent()]).toEqual([2, false, 2]);
 });
 
 test("a `while` loop from MIR tests where it's written", async () => {
@@ -7286,20 +7152,18 @@ pub fn halved(mut n: u32, out: &mut Vec<u32>) {
     out.push(0);
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  while (messages.length > max) {\n    $removeAt(messages, 0);\n  }\n  return messages;\n");
-    expect(js).toContain("  while (n > 1) {\n    n = (n / 2) >>> 0;\n    steps = (steps + 1) >>> 0;\n  }\n  return steps;\n");
-    expect(js).toContain("  while (n > 1) {\n");
-    // A `loop` the program wrote stays one.
-    expect(js).toContain("export function looped(n) {\n  while (true) {\n    if (n <= 1) {\n      return 1;\n    }\n");
-    expect(js).toContain("  while (n > 1) {\n    if (n === 7) {\n      return 70;\n    }\n    if (n === 9) {\n      break;\n    }\n    n = (n / 2) >>> 0;\n  }\n  return (n + 100) >>> 0;\n");
-    const lib = await import(join(dir, out));
-    const pushed: number[] = [];
-    lib.halved(30, pushed);
-    expect([lib.trimmed([1, 2, 3], 1), lib.counted(9), pushed, lib.stopped(15), lib.stopped(9), lib.stopped(40), lib.looped(18), lib.looped(4)]).toEqual([[3], 3, [15, 0], 70, 109, 101, 109, 1]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  while (messages.length > max) {\n    $removeAt(messages, 0);\n  }\n  return messages;\n");
+  expect(js).toContain("  while (n > 1) {\n    n = (n / 2) >>> 0;\n    steps = (steps + 1) >>> 0;\n  }\n  return steps;\n");
+  expect(js).toContain("  while (n > 1) {\n");
+  // A `loop` the program wrote stays one.
+  expect(js).toContain("export function looped(n) {\n  while (true) {\n    if (n <= 1) {\n      return 1;\n    }\n");
+  expect(js).toContain("  while (n > 1) {\n    if (n === 7) {\n      return 70;\n    }\n    if (n === 9) {\n      break;\n    }\n    n = (n / 2) >>> 0;\n  }\n  return (n + 100) >>> 0;\n");
+  const lib = await import(join(dir, "mir.js"));
+  const pushed: number[] = [];
+  lib.halved(30, pushed);
+  expect([lib.trimmed([1, 2, 3], 1), lib.counted(9), pushed, lib.stopped(15), lib.stopped(9), lib.stopped(40), lib.looped(18), lib.looped(4)]).toEqual([[3], 3, [15, 0], 70, 109, 101, 109, 1]);
 });
 
 test("a chain collected from MIR is a spread", async () => {
@@ -7314,13 +7178,11 @@ pub fn capped(prev: &VecDeque<u32>, more: Vec<u32>) -> VecDeque<u32> {
     messages
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const messages = [...prev, ...more];\n");
-    const lib = await import(join(dir, out));
-    expect(lib.capped([1, 2], [3])).toEqual([2, 3]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const messages = [...prev, ...more];\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.capped([1, 2], [3])).toEqual([2, 3]);
 });
 
 test("a loop's `continue`s from MIR are where the program wrote them", async () => {
@@ -7342,10 +7204,9 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`  for (const route of routes) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`  for (const route of routes) {
     if (route.header) {
       continue;
     }
@@ -7358,7 +7219,6 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
       out.push(route.path);
     }
   }`);
-  }
 });
 
 // What \`?\` of an \`Option\` gives a \`let\`, from MIR, is held under the
@@ -7370,13 +7230,11 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
     Some(f * 10)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return Math.imul(f, 10);\n");
-    const lib = await import(join(dir, out));
-    expect([lib.first_even([1, 4]), lib.first_even([1])]).toEqual([40, undefined]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const f = xs.find((x) => x % 2 === 0);\n  if (f == null) {\n    return;\n  }\n  return Math.imul(f, 10);\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.first_even([1, 4]), lib.first_even([1])]).toEqual([40, undefined]);
 });
 
 // An unstable sort and a selection from MIR (ADR 0342).
@@ -7394,11 +7252,9 @@ pub fn third(mut v: Vec<u32>) -> u32 {
     *v.select_nth_unstable(2).1
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.down([3, 1, 2]), lib.by_len(["ccc", "a", "bb"]), lib.third([5, 1, 4, 2, 3])]).toEqual([[3, 2, 1], ["a", "bb", "ccc"], 3]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.down([3, 1, 2]), lib.by_len(["ccc", "a", "bb"]), lib.third([5, 1, 4, 2, 3])]).toEqual([[3, 2, 1], ["a", "bb", "ccc"], 3]);
 });
 
 // A slice's own methods from MIR: split by a test, filled, checked sorted,
@@ -7416,11 +7272,9 @@ pub fn facts(v: &[i32]) -> (bool, usize, usize) {
     (v.is_sorted(), v.partition_point(|&x| x < 3), v.chunks_exact(2).count())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.parts([3, -1, 4, 5, -2, 6]), lib.zeroed([1, 2]), lib.facts([1, 2, 3, 4, 5])]).toEqual([[1, 2, 1], [0, 0], [true, 2, 2]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.parts([3, -1, 4, 5, -2, 6]), lib.zeroed([1, 2]), lib.facts([1, 2, 3, 4, 5])]).toEqual([[1, 2, 1], [0, 0], [true, 2, 2]]);
 });
 
 // Two iterators equal from MIR, \`a.eq(b)\`: each item in turn, as Rust
@@ -7454,12 +7308,10 @@ pub fn upto(m: &BTreeMap<u32, &'static str>) -> Vec<&'static str> {
     m.range(..=2).map(|(_, v)| *v).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    const m = new Map([[3, "c"], [1, "a"], [2, "b"]]);
-    expect([lib.from_two(m), lib.upto(m)]).toEqual([[2, 3], ["a", "b"]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  const m = new Map([[3, "c"], [1, "a"], [2, "b"]]);
+  expect([lib.from_two(m), lib.upto(m)]).toEqual([[2, 3], ["a", "b"]]);
 });
 
 // A derived order of an enum with fields: by variant, as declared, then
@@ -7479,15 +7331,13 @@ pub fn order(a: &Scaled, b: &Scaled) -> Option<std::cmp::Ordering> {
     a.partial_cmp(b)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    const rect = (a: number, b: number) => ({ TAG: "Rect", _0: a, _1: b });
-    const circle = (r: number) => ({ TAG: "Circle", r });
-    expect(lib.sorted([rect(2, 3), "Dot", circle(2), rect(1, 9), circle(1), rect(2, 1)])).toEqual([circle(1), circle(2), rect(1, 9), rect(2, 1), rect(2, 3), "Dot"]);
-    const scale = (x: number) => ({ TAG: "Scale", _0: x });
-    expect([lib.order(scale(NaN), scale(1)), lib.order("Dot", scale(NaN)), lib.order(scale(2), scale(1))]).toEqual([undefined, -1, 1]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  const rect = (a: number, b: number) => ({ TAG: "Rect", _0: a, _1: b });
+  const circle = (r: number) => ({ TAG: "Circle", r });
+  expect(lib.sorted([rect(2, 3), "Dot", circle(2), rect(1, 9), circle(1), rect(2, 1)])).toEqual([circle(1), circle(2), rect(1, 9), rect(2, 1), rect(2, 3), "Dot"]);
+  const scale = (x: number) => ({ TAG: "Scale", _0: x });
+  expect([lib.order(scale(NaN), scale(1)), lib.order("Dot", scale(NaN)), lib.order(scale(2), scale(1))]).toEqual([undefined, -1, 1]);
 });
 
 // \`replacen\` of any count, as Rust's: the first \`n\` matches, an empty
@@ -7504,11 +7354,9 @@ pub fn empty(s: &str) -> String {
     s.replacen("", "-", 2)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.two("hello world"), lib.many("ababab", 0), lib.many("ababab", 2), lib.many("ababab", 9), lib.empty("héé")]).toEqual(["he__o world", "ababab", "XXab", "XXX", "-h-éé"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.two("hello world"), lib.many("ababab", 0), lib.many("ababab", 2), lib.many("ababab", 9), lib.empty("héé")]).toEqual(["he__o world", "ababab", "XXab", "XXX", "-h-éé"]);
 });
 
 // An enum made a number, \`ordering as i32\` or a fieldless one's, from
@@ -7524,11 +7372,9 @@ pub fn code(c: Color) -> i32 {
     c as i32
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.order("abc", "abd"), lib.order("b", "a"), lib.code("Red"), lib.code("Green"), lib.code("Blue")]).toEqual([-1, 1, 0, 5, 6]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.order("abc", "abd"), lib.order("b", "a"), lib.code("Red"), lib.code("Green"), lib.code("Blue")]).toEqual([-1, 1, 0, 5, 6]);
 });
 
 // A float's sum from MIR starts at -0.0, as Rust's does: an empty sum and
@@ -7542,11 +7388,9 @@ pub fn owned(xs: Vec<f64>) -> f64 {
     xs.into_iter().sum()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([Object.is(lib.total([]), -0), Object.is(lib.total([-0]), -0), Object.is(lib.owned([-0, -0]), -0), lib.total([1, 2])]).toEqual([true, true, true, 3]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([Object.is(lib.total([]), -0), Object.is(lib.total([-0]), -0), Object.is(lib.owned([-0, -0]), -0), lib.total([1, 2])]).toEqual([true, true, true, 3]);
 });
 
 // A nested pattern of an item a closure reads of what it captured, from
@@ -7571,13 +7415,11 @@ pub fn first(errors: &'static Vec<Lint>) -> impl Fn() -> Option<String> {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("const { line, column, message } = errors[0]");
-    const lib = await import(join(dir, out));
-    expect(lib.first([{ line: 1, column: 2, message: "m", rule: "r", severity: "error" }])()).toBe("1:2 - m");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("const { line, column, message } = errors[0]");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.first([{ line: 1, column: 2, message: "m", rule: "r", severity: "error" }])()).toBe("1:2 - m");
 });
 
 // Sets and maps from MIR made of arrays and read as arrays:
@@ -7596,15 +7438,13 @@ pub fn keys(m: &BTreeMap<String, u32>) -> Vec<String> {
     m.iter().map(|(k, v)| format!("{k}{v}")).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const a = new Set([1, 2, 3]);\n");
-    expect(js).toContain('  const both = $setAlgebra(a, b, "intersection");\n');
-    expect(js).toContain("  return $sortedEntries(m, $cmp).map(");
-    const lib = await import(join(dir, out));
-    expect([lib.both(), lib.keys(new Map([["b", 1], ["a", 2]]))]).toEqual([[2, 3], ["a2", "b1"]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const a = new Set([1, 2, 3]);\n");
+  expect(js).toContain('  const both = $setAlgebra(a, b, "intersection");\n');
+  expect(js).toContain("  return $sortedEntries(m, $cmp).map(");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.both(), lib.keys(new Map([["b", 1], ["a", 2]]))]).toEqual([[2, 3], ["a2", "b1"]]);
 });
 
 // A string's or-pattern from MIR is one test of each, \`s === "a" || …\`,
@@ -7621,15 +7461,13 @@ test("a string's or-pattern from MIR is an or of its tests", async () => {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (s === "a" || s === "e" || s === "i") {\n    return "vowel";\n  }\n');
-    // What an arm binds of the value whole is the value.
-    expect(js).toContain("  if ($byteLen(s) > 1) {\n");
-    const lib = await import(join(dir, out));
-    expect(["a", "i", "", "z", "zz"].map(lib.kind)).toEqual(["vowel", "vowel", "empty", "consonant", "word"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (s === "a" || s === "e" || s === "i") {\n    return "vowel";\n  }\n');
+  // What an arm binds of the value whole is the value.
+  expect(js).toContain("  if ($byteLen(s) > 1) {\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(["a", "i", "", "z", "zz"].map(lib.kind)).toEqual(["vowel", "vowel", "empty", "consonant", "word"]);
 });
 
 // A range pattern's tests from MIR read the value first, \`k >= 2\`, and a
@@ -7642,16 +7480,14 @@ pub fn mid(k: u8) -> bool { matches!(k, 2..=5) }
 pub fn grade(k: u8) -> &'static str { match k { 0..=4 => "low", 5..10 => "mid", _ => "high" } }
 pub fn written(k: u8) -> bool { 2 <= k }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("export function big(k) {\n  return k >= 2;\n}");
-    expect(js).toContain("export function mid(k) {\n  return k >= 2 && k <= 5;\n}");
-    expect(js).toContain('  if (k <= 4) {\n    return "low";\n  }\n');
-    expect(js).toContain("export function written(k) {\n  return 2 <= k;\n}");
-    const lib = await import(join(dir, out));
-    expect([lib.big(1), lib.big(2), lib.mid(5), lib.mid(6), lib.grade(0), lib.grade(7), lib.grade(10)]).toEqual([false, true, true, false, "low", "mid", "high"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("export function big(k) {\n  return k >= 2;\n}");
+  expect(js).toContain("export function mid(k) {\n  return k >= 2 && k <= 5;\n}");
+  expect(js).toContain('  if (k <= 4) {\n    return "low";\n  }\n');
+  expect(js).toContain("export function written(k) {\n  return 2 <= k;\n}");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.big(1), lib.big(2), lib.mid(5), lib.mid(6), lib.grade(0), lib.grade(7), lib.grade(10)]).toEqual([false, true, true, false, "low", "mid", "high"]);
 });
 
 // A loop the program leaves with \`break\`, its function's value after it,
@@ -7696,18 +7532,16 @@ pub fn root(n: u32) -> u32 {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    if (i > 7) {\n      break;\n    }\n");
-    expect(js).toContain("  }\n  return out;\n}\n\nexport function drained");
-    expect(js).toMatch(/\n  }\n  return out;\n}\n\nexport function early/);
-    // A \`return\` the program wrote stays.
-    expect(js).toContain("      return x;\n");
-    expect(js).toContain("      return i;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.odds(), lib.drained([1, 2]), lib.early([1, 5]), lib.early([]), lib.root(10)]).toEqual([[1, 2, 3, 4, 5, 6, 7], "21", 5, 0, 4]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    if (i > 7) {\n      break;\n    }\n");
+  expect(js).toContain("  }\n  return out;\n}\n\nexport function drained");
+  expect(js).toMatch(/\n  }\n  return out;\n}\n\nexport function early/);
+  // A \`return\` the program wrote stays.
+  expect(js).toContain("      return x;\n");
+  expect(js).toContain("      return i;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.odds(), lib.drained([1, 2]), lib.early([1, 5]), lib.early([]), lib.root(10)]).toEqual([[1, 2, 3, 4, 5, 6, 7], "21", 5, 0, 4]);
 });
 
 // An \`else if\` the program wrote at a loop's end, after an \`if\` it ended
@@ -7831,20 +7665,18 @@ pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Sectio
     sections
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    } else if (route.title != null && route.path != null) {\n");
-    // Nor a \`continue\` where the body ends anyway.
-    expect(js).not.toMatch(/\n      continue;\n    } else if/);
-    const lib = await import(join(dir, out));
-    const routes = [
-      { has_section_header: true, section_header: "A" },
-      { title: "t", path: "/p" },
-      { title: "g", routes: [{ title: "c", path: "/c" }] },
-    ];
-    expect(lib.extractSectionedRoutes(routes, "x").map((s: { heading: string; pages: unknown[]; sub_groups: unknown[] }) => [s.heading, s.pages.length, s.sub_groups.length])).toEqual([["A", 1, 1]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    } else if (route.title != null && route.path != null) {\n");
+  // Nor a \`continue\` where the body ends anyway.
+  expect(js).not.toMatch(/\n      continue;\n    } else if/);
+  const lib = await import(join(dir, "mir.js"));
+  const routes = [
+    { has_section_header: true, section_header: "A" },
+    { title: "t", path: "/p" },
+    { title: "g", routes: [{ title: "c", path: "/c" }] },
+  ];
+  expect(lib.extractSectionedRoutes(routes, "x").map((s: { heading: string; pages: unknown[]; sub_groups: unknown[] }) => [s.heading, s.pages.length, s.sub_groups.length])).toEqual([["A", 1, 1]]);
 });
 
 // A \`match\`'s arms from MIR are tested in the order they're written, an
@@ -7864,15 +7696,13 @@ pub fn view(s: Status) -> String {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    const at = (s: string) => js.indexOf(s);
-    expect([at('"Idle"') < at('"Loading"'), at('"Loading"') < at('"Done"')]).toEqual([true, true]);
-    const lib = await import(join(dir, out));
-    const all = ["Idle", { TAG: "Loading", _0: 5 }, { TAG: "Done", ok: true }, { TAG: "Done", ok: false }, { TAG: "Failed", _0: "x" }];
-    expect(all.map(lib.view)).toEqual(["idle", "5%", "ok", "not ok", "x"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const at = (s: string) => js.indexOf(s);
+  expect([at('"Idle"') < at('"Loading"'), at('"Loading"') < at('"Done"')]).toEqual([true, true]);
+  const lib = await import(join(dir, "mir.js"));
+  const all = ["Idle", { TAG: "Loading", _0: 5 }, { TAG: "Done", ok: true }, { TAG: "Done", ok: false }, { TAG: "Failed", _0: "x" }];
+  expect(all.map(lib.view)).toEqual(["idle", "5%", "ok", "not ok", "x"]);
 });
 
 // Each \`?\` from MIR is a guard where it's written, \`if (result.TAG ===
@@ -7891,10 +7721,9 @@ pub fn opt2(a: Option<i32>, b: Option<i32>) -> Option<i32> {
     Some(x + y)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`  const result = $parseInt(a, -2147483648, 2147483647);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`  const result = $parseInt(a, -2147483648, 2147483647);
   if (result.TAG === "Err") {
     return result;
   }
@@ -7905,10 +7734,9 @@ pub fn opt2(a: Option<i32>, b: Option<i32>) -> Option<i32> {
   }
   const y = result$1._0;
   return { TAG: "Ok", _0: (x + y) | 0 };`);
-    expect(js).toContain("  if (a == null) {\n    return;\n  }\n  if (b == null) {\n    return;\n  }\n  return (a + b) | 0;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.parse2("1", "2"), lib.parse2("x", "2").TAG, lib.opt2(1, 2), lib.opt2(1, undefined)]).toEqual([{ TAG: "Ok", _0: 3 }, "Err", 3, undefined]);
-  }
+  expect(js).toContain("  if (a == null) {\n    return;\n  }\n  if (b == null) {\n    return;\n  }\n  return (a + b) | 0;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.parse2("1", "2"), lib.parse2("x", "2").TAG, lib.opt2(1, 2), lib.opt2(1, undefined)]).toEqual([{ TAG: "Ok", _0: 3 }, "Err", 3, undefined]);
 });
 
 // A wide field updated through a \`&mut\`, from MIR, is written where it's
@@ -7921,15 +7749,13 @@ pub fn bump(m: &mut Money) {
     m.cents += 1;
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("export function bump(m) {\n  m.cents = BigInt.asIntN(64, m.cents + 1n);\n}");
-    const lib = await import(join(dir, out));
-    const m = { cents: 9223372036854775807n };
-    lib.bump(m);
-    expect(m.cents).toBe(-9223372036854775808n);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("export function bump(m) {\n  m.cents = BigInt.asIntN(64, m.cents + 1n);\n}");
+  const lib = await import(join(dir, "mir.js"));
+  const m = { cents: 9223372036854775807n };
+  lib.bump(m);
+  expect(m.cents).toBe(-9223372036854775808n);
 });
 
 // What's left of a string's \`chars()\` once stepped, \`as_str()\`, from MIR:
@@ -7953,15 +7779,13 @@ pub fn whole(w: &str) -> String {
     w.chars().as_str().to_string()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("$restStr(c)");
-    const lib = await import(join(dir, out));
-    expect([lib.cap("hello"), lib.cap(""), lib.cap("é!")]).toEqual(["Hello", "", "É!"]);
-    expect([lib.init("abc"), lib.init(""), lib.whole("abc")]).toEqual(["ab", "", "abc"]);
-    expect(js).toContain('  return Array.from(w).join("");\n');
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("$restStr(c)");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.cap("hello"), lib.cap(""), lib.cap("é!")]).toEqual(["Hello", "", "É!"]);
+  expect([lib.init("abc"), lib.init(""), lib.whole("abc")]).toEqual(["ab", "", "abc"]);
+  expect(js).toContain('  return Array.from(w).join("");\n');
 });
 
 // A match of three arms or more giving a variable its value, from MIR, is
@@ -7992,15 +7816,13 @@ pub fn pick(x: i32) -> String {
     shown.to_string()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (k === "Note") {\n    cls = "note";\n  } else if (k.TAG === "Warn") {\n    cls = "warn";\n  } else {\n    cls = "tip";\n  }\n');
-    expect(js).toMatch(/} else if \(x < 0\) {\n    \w+ = /);
-    const lib = await import(join(dir, out));
-    expect([lib.class$("Note"), lib.class$({ TAG: "Warn", level: 1 }), lib.class$({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
-    expect([lib.pick(6), lib.pick(-1), lib.pick(2)]).toEqual(["13", "neg", "2"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (k === "Note") {\n    cls = "note";\n  } else if (k.TAG === "Warn") {\n    cls = "warn";\n  } else {\n    cls = "tip";\n  }\n');
+  expect(js).toMatch(/} else if \(x < 0\) {\n    \w+ = /);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.class$("Note"), lib.class$({ TAG: "Warn", level: 1 }), lib.class$({ TAG: "Tip", _0: "x" })]).toEqual(["note!", "warn!", "tip!"]);
+  expect([lib.pick(6), lib.pick(-1), lib.pick(2)]).toEqual(["13", "neg", "2"]);
 });
 
 // A count kept in a map, `*m.entry(k).or_insert(0) += 1`, from MIR is the
@@ -8022,15 +7844,13 @@ pub fn bumped(mut m: HashMap<&'static str, u32>) -> u32 {
     m["a"]
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    const current = $orInsert(counts, w, 0);\n    counts.set(w, (current + 1) >>> 0);\n");
-    expect(js).toContain('  const current = $orInsert(m, "a", 0);\n  m.set("a", (current + 5) >>> 0);\n');
-    const lib = await import(join(dir, out));
-    expect(lib.counts("a b a")).toEqual([["a", 2], ["b", 1]]);
-    expect([lib.bumped(new Map()), lib.bumped(new Map([["a", 1]]))]).toEqual([5, 6]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    const current = $orInsert(counts, w, 0);\n    counts.set(w, (current + 1) >>> 0);\n");
+  expect(js).toContain('  const current = $orInsert(m, "a", 0);\n  m.set("a", (current + 5) >>> 0);\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.counts("a b a")).toEqual([["a", 2], ["b", 1]]);
+  expect([lib.bumped(new Map()), lib.bumped(new Map([["a", 1]]))]).toEqual([5, 6]);
 });
 
 // A slice's items with their indices, `iter().enumerate()`, from MIR are
@@ -8073,13 +7893,12 @@ pub fn first(grid: &[Vec<u32>]) -> Option<u32> {
     found
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  for (const [r, row] of grid.entries()) {\n    for (const [c, v] of row.entries()) {\n");
-    expect(js).toContain("  rows: for (const row of grid) {");
-    expect(js).toContain("        continue rows;");
-    expect(js).toContain(`  outer: for (const row of grid) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  for (const [r, row] of grid.entries()) {\n    for (const [c, v] of row.entries()) {\n");
+  expect(js).toContain("  rows: for (const row of grid) {");
+  expect(js).toContain("        continue rows;");
+  expect(js).toContain(`  outer: for (const row of grid) {
     for (const v of row) {
       if (v > 3) {
         found = v;
@@ -8088,10 +7907,9 @@ pub fn first(grid: &[Vec<u32>]) -> Option<u32> {
     }
   }
   return found;`);
-    const lib = await import(join(dir, out));
-    const grid = [[1, 2], [0, 5], [3, 4]];
-    expect([lib.place(grid), lib.place([[1]]), lib.skip(grid), lib.first(grid), lib.first([[1]])]).toEqual([[2, 1], undefined, 10, 5, undefined]);
-  }
+  const lib = await import(join(dir, "mir.js"));
+  const grid = [[1, 2], [0, 5], [3, 4]];
+  expect([lib.place(grid), lib.place([[1]]), lib.skip(grid), lib.first(grid), lib.first([[1]])]).toEqual([[2, 1], undefined, 10, 5, undefined]);
 });
 
 // MIR's checks of a `%` or `/`, `2 === -1` of a constant divisor, are
@@ -8114,20 +7932,18 @@ pub fn by(a: i32, b: i32) -> i32 {
     a % b
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`    if (i % 2 === 0) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`    if (i % 2 === 0) {
       continue;
     }
     out.push((i / 3) | 0);`);
-    const lib = await import(join(dir, out));
-    expect(lib.odds(7)).toEqual([0, 1, 1, 2]);
-    // A divisor not known is checked where it divides, once.
-    expect(js).toContain("export function by(a, b) {\n  return $rem(a, b, -2147483648) | 0;\n}");
-    expect(() => lib.by(-2147483648, -1)).toThrow("remainder with overflow");
-    expect(() => lib.by(1, 0)).toThrow("divisor of zero");
-  }
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.odds(7)).toEqual([0, 1, 1, 2]);
+  // A divisor not known is checked where it divides, once.
+  expect(js).toContain("export function by(a, b) {\n  return $rem(a, b, -2147483648) | 0;\n}");
+  expect(() => lib.by(-2147483648, -1)).toThrow("remainder with overflow");
+  expect(() => lib.by(1, 0)).toThrow("divisor of zero");
 });
 
 test("a test from MIR that `x` is set and true reads `x`", async () => {
@@ -8168,22 +7984,20 @@ pub fn logs(message: &Message, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).not.toContain("!= null &&");
-    expect(js).toContain("  if (props.meta) {\n");
-    const lib = await import(join(dir, out));
-    const pushed: number[] = [];
-    lib.starts({ TAG: "Start", first_load: true }, pushed);
-    lib.starts({ TAG: "Start", first_load: false }, pushed);
-    lib.starts({ TAG: "Start" }, pushed);
-    lib.starts("Refresh", pushed);
-    expect([pushed, lib.titled("e"), lib.titled(""), lib.titled(undefined)]).toEqual([[1, 1], "#e", "none", "none"]);
-    lib.logs({ TAG: "Start", first_load: true }, pushed);
-    lib.logs({ TAG: "Start" }, pushed);
-    expect([pushed, lib.meta({ meta: "ab" }), lib.meta({ meta: "" }), lib.meta({})]).toEqual([[1, 1, 2], 2, 0, 0]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).not.toContain("!= null &&");
+  expect(js).toContain("  if (props.meta) {\n");
+  const lib = await import(join(dir, "mir.js"));
+  const pushed: number[] = [];
+  lib.starts({ TAG: "Start", first_load: true }, pushed);
+  lib.starts({ TAG: "Start", first_load: false }, pushed);
+  lib.starts({ TAG: "Start" }, pushed);
+  lib.starts("Refresh", pushed);
+  expect([pushed, lib.titled("e"), lib.titled(""), lib.titled(undefined)]).toEqual([[1, 1], "#e", "none", "none"]);
+  lib.logs({ TAG: "Start", first_load: true }, pushed);
+  lib.logs({ TAG: "Start" }, pushed);
+  expect([pushed, lib.meta({ meta: "ab" }), lib.meta({ meta: "" }), lib.meta({})]).toEqual([[1, 1, 2], 2, 0, 0]);
 });
 
 test("a match guard's binding from MIR is what it binds", async () => {
@@ -8213,16 +8027,14 @@ pub fn doubled(k: Kind) -> u8 {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('export function titled(errorCode) {\n  if (errorCode) {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
-    expect(js).toContain("  return k._0;\n");
-    expect(js).toContain("    return (k.level * 2) & 255;\n");
-    expect(js).not.toContain("const level");
-    const lib = await import(join(dir, out));
-    expect([lib.icon({ TAG: "Warn", level: 2 }), lib.icon({ TAG: "Warn", level: 1 }), lib.icon({ TAG: "Tip", _0: "t" }), lib.doubled({ TAG: "Warn", level: 3 })]).toEqual(["!!", "!", "t", 6]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('export function titled(errorCode) {\n  if (errorCode) {\n    return `#${errorCode}`;\n  }\n  return "none";\n}');
+  expect(js).toContain("  return k._0;\n");
+  expect(js).toContain("    return (k.level * 2) & 255;\n");
+  expect(js).not.toContain("const level");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.icon({ TAG: "Warn", level: 2 }), lib.icon({ TAG: "Warn", level: 1 }), lib.icon({ TAG: "Tip", _0: "t" }), lib.doubled({ TAG: "Warn", level: 3 })]).toEqual(["!!", "!", "t", 6]);
 });
 
 test("a closure from MIR captures a variable itself where nothing changes it after", async () => {
@@ -8244,15 +8056,13 @@ pub fn each(n: u32) -> Vec<u32> {
     made.iter().map(|f| f()).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  hover(() => index);\n");
-    const lib = await import(join(dir, out));
-    let seen = 0;
-    lib.last(3, (f: () => number) => { seen = f(); });
-    expect([seen, lib.each(3)]).toEqual([3, [0, 1, 2]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  hover(() => index);\n");
+  const lib = await import(join(dir, "mir.js"));
+  let seen = 0;
+  lib.last(3, (f: () => number) => { seen = f(); });
+  expect([seen, lib.each(3)]).toEqual([3, [0, 1, 2]]);
 });
 
 test("a `let` a loop's body makes, from MIR, is declared in the body", async () => {
@@ -8269,13 +8079,11 @@ test("a `let` a loop's body makes, from MIR, is declared in the body", async () 
     out
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  for (const end of ends) {\n    let start = 0;\n");
-    const lib = await import(join(dir, out));
-    expect(lib.starts(["ab", "c"], [1, 2])).toEqual([3, 5]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  for (const end of ends) {\n    let start = 0;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.starts(["ab", "c"], [1, 2])).toEqual([3, 5]);
 });
 
 test("a thread-local only its module reads and sets, from MIR, is its variable (ADR 0270)", async () => {
@@ -8300,15 +8108,13 @@ pub fn remember(f: &dyn Fn(&dyn Fn(u32))) -> u32 {
     LAST.get()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("let COUNT = 0;\nconst SEEN = false;\n");
-    expect(js).toContain("let LAST = 0;\n");
-    expect(js).toContain("  COUNT = (COUNT + 1) >>> 0;\n  return COUNT;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.bump(), lib.bump(), lib.seen(), lib.remember((g: (n: number) => void) => g(7))]).toEqual([1, 2, false, 7]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("let COUNT = 0;\nconst SEEN = false;\n");
+  expect(js).toContain("let LAST = 0;\n");
+  expect(js).toContain("  COUNT = (COUNT + 1) >>> 0;\n  return COUNT;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.bump(), lib.bump(), lib.seen(), lib.remember((g: (n: number) => void) => g(7))]).toEqual([1, 2, false, 7]);
 });
 
 test("a `RefCell` field only ever borrowed for a moment, from MIR, is its value (ADR 0362)", async () => {
@@ -8334,15 +8140,13 @@ pub fn count(node: &Node) -> usize {
     node.children.borrow().len()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    const node = { item: i, children: [] };\n    root.children.push(node);\n");
-    expect(js).toContain("  if (node.children.length < 2) {\n    return 0;\n  }\n  return node.children.length;\n");
-    const lib = await import(join(dir, out));
-    const root = lib.tree([1, 2, 3]);
-    expect([lib.count(root), lib.count(root.children[0])]).toEqual([3, 0]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    const node = { item: i, children: [] };\n    root.children.push(node);\n");
+  expect(js).toContain("  if (node.children.length < 2) {\n    return 0;\n  }\n  return node.children.length;\n");
+  const lib = await import(join(dir, "mir.js"));
+  const root = lib.tree([1, 2, 3]);
+  expect([lib.count(root), lib.count(root.children[0])]).toEqual([3, 0]);
 });
 
 test("a let-else from MIR inside a branch, its `else` a `return`, is a guard there", async () => {
@@ -8358,10 +8162,9 @@ pub fn scroll(pos: usize, navs: &[Nav], out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(`  if (pos < navs.length) {
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(`  if (pos < navs.length) {
     const offset = navs[pos].offset;
     if (offset == null) {
       return;
@@ -8369,7 +8172,6 @@ pub fn scroll(pos: usize, navs: &[Nav], out: &mut Vec<u32>) {
     out.push(offset);
     out.push((offset + 1) >>> 0);
   }`);
-  }
 });
 
 test("a call from MIR is read in place past an object of constants before it", async () => {
@@ -8386,11 +8188,9 @@ pub fn theme() -> Theme {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('    font: { body: unquoted(joined(["a", "b"])), mono: unquoted(joined(["c"])), size: "14px" },\n');
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('    font: { body: unquoted(joined(["a", "b"])), mono: unquoted(joined(["c"])), size: "14px" },\n');
 });
 
 test("an `||` of `matches!` from MIR is one test, at a function's end or not", async () => {
@@ -8412,19 +8212,17 @@ pub fn tail(message: &Message, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    const test = '  if ((message.TAG === "Start" && message.first_load) || message === "Refresh") {\n    out.push(1);\n  }\n';
-    expect(js).toContain(`export function starts(message, out) {\n${test}  out.push(2);\n}`);
-    expect(js).toContain(`export function tail(message, out) {\n${test}}`);
-    const lib = await import(join(dir, out));
-    const pushed: number[] = [];
-    lib.starts({ TAG: "Start", first_load: true }, pushed);
-    lib.tail("Refresh", pushed);
-    lib.tail("Other", pushed);
-    expect(pushed).toEqual([1, 2, 1]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  const test = '  if ((message.TAG === "Start" && message.first_load) || message === "Refresh") {\n    out.push(1);\n  }\n';
+  expect(js).toContain(`export function starts(message, out) {\n${test}  out.push(2);\n}`);
+  expect(js).toContain(`export function tail(message, out) {\n${test}}`);
+  const lib = await import(join(dir, "mir.js"));
+  const pushed: number[] = [];
+  lib.starts({ TAG: "Start", first_load: true }, pushed);
+  lib.tail("Refresh", pushed);
+  lib.tail("Other", pushed);
+  expect(pushed).toEqual([1, 2, 1]);
 });
 
 // A guard of what a variant binds, `Some(code) if !code.is_empty()` of an
@@ -8439,18 +8237,16 @@ test("a guarded binding of an Option's string is its truth", async () => {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    // MIR's one value, as react.dev's original writes it.
-    expect(js).toContain(
-      out === "mir.js"
-        ? 'export function title(errorCode) {\n  return errorCode ? `Minified React error #${errorCode}` : "Minified Error Decoder";\n}'
-        : 'export function title(errorCode) {\n  if (errorCode) {\n    return `Minified React error #${errorCode}`;\n  }\n',
-    );
-    const lib = await import(join(dir, out));
-    expect([lib.title("1"), lib.title(""), lib.title(undefined)]).toEqual(["Minified React error #1", "Minified Error Decoder", "Minified Error Decoder"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  // MIR's one value, as react.dev's original writes it.
+  expect(js).toContain(
+    "mir.js" === "mir.js"
+      ? 'export function title(errorCode) {\n  return errorCode ? `Minified React error #${errorCode}` : "Minified Error Decoder";\n}'
+      : 'export function title(errorCode) {\n  if (errorCode) {\n    return `Minified React error #${errorCode}`;\n  }\n',
+  );
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.title("1"), lib.title(""), lib.title(undefined)]).toEqual(["Minified React error #1", "Minified Error Decoder", "Minified Error Decoder"]);
 });
 
 // Text's truth, `!!code` of `!code.is_empty()`, isn't a presence test: an
@@ -8471,13 +8267,11 @@ pub fn upper(s: &str) -> Option<String> {
     upper
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).not.toContain("?.toUpperCase()");
-    const lib = await import(join(dir, out));
-    expect([lib.held(""), lib.held("a"), lib.held(undefined), lib.upper(""), lib.upper("b")]).toEqual([undefined, "A", undefined, undefined, "B"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).not.toContain("?.toUpperCase()");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.held(""), lib.held("a"), lib.held(undefined), lib.upper(""), lib.upper("b")]).toEqual([undefined, "A", undefined, undefined, "B"]);
 });
 
 // ADR 0275: a nullable field given `Some(..)` or `None` by a branch, as
@@ -8509,14 +8303,12 @@ pub fn later(code: Option<&str>) -> Props {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return { message: code ? code.toUpperCase() : null };");
-    const lib = await import(join(dir, out));
-    expect([lib.props("a"), lib.props(""), lib.props(undefined)]).toEqual([{ message: "A" }, { message: null }, { message: null }]);
-    expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return { message: code ? code.toUpperCase() : null };");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.props("a"), lib.props(""), lib.props(undefined)]).toEqual([{ message: "A" }, { message: null }, { message: null }]);
+  expect([lib.later("xa"), lib.later("a"), lib.later(""), lib.later(undefined)]).toEqual([{ message: "a" }, { message: null }, { message: null }, { message: null }]);
 });
 
 // A let chain's tests, each read where it's tested once what holds them
@@ -8536,13 +8328,11 @@ pub fn revive(val: Option<&'static Unknown>) -> Option<&'static Unknown> {
     val
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('export function revive(val) {\n  if (Array.isArray(val) && val[0] === "$r") {\n    return val[1];\n  }\n  return val;\n}');
-    const lib = await import(join(dir, out));
-    expect([lib.revive(["$r", 1]), lib.revive(["x", 1]), lib.revive(undefined), lib.revive("$r")]).toEqual([1, ["x", 1], undefined, "$r"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('export function revive(val) {\n  if (Array.isArray(val) && val[0] === "$r") {\n    return val[1];\n  }\n  return val;\n}');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.revive(["$r", 1]), lib.revive(["x", 1]), lib.revive(undefined), lib.revive("$r")]).toEqual([1, ["x", 1], undefined, "$r"]);
 });
 
 // An `async fn`'s parameter pattern, as react.dev's errors page takes
@@ -8558,13 +8348,11 @@ pub async fn props(Ctx { params, .. }: Ctx) -> String {
     params.unwrap_or_default()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('export async function props({ params }) {\n  return params ?? "";\n}');
-    const lib = await import(join(dir, out));
-    expect([await lib.props({ params: "a" }), await lib.props({})]).toEqual(["a", ""]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('export async function props({ params }) {\n  return params ?? "";\n}');
+  const lib = await import(join(dir, "mir.js"));
+  expect([await lib.props({ params: "a" }), await lib.props({})]).toEqual(["a", ""]);
 });
 
 // A match arm's guard, `Some(path) if !skip`, is one test with its pattern,
@@ -8585,13 +8373,11 @@ pub fn crumbs(cs: &[Crumb]) -> Vec<Option<String>> {
         .collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    if (c.path != null && !(c.skip ?? false)) {\n      return c.path + c.title;\n    }\n");
-    const lib = await import(join(dir, out));
-    expect(lib.crumbs([{ path: "/a", title: "A" }, { path: "/b", skip: true, title: "B" }, { title: "C" }])).toEqual(["/aA", undefined, undefined]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    if (c.path != null && !(c.skip ?? false)) {\n      return c.path + c.title;\n    }\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.crumbs([{ path: "/a", title: "A" }, { path: "/b", skip: true, title: "B" }, { title: "C" }])).toEqual(["/aA", undefined, undefined]);
 });
 
 // `ids.iter().position(..)` of an iterator made for it, as react.dev's
@@ -8603,13 +8389,11 @@ test("a position of an array's own iterator from MIR is of the array", async () 
     ids.iter().position(|id| Some(id.as_str()) == path.split('#').nth(1))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return $position(ids, (id) => id == path.split("#")[1]);');
-    const lib = await import(join(dir, out));
-    expect([lib.second(["a", "b"], "x#b"), lib.second(["a"], "x")]).toEqual([1, undefined]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return $position(ids, (id) => id == path.split("#")[1]);');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.second(["a", "b"], "x#b"), lib.second(["a"], "x")]).toEqual([1, undefined]);
 });
 
 // An `||` of `&&`s, `(a && b) || (c && (d || e)) || f`, which MIR jumps
@@ -8635,15 +8419,13 @@ pub fn handle(ev: &Ev, open: bool, out: &mut Vec<u32>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (\n    (ev.key_code === 27 && open) ||\n    (ev.key === "k" && (ev.meta || ev.ctrl)) ||\n    (!editing(ev) && ev.key === "/" && !open)\n  ) {\n    out.push(1);\n');
-    const lib = await import(join(dir, out));
-    const pushed: number[] = [];
-    for (const [ev, open] of [[{ key_code: 27, key: "", meta: false, ctrl: false }, true], [{ key_code: 0, key: "k", meta: false, ctrl: true }, false], [{ key_code: 0, key: "k", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, true]] as const) lib.handle(ev, open, pushed);
-    expect(pushed).toEqual([1, 2, 1, 1]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (\n    (ev.key_code === 27 && open) ||\n    (ev.key === "k" && (ev.meta || ev.ctrl)) ||\n    (!editing(ev) && ev.key === "/" && !open)\n  ) {\n    out.push(1);\n');
+  const lib = await import(join(dir, "mir.js"));
+  const pushed: number[] = [];
+  for (const [ev, open] of [[{ key_code: 27, key: "", meta: false, ctrl: false }, true], [{ key_code: 0, key: "k", meta: false, ctrl: true }, false], [{ key_code: 0, key: "k", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, false], [{ key_code: 0, key: "/", meta: false, ctrl: false }, true]] as const) lib.handle(ev, open, pushed);
+  expect(pushed).toEqual([1, 2, 1, 1]);
 });
 
 // A `VecDeque`'s iterator from MIR, of the array it is, copied where it's
@@ -8662,18 +8444,16 @@ pub fn update(f: &dyn Fn(&dyn Fn(&VecDeque<u32>) -> VecDeque<u32>)) {
     });
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    const messages = prev.slice();\n");
-    const lib = await import(join(dir, out));
-    const prev = [1, 2, 3, 4, 5];
-    let got: number[] = [];
-    lib.update((f: (p: number[]) => number[]) => {
-      got = f(prev);
-    });
-    expect([got, prev]).toEqual([[3, 4, 5], [1, 2, 3, 4, 5]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    const messages = prev.slice();\n");
+  const lib = await import(join(dir, "mir.js"));
+  const prev = [1, 2, 3, 4, 5];
+  let got: number[] = [];
+  lib.update((f: (p: number[]) => number[]) => {
+    got = f(prev);
+  });
+  expect([got, prev]).toEqual([[3, 4, 5], [1, 2, 3, 4, 5]]);
 });
 
 // A chain MIR makes lazily for one spread alone, of stages that do nothing
@@ -8696,16 +8476,14 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
     all.len()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => Math.imul(x, 2) >>> 0);\n");
-    // Not of `Math.random()`, which does something: lazy, the array's own
-    // iterator.
-    if (out === "mir.js") expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
-    const lib = await import(join(dir, out));
-    expect([lib.joined([1], [1, 2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], 2]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => Math.imul(x, 2) >>> 0);\n");
+  // Not of `Math.random()`, which does something: lazy, the array's own
+  // iterator.
+  if ("mir.js" === "mir.js") expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.joined([1], [1, 2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], 2]);
 });
 
 // A `while` in a closure from MIR, whose test reads what MIR held first,
@@ -8730,14 +8508,12 @@ pub fn run() -> Vec<u32> {
     })
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    // Incremental, as an app's build is: spans of a closure's body hold it.
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "-C", `incremental=${join(dir, "incremental")}`], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    while (messages.length > keep) {\n      $removeAt(messages, 0);\n    }\n    return messages;\n");
-    const lib = await import(join(dir, out));
-    expect(lib.run()).toEqual([3, 4]);
-  }
+  // Incremental, as an app's build is: spans of a closure's body hold it.
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "-C", `incremental=${join(dir, "incremental")}`]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    while (messages.length > keep) {\n      $removeAt(messages, 0);\n    }\n    return messages;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.run()).toEqual([3, 4]);
 });
 
 // A temporary MIR makes of what calls, given to a builtin's function,
@@ -8754,13 +8530,11 @@ pub fn files(code: String, other: String) -> &'static js::Dict<String> {
     ])
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  return { "/index.js": code.toUpperCase(), "/other.js": other };\n');
-    const lib = await import(join(dir, out));
-    expect(lib.files("a", "b")).toEqual({ "/index.js": "A", "/other.js": "b" });
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  return { "/index.js": code.toUpperCase(), "/other.js": other };\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.files("a", "b")).toEqual({ "/index.js": "A", "/other.js": "b" });
 });
 
 // ADR 0233: a `match` whose arms each give the field of their variant's
@@ -8829,18 +8603,16 @@ pub fn tag(kind: Kind) -> String {
     format!("{name} {classes}")
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const variant = MAP[kind];\n");
-    // Taken apart, as react.dev's Tag takes its variant's name and classes.
-    expect(js).toContain("  const { name, classes } = LOOKS[kind];\n");
-    expect(lib_tags(await import(join(dir, out)))).toEqual(["Note green", "Pitfall yellow", "WIP gray"]);
-    expect(js).toContain("export function name(kind) {\n  return kind;\n}");
-    const lib = await import(join(dir, out));
-    expect(["note", "pitfall", "wip"].map((k) => lib.label(k))).toEqual(["n!", "p!", "w!"]);
-    expect(["note", "pitfall", "wip"].map((k) => [lib.name(k), lib.mixed(k)])).toEqual([["note", "n"], ["pitfall", "p"], ["wip", "wip"]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const variant = MAP[kind];\n");
+  // Taken apart, as react.dev's Tag takes its variant's name and classes.
+  expect(js).toContain("  const { name, classes } = LOOKS[kind];\n");
+  expect(lib_tags(await import(join(dir, "mir.js")))).toEqual(["Note green", "Pitfall yellow", "WIP gray"]);
+  expect(js).toContain("export function name(kind) {\n  return kind;\n}");
+  const lib = await import(join(dir, "mir.js"));
+  expect(["note", "pitfall", "wip"].map((k) => lib.label(k))).toEqual(["n!", "p!", "w!"]);
+  expect(["note", "pitfall", "wip"].map((k) => [lib.name(k), lib.mixed(k)])).toEqual([["note", "n"], ["pitfall", "p"], ["wip", "wip"]]);
 });
 
 // A consumer that stops early, `position`, `any`, `find`, `all`, of an
@@ -8875,11 +8647,9 @@ test("an early-stopping consumer leaves the rest of the iterator", async () => {
     out
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect(lib.after([1, 2, 3])).toEqual([1, 3, 1, 3, 2, 3, undefined, 3, 20, 3, 2, 3, 1, 1, 3]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.after([1, 2, 3])).toEqual([1, 3, 1, 3, 2, 3, undefined, 3, 20, 3, 2, 3, 1, 1, 3]);
 });
 
 // ADR 0298: `is_some()` of an `Option` never falsy, `!!o`, given as a
@@ -8913,16 +8683,14 @@ pub fn or_none() -> bool {
   const globals = globalThis as typeof globalThis & { maybeSupports?: object; supportsIt?: (what: string) => boolean };
   globals.supportsIt = () => true;
   try {
-    for (const [out, env] of [["mir.js", {}]] as const) {
-      run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-      const js = readFileSync(join(dir, out), "utf8");
-      expect(js).toContain('  SUPPORTED = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
-      const lib = await import(join(dir, out));
-      delete globals.maybeSupports;
-      const absent = [lib.update(), lib.negated(), lib.or_none()];
-      globals.maybeSupports = {};
-      expect([absent, [lib.update(), lib.negated(), lib.or_none()]]).toEqual([[false, false, true], [true, true, true]]);
-    }
+    run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+    const js = readFileSync(join(dir, "mir.js"), "utf8");
+    expect(js).toContain('  SUPPORTED = !!globalThis.maybeSupports && globalThis.supportsIt("importmap");\n');
+    const lib = await import(join(dir, "mir.js"));
+    delete globals.maybeSupports;
+    const absent = [lib.update(), lib.negated(), lib.or_none()];
+    globals.maybeSupports = {};
+    expect([absent, [lib.update(), lib.negated(), lib.or_none()]]).toEqual([[false, false, true], [true, true, true]]);
   } finally {
     delete globals.maybeSupports;
     delete globals.supportsIt;
@@ -8949,13 +8717,11 @@ pub fn button(Props { provided_files }: Props, supported: bool) -> Option<u32> {
     Some(n)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  if (providedFiles.some((file) => !SUPPORTED.includes(file))) {\n");
-    const lib = await import(join(dir, out));
-    expect([lib.button({ provided_files: ["/App.js"] }, true), lib.button({ provided_files: ["/x.js"] }, true), lib.button({ provided_files: [] }, false)]).toEqual([1, undefined, undefined]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  if (providedFiles.some((file) => !SUPPORTED.includes(file))) {\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.button({ provided_files: ["/App.js"] }, true), lib.button({ provided_files: ["/x.js"] }, true), lib.button({ provided_files: [] }, false)]).toEqual([1, undefined, undefined]);
 });
 
 // As react.dev's createFileMap reads a code block's meta:
@@ -8976,18 +8742,16 @@ pub fn hidden(tokens: &[String]) -> bool {
     tokens.iter().any(|token| token == "hidden")
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (t !== "pre" && u !== "pre") {\n');
-    expect(js).toContain('  return tokens.find((token) => token.includes("/") || token.includes("."));\n');
-    expect(js).toContain('  return tokens.includes("hidden");\n');
-    const lib = await import(join(dir, out));
-    const pushed: number[] = [];
-    lib.not_pre("a", "b", pushed);
-    lib.not_pre("pre", "b", pushed);
-    expect([pushed, lib.found(["a", "b.js"]), lib.found(["a"]), lib.hidden(["hidden"]), lib.hidden(["x"])]).toEqual([[1], "b.js", undefined, true, false]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (t !== "pre" && u !== "pre") {\n');
+  expect(js).toContain('  return tokens.find((token) => token.includes("/") || token.includes("."));\n');
+  expect(js).toContain('  return tokens.includes("hidden");\n');
+  const lib = await import(join(dir, "mir.js"));
+  const pushed: number[] = [];
+  lib.not_pre("a", "b", pushed);
+  lib.not_pre("pre", "b", pushed);
+  expect([pushed, lib.found(["a", "b.js"]), lib.found(["a"]), lib.hidden(["hidden"]), lib.hidden(["x"])]).toEqual([[1], "b.js", undefined, true, false]);
 });
 
 // `count()` of an array's items, a `split`'s: its `length`, not a `reduce`
@@ -9001,15 +8765,13 @@ pub fn long(words: &[String]) -> usize {
     words.iter().filter(|w| w.len() > 2).count()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  return code.split("\\n").length;\n');
-    expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
-    expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.lines("a\nb\nc"), lib.long(["a", "abc", "abcd"])]).toEqual([3, 2]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  return code.split("\\n").length;\n');
+  expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
+  expect(js).toContain("  return words.filter((w) => $byteLen(w) > 2).length;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.lines("a\nb\nc"), lib.long(["a", "abc", "abcd"])]).toEqual([3, 2]);
 });
 
 // A `let` pattern of a variable the program names takes it apart, one
@@ -9030,15 +8792,13 @@ pub fn written(error: &E) -> String {
     message.clone()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("export function one(error) {\n  const { message } = error;\n");
-    // One the program wrote as a field's, as it is.
-    expect(js).toContain("export function written(error) {\n  const message = error.message;\n");
-    const lib = await import(join(dir, out));
-    expect([lib.one({ message: "m" }), lib.written({ message: "w" })]).toEqual(["m", "w"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("export function one(error) {\n  const { message } = error;\n");
+  // One the program wrote as a field's, as it is.
+  expect(js).toContain("export function written(error) {\n  const message = error.message;\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.one({ message: "m" }), lib.written({ message: "w" })]).toEqual(["m", "w"]);
 });
 
 // A `Cell` field a `let` pattern binds by reference, only read, is its
@@ -9061,14 +8821,12 @@ pub fn retitle(error: &E) -> String {
     format!("{}: {message}", title.get().unwrap_or("Error"))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("export function show(error) {\n  const { message, title } = error;\n");
-    const lib = await import(join(dir, out));
-    const error = { title: "T", message: "m" };
-    expect([lib.show(error), lib.show({ message: "m" }), lib.retitle(error), error.title]).toEqual(["T: m", "Error: m", "New: m", "New"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("export function show(error) {\n  const { message, title } = error;\n");
+  const lib = await import(join(dir, "mir.js"));
+  const error = { title: "T", message: "m" };
+  expect([lib.show(error), lib.show({ message: "m" }), lib.retitle(error), error.title]).toEqual(["T: m", "Error: m", "New: m", "New"]);
 });
 
 // `flatten()` of `Option` items, a JS iterator of what's there, collected:
@@ -9080,13 +8838,11 @@ test("flattened options collected from MIR are the array's filter", async () => 
     parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  return parts.filter((item) => item != null).join(" ");\n');
-    const lib = await import(join(dir, out));
-    expect(lib.cn(["a", undefined, "b"])).toBe("a b");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  return parts.filter((item) => item != null).join(" ");\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.cn(["a", undefined, "b"])).toBe("a b");
 });
 
 // Returns the program wrote, which MIR's lowering makes assignments of the
@@ -9115,14 +8871,12 @@ pub fn crumbs<'a>(path: &str, current: &'a Route, crumbs_so_far: Vec<&'a Route>)
     Vec::new()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    if (child.length !== 0) {\n      return child;\n    }\n  }\n  return [];\n}");
-    const lib = await import(join(dir, out));
-    const tree = { path: "/", routes: [{ path: "/a", routes: [{ path: "/a/b" }] }] };
-    expect([lib.crumbs("/a/b", tree, []).map((r: { path: string }) => r.path), lib.crumbs("/x", tree, [])]).toEqual([["/", "/a"], []]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    if (child.length !== 0) {\n      return child;\n    }\n  }\n  return [];\n}");
+  const lib = await import(join(dir, "mir.js"));
+  const tree = { path: "/", routes: [{ path: "/a", routes: [{ path: "/a/b" }] }] };
+  expect([lib.crumbs("/a/b", tree, []).map((r: { path: string }) => r.path), lib.crumbs("/x", tree, [])]).toEqual([["/", "/a"], []]);
 });
 
 // A method's `self` is named after its type, `section` of a `Section`, as
@@ -9148,13 +8902,11 @@ pub fn label(section: Section) -> String {
     format!("og-{}", section.as_str())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  as_str(section) {\n    return section;\n  },\n");
-    const lib = await import(join(dir, out));
-    expect(lib.label("home")).toBe("og-home");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  as_str(section) {\n    return section;\n  },\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.label("home")).toBe("og-home");
 });
 
 // ADR 0264: a function giving each variant its own name gives what it's
@@ -9181,13 +8933,11 @@ pub fn image(section: Option<Section>) -> String {
     format!("/images/og-{}.png", section.unwrap_or(Section::Unknown).as_str())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  return `/images/og-${section ?? "unknown"}.png`;\n');
-    const lib = await import(join(dir, out));
-    expect([lib.image("learn"), lib.image(undefined)]).toEqual(["/images/og-learn.png", "/images/og-unknown.png"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  return `/images/og-${section ?? "unknown"}.png`;\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.image("learn"), lib.image(undefined)]).toEqual(["/images/og-learn.png", "/images/og-unknown.png"]);
 });
 
 // An `if` of an `||`, its branches as the program wrote them: `home ||
@@ -9212,14 +8962,12 @@ pub fn flagged(heading: bool, crumb: bool, expanded: bool) -> Option<&'static st
     (!heading && crumb && !expanded).then_some("on")
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    home || !meta.title\n      ? `/images/og-${meta.path}.png`\n");
-    expect(js).toContain('  return !heading && crumb && !expanded ? "on" : undefined;\n');
-    const lib = await import(join(dir, out));
-    expect([lib.image(true, { title: "t", path: "/a" }), lib.image(false, { title: "t", path: "/a/b" }), lib.flagged(false, true, false)]).toEqual(["/images/og-/a.png", "/images/og/-a-b.png", "on"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    home || !meta.title\n      ? `/images/og-${meta.path}.png`\n");
+  expect(js).toContain('  return !heading && crumb && !expanded ? "on" : undefined;\n');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.image(true, { title: "t", path: "/a" }), lib.image(false, { title: "t", path: "/a/b" }), lib.flagged(false, true, false)]).toEqual(["/images/og-/a.png", "/images/og/-a-b.png", "on"]);
 });
 
 // A chain read past the alias MIR makes of what its callback borrows
@@ -9238,13 +8986,11 @@ test("a chain is read in place past a closure's mutable borrow", async () => {
     list
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  array.forEach((item, index) => {\n");
-    const lib = await import(join(dir, out));
-    expect(lib.list(["a", "b", "c"])).toEqual(["1b", "2c"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  array.forEach((item, index) => {\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.list(["a", "b", "c"])).toEqual(["1b", "2c"]);
 });
 
 // An element's place checked then set, `args[0] = v`, from MIR is
@@ -9262,18 +9008,16 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
     args[i] = made();
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('    args[$at(args, 0)] = "HTML";\n');
-    expect(js).toMatch(/  args\[\$at\(args, i\)\] = \w+;\n}/);
-    const lib = await import(join(dir, out));
-    const args = [""];
-    lib.fill(args);
-    const made: string[] = [];
-    expect(() => lib.put(args, 1, () => (made.push("x"), "x"))).toThrow();
-    expect([args, made]).toEqual([["HTML"], ["x"]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('    args[$at(args, 0)] = "HTML";\n');
+  expect(js).toMatch(/  args\[\$at\(args, i\)\] = \w+;\n}/);
+  const lib = await import(join(dir, "mir.js"));
+  const args = [""];
+  lib.fill(args);
+  const made: string[] = [];
+  expect(() => lib.put(args, 1, () => (made.push("x"), "x"))).toThrow();
+  expect([args, made]).toEqual([["HTML"], ["x"]]);
 });
 
 // A clone of a nullable field's `Option`, `m.rule_id.clone()`, is its JS
@@ -9295,13 +9039,11 @@ pub fn diags(msgs: Vec<&Msg>) -> Vec<Diag> {
     msgs.iter().map(|m| Diag { rule_id: m.rule_id.clone(), line: m.line }).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("({ rule_id: m.rule_id, line: m.line })");
-    const lib = await import(join(dir, out));
-    expect(lib.diags([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }])).toEqual([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("({ rule_id: m.rule_id, line: m.line })");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.diags([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }])).toEqual([{ rule_id: null, line: 1 }, { rule_id: "r", line: 2 }]);
 });
 
 // A trait's default method that's a binding, `get ruleId`, called through
@@ -9332,13 +9074,11 @@ pub fn kept(errors: Vec<&'static LintError>, diags: Vec<&'static Diagnostic>) ->
     (n, diags.into_iter().filter(|d| isReactRuleError(*d)).collect())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return error.ruleId != null;");
-    const lib = await import(join(dir, out));
-    expect(lib.kept([{ line: 1, ruleId: "a" }, { line: 2, ruleId: null }], [{ from: 1, ruleId: null }, { from: 2, ruleId: "b" }])).toEqual([1, [{ from: 2, ruleId: "b" }]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return error.ruleId != null;");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.kept([{ line: 1, ruleId: "a" }, { line: 2, ruleId: null }], [{ from: 1, ruleId: null }, { from: 2, ruleId: "b" }])).toEqual([1, [{ from: 2, ruleId: "b" }]]);
 });
 
 // ADR 0250: a struct update whose every field is given, `Hit { url, ..*item
@@ -9357,14 +9097,12 @@ pub fn moved(hit: Hit) -> Hit {
     Hit { url: hit.url.replace("#x", ""), ..hit }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('({ ...item, url: item.url.replaceAll("#x", "") })');
-    expect(js).toContain('return { ...hit, url: hit.url.replaceAll("#x", "") };');
-    const lib = await import(join(dir, out));
-    expect([lib.cleaned([{ url: "a#x", level: 1 }]), lib.moved({ url: "b#x", level: 2 })]).toEqual([[{ url: "a", level: 1 }], { url: "b", level: 2 }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('({ ...item, url: item.url.replaceAll("#x", "") })');
+  expect(js).toContain('return { ...hit, url: hit.url.replaceAll("#x", "") };');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.cleaned([{ url: "a#x", level: 1 }]), lib.moved({ url: "b#x", level: 2 })]).toEqual([[{ url: "a", level: 1 }], { url: "b", level: 2 }]);
 });
 
 // ADR 0250: a struct update that reads one field of its base, `Props {
@@ -9385,14 +9123,12 @@ pub fn copied(a: &Props) -> Props {
     Props { title: "y".to_string(), level: a.level }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return { ...props, title: "x" };');
-    expect(js).toContain('return { title: "y", level: a.level };');
-    const lib = await import(join(dir, out));
-    expect(lib.retitled({ title: "a", level: 1, extra: 2 })).toEqual({ title: "x", level: 1, extra: 2 });
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return { ...props, title: "x" };');
+  expect(js).toContain('return { title: "y", level: a.level };');
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.retitled({ title: "a", level: 1, extra: 2 })).toEqual({ title: "x", level: 1, extra: 2 });
 });
 
 // An `||` chain, `a || b || c`, not `!(!a && !b) || c`: a `bool` field,
@@ -9416,21 +9152,19 @@ pub fn heading(names: Vec<String>) -> Vec<String> {
     names.into_iter().filter(|n| n.as_str() == "H1" || n.as_str() == "H2" || n.as_str() == "H3").collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return element.editable || tagName === "INPUT" || tagName === "SELECT" || tagName === "TEXTAREA";');
-    expect(js).toContain("const hide = error != null || height == null || height === 0 || !ready;");
-    expect(js).toContain('names.filter((n) => n === "H1" || n === "H2" || n === "H3")');
-    const lib = await import(join(dir, out));
-    expect([
-      lib.editing({ editable: false, tag: "SELECT" }),
-      lib.editing({ editable: false, tag: "B" }),
-      lib.hidden(undefined, 3, true),
-      lib.hidden(undefined, 0, true),
-      lib.heading(["H2", "P"]),
-    ]).toEqual([true, false, false, true, ["H2"]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return element.editable || tagName === "INPUT" || tagName === "SELECT" || tagName === "TEXTAREA";');
+  expect(js).toContain("const hide = error != null || height == null || height === 0 || !ready;");
+  expect(js).toContain('names.filter((n) => n === "H1" || n === "H2" || n === "H3")');
+  const lib = await import(join(dir, "mir.js"));
+  expect([
+    lib.editing({ editable: false, tag: "SELECT" }),
+    lib.editing({ editable: false, tag: "B" }),
+    lib.hidden(undefined, 3, true),
+    lib.hidden(undefined, 0, true),
+    lib.heading(["H2", "P"]),
+  ]).toEqual([true, false, false, true, ["H2"]]);
 });
 
 // A match of more than two arms as a value is a chain of its arms in the
@@ -9462,15 +9196,13 @@ pub fn tag(variant: RouteTag, text: Option<&'static str>) -> String {
     format!("{} {classes}", text.unwrap_or(name))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('variant === "foundation"');
-    expect(js).not.toContain("!==");
-    expect(js.indexOf('"Foundation"')).toBeLessThan(js.indexOf('"Deprecated"'));
-    const lib = await import(join(dir, out));
-    expect([lib.tag("advanced", undefined), lib.tag("deprecated", "D")]).toEqual(["Advanced bg-green-40 text-white", "D bg-red-40 text-white"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('variant === "foundation"');
+  expect(js).not.toContain("!==");
+  expect(js.indexOf('"Foundation"')).toBeLessThan(js.indexOf('"Deprecated"'));
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.tag("advanced", undefined), lib.tag("deprecated", "D")]).toEqual(["Advanced bg-green-40 text-white", "D bg-red-40 text-white"]);
 });
 
 // `next()` of an array's iterator that nothing else steps, a split's,
@@ -9485,14 +9217,12 @@ pub fn first(keys: Vec<String>) -> Option<String> {
     keys.into_iter().next()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return $splitBy(path, (c) => ["?", "#"].includes(c))[0] ?? "";');
-    expect(js).toContain("return keys[0];");
-    const lib = await import(join(dir, out));
-    expect([lib.clean("/a?b"), lib.clean(""), lib.first([]), lib.first(["k"])]).toEqual(["/a", "", undefined, "k"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return $splitBy(path, (c) => ["?", "#"].includes(c))[0] ?? "";');
+  expect(js).toContain("return keys[0];");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.clean("/a?b"), lib.clean(""), lib.first([]), lib.first(["k"])]).toEqual(["/a", "", undefined, "k"]);
 });
 
 // `matches!` of an or-pattern, `None | Some(Bottom)`, is its tests'
@@ -9513,14 +9243,12 @@ pub fn shown(caption_position: Option<CaptionPosition>, text: &'static str) -> O
     matches!(caption_position, None | Some(CaptionPosition::Bottom)).then_some(text)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return captionPosition == null || captionPosition === "bottom";');
-    expect(js).toContain('return captionPosition == null || captionPosition === "bottom" ? text : undefined;');
-    const lib = await import(join(dir, out));
-    expect([lib.below(undefined), lib.below("top"), lib.shown("bottom", "t"), lib.shown("top", "t")]).toEqual([true, false, "t", undefined]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return captionPosition == null || captionPosition === "bottom";');
+  expect(js).toContain('return captionPosition == null || captionPosition === "bottom" ? text : undefined;');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.below(undefined), lib.below("top"), lib.shown("bottom", "t"), lib.shown("top", "t")]).toEqual([true, false, "t", undefined]);
 });
 
 // An `if let .. else if let .. else { panic!() }` chain is its arms in
@@ -9547,14 +9275,12 @@ pub fn message(kind: Kind) -> String {
     message
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (kind.TAG === "Text") {\n    message = kind._0;\n  } else if (kind.TAG === "Element" && kind._0 != null) {\n    message = kind._0;\n  } else {\n    throw');
-    const lib = await import(join(dir, out));
-    expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: "b" })]).toEqual(["a", "b"]);
-    expect(() => lib.message({ TAG: "Element", _0: undefined })).toThrow("plain string");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (kind.TAG === "Text") {\n    message = kind._0;\n  } else if (kind.TAG === "Element" && kind._0 != null) {\n    message = kind._0;\n  } else {\n    throw');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.message({ TAG: "Text", _0: "a" }), lib.message({ TAG: "Element", _0: "b" })]).toEqual(["a", "b"]);
+  expect(() => lib.message({ TAG: "Element", _0: undefined })).toThrow("plain string");
 });
 
 // `x != null && typeof x === "string"`, an `Option`'s test before a
@@ -9596,14 +9322,12 @@ pub fn kept(error: Option<&Err>, height: Option<f64>, ready: bool) -> String {
     if hide { "a".to_string() } else { "b".to_string() }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return !!error || height == null || height === 0 || !ready;");
-    expect(js).toContain("const hide = error || height == null || height === 0 || !ready;");
-    const lib = await import(join(dir, out));
-    expect([lib.hidden({ title: "t" }, 3, true), lib.hidden(undefined, 3, true), lib.kept({ title: "t" }, 3, true), lib.kept(undefined, 3, true)]).toEqual([true, false, "a", "b"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return !!error || height == null || height === 0 || !ready;");
+  expect(js).toContain("const hide = error || height == null || height === 0 || !ready;");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.hidden({ title: "t" }, 3, true), lib.hidden(undefined, 3, true), lib.kept({ title: "t" }, 3, true), lib.kept(undefined, 3, true)]).toEqual([true, false, "a", "b"]);
 });
 
 // An `else if` chain's last arm before a panic is an `else if`, not a
@@ -9625,14 +9349,12 @@ test("an else-if chain's arm before a panic stays an else if", async () => {
     file_path
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  } else if (className === "language-css") {\n    filePath = "/styles.css";\n  } else {\n    throw');
-    const lib = await import(join(dir, out));
-    expect([lib.path(undefined, "language-css"), lib.path("a.js", "x")]).toEqual(["/styles.css", "/a.js"]);
-    expect(() => lib.path(undefined, "x")).toThrow("missing a filename");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  } else if (className === "language-css") {\n    filePath = "/styles.css";\n  } else {\n    throw');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.path(undefined, "language-css"), lib.path("a.js", "x")]).toEqual(["/styles.css", "/a.js"]);
+  expect(() => lib.path(undefined, "x")).toThrow("missing a filename");
 });
 
 // A match's arms as statements chain in the order written, `if (TAG ===
@@ -9670,17 +9392,15 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (message.TAG === "resize") {');
-    expect(js).toContain('  } else if (message.TAG === "start") {');
-    expect(js).not.toContain("!==");
-    const lib = await import(join(dir, out));
-    const log: string[] = [];
-    for (const m of [{ TAG: "resize", height: 2 }, { TAG: "start", first_load: true }, "done", "refresh"]) lib.handle(m, log);
-    expect(log).toEqual(["h2", "first", "start", "done"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (message.TAG === "resize") {');
+  expect(js).toContain('  } else if (message.TAG === "start") {');
+  expect(js).not.toContain("!==");
+  const lib = await import(join(dir, "mir.js"));
+  const log: string[] = [];
+  for (const m of [{ TAG: "resize", height: 2 }, { TAG: "start", first_load: true }, "done", "refresh"]) lib.handle(m, log);
+  expect(log).toEqual(["h2", "first", "start", "done"]);
 });
 
 // A pattern's binding of a variable, `if let Some(error) = raw`, a copy of
@@ -9711,13 +9431,11 @@ pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Opt
     error.and_then(|e| e.title.get())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  if (raw && raw.title === "Runtime Exception") {\n    raw.title = "Runtime Error";\n  }');
-    const lib = await import(join(dir, out));
-    expect([lib.fixed({ title: "Runtime Exception" }, undefined), lib.fixed(undefined, { title: "x" })]).toEqual(["Runtime Error", "x"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  if (raw && raw.title === "Runtime Exception") {\n    raw.title = "Runtime Error";\n  }');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.fixed({ title: "Runtime Exception" }, undefined), lib.fixed(undefined, { title: "x" })]).toEqual(["Runtime Error", "x"]);
 });
 
 // A match's arm that does nothing, `Refresh | Console { .. } | Other(_) =>
@@ -9749,15 +9467,13 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('  } else if (message === "done") {\n    log.push("done");\n  }\n}');
-    const lib = await import(join(dir, out));
-    const log: string[] = [];
-    for (const m of [{ TAG: "resize", height: 1 }, "done", "refresh", "x"]) lib.handle(m, log);
-    expect(log).toEqual(["h1", "done"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('  } else if (message === "done") {\n    log.push("done");\n  }\n}');
+  const lib = await import(join(dir, "mir.js"));
+  const log: string[] = [];
+  for (const m of [{ TAG: "resize", height: 1 }, "done", "refresh", "x"]) lib.handle(m, log);
+  expect(log).toEqual(["h1", "done"]);
 });
 
 // A temporary MIR holds of what a pattern takes apart, read more than once,
@@ -9776,14 +9492,12 @@ pub fn lines(meta: &str) -> String {
     lines.to_uppercase()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  const value = globalThis.find(meta);\n  if (!value) {");
-    const lib = await import(join(dir, out));
-    (globalThis as any).find = (text: string) => (text ? [text, "ab"] : undefined);
-    expect([lib.lines("x"), lib.lines("")]).toEqual(["AB", ""]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  const value = globalThis.find(meta);\n  if (!value) {");
+  const lib = await import(join(dir, "mir.js"));
+  (globalThis as any).find = (text: string) => (text ? [text, "ab"] : undefined);
+  expect([lib.lines("x"), lib.lines("")]).toEqual(["AB", ""]);
 });
 
 // An `||` chain whose first test is a getter's `bool`, `element.isContentEditable`,
@@ -9797,13 +9511,11 @@ pub fn editing(element: &HTMLElement) -> bool {
     element.is_content_editable() || tag_name == "INPUT" || tag_name == "SELECT" || tag_name == "TEXTAREA"
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  return (\n    element.isContentEditable ||\n");
-    const lib = await import(join(dir, out));
-    expect([lib.editing({ isContentEditable: false, tagName: "SELECT" }), lib.editing({ isContentEditable: false, tagName: "B" })]).toEqual([true, false]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  return (\n    element.isContentEditable ||\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.editing({ isContentEditable: false, tagName: "SELECT" }), lib.editing({ isContentEditable: false, tagName: "B" })]).toEqual([true, false]);
 });
 
 // A call of a function that gives a `bool`, `isItem(item)`, is one, so
@@ -9822,14 +9534,12 @@ pub fn images(items: Vec<&Item>) -> Vec<&Item> {
     items.into_iter().filter(|item| is_item(item) && item.kind == "img").collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('items.filter((item) => globalThis.isItem(item) && item.kind === "img")');
-    const lib = await import(join(dir, out));
-    (globalThis as any).isItem = (x: { kind: string }) => x.kind !== "";
-    expect(lib.images([{ kind: "img" }, { kind: "p" }, { kind: "" }])).toEqual([{ kind: "img" }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('items.filter((item) => globalThis.isItem(item) && item.kind === "img")');
+  const lib = await import(join(dir, "mir.js"));
+  (globalThis as any).isItem = (x: { kind: string }) => x.kind !== "";
+  expect(lib.images([{ kind: "img" }, { kind: "p" }, { kind: "" }])).toEqual([{ kind: "img" }]);
 });
 
 // ADR 0279, of a function item given as the callback, `filter(is_rule)`, as
@@ -9860,17 +9570,15 @@ pub fn parsed(v: Vec<&str>) -> Vec<f64> {
     v.into_iter().map(parse_float).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain(".filter(is_rule)");
-    expect(js).toContain("v.map(twice)");
-    expect(js).toContain("v.map((text) => parseFloat(text))");
-    const lib = await import(join(dir, out));
-    expect(lib.kept([{ rule: "a" }, { rule: undefined }])).toBe(1);
-    expect(lib.doubled([1, 2])).toEqual([2, 4]);
-    expect(lib.parsed(["1", "2"])).toEqual([1, 2]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain(".filter(is_rule)");
+  expect(js).toContain("v.map(twice)");
+  expect(js).toContain("v.map((text) => parseFloat(text))");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.kept([{ rule: "a" }, { rule: undefined }])).toBe(1);
+  expect(lib.doubled([1, 2])).toEqual([2, 4]);
+  expect(lib.parsed(["1", "2"])).toEqual([1, 2]);
 });
 
 // ADR 0308: a function written in a body, a closure's too, is declared
@@ -9893,14 +9601,12 @@ test("a function written in a closure is declared where it's written", async () 
     if small(k) { 0 } else { f() }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toMatch(/const k = .*\n  function small\(x\)/);
-    expect(js).toMatch(/const n = xs\.length;\n    function big\(x\)/);
-    const lib = await import(join(dir, out));
-    expect([lib.counted([1, 2, 3], 0), lib.counted([1, 2, 3], -2)]).toEqual([5, 0]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toMatch(/const k = .*\n  function small\(x\)/);
+  expect(js).toMatch(/const n = xs\.length;\n    function big\(x\)/);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.counted([1, 2, 3], 0), lib.counted([1, 2, 3], -2)]).toEqual([5, 0]);
 });
 
 // An `async` closure's `|_|`, which takes nothing it reads, takes nothing
@@ -9915,13 +9621,11 @@ pub async fn made() -> u32 {
     run(async move |_| 1).await + run(async move |x| x).await
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("run(async () => 1)");
-    const lib = await import(join(dir, out));
-    expect(await lib.made()).toBe(3);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("run(async () => 1)");
+  const lib = await import(join(dir, "mir.js"));
+  expect(await lib.made()).toBe(3);
 });
 
 // A `let` Rust declares in a loop's body is declared there,
@@ -9956,15 +9660,13 @@ pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("      const contentBoxSize = Array.isArray(size) ? size[0] : size;");
-    const lib = await import(join(dir, out));
-    const widths: number[] = [];
-    lib.widths([{ contentBoxSize: [{ inline_size: 1 }] }, {}, { contentBoxSize: { inline_size: 2 } }], (w: number) => widths.push(w));
-    expect(widths).toEqual([1, 2]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("      const contentBoxSize = Array.isArray(size) ? size[0] : size;");
+  const lib = await import(join(dir, "mir.js"));
+  const widths: number[] = [];
+  lib.widths([{ contentBoxSize: [{ inline_size: 1 }] }, {}, { contentBoxSize: { inline_size: 2 } }], (w: number) => widths.push(w));
+  expect(widths).toEqual([1, 2]);
 });
 
 // Arrays joined, `[first, vec![..]].concat()`, are one array of the first's
@@ -9983,14 +9685,12 @@ pub fn all(first: Vec<&'static Unknown>) -> Vec<&'static Unknown> {
     children
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('const children = [...first, globalThis.made("a"), globalThis.made("b")];');
-    const lib = await import(join(dir, out));
-    (globalThis as any).made = (name: string) => ({ name });
-    expect(lib.all([{ name: "x" }])).toEqual([{ name: "x" }, { name: "a" }, { name: "b" }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('const children = [...first, globalThis.made("a"), globalThis.made("b")];');
+  const lib = await import(join(dir, "mir.js"));
+  (globalThis as any).made = (name: string) => ({ name });
+  expect(lib.all([{ name: "x" }])).toEqual([{ name: "x" }, { name: "a" }, { name: "b" }]);
 });
 
 // A loop's `if`s the program ends with `continue`,
@@ -10028,15 +9728,13 @@ test("continues a loop's ifs end with are kept", async () => {
     tokens
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('      depth = (depth + 1) | 0;\n      continue;\n    }\n    if (c === "}") {');
-    expect(js).toContain("    if (depth > 0) {\n      continue;\n    }");
-    expect(js).not.toContain("else");
-    const lib = await import(join(dir, out));
-    expect(lib.split("a {b c} d e")).toEqual(["a", "d"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('      depth = (depth + 1) | 0;\n      continue;\n    }\n    if (c === "}") {');
+  expect(js).toContain("    if (depth > 0) {\n      continue;\n    }");
+  expect(js).not.toContain("else");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.split("a {b c} d e")).toEqual(["a", "d"]);
 });
 
 // What a `let`-`else` binds of a variable, `let Some(current) = &mut
@@ -10070,13 +9768,11 @@ pub fn grouped(items: &[u32]) -> Vec<Section> {
     sections
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    current.pages.push(item);");
-    const lib = await import(join(dir, out));
-    expect(lib.grouped([1, 0, 2, 3, 0, 4])).toEqual([{ pages: [2, 3] }, { pages: [4] }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    current.pages.push(item);");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.grouped([1, 0, 2, 3, 0, 4])).toEqual([{ pages: [2, 3] }, { pages: [4] }]);
 });
 
 // A closure's pattern of a pattern, `|(index, Challenge { name, .. })|`, is
@@ -10101,15 +9797,13 @@ pub fn named(challenges: &[(u32, Challenge)]) -> Vec<String> {
     challenges.iter().map(|(n, Challenge { name, .. })| format!("{n} {name}")).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("challenges.map(({ name, id, order }, index) => `${index}:${id}:${order}. ${name}`)");
-    expect(js).toContain("challenges.map(([n, { name }]) => `${n} ${name}`)");
-    const lib = await import(join(dir, out));
-    expect(lib.labels([{ id: "a", name: "A", order: 1 }])).toEqual(["0:a:1. A"]);
-    expect(lib.named([[7, { id: "a", name: "A", order: 1 }]])).toEqual(["7 A"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("challenges.map(({ name, id, order }, index) => `${index}:${id}:${order}. ${name}`)");
+  expect(js).toContain("challenges.map(([n, { name }]) => `${n} ${name}`)");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.labels([{ id: "a", name: "A", order: 1 }])).toEqual(["0:a:1. A"]);
+  expect(lib.named([[7, { id: "a", name: "A", order: 1 }]])).toEqual(["7 A"]);
 });
 
 // A value the program wrote with `&&`, `s != "en" && (if t { .. } else {
@@ -10130,15 +9824,13 @@ pub fn kept(all: &[String], complete: bool, done: &[&str]) -> usize {
         .count()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return s !== "en" && (t ? !s : u);');
-    expect(js).toContain('(code) => code !== "en" && (complete ? done.includes(code) : !done.includes(code))');
-    expect(js).toContain("  if (t) {\n    return (x + 1) >>> 0;\n  }");
-    const lib = await import(join(dir, out));
-    expect([lib.c(true, false, ""), lib.c(false, true, "en"), lib.kept(["en", "fr", "de"], true, ["fr"])]).toEqual([true, false, 1]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return s !== "en" && (t ? !s : u);');
+  expect(js).toContain('(code) => code !== "en" && (complete ? done.includes(code) : !done.includes(code))');
+  expect(js).toContain("  if (t) {\n    return (x + 1) >>> 0;\n  }");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.c(true, false, ""), lib.c(false, true, "en"), lib.kept(["en", "fr", "de"], true, ["fr"])]).toEqual([true, false, 1]);
 });
 
 // A name given apart from one given apart already, `caption$1`'s, is the
@@ -10157,13 +9849,11 @@ pub fn shown(infos: &[Info]) -> Vec<String> {
         .collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("const caption = info.caption ? info.caption : undefined;");
-    const lib = await import(join(dir, out));
-    expect(lib.shown([{ caption: "a" }, { caption: "" }, {}])).toEqual(["<a>", "", ""]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("const caption = info.caption ? info.caption : undefined;");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.shown([{ caption: "a" }, { caption: "" }, {}])).toEqual(["<a>", "", ""]);
 });
 
 // A float THIR's facts know whole and in range where it's cast, `index as
@@ -10181,13 +9871,11 @@ pub fn column(line: &str, substr: &str) -> u32 {
     index as u32 + string::length(substr)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return (index + substr.length) >>> 0;");
-    const lib = await import(join(dir, out));
-    expect(lib.column("abcd", "cd")).toBe(4);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return (index + substr.length) >>> 0;");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.column("abcd", "cd")).toBe(4);
 });
 
 // `mem::take(&mut current)` of a variable takes it and gives it a new
@@ -10241,17 +9929,15 @@ pub fn kept(items: &[u32]) -> (Vec<Vec<u32>>, Vec<u32>) {
     (all, current)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).not.toContain("$take(");
-    expect(js).toContain("  const t = a;\n  a = b;\n  b = t;");
-    expect(js).toContain("$exchange(a, b);");
-    expect(js).toContain("      const old = current;\n      current = [];\n      all.push(old);");
-    const lib = await import(join(dir, out));
-    expect([lib.direct([1, 2, 0, 3, 0]), lib.captured([1, 0, 0])]).toEqual([[[1, 2], [3]], [[1], []]]);
-    expect(lib.kept([1, 0, 2, 3])).toEqual([[[1]], [2, 3]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).not.toContain("$take(");
+  expect(js).toContain("  const t = a;\n  a = b;\n  b = t;");
+  expect(js).toContain("$exchange(a, b);");
+  expect(js).toContain("      const old = current;\n      current = [];\n      all.push(old);");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.direct([1, 2, 0, 3, 0]), lib.captured([1, 0, 0])]).toEqual([[[1, 2], [3]], [[1], []]]);
+  expect(lib.kept([1, 0, 2, 3])).toEqual([[[1]], [2, 3]]);
 });
 
 // A value made in each branch of a `try`, a match of what a call gives,
@@ -10277,15 +9963,13 @@ pub fn shown(msg: Option<&Unknown>, tagged: bool) -> Option<String> {
     children
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("    try {\n      children = JSON.stringify(msg, null, 2);");
-    const lib = await import(join(dir, out));
-    const cyclic: any = {};
-    cyclic.self = cyclic;
-    expect([lib.shown({ a: 1 }, false), lib.shown(cyclic, false), lib.shown(undefined, true)]).toEqual(['{\n  "a": 1\n}', "[object Object]", "tag"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    try {\n      children = JSON.stringify(msg, null, 2);");
+  const lib = await import(join(dir, "mir.js"));
+  const cyclic: any = {};
+  cyclic.self = cyclic;
+  expect([lib.shown({ a: 1 }, false), lib.shown(cyclic, false), lib.shown(undefined, true)]).toEqual(['{\n  "a": 1\n}', "[object Object]", "tag"]);
 });
 
 // An iterator's adapter of a JS iterator, `.map(..)` of a range's, is a JS
@@ -10297,13 +9981,11 @@ test("an adapter of a JS iterator is not made one again", async () => {
     (0..n).filter_map(|i| if i % 2 == 0 { Some(i * 10) } else { None }).filter(|x| *x > 5).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).not.toContain("Iterator.from(");
-    const lib = await import(join(dir, out));
-    expect(lib.evens(10)).toEqual([20, 40, 60, 80]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).not.toContain("Iterator.from(");
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.evens(10)).toEqual([20, 40, 60, 80]);
 });
 
 // From MIR: an array's iterator made for an adapter alone, `log.iter()
@@ -10322,16 +10004,14 @@ pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
     prev.iter().cloned().chain(new_logs).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("const newLogs = log\n    .values()\n    .filter(");
-    const lib = await import(join(dir, out));
-    const order: number[] = [];
-    (globalThis as any).seen = (x: number) => (order.push(x), x);
-    expect(lib.joined([1], [3, 4])).toEqual([1, 8]);
-    expect(order).toEqual([3, 4, 8]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("const newLogs = log\n    .values()\n    .filter(");
+  const lib = await import(join(dir, "mir.js"));
+  const order: number[] = [];
+  (globalThis as any).seen = (x: number) => (order.push(x), x);
+  expect(lib.joined([1], [3, 4])).toEqual([1, 8]);
+  expect(order).toEqual([3, 4, 8]);
 });
 
 // An update's derived `Default` base, `..Default::default()`, is each
@@ -10355,14 +10035,12 @@ pub fn named(name: String, size: u32) -> String {
     format!("{} {} {}", o.name, o.size, o.tags.len())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return { name: "", size, tags: [] };');
-    expect(js).toContain("const o = { name, size, tags: [] };");
-    const lib = await import(join(dir, out));
-    expect([lib.sized(3), lib.named("a", 2)]).toEqual([{ name: "", size: 3, tags: [] }, "a 2 0"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return { name: "", size, tags: [] };');
+  expect(js).toContain("const o = { name, size, tags: [] };");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.sized(3), lib.named("a", 2)]).toEqual([{ name: "", size: 3, tags: [] }, "a 2 0"]);
 });
 
 // A range's items each mapped, all collected, `(0..n).map(f).collect()`,
@@ -10403,23 +10081,21 @@ pub fn odd_to_five() -> Vec<u32> {
     (1..=5).filter(|i| i % 2 == 1).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
-    if (out === "mir.js") expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
-    if (out === "mir.js") expect(js).toContain("return $range(0, n).toReversed();");
-    if (out === "mir.js") expect(js).toContain("return $range(1, n + 1);");
-    if (out === "mir.js") expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
-    if (out === "mir.js") expect(js).toContain("return $range(1, 4).map(");
-    if (out === "mir.js") expect(js).toContain("return $lazyRange(1, 6)\n");
-    const lib = await import(join(dir, out));
-    expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
-    expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
-    expect(lib.odd_squares(6)).toEqual([1, 9, 25]);
-    expect([lib.doubled(), lib.odd_to_five()]).toEqual([[2, 4, 6], [1, 3, 5]]);
-    if (out === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
+  if ("mir.js" === "mir.js") expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
+  if ("mir.js" === "mir.js") expect(js).toContain("return $range(0, n).toReversed();");
+  if ("mir.js" === "mir.js") expect(js).toContain("return $range(1, n + 1);");
+  if ("mir.js" === "mir.js") expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
+  if ("mir.js" === "mir.js") expect(js).toContain("return $range(1, 4).map(");
+  if ("mir.js" === "mir.js") expect(js).toContain("return $lazyRange(1, 6)\n");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
+  expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
+  expect(lib.odd_squares(6)).toEqual([1, 9, 25]);
+  expect([lib.doubled(), lib.odd_to_five()]).toEqual([[2, 4, 6], [1, 3, 5]]);
+  if ("mir.js" === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
 });
 
 // A closure that calls only a method named as a slice's that only reads,
@@ -10446,21 +10122,19 @@ pub fn a_names(names: Vec<String>) -> usize {
     w.len()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    const logs: string[] = [];
-    const log = console.log;
-    console.log = (line: string) => logs.push(line);
-    try {
-      expect([lib.run(), lib.a_names(["ab", "b", "ac"])]).toEqual([2, 2]);
-    } finally {
-      console.log = log;
-    }
-    expect(logs).toEqual(["at", "f2", "at", "f3", "ab", "ac"]);
-    // A \`str\`'s \`starts_with\` only reads: the array's own \`filter\`.
-    if (out === "mir.js") expect(readFileSync(join(dir, out), "utf8")).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  const logs: string[] = [];
+  const log = console.log;
+  console.log = (line: string) => logs.push(line);
+  try {
+    expect([lib.run(), lib.a_names(["ab", "b", "ac"])]).toEqual([2, 2]);
+  } finally {
+    console.log = log;
   }
+  expect(logs).toEqual(["at", "f2", "at", "f3", "ab", "ac"]);
+  // A \`str\`'s \`starts_with\` only reads: the array's own \`filter\`.
+  if ("mir.js" === "mir.js") expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
 });
 
 // A handle's value read or written in place, `Cell::set` of `&self.n`, is
@@ -10488,13 +10162,11 @@ pub fn pair() -> String {
     }
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("  bump(t) {\n    t.n = (t.n + 1) >>> 0;\n    return t.n;\n  },");
-    expect(readFileSync(join(dir, out), "utf8")).toContain("  return `${value[0]} ${value[1]}`;");
-    expect((await import(join(dir, out))).run()).toBe(2);
-    expect((await import(join(dir, out))).pair()).toBe("11 22");
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  bump(t) {\n    t.n = (t.n + 1) >>> 0;\n    return t.n;\n  },");
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  return `${value[0]} ${value[1]}`;");
+  expect((await import(join(dir, "mir.js"))).run()).toBe(2);
+  expect((await import(join(dir, "mir.js"))).pair()).toBe("11 22");
 });
 
 // A variable a loop's turn declares, `let y = match x { 0 => continue, ..
@@ -10515,11 +10187,9 @@ test("a let each turn assigns from MIR is the loop body's", async () => {
     out
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("  for (const x of v) {\n    let y;\n");
-    expect((await import(join(dir, out))).named([0, 1, 7])).toEqual(["one", "7"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("  for (const x of v) {\n    let y;\n");
+  expect((await import(join(dir, "mir.js"))).named([0, 1, 7])).toEqual(["one", "7"]);
 });
 
 // `Math`'s functions but `random` only compute their value: a range's end
@@ -10531,12 +10201,10 @@ test("a slice to a computed end from MIR reads the end where it's used", async (
     segments[..segments.len().saturating_sub(1)].to_vec()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("$slice(segments, 0, Math.max(segments.length - 1, 0))");
-    const lib = await import(join(dir, out));
-    expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$slice(segments, 0, Math.max(segments.length - 1, 0))");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.crumbs(["a", "b", "c"]), lib.crumbs([])]).toEqual([["a", "b"], []]);
 });
 
 // A slice's `iter_mut()` is an array's items: its chain the array's own
@@ -10555,17 +10223,15 @@ pub fn big(v: &mut [u32]) -> usize {
     v.iter_mut().filter(|x| **x > 2).count()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("const e = v.find(([k]) => k === w);");
-    expect(js).toContain("return $mutItems(v).filter((x) => x.value > 2).length;");
-    const lib = await import(join(dir, out));
-    const v = [[1, 1]];
-    lib.count(v, 1);
-    lib.count(v, 2);
-    expect([v, lib.big([1, 3, 5])]).toEqual([[[1, 2], [2, 1]], 2]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("const e = v.find(([k]) => k === w);");
+  expect(js).toContain("return $mutItems(v).filter((x) => x.value > 2).length;");
+  const lib = await import(join(dir, "mir.js"));
+  const v = [[1, 1]];
+  lib.count(v, 1);
+  lib.count(v, 2);
+  expect([v, lib.big([1, 3, 5])]).toEqual([[[1, 2], [2, 1]], 2]);
 });
 
 // An untagged enum is its payload (ADR 0214): an `Option` of one whose every
@@ -10598,14 +10264,12 @@ pub fn labeled(label: Option<Label>) -> bool {
     label.is_some()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain("  if (size) {\n");
-    expect(js).toContain("return label != null;");
-    const lib = await import(join(dir, out));
-    expect([lib.width([{ w: 3 }]), lib.width({ w: 4 }), lib.width(undefined), lib.labeled(""), lib.labeled(undefined)]).toEqual([3, 4, 0, true, false]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  if (size) {\n");
+  expect(js).toContain("return label != null;");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.width([{ w: 3 }]), lib.width({ w: 4 }), lib.width(undefined), lib.labeled(""), lib.labeled(undefined)]).toEqual([3, 4, 0, true, false]);
 });
 
 // A `let … else { continue; }` the program wrote, as react.dev's llmsTxt
@@ -10640,11 +10304,9 @@ pub fn sections(items: &[u32]) -> Vec<Section> {
     out
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("    if (!current) {\n      continue;\n    }\n    if (item > 10) {\n");
-    expect((await import(join(dir, out))).sections([5, 0, 30, 2, 0, 7])).toEqual([{ pages: [3, 2] }, { pages: [7] }]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("    if (!current) {\n      continue;\n    }\n    if (item > 10) {\n");
+  expect((await import(join(dir, "mir.js"))).sections([5, 0, 30, 2, 0, 7])).toEqual([{ pages: [3, 2] }, { pages: [7] }]);
 });
 
 
@@ -10804,10 +10466,8 @@ pub fn getSyntaxHighlight(theme: &Theme) -> &'static HighlightStyle {
     ])
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain('    { tag: tags.keyword, class: classNameToken("keyword") },\n');
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain('    { tag: tags.keyword, class: classNameToken("keyword") },\n');
 });
 
 // A range of numbers made where it's stepped, `(0..n).find(f)`, is its
@@ -10831,13 +10491,11 @@ pub fn evens(n: u32) -> Vec<u32> {
     (0..n).filter(|i| i % 2 == 0).collect()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.first(5, (i: number) => i > 2), lib.first(2, () => false), lib.picked([3, undefined, 2])]).toEqual([3, undefined, [3, 2]]);
-    expect([lib.letter((c: string) => c > "b"), lib.letter(() => false)]).toEqual(["c", undefined]);
-    expect(lib.evens(5)).toEqual([0, 2, 4]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.first(5, (i: number) => i > 2), lib.first(2, () => false), lib.picked([3, undefined, 2])]).toEqual([3, undefined, [3, 2]]);
+  expect([lib.letter((c: string) => c > "b"), lib.letter(() => false)]).toEqual(["c", undefined]);
+  expect(lib.evens(5)).toEqual([0, 2, 4]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   // Of a filter, which may keep few of many, no array of them all either.
   expect(js).toContain("return $lazyRange(0, n)\n    .filter((i) => i % 2 === 0)\n    .toArray();");
@@ -10881,12 +10539,10 @@ pub fn run() -> f64 {
     p.expr().unwrap()
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js.split("P.next(p);").length - 1).toBe(1);
-    expect((await import(join(dir, out))).run()).toBe(2.5);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js.split("P.next(p);").length - 1).toBe(1);
+  expect((await import(join(dir, "mir.js"))).run()).toBe(2.5);
 });
 
 // `String::from_iter(items)` from MIR: an array's joined, `["h",
@@ -10906,15 +10562,13 @@ pub fn counted(n: u32) -> String {
     of((0..n).map(|i| char::from_digit(i, 10).unwrap()))
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const js = readFileSync(join(dir, out), "utf8");
-    expect(js).toContain('return ["h", "é", "!"].join("");');
-    // A JS iterator has no \`join\` but Bun's: its items, an array's.
-    if (out === "mir.js") expect(js).toContain('return Iterator.from(items).toArray().join("");');
-    const lib = await import(join(dir, out));
-    expect([lib.letters(), lib.backwards("axbc"), lib.counted(4)]).toEqual(["hé!", "cba", "0123"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return ["h", "é", "!"].join("");');
+  // A JS iterator has no \`join\` but Bun's: its items, an array's.
+  if ("mir.js" === "mir.js") expect(js).toContain('return Iterator.from(items).toArray().join("");');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.letters(), lib.backwards("axbc"), lib.counted(4)]).toEqual(["hé!", "cba", "0123"]);
 });
 
 // A range cloned and stepped is the copy stepped: the range itself, read
@@ -10933,11 +10587,9 @@ pub fn summed(a: i32, z: i32) -> String {
     format!("{s} {:?}", r)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.counted(1, 4), lib.summed(1, 3)]).toEqual(["3 1..4", "6 1..=3"]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.counted(1, 4), lib.summed(1, 3)]).toEqual(["3 1..4", "6 1..=3"]);
 });
 
 // An iterator of the crate's `len()`: std's of its `size_hint()`, which
@@ -10970,10 +10622,8 @@ pub fn lens() -> (usize, usize) {
     (s.len(), Own.len())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect((await import(join(dir, out))).lens()).toEqual([4, 42]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect((await import(join(dir, "mir.js"))).lens()).toEqual([4, 42]);
 });
 
 // A chunks' `remainder()` from MIR: of one made there, its array's,
@@ -10990,12 +10640,10 @@ pub fn stepped(v: &[u32]) -> (Vec<u32>, Vec<u32>) {
     (first, c.remainder().to_vec())
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect(readFileSync(join(dir, out), "utf8")).toContain("$chunksExact(v, 2).remainder");
-    const lib = await import(join(dir, out));
-    expect([lib.rest([1, 2, 3]), lib.stepped([1, 2, 3, 4, 5])]).toEqual([[3], [[1, 2], [5]]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain("$chunksExact(v, 2).remainder");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.rest([1, 2, 3]), lib.stepped([1, 2, 3, 4, 5])]).toEqual([[3], [[1, 2], [5]]]);
 });
 
 // A `Vec`'s range pushed again, `extend_from_within`, or replaced,
@@ -11016,11 +10664,9 @@ pub fn replaced(mut v: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
     (v, old)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    const lib = await import(join(dir, out));
-    expect([lib.doubled([1, 2]), lib.tail_again([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.doubled([1, 2]), lib.tail_again([1, 2, 3]), lib.replaced([1, 2, 3])]).toEqual([[1, 2, 1, 2], [1, 2, 3, 2, 3], [[9, 8], [1, 2, 3]]]);
 });
 
 // An iterator of the crate's from MIR: what its impl writes itself, its
@@ -11044,10 +10690,8 @@ pub fn run() -> (usize, Vec<u32>, Vec<u32>) {
     (own, mapped, chained)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect((await import(join(dir, out))).run()).toEqual([99, [10, 20, 30], [7, 2, 3]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect((await import(join(dir, "mir.js"))).run()).toEqual([99, [10, 20, 30], [7, 2, 3]]);
 });
 
 // The crate's iterator stepped through a `&mut` to it, `by_ref()`, from
@@ -11073,10 +10717,8 @@ pub fn run() -> (Vec<u32>, Vec<u32>) {
     (first, rest)
 }
 `);
-  for (const [out, env] of [["mir.js", {}]] as const) {
-    run([compiler, join(dir, "lib.rs"), "-o", join(dir, out)], 600_000, env);
-    expect((await import(join(dir, out))).run()).toEqual([[1, 2], [3, 4, 5]]);
-  }
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  expect((await import(join(dir, "mir.js"))).run()).toEqual([[1, 2], [3, 4, 5]]);
 });
 
 // A match MIR tests as a tree, an arm reached from more than one of its
