@@ -125,26 +125,13 @@ fn locals(item: &mut js::Item) {
 /// The name `name`, `label$1` or `Error$`, was given apart from, where it
 /// may be that name: one none of `mentioned` is, nor a word JS keeps.
 fn reclaimable<'a>(name: &'a str, mentioned: &HashSet<String>) -> Option<&'a str> {
-    // The globals rust-js names apart from a Rust name, which JS lets a
-    // variable be.
-    const GLOBALS: &[&str] = &[
-        "Math",
-        "Error",
-        "String",
-        "WeakMap",
-        "DataView",
-        "ArrayBuffer",
-        "Number",
-        "BigInt",
-        "Object",
-    ];
     let (base, suffix) = name.rsplit_once('$')?;
     if base.is_empty() || base.contains('$') || !suffix.bytes().all(|b| b.is_ascii_digit()) || mentioned.contains(base)
     {
         return None;
     }
     // A word JS keeps, `class`, is named apart for good.
-    if crate::names::js_ident(base) != base && !GLOBALS.contains(&base) {
+    if crate::names::kept_word(base) {
         return None;
     }
     Some(base)

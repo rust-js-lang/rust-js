@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "        if true {\n",
     tests: ["test/corpus.test.ts", "-t", "dictionary_helper_names"],
   },
+  {
+    name: "globals-kept-for-good",
+    breaks: "an import named apart from `Error` stays `Error$` where nothing reads the global",
+    file: "src/names.rs",
+    find: "    KEPT.contains(&name)\n}",
+    replace: "    KEPT.contains(&name) || GLOBALS.contains(&name)\n}",
+    tests: ["test/lowering.test.ts", "-t", "nothing it shadows"],
+  },
 ];

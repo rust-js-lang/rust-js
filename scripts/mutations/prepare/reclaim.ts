@@ -16,16 +16,8 @@ export const mutations: Mutation[] = [
     name: "reclaim-keyword",
     breaks: "a parameter named `class` in Rust is `class` in JS, a word JS keeps",
     file: "src/prepare/reclaim.rs",
-    find: "    if crate::names::js_ident(base) != base && !GLOBALS.contains(&base) {",
-    replace: "    if false && crate::names::js_ident(base) != base && !GLOBALS.contains(&base) {",
-    tests,
-  },
-  {
-    name: "reclaim-no-globals",
-    breaks: "an import named apart from `Error` stays `Error$` where nothing reads the global",
-    file: "src/prepare/reclaim.rs",
-    find: "    if crate::names::js_ident(base) != base && !GLOBALS.contains(&base) {",
-    replace: "    if crate::names::js_ident(base) != base {",
+    find: "    if crate::names::kept_word(base) {",
+    replace: "    if false && crate::names::kept_word(base) {",
     tests,
   },
   {
