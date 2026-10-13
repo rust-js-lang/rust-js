@@ -676,13 +676,13 @@ macro_rules! handle {
 /// what sets it. `let (count, set_count) = use_state(0);` is
 /// `const [count, setCount] = useState(0);`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
-pub fn use_state<T>(initial: T) -> (&'static T, Dispatch<SetStateAction<T>>) {
+pub fn use_state<T>(initial: T) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
     unreachable!()
 }
 
 /// `useState(() => initial())`: the first value, computed on the first render only.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useState")]
-pub fn use_state_with<T>(initial: impl Fn() -> T + 'static) -> (&'static T, Dispatch<SetStateAction<T>>) {
+pub fn use_state_with<T>(initial: impl Fn() -> T + 'static) -> (&'static T, &'static Dispatch<SetStateAction<T>>) {
     unreachable!()
 }
 
@@ -709,7 +709,7 @@ impl<T> Dispatch<SetStateAction<T>> {
 }
 
 /// The setter is the function it is, as @types/react's `Dispatch` is, where
-/// a prop wants one: `onChange={&*set_text}` is `onChange={setText}`.
+/// a prop wants one: `onChange={&**set_text}` is `onChange={setText}`.
 impl<T> Deref for Dispatch<SetStateAction<T>> {
     type Target = dyn Fn(T);
 

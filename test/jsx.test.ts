@@ -3658,22 +3658,23 @@ pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> JSX::Element {
 });
 
 // A state's setter is a function, as @types/react's `Dispatch` is: given
-// where a prop wants one, as react.dev's home page gives `setSearchText`.
+// where a prop wants one, as react.dev's home page gives `setSearchText`,
+// and `setHoverLine` to a memo'd CodeBlock, whose props are `'static`.
 test("a state's setter is given as the function it is", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx, use_state};
-pub struct InputProps<'a> { pub value: &'a str, pub on_change: &'a dyn Fn(String) }
-pub fn Input(InputProps { value, on_change }: InputProps) -> JSX::Element {
-    let _ = on_change;
+pub struct InputProps<'a> { pub value: &'a str, pub on_change: &'a dyn Fn(String), pub on_clear: Option<&'static dyn Fn(String)> }
+pub fn Input(InputProps { value, on_change, on_clear }: InputProps) -> JSX::Element {
+    let _ = (on_change, on_clear);
     jsx! { <b>{value}</b> }
 }
 pub fn Search() -> JSX::Element {
     let (text, set_text) = use_state(String::from("a"));
-    jsx! { <Input value={text.as_str()} on_change={&*set_text} /> }
+    jsx! { <Input value={text.as_str()} on_change={&**set_text} on_clear={Some(&**set_text)} /> }
 }
 `);
   run(args);
-  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<Input value={text} on_change={setText} />");
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<Input value={text} on_change={setText} on_clear={setText} />");
   const { Search } = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(createElement(Search))).toBe("<b>a</b>");
 });
