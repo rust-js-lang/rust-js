@@ -20,11 +20,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "tidy-closure-assign-unseen",
-    breaks: "a variable a closure assigns is a `const`",
+    breaks: "a variable assigned again, a parameter, is taken for one nothing changes: a tuple's part of it is read after a guard set it",
     file: "src/lower/mir/tidy.rs",
     find: "            {\n                assigned.insert(name.clone());\n            }\n        }\n",
     replace: "            {\n                let _ = name;\n            }\n        }\n",
-    tests: ["test/corpus.test.ts","-t","declarations_assigned_later"],
+    tests: ["test/corpus.test.ts", "-t", "tuple_scrutinee_calls|declarations_assigned_later"],
   },
   {
     name: "tidy-handle-assign-unseen",
@@ -1998,7 +1998,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "    js::statement_lists(body, &mut tried_first);\n",
     replace: "",
-    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
+    tests: ["test/snapshots.test.ts"],
   },
   {
     name: "mir-tidy-if-condition-logical-folded",

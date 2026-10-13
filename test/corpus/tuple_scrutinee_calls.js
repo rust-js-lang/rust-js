@@ -90,6 +90,22 @@ function bumped(v) {
   return 0;
 }
 
+function guarded_param(v, x) {
+  const value = v.pop();
+  const value$1 = x;
+  x = (x + 10) >>> 0;
+  if (!false) {
+    if (value != null) {
+      const b = value;
+      const a = value$1;
+      return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
+    }
+    const a = value$1;
+    return (a + x) >>> 0;
+  }
+  return 0;
+}
+
 function bump(n) {
   n.value = (n.value + 10) >>> 0;
   return false;
@@ -145,17 +161,19 @@ function main() {
   const value$4 = guarded(k);
   const value$5 = guarded(k);
   console.log(`${value$4} ${value$5} ${bumped([4])}`);
-  const value$6 = bumped_by_ref([4], true);
-  console.log(`${value$6} ${bumped_by_ref([], false)}`);
+  const value$6 = guarded_param([4], 1);
+  console.log(`${value$6} ${guarded_param([], 2)}`);
+  const value$7 = bumped_by_ref([4], true);
+  console.log(`${value$7} ${bumped_by_ref([], false)}`);
   const map = new Map();
   map.set("a", { TAG: "Circle", _0: 3 });
   map.set("b", { TAG: "Square", _0: 4 });
   const names = $iter(["a", "b", "a"]);
-  const value$7 = peeked(map, names);
   const value$8 = peeked(map, names);
   const value$9 = peeked(map, names);
+  const value$10 = peeked(map, names);
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${((value) => (value == null ? "None" : `Some(${value})`))(peeked(map, names))}`,
+    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${((value) => (value == null ? "None" : `Some(${value})`))(peeked(map, names))}`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -2,8 +2,8 @@
 // that acts held first, in order, `const value = v.pop();`, and what's read
 // before it with it, `v.len()` of `(v.len(), v.pop())`, read as it was
 // before the call; the rest read where the tuple's parts are. A variable
-// is read where its part is unless something sets it after, a guard, a
-// closure called in one, or a `&mut` given in one: the tuple has it as it
+// is read where its part is unless something sets it after, a guard, of
+// a parameter too, a closure called in one, or a `&mut` given in one: the tuple has it as it
 // was.
 use std::collections::HashMap;
 
@@ -66,6 +66,20 @@ fn bumped(v: &mut Vec<u32>) -> u32 {
     }
 }
 
+fn guarded_param(v: &mut Vec<u32>, mut x: u32) -> u32 {
+    match (v.pop(), x) {
+        (_, _) if {
+            x += 10;
+            false
+        } =>
+        {
+            0
+        }
+        (Some(b), a) => a * 100 + b + x,
+        (None, a) => a + x,
+    }
+}
+
 fn bump(n: &mut u32) -> bool {
     *n += 10;
     false
@@ -88,6 +102,7 @@ fn main() {
     println!("{} {} {}", counted(&mut w), counted(&mut w), counted(&mut w));
     let mut k = vec![3];
     println!("{} {} {}", guarded(&mut k), guarded(&mut k), bumped(&mut vec![4]));
+    println!("{} {}", guarded_param(&mut vec![4], 1), guarded_param(&mut vec![], 2));
     println!("{} {}", bumped_by_ref(&mut vec![4], true), bumped_by_ref(&mut vec![], false));
     let mut map = HashMap::new();
     map.insert("a".to_string(), Shape::Circle(3));
