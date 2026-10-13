@@ -76,9 +76,7 @@ pub fn lower_crate<'tcx>(
         generic_consts,
         pretty_debug,
         format_options,
-        plain_locals,
         quiet_locals,
-        plain_cells,
         read_at_once,
         named_expressions,
         local_functions,
@@ -165,19 +163,13 @@ pub fn lower_crate<'tcx>(
         // A `const { .. }` thread-local's value, the `const` in its block, is
         // its variable, by its name.
         let key = thread_local_inits.get(&def_id).copied();
-        let (named, value, mutable) = match key {
-            Some(key) => {
-                let plain = plain_locals.get(&key).copied();
-                (key, module_variable(value, plain), plain == Some(true))
-            }
-            None => (def_id, value, false),
-        };
+        let named = key.unwrap_or(def_id);
         let info = &fns[&named.to_def_id()];
         let span = tcx.def_span(named).source_callsite();
         const_items.entry(info.module).or_default().push(js::Const {
             name: info.name.clone(),
             value,
-            mutable,
+            mutable: false,
             export: tcx.visibility(named).is_public() || called_from_elsewhere.contains(&named.to_def_id()),
             span: sources.span(span),
         });
@@ -220,8 +212,6 @@ pub fn lower_crate<'tcx>(
         serde_attrs,
         pretty_debug,
         format_options,
-        plain_locals: &plain_locals,
-        plain_cells: &plain_cells,
         read_at_once: &read_at_once,
         plain_ref_cells: &plain_ref_cells,
         named_expressions: &named_expressions,
@@ -291,7 +281,6 @@ pub fn lower_crate<'tcx>(
             runtime: HashSet::new(),
             jsx: false,
             writing: Default::default(),
-            chains: Default::default(),
             stepping: body.map_or_else(Default::default, |body| {
                 super::iterators::Stepping::of(&body.facts.stepped)
             }),
@@ -403,12 +392,10 @@ pub fn lower_crate<'tcx>(
                 };
                 let info = &fns[&key.to_def_id()];
                 let span = tcx.def_span(key).source_callsite();
-                let plain = plain_locals.get(&key).copied();
-                let value = module_variable(value, plain);
                 pass.local_consts.entry(info.module).or_default().push(js::Const {
                     name: info.name.clone(),
                     value,
-                    mutable: plain == Some(true),
+                    mutable: false,
                     // A `const { .. }` block has no visibility: it's its function's alone.
                     export: (tcx.def_kind(key) != DefKind::AnonConst && tcx.visibility(key).is_public())
                         || called_from_elsewhere.contains(&key.to_def_id()),
@@ -783,21 +770,6 @@ fn fill_hole(e: &mut Expr, holes: &mut HashMap<u32, js::Function>) {
     {
         fill_holes(&mut function.body, holes);
         e.kind = js::ExprKind::Function(Box::new(function));
-    }
-}
-
-/// A thread-local's value, `{ value: 0 }`: of one only read and set, what
-/// its cell holds, its module's variable, a `let` if it's set (ADR 0270).
-fn module_variable(value: Expr, plain: Option<bool>) -> Expr {
-    match value.kind {
-        js::ExprKind::Object(ref props)
-            if plain.is_some()
-                && let [js::Prop::Field(field, held)] = props.as_slice()
-                && field == "value" =>
-        {
-            held.clone()
-        }
-        _ => value,
     }
 }
 

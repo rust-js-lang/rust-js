@@ -1495,7 +1495,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(mir) => self.mir_signature(body, mir, &mut stmts),
             None => Err(self.unsupported(span, "this constant, without its MIR")),
         };
-        let hoisted = self.leave_body(enclosing, true)?;
+        let hoisted = self.leave_body(enclosing);
         lowered?;
         stmts.splice(0..0, hoisted);
         Ok(Expr::arrow(Vec::new(), stmts))
@@ -2461,7 +2461,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         params.extend(own_params.into_iter().map(Into::into));
         // Only the drops it uses: most defaults drop nothing of their `Self`.
         let used = self.used_drops();
-        rest.splice(0..0, self.leave_body(enclosing, true)?);
+        rest.splice(0..0, self.leave_body(enclosing));
         let mut out: Vec<_> = made
             .into_iter()
             .filter(|(index, _)| used.contains(index))

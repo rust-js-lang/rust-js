@@ -367,11 +367,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Pin(_) => unreachable!("lowered by pin_call"),
             Std::Any(_) => unreachable!("lowered by any_call"),
             Std::Uninit(_) => unreachable!("lowered by uninit_call"),
-            Std::Cow(_) => unreachable!("lowered by cow_call"),
-            Std::Rc(_) => unreachable!("lowered by rc_call"),
-            Std::Slice(_) => unreachable!("lowered by slice_call"),
-            Std::OptionPlace(_) => unreachable!("lowered by option_place"),
-            Std::PtrEq => unreachable!("lowered by ptr_eq"),
+            Std::Cow(_) => unreachable!("lowered by mir_std_call"),
+            Std::Rc(_) => unreachable!("lowered by mir_std_call"),
+            Std::Slice(_) => unreachable!("lowered by mir_std_call"),
+            Std::OptionPlace(_) => unreachable!("lowered by mir_std_call"),
+            Std::PtrEq => unreachable!("lowered by mir_std_call"),
             Std::ToBig
             | Std::Cast { .. }
             | Std::Duration(_)

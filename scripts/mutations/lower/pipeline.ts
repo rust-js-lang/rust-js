@@ -163,14 +163,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {
-    name: "const-thread-local-boxed",
-    breaks: "a `const { .. }` thread-local only read and set keeps its cell's `{ value }`, which `SEEN == null` never is",
-    file: "src/lower/pipeline.rs",
-    find: "(key, module_variable(value, plain), plain == Some(true))",
-    replace: "(key, value, plain == Some(true))",
-    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
-  },
-  {
     name: "default-of-another-refused",
     breaks: "`js::export_default!` of another module's function is an error",
     file: "src/lower/pipeline.rs",

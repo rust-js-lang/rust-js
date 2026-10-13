@@ -2,7 +2,6 @@
 
 use super::{FnCx, Std};
 use crate::js::{self, Expr};
-use crate::runtime::Helper;
 
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty;
@@ -33,19 +32,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => Expr::object(vec![js::Prop::Field("value".into(), value)]),
             false => value,
         }
-    }
-
-    /// `v[i]`, checked: `$index(v, i)`, or just `v[i]` for an array whose
-    /// length is its type's and a constant index below it, which rustc checked.
-    /// Of one a condition showed in bounds too (ADR 0292): `site` is the
-    /// index, or the function of a `Vec`'s `Index::index`.
-    pub(super) fn checked_index(&mut self, site: ExprId, lhs: ExprId, values: Vec<Expr>) -> Expr {
-        if self.in_bounds(lhs, &values[1]) || self.body_facts.in_bounds.contains(&site) {
-            let [items, index]: [Expr; 2] = values.try_into().ok().expect("the items and an index");
-            return Expr::index(items, index);
-        }
-        self.runtime.insert(Helper::Index);
-        Expr::call(Expr::var("$index"), values)
     }
 
     /// Is `index` a constant below the length of the array `lhs`'s type?

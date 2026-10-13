@@ -115,8 +115,8 @@ export const mutations: Mutation[] = [
     name: "mir-quiet-locals-none",
     breaks: "MIR knows no quiet thread-local, each borrowed through `$withBorrow`",
     file: "src/lower/analysis.rs",
-    find: "(HashMap::new(), thread_locals.into_keys().collect());",
-    replace: "(HashMap::new(), HashSet::new());",
+    find: "let quiet_locals: HashSet<_> = thread_locals.into_keys().collect();",
+    replace: "let quiet_locals: HashSet<_> = HashSet::new();",
     tests: ["test/modules.test.ts","-t","thread-local only read and set"],
   },
   {

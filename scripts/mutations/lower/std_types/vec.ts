@@ -11,28 +11,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "collection_methods"],
   },
   {
-    name: "stepping-count-length",
-    breaks: "`count()` of an iterator that knows where it is is `undefined`",
-    file: "src/lower/std_types/vec.rs",
-    find: "            Std::Len if args.first().is_some_and(|&a| self.is_stepping(a)) => {",
-    replace: "            Std::Len if false => {",
-    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
-  },
-  {
     name: "text-empty-by-length",
     breaks: "a string's `is_empty()` is `text.length === 0`, not `!text`",
     file: "src/lower/std_types/vec.rs",
     find: "            Std::IsEmpty if self.is_string_like(tys[0].peel_refs()) => ",
     replace: "            Std::IsEmpty if false && self.is_string_like(tys[0].peel_refs()) => ",
     tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
-  },
-  {
-    name: "lazy-count-length",
-    breaks: "`count()` of a JS iterator, `list.values().filter(..)`, is its `.length`, which a JS iterator doesn't have",
-    file: "src/lower/std_types/vec.rs",
-    find: "            Std::Len if args.first().is_some_and(|&a| self.is_lazy_value(a)) => {",
-    replace: "            Std::Len if false && args.first().is_some_and(|&a| self.is_lazy_value(a)) => {",
-    tests: ["test/compiler.test.ts", "-t", "the webapi crate's bindings become plain JS"],
   },
   {
     name: "capacity-args-dropped",

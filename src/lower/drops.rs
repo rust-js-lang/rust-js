@@ -13,7 +13,7 @@ use std::rc::Rc;
 
 use rustc_hir::def::DefKind;
 
-use rustc_middle::thir::{ExprId, ExprKind, LocalVarId, Pat, StmtKind as ThirStmt};
+use rustc_middle::thir::{ExprKind, Pat, StmtKind as ThirStmt};
 use rustc_middle::ty::{self, GenericArgsRef, Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -103,10 +103,6 @@ pub(super) struct DropState<'tcx> {
     sizes: RefCell<HashMap<Ty<'tcx>, (usize, bool)>>,
     /// Each body's facts, by the address of its THIR: a closure's is its own.
     facts: HashMap<usize, Rc<Facts>>,
-    /// Every owner given a scope, and each move lowered, which a body's
-    /// facts must all be once it's lowered.
-    registered: HashSet<LocalVarId>,
-    lowered_moves: HashSet<(usize, ExprId)>,
     /// The function being lowered's drop functions, by the index of the
     /// type parameter each drops.
     param_drops: HashMap<u32, String>,
@@ -783,17 +779,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Finish the body `enter_body_drops` started: every owner it has had a
     /// scope, and every move its flag cleared, and the enclosing body's back.
-    pub(super) fn leave_body_drops(&mut self, enclosing: EnclosingDrops<'tcx>, from_mir: bool) -> R<Vec<Stmt>> {
-        if !from_mir {
-            self.check_drops()?;
-        }
+    pub(super) fn leave_body_drops(&mut self, enclosing: EnclosingDrops<'tcx>) -> Vec<Stmt> {
         if let Some(swapped) = enclosing.swapped {
             self.restore_drops(swapped);
         }
-        Ok(match enclosing.hoisted {
+        match enclosing.hoisted {
             Some(outer) => self.end_hoisting(outer),
             None => Vec::new(),
-        })
+        }
     }
 
     /// The function being lowered is given a drop for its type parameter
@@ -985,34 +978,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             value
         } else {
             self.spill("value", value, out)
-        }
-    }
-
-    /// Once a body is lowered: every owner it has must have had a scope, and
-    /// every move its flag cleared. One that didn't went a way this doesn't
-    /// know, so it's an error, not JS that forgets a drop.
-    pub(super) fn check_drops(&mut self) -> R<()> {
-        let facts = self.drop_facts()?;
-        let key = std::ptr::from_ref(self.thir) as usize;
-        let mut failed = None;
-        for (var, span) in &facts.owners {
-            if !self.drop_state.registered.contains(var) {
-                failed = Some(self.unsupported(*span, "binding a value with a destructor here"));
-            }
-        }
-        for &e in facts
-            .moves
-            .iter()
-            .chain(facts.part_moves.keys())
-            .chain(facts.updates.keys())
-        {
-            if !self.drop_state.lowered_moves.contains(&(key, e)) {
-                failed = Some(self.unsupported(self.thir[e].span, "moving a value with a destructor here"));
-            }
-        }
-        match failed {
-            Some(guar) => Err(guar),
-            None => Ok(()),
         }
     }
 }

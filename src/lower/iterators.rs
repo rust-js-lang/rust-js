@@ -3,7 +3,6 @@
 //! (ADR 0139), and what a chain that owns its items drops (ADR 0098).
 
 use super::calls::Call;
-use super::combinators::IterComb;
 use super::combinators::IterSource;
 use super::fn_def;
 use super::recognition::{StdItem, std_item, trait_method};
@@ -18,44 +17,6 @@ use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 use std::collections::HashSet;
-
-/// What a function's iterator chains are, beyond their types, each stage by
-/// its body's THIR and its expression.
-#[derive(Default)]
-pub(super) struct Chains {
-    /// The stages that are JS iterators, though their types aren't lazy
-    /// (ADR 0139), and the receivers that start one.
-    pub(super) lazy: HashSet<(usize, ExprId)>,
-    /// The variables that hold a lazy chain, which every use iterates.
-    pub(super) locals: HashSet<LocalVarId>,
-}
-
-/// Whether `known` is an adapter, which makes an iterator of an iterator,
-/// rather than a consumer, which ends one.
-fn is_adapter(known: Std) -> bool {
-    matches!(
-        known,
-        Std::ArrayMethod("map" | "filter")
-            | Std::Enumerate
-            | Std::Rev
-            | Std::Skip
-            | Std::Take
-            | Std::Cloned
-            | Std::Fuse
-            | Std::IterComb(
-                IterComb::FilterMap
-                    | IterComb::Scan
-                    | IterComb::FlatMap
-                    | IterComb::Flatten
-                    | IterComb::Zip
-                    | IterComb::Chain
-                    | IterComb::TakeWhile
-                    | IterComb::SkipWhile
-                    | IterComb::StepBy
-                    | IterComb::Inspect
-            )
-    )
-}
 
 /// The value `(p) => p === value` or `(p) => value === p` looks for, if
 /// it doesn't depend on `p` and reads the same however often it's read.
@@ -205,12 +166,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             false => left,
         })
-    }
-
-    /// An iterator that's a JS iterator, not an array (ADR 0055): one of the
-    /// crate's own, or std's adapters on one.
-    fn is_lazy_iter(&self, ty: ty::Ty<'tcx>) -> bool {
-        self.recognition().is_lazy_iter(ty)
     }
 
     /// Is a `ty` given for `callee`'s type parameter `input` one whose JS
@@ -363,49 +318,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(projection))
             .ok()
-    }
-
-    /// A chain's stage, by its body and its expression: what a consumer
-    /// that takes it by `&mut`, as `find` does, borrows.
-    pub(super) fn chain_key(&self, e: ExprId) -> (usize, ExprId) {
-        (std::ptr::from_ref(self.thir) as usize, self.chain_stage(e))
-    }
-
-    fn chain_stage(&self, e: ExprId) -> ExprId {
-        match self.thir[self.strip(e)].kind {
-            ExprKind::Borrow { arg, .. } => self.strip(arg),
-            _ => self.strip(e),
-        }
-    }
-
-    /// Whether `e`'s value is a JS iterator: a lazy type's, or a stage a
-    /// chain's consumer made lazy.
-    pub(super) fn is_lazy_value(&self, e: ExprId) -> bool {
-        self.is_lazy_iter(self.thir[e].ty)
-            || self.chains.lazy.contains(&self.chain_key(e))
-            || matches!(self.thir[self.chain_stage(e)].kind, ExprKind::VarRef { id } if self.chains.locals.contains(&id))
-            || self.through_by_ref(e)
-    }
-
-    /// Whether `e` is `it.by_ref()`, or a chain on it: each stage takes from
-    /// `it` only what it's asked for, as Rust's does, so `take(2)` leaves the
-    /// rest in `it` (ADR 0071).
-    fn through_by_ref(&self, e: ExprId) -> bool {
-        let mut at = self.strip(e);
-        loop {
-            // `&mut *it.by_ref()`, as `take` takes it.
-            while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = self.thir[at].kind {
-                at = self.strip(arg);
-            }
-            let ExprKind::Call { fun, ref args, .. } = self.thir[at].kind else {
-                return false;
-            };
-            match (self.std_fn(fun), args.first()) {
-                (Some(Std::IterByRef), _) => return true,
-                (Some(known), Some(&inner)) if is_adapter(known) => at = self.strip(inner),
-                _ => return false,
-            }
-        }
     }
 
     /// `test`, a stage's predicate, as one that drops the `item` it
@@ -639,19 +551,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => def_id.is_local() && !super::bindings::is_binding(self.tcx, def_id),
         }
-    }
-
-    /// Does `e` name one that knows where it is: a `Peekable`, or a local
-    /// `next()` steps through?
-    pub(super) fn is_stepping(&self, e: ExprId) -> bool {
-        // `it`, `&mut it`, or `&mut *it` of a `&mut` to one.
-        let mut e = self.strip(e);
-        while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = self.thir[e].kind {
-            e = self.strip(arg);
-        }
-        let ty = self.thir[e].ty;
-        self.is_peekable(ty)
-            || matches!(self.thir[e].kind, ExprKind::VarRef { id } if self.stepping.bound.contains(&id))
     }
 }
 

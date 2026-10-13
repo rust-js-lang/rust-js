@@ -71,10 +71,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// Finish the body `enter_body` started, and go back to the enclosing one:
     /// the drop functions it declares, for its top.
-    /// `from_mir`: a body lowered from its MIR, whose drops are its own
-    /// (ADR 0364), which THIR's facts don't check (`check_drops`).
-    pub(super) fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>, from_mir: bool) -> R<Vec<Stmt>> {
-        let hoisted = self.leave_body_drops(enclosing.drops, from_mir)?;
+    pub(super) fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>) -> Vec<Stmt> {
+        let hoisted = self.leave_body_drops(enclosing.drops);
         self.thir = enclosing.thir;
         self.body_facts = enclosing.body_facts;
         self.body_owner = enclosing.body_owner;
@@ -97,7 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.typing_env = typing_env;
             }
         }
-        Ok(hoisted)
+        hoisted
     }
 }
 

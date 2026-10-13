@@ -68,15 +68,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^locks"],
   },
   {
-    name: "borrow-held-always",
-    breaks: "every borrow is counted, where only checking it is the same",
-    file: "src/lower/std_types/cell.rs",
-    find: "                    Some(fun) => !self.drop_facts()?.momentary.contains(&fun),",
-    replace: "                    Some(_) => true,",
-    tests: ["test/corpus.test.ts", "-t", "^locks"],
-    snapshots: true,
-  },
-  {
     name: "replace-unchecked",
     breaks: "`replace` while a `borrow()` lives runs on",
     file: "src/lower/std_types/cell.rs",
@@ -91,18 +82,6 @@ export const mutations: Mutation[] = [
     find: "            Std::CellSwap if self.is_std_type(",
     replace: "            Std::CellSwap if false && self.is_std_type(",
     tests: ["test/corpus.test.ts", "-t", "refcell_swap_itself"],
-  },
-  {
-    "name": "plain-refcell-local-unchecked",
-    "breaks": "a local `RefCell` of a type a field holds as its value isn't checked, so a `borrow_mut` beside a held `borrow` doesn't panic",
-    "file": "src/lower/std_types/cell.rs",
-    "find": "            if matches!(self.thir[self.strip(arg)].kind, ExprKind::Field { .. })\n                && self.plain_ref_cell(self.thir[arg].ty))",
-    "replace": "            if self.plain_ref_cell(self.thir[arg].ty))",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "only borrowed for a moment"
-    ]
   },
   {
     name: "drop-unsupported-silent",

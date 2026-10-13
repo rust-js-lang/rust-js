@@ -317,12 +317,6 @@ struct CrateFacts<'a, 'tcx> {
     /// Does it give a placeholder's options to its writers and dictionaries
     /// (ADR 0058)?
     format_options: bool,
-    /// The thread-locals that are their module's variable, each whether it's
-    /// set, a `let` (ADR 0270).
-    plain_locals: &'a HashMap<LocalDefId, bool>,
-    /// The cells that are their function's variable, each to the one it's a
-    /// clone of, or itself (ADR 0287).
-    plain_cells: &'a HashMap<LocalVarId, LocalVarId>,
     /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
     read_at_once: &'a HashSet<LocalVarId>,
     /// The `RefCell`s a field holds as their value, never counted (ADR
@@ -371,8 +365,6 @@ struct FnCx<'a, 'tcx> {
     jsx: bool,
     /// What writing to a `Formatter` knows (ADRs 0054, 0137).
     writing: display::Writing,
-    /// What this function's iterator chains are, beyond their types.
-    chains: iterators::Chains,
     /// The locals stepped through, each a `$iter` (ADR 0071).
     stepping: iterators::Stepping,
     /// The recursive types being cloned, and the function each one's clone

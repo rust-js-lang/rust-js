@@ -181,13 +181,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, &format!("`as_deref` of a `{ty}`")))
     }
 
-    /// `vec![item; n]`, of their values (ADR 0364): `rebuilt`, whether making
-    /// `item` again makes a clone of it.
+    /// `vec![item; n]`, of their values (ADR 0364).
     pub(in crate::lower) fn copies_values(
         &mut self,
         (item, item_ty): (Expr, Ty<'tcx>),
         n: Expr,
-        rebuilt: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -208,19 +206,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![item, n, Expr::arrow(vec![name.into()], body)],
             ));
         }
-        let body = if rebuilt {
-            vec![StmtKind::Return(Some(item)).at(js::Span::NONE)]
+        let item = if item.reads_same() {
+            item
         } else {
-            let item = if item.reads_same() {
-                item
-            } else {
-                self.spill("item", item, out)
-            };
-            let mut body = Vec::new();
-            let copy = self.clone_value(item, item_ty, span, &mut body)?;
-            body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
-            body
+            self.spill("item", item, out)
         };
+        let mut body = Vec::new();
+        let copy = self.clone_value(item, item_ty, span, &mut body)?;
+        body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
         let length = Expr::object(vec![Prop::Field("length".into(), n)]);
         let from = Expr::member(Expr::var("Array"), "from");
         Ok(Expr::call(from, vec![length, Expr::arrow(Vec::new(), body)]))

@@ -3902,21 +3902,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if is_std_item(self.tcx, adt.did())
             && self.tcx.item_name(adt.did()).as_str() == "ExtractIf")
     }
-
-    pub(super) fn is_lazy_iter(&self, ty: ty::Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty.peel_refs());
-        // std's sources that may never end (ADR 0128).
-        let endless = matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.crate_name(adt.did().krate) == sym::core
-            && ["std::iter::Repeat", "std::iter::RepeatWith", "std::iter::Successors", "std::iter::FromFn"]
-                .contains(&std_path(self.tcx, adt.did()).as_str()));
-        endless
-            || self.is_extract_if(ty)
-            || self.range_kind(ty) == Some(RangeKind::From)
-            || self.is_user_iterator(ty)
-            || self.is_generic_iter(ty)
-            || self.is_dyn_iter(ty)
-            || matches!(ty.kind(), ty::Adt(_, args) if self.is_array_iter(ty) && args.types().any(|t| self.is_lazy_iter(t)))
-    }
 }
 
 /// Is `id` std's, core's or alloc's?
@@ -4445,51 +4430,6 @@ pub(crate) fn is_from_str(tcx: TyCtxt<'_>, id: DefId) -> bool {
     tcx.crate_name(id.krate) == sym::core
         && tcx.def_kind(id) == DefKind::Trait
         && std_path(tcx, id).ends_with("str::FromStr")
-}
-
-/// What a std function does with a `Cell`, of those a cell that's its
-/// function's variable is used by (ADR 0287).
-#[derive(Clone, Copy, PartialEq)]
-pub(super) enum CellUse {
-    /// `Cell::new(x)`.
-    New,
-    /// `c.get()`.
-    Get,
-    /// `c.set(x)`.
-    Set,
-    /// `Rc::new(c)`, which shares it.
-    Shared,
-    /// `rc.clone()`, another `Rc` of it.
-    Cloned,
-    /// `*rc`, the cell an `Rc` holds.
-    Deref,
-}
-
-/// What `id`, called with `args`, does with a `Cell` (ADR 0287), if it's
-/// one of [`CellUse`]'s.
-pub(super) fn cell_use<'tcx>(tcx: TyCtxt<'tcx>, id: DefId, args: ty::GenericArgsRef<'tcx>) -> Option<CellUse> {
-    let rc = |ty: Ty<'tcx>| {
-        matches!(ty.kind(), ty::Adt(adt, _)
-            if tcx.is_diagnostic_item(sym::Rc, adt.did()) || tcx.is_diagnostic_item(sym::Arc, adt.did()))
-    };
-    if let Some(tr) = tcx.trait_of_assoc(id) {
-        let shared = args.types().next().is_some_and(rc);
-        return match () {
-            _ if shared && tcx.is_lang_item(tr, LangItem::Clone) => Some(CellUse::Cloned),
-            _ if shared && tcx.is_lang_item(tr, LangItem::Deref) => Some(CellUse::Deref),
-            _ => None,
-        };
-    }
-    let imp = tcx.inherent_impl_of_assoc(id)?;
-    let owner = tcx.type_of(imp).instantiate_identity().skip_normalization();
-    let ty::Adt(adt, _) = owner.kind() else { return None };
-    match tcx.item_name(id).as_str() {
-        "new" if rc(owner) => Some(CellUse::Shared),
-        "new" if is_std_def(tcx, adt.did(), StdItem::Cell) => Some(CellUse::New),
-        "get" if is_std_def(tcx, adt.did(), StdItem::Cell) => Some(CellUse::Get),
-        "set" if is_std_def(tcx, adt.did(), StdItem::Cell) => Some(CellUse::Set),
-        _ => None,
-    }
 }
 
 /// Is `id` a thread-local's `with_borrow` or `with_borrow_mut`, which runs

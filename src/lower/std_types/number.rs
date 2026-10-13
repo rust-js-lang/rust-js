@@ -526,7 +526,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let list = vec![arg(), Expr::int((num.bits() / 8).into())];
                 helper(self, Helper::FloatFromBits, "$floatFromBits", list)
             }
-            NumOp::ToIntUnchecked => unreachable!("a cast, in `std_call`"),
+            NumOp::ToIntUnchecked => unreachable!("a cast, in `mir_std_call`"),
             NumOp::EdgeOnes { .. }
             | NumOp::SwapBytes
             | NumOp::ReverseBits

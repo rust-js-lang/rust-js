@@ -5413,10 +5413,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let boxed = self.option_of(output).is_some_and(|inner| self.boxed_payload(inner));
         let call = super::calls::Call {
-            fun: None,
             def_id,
             generic_args,
-            args: &[],
             tys: arg_tys,
             span,
         };
@@ -6162,7 +6160,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::FromElem => {
                 let item = self.value_expr(values.next().expect("the item"), span)?;
                 let n = self.value_expr(values.next().expect("the count"), span)?;
-                self.copies_values((item, arg_tys[0]), n, false, span, out)?
+                self.copies_values((item, arg_tys[0]), n, span, out)?
             }
             Std::NonZeroNew => {
                 let n = self.value_expr(values.next().expect("the number"), span)?;

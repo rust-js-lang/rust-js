@@ -7,7 +7,6 @@ use crate::js;
 use crate::js::{Expr, Stmt, StmtKind};
 use crate::runtime::Helper;
 
-use rustc_middle::thir::ExprId;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -16,13 +15,8 @@ use rustc_span::def_id::DefId;
 /// arguments, and whether its value is used.
 #[derive(Clone, Copy)]
 pub(super) struct Call<'c, 'tcx> {
-    /// The function's THIR expression: none, as a call is lowered from
-    /// MIR, its arguments their values alone (ADR 0364).
-    pub(super) fun: Option<ExprId>,
     pub(super) def_id: DefId,
     pub(super) generic_args: ty::GenericArgsRef<'tcx>,
-    /// Its arguments' THIR expressions: none, as for `fun`.
-    pub(super) args: &'c [ExprId],
     /// Each argument's type.
     pub(super) tys: &'c [Ty<'tcx>],
     pub(super) span: Span,

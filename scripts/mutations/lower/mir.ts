@@ -598,8 +598,8 @@ export const mutations: Mutation[] = [
     name: "mir-copies-shared",
     breaks: "`vec![p; 3]` of a struct is three names for one object",
     file: "src/lower/mir.rs",
-    find: "self.copies_values((item, arg_tys[0]), n, false, span, out)?",
-    replace: "self.copies_values((item, tcx.types.unit), n, false, span, out)?",
+    find: "self.copies_values((item, arg_tys[0]), n, span, out)?",
+    replace: "self.copies_values((item, tcx.types.unit), n, span, out)?",
     tests: ["test/corpus.test.ts","-t","copy_mutation"],
   },
   {

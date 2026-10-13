@@ -262,16 +262,10 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// Whether the crate gives a placeholder's options to a value it doesn't
     /// apply them to itself: then its writers take them (ADR 0058).
     pub format_options: bool,
-    /// The thread-locals that are their module's variable, each whether it's
-    /// set, a `let` (ADR 0270).
-    pub plain_locals: HashMap<LocalDefId, bool>,
     /// The thread-locals only read and set in their own module, which
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
     pub quiet_locals: HashSet<LocalDefId>,
-    /// The cells that are their function's variable, each to the one it's a
-    /// clone of, or itself (ADR 0287).
-    pub plain_cells: HashMap<LocalVarId, LocalVarId>,
     /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
     pub read_at_once: HashSet<LocalVarId>,
     /// The functions a block makes and gives, each a named function
@@ -423,10 +417,8 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     let thread_locals =
         plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
-    let (plain_locals, quiet_locals): (HashMap<_, _>, HashSet<_>) =
-        (HashMap::new(), thread_locals.into_keys().collect());
+    let quiet_locals: HashSet<_> = thread_locals.into_keys().collect();
     let counted = counted_rcs(tcx, all_bodies);
-    let plain_cells = HashMap::new();
     let read_at_once = plain_locals::read_at_once(tcx, all_bodies);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
@@ -528,9 +520,7 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         generic_consts,
         pretty_debug,
         format_options,
-        plain_locals,
         quiet_locals,
-        plain_cells,
         read_at_once,
         named_expressions,
         local_functions,

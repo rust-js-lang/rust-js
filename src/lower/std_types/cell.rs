@@ -2,22 +2,12 @@
 
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
-use crate::lower::recognition::{CellUse, Std, StdItem, cell_use};
-use crate::lower::{FnCx, R, fn_def};
+use crate::lower::recognition::{Std, StdItem};
+use crate::lower::{FnCx, R};
 use crate::runtime::Helper;
-use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
 use rustc_middle::ty::{self};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Whether `lent`, a borrow's cell, is a field's `RefCell` never
-    /// counted, `&x.f` (ADR 0362): a local's is a cell, whose borrows count.
-    fn plain_ref_cell_field(&self, lent: ExprId) -> bool {
-        let lent = self.strip(lent);
-        matches!(self.thir[lent].kind, ExprKind::Borrow { arg, .. }
-            if matches!(self.thir[self.strip(arg)].kind, ExprKind::Field { .. })
-                && self.plain_ref_cell(self.thir[arg].ty))
-    }
-
     /// What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098): `None` if `known` is another.
     pub(in crate::lower) fn cell_call(
         &mut self,
@@ -27,9 +17,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
         let Call {
-            fun,
             generic_args,
-            args,
             tys,
             span,
             ..
@@ -39,26 +27,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match known {
             // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it sees a change.
             Std::CellNew => Expr::object(vec![Prop::Field("value".into(), arg())]),
-            // A thread-local that's its module's `let` is what it holds
-            // (ADR 0270).
-            // So is a cell that's its function's `let` (ADR 0287).
-            Std::CellGet
-                if args.first().is_some_and(|&a| self.plain_local(a))
-                    || args.first().is_some_and(|&a| self.plain_cell(a).is_some()) =>
-            {
-                self.copy_if_needed(arg(), generic_args.type_at(0))
-            }
             Std::CellGet => self.copy_if_needed(Expr::member(arg(), "value"), generic_args.type_at(0)),
             Std::CellSet => {
                 let (cell, value) = (arg(), arg());
-                let place = if args.first().is_some_and(|&a| self.plain_local(a))
-                    || args.first().is_some_and(|&a| self.plain_cell(a).is_some())
-                {
-                    cell
-                } else {
-                    Expr::member(cell, "value")
-                };
-                out.push(StmtKind::Assign(place, value).at(js_span));
+                out.push(StmtKind::Assign(Expr::member(cell, "value"), value).at(js_span));
                 Expr::undefined()
             }
             // What it held, and the new value in its place: `v`, its type's
@@ -123,26 +95,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // while it's held where something could ask (ADR 0328).
             // Of a field's `RefCell` never counted, the field itself, whose
             // check can't fail (ADR 0362).
-            Std::Borrow { lock: false, .. } if args.first().is_some_and(|&a| self.plain_ref_cell_field(a)) => arg(),
             Std::Borrow { mutable, lock } => {
-                // Held: THIR's facts say what's momentary by the call's
-                // expression, which a call lowered from MIR doesn't have.
-                let hold = match fun {
-                    Some(fun) => !self.drop_facts()?.momentary.contains(&fun),
-                    None => true,
-                };
                 let name = match (lock, mutable) {
                     (false, false) => "$borrow",
                     (false, true) => "$borrowMut",
                     (true, false) => "$lockRead",
                     (true, true) => "$lock",
                 };
-                let mut given = vec![arg()];
-                if hold {
-                    given.push(Expr::bool(true));
-                }
                 self.runtime.insert(Helper::Borrow);
-                let guard = Expr::call(Expr::var(name), given);
+                let guard = Expr::call(Expr::var(name), vec![arg(), Expr::bool(true)]);
                 if lock { Self::ok(guard) } else { guard }
             }
             Std::TryBorrow { mutable, lock } => {
@@ -273,11 +234,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (key, f) = (arg(), arg());
                 crate::lower::calls::apply_in(f, vec![key], out)
             }
-            // A plain one's `f` asks nothing of borrows (ADR 0328).
-            Std::LocalBorrow { .. } if args.first().is_some_and(|&a| self.plain_local(a)) => {
-                let (key, f) = (arg(), arg());
-                apply(f, vec![key])
-            }
             Std::LocalBorrow { mutable } => {
                 let mut given = vec![arg(), arg()];
                 let name = match mutable {
@@ -294,34 +250,5 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         }))
-    }
-
-    /// The cell `e` reads, through `&`, `*` and an `Rc`'s deref, if it's its
-    /// function's variable (ADR 0287): the clone it's of, or itself.
-    pub(in crate::lower) fn plain_cell(&self, mut e: ExprId) -> Option<LocalVarId> {
-        loop {
-            e = self.strip(e);
-            match self.thir[e].kind {
-                ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => e = arg,
-                ExprKind::Call { fun, ref args, .. }
-                    if fn_def(self.thir[fun].ty).and_then(|(id, a)| cell_use(self.tcx, id, a))
-                        == Some(CellUse::Deref) =>
-                {
-                    e = args[0]
-                }
-                ExprKind::VarRef { id } => return self.krate.plain_cells.get(&id).copied(),
-                ExprKind::UpvarRef { var_hir_id, .. } => return self.krate.plain_cells.get(&var_hir_id).copied(),
-                _ => return None,
-            }
-        }
-    }
-
-    /// Is `key`, `&KEY`, a thread-local that's its module's `let` (ADR 0270)?
-    fn plain_local(&self, key: ExprId) -> bool {
-        let ExprKind::Borrow { arg, .. } = self.thir[self.strip(key)].kind else {
-            return false;
-        };
-        matches!(self.thir[self.strip(arg)].kind, ExprKind::NamedConst { def_id, .. }
-            if def_id.as_local().is_some_and(|key| self.krate.plain_locals.contains_key(&key)))
     }
 }

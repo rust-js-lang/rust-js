@@ -131,14 +131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","range_values"],
   },
   {
-    name: "dyn-iter-not-lazy",
-    breaks: "a `dyn Iterator` isn't taken for a JS iterator, so `next()` of one given as a parameter is refused",
-    file: "src/lower/recognition.rs",
-    find: "            || self.is_generic_iter(ty)\n            || self.is_dyn_iter(ty)",
-    replace: "            || self.is_generic_iter(ty)",
-    tests: ["test/corpus.test.ts", "-t", "dyn_iterators"],
-  },
-  {
     name: "box-from-unknown",
     breaks: "`22.into()` to a `Box` is refused",
     file: "src/lower/recognition.rs",
