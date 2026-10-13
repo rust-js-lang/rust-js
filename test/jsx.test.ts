@@ -3814,6 +3814,19 @@ pub fn Next<F: Fn() + Copy + 'static>(NextProps { total, next }: NextProps<F>) -
     jsx! { <button onClick={move |_| next()}>{total}</button> }
 }
 
+// A copy of a struct holding one is a spread, the function one of the rest.
+#[derive(Clone, Copy)]
+pub struct Counted<F: Fn() + Copy> {
+    pub total: usize,
+    pub next: F,
+}
+
+pub fn bumped<F: Fn() + Copy>(counted: Counted<F>) -> usize {
+    let mut copy = counted;
+    copy.total += 1;
+    copy.total + counted.total
+}
+
 // A type changed in place, as react.dev's ChallengeContents is, which a
 // type parameter could be but for its bound.
 pub struct Tally {
@@ -3829,7 +3842,9 @@ pub fn counted() -> u32 {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("export function Next({ total, next }) {");
-  const { Next } = await import(join(dir, "lib.jsx"));
+  expect(jsx).toContain("const copy = { ...counted };");
+  const { Next, bumped } = await import(join(dir, "lib.jsx"));
+  expect(bumped({ total: 1, next: () => {} })).toBe(3);
   let clicked = 0;
   const tree = Next({ total: 3, next: () => clicked++ });
   tree.props.onClick();

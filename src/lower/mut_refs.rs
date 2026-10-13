@@ -15,8 +15,7 @@ use rustc_span::def_id::DefId;
 use std::collections::HashSet;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`, and
-    /// of a `String`'s `&mut str`, `&mut *s.deref_mut()`: `s`.
+    /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`.
     pub(super) fn mut_borrowed(&self, arg: ExprId) -> Option<ExprId> {
         let ExprKind::Borrow {
             borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
@@ -25,14 +24,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         else {
             return None;
         };
-        let mut place = self.through_same(place);
+        let mut place = place;
         while let ExprKind::Deref { arg: inner } = self.thir[self.strip(place)].kind
             && let ExprKind::Borrow {
                 borrow_kind: rustc_middle::mir::BorrowKind::Mut { .. },
                 arg: reborrowed,
             } = self.thir[self.strip(inner)].kind
         {
-            place = self.through_same(reborrowed);
+            place = reborrowed;
         }
         Some(place)
     }

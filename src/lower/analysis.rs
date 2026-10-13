@@ -28,7 +28,7 @@ use rc_counts::counted_rcs;
 use rustc_hir::def::DefKind;
 use rustc_hir::find_attr;
 use rustc_middle::mir::BorrowKind;
-use rustc_middle::thir::{ExprKind, LocalVarId};
+use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
@@ -266,8 +266,6 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// `plain_statics` makes plain: what their borrows' closures are given is
     /// what's in them, as nothing borrows them meanwhile (ADR 0328).
     pub quiet_locals: HashSet<LocalDefId>,
-    /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
-    pub read_at_once: HashSet<LocalVarId>,
     /// The functions a block makes and gives, each a named function
     /// expression there (ADR 0296).
     pub named_expressions: HashSet<DefId>,
@@ -417,7 +415,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
     // (`plain_statics`), its quiet borrows given what's in it (ADR 0364).
     let quiet_locals = plain_locals::plain_thread_locals(tcx, all_bodies, thread_local_inits.values().copied(), &quiet);
     let counted = counted_rcs(tcx, all_bodies);
-    let read_at_once = plain_locals::read_at_once(tcx, all_bodies);
 
     // A derived `Serialize`'s `serialize` and `Deserialize`'s `deserialize`,
     // which rust-js writes (ADRs 0077 and 0078).
@@ -519,7 +516,6 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         pretty_debug,
         format_options,
         quiet_locals,
-        read_at_once,
         named_expressions,
         local_functions,
     })

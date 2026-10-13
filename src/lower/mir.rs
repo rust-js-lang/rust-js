@@ -5426,12 +5426,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let drained = known == Std::IterComb(IterComb::SkipWhile);
         self.check_takes_drops(known, def_id, arg_tys, drained, span)?;
         // `v[i]` THIR knows is in bounds, `v[0]` after `v.is_empty()`'s test
-        // fails, or of an array long enough: unchecked.
+        // fails: unchecked.
         if known == Std::Index
             && let Some((fun, args)) = self.thir_call(def_id, span)
-            && let [items_id, _] = args[..]
-            && let [Value::Expr(_) | Value::Place(_), Value::Expr(index)] = &values[..]
-            && (self.body_facts.in_bounds.contains(&fun) || self.in_bounds(items_id, index))
+            && let [_, _] = args[..]
+            && let [Value::Expr(_) | Value::Place(_), Value::Expr(_)] = &values[..]
+            && self.body_facts.in_bounds.contains(&fun)
         {
             let mut exprs = values
                 .into_iter()

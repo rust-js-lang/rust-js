@@ -4,7 +4,6 @@
 //! as `body_queries`' are: the destructors' analysis asks it (ADR 0098), and
 //! so do iterator chains, of their stages' closures (ADR 0139).
 
-use super::bindings;
 use super::fn_def;
 use super::recognition::{PureStd, pure_std};
 
@@ -32,8 +31,6 @@ pub(super) fn cannot_leave_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: Exp
         | ExprKind::Deref { arg }
         | ExprKind::Unary { arg, .. }
         | ExprKind::Cast { source: arg } => pure(*arg),
-        // A coercion, `&dyn Fn` of a narrower lifetime say, is its value.
-        ExprKind::PointerCoercion { source, .. } => pure(*source),
         // Arithmetic wraps (ADR 0011), so only an integer's division can
         // panic, and not by a literal other than 0 or -1.
         ExprKind::Binary { op, lhs, rhs } => {
@@ -46,12 +43,9 @@ pub(super) fn cannot_leave_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: Exp
             !divides && pure(*lhs) && pure(*rhs)
         }
         ExprKind::LogicalOp { lhs, rhs, .. } => pure(*lhs) && pure(*rhs),
-        ExprKind::If {
-            cond, then, else_opt, ..
-        } => pure(*cond) && pure(*then) && else_opt.is_none_or(pure),
-        // `Box::new(x)` only puts `x` in a box. An operator on references to
-        // numbers, `x * 2` of an `&i32`, is a call of its trait's method, which
-        // is the operator's; and a comparison of numbers or strings.
+        // `Box::new(x)` only puts `x` in a box. A division on references to
+        // numbers, `x / 2` of an `&i32`, is a call of its trait's method, which
+        // is the operator's; another operator's is taken as one that may leave.
         ExprKind::Call { fun, args, .. } => {
             let Some((id, generic_args)) = fn_def(thir[*fun].ty) else {
                 return false;
@@ -96,14 +90,14 @@ pub(super) fn cannot_leave_in<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>, e: Exp
                 Some(LangItem::Div | LangItem::Rem) => {
                     generic_args.types().all(simple) && args.get(1).is_some_and(|&rhs| !divides(rhs))
                 }
-                Some(_) => generic_args.types().all(simple),
+                Some(_) => false,
                 // std's own, where no code of the crate's runs: a `len()`, a
                 // question of an `Option` or a `Result`, and a copy or a string
-                // of what's simple; and a binding that can't throw (ADR 0301).
+                // of what's simple.
                 None => match pure_std(tcx, id) {
                     Some(PureStd::Question | PureStd::BoxNew | PureStd::Unchecked) => true,
                     Some(PureStd::Copy) => generic_args.types().all(simple),
-                    None => bindings::is_binding(tcx, id) && bindings::cannot_throw(tcx, id),
+                    None => false,
                 },
             };
             call_pure && args.iter().all(|&a| pure(a))

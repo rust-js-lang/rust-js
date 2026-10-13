@@ -74,12 +74,4 @@ export const mutations: Mutation[] = [
     replace: "            Std::CellSwap if false && self.is_std_type(",
     tests: ["test/corpus.test.ts", "-t", "refcell_swap_itself"],
   },
-  {
-    name: "drop-unsupported-silent",
-    breaks: "`drop(x)` of what drops as JS can't drop it drops nothing, unrefused",
-    file: "src/lower/std_types/cell.rs",
-    find: "                self.check_held_drops(ty, span)?;\n",
-    replace: "",
-    tests: ["test/lowering.test.ts", "-t", "adapter of items with a destructor"],
-  },
 ];

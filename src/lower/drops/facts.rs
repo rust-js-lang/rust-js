@@ -8,14 +8,13 @@ use std::collections::{HashMap, HashSet};
 use rustc_hir::{BindingMode, ByRef};
 use rustc_middle::thir::visit::{self, Visitor};
 use rustc_middle::thir::{
-    AdtExpr, AdtExprBase, Expr as ThirExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind as ThirStmt, Thir,
+    AdtExprBase, Expr as ThirExpr, ExprId, ExprKind, LocalVarId, Pat, PatKind, StmtKind as ThirStmt, Thir,
 };
 use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
-use super::super::body_queries::BodyQuery;
 use super::super::effects::cannot_leave_in;
 use super::super::recognition::Std;
 use super::super::{fn_def, strip};
@@ -46,7 +45,7 @@ pub(in crate::lower) struct Facts {
     pub(super) parts: HashMap<LocalVarId, Vec<Path>>,
     pub(super) part_moves: HashMap<ExprId, (LocalVarId, Path)>,
     /// Each owner a struct update, `..base`, moves parts of, with its owner
-    /// and those parts: the fields the update doesn't name.
+    /// and those parts: its fields that have a destructor.
     pub(super) updates: HashMap<ExprId, (LocalVarId, Vec<Path>)>,
     /// What this body does that isn't supported yet.
     pub(super) problems: Vec<(Span, String)>,
@@ -68,13 +67,13 @@ pub(in crate::lower) enum TempKind {
     Operand,
 }
 
-/// The parts a struct update moves out of its base: the fields it doesn't
-/// name that have a destructor.
-fn updated_paths<'tcx>(cx: &DropQuery<'_, 'tcx>, adt: &AdtExpr<'tcx>, field_types: &[Ty<'tcx>]) -> Vec<Path> {
+/// The parts a struct update takes of its base: its fields that have a
+/// destructor.
+fn updated_paths<'tcx>(cx: &DropQuery<'_, 'tcx>, field_types: &[Ty<'tcx>]) -> Vec<Path> {
     field_types
         .iter()
         .enumerate()
-        .filter(|&(i, &ty)| !adt.fields.iter().any(|f| f.name.as_usize() == i) && cx.has_drops(ty))
+        .filter(|&(_, &ty)| cx.has_drops(ty))
         .map(|(i, _)| vec![(None, i)])
         .collect()
 }
@@ -104,17 +103,8 @@ pub(super) fn find_facts<'tcx>(cx: &DropQuery<'_, 'tcx>, thir: &Thir<'tcx>, body
         stack: Vec::new(),
         statements: Vec::new(),
         lets: HashMap::new(),
-        passing: HashSet::new(),
         facts: Facts::default(),
     };
-    // A closure called once, that moves what it holds, owns what it took,
-    // and drops what it didn't move as its call ends.
-    if let Some(held) = finder.consumed() {
-        let span = cx.recognition.tcx.def_span(body_owner);
-        for (var, _) in held {
-            finder.facts.owners.insert(var, span);
-        }
-    }
     for param in &thir.params {
         if let Some(pat) = &param.pat {
             finder.visit_pat(pat);
@@ -141,21 +131,10 @@ struct Finder<'c, 'q, 'a, 'tcx> {
     statements: Vec<(region::Scope, Option<ExprId>)>,
     /// Each `let` statement's value, and its pattern.
     lets: HashMap<ExprId, &'a Pat<'tcx>>,
-    /// The bindings of `?`'s own `match`, `Continue(v) => v` and `Break(r)`:
-    /// each value passes straight through, to where `e?` goes or out of the
-    /// function, owned by neither.
-    passing: HashSet<LocalVarId>,
     facts: Facts,
 }
 
 impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
-    fn body_query(&self) -> BodyQuery<'a, 'tcx> {
-        BodyQuery {
-            tcx: self.cx.recognition.tcx,
-            thir: self.thir,
-        }
-    }
-
     fn id(&self, e: &ThirExpr<'tcx>) -> ExprId {
         self.ids[&(std::ptr::from_ref(e) as usize)]
     }
@@ -204,27 +183,6 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
 
     fn problem(&mut self, span: Span, what: &str) {
         self.facts.problems.push((span, what.to_string()));
-    }
-
-    /// What the body, if it's a closure's that's called once, holds that
-    /// has a destructor.
-    fn consumed(&self) -> Option<Vec<(LocalVarId, Ty<'tcx>)>> {
-        let closure = self.body_owner;
-        if !self.cx.recognition.tcx.is_closure_like(closure) {
-            return None;
-        }
-        let ty = self
-            .cx
-            .recognition
-            .tcx
-            .type_of(closure)
-            .instantiate_identity()
-            .skip_normalization();
-        let ty::Closure(_, args) = ty.kind() else { return None };
-        if args.as_closure().kind() != ty::ClosureKind::FnOnce {
-            return None;
-        }
-        self.cx.held(closure)
     }
 
     /// A closure that holds a value with a destructor drops it through the
@@ -322,12 +280,6 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             Some(ExprKind::Index { lhs, .. } | ExprKind::AssignOp { lhs, .. }) if *lhs == child => Taken::Nothing,
             // Written over: its old value is dropped where it's lowered.
             Some(ExprKind::Assign { lhs, .. }) if *lhs == child => Taken::Nothing,
-            // What a box holds, `*b`: borrowed, as a method's `&self` takes it,
-            // or moved out, which leaves the box nothing to drop.
-            Some(ExprKind::Deref { arg }) if *arg == child => match self.projection_moved() {
-                true => Taken::Whole,
-                false => Taken::Nothing,
-            },
             Some(ExprKind::Field { lhs, .. }) if *lhs == child => {
                 // A field moved out, `consume(pair.a)`: a part of its own.
                 match self.moved_projection() {
@@ -375,7 +327,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 if let AdtExprBase::Base(fru) = &adt.base
                     && fru.base == child =>
             {
-                let paths = updated_paths(self.cx, adt, &fru.field_types);
+                let paths = updated_paths(self.cx, &fru.field_types);
                 if paths.is_empty() {
                     Taken::Nothing
                 } else {
@@ -432,8 +384,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         for &parent in self.stack.iter().rev().skip(1) {
             match &self.thir[parent].kind {
                 ExprKind::Scope { .. } | ExprKind::PlaceTypeAscription { .. } => {}
-                // A box's value, `*b`, as a field's: borrowed, or moved out.
-                ExprKind::Field { lhs, .. } | ExprKind::Deref { arg: lhs } if *lhs == child => {}
+                ExprKind::Field { lhs, .. } if *lhs == child => {}
                 ExprKind::Borrow { arg, .. } | ExprKind::RawBorrow { arg, .. } if *arg == child => return false,
                 ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } | ExprKind::Index { lhs, .. }
                     if *lhs == child =>
@@ -497,7 +448,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 if matches!(pat.kind, PatKind::Wild | PatKind::Binding { subpattern: None, .. }) {
                     return;
                 }
-                if !self.temp_taken_apart(e, &mut std::iter::once(pat), false) {
+                if !self.temp_taken_apart(e, &mut std::iter::once(pat), true) {
                     self.problem(span, "taking apart a temporary with a destructor");
                     return;
                 }
@@ -528,13 +479,12 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 | ExprKind::Index { lhs: arg, .. }
                 | ExprKind::Deref { arg },
             ) => *arg == child,
-            // `..Default::default()`: what the update moves out of it.
+            // `..Default::default()`, used in place.
             Some(ExprKind::Adt(adt))
                 if let AdtExprBase::Base(fru) = &adt.base
                     && fru.base == child =>
             {
-                let paths = updated_paths(self.cx, adt, &fru.field_types);
-                self.facts.temp_parts.insert(e, (paths, false));
+                self.facts.temp_parts.insert(e, (Vec::new(), false));
                 true
             }
             _ => false,
@@ -712,7 +662,6 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
             ty,
             ..
         } = pat.kind
-            && !self.passing.contains(&var)
         {
             match self.cx.drops(ty) {
                 Drops::Nothing => {}
@@ -728,27 +677,6 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Finder<'c, 'q, 'a, 'tcx> {
     fn visit_expr(&mut self, expr: &'a ThirExpr<'tcx>) {
         let id = self.id(expr);
         self.stack.push(id);
-        // A `for` loop is what it iterates, its item, which its pattern owns
-        // each time round as a parameter would, and its body: not the `iter`
-        // and `next()` rustc writes it with, which its lowering doesn't.
-        if let Some(f) = self.body_query().as_for(id) {
-            self.visit_expr(&self.thir[f.head]);
-            self.visit_pat(f.pat);
-            self.visit_expr(&self.thir[f.body]);
-            self.stack.pop();
-            return;
-        }
-        if let ExprKind::Match { ref arms, .. } = expr.kind
-            && self.body_query().as_question(id).is_some()
-        {
-            for &arm in arms {
-                self.thir[arm].pattern.walk_always(|p| {
-                    if let PatKind::Binding { var, .. } = p.kind {
-                        self.passing.insert(var);
-                    }
-                });
-            }
-        }
         match expr.kind {
             ExprKind::VarRef { id: var } | ExprKind::UpvarRef { var_hir_id: var, .. }
                 if self.facts.owners.contains_key(&var) =>

@@ -1014,7 +1014,7 @@ export const mutations: Mutation[] = [
     name: "mir-in-bounds-checked",
     breaks: "`v[0]` THIR knows is in bounds is `$index(v, 0)`",
     file: "src/lower/mir.rs",
-    find: "            && (self.body_facts.in_bounds.contains(&fun) || self.in_bounds(items_id, index))\n",
+    find: "            && self.body_facts.in_bounds.contains(&fun)\n",
     replace: "            && false\n",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },

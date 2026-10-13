@@ -67,14 +67,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "MIR refuses a destructor given where a generic fold takes none"],
   },
   {
-    name: "or-moves-not-collected",
-    breaks: "what an or-pattern moves out is dropped again where the value is",
-    file: "src/lower/drops/types.rs",
-    find: "                    if !found.contains(&path) {",
-    replace: "                    if false && !found.contains(&path) {",
-    tests: ["test/corpus.test.ts", "-t", "or_pattern_part_moves"],
-  },
-  {
     name: "weak-drops-nothing",
     breaks: "dropping a `Weak` doesn't count it gone",
     file: "src/lower/drops/types.rs",

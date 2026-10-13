@@ -317,8 +317,6 @@ struct CrateFacts<'a, 'tcx> {
     /// Does it give a placeholder's options to its writers and dictionaries
     /// (ADR 0058)?
     format_options: bool,
-    /// The `&Cell`s a `let` takes apart that are their value (ADR 0293).
-    read_at_once: &'a HashSet<LocalVarId>,
     /// The `RefCell`s a field holds as their value, never counted (ADR
     /// 0362), found once the first is asked of.
     plain_ref_cells: &'a std::cell::OnceCell<HashSet<Ty<'tcx>>>,

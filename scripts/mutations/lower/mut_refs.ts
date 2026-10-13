@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "^cows"],
   },
   {
-    name: "mut-borrowed-same-unseen",
-    breaks: "`shout(&mut v[0])` of a `fn(&mut str)` isn't of `v[0]`",
-    file: "src/lower/mut_refs.rs",
-    find: "        let mut place = self.through_same(place);\n",
-    replace: "        let mut place = place;\n",
-    tests: ["test/corpus.test.ts","-t","str_mut"],
-  },
-  {
     name: "mut-items-box-unseen",
     breaks: "a `Box<[T; N]>`'s `&mut` items, `for n in &mut boxed`, aren't a sequence's",
     file: "src/lower/mut_refs.rs",

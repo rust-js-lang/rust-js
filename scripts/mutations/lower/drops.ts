@@ -4,11 +4,11 @@ import type { Mutation } from "../../mutations";
 export const mutations: Mutation[] = [
   {
     name: "drop-function-in-branch",
-    breaks: "a drop function is declared where it's first needed, a branch another call isn't in",
+    breaks: "a drop function of a trait's default method is declared where it's first needed, a branch another call isn't in",
     file: "src/lower/drops.rs",
     find: "                Some(hoisted) => hoisted.defs.push(def),\n",
     replace: "                Some(_) => out.push(def),\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_functions"],
+    tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
   },
   {
     name: "generic-drop-not-passed-on",
@@ -156,11 +156,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "hoisted-drops-redeclared",
-    breaks: "a drop function is declared again for each drop, twice in one body",
+    breaks: "a drop function of a trait's default method is declared again for each drop, without end for a type inside itself",
     file: "src/lower/drops.rs",
     find: "            .and_then(|hoisted| hoisted.functions.iter().find(|(t, _)| *t == ty))\n",
     replace: "            .and_then(|hoisted| hoisted.functions.iter().find(|_| false))\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_functions"],
+    tests: ["test/corpus.test.ts", "-t", "default_method_drops"],
   },
   {
     name: "guard-drop-unrun",

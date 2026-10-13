@@ -77,7 +77,6 @@ pub fn lower_crate<'tcx>(
         pretty_debug,
         format_options,
         quiet_locals,
-        read_at_once,
         named_expressions,
         local_functions,
     } = analyze_crate(tcx, all_bodies, initializers, dependencies, export_library)?;
@@ -212,7 +211,6 @@ pub fn lower_crate<'tcx>(
         serde_attrs,
         pretty_debug,
         format_options,
-        read_at_once: &read_at_once,
         plain_ref_cells: &plain_ref_cells,
         named_expressions: &named_expressions,
         local_functions: &local_functions,

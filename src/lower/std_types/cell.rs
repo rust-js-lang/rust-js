@@ -128,8 +128,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Drop => {
                 let ty = tys[0];
                 let value = arg();
-                // What drops as JS can't drop it: refused, not dropped as nothing.
-                self.check_held_drops(ty, span)?;
                 let value = self.droppable(value, ty, out);
                 self.drop_value(value, ty, span, out)?;
                 Expr::undefined()

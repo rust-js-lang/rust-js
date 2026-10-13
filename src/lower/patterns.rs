@@ -19,9 +19,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// variables, and says whether one is `mut`. `None`, binding nothing, if a
     /// part is anything else, or needs a copy of its own (ADR 0020).
     pub(super) fn js_pattern(&mut self, pat: &Pat<'tcx>) -> Option<(js::Pattern, bool)> {
-        // Of a reference, `let Params { message, code } = params();`: a
-        // reference is the value (ADR 0023), taken apart as it is.
-        let pat = without_refs(pat);
         // A struct's or a tuple's fields, or an array's first items, `[a, b,
         // ..]`, which are `const [a, b] = xs` (ADR 0123): each by where it is.
         let fields: Vec<(usize, &Pat<'tcx>)> = match &pat.kind {
@@ -33,26 +30,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return None,
         };
-        // A flattened struct taken apart, `WithRouterProps { props: SeoProps {
-        // title, .. }, router }`: its fields are its parent's in JS (ADR 0204),
-        // so its pattern's are the parent's pattern's, `{ title, router }`.
-        // Each where it's written, among the other fields.
-        let mut flattened = Vec::new();
-        let mut kept = Vec::new();
-        let mut written = Vec::new();
-        for (at, (i, field)) in fields.into_iter().enumerate() {
-            if matches!(pat.kind, PatKind::Leaf { .. })
-                && bindings::is_flatten_field(self.tcx, pat.ty, i)
-                && matches!(without_refs(field).kind, PatKind::Leaf { .. })
-            {
-                let (nested, mutable) = self.js_pattern(field)?;
-                flattened.push((at, nested, mutable));
-            } else {
-                kept.push((i, field));
-                written.push(at);
-            }
-        }
-        let fields = kept;
         // `(i, &x)`: a reference is the value (ADR 0023), so that part is `x`.
         let parts: Vec<_> = fields
             .into_iter()
@@ -61,18 +38,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ if self.is_cell(field.ty) => None,
                 // A `Cell` in an object's field is the property itself (ADR
                 // 0288): what's bound of it is a handle on it, or a cell of its
-                // own, which JS's destructuring wouldn't give. One read at
-                // once is its value, then, which its `get()` reads (ADR 0293).
+                // own, which JS's destructuring wouldn't give.
                 _ if matches!(self.shape(pat.ty), Shape::Object(_)) && self.is_std_type(field.ty, StdItem::Cell) => {
-                    match without_refs(field).kind {
-                        PatKind::Binding {
-                            name,
-                            var,
-                            subpattern: None,
-                            ..
-                        } if self.krate.read_at_once.contains(&var) => Some((i, Some((name, var, false)))),
-                        _ => None,
-                    }
+                    None
                 }
                 PatKind::Wild => Some((i, None)),
                 PatKind::Binding {
@@ -85,22 +53,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } if self.unsupported_part(ty).is_none() && !(self.contains_mutated(ty) && self.is_copy(ty)) => {
                     Some((i, Some((name, var, mutability == Mutability::Mut))))
                 }
-                // Bound by a shared reference, each part is read once: what's
-                // borrowed can't change while it is, and a `Cell`, which can,
-                // is the one JS object either way (ADR 0244).
-                PatKind::Binding {
-                    name,
-                    var,
-                    mode: BindingMode(ByRef::Yes(_, Mutability::Not), _),
-                    subpattern: None,
-                    ty,
-                    ..
-                } if self.unsupported_part(ty).is_none() => Some((i, Some((name, var, false)))),
                 _ => None,
             })
             .collect::<Option<_>>()?;
-        let mutable =
-            parts.iter().any(|(_, part)| part.is_some_and(|(_, _, m)| m)) || flattened.iter().any(|(_, _, m)| *m);
+        let mutable = parts.iter().any(|(_, part)| part.is_some_and(|(_, _, m)| m));
         if matches!(pat.kind, PatKind::Array { .. }) {
             let mut items = Vec::new();
             for (i, part) in parts {
@@ -114,7 +70,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Some((js::Pattern::names_array(items), mutable));
         }
         let pattern = match self.shape(pat.ty) {
-            Shape::Array(_) if !flattened.is_empty() => return None,
             Shape::Array(tys) => {
                 let mut items = vec![None; tys.len()];
                 for (i, part) in parts {
@@ -129,34 +84,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Shape::Object(fields) => {
                 let mut named = Vec::new();
                 let mut rest = None;
-                let some_flattened = !flattened.is_empty();
-                let mut flattened = flattened.into_iter().peekable();
-                let mut flattened_rest = None;
-                let mut merge = |nested: js::Pattern, named: &mut Vec<_>| -> Option<()> {
-                    let js::Pattern::Object(more, more_rest) = nested else {
-                        return None;
-                    };
-                    named.extend(more);
-                    if more_rest.is_some() {
-                        if flattened_rest.is_some() {
-                            return None;
-                        }
-                        flattened_rest = more_rest;
-                    }
-                    Some(())
-                };
-                for (k, (i, part)) in parts.into_iter().enumerate() {
-                    while let Some((_, nested, _)) = flattened.next_if(|(at, _, _)| *at < written[k]) {
-                        merge(nested, &mut named)?;
-                    }
+                for (i, part) in parts {
                     let Some((name, var, m)) = part else { continue };
                     let bound = self.bind(var, name.as_str(), m);
-                    // A `&Cell` read at once, as its value (ADR 0293).
-                    if self.krate.read_at_once.contains(&var)
-                        && let Some(local) = self.locals.vars.get_mut(&var)
-                    {
-                        local.place = Expr::handle(local.place.clone());
-                    }
                     // The props a component's struct doesn't name, `...rest` (ADR
                     // 0195), or a flattened struct's, typed (ADR 0204).
                     match super::bindings::is_rest_field(self.tcx, pat.ty, i) {
@@ -166,17 +96,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             named.push((fields[i].0.clone(), js::Pattern::Name(bound), default))
                         }
                     }
-                }
-                for (_, nested, _) in flattened {
-                    merge(nested, &mut named)?;
-                }
-                // A rest beside one would hold the flattened struct's fields
-                // its pattern leaves.
-                if some_flattened {
-                    if rest.is_some() {
-                        return None;
-                    }
-                    rest = flattened_rest;
                 }
                 // What the rest holds is what isn't named, so a field the
                 // pattern leaves, `..` or `_`, is named still, `className:

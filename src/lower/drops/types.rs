@@ -226,17 +226,8 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
                 at.pop();
                 ok
             }),
-            // `Single(t) | Ambiguous(t, _)` (ADR 0191): every alternative's.
-            PatKind::Or { pats } => pats.iter().all(|p| {
-                let mut moved = Vec::new();
-                let ok = self.paths_in(p, at, &mut moved);
-                for path in moved {
-                    if !found.contains(&path) {
-                        found.push(path);
-                    }
-                }
-                ok
-            }),
+            // `Single(t) | Ambiguous(t, _)` (ADR 0191): each alternative followed.
+            PatKind::Or { pats } => pats.iter().all(|p| self.paths_in(p, at, &mut Vec::new())),
             _ => !moves(pat),
         }
     }

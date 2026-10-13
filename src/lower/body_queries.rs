@@ -94,23 +94,6 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
         })
     }
 
-    /// Recognize `?`'s desugaring (ADR 0035), and return what's tried:
-    ///
-    /// ```text
-    /// match Try::branch(e) { Continue(v) => v, Break(r) => return FromResidual::from_residual(r) }
-    /// ```
-    pub(super) fn as_question(&self, e: ExprId) -> Option<ExprId> {
-        let thir = self.thir;
-        let ExprKind::Match { scrutinee, .. } = thir[strip(thir, e)].kind else {
-            return None;
-        };
-        let ExprKind::Call { fun, ref args, .. } = thir[strip(thir, scrutinee)].kind else {
-            return None;
-        };
-        let (branch, _) = fn_def(thir[strip(thir, fun)].ty)?;
-        self.tcx.is_lang_item(branch, LangItem::TryTraitBranch).then(|| args[0])
-    }
-
     /// The variable a place starts from.
     pub(super) fn root_var(&self, e: ExprId) -> Option<LocalVarId> {
         match self.thir[self.strip(e)].kind {

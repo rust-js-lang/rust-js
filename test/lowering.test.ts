@@ -524,7 +524,7 @@ pub fn constants() -> (Settled, Settled) {
 // react.dev's nested table of contents pushes onto a node's `children`.
 test("a field's RefCell only borrowed for a moment is its value", async () => {
   const dir = fixture("plain-refcell-field");
-  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -607,6 +607,51 @@ pub fn asked(n: u8) -> usize {
     len
 }
 
+// One held while its statement calls what may ask is counted.
+pub struct Pushed {
+    pub values: RefCell<Vec<i16>>,
+}
+
+fn count(pushed: &Pushed) -> i16 {
+    pushed.values.borrow().len() as i16
+}
+
+pub fn pushed(n: i16) {
+    let pushed = Pushed { values: RefCell::new(vec![n]) };
+    pushed.values.borrow_mut().push(count(&pushed));
+}
+
+// One held while its statement drops what may ask is counted.
+pub struct Ticked {
+    pub values: RefCell<Vec<i8>>,
+}
+
+pub struct Tick<'a>(&'a Cell<u32>, i8);
+
+impl Drop for Tick<'_> {
+    fn drop(&mut self) {
+        self.0.set(self.0.get() + 1);
+    }
+}
+
+pub fn ticked(n: i8) -> u32 {
+    let ticks = Cell::new(0);
+    let ticked = Ticked { values: RefCell::new(vec![n]) };
+    ticked.values.borrow_mut().push(Tick(&ticks, n).1);
+    ticks.get() + ticked.values.borrow().len() as u32
+}
+
+// Two shared borrows in one statement ask nothing of each other.
+pub struct Shared {
+    pub values: RefCell<Vec<f64>>,
+}
+
+pub fn shared(n: f64) -> usize {
+    let shared = Shared { values: RefCell::new(vec![n]) };
+    let len = shared.values.borrow().len() + shared.values.borrow().len();
+    len
+}
+
 // A derive's reads its fields itself.
 #[derive(Clone)]
 pub struct Derived {
@@ -625,14 +670,16 @@ pub fn derived(n: i32) -> usize {
   expect(js).toContain("{ children: [] }");
   expect(js).toContain("parent.children.push(node);");
   expect(js.slice(js.indexOf("export function nested"), js.indexOf("export function both"))).not.toContain("$borrow");
-  // Each of the others is a cell: lent, bound, counted, derived.
-  expect(js.match(/\{ values: \{ value: \[n\] \} \}/g)?.length).toBe(4);
+  expect(js).toContain("const shared = { values: [n] };");
+  // Each of the others is a cell: lent, bound, counted, held while asked, derived.
+  expect(js.match(/\{ values: \{ value: \[n\] \} \}/g)?.length).toBe(6);
   const lib = await import(join(dir, "lib.js"));
   const items = [1, 2, 2, 3, 2].map((depth, i) => ({ depth, url: `#${i}` }));
   const root = lib.nested(items);
   expect([lib.width(root), root.children[0].children.length, root.children[0].children[1].children[0].item.url]).toEqual([1, 3, "#3"]);
-  expect([lib.held(4), lib.bound(1), lib.asked(1), lib.derived(1)]).toEqual([4, 1, 2, 3]);
+  expect([lib.held(4), lib.bound(1), lib.asked(1), lib.derived(1), lib.shared(1), lib.ticked(1)]).toEqual([4, 1, 2, 3, 2, 3]);
   expect(() => lib.both(root)).toThrow("already borrowed");
+  expect(() => lib.pushed(1)).toThrow("already mutably borrowed");
 });
 
 // ADR 0214: an untagged enum's `Dict` is a plain object, of no class: told
@@ -3326,6 +3373,12 @@ pub fn counted() -> u32 {
     counter.count.get()
 }
 
+// A parameter taken apart reads its \`Cell\` where it is, a field JS can set.
+pub fn bumped(Counter { count, label }: Counter) -> u32 {
+    count.set(count.get() + label.len() as u32);
+    count.get()
+}
+
 // A closure taking a pair apart, inlined where it's called, is its part.
 pub fn found(people: Vec<(String, u32)>) -> Option<usize> {
     people.binary_search_by_key(&57, |&(_, age)| age).ok()
@@ -3337,6 +3390,7 @@ pub fn found(people: Vec<(String, u32)>) -> Option<usize> {
   const lib = await import(join(dir, "lib.js"));
   expect(js).toContain("$cmp(item[1], 57)");
   expect([lib.described(), lib.counted(), lib.found([["a", 50], ["b", 57]])]).toEqual(['Some("m") None', 3, 1]);
+  expect(lib.bumped({ count: 1, label: "ab" })).toBe(3);
 });
 
 // An `if` whose branch leaves has no `else`: what follows it runs only when
