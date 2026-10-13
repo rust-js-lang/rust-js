@@ -222,14 +222,12 @@ enum Shape<'tcx> {
     Other,
 }
 
-struct Loop {}
-
 /// A body lowered inside the one being lowered, and what it starts from
-/// (`enter_body`). Each has its own THIR, owner and stepped locals; what
+/// (`enter_body`). Each has its own THIR and owner; what
 /// else isn't said here, it shares with the enclosing body.
 enum Nested<'tcx> {
-    /// A closure's, an arrow: the enclosing `Locals` and captures, loops
-    /// of its own, and these names to start from.
+    /// A closure's, an arrow: the enclosing `Locals` and captures, and
+    /// these names to start from.
     Closure { names: HashSet<String> },
     /// A trait's default body, copied into an impl (ADR 0049): `Locals` of
     /// its own, a copy of the names, and the impl's evidence, arguments,
@@ -253,14 +251,13 @@ struct Enclosing<'a, 'tcx> {
     thir: &'a Thir<'tcx>,
     body_facts: &'a body_queries::BodyFacts,
     body_owner: DefId,
-    stepping: iterators::EnclosingStepping,
     drops: drops::EnclosingDrops<'tcx>,
     kind: EnclosingKind<'tcx>,
 }
 
 /// What each kind of nested body took, by `Nested`'s kinds.
 enum EnclosingKind<'tcx> {
-    Closure { loops: Vec<Loop>, names: HashSet<String> },
+    Closure { names: HashSet<String> },
     Default(Box<ItemScope<'tcx>>),
 }
 
@@ -357,14 +354,11 @@ struct FnCx<'a, 'tcx> {
     names: HashSet<String>,
     /// Those taken by the module: its functions, imports and globals.
     module_names: &'a HashSet<String>,
-    loops: Vec<Loop>,
     runtime: HashSet<Helper>,
     /// Whether this function makes JSX.
     jsx: bool,
     /// What writing to a `Formatter` knows (ADRs 0054, 0137).
     writing: display::Writing,
-    /// The locals stepped through, each a `$iter` (ADR 0071).
-    stepping: iterators::Stepping,
     /// The recursive types being cloned, and the function each one's clone
     /// is (`clone_value`), which a clone inside it calls.
     cloning: Vec<(Ty<'tcx>, String)>,

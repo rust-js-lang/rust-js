@@ -284,13 +284,9 @@ pub fn lower_crate<'tcx>(
             locals: Locals::default(),
             names,
             module_names: &taken[&module],
-            loops: Vec::new(),
             runtime: HashSet::new(),
             jsx: false,
             writing: Default::default(),
-            stepping: body.map_or_else(Default::default, |body| {
-                super::iterators::Stepping::of(&body.facts.stepped)
-            }),
             cloning: Vec::new(),
             item: def_id,
             walks: Default::default(),

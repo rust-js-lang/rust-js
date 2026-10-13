@@ -3,7 +3,7 @@
 
 use super::bindings::named_callback;
 use super::fn_def;
-use super::recognition::{SliceLength, StdItem, is_std_method, slice_length};
+use super::recognition::{SliceLength, slice_length};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef, Mutability};
 
@@ -27,10 +27,6 @@ pub(super) struct BodyQuery<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
-    fn strip(&self, e: ExprId) -> ExprId {
-        strip(self.thir, e)
-    }
-
     /// Recognize the `for` desugaring (ADR 0025):
     ///
     /// ```text
@@ -93,26 +89,12 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
             body: some.1,
         })
     }
-
-    /// The variable a place starts from.
-    pub(super) fn root_var(&self, e: ExprId) -> Option<LocalVarId> {
-        match self.thir[self.strip(e)].kind {
-            ExprKind::VarRef { id } | ExprKind::UpvarRef { var_hir_id: id, .. } => Some(id),
-            ExprKind::Field { lhs, .. } | ExprKind::Deref { arg: lhs } => self.root_var(lhs),
-            _ => None,
-        }
-    }
 }
 
 /// Context-independent facts collected once, before borrowck steals the body.
 /// Type/representation facts depend on the current instantiation and stay elsewhere.
 #[derive(Default)]
 pub(super) struct BodyFacts {
-    pub(super) mutably_borrowed: HashSet<LocalVarId>,
-    pub(super) stepped: HashSet<LocalVarId>,
-    /// What a borrow lends, `g` of `&mut g`, as a closure's call does: read
-    /// there, it's not copied.
-    pub(super) lent: HashSet<ExprId>,
     /// The items of a `Vec` or a slice read where a condition shows their
     /// index in bounds (`known_in_bounds`): each `a[i]`, and the function
     /// of each `Index::index(&v, i)`.
@@ -127,23 +109,11 @@ pub(super) struct BodyFacts {
 
 impl BodyFacts {
     pub(super) fn collect<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> Self {
-        let query = BodyQuery { tcx, thir };
         let mut facts = Self {
-            stepped: stepped_locals(tcx, thir),
             in_bounds: known_in_bounds(tcx, thir),
             whole_casts: whole_casts(tcx, thir),
             ..Self::default()
         };
-        for expr in thir.exprs.iter() {
-            if let ExprKind::Borrow { borrow_kind, arg } = expr.kind {
-                facts.lent.insert(strip(thir, arg));
-                if matches!(borrow_kind, BorrowKind::Mut { .. })
-                    && let Some(id) = query.root_var(arg)
-                {
-                    facts.mutably_borrowed.insert(id);
-                }
-            }
-        }
         facts.named_callbacks = named_callbacks(tcx, thir);
         facts
     }
@@ -463,40 +433,6 @@ pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
             | ExprKind::PlaceTypeAscription { source: inner, .. } => e = inner,
             _ => return e,
         }
-    }
-}
-
-/// The locals a body calls `next()` on, directly or through `&mut`: the
-/// ones that must know where they are (ADR 0071).
-pub(super) fn stepped_locals<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalVarId> {
-    let mut stepped = HashSet::new();
-    for expr in thir.exprs.iter() {
-        let ExprKind::Call { fun, ref args, .. } = expr.kind else {
-            continue;
-        };
-        let Some((def_id, _)) = fn_def(thir[fun].ty) else {
-            continue;
-        };
-        let steps = is_std_method(tcx, def_id, StdItem::Iterator, "next");
-        let Some(&receiver) = args.first() else {
-            continue;
-        };
-        if steps && let Some(id) = stepped_local(thir, receiver) {
-            stepped.insert(id);
-        }
-    }
-    stepped
-}
-
-/// The local an iterator argument is: `it` of `it`, `&mut it` or `&mut *it`.
-fn stepped_local(thir: &Thir<'_>, e: ExprId) -> Option<LocalVarId> {
-    let mut e = strip(thir, e);
-    while let ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } = thir[e].kind {
-        e = strip(thir, arg);
-    }
-    match thir[e].kind {
-        ExprKind::VarRef { id } => Some(id),
-        _ => None,
     }
 }
 

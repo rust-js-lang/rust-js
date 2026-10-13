@@ -35,7 +35,6 @@ section(
 const owned: [string, string][] = [
   ["given", "traits.rs"],
   ["writing", "display.rs"],
-  ["stepping", "iterators.rs"],
   ["drop_state", "drops"],
   ["cloning", "std_impls.rs"],
   ["walks", ""],

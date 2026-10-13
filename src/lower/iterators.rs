@@ -12,11 +12,10 @@ use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
 use crate::runtime::Helper;
 
-use rustc_middle::thir::{ExprId, ExprKind, LocalVarId};
+use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
-use std::collections::HashSet;
 
 /// The value `(p) => p === value` or `(p) => value === p` looks for, if
 /// it doesn't depend on `p` and reads the same however often it's read.
@@ -48,54 +47,7 @@ fn sought(test: &Expr) -> Option<Expr> {
     (value.reads_same() && !value.mentions_var(param)).then(|| (**value).clone())
 }
 
-/// The locals stepped through, each a `$iter` that knows where it is (ADR
-/// 0071): those `next()` is called on, or that are lent as a `&mut dyn
-/// Iterator`, in the bodies being lowered, and those bound as one.
-#[derive(Default)]
-pub(super) struct Stepping {
-    stepped: HashSet<LocalVarId>,
-    bound: HashSet<LocalVarId>,
-}
-
-impl Stepping {
-    pub(super) fn of(stepped: &HashSet<LocalVarId>) -> Stepping {
-        Stepping {
-            stepped: stepped.clone(),
-            bound: HashSet::new(),
-        }
-    }
-}
-
-/// What a body inside another takes from the enclosing one's `Stepping`
-/// while it's lowered, given back as it ends.
-pub(super) struct EnclosingStepping {
-    stepped: HashSet<LocalVarId>,
-    bound: Option<HashSet<LocalVarId>>,
-}
-
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Start lowering a body inside the one being lowered: a closure sees the
-    /// enclosing body's stepped locals; a copied default, an item of its own,
-    /// sees its own, `own`, instead of them.
-    pub(super) fn enter_body_stepping(&mut self, own: &HashSet<LocalVarId>, item: bool) -> EnclosingStepping {
-        let stepped = self.stepping.stepped.clone();
-        let bound = match item {
-            true => {
-                self.stepping.stepped = own.clone();
-                Some(std::mem::take(&mut self.stepping.bound))
-            }
-            false => None,
-        };
-        EnclosingStepping { stepped, bound }
-    }
-
-    pub(super) fn leave_body_stepping(&mut self, enclosing: EnclosingStepping) {
-        self.stepping.stepped = enclosing.stepped;
-        if let Some(bound) = enclosing.bound {
-            self.stepping.bound = bound;
-        }
-    }
-
     /// `Iterator.from(value)`: a JS iterator of an array or of one, which
     /// steps either (ADR 0061).
     pub(super) fn js_iterator(&self, value: Expr) -> Expr {

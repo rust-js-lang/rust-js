@@ -288,7 +288,6 @@ test("tidying asks neither rustc nor the function being lowered", () => {
 // read by, unseen (the third architecture audit).
 const owners: Record<string, string[]> = {
   "self.drop_state": ["src/lower/drops.rs"],
-  "self.stepping": ["src/lower/iterators.rs"],
   "self.writing": ["src/lower/display.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
   "self.given": ["src/lower/traits.rs"],

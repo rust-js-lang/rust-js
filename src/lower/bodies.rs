@@ -21,8 +21,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     // ── Closures (ADR 0022) ─────────────────────────────────────────────
 
     /// Start lowering `body`, a body inside the one being lowered, as
-    /// `nested` says it starts. Each body finds its own stepped iterators
-    /// (ADR 0071) and is checked for what it drops (ADR 0098). A body that
+    /// `nested` says it starts. Each body is checked for what it drops (ADR
+    /// 0098). A body that
     /// fails leaves the state as it is: its whole item fails with it.
     pub(super) fn enter_body(
         &mut self,
@@ -33,14 +33,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let thir = std::mem::replace(&mut self.thir, &body.thir);
         let body_facts = std::mem::replace(&mut self.body_facts, &body.facts);
         let body_owner = std::mem::replace(&mut self.body_owner, owner);
-        let stepping = self.enter_body_stepping(&body.facts.stepped, matches!(nested, Nested::Default { .. }));
         let mut default_drops = None;
         // A closure and a copied default are JS functions of their own, which
         // declare their own drop functions.
         let frame = true;
         let kind = match nested {
             Nested::Closure { names } => EnclosingKind::Closure {
-                loops: std::mem::take(&mut self.loops),
                 names: std::mem::replace(&mut self.names, names),
             },
             Nested::Default {
@@ -63,7 +61,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             thir,
             body_facts,
             body_owner,
-            stepping,
             drops: self.enter_body_drops(default_drops, frame)?,
             kind,
         })
@@ -76,10 +73,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.thir = enclosing.thir;
         self.body_facts = enclosing.body_facts;
         self.body_owner = enclosing.body_owner;
-        self.leave_body_stepping(enclosing.stepping);
         match enclosing.kind {
-            EnclosingKind::Closure { loops, names } => {
-                self.loops = loops;
+            EnclosingKind::Closure { names } => {
                 self.names = names;
             }
             EnclosingKind::Default(scope) => {
