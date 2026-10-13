@@ -97,14 +97,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "mapped to a property is an optional chain"],
   },
   {
-    name: "map-of-value-itself-called",
-    breaks: "`text.map(js::unknown)` is `text != null ? text : undefined`, not `text`",
-    file: "src/lower/std_types/option.rs",
-    find: "                        || crate::lower::bindings::is_binding(self.tcx, function)\n",
-    replace: "                        || false && crate::lower::bindings::is_binding(self.tcx, function)\n",
-    tests: ["test/compiler.test.ts", "-t", "string functions are JS's"],
-  },
-  {
     name: "unwrap-unchecked-unboxed",
     breaks: "`unwrap_unchecked()` of an `Option<Option<T>>` is the box, so `Some(None)` unwrapped is `{ ... }`, not `undefined`",
     file: "src/lower/std_types/option.rs",

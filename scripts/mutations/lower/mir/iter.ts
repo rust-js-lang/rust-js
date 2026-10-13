@@ -143,7 +143,7 @@ export const mutations: Mutation[] = [
     breaks: "`rev()` of a `split` just made is `$rest($iter(…))` reversed, not the array's",
     file: "src/lower/mir/iter.rs",
     find: "                            _ => crate::lower::iterators::iterated(receiver),\n",
-    replace: "                            _ => self.helper(Helper::Rest, \"$rest\", vec![receiver]),\n",
+    replace: "                            _ => crate::js::Expr::call_helper(\"$rest\", vec![receiver]),\n",
     tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
   },
   {

@@ -79,7 +79,7 @@ export const mutations: Mutation[] = [
     breaks: "`split_mut(p)` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
     find: "                    true => self.view_call(\"$sliceSplitByMut\", list),",
-    replace: "                    true => helper(self, \"$sliceSplitBy\", list),",
+    replace: "                    true => helper(\"$sliceSplitBy\", list),",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
   {
@@ -87,7 +87,7 @@ export const mutations: Mutation[] = [
     breaks: "`chunk_by_mut(p)` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
     find: "SliceOp::ChunkBy { mutable: true } => self.view_call(\"$chunkByMut\", vec![arg(), arg()]),",
-    replace: "SliceOp::ChunkBy { mutable: true } => helper(self, \"$chunkBy\", vec![arg(), arg()]),",
+    replace: "SliceOp::ChunkBy { mutable: true } => helper(\"$chunkBy\", vec![arg(), arg()]),",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
   {
@@ -95,7 +95,7 @@ export const mutations: Mutation[] = [
     breaks: "`split_first_chunk_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
     find: "                    true => self.view_call(\"$splitChunkMut\", list),",
-    replace: "                    true => helper(self, \"$splitChunk\", list),",
+    replace: "                    true => helper(\"$splitChunk\", list),",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
   {
@@ -103,7 +103,7 @@ export const mutations: Mutation[] = [
     breaks: "`chunks_exact_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
     find: "self.view_call(\"$chunksExactMut\", vec![arg(), arg()])",
-    replace: "helper(self, \"$chunksExact\", vec![arg(), arg()])",
+    replace: "helper(\"$chunksExact\", vec![arg(), arg()])",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
   {
@@ -111,7 +111,7 @@ export const mutations: Mutation[] = [
     breaks: "`rchunks_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
     find: "                self.view_call(\"$rchunksMut\", vec![arg(), arg(), Expr::bool(exact)])",
-    replace: "                helper(self, \"$rchunks\", vec![arg(), arg(), Expr::bool(exact)])",
+    replace: "                helper(\"$rchunks\", vec![arg(), arg(), Expr::bool(exact)])",
     tests: ["test/corpus.test.ts","-t","slice_views"],
   },
   {
@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     breaks: "`as_chunks_mut` gives copies, not views",
     file: "src/lower/std_types/slice.rs",
     find: "                    true => self.view_call(\"$asChunksMut\", list),",
-    replace: "                    true => helper(self, \"$asChunks\", list),",
+    replace: "                    true => helper(\"$asChunks\", list),",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
   },
   {

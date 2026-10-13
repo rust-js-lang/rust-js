@@ -167,20 +167,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (option, f) = (arg(), arg());
                 // By a function giving each variant its own name, the option
                 // itself: `section.map(Section::as_str)` is `section` (ADR 0264).
-                // So by a binding that's the value itself, `map(js::unknown)`.
                 if let Some((function, _)) = crate::lower::fn_def(tys[1])
-                    && (self.gives_own_name(function)
-                        || crate::lower::bindings::is_binding(self.tcx, function)
-                            && matches!(
-                                crate::lower::bindings::js_form(self.tcx, function),
-                                crate::lower::bindings::JsForm::This
-                            ))
+                    && self.gives_own_name(function)
                     && !self.boxed_payload(generic_args.type_at(0))
                     && !self.boxed_payload(generic_args.type_at(1))
                 {
                     return Ok(Some(option));
                 }
-                // By what gives it as it is, `map(String::as_str)`: the option.
+                // By what gives it as it is, `map(String::as_str)`, or a binding
+                // that's the value itself, `map(js::unknown)`: the option.
                 if f.is_identity() {
                     return Ok(Some(option));
                 }
