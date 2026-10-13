@@ -11,7 +11,6 @@ use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
 use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -141,7 +140,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if callee.helper_name() == Some("$fmtTry")
                 && matches!(args.first().map(|a| &a.kind), Some(js::ExprKind::Arrow(params, _)) if params.is_empty()));
         if !tried {
-            self.runtime.insert(Helper::FmtError);
             out.push(StmtKind::Expr(Expr::call(Expr::helper("$fmtCheck"), vec![value])).at(js_span));
             return;
         }
@@ -199,7 +197,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             FmtResultAnswer::Is(false) => Expr::bin(Op::Ne, result, Expr::undefined()),
             FmtResultAnswer::Unwrap | FmtResultAnswer::Expect => {
                 let message = message.unwrap_or_else(|| Expr::str("called `Result::unwrap()` on an `Err` value"));
-                self.runtime.insert(Helper::FmtError);
                 Expr::call(Expr::helper("$fmtExpect"), vec![result, message])
             }
         }
@@ -208,7 +205,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$fmtTry(() => { .. })`: what `body` writes, as a `fmt::Result`,
     /// `undefined` or the `fmt::Error` it failed with (ADR 0187).
     pub(super) fn fmt_try(&mut self, body: Vec<Stmt>) -> Expr {
-        self.runtime.insert(Helper::FmtError);
         Expr::call(Expr::helper("$fmtTry"), vec![Expr::arrow(Vec::new(), body)])
     }
 
@@ -278,14 +274,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let num = Num::of(ty);
         // A precision is a float's digits.
         if let Some(num) = num.filter(|n| n.float()) {
-            let (helper, show) = match (kind, num) {
-                (Std::FmtDebug, Num::F32) => (Helper::DebugF32, "$debugF32"),
-                (Std::FmtDebug, _) => (Helper::DebugF64, "$debugF64"),
-                (_, Num::F32) => (Helper::DisplayF32, "$displayF32"),
-                _ => (Helper::DisplayF64, "$displayF64"),
+            let show = match (kind, num) {
+                (Std::FmtDebug, Num::F32) => "$debugF32",
+                (Std::FmtDebug, _) => "$debugF64",
+                (_, Num::F32) => "$displayF32",
+                _ => "$displayF64",
             };
-            self.runtime.insert(helper);
-            self.runtime.insert(Helper::FormatFloat);
             return Some(Expr::call(
                 Expr::helper("$formatFloat"),
                 vec![value, options.clone(), Expr::var(show)],
@@ -297,7 +291,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::FmtDisplay if self.is_string_like(ty) => value,
             _ => return None,
         };
-        self.runtime.insert(Helper::Formatted);
         let mut args = vec![text, options.clone()];
         if num.is_some() {
             args.push(Expr::bool(true));
@@ -385,7 +378,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // More than five fields: arrays of their names and strings.
             WriteCall::StructFields => {
-                self.runtime.insert(Helper::DebugFields);
                 values.extend(self.writing.given.is_some().then(|| pretty.alternate()));
                 Expr::call(Expr::helper("$debugFields"), values)
             }
@@ -638,7 +630,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let written = match (&pretty, has_parts, pretty_open) {
             (Pretty::Plain, _, _) | (_, false, _) | (_, _, None) => written,
             (_, true, Some(open)) => {
-                self.runtime.insert(Helper::Pretty);
                 let mut list = vec![open, array, Expr::str(pretty_close)];
                 if non_exhaustive {
                     list.push(Expr::bool(true));
@@ -668,7 +659,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.can_apply(ty, pretty, span)?;
         // A UTF-8 error's message, a `FromUtf8Error`'s its `Utf8Error`'s (ADR 0172).
         if let Some(owned) = self.recognition().utf8_error(ty) {
-            self.runtime.insert(Helper::Utf8);
             let error = if owned { Expr::member(value, "error") } else { value };
             return Ok(Expr::call(Expr::helper("$utf8ErrorMessage"), vec![error]));
         }
@@ -718,7 +708,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ));
         }
         if self.is_json_error(ty) {
-            self.runtime.insert(Helper::JsonError);
             return Ok(Expr::call(Expr::helper("$displayJsonError"), vec![value]));
         }
         // A `Value`'s JSON, or a `Number`'s (ADR 0083).
@@ -729,11 +718,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(shown_number(value));
         }
         if Num::of(ty) == Some(Num::F64) {
-            self.runtime.insert(Helper::DisplayF64);
             return Ok(Expr::call(Expr::helper("$displayF64"), vec![value]));
         }
         if Num::of(ty) == Some(Num::F32) {
-            self.runtime.insert(Helper::DisplayF32);
             return Ok(Expr::call(Expr::helper("$displayF32"), vec![value]));
         }
         let display = self.display_trait();
@@ -788,13 +775,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         match pretty {
-            Pretty::When(options) if self.krate.format_options => {
-                self.runtime.insert(Helper::Formatted);
-                Expr::call(
-                    Expr::helper("$formatted"),
-                    vec![text, options.clone(), Expr::bool(true)],
-                )
-            }
+            Pretty::When(options) if self.krate.format_options => Expr::call(
+                Expr::helper("$formatted"),
+                vec![text, options.clone(), Expr::bool(true)],
+            ),
             _ => text,
         }
     }
@@ -848,7 +832,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // a `TypeId` its hash, which rust-js doesn't keep (ADR 0331).
         if self.recognition().is_dyn_any(ty) {
             if value.has_effects() {
-                self.runtime.insert(Helper::DebugAny);
                 return Ok(Expr::call(Expr::helper("$debugAny"), vec![value]));
             }
             return Ok(Expr::str("Any { .. }"));
@@ -901,7 +884,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if self.writing.options.is_some() || matches!(pretty, Pretty::Given(..)) {
                 return Err(self.unsupported(span, "options for a `Duration`'s `{:?}`"));
             }
-            self.runtime.insert(Helper::Duration);
             return Ok(Expr::call(Expr::helper("$debugDuration"), vec![value]));
         }
         // A part of a `{:?}` given its options (ADR 0058): a leaf applies them.
@@ -961,11 +943,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(shown);
         }
         if num == Some(Num::F64) {
-            self.runtime.insert(Helper::DebugF64);
             return Ok(Expr::call(Expr::helper("$debugF64"), vec![value]));
         }
         if num == Some(Num::F32) {
-            self.runtime.insert(Helper::DebugF32);
             return Ok(Expr::call(Expr::helper("$debugF32"), vec![value]));
         }
         if num.is_some() || ty.is_bool() {
@@ -975,11 +955,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::str("()"));
         }
         if ty.is_char() {
-            self.runtime.insert(Helper::DebugStr);
             return Ok(Expr::call(Expr::helper("$debugStr"), vec![value, Expr::str("'")]));
         }
         if self.is_string_like(ty) {
-            self.runtime.insert(Helper::DebugStr);
             return Ok(Expr::call(Expr::helper("$debugStr"), vec![value]));
         }
         // What a JS function threw, as JS shows it: `SyntaxError: ..`.
@@ -987,12 +965,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::var("String"), vec![value]));
         }
         if self.is_json_error(ty) {
-            self.runtime.insert(Helper::JsonError);
             return Ok(Expr::call(Expr::helper("$debugJsonError"), vec![value]));
         }
         // Their derived `Debug`s (ADR 0172).
         if let Some(owned) = self.recognition().utf8_error(ty) {
-            self.runtime.insert(Helper::Utf8);
             let mut list = vec![value];
             if owned {
                 list.push(Expr::bool(true));
@@ -1004,7 +980,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A path shows its text as a string does (ADR 0173).
         if self.recognition().is_path_like(ty) {
-            self.runtime.insert(Helper::DebugStr);
             return Ok(Expr::call(Expr::helper("$debugStr"), vec![value]));
         }
         // A `Cow` shows what it borrows or owns (ADR 0319).
@@ -1017,7 +992,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 unreachable!("a struct")
             };
             let name = self.tcx.item_name(adt.did());
-            self.runtime.insert(Helper::DebugParseError);
             return Ok(Expr::call(
                 Expr::helper("$debugParseError"),
                 vec![value, Expr::str(name.as_str())],
@@ -1182,7 +1156,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             vec!["value".into()],
                             vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                         );
-                        self.runtime.insert(Helper::Borrow);
                         Expr::call(Expr::helper("$showBorrowed"), vec![value, show])
                     }
                     false => self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)?,
@@ -1334,7 +1307,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if pretty.known() == Some(false) {
             return plain;
         }
-        self.runtime.insert(Helper::Pretty);
         pretty.choose(Expr::call(Expr::helper("$pretty"), vec![open, items, close]), plain)
     }
 

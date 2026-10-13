@@ -4,7 +4,6 @@ use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_middle::ty::{self};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -44,24 +43,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !self.is_object(item) {
                     given.push(Expr::bool(true));
                 }
-                self.runtime.insert(Helper::Borrow);
                 Expr::call(Expr::helper("$replaceWith"), given)
             }
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
                 let cell = arg();
                 let cell = match self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) {
-                    true => {
-                        self.runtime.insert(Helper::Borrow);
-                        Expr::call(Expr::helper("$borrowMut"), vec![cell])
-                    }
+                    true => Expr::call(Expr::helper("$borrowMut"), vec![cell]),
                     false => cell,
                 };
                 let next = match known {
                     Std::CellReplace => arg(),
                     _ => self.default_value(item, span)?,
                 };
-                self.runtime.insert(Helper::CellReplace);
                 Expr::call(Expr::helper("$cellReplace"), vec![cell, next])
             }
             // A `&mut` to what it holds: the object itself, or for a number or
@@ -71,13 +65,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false => Expr::member(arg(), "value"),
             },
             Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
-                self.runtime.insert(Helper::Borrow);
                 Expr::call(Expr::helper("$refCellSwap"), vec![arg(), arg()])
             }
-            Std::CellSwap => {
-                self.runtime.insert(Helper::CellReplace);
-                Expr::call(Expr::helper("$cellSwap"), vec![arg(), arg()])
-            }
+            Std::CellSwap => Expr::call(Expr::helper("$cellSwap"), vec![arg(), arg()]),
             // `c.value = f(c.value)`.
             Std::CellUpdate => {
                 let cell = arg();
@@ -102,7 +92,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (true, false) => "$lockRead",
                     (true, true) => "$lock",
                 };
-                self.runtime.insert(Helper::Borrow);
                 let guard = Expr::call(Expr::var(name), vec![arg(), Expr::bool(true)]);
                 if lock { Self::ok(guard) } else { guard }
             }
@@ -111,7 +100,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if mutable {
                     given.push(Expr::bool(true));
                 }
-                self.runtime.insert(Helper::Borrow);
                 Expr::call(Expr::var(if lock { "$tryLock" } else { "$tryBorrow" }), given)
             }
             Std::GuardValue { mutable } => {
@@ -236,7 +224,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     false => "$withBorrow",
                 };
-                self.runtime.insert(Helper::Borrow);
                 Expr::call(Expr::var(name), given)
             }
             _ => return Ok(None),

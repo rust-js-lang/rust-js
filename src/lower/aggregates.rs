@@ -8,7 +8,6 @@ use super::recognition::{StdItem, std_item};
 use super::representation::ordering_value;
 use super::{FnCx, R, Shape, assembled};
 use crate::js::{self, Expr, Prop, StmtKind};
-use crate::runtime::Helper;
 use rustc_abi::VariantIdx;
 use rustc_hir::def::CtorKind;
 use rustc_middle::thir::{self as thir, ExprId};
@@ -63,10 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty) {
             return match variant.name.as_str() {
                 "Ok" => Ok(Expr::undefined()),
-                _ if self.is_fmt_result(ty) => {
-                    self.runtime.insert(Helper::FmtError);
-                    Ok(Expr::call(Expr::helper("$fmtError"), Vec::new()))
-                }
+                _ if self.is_fmt_result(ty) => Ok(Expr::call(Expr::helper("$fmtError"), Vec::new())),
                 _ => Err(self.unsupported(span, "an `io::Error`")),
             };
         }

@@ -14,8 +14,8 @@ export const mutations: Mutation[] = [
     name: "promise-result-unsettled",
     breaks: "a JS promise of a `Result` that rejects throws at its `.await`, not an `Err`",
     file: "src/lower/calls.rs",
-    find: "            Catching::PromiseResult => {\n                self.runtime.insert(Helper::Settle);\n                Expr::call(Expr::helper(\"$settle\"), vec![value])\n            }",
-    replace: "            Catching::PromiseResult => value,",
+    find: "            Catching::PromiseResult => Expr::call(Expr::helper(\"$settle\"), vec![value]),\n",
+    replace: "            Catching::PromiseResult => value,\n",
     tests: ["test/compiler.test.ts", "-t", "the builtins crate's object and js_error functions are JS's"],
   },
 ];

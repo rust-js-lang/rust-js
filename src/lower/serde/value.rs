@@ -9,7 +9,6 @@ use crate::lower::display::Pretty;
 use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
@@ -52,7 +51,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let value = values.remove(0);
                 let reader = self.json_reader(ty, span)?;
                 self.use_value();
-                self.runtime.insert(Helper::FromJson);
                 Ok(Expr::call(Expr::helper("$fromJsonValue"), vec![value, reader]))
             }
             JsonCall::Index => {
@@ -92,9 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn use_value(&mut self) {
-        self.runtime.insert(Helper::JsonValue);
-    }
+    fn use_value(&mut self) {}
 
     /// `$jsonValueWrite` and `$jsonNumberWrite`: what writes a `Value` or a
     /// `Number`, `(value, json) => ..`.

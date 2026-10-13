@@ -5,7 +5,6 @@ use crate::js::{Expr, Stmt};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{ChannelOp, Std};
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A channel's call (ADR 0142): `None` if `known` is another.
@@ -19,7 +18,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Std::Channel(op) = known else {
             return Ok(None);
         };
-        self.runtime.insert(Helper::Channel);
         let (helper, count) = match op {
             ChannelOp::New => ("$channel", 0),
             ChannelOp::Send => ("$send", 2),

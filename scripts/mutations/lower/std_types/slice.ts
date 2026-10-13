@@ -295,8 +295,8 @@ export const mutations: Mutation[] = [
     name: "deque-insert-mut-no-handle",
     breaks: "`insert_mut`'s number is the number, not a handle on it",
     file: "src/lower/std_types/slice.rs",
-    find: "                if mutable && self.is_boxable(item()) {\n                    given.push(Expr::bool(true));\n                }\n                helper(self, \"$dequeInsert\"",
-    replace: "                if false {\n                    given.push(Expr::bool(true));\n                }\n                helper(self, \"$dequeInsert\"",
+    find: "mutable && self.is_boxable(item())",
+    replace: "false",
     tests: ["test/corpus.test.ts","-t","deque_push_mut"],
   },
   {

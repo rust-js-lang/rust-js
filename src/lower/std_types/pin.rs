@@ -5,7 +5,6 @@ use crate::js::{Expr, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_middle::ty::{self, Ty};
 
 /// A `Pin`'s functions, and its `Deref` and `DerefMut`.
@@ -67,7 +66,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match handle || self.is_boxable(target) {
                     true => out.push(StmtKind::Assign(Expr::member(pin, "value"), value).at(js_span)),
                     false => {
-                        self.runtime.insert(Helper::Assign);
                         out.push(StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![pin, value])).at(js_span));
                     }
                 }

@@ -11,7 +11,6 @@ use super::recognition::{
 use super::representation::{Num, const_js, eval_const};
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Prop, StmtKind};
-use crate::runtime::Helper;
 use rustc_hir::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
@@ -1075,12 +1074,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let text =
                 |ty: Ty<'tcx>| self.is_lang_adt(ty, LangItem::String) || self.recognition().is_formatter_type(ty);
             if text(ty) {
-                self.runtime.insert(Helper::StringWriter);
                 return Ok(Expr::helper("$stringWriter"));
             }
             if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
                 if text(inner) {
-                    self.runtime.insert(Helper::StringWriter);
                     return Ok(Expr::helper("$mutStringWriter"));
                 }
                 if self.is_object(inner) {
@@ -1811,14 +1808,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         if self.is_string_like(from) {
-            self.runtime.insert(Helper::StringError);
             return Ok(Some(Expr::call(Expr::helper("$stringError"), Vec::new())));
         }
         // One of std's parse errors, which is its message (ADR 0063).
         if self.is_parse_error(from)
             && let ty::Adt(adt, _) = from.kind()
         {
-            self.runtime.insert(Helper::ParseErrorDyn);
             let name = self.tcx.item_name(adt.did());
             return Ok(Some(Expr::call(
                 Expr::helper("$parseErrorDyn"),
@@ -1827,7 +1822,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // serde_json's, shown as serde_json shows it.
         if self.is_json_error(from) {
-            self.runtime.insert(Helper::JsonErrorDyn);
             return Ok(Some(Expr::call(Expr::helper("$jsonErrorDyn"), Vec::new())));
         }
         let error = std_item(self.tcx, StdItem::Error);
@@ -2298,7 +2292,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
                 .at(js::Span::NONE),
             );
-            self.runtime.insert(Helper::TraitImpl);
             // One dictionary for each set of what it's given: its const
             // parameters' values, its dictionaries, and its drops, which may be
             // none.

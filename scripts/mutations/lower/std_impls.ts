@@ -246,8 +246,8 @@ export const mutations: Mutation[] = [
     name: "refcell-clone-unchecked",
     breaks: "a `RefCell`'s clone while it's mutably borrowed runs on",
     file: "src/lower/std_impls.rs",
-    find: "                let cell = match std(StdItem::RefCell) {\n                    true => {\n                        self.runtime.insert(Helper::Borrow);\n                        Expr::call(Expr::helper(\"$borrow\"), vec![place])",
-    replace: "                let cell = match false {\n                    true => {\n                        self.runtime.insert(Helper::Borrow);\n                        Expr::call(Expr::helper(\"$borrow\"), vec![place])",
+    find: "l = match std(StdItem::RefCell)",
+    replace: "l = match false",
     tests: ["test/corpus.test.ts", "-t", "refcell_clone_while_mut"],
   },
   {

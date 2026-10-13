@@ -7,7 +7,6 @@ use crate::lower::drops::Drops;
 
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{self, Ty};
@@ -72,7 +71,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(error) = generic_args.types().nth(1) {
                     self.typed_debug(&mut list, error, span)?;
                 }
-                self.runtime.insert(Helper::UnwrapOk);
                 Expr::call(Expr::helper("$unwrapOk"), list)
             }
             Std::UnwrapErr => {
@@ -80,7 +78,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let Some(value) = generic_args.types().next() {
                     self.typed_debug(&mut list, value, span)?;
                 }
-                self.runtime.insert(Helper::UnwrapErr);
                 Expr::call(Expr::helper("$unwrapErr"), list)
             }
             // `r.TAG === "Ok" ? r._0 : d`, with `r` computed once, and `d` too,
@@ -125,7 +122,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::IsSome => self.present(arg(), generic_args.type_at(0)),
             Std::IsNone => self.absent(arg(), generic_args.type_at(0)),
             Std::Unwrap => {
-                self.runtime.insert(Helper::Unwrap);
                 // `expect` has a message too.
                 let list = (0..tys.len()).map(|_| arg()).collect();
                 let unwrapped = Expr::call(Expr::helper("$unwrap"), list);
@@ -358,7 +354,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `Some` of `items[index]`, or `None` if there's none (ADR 0051).
     pub(in crate::lower) fn some_at(&mut self, items: Expr, index: Expr) -> Expr {
-        self.runtime.insert(Helper::SomeAt);
         Expr::call(Expr::helper("$someAt"), vec![items, index])
     }
 
@@ -373,7 +368,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if (value.is_constant() && !nullish) || literal {
             return value;
         }
-        self.runtime.insert(Helper::Some);
         Expr::call(Expr::helper("$some"), vec![value])
     }
 
@@ -433,7 +427,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// What's in an `Option` of a generic `T` (ADR 0051): `$someValue(option)`.
     pub(in crate::lower) fn some_value(&mut self, option: Expr) -> Expr {
-        self.runtime.insert(Helper::SomeValue);
         Expr::call(Expr::helper("$someValue"), vec![option])
     }
 }

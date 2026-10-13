@@ -5,7 +5,6 @@ use super::bindings::Export;
 use super::{Body, CrateFacts, FnCx, FnInfo, Locals, const_js, eval_const, module_file, module_symbol, static_value};
 use crate::js::{self, Expr, Prop, StmtKind};
 use crate::program::{ImportRequest, LoweredImport, LoweredModule, Unlinked, UnlinkedModule};
-use crate::runtime::Helper;
 use rustc_hir as hir;
 use rustc_hir::def::{DefKind, Res};
 use rustc_hir::find_attr;
@@ -21,7 +20,6 @@ use std::sync::Arc;
 struct Pass {
     functions: HashMap<LocalModId, Vec<js::Function>>,
     namespaces: HashMap<LocalModId, Vec<js::Namespace>>,
-    runtime: HashMap<LocalModId, HashSet<Helper>>,
     jsx: HashSet<LocalModId>,
     caches: HashMap<LocalModId, Vec<String>>,
     /// What each module runs when it's loaded, each `js::on_load!`'s
@@ -284,7 +282,6 @@ pub fn lower_crate<'tcx>(
             locals: Locals::default(),
             names,
             module_names: &taken[&module],
-            runtime: HashSet::new(),
             jsx: false,
             writing: Default::default(),
             cloning: Vec::new(),
@@ -299,7 +296,6 @@ pub fn lower_crate<'tcx>(
             Some(_) => Err(cx.unsupported(tcx.def_span(def_id), "this body, without its MIR")),
             None if codecs.contains(&def_id) => cx.lower_codec(def_id).map(|function| super::LoweredFn {
                 function,
-                runtime: std::mem::take(&mut cx.runtime),
                 jsx: cx.jsx,
                 dependencies: cx.dependencies.take(),
             }),
@@ -307,7 +303,6 @@ pub fn lower_crate<'tcx>(
                 .lower_dictionary(def_id, &cache_of[&def_id])
                 .map(|function| super::LoweredFn {
                     function,
-                    runtime: std::mem::take(&mut cx.runtime),
                     jsx: cx.jsx,
                     dependencies: cx.dependencies.take(),
                 }),
@@ -400,7 +395,6 @@ pub fn lower_crate<'tcx>(
                         || called_from_elsewhere.contains(&key.to_def_id()),
                     span: sources.span(span),
                 });
-                pass.runtime.entry(module).or_default().extend(lowered.runtime);
                 if lowered.jsx {
                     pass.jsx.insert(module);
                 }
@@ -450,7 +444,6 @@ pub fn lower_crate<'tcx>(
                     }
                     None => pass.functions.entry(module).or_default().push(lowered.function),
                 }
-                pass.runtime.entry(module).or_default().extend(lowered.runtime);
             }
         }
     }
@@ -676,7 +669,6 @@ pub fn lower_crate<'tcx>(
                 module: lowered,
                 imports: candidates,
                 reserved_names: taken[&module].clone(),
-                runtime: pass.runtime.remove(&module).unwrap_or_default(),
             }
         })
         .collect();

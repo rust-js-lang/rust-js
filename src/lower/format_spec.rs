@@ -7,7 +7,6 @@ use super::recognition::Std;
 use super::representation::Num;
 use super::{FnCx, R};
 use crate::js::{Expr, Op, Prop};
-use crate::runtime::Helper;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
@@ -212,7 +211,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if precision.is_some() {
                     return Err(self.unsupported(span, "`{:.2e}` and the like"));
                 }
-                self.runtime.insert(Helper::LowerExp);
                 let mut args = vec![value];
                 if num == Num::F32 {
                     args.push(Expr::bool(true));
@@ -229,7 +227,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ if let Some(digits) = precision.clone()
                 && num.is_some_and(Num::float) =>
             {
-                self.runtime.insert(Helper::ToFixed);
                 Expr::call(Expr::helper("$toFixed"), vec![value, digits])
             }
             // `{:.3}` of a string: its first three `char`s.
@@ -257,7 +254,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => self.debug_string(value, ty, span)?,
         };
         let text = if spec.plus && num.is_some() {
-            self.runtime.insert(Helper::Plus);
             Expr::call(Expr::helper("$plus"), vec![text])
         } else {
             text
@@ -278,7 +274,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !spec.plus && !spec.alternate && matches!(num, Some(Num::U8 | Num::U16 | Num::U32)) {
                 return Ok(Expr::call(Expr::member(text, "padStart"), vec![width, Expr::str("0")]));
             }
-            self.runtime.insert(Helper::ZeroPad);
             return Ok(Expr::call(Expr::helper("$zeroPad"), vec![text, width]));
         }
         let align = spec.align.unwrap_or(if num.is_some() { '>' } else { '<' });
@@ -292,7 +287,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(Expr::call(Expr::member(text, method), args));
         }
-        self.runtime.insert(Helper::Pad);
         let mut args = vec![text, width, Expr::str(align.to_string())];
         if spec.fill != ' ' {
             args.push(Expr::str(fill));

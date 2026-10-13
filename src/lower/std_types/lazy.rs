@@ -5,7 +5,6 @@ use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, StdItem};
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_middle::ty;
 
 /// A `LazyCell`'s or `LazyLock`'s own functions, and its `Deref`.
@@ -49,12 +48,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(Expr::object(vec![Prop::Field("init".into(), lazy)])));
         }
         // A `LazyLock`'s init that uses it deadlocks in Rust: rust-js's error.
-        let (helper, force) = match self.recognition().is_lock_cell(tys[0].peel_refs()) {
-            true => (Helper::ForceLock, "$forceLock"),
-            false => (Helper::Force, "$force"),
+        let force = match self.recognition().is_lock_cell(tys[0].peel_refs()) {
+            true => "$forceLock",
+            false => "$force",
         };
         if op == LazyOp::Force || op == LazyOp::ForceMut && !self.is_boxable(item) {
-            self.runtime.insert(helper);
             return Ok(Some(Expr::call(Expr::var(force), vec![lazy])));
         }
         if op == LazyOp::GetMut && self.boxed_payload(item) {
@@ -69,7 +67,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // the cell itself is once its value's made.
         let given = match op {
             LazyOp::ForceMut => {
-                self.runtime.insert(helper);
                 let force = Expr::call(Expr::var(force), vec![lazy.clone()]);
                 out.push(StmtKind::Expr(force).at(self.js_span(span)));
                 return Ok(Some(lazy));

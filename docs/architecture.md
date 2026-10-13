@@ -294,7 +294,7 @@ outside its owner, and how much each module knows of the rest.
 | Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
 | Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
 | A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
-| What a runtime helper is: one the package exports, one whose call does only what its arguments do, one that names a place | `runtime.rs` | `exports`, `is_pure`, `names_a_place` |
+| What a runtime helper is: one the package exports, the helper that declares a name, one whose call does only what its arguments do, one that names a place | `runtime.rs` | `exports`, `helper_of`, `is_pure`, `names_a_place` |
 
 **Calls.** A call is lowered from MIR by `mir_call`, which hands it on by
 what's called:
@@ -340,11 +340,13 @@ takes apart `Iterator.from` and a range's `$iterator`.
 **Runtime helpers.** The JS that generated code imports from
 `@rust-js/runtime`: each is a file, `src/runtime/<name>.js`, which
 `runtime.rs` names and orders, and the package is made from them
-([ADR 0103](decisions/0103-runtime-package.md)). Lowering asks for the
-helpers a module needs; `output.rs` imports the ones its prepared tree
-reads, and the printer is given that list. A name the compiler makes for
-a module of its own, a dictionary's cache, is never a name the runtime
-exports (`runtime::exports`).
+([ADR 0103](decisions/0103-runtime-package.md)). Lowering writes a helper
+by the name it exports, `Expr::helper("$cmp")`, which checks the runtime
+has it; the linker asks for the helper behind each name a module's tree
+reads, and `output.rs` imports the ones its prepared tree reads, which
+the printer is given. A name the compiler makes for a module of its own,
+a dictionary's cache, is never a name the runtime exports
+(`runtime::exports`).
 
 ## Owned output and source origins
 
@@ -500,8 +502,3 @@ architecture audit found the rest.
   `{stem}.js`, takes every JS file the compiler wrote, and finds `main`
   by a regular expression over the JS; a manifest of it, which would say
   whether the program has a `main`, is what build hosts read.
-- **Runtime helpers as symbols:** a helper written as the runtime's,
-  `Expr::helper("$cmp")`, is asked for by being written (ADR 0103); most
-  are still asked for, `Helper::Cmp`, and their names written apart,
-  `Expr::var("$cmp")`, which a ratchet holds to fall. One written and not
-  asked for is refused as its module is planned.

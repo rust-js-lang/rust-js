@@ -216,8 +216,11 @@ test("each runtime helper is asked for, or needed by another", () => {
   expect(helpers.length).toBeGreaterThan(200);
   const deps = runtime.slice(runtime.indexOf("fn dependencies"), runtime.indexOf("pub fn source"));
   const needed = new Set([...deps.matchAll(/=> &\[([^\]]*)\]/g)].flatMap(m => [...m[1].matchAll(/Helper::(\w+)/g)].map(n => n[1])));
-  const asking = sources.filter(file => file !== "src/runtime.rs").map(read).join("\n");
-  const unasked = helpers.filter(name => !needed.has(name) && !new RegExp(`Helper::${name}\\b`).test(asking));
+  // Asked for by being written, by a name it exports (ADR 0103).
+  const files = new Map([...runtime.matchAll(/Helper::(\w+) => include_str!\("runtime\/([\w.]+)"\)/g)].map(m => [m[1], m[2]]));
+  const declared = (helper: string) => [...read(`src/runtime/${files.get(helper)}`).matchAll(/^(?:async function\*? |function\*? |class |const |let )(\$\w+)/gm)].map(m => m[1]);
+  const writing = sources.filter(file => file !== "src/runtime.rs").map(read).join("\n");
+  const unasked = helpers.filter(name => !needed.has(name) && !declared(name).some(own => writing.includes(`"${own}"`)));
   expect(unasked).toEqual([]);
 });
 

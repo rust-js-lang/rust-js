@@ -8,7 +8,6 @@ use crate::lower::recognition::StdItem;
 use crate::lower::representation::{Num, is_fieldless_enum};
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -126,10 +125,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let compare = self.cmp_fn(args.type_at(0), false, span)?;
         Ok(if self.is_set(ty) {
-            self.runtime.insert(Helper::SortedKeys);
             Expr::call(Expr::helper("$sortedKeys"), vec![map, compare])
         } else {
-            self.runtime.insert(Helper::SortedEntries);
             Expr::call(Expr::helper("$sortedEntries"), vec![map, compare])
         })
     }
@@ -139,13 +136,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// key type, serde_json's `Map`, is of strings.
     pub(in crate::lower) fn map_class(&mut self, set: bool, key: Option<Ty<'tcx>>) -> Expr {
         let by_value = key.is_some_and(|key| self.is_value_key(key) && !self.is_js_key(key));
-        let (helper, name) = match (set, by_value) {
+        let name = match (set, by_value) {
             (false, false) => return Expr::var("Map"),
             (true, false) => return Expr::var("Set"),
-            (false, true) => (Helper::KeyMap, "$KeyMap"),
-            (true, true) => (Helper::KeySet, "$KeySet"),
+            (false, true) => "$KeyMap",
+            (true, true) => "$KeySet",
         };
-        self.runtime.insert(helper);
         Expr::var(name)
     }
 
@@ -174,10 +170,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
-        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
-            this.runtime.insert(helper);
-            Expr::call(Expr::helper(name), list)
-        };
+        let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         // The map or set a method of ADR 0325's is of, its type's arguments, and
         // a B-tree's keys' `cmp` where the method orders them.
         let receiver = tys.first().map_or(self.tcx.types.unit, |ty| ty.peel_refs());
@@ -200,10 +193,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
-        let map_ops = |cx: &mut Self, name: &'static str, list: Vec<Expr>| {
-            cx.runtime.insert(Helper::MapOps);
-            Expr::call(Expr::helper(name), list)
-        };
+        let map_ops = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         Ok(match op {
             MapOp::Clear => method(arg(), "clear", Vec::new()),
             // Each entry in its order, a B-tree's its keys', `f` given a handle on
@@ -213,19 +203,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let m = if m.reads_same() { m } else { self.spill("map", m, out) };
                 let entries = self.in_order_of(m.clone(), receiver, span)?;
                 match set {
-                    true => map_ops(self, "$retainSet", vec![m, f, entries]),
+                    true => map_ops("$retainSet", vec![m, f, entries]),
                     false => {
                         let handles = types.get(1).is_some_and(|&value| self.is_boxable(value));
-                        if handles {
-                            self.runtime.insert(Helper::MutEntries);
-                        }
-                        map_ops(self, "$retainMap", vec![m, f, entries, Expr::bool(handles)])
+                        map_ops("$retainMap", vec![m, f, entries, Expr::bool(handles)])
                     }
                 }
             }
-            MapOp::DrainAll => map_ops(self, "$drainAll", vec![arg()]),
-            MapOp::GetKeyValue => map_ops(self, "$getKeyValue", vec![arg(), arg()]),
-            MapOp::RemoveEntry => map_ops(self, "$removeEntry", vec![arg(), arg()]),
+            MapOp::DrainAll => map_ops("$drainAll", vec![arg()]),
+            MapOp::GetKeyValue => map_ops("$getKeyValue", vec![arg(), arg()]),
+            MapOp::RemoveEntry => map_ops("$removeEntry", vec![arg(), arg()]),
             MapOp::SetGet | MapOp::SetTake => {
                 let (s, x) = (arg(), arg());
                 let x = if x.reads_same() { x } else { self.spill("item", x, out) };
@@ -235,18 +222,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::cond(test, x, Expr::undefined())
             }
-            MapOp::SetReplace => map_ops(self, "$setReplace", vec![arg(), arg()]),
+            MapOp::SetReplace => map_ops("$setReplace", vec![arg(), arg()]),
             MapOp::Algebra(name) => {
                 let mut list = vec![arg(), arg(), Expr::str(name)];
                 list.extend(cmp);
-                map_ops(self, "$setAlgebra", list)
+                map_ops("$setAlgebra", list)
             }
-            MapOp::Subset { superset } => map_ops(self, "$isSubset", vec![arg(), arg(), Expr::bool(superset)]),
-            MapOp::Disjoint => map_ops(self, "$isDisjoint", vec![arg(), arg()]),
+            MapOp::Subset { superset } => map_ops("$isSubset", vec![arg(), arg(), Expr::bool(superset)]),
+            MapOp::Disjoint => map_ops("$isDisjoint", vec![arg(), arg()]),
             MapOp::TreeEnd { last, pop } => {
                 let cmp = cmp.expect("a B-tree's order");
                 map_ops(
-                    self,
                     "$treeEnd",
                     vec![arg(), cmp, Expr::bool(last), Expr::bool(set), Expr::bool(pop)],
                 )
@@ -254,13 +240,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::TreeSplitOff => {
                 let (m, key) = (arg(), arg());
                 let cmp = cmp.expect("a B-tree's order");
-                map_ops(self, "$treeSplitOff", vec![m, key, cmp, Expr::bool(set)])
+                map_ops("$treeSplitOff", vec![m, key, cmp, Expr::bool(set)])
             }
-            MapOp::TreeAppend => map_ops(self, "$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
+            MapOp::TreeAppend => map_ops("$treeAppend", vec![arg(), arg(), Expr::bool(set)]),
             MapOp::Extend => {
                 let (m, items) = (arg(), arg());
                 let items = self.items_of(items, tys[1], span, out)?;
-                map_ops(self, "$extendMap", vec![m, items, Expr::bool(set)])
+                map_ops("$extendMap", vec![m, items, Expr::bool(set)])
             }
             MapOp::TreeRange { .. } | MapOp::ExtractIf => {
                 return Err(self.unsupported(span, "a map's range, of its value alone"));
@@ -273,11 +259,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             MapOp::Insert => {
                 let list = vec![arg(), arg(), arg()];
-                helper(self, Helper::Insert, "$insert", list)
+                helper("$insert", list)
             }
             MapOp::Add => {
                 let list = vec![arg(), arg()];
-                helper(self, Helper::Add, "$add", list)
+                helper("$add", list)
             }
             MapOp::Get => {
                 let (m, k) = (arg(), arg());
@@ -286,12 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Index => {
                 let (m, k) = (arg(), arg());
                 let value = method(m, "get", vec![k]);
-                helper(
-                    self,
-                    Helper::Unwrap,
-                    "$unwrap",
-                    vec![value, Expr::str("no entry found for key")],
-                )
+                helper("$unwrap", vec![value, Expr::str("no entry found for key")])
             }
             MapOp::Has => {
                 let (m, k) = (arg(), arg());
@@ -299,7 +280,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             MapOp::Remove => {
                 let list = vec![arg(), arg()];
-                helper(self, Helper::Remove, "$remove", list)
+                helper("$remove", list)
             }
             MapOp::Delete => {
                 let (s, x) = (arg(), arg());
@@ -339,35 +320,33 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // Kept or matched: `Occupied` or `Vacant` of `[m, key]`, as std's
             // enum is (ADR 0345).
-            MapOp::Entry => map_ops(self, "$entry", vec![arg(), arg()]),
+            MapOp::Entry => map_ops("$entry", vec![arg(), arg()]),
             MapOp::VacantInsert => {
                 let mut list = vec![arg(), arg()];
                 if types.get(1).is_some_and(|&value| self.is_boxable(value)) {
-                    self.runtime.insert(Helper::MutGet);
                     list.push(Expr::bool(true));
                 }
-                map_ops(self, "$vacantInsert", list)
+                map_ops("$vacantInsert", list)
             }
             MapOp::EndEntry { last } => {
                 let cmp = self.cmp_fn(types[0], false, span)?;
-                map_ops(self, "$endEntry", vec![arg(), cmp, Expr::bool(last)])
+                map_ops("$endEntry", vec![arg(), cmp, Expr::bool(last)])
             }
             MapOp::EntryKey => Expr::index(arg(), Expr::int(1)),
             MapOp::EntryGet { mutable } => {
                 let mut list = vec![arg()];
                 if mutable && types.get(1).is_some_and(|&value| self.is_boxable(value)) {
-                    self.runtime.insert(Helper::MutGet);
                     list.push(Expr::bool(true));
                 }
-                map_ops(self, "$entryGet", list)
+                map_ops("$entryGet", list)
             }
-            MapOp::EntryInsert => map_ops(self, "$entryInsert", vec![arg(), arg()]),
+            MapOp::EntryInsert => map_ops("$entryInsert", vec![arg(), arg()]),
             MapOp::EntryRemove { entry } => {
                 let mut list = vec![arg()];
                 if entry {
                     list.push(Expr::bool(true));
                 }
-                map_ops(self, "$entryRemove", list)
+                map_ops("$entryRemove", list)
             }
             MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault => {
                 return Err(self.unsupported(span, "an entry's value, of its value alone"));
@@ -408,7 +387,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let handles = !set
             && matches!(receiver.peel_refs().kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.is_boxable(value)));
-        self.runtime.insert(Helper::ExtractIf);
         Ok(Expr::call(
             Expr::helper("$mapExtractIf"),
             vec![m, f, entries, Expr::bool(handles), Expr::bool(set)],
@@ -452,7 +430,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (RangeKind::ToInclusive, [end]) => (None, Some(end.clone()), true),
             _ => (None, None, false),
         };
-        self.runtime.insert(Helper::MapOps);
         let range = Expr::call(
             Expr::helper("$treeRange"),
             vec![
@@ -470,7 +447,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if !handles {
             return Ok(range);
         }
-        self.runtime.insert(Helper::MutEntries);
         Ok(Expr::call(Expr::helper("$mutEntries"), vec![m, range]))
     }
 

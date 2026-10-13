@@ -11,7 +11,6 @@ use super::{FnCx, R, Std};
 use crate::js;
 use crate::js::StmtKind;
 use crate::js::{Expr, Stmt};
-use crate::runtime::Helper;
 
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self};
@@ -151,10 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
                         vec![line],
                     ),
-                    Err(text) => {
-                        self.runtime.insert(Helper::Print);
-                        Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text])
-                    }
+                    Err(text) => Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text]),
                 }
             }
             _ => Expr::undefined(),
@@ -171,10 +167,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> Expr {
-        self.runtime.insert(Helper::FmtError);
         let js_span = self.js_span(span);
         if let Std::Print { error } = known {
-            self.runtime.insert(Helper::Print);
             let (text, caught) = (self.fresh("text"), self.fresh("error"));
             append_written(&Expr::var(&text), value, true, js_span, &mut body);
             let failed = Expr::call(
@@ -243,10 +237,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::member(Expr::var("console"), if error { "error" } else { "log" }),
                     vec![line],
                 ),
-                Err(text) => {
-                    self.runtime.insert(Helper::Print);
-                    Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text])
-                }
+                Err(text) => Expr::call(Expr::var(if error { "$eprint" } else { "$print" }), vec![text]),
             },
             Std::FmtStr => arg(),
             Std::FmtDisplay => {

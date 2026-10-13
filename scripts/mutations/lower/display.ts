@@ -231,8 +231,8 @@ export const mutations: Mutation[] = [
     name: "std-radix-unpadded",
     breaks: "`{:04x}` through a delegating impl isn't padded",
     file: "src/lower/display.rs",
-    find: "            Pretty::When(options) if self.krate.format_options => {\n",
-    replace: "            Pretty::When(options) if false && self.krate.format_options => {\n",
+    find: "self.krate.format_options =",
+    replace: "false && self.krate.format_options =",
     tests: ["test/corpus.test.ts","-t","user_fmt_traits"],
   },
   {

@@ -6,7 +6,6 @@ use super::recognition::{StdItem, std_item};
 use super::representation::Num;
 use super::{FnCx, R, Shape, is_fieldless_enum, lower_first};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
-use crate::runtime::Helper;
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{DefKind, Res};
@@ -135,12 +134,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A channel's sender: one more, of the same queue (ADR 0142).
         if self.recognition().channel_end(ty) == Some(super::recognition::ChannelEnd::Sender) {
-            self.runtime.insert(Helper::Channel);
             return Ok(Expr::call(Expr::helper("$cloneSender"), vec![place]));
         }
         // A counted `Rc`, or a `Weak`: one more, of the same value (ADR 0320).
         if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() {
-            self.runtime.insert(Helper::Rc);
             let clone = if self.weak_of(ty).is_some() {
                 "$weakClone"
             } else {
@@ -247,7 +244,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut body = Vec::new();
                 let value = self.clone_value(Expr::var("value"), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
-                self.runtime.insert(Helper::Borrow);
                 let value = Expr::call(
                     Expr::helper("$withBorrow"),
                     vec![place, Expr::arrow(vec!["value".into()], body)],
@@ -256,10 +252,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let cell = match std(StdItem::RefCell) {
-                    true => {
-                        self.runtime.insert(Helper::Borrow);
-                        Expr::call(Expr::helper("$borrow"), vec![place])
-                    }
+                    true => Expr::call(Expr::helper("$borrow"), vec![place]),
                     false => place,
                 };
                 let value = self.clone_value(Expr::member(cell, "value"), args.type_at(0), span, out)?;
@@ -753,7 +746,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, &format!("`==` on `{ty}`")));
         }
         if !self.custom_eq(ty) {
-            self.runtime.insert(Helper::Eq);
             return Ok(Expr::call(Expr::helper("$eq"), vec![a, b]));
         }
         // Each is read more than once below.
@@ -776,7 +768,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mut body = Vec::new();
                 let eq = self.eq_value(Expr::var("x"), Expr::var("y"), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
-                self.runtime.insert(Helper::Borrow);
                 let inner = Expr::call(
                     Expr::helper("$withBorrow"),
                     vec![b, Expr::arrow(vec!["y".into()], body)],
@@ -791,13 +782,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let (a, b) = match std(StdItem::RefCell) {
-                    true => {
-                        self.runtime.insert(Helper::Borrow);
-                        (
-                            Expr::call(Expr::helper("$borrow"), vec![a]),
-                            Expr::call(Expr::helper("$borrow"), vec![b]),
-                        )
-                    }
+                    true => (
+                        Expr::call(Expr::helper("$borrow"), vec![a]),
+                        Expr::call(Expr::helper("$borrow"), vec![b]),
+                    ),
                     false => (a, b),
                 };
                 self.eq_value(
@@ -851,7 +839,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Adt(adt, args) if adt.is_enum() => {
                 // `{ TAG: "Line", _0: .. }` (ADR 0033): a variant with a custom
                 // part compares its fields, and `$eq` the rest.
-                self.runtime.insert(Helper::Eq);
                 let mut value = Expr::call(Expr::helper("$eq"), vec![a.clone(), b.clone()]);
                 for variant in adt.variants().iter().rev() {
                     let fields = self.variant_fields(variant, args);

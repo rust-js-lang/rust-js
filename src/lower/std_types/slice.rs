@@ -10,7 +10,6 @@ use crate::lower::recognition::trait_method;
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 
 /// What an unstable sort orders by: its items' own order, a comparator
 /// (`_by`), or a key (`_by_key`).
@@ -185,7 +184,6 @@ pub(in crate::lower) enum SliceOp {
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of one of the views' helpers (ADR 0335).
     pub(in crate::lower) fn view_call(&mut self, name: &'static str, list: Vec<Expr>) -> Expr {
-        self.runtime.insert(Helper::View);
         Expr::call(Expr::helper(name), list)
     }
 
@@ -269,7 +267,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if select && self.is_boxable(item) {
             list.push(Expr::bool(true));
         }
-        self.runtime.insert(Helper::SortUnstable);
         let name = if select { "$selectNthUnstable" } else { "$sortUnstable" };
         Expr::call(Expr::var(name), list)
     }
@@ -359,7 +356,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_boxable(item) {
             list.push(Expr::bool(true));
         }
-        self.runtime.insert(Helper::ExtractIf);
         Expr::call(Expr::helper("$extractIf"), list)
     }
 
@@ -381,7 +377,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         } else {
             self.spill("slots", slots, out)
         };
-        self.runtime.insert(Helper::SliceOps);
         if clone {
             let clone = self.clone_arg(item, span)?;
             return Ok(Expr::call(
@@ -425,10 +420,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Some(_), true) => "$sliceSplitOffEndMut",
         };
         let split = match mutable {
-            false => {
-                self.runtime.insert(Helper::SliceOps);
-                Expr::call(Expr::var(name), list)
-            }
+            false => Expr::call(Expr::var(name), list),
             true => self.view_call(name, list),
         };
         self.spill("split", split, out)
@@ -441,7 +433,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         (start, end): (Expr, Option<Expr>),
         dest: Expr,
     ) -> Expr {
-        self.runtime.insert(Helper::SliceOps);
         Expr::call(
             Expr::helper("$copyWithin"),
             vec![items, start, end.unwrap_or_else(Expr::undefined), dest],
@@ -460,10 +451,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let helper = |cx: &mut Self, name: &'static str, list: Vec<Expr>| {
-            cx.runtime.insert(Helper::SliceOps);
-            Expr::call(Expr::helper(name), list)
-        };
+        let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         let item = || generic_args.type_at(0);
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
@@ -474,13 +462,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match self.needs_clone(item()) {
                     true => {
                         let clone = self.clone_arg(item(), span)?;
-                        helper(self, "$fill", vec![items, value, clone])
+                        helper("$fill", vec![items, value, clone])
                     }
                     false => Expr::call(Expr::member(items, "fill"), vec![value]),
                 }
             }
-            SliceOp::FillWith => helper(self, "$fillWith", vec![arg(), arg()]),
-            SliceOp::CopyFromSlice => helper(self, "$copyFromSlice", vec![arg(), arg()]),
+            SliceOp::FillWith => helper("$fillWith", vec![arg(), arg()]),
+            SliceOp::CopyFromSlice => helper("$copyFromSlice", vec![arg(), arg()]),
             // Each by its type's own `clone_from` where it has one, as
             // std's calls it.
             SliceOp::CloneFromSlice if self.recognition().own_clone_from(item()) => {
@@ -497,7 +485,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec!["items".into(), "i".into(), "from".into()],
                     vec![StmtKind::Expr(called).at(js::Span::NONE)],
                 );
-                helper(self, "$cloneFromSlice", vec![items, source, Expr::undefined(), f])
+                helper("$cloneFromSlice", vec![items, source, Expr::undefined(), f])
             }
             SliceOp::CloneFromSlice if self.recognition().reaches_clone_from(item()) => {
                 return Err(self.unsupported(
@@ -508,9 +496,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SliceOp::CloneFromSlice => {
                 let (items, source) = (arg(), arg());
                 let clone = self.clone_arg(item(), span)?;
-                helper(self, "$cloneFromSlice", vec![items, source, clone])
+                helper("$cloneFromSlice", vec![items, source, clone])
             }
-            SliceOp::SwapWithSlice => helper(self, "$swapWithSlice", vec![arg(), arg()]),
+            SliceOp::SwapWithSlice => helper("$swapWithSlice", vec![arg(), arg()]),
             // Each two in a row, by their `PartialOrd`.
             // A number's is JS's `<=`, `false` of a NaN as `partial_cmp`'s is.
             SliceOp::IsSorted => {
@@ -527,21 +515,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec!["a".into(), "b".into()],
                     vec![crate::js::StmtKind::Return(Some(le)).at(crate::js::Span::NONE)],
                 );
-                helper(self, "$isSortedBy", vec![items, in_order])
+                helper("$isSortedBy", vec![items, in_order])
             }
-            SliceOp::IsSortedBy => helper(self, "$isSortedBy", vec![arg(), arg()]),
+            SliceOp::IsSortedBy => helper("$isSortedBy", vec![arg(), arg()]),
             SliceOp::IsSortedByKey => {
                 let (items, key) = (arg(), arg());
                 // `is_sorted_by_key<'a, F, K>`: its key, the third type.
                 let key_ty = generic_args.types().nth(2).expect("its key's type");
                 let cmp = self.cmp_fn(key_ty, true, span)?;
-                helper(self, "$isSortedByKey", vec![items, key, cmp])
+                helper("$isSortedByKey", vec![items, key, cmp])
             }
-            SliceOp::PartitionPoint => helper(self, "$partitionPoint", vec![arg(), arg()]),
-            SliceOp::ChunksExact { mutable: false } => helper(self, "$chunksExact", vec![arg(), arg()]),
-            SliceOp::Rchunks { exact, mutable: false } => {
-                helper(self, "$rchunks", vec![arg(), arg(), Expr::bool(exact)])
-            }
+            SliceOp::PartitionPoint => helper("$partitionPoint", vec![arg(), arg()]),
+            SliceOp::ChunksExact { mutable: false } => helper("$chunksExact", vec![arg(), arg()]),
+            SliceOp::Rchunks { exact, mutable: false } => helper("$rchunks", vec![arg(), arg(), Expr::bool(exact)]),
             SliceOp::ChunksMut => self.view_call("$chunksMut", vec![arg(), arg()]),
             SliceOp::ChunksExact { mutable: true } => self.view_call("$chunksExactMut", vec![arg(), arg()]),
             SliceOp::Rchunks { exact, mutable: true } => {
@@ -561,13 +547,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.view_call("$splitEndMut", list)
             }
-            SliceOp::ChunkBy { mutable: false } => helper(self, "$chunkBy", vec![arg(), arg()]),
+            SliceOp::ChunkBy { mutable: false } => helper("$chunkBy", vec![arg(), arg()]),
             SliceOp::ChunkBy { mutable: true } => self.view_call("$chunkByMut", vec![arg(), arg()]),
             SliceOp::SplitChunk { last, mutable } => {
                 let n = self.chunk_length(generic_args, span)?;
                 let list = vec![arg(), Expr::int(n as i128), Expr::bool(last)];
                 match mutable {
-                    false => helper(self, "$splitChunk", list),
+                    false => helper("$splitChunk", list),
                     true => self.view_call("$splitChunkMut", list),
                 }
             }
@@ -615,7 +601,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             SliceOp::ArrayWindows => {
                 let n = self.chunk_length(generic_args, span)?;
-                self.runtime.insert(Helper::Windows);
                 Expr::call(Expr::helper("$windows"), vec![arg(), Expr::int(n as i128)])
             }
             SliceOp::AsChunks {
@@ -629,7 +614,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(Expr::bool(true));
                 }
                 let pair = match mutable {
-                    false => helper(self, "$asChunks", list),
+                    false => helper("$asChunks", list),
                     true => self.view_call("$asChunksMut", list),
                 };
                 match unchecked {
@@ -690,7 +675,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let predicate = arg();
                 let list = vec![items, predicate, limit, Expr::bool(inclusive), Expr::bool(back)];
                 match mutable {
-                    false => helper(self, "$sliceSplitBy", list),
+                    false => helper("$sliceSplitBy", list),
                     true => self.view_call("$sliceSplitByMut", list),
                 }
             }
@@ -698,11 +683,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (items, key) = (arg(), arg());
                 // `sort_by_cached_key<K, F>`: its key, the second type.
                 let cmp = self.cmp_fn(generic_args.type_at(1), false, span)?;
-                helper(self, "$sortByCachedKey", vec![items, key, cmp])
+                helper("$sortByCachedKey", vec![items, key, cmp])
             }
             SliceOp::AsciiCase { upper, in_place } => {
                 let name = if in_place { "$makeAsciiBytes" } else { "$asciiBytes" };
-                helper(self, name, vec![arg(), Expr::bool(upper)])
+                helper(name, vec![arg(), Expr::bool(upper)])
             }
             SliceOp::IsAscii => {
                 let byte = Expr::arrow(
@@ -715,7 +700,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::member(arg(), "every"), vec![byte])
             }
             SliceOp::TrimAscii { start, end } => {
-                helper(self, "$trimAsciiBytes", vec![arg(), Expr::bool(start), Expr::bool(end)])
+                helper("$trimAsciiBytes", vec![arg(), Expr::bool(start), Expr::bool(end)])
             }
             SliceOp::Strip { suffix, circumfix } => {
                 let mut list = vec![arg(), arg()];
@@ -730,9 +715,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 };
                 list.extend(self.item_eq(item(), span)?);
-                helper(self, name, list)
+                helper(name, list)
             }
-            SliceOp::Repeat => helper(self, "$repeatItems", vec![arg(), arg()]),
+            SliceOp::Repeat => helper("$repeatItems", vec![arg(), arg()]),
             SliceOp::PushMut { at } => {
                 let mut given = vec![arg(), arg()];
                 if at {
@@ -741,25 +726,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.is_boxable(item()) {
                     given.push(Expr::bool(true));
                 }
-                helper(self, if at { "$insertMut" } else { "$pushMut" }, given)
+                helper(if at { "$insertMut" } else { "$pushMut" }, given)
             }
             SliceOp::PushFrontMut => {
                 let mut given = vec![arg(), arg()];
                 if self.is_boxable(item()) {
                     given.push(Expr::bool(true));
                 }
-                helper(self, "$pushFrontMut", given)
+                helper("$pushFrontMut", given)
             }
             SliceOp::DequeInsert { mutable } => {
                 let mut given = vec![arg(), arg(), arg()];
                 if mutable && self.is_boxable(item()) {
                     given.push(Expr::bool(true));
                 }
-                helper(self, "$dequeInsert", given)
+                helper("$dequeInsert", given)
             }
-            SliceOp::DequeSwapRemove { front } => {
-                helper(self, "$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)])
-            }
+            SliceOp::DequeSwapRemove { front } => helper("$dequeSwapRemove", vec![arg(), arg(), Expr::bool(front)]),
             SliceOp::RetainMut | SliceOp::PopFrontIf => {
                 let handles = self.is_boxable(item());
                 let name = if op == SliceOp::RetainMut {
@@ -767,7 +750,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     "$popFrontIf"
                 };
-                helper(self, name, vec![arg(), arg(), Expr::bool(handles)])
+                helper(name, vec![arg(), arg(), Expr::bool(handles)])
             }
             SliceOp::CopyWithin => unreachable!("lowered above"),
         })

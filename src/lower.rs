@@ -72,7 +72,6 @@ mod untagged;
 
 use crate::names::{fresh_in, js_ident};
 use crate::program::TestFn;
-use crate::runtime::Helper;
 pub use analysis::{collect_bodies, collect_initializers, collect_mir};
 use bindings::{Export, is_binding};
 pub use pipeline::lower_crate;
@@ -154,7 +153,6 @@ pub(crate) fn fn_def<'tcx>(ty: Ty<'tcx>) -> Option<(DefId, GenericArgsRef<'tcx>)
 
 pub struct LoweredFn {
     pub function: js::Function,
-    pub runtime: HashSet<Helper>,
     pub jsx: bool,
     dependencies: Dependencies,
 }
@@ -325,7 +323,6 @@ struct FnCx<'a, 'tcx> {
     names: HashSet<String>,
     /// Those taken by the module: its functions, imports and globals.
     module_names: &'a HashSet<String>,
-    runtime: HashSet<Helper>,
     /// Whether this function makes JSX.
     jsx: bool,
     /// What writing to a `Formatter` knows (ADRs 0054, 0137).
@@ -584,7 +581,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(f));
         }
         if let Some(Std::MaxOf(max)) = known {
-            self.runtime.insert(if max { Helper::F64Max } else { Helper::F64Min });
             return Ok(Some(Expr::var(if max { "$f64Max" } else { "$f64Min" })));
         }
         if is_binding(self.tcx, def_id) {

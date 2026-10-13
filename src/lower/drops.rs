@@ -23,7 +23,6 @@ use super::representation::variant_field;
 use super::traits::item_drop_key;
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::runtime::Helper;
 
 mod facts;
 mod types;
@@ -371,7 +370,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A channel's end (ADR 0142).
             ty::Adt(..) if let Some(end) = self.recognition().channel_end(ty) => {
-                self.runtime.insert(Helper::Channel);
                 let drop = match end {
                     ChannelEnd::Sender => "$dropSender",
                     ChannelEnd::Receiver => "$dropReceiver",
@@ -409,7 +407,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // what it points at, if that has a destructor; a `Weak`: `$weakDrop`
             // (ADR 0320).
             ty::Adt(..) if let Some(pointee) = self.counted_rc(ty) => {
-                self.runtime.insert(Helper::Rc);
                 let mut args = vec![value];
                 if self.drops(pointee) == Drops::Runs {
                     let name = self.fresh("value");
@@ -439,16 +436,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A heap's `PeekMut` (ADR 0333).
             ty::Adt(..) if self.recognition().peek_mut_of(ty).is_some() => {
-                self.runtime.insert(Helper::HeapOps);
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$peekMutDrop"), vec![value])).at(js_span));
             }
             // A guard: `$unborrow(cell)` (ADR 0328).
             ty::Adt(..) if self.is_guard(ty) => {
-                self.runtime.insert(Helper::Borrow);
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$unborrow"), vec![value])).at(js_span));
             }
             ty::Adt(..) if self.weak_of(ty).is_some() => {
-                self.runtime.insert(Helper::Rc);
                 out.push(StmtKind::Expr(Expr::call(Expr::helper("$weakDrop"), vec![value])).at(js_span));
             }
             // What a closure holds: the variables it took, where it was made.

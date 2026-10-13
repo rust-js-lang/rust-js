@@ -9,7 +9,6 @@ use rustc_span::def_id::DefId;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::recognition::{rc_pointee, weak_pointee};
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 
 /// What only a counted `Rc` or its `Weak` answers.
 #[derive(Clone, Copy, PartialEq)]
@@ -83,7 +82,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(pointee) = pointee {
             self.counted_here(pointee, span)?;
         }
-        self.runtime.insert(Helper::Rc);
         let helper = |name: &'static str, args: Vec<Expr>| Expr::call_helper(name, args);
         Ok(match op {
             RcOp::WeakNew => Expr::object(vec![

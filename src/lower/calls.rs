@@ -5,7 +5,6 @@ use super::recognition::Catching;
 use super::FnCx;
 use crate::js;
 use crate::js::{Expr, Stmt, StmtKind};
-use crate::runtime::Helper;
 
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -48,15 +47,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn catching(&mut self, def_id: DefId, args: ty::GenericArgsRef<'tcx>, value: Expr) -> Expr {
         match self.recognition().catching(def_id, args) {
             Catching::Result => {
-                self.runtime.insert(Helper::Try);
                 let span = value.span;
                 let thunk = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(span)]);
                 Expr::call(Expr::helper("$try"), vec![thunk])
             }
-            Catching::PromiseResult => {
-                self.runtime.insert(Helper::Settle);
-                Expr::call(Expr::helper("$settle"), vec![value])
-            }
+            Catching::PromiseResult => Expr::call(Expr::helper("$settle"), vec![value]),
             Catching::Direct => value,
         }
     }

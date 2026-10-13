@@ -26,7 +26,6 @@ use crate::lower::bindings::variant_name;
 use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R, Shape};
-use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::CtorKind;
 use rustc_middle::ty::{self, Ty};
@@ -53,9 +52,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.codec_fn(ty, false)
     }
 
-    fn use_reader(&mut self) {
-        self.runtime.insert(Helper::FromJson);
-    }
+    fn use_reader(&mut self) {}
 
     /// `serde_json::from_str::<T>(s)`: `$fromJson(s, read)`, with `read` the
     /// function that reads a `T`.
@@ -121,7 +118,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // serde_json's `Value` and `Number` (ADR 0083); its `Map` is a map.
         if self.json_type(ty) == Some(super::Json::Value) {
-            self.runtime.insert(Helper::JsonValue);
             return Ok(reader("value"));
         }
         if self.is_json_number(ty) {
@@ -137,7 +133,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let read = self.json_reader(inner, span)?;
             // A `Some` that looks like `None` is boxed (ADR 0051).
             let read = if self.boxed_payload(inner) {
-                self.runtime.insert(Helper::Some);
                 Expr::call(reader("some"), vec![read])
             } else {
                 read

@@ -6,7 +6,6 @@ use super::std_types::cow::CowOp;
 use super::std_types::map::{MapOp, Part};
 use super::{FnCx, R, Std};
 use crate::js::{self, Expr, Prop, Stmt, StmtKind};
-use crate::runtime::Helper;
 use rustc_ast::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
@@ -27,10 +26,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn copied_back(&mut self, place: Expr, boxed: &str, object: bool, at: js::Span) -> Stmt {
         let back = Expr::member(Expr::var(boxed), "value");
         match object {
-            true => {
-                self.runtime.insert(Helper::Assign);
-                StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![place, back])).at(at)
-            }
+            true => StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![place, back])).at(at),
             false => StmtKind::Assign(place, back).at(at),
         }
     }
@@ -75,19 +71,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `handle_helper`, of the receiver's type.
-    fn handle_helper_of(&self, known: Std, receiver: Ty<'tcx>) -> Option<(Helper, &'static str)> {
+    fn handle_helper_of(&self, known: Std, receiver: Ty<'tcx>) -> Option<&'static str> {
         // A `Box<[T; N]>` is its array.
         let receiver = receiver.boxed_ty().unwrap_or(receiver);
         let sequence = receiver.is_array() || receiver.is_slice() || self.is_vec_like(receiver);
         let map = self.is_map(receiver) && !self.is_set(receiver);
         Some(match known {
-            Std::Same | Std::Pointee if sequence => (Helper::MutItems, "$mutItems"),
-            Std::First | Std::SliceGet | Std::SliceLast if sequence => (Helper::MutAt, "$mutAt"),
-            Std::Map(MapOp::Get) if map => (Helper::MutGet, "$mutGet"),
-            Std::Map(MapOp::Iter(Part::Entries)) if map => (Helper::MutEntries, "$mutEntries"),
-            Std::Map(MapOp::Iter(Part::Values)) if map => (Helper::MutValues, "$mutValues"),
+            Std::Same | Std::Pointee if sequence => "$mutItems",
+            Std::First | Std::SliceGet | Std::SliceLast if sequence => "$mutAt",
+            Std::Map(MapOp::Get) if map => "$mutGet",
+            Std::Map(MapOp::Iter(Part::Entries)) if map => "$mutEntries",
+            Std::Map(MapOp::Iter(Part::Values)) if map => "$mutValues",
             // A `Cow`'s `to_mut()` of text or a number (ADR 0319).
-            Std::Cow(CowOp::ToMut) => (Helper::CowMut, "$cowMut"),
+            Std::Cow(CowOp::ToMut) => "$cowMut",
             _ => return None,
         })
     }
@@ -103,7 +99,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Option<Expr>> {
-        let Some((helper, name)) = self.handle_helper_of(known, receiver) else {
+        let Some(name) = self.handle_helper_of(known, receiver) else {
             return Ok(None);
         };
         match known {
@@ -118,8 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => {}
         }
-        self.runtime.insert(helper);
-        Ok(Some(Expr::call(Expr::var(name), values)))
+        Ok(Some(Expr::call_helper(name, values)))
     }
 
     /// A `&mut` to one of `def_id`'s type parameters that's an object in a

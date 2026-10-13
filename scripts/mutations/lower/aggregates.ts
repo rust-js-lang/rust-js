@@ -54,8 +54,8 @@ export const mutations: Mutation[] = [
     name: "adt-value-fmt-ok-thrown",
     breaks: "a `fmt::Result`'s `Ok` from MIR is thrown as an `Err` is",
     file: "src/lower/aggregates.rs",
-    find: "                \"Ok\" => Ok(Expr::undefined()),\n                _ if self.is_fmt_result(ty) => {\n",
-    replace: "                \"Ok\" if false => Ok(Expr::undefined()),\n                _ if self.is_fmt_result(ty) => {\n",
+    find: "=> Ok(Expr::u",
+    replace: "if false => Ok(Expr::u",
     tests: ["test/corpus.test.ts","-t","write_to_string"],
   },
   {

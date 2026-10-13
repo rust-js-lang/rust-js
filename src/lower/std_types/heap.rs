@@ -6,7 +6,6 @@ use rustc_span::Span;
 
 use crate::js::Expr;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 
 /// A `BinaryHeap`'s: a JS array kept in the order Rust's heap keeps it,
 /// by the same steps, so `{:?}` and `into_vec()` show what Rust's do.
@@ -49,7 +48,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let HeapOp::PeekTop { .. } | HeapOp::PeekPop = op {
             let item = self.recognition().peek_mut_of(heap_ty).expect("a `PeekMut`");
             let guard = values.remove(0);
-            self.runtime.insert(Helper::HeapOps);
             return Ok(match op {
                 HeapOp::PeekTop { mutable: false } => Expr::index(Expr::member(guard, "heap"), Expr::int(0)),
                 HeapOp::PeekTop { .. } => {
@@ -72,17 +70,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let compare = self.cmp_fn(item, false, span)?;
         values.push(compare);
-        let (helper, name) = match op {
-            HeapOp::Push => (Helper::HeapPush, "$heapPush"),
-            HeapOp::Pop => (Helper::HeapPop, "$heapPop"),
-            HeapOp::IntoSorted => (Helper::HeapSorted, "$heapSorted"),
-            HeapOp::From => (Helper::HeapFrom, "$heapFrom"),
-            HeapOp::Append => (Helper::HeapOps, "$heapAppend"),
-            HeapOp::Retain => (Helper::HeapOps, "$heapRetain"),
-            HeapOp::PeekMut => (Helper::HeapOps, "$peekMut"),
+        let name = match op {
+            HeapOp::Push => "$heapPush",
+            HeapOp::Pop => "$heapPop",
+            HeapOp::IntoSorted => "$heapSorted",
+            HeapOp::From => "$heapFrom",
+            HeapOp::Append => "$heapAppend",
+            HeapOp::Retain => "$heapRetain",
+            HeapOp::PeekMut => "$peekMut",
             HeapOp::Drain | HeapOp::PeekTop { .. } | HeapOp::PeekPop => unreachable!("lowered above"),
         };
-        self.runtime.insert(helper);
         Ok(Expr::call(Expr::var(name), values))
     }
 

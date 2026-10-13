@@ -93,7 +93,6 @@ pub struct UnlinkedModule {
     pub module: LoweredModule,
     pub imports: Vec<ImportRequest>,
     pub reserved_names: HashSet<String>,
-    pub runtime: HashSet<Helper>,
 }
 
 /// Complete lowering output, owned independently of rustc. Only linking turns

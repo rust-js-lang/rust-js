@@ -12,7 +12,6 @@ use crate::lower::recognition::{Std, TypeFact, any_trait};
 use crate::lower::representation::{Num, is_fieldless_enum};
 use crate::lower::std_types::any::AnyOp;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{BinOp, UnOp};
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
@@ -176,10 +175,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let width = Expr::int(num.bits().into());
         let signed = Expr::bool(num.signed());
         let bytes = Expr::int((num.bits() / 8).into());
-        let call = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
-            this.runtime.insert(helper);
-            Expr::call(Expr::helper(name), list)
-        };
+        let call = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         let ops = matches!(
             op,
             NumOp::EdgeOnes { .. }
@@ -202,34 +198,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if trailing {
                     list.push(Expr::bool(true));
                 }
-                call(self, Helper::IntBits, "$edgeOnes", list)
+                call("$edgeOnes", list)
             }
-            NumOp::SwapBytes | NumOp::Endian { swap: true } => {
-                call(self, Helper::IntBits, "$swapBytes", vec![arg(), width, signed])
-            }
+            NumOp::SwapBytes | NumOp::Endian { swap: true } => call("$swapBytes", vec![arg(), width, signed]),
             NumOp::Endian { swap: false } => arg(),
-            NumOp::ReverseBits => call(self, Helper::IntBits, "$reverseBits", vec![arg(), width, signed]),
+            NumOp::ReverseBits => call("$reverseBits", vec![arg(), width, signed]),
             NumOp::CheckedEuclid { rem } => {
                 let min = match num.signed() {
                     true => num.literal(num.range().0),
                     false => Expr::undefined(),
                 };
-                call(
-                    self,
-                    Helper::IntBits,
-                    "$checkedEuclid",
-                    vec![arg(), arg(), min, Expr::bool(rem)],
-                )
+                call("$checkedEuclid", vec![arg(), arg(), min, Expr::bool(rem)])
             }
             NumOp::Recip => num.wrap(Expr::bin(Op::Div, Expr::num(1.0), arg())),
             NumOp::FloatToBytes { little } => {
-                let bits = call(self, Helper::FloatToBits, "$floatToBits", vec![arg(), bytes.clone()]);
-                call(self, Helper::ToBytes, "$toBytes", vec![bits, bytes, Expr::bool(little)])
+                let bits = call("$floatToBits", vec![arg(), bytes.clone()]);
+                call("$toBytes", vec![bits, bytes, Expr::bool(little)])
             }
             NumOp::FloatFromBytes { little } => {
                 let list = vec![arg(), bytes.clone(), Expr::bool(little), Expr::bool(false)];
-                let bits = call(self, Helper::FromBytes, "$fromBytes", list);
-                call(self, Helper::FloatFromBits, "$floatFromBits", vec![bits, bytes])
+                let bits = call("$fromBytes", list);
+                call("$floatFromBits", vec![bits, bytes])
             }
             _ => unreachable!("one of the ops above"),
         }))
@@ -314,10 +303,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Num::I16 => Expr::bin(Op::BitAnd, x, Expr::int(0xffff)),
             _ => x,
         };
-        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
-            this.runtime.insert(helper);
-            Expr::call(Expr::helper(name), list)
-        };
+        let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         // An `f32`'s result is rounded to one, but for those that are exact
         // already (ADR 0122).
         let rounded = |e: Expr| if num == Num::F32 { num.wrap(e) } else { e };
@@ -333,20 +319,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::Abs => num.wrap(math("abs", vec![arg()])),
             // An `i32::MIN`'s is 2^31, which a `u32` holds.
             NumOp::UnsignedAbs => math("abs", vec![arg()]),
-            NumOp::CheckedPow => helper(
-                self,
-                Helper::CheckedPow,
-                "$checkedPow",
-                vec![arg(), arg(), Expr::int(lo), Expr::int(hi)],
-            ),
+            NumOp::CheckedPow => helper("$checkedPow", vec![arg(), arg(), Expr::int(lo), Expr::int(hi)]),
             // Exact below 2^53, and `$pow` multiplies as `Math.imul` does, so
             // what's past it wraps as Rust's does.
             NumOp::Pow => {
-                let power = helper(self, Helper::Pow, "$pow", vec![arg(), arg()]);
+                let power = helper("$pow", vec![arg(), arg()]);
                 if num == Num::I32 { power } else { num.wrap(power) }
             }
-            NumOp::Powi if num == Num::F32 => helper(self, Helper::PowiF32, "$powiF32", vec![arg(), arg()]),
-            NumOp::Powi => helper(self, Helper::Powi, "$powi", vec![arg(), arg()]),
+            NumOp::Powi if num == Num::F32 => helper("$powiF32", vec![arg(), arg()]),
+            NumOp::Powi => helper("$powi", vec![arg(), arg()]),
             // `a ** b`, but where JS's `**` gives NaN, of a base of 1 or -1 to an
             // infinite or NaN power, Rust's is 1: `$powf`, unless the power is a
             // finite constant, `x.powf(2.0)`.
@@ -354,12 +335,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, b) = (arg(), arg());
                 match &b.kind {
                     js::ExprKind::Num(n) if n.is_finite() => rounded(Expr::bin(Op::Pow, a, b)),
-                    _ => rounded(helper(self, Helper::Powf, "$powf", vec![a, b])),
+                    _ => rounded(helper("$powf", vec![a, b])),
                 }
             }
             NumOp::Exp2 => rounded(Expr::bin(Op::Pow, Expr::num(2.0), arg())),
-            NumOp::Round => helper(self, Helper::Round, "$round", vec![arg()]),
-            NumOp::TotalCmp => helper(self, Helper::TotalCmp, "$totalCmp", vec![arg(), arg()]),
+            NumOp::Round => helper("$round", vec![arg()]),
+            NumOp::TotalCmp => helper("$totalCmp", vec![arg(), arg()]),
             NumOp::IsNan => number("isNaN", vec![arg()]),
             NumOp::IsFinite => number("isFinite", vec![arg()]),
             NumOp::IsInfinite => Expr::bin(Op::Eq, math("abs", vec![arg()]), Expr::var("Infinity")),
@@ -370,49 +351,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => f64::MIN_POSITIVE,
                 });
                 match op {
-                    NumOp::IsNormal { subnormal: true } => {
-                        helper(self, Helper::IsNormal, "$isNormal", vec![arg(), min, Expr::bool(true)])
-                    }
-                    NumOp::IsNormal { .. } => helper(self, Helper::IsNormal, "$isNormal", vec![arg(), min]),
-                    _ => helper(self, Helper::IsNormal, "$classify", vec![arg(), min]),
+                    NumOp::IsNormal { subnormal: true } => helper("$isNormal", vec![arg(), min, Expr::bool(true)]),
+                    NumOp::IsNormal { .. } => helper("$isNormal", vec![arg(), min]),
+                    _ => helper("$classify", vec![arg(), min]),
                 }
             }
             // The exact result, if it's in range. A product past 2^53 is
             // rounded, but it's far out of range either way.
             NumOp::Checked(BinOp::Div) => {
                 let min = Expr::int(lo);
-                helper(self, Helper::CheckedDiv, "$checkedDiv", vec![arg(), arg(), min])
+                helper("$checkedDiv", vec![arg(), arg(), min])
             }
             NumOp::Checked(BinOp::Rem) => {
                 let list = vec![arg(), arg(), Expr::int(lo)];
-                helper(self, Helper::CheckedRem, "$checkedRem", list)
+                helper("$checkedRem", list)
             }
             NumOp::Checked(op) => {
                 let exact = Expr::bin(js_op(op), arg(), arg());
-                helper(
-                    self,
-                    Helper::Checked,
-                    "$checked",
-                    vec![exact, Expr::int(lo), Expr::int(hi)],
-                )
+                helper("$checked", vec![exact, Expr::int(lo), Expr::int(hi)])
             }
             NumOp::CheckedNeg => {
                 let exact = Expr::unary(UnaryOp::Neg, arg());
-                helper(
-                    self,
-                    Helper::Checked,
-                    "$checked",
-                    vec![exact, Expr::int(lo), Expr::int(hi)],
-                )
+                helper("$checked", vec![exact, Expr::int(lo), Expr::int(hi)])
             }
             NumOp::CheckedAbs => {
                 let exact = math("abs", vec![arg()]);
-                helper(
-                    self,
-                    Helper::Checked,
-                    "$checked",
-                    vec![exact, Expr::int(lo), Expr::int(hi)],
-                )
+                helper("$checked", vec![exact, Expr::int(lo), Expr::int(hi)])
             }
             NumOp::Saturating(op) => {
                 let exact = Expr::bin(js_op(op), arg(), arg());
@@ -440,14 +404,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, b) = (arg(), arg());
                 self.binary(BinOp::Div, a, b, None, ty, span)?
             }
-            NumOp::RemEuclid => {
-                self.runtime.insert(Helper::Rem);
-                helper(self, Helper::RemEuclid, "$remEuclid", vec![arg(), arg(), Expr::int(lo)])
-            }
-            NumOp::DivEuclid => {
-                self.runtime.insert(Helper::Div);
-                helper(self, Helper::DivEuclid, "$divEuclid", vec![arg(), arg(), Expr::int(lo)])
-            }
+            NumOp::RemEuclid => helper("$remEuclid", vec![arg(), arg(), Expr::int(lo)]),
+            NumOp::DivEuclid => helper("$divEuclid", vec![arg(), arg(), Expr::int(lo)]),
             NumOp::IsPositive { negative } => Expr::bin(if negative { Op::Lt } else { Op::Gt }, arg(), Expr::int(0)),
             // Shifted, below the width, as `<<` shifts.
             NumOp::CheckedShift(op) => {
@@ -458,18 +416,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::cond(fits, self.binary(op, a, by, None, ty, span)?, Expr::undefined())
             }
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
-            NumOp::WrappingDiv => helper(
-                self,
-                Helper::WrappingDiv,
-                "$wrappingDiv",
-                vec![arg(), arg(), Expr::int(lo)],
-            ),
-            NumOp::WrappingRem => helper(
-                self,
-                Helper::WrappingRem,
-                "$wrappingRem",
-                vec![arg(), arg(), Expr::int(lo)],
-            ),
+            NumOp::WrappingDiv => helper("$wrappingDiv", vec![arg(), arg(), Expr::int(lo)]),
+            NumOp::WrappingRem => helper("$wrappingRem", vec![arg(), arg(), Expr::int(lo)]),
             // What wrapping gives, and the exact result, which a product past
             // 2^53 rounds, far out of range either way.
             NumOp::Overflowing(op) => {
@@ -478,12 +426,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let b = if b.reads_same() { b } else { self.spill("b", b, out) };
                 let exact = Expr::bin(js_op(op), a.clone(), b.clone());
                 let wrapped = self.binary(op, a, b, None, ty, span)?;
-                helper(
-                    self,
-                    Helper::Overflowing,
-                    "$overflowing",
-                    vec![wrapped, exact, Expr::int(lo), Expr::int(hi)],
-                )
+                helper("$overflowing", vec![wrapped, exact, Expr::int(lo), Expr::int(hi)])
             }
             NumOp::OverflowingNeg => {
                 let x = arg();
@@ -502,12 +445,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => bits(arg()),
                 };
                 let list = vec![x, arg(), Expr::int(num.bits().into()), Expr::bool(left)];
-                let rotated = helper(self, Helper::RotateBits, "$rotateBits", list);
+                let rotated = helper("$rotateBits", list);
                 if num.signed() { num.wrap(rotated) } else { rotated }
             }
             NumOp::ToBytes { little } => {
                 let list = vec![arg(), Expr::int((num.bits() / 8).into()), Expr::bool(little)];
-                helper(self, Helper::ToBytes, "$toBytes", list)
+                helper("$toBytes", list)
             }
             NumOp::FromBytes { little } => {
                 let list = vec![
@@ -516,15 +459,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::bool(little),
                     Expr::bool(num.signed()),
                 ];
-                helper(self, Helper::FromBytes, "$fromBytes", list)
+                helper("$fromBytes", list)
             }
             NumOp::ToBits => {
                 let list = vec![arg(), Expr::int((num.bits() / 8).into())];
-                helper(self, Helper::FloatToBits, "$floatToBits", list)
+                helper("$floatToBits", list)
             }
             NumOp::FromBits => {
                 let list = vec![arg(), Expr::int((num.bits() / 8).into())];
-                helper(self, Helper::FloatFromBits, "$floatFromBits", list)
+                helper("$floatFromBits", list)
             }
             NumOp::ToIntUnchecked => unreachable!("a cast, in `mir_std_call`"),
             NumOp::EdgeOnes { .. }
@@ -536,28 +479,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             | NumOp::FloatToBytes { .. }
             | NumOp::FloatFromBytes { .. } => unreachable!("`bits_call`'s"),
             NumOp::SaturatingPow => {
-                self.runtime.insert(Helper::CheckedPow);
                 let list = vec![arg(), arg(), Expr::int(lo), Expr::int(hi)];
-                helper(self, Helper::SaturatingPow, "$saturatingPow", list)
+                helper("$saturatingPow", list)
             }
-            NumOp::Signum if num.float() => helper(self, Helper::FloatSignum, "$signum", vec![arg()]),
+            NumOp::Signum if num.float() => helper("$signum", vec![arg()]),
             NumOp::Signum => math("sign", vec![arg()]),
             NumOp::Clamp if num.float() => {
-                let (debug_helper, debug) = if num == Num::F32 {
-                    (Helper::DebugF32, "$debugF32")
-                } else {
-                    (Helper::DebugF64, "$debugF64")
-                };
-                self.runtime.insert(debug_helper);
+                let debug = if num == Num::F32 { "$debugF32" } else { "$debugF64" };
                 let list = vec![arg(), arg(), arg(), Expr::var(debug)];
-                helper(self, Helper::ClampFloat, "$clampFloat", list)
+                helper("$clampFloat", list)
             }
-            NumOp::Clamp => helper(self, Helper::Clamp, "$clamp", vec![arg(), arg(), arg()]),
+            NumOp::Clamp => helper("$clamp", vec![arg(), arg(), arg()]),
             NumOp::FromStrRadix => {
                 let list = vec![arg(), Expr::int(lo), Expr::int(hi), arg()];
-                helper(self, Helper::ParseInt, "$parseInt", list)
+                helper("$parseInt", list)
             }
-            NumOp::DivCeil => helper(self, Helper::DivCeil, "$divCeil", vec![arg(), arg()]),
+            NumOp::DivCeil => helper("$divCeil", vec![arg(), arg()]),
             // Exact: what's after the point, in an `f32` as in an `f64`.
             NumOp::Fract => {
                 let x = arg();
@@ -576,15 +513,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 rounded(Expr::bin(Op::Mul, arg(), factor))
             }
             NumOp::SignNegative { negated } => {
-                let negative = helper(self, Helper::SignNegative, "$signNegative", vec![arg()]);
+                let negative = helper("$signNegative", vec![arg()]);
                 if negated {
                     Expr::unary(UnaryOp::Not, negative)
                 } else {
                     negative
                 }
             }
-            NumOp::Ilog { base } => helper(self, Helper::Ilog, "$ilog", vec![arg(), Expr::int(base.into())]),
-            NumOp::Isqrt => helper(self, Helper::Isqrt, "$isqrt", vec![arg()]),
+            NumOp::Ilog { base } => helper("$ilog", vec![arg(), Expr::int(base.into())]),
+            NumOp::Isqrt => helper("$isqrt", vec![arg()]),
             // Rounded toward zero, as Rust's integer division is: exact, as the
             // sum of two 32-bit integers is.
             NumOp::Midpoint => math(
@@ -592,7 +529,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::num(2.0))],
             ),
             NumOp::CountZeros => {
-                let ones = helper(self, Helper::CountOnes, "$countOnes", vec![bits(arg())]);
+                let ones = helper("$countOnes", vec![bits(arg())]);
                 Expr::bin(Op::Sub, Expr::int(num.bits().into()), ones)
             }
             NumOp::LeadingZeros => {
@@ -604,16 +541,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             NumOp::TrailingZeros => {
                 let x = bits(arg());
-                helper(
-                    self,
-                    Helper::TrailingZeros,
-                    "$trailingZeros",
-                    vec![x, Expr::int(num.bits().into())],
-                )
+                helper("$trailingZeros", vec![x, Expr::int(num.bits().into())])
             }
             NumOp::CountOnes => {
                 let x = bits(arg());
-                helper(self, Helper::CountOnes, "$countOnes", vec![x])
+                helper("$countOnes", vec![x])
             }
             NumOp::IsPowerOfTwo => {
                 let x = arg();
@@ -681,10 +613,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (lo, hi) = (num.literal(lo), num.literal(hi as i128));
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
-        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
-            this.runtime.insert(helper);
-            Expr::call(Expr::helper(name), list)
-        };
+        let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         // A 128-bit one's width, where a helper takes it: 64 is the default.
         let width = |mut list: Vec<Expr>| {
             if num.bits() == 128 {
@@ -693,26 +622,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             list
         };
         Ok(match op {
-            NumOp::Abs => num.wrap(helper(self, Helper::BigAbs, "$bigAbs", vec![arg()])),
+            NumOp::Abs => num.wrap(helper("$bigAbs", vec![arg()])),
             // An `i64::MIN`'s is 2^63, which a `u64` holds.
-            NumOp::UnsignedAbs => helper(self, Helper::BigAbs, "$bigAbs", vec![arg()]),
-            NumOp::Pow => num.wrap(helper(self, Helper::BigPow, "$bigPow", width(vec![arg(), arg()]))),
-            NumOp::CheckedPow => helper(self, Helper::CheckedPow, "$checkedPow", vec![arg(), arg(), lo, hi]),
+            NumOp::UnsignedAbs => helper("$bigAbs", vec![arg()]),
+            NumOp::Pow => num.wrap(helper("$bigPow", width(vec![arg(), arg()]))),
+            NumOp::CheckedPow => helper("$checkedPow", vec![arg(), arg(), lo, hi]),
             NumOp::Checked(BinOp::Rem) => {
                 let min = if num.signed() { lo.clone() } else { Expr::undefined() };
-                helper(self, Helper::CheckedRem, "$checkedRem", vec![arg(), arg(), min])
+                helper("$checkedRem", vec![arg(), arg(), min])
             }
             NumOp::Checked(BinOp::Div) => {
                 let min = if num.signed() { lo } else { Expr::undefined() };
-                helper(self, Helper::BigCheckedDiv, "$bigCheckedDiv", vec![arg(), arg(), min])
+                helper("$bigCheckedDiv", vec![arg(), arg(), min])
             }
             NumOp::Checked(op) => {
                 let exact = Expr::bin(js_op(op), arg(), arg());
-                helper(self, Helper::BigChecked, "$bigChecked", vec![exact, lo, hi])
+                helper("$bigChecked", vec![exact, lo, hi])
             }
             NumOp::Saturating(op) => {
                 let exact = Expr::bin(js_op(op), arg(), arg());
-                helper(self, Helper::BigClamp, "$bigClamp", vec![exact, lo, hi])
+                helper("$bigClamp", vec![exact, lo, hi])
             }
             NumOp::Wrapping(op) => {
                 let (a, b) = (arg(), arg());
@@ -726,18 +655,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, b) = (arg(), arg());
                 self.binary(BinOp::Div, a, b, None, ty, span)?
             }
-            NumOp::RemEuclid => {
-                self.runtime.insert(Helper::BigRem);
-                helper(self, Helper::BigRemEuclid, "$bigRemEuclid", vec![arg(), arg(), lo])
-            }
-            NumOp::DivEuclid => {
-                self.runtime.insert(Helper::BigDiv);
-                helper(self, Helper::BigDivEuclid, "$bigDivEuclid", vec![arg(), arg(), lo])
-            }
-            NumOp::Signum => helper(self, Helper::BigSignum, "$bigSignum", vec![arg()]),
-            NumOp::LeadingZeros => helper(self, Helper::BigBits, "$bigLeadingZeros", width(vec![arg()])),
-            NumOp::TrailingZeros => helper(self, Helper::BigBits, "$bigTrailingZeros", width(vec![arg()])),
-            NumOp::CountOnes => helper(self, Helper::BigBits, "$bigCountOnes", width(vec![arg()])),
+            NumOp::RemEuclid => helper("$bigRemEuclid", vec![arg(), arg(), lo]),
+            NumOp::DivEuclid => helper("$bigDivEuclid", vec![arg(), arg(), lo]),
+            NumOp::Signum => helper("$bigSignum", vec![arg()]),
+            NumOp::LeadingZeros => helper("$bigLeadingZeros", width(vec![arg()])),
+            NumOp::TrailingZeros => helper("$bigTrailingZeros", width(vec![arg()])),
+            NumOp::CountOnes => helper("$bigCountOnes", width(vec![arg()])),
             NumOp::IsPowerOfTwo => {
                 let x = arg();
                 let x = if x.reads_same() { x } else { self.spill("n", x, out) };
@@ -748,16 +671,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::bin(Op::Eq, lower, Expr::bigint(0)),
                 )
             }
-            NumOp::AbsDiff => helper(self, Helper::BigAbsDiff, "$bigAbsDiff", vec![arg(), arg()]),
-            NumOp::Clamp => helper(self, Helper::Clamp, "$clamp", vec![arg(), arg(), arg()]),
+            NumOp::AbsDiff => helper("$bigAbsDiff", vec![arg(), arg()]),
+            NumOp::Clamp => helper("$clamp", vec![arg(), arg(), arg()]),
             NumOp::IsPositive { negative } => Expr::bin(if negative { Op::Lt } else { Op::Gt }, arg(), Expr::bigint(0)),
             NumOp::CheckedNeg => {
                 let exact = Expr::unary(UnaryOp::Neg, arg());
-                helper(self, Helper::BigChecked, "$bigChecked", vec![exact, lo, hi])
+                helper("$bigChecked", vec![exact, lo, hi])
             }
             NumOp::CheckedAbs => {
-                let exact = helper(self, Helper::BigAbs, "$bigAbs", vec![arg()]);
-                helper(self, Helper::BigChecked, "$bigChecked", vec![exact, lo, hi])
+                let exact = helper("$bigAbs", vec![arg()]);
+                helper("$bigChecked", vec![exact, lo, hi])
             }
             NumOp::CheckedShift(op) => {
                 let (a, by) = (arg(), arg());
@@ -769,18 +692,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             NumOp::WrappingNeg => num.wrap(Expr::unary(UnaryOp::Neg, arg())),
             NumOp::WrappingDiv => {
                 let min = if num.signed() { lo.clone() } else { Expr::undefined() };
-                helper(self, Helper::WrappingDiv, "$wrappingDiv", vec![arg(), arg(), min])
+                helper("$wrappingDiv", vec![arg(), arg(), min])
             }
             NumOp::WrappingRem => {
                 let min = if num.signed() { lo.clone() } else { Expr::undefined() };
-                helper(self, Helper::WrappingRem, "$wrappingRem", vec![arg(), arg(), min])
+                helper("$wrappingRem", vec![arg(), arg(), min])
             }
             // The exact result, and it wrapped.
             NumOp::Overflowing(op) => {
                 let exact = Expr::bin(js_op(op), arg(), arg());
                 let exact = self.spill("exact", exact, out);
                 let wrapped = num.wrap(exact.clone());
-                helper(self, Helper::Overflowing, "$overflowing", vec![wrapped, exact, lo, hi])
+                helper("$overflowing", vec![wrapped, exact, lo, hi])
             }
             NumOp::OverflowingNeg => {
                 let x = arg();
@@ -792,25 +715,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::array(vec![num.wrap(Expr::unary(UnaryOp::Neg, x)), overflowed])
             }
-            NumOp::SaturatingPow => {
-                self.runtime.insert(Helper::CheckedPow);
-                helper(
-                    self,
-                    Helper::SaturatingPow,
-                    "$saturatingPow",
-                    vec![arg(), arg(), lo, hi],
-                )
-            }
+            NumOp::SaturatingPow => helper("$saturatingPow", vec![arg(), arg(), lo, hi]),
             NumOp::RotateBits { left } => {
                 let bits = Expr::int(num.bits().into());
                 let x = Expr::call(Expr::member(Expr::var("BigInt"), "asUintN"), vec![bits.clone(), arg()]);
                 let list = vec![x, arg(), bits, Expr::bool(left)];
-                let rotated = helper(self, Helper::RotateBits, "$rotateBits", list);
+                let rotated = helper("$rotateBits", list);
                 if num.signed() { num.wrap(rotated) } else { rotated }
             }
             NumOp::ToBytes { little } => helper(
-                self,
-                Helper::ToBytes,
                 "$toBytes",
                 vec![arg(), Expr::int((num.bits() / 8).into()), Expr::bool(little)],
             ),
@@ -821,16 +734,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::bool(little),
                     Expr::bool(num.signed()),
                 ];
-                helper(self, Helper::FromBytes, "$fromBytes", list)
+                helper("$fromBytes", list)
             }
-            NumOp::FromStrRadix => helper(self, Helper::ParseBig, "$parseBig", vec![arg(), lo, hi, arg()]),
-            NumOp::DivCeil => helper(self, Helper::DivCeil, "$divCeil", vec![arg(), arg()]),
-            NumOp::Ilog { base } => helper(self, Helper::Ilog, "$ilog", vec![arg(), Expr::int(base.into())]),
-            NumOp::Isqrt => helper(self, Helper::Isqrt, "$isqrt", vec![arg()]),
+            NumOp::FromStrRadix => helper("$parseBig", vec![arg(), lo, hi, arg()]),
+            NumOp::DivCeil => helper("$divCeil", vec![arg(), arg()]),
+            NumOp::Ilog { base } => helper("$ilog", vec![arg(), Expr::int(base.into())]),
+            NumOp::Isqrt => helper("$isqrt", vec![arg()]),
             // Rounded toward zero, as a BigInt's division is.
             NumOp::Midpoint => Expr::bin(Op::Div, Expr::bin(Op::Add, arg(), arg()), Expr::bigint(2)),
             NumOp::CountZeros => {
-                let ones = helper(self, Helper::BigBits, "$bigCountOnes", width(vec![arg()]));
+                let ones = helper("$bigCountOnes", width(vec![arg()]));
                 Expr::bin(Op::Sub, Expr::int(num.bits().into()), ones)
             }
             _ => return Err(self.unsupported(span, &format!("this method of a {}-bit integer", num.bits()))),
@@ -944,9 +857,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             BinOp::Mul => num.wrap(Expr::bin(Op::Mul, l, r)),
             BinOp::Div | BinOp::Rem => {
-                let (js_op, helper, name) = match op {
-                    BinOp::Div => (Op::Div, Helper::Div, "$div"),
-                    _ => (Op::Rem, Helper::Rem, "$rem"),
+                let (js_op, name) = match op {
+                    BinOp::Div => (Op::Div, "$div"),
+                    _ => (Op::Rem, "$rem"),
                 };
                 // A literal divisor that can't panic stays inline: `a / 3 | 0`.
                 let safe = known
@@ -955,7 +868,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let quotient = if safe {
                     Expr::bin(js_op, l, r)
                 } else {
-                    self.runtime.insert(helper);
                     let mut args = vec![l, r];
                     if num.signed() {
                         args.push(Expr::int(num.range().0));
@@ -1005,9 +917,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             BinOp::Sub => num.wrap(Expr::bin(Op::Sub, unwrapped(l), unwrapped(r))),
             BinOp::Mul => num.wrap(Expr::bin(Op::Mul, unwrapped(l), unwrapped(r))),
             BinOp::Div | BinOp::Rem => {
-                let (js_op, helper, name) = match op {
-                    BinOp::Div => (Op::Div, Helper::BigDiv, "$bigDiv"),
-                    _ => (Op::Rem, Helper::BigRem, "$bigRem"),
+                let (js_op, name) = match op {
+                    BinOp::Div => (Op::Div, "$bigDiv"),
+                    _ => (Op::Rem, "$bigRem"),
                 };
                 let safe = known
                     .or_else(|| r.as_bigint())
@@ -1015,7 +927,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if safe {
                     Expr::bin(js_op, l, r)
                 } else {
-                    self.runtime.insert(helper);
                     let mut args = vec![l, r];
                     if num.signed() {
                         args.push(Expr::bigint(num.range().0));
@@ -1160,12 +1071,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // rest is truncated into range. An `f32` is an `f64` exactly.
             (Num::F32 | Num::F64, _) => {
                 let (lo, hi) = target.range();
-                let (helper, name) = if target.big() {
-                    (Helper::F64ToBig, "$f64ToBig")
-                } else {
-                    (Helper::F64ToInt, "$f64ToInt")
-                };
-                self.runtime.insert(helper);
+                let name = if target.big() { "$f64ToBig" } else { "$f64ToInt" };
                 Ok(Expr::call(
                     Expr::var(name),
                     vec![v, target.literal(lo), target.literal(hi as i128)],
@@ -1177,10 +1083,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (_, Num::F64) => Ok(v),
             // Its nearest `f32`, rounded once: through an `f64` it would be
             // rounded twice, which can miss it (ADR 0122).
-            (source, Num::F32) if source.big() => {
-                self.runtime.insert(Helper::BigToF32);
-                Ok(Expr::call(Expr::helper("$bigToF32"), vec![v]))
-            }
+            (source, Num::F32) if source.big() => Ok(Expr::call(Expr::helper("$bigToF32"), vec![v])),
             // Up to 16 bits, an `f32` holds it exactly; a 32-bit one, an `f64`
             // does, rounded once.
             (source, Num::F32) if source.bits() <= 16 => Ok(v),
@@ -1294,14 +1197,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match known {
             Std::Duration(op) => {
                 let nanos = |n: i64| Expr::bigint(i128::from(n));
-                let helper = |cx: &mut Self, name: &'static str, args: Vec<Expr>| {
-                    cx.runtime.insert(Helper::Duration);
-                    Expr::call(Expr::helper(name), args)
-                };
+                let helper = |name: &'static str, args: Vec<Expr>| Expr::call(Expr::helper(name), args);
                 match op {
                     DurationOp::New => {
                         let (secs, subsec) = (arg(), arg());
-                        helper(self, "$durationNew", vec![secs, subsec])
+                        helper("$durationNew", vec![secs, subsec])
                     }
                     DurationOp::From(1) | DurationOp::As(1) => arg(),
                     DurationOp::From(unit) => Expr::bin(Op::Mul, arg(), nanos(unit)),
@@ -1317,15 +1217,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     DurationOp::IsZero => Expr::bin(Op::Eq, arg(), nanos(0)),
                     DurationOp::Add => {
                         let (a, b) = (arg(), arg());
-                        helper(self, "$durationAdd", vec![a, b])
+                        helper("$durationAdd", vec![a, b])
                     }
                     DurationOp::Sub => {
                         let (a, b) = (arg(), arg());
-                        helper(self, "$durationSub", vec![a, b])
+                        helper("$durationSub", vec![a, b])
                     }
                     DurationOp::Checked { add: true } => {
                         let (a, b) = (arg(), arg());
-                        helper(self, "$durationChecked", vec![Expr::bin(Op::Add, a, b)])
+                        helper("$durationChecked", vec![Expr::bin(Op::Add, a, b)])
                     }
                     DurationOp::Checked { add: false } => {
                         let (a, b) = (arg(), arg());
@@ -1384,7 +1284,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let num = self.num(target, span)?;
                 let (lo, hi) = num.range();
-                self.runtime.insert(Helper::TryFromInt);
                 let tried = Expr::call(
                     Expr::helper("$tryFromInt"),
                     vec![arg(), num.literal(lo), num.literal(hi as i128)],
@@ -1392,36 +1291,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A `NonZero`'s, an error of `0` (ADR 0177), its message as the
                 // others' is.
                 match crate::lower::recognition::is_non_zero_ty(target) {
-                    true => {
-                        self.runtime.insert(Helper::NonZeroOk);
-                        Expr::call(
-                            Expr::helper("$nonZeroOk"),
-                            vec![tried, Expr::str("number would be zero for non-zero type")],
-                        )
-                    }
+                    true => Expr::call(
+                        Expr::helper("$nonZeroOk"),
+                        vec![tried, Expr::str("number would be zero for non-zero type")],
+                    ),
                     false => tried,
                 }
             }
-            Std::FromDigit => {
-                self.runtime.insert(Helper::FromDigit);
-                Expr::call(Expr::helper("$fromDigit"), vec![arg(), arg()])
-            }
-            Std::FromU32 => {
-                self.runtime.insert(Helper::FromU32);
-                Expr::call(Expr::helper("$fromU32"), vec![arg()])
-            }
-            Std::Cmp => {
-                self.runtime.insert(Helper::Cmp);
-                Expr::call(Expr::helper("$cmp"), vec![arg(), arg()])
-            }
+            Std::FromDigit => Expr::call(Expr::helper("$fromDigit"), vec![arg(), arg()]),
+            Std::FromU32 => Expr::call(Expr::helper("$fromU32"), vec![arg()]),
+            Std::Cmp => Expr::call(Expr::helper("$cmp"), vec![arg(), arg()]),
             Std::MaxOf(max) => {
                 let num = Num::of(tys[0].peel_refs());
                 let callee = if num.is_some_and(Num::float) {
-                    self.runtime.insert(if max { Helper::F64Max } else { Helper::F64Min });
                     Expr::var(if max { "$f64Max" } else { "$f64Min" })
                 } else if num.is_some_and(Num::big) {
                     // `Math.max` takes numbers only.
-                    self.runtime.insert(Helper::BigMinMax);
                     Expr::var(if max { "$bigMax" } else { "$bigMin" })
                 } else {
                     Expr::member(Expr::var("Math"), if max { "max" } else { "min" })

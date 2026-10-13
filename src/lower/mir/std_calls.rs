@@ -138,7 +138,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if matches!(list.last().map(|e| &e.kind), Some(js::ExprKind::Undefined)) {
                     list.pop();
                 }
-                self.runtime.insert(Helper::AssertFailed);
                 Expr::call(Expr::helper("$assertFailed"), list)
             }
             // A writer of the crate's own: what `write!` and `write_char` give
@@ -292,7 +291,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         }
                         let mut list = vec![whole.clone(), Expr::bool(upper)];
                         list.extend(bounds);
-                        self.runtime.insert(Helper::AsciiCase);
                         let edited = Expr::call(Expr::helper("$asciiCase"), list);
                         out.push(StmtKind::Assign(whole, edited).at(self.js_span(span)));
                         return Ok(Some(Value::Expr(Expr::undefined())));
@@ -423,7 +421,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.extend(end);
                 let view = self.view_call("$view", list);
                 match self.is_boxable(generic_args.type_at(0)) {
-                    true => self.helper(Helper::MutItems, "$mutItems", vec![view]),
+                    true => Expr::call_helper("$mutItems", vec![view]),
                     false => view,
                 }
             }
@@ -574,7 +572,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // What was there, taken out.
             Std::DequeRemove => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.helper(Helper::RemoveOpt, "$removeOpt", exprs)
+                Expr::call_helper("$removeOpt", exprs)
             }
             _ => return Ok(None),
         })))
@@ -667,13 +665,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let it = exprs.next().expect("the iterator");
                 let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
                 match op {
-                    StepOp::Peek if boxed => self.helper(Helper::PeekSome, "$peekSome", vec![it]),
+                    StepOp::Peek if boxed => Expr::call_helper("$peekSome", vec![it]),
                     // A string's `chars()`' rest, as a string.
-                    StepOp::AsStr => self.helper(Helper::RestStr, "$restStr", vec![it]),
-                    StepOp::Peek => self.helper(Helper::Peek, "$peek", vec![it]),
+                    StepOp::AsStr => Expr::call_helper("$restStr", vec![it]),
+                    StepOp::Peek => Expr::call_helper("$peek", vec![it]),
                     StepOp::NextIf => {
                         let f = exprs.next().expect("a test");
-                        self.helper(Helper::NextIf, "$nextIf", vec![it, f])
+                        Expr::call_helper("$nextIf", vec![it, f])
                     }
                     StepOp::NextIfEq => {
                         let item = arg_tys[1];
@@ -690,7 +688,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             vec!["item".into()],
                             vec![StmtKind::Return(Some(Expr::bin(Op::Eq, Expr::var("item"), x))).at(js::Span::NONE)],
                         );
-                        self.helper(Helper::NextIf, "$nextIf", vec![it, same])
+                        Expr::call_helper("$nextIf", vec![it, same])
                     }
                     _ => {
                         let it = if it.reads_same() { it } else { self.spill("it", it, out) };
@@ -762,7 +760,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "`Rc::make_mut` of an `Rc` that isn't a place here"));
                 }
                 self.counted_here(item, span)?;
-                self.runtime.insert(Helper::Rc);
                 self.flush(state, out)?;
                 self.make_mut_values(place, item, span, out)?
             }

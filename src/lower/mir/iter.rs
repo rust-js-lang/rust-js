@@ -18,7 +18,6 @@ use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R, bindings};
-use crate::runtime::Helper;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of an `Iterator`'s or an `IntoIterator`'s method, of a std
@@ -130,10 +129,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())));
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
                 (Some(IterMethod::NextBack), Some(RangeKind::Exclusive)) => {
-                    self.helper(Helper::RangeNextBack, "$rangeNextBack", vec![it])
+                    Expr::call_helper("$rangeNextBack", vec![it])
                 }
                 (Some(IterMethod::NextBack), Some(RangeKind::Inclusive)) => {
-                    self.helper(Helper::RangeInclusiveNextBack, "$rangeInclusiveNextBack", vec![it])
+                    Expr::call_helper("$rangeInclusiveNextBack", vec![it])
                 }
                 // A map of an array's items, `v.iter().map(f)`: its source's
                 // last item, mapped, as Rust's `Map::next_back` maps that one
@@ -144,7 +143,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         && let js::ExprKind::Call(callee, args) = &it.kind
                         && let js::ExprKind::Member(source, _) = &callee.kind =>
                 {
-                    let last = self.helper(Helper::NextBack, "$nextBack", vec![(**source).clone()]);
+                    let last = Expr::call_helper("$nextBack", vec![(**source).clone()]);
                     let last = self.spill("last", last, made);
                     let none = Expr::bin(Op::Eq, last.clone(), Expr::undefined());
                     Expr::cond(
@@ -153,10 +152,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         crate::lower::calls::apply(args[0].clone(), vec![last]),
                     )
                 }
-                (Some(IterMethod::NextBack), None) if array && boxed => {
-                    self.helper(Helper::NextBackSome, "$nextBackSome", vec![it])
-                }
-                (Some(IterMethod::NextBack), None) if array => self.helper(Helper::NextBack, "$nextBack", vec![it]),
+                (Some(IterMethod::NextBack), None) if array && boxed => Expr::call_helper("$nextBackSome", vec![it]),
+                (Some(IterMethod::NextBack), None) if array => Expr::call_helper("$nextBack", vec![it]),
                 (Some(IterMethod::Len), None) if array => {
                     Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at"))
                 }
@@ -208,11 +205,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let range = self.range_kind(iter_ty);
             return Ok(Some(match (std_method, range) {
                 (Some(IterMethod::Rev), Some(RangeKind::Exclusive)) => {
-                    self.runtime.insert(Helper::RangeNextBack);
                     self.stepped_by(receiver, Expr::helper("$rangeNextBack"))
                 }
                 (Some(IterMethod::Rev), Some(RangeKind::Inclusive)) => {
-                    self.runtime.insert(Helper::RangeInclusiveNextBack);
                     let next_back = Expr::helper("$rangeInclusiveNextBack");
                     self.stepped_by(receiver, next_back)
                 }
@@ -226,7 +221,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {
                             match std_method {
                                 Some(IterMethod::Peekable) => return Ok(Some(receiver)),
-                                _ => self.helper(Helper::Rest, "$rest", vec![receiver]),
+                                _ => Expr::call_helper("$rest", vec![receiver]),
                             }
                         }
                         Some(_) => match self.std_iterator(receiver, iter_ty) {
@@ -238,7 +233,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             {
                                 crate::lower::iterators::iterated(it)
                             }
-                            it => self.helper(Helper::Rest, "$rest", vec![it]),
+                            it => Expr::call_helper("$rest", vec![it]),
                         },
                         // A `$iter` of an array, just made: the array.
                         None if crate::lower::iterators::is_stepped_items(&receiver) => match std_method {
@@ -287,7 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if !known {
                 return Err(self.unsupported(span, &format!("`size_hint()` of a `{iter_ty}`, from its MIR")));
             }
-            return Ok(Some(self.helper(Helper::SizeHint, "$sizeHint", vec![it])));
+            return Ok(Some(Expr::call_helper("$sizeHint", vec![it])));
         }
         // `by_ref()` of the crate's iterator: a `&mut` to it, it itself, which
         // its own `next` steps.
@@ -325,14 +320,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if std_method == Some(IterMethod::Next) {
             let item = self.option_of(output).expect("`next` gives an `Option`");
             return Ok(Some(match self.range_kind(iter_ty) {
-                Some(RangeKind::Exclusive) => self.helper(Helper::RangeNext, "$rangeNext", vec![receiver]),
-                Some(RangeKind::From) => self.helper(Helper::RangeFromNext, "$rangeFromNext", vec![receiver]),
-                Some(RangeKind::Inclusive) => {
-                    self.helper(Helper::RangeInclusiveNext, "$rangeInclusiveNext", vec![receiver])
-                }
+                Some(RangeKind::Exclusive) => Expr::call_helper("$rangeNext", vec![receiver]),
+                Some(RangeKind::From) => Expr::call_helper("$rangeFromNext", vec![receiver]),
+                Some(RangeKind::Inclusive) => Expr::call_helper("$rangeInclusiveNext", vec![receiver]),
                 Some(_) => return Ok(None),
-                None if self.boxed_payload(item) => self.helper(Helper::NextSome, "$nextSome", vec![receiver]),
-                None => self.helper(Helper::Next, "$next", vec![receiver]),
+                None if self.boxed_payload(item) => Expr::call_helper("$nextSome", vec![receiver]),
+                None => Expr::call_helper("$next", vec![receiver]),
             }));
         }
         // Taken by a `&mut`, it's stepped through what can't close it.
@@ -401,13 +394,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(IterMethod::Find) => {
                 let test = self.unary_callback(arg(), own);
                 match item.is_some_and(|item| self.boxed_payload(item)) {
-                    true => self.helper(Helper::NextSome, "$nextSome", vec![method("filter", it, vec![test])]),
+                    true => Expr::call_helper("$nextSome", vec![method("filter", it, vec![test])]),
                     false => method("find", it, vec![test]),
                 }
             }
             Some(IterMethod::Position) => {
                 let found = self.unary_callback(arg(), own);
-                self.helper(Helper::Position, "$position", vec![it, found])
+                Expr::call_helper("$position", vec![it, found])
             }
             // Each item of both in turn, till one differs or either ends, as
             // Rust's `eq` steps them; `ne` its negation.
@@ -416,7 +409,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let other = arg();
                 let mut list = vec![it, other];
                 list.extend(self.item_eq(item, span)?);
-                let same = self.helper(Helper::CmpItems, "$iterEq", list);
+                let same = Expr::call_helper("$iterEq", list);
                 match std_method {
                     Some(IterMethod::Eq) => same,
                     _ => Expr::unary(js::UnaryOp::Not, same),
@@ -539,18 +532,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The crate's own behind an `impl Iterator` too.
         let ty = self.reveal(ty);
         match self.range_kind(ty) {
-            Some(RangeKind::Exclusive) => {
-                self.runtime.insert(Helper::RangeNext);
-                Ok(self.stepped_by(value, Expr::helper("$rangeNext")))
-            }
-            Some(RangeKind::From) => {
-                self.runtime.insert(Helper::RangeFromNext);
-                Ok(self.stepped_by(value, Expr::helper("$rangeFromNext")))
-            }
-            Some(RangeKind::Inclusive) => {
-                self.runtime.insert(Helper::RangeInclusiveNext);
-                Ok(self.stepped_by(value, Expr::helper("$rangeInclusiveNext")))
-            }
+            Some(RangeKind::Exclusive) => Ok(self.stepped_by(value, Expr::helper("$rangeNext"))),
+            Some(RangeKind::From) => Ok(self.stepped_by(value, Expr::helper("$rangeFromNext"))),
+            Some(RangeKind::Inclusive) => Ok(self.stepped_by(value, Expr::helper("$rangeInclusiveNext"))),
             Some(_) => Err(self.unsupported(span, "iterating this range, from its MIR")),
             None if self.is_user_iterator(ty) => {
                 let trait_id = std_item(self.tcx, StdItem::Iterator);
@@ -623,7 +607,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             false => range.end.clone(),
         };
-        let mut items = self.helper(Helper::Range, "$range", vec![range.start.clone(), end]);
+        let mut items = Expr::call_helper("$range", vec![range.start.clone(), end]);
         if range.back {
             items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
         }
@@ -702,11 +686,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 )
             }
         }
-    }
-
-    pub(super) fn helper(&mut self, helper: Helper, name: &'static str, args: Vec<Expr>) -> Expr {
-        self.runtime.insert(helper);
-        Expr::call(Expr::helper(name), args)
     }
 }
 

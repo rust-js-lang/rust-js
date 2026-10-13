@@ -6,7 +6,6 @@ use super::calls::given_to_js;
 use super::{FnCx, R};
 use crate::js;
 use crate::js::{Expr, Op, StmtKind, UnaryOp};
-use crate::runtime::Helper;
 use rustc_middle::ty;
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -113,7 +112,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         )
                         .is_some_and(|value| self.boxed_payload(value)) =>
             {
-                self.runtime.insert(Helper::DictGet);
                 Expr::call(Expr::helper("$dictGet"), vec![this, args.remove(0)])
             }
             (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)),

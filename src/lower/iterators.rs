@@ -10,7 +10,6 @@ use super::representation::Num;
 use super::{FnCx, R, Std};
 use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
-use crate::runtime::Helper;
 
 use rustc_middle::thir::{ExprId, ExprKind};
 use rustc_middle::ty::{self, Ty};
@@ -74,13 +73,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(if self.option_of(target).is_some() {
             let mut list = vec![items];
             if item.is_some_and(|item| self.option_of(item).is_some_and(|inner| self.boxed_payload(inner))) {
-                self.runtime.insert(Helper::SomeValue);
                 list.push(Expr::bool(true));
             }
-            self.runtime.insert(Helper::CollectOptions);
             Expr::call(Expr::helper("$collectOptions"), list)
         } else {
-            self.runtime.insert(Helper::CollectResults);
             Expr::call(Expr::helper("$collectResults"), vec![items])
         })
     }
@@ -88,21 +84,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$lent(it)`: a generic iterator lent as a `&mut`, which steps `it` and
     /// can't close it, as its lender goes on stepping it (ADR 0071).
     pub(super) fn lent_iterator(&mut self, it: Expr) -> Expr {
-        self.runtime.insert(Helper::Lent);
         Expr::call(Expr::helper("$lent"), vec![it])
     }
 
     /// `$iter(items)`: a JS iterator of an array that knows where it is
     /// (ADR 0071).
     pub(super) fn stepped_items(&mut self, items: Expr) -> Expr {
-        self.runtime.insert(Helper::Iter);
         Expr::call(Expr::helper("$iter"), vec![items])
     }
 
     /// `$iterator(value, next)`: a JS iterator of `value`, stepped by `next`,
     /// a range's by its `$rangeNext`.
     pub(super) fn stepped_by(&mut self, value: Expr, next: Expr) -> Expr {
-        self.runtime.insert(Helper::Iterator);
         Expr::call(Expr::helper("$iterator"), vec![value, next])
     }
 
@@ -202,7 +195,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::array(vec![Expr::int(0), Expr::undefined()])
             }
         };
-        self.runtime.insert(Helper::ExactLen);
         Ok(Expr::call(Expr::helper("$exactLen"), vec![hint]))
     }
 
@@ -248,10 +240,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 vec![StmtKind::Return(Some(call)).at(js::Span::NONE)],
             ),
         };
-        self.runtime.insert(Helper::Iterator);
         let mut list = vec![value, next];
         if boxed {
-            self.runtime.insert(Helper::SomeValue);
             list.push(Expr::bool(true));
         }
         Ok(Expr::call(Expr::helper("$iterator"), list))
@@ -313,18 +303,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match item {
             Some(item) if !self.is_primitive_ord(item) => {
                 let compare = self.cmp_fn(item, false, span)?;
-                self.runtime.insert(if max { Helper::MaxBy } else { Helper::MinBy });
                 let mut list = vec![items, compare];
                 if self.boxed_payload(item) {
-                    self.runtime.insert(Helper::Some);
                     list.push(Expr::bool(true));
                 }
                 Expr::call(Expr::var(if max { "$maxBy" } else { "$minBy" }), list)
             }
-            _ => {
-                self.runtime.insert(if max { Helper::Max } else { Helper::Min });
-                Expr::call(Expr::var(if max { "$max" } else { "$min" }), vec![items])
-            }
+            _ => Expr::call(Expr::var(if max { "$max" } else { "$min" }), vec![items]),
         })
     }
 
@@ -435,26 +420,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.needs_clone(item) {
                     list.push(self.clone_fn("value", item, span)?);
                 }
-                self.runtime.insert(Helper::Repeating);
                 Expr::call(Expr::helper("$repeating"), list)
             }
-            Std::IterSource(IterSource::RepeatWith) => {
-                self.runtime.insert(Helper::RepeatingWith);
-                Expr::call(Expr::helper("$repeatingWith"), vec![arg()])
-            }
+            Std::IterSource(IterSource::RepeatWith) => Expr::call(Expr::helper("$repeatingWith"), vec![arg()]),
             // Their closures' `Option`s: a `Some` that looks like `None` is boxed (ADR 0051).
             Std::IterSource(source @ (IterSource::Successors | IterSource::FromFn)) => {
                 let item = generic_args.type_at(0);
-                let (helper, name) = match source {
-                    IterSource::Successors => (Helper::Successors, "$successors"),
-                    _ => (Helper::FromFn, "$fromFn"),
+                let name = match source {
+                    IterSource::Successors => "$successors",
+                    _ => "$fromFn",
                 };
                 let boxed = self.boxed_payload(item);
                 let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 if boxed {
                     list.push(Expr::bool(true));
                 }
-                self.runtime.insert(helper);
                 Expr::call(Expr::var(name), list)
             }
             _ => return Ok(None),

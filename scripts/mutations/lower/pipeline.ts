@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     name: "dictionary-jsx-unmarked",
     breaks: "an impl whose copied default renders JSX is written to a `.js` file, which a JS tool won't parse",
     file: "src/lower/pipeline.rs",
-    find: "                .lower_dictionary(def_id, &cache_of[&def_id])\n                .map(|function| super::LoweredFn {\n                    function,\n                    runtime: std::mem::take(&mut cx.runtime),\n                    jsx: cx.jsx,",
-    replace: "                .lower_dictionary(def_id, &cache_of[&def_id])\n                .map(|function| super::LoweredFn {\n                    function,\n                    runtime: std::mem::take(&mut cx.runtime),\n                    jsx: false,",
+    find: "                 jsx: cx.jsx",
+    replace: "                 jsx: false",
     tests: ["test/traits.test.ts", "-t", "copied JSX defaults select the implementation module's JSX extension"],
   },
   {

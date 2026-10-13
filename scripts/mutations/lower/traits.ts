@@ -475,8 +475,8 @@ export const mutations: Mutation[] = [
     name: "json-error-dyn-refused",
     breaks: "`serde_json::from_str(s)?` into a `Box<dyn Error>` is an error",
     file: "src/lower/traits.rs",
-    find: "        if self.is_json_error(from) {\n            self.runtime.insert(Helper::JsonErrorDyn);",
-    replace: "        if false {\n            self.runtime.insert(Helper::JsonErrorDyn);",
+    find: "self.is_json_error(from)",
+    replace: "false",
     tests: ["test/serde.test.ts", "-t", "Box<dyn Error> shows as serde_json"],
   },
   {

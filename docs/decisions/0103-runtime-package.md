@@ -54,14 +54,16 @@ compiler's version, released with it, as ReScript's is:
   the package has for it. There's no other way to have them: every build,
   one file's or Cargo's, imports the package, as every ReScript module does.
 - **A helper is written as the runtime's, which asks for it:**
-  `Expr::helper("$lazyRange")`, a node of its own the linker finds, which
-  the module asks for, by the helper that declares it, by being written.
-  (Amended: a helper was asked for, `Helper::LazyRange`, and its name
-  written, `$lazyRange`, apart; one written and not asked for was a
-  ReferenceError where it runs, and tidying wrote two so, asked for ahead
-  by what it tidies, a helper's dependency that wasn't one; found by the
-  third architecture audit. The names written apart are being moved to
-  it, and a ratchet holds their count, which only falls.)
+  `Expr::helper("$lazyRange")`, a variable of the name the runtime exports,
+  which it checks is one; the linker asks for the helper behind each name
+  a module's tree reads that the runtime exports, and nothing else asks.
+  No other variable is named so: Rust's names have no `$`, and the
+  compiler's own are named apart from the runtime's. (Amended: a helper
+  was asked for, `Helper::LazyRange`, and its name written, `$lazyRange`,
+  apart; one written and not asked for was a ReferenceError where it
+  runs, and tidying wrote two so, asked for ahead by what it tidies, a
+  helper's dependency that wasn't one; found by the third architecture
+  audit. Lowering writes helpers alone now, and knows no `Helper`.)
 - **A helper's state is the app's now, not each module's:** `$printed`, the
   unfinished line of a `print!` in a browser, is one buffer for every
   module, as Rust has one stdout.

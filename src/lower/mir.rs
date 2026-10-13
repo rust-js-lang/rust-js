@@ -54,7 +54,6 @@ use super::std_types::text::{StringEdit, TextOp, range_read};
 use super::{Body, FnCx, LoweredFn, R, Shape, bindings, fn_def};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::names::js_ident;
-use crate::runtime::Helper;
 
 /// A body's MIR, as borrowck reads it (ADR 0364), and its promoted constants.
 pub struct Mir<'tcx> {
@@ -372,7 +371,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .def_ident_span(def_id)
                     .map_or(js::Span::NONE, |s| self.js_span(s)),
             },
-            runtime: std::mem::take(&mut self.runtime),
             jsx: self.jsx,
             dependencies: self.dependencies.take(),
         })
@@ -1018,7 +1016,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // what what it called did (ADR 0187): `let f = ""; try { .. }
                 // catch (error) { .. } return f;`.
                 true => {
-                    self.runtime.insert(Helper::FmtError);
                     let made = (out.iter()).position(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name));
                     let mut body = out.split_off(made.map_or(0, |at| at + 1));
                     // Its last `return f`, the one after the `try`.
@@ -2368,7 +2365,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `Err(fmt::Error)`, thrown (ADR 0187).
                     Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(..)) => {
                         self.flush(state, out)?;
-                        self.runtime.insert(Helper::FmtError);
                         let thrown = Expr::call(Expr::helper("$fmtError"), Vec::new());
                         out.push(StmtKind::Expr(thrown).at(self.js_span(span)));
                         Ok(())
@@ -2785,7 +2781,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 return Err(self.unsupported(span, "an `Rc` or a `Weak` written through a `&mut`, from its MIR"));
             }
-            self.runtime.insert(Helper::Assign);
             let assigned = Expr::call(Expr::helper("$assign"), vec![target, value]);
             out.push(StmtKind::Expr(assigned).at(js_span));
             return Ok(());
@@ -3078,14 +3073,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 value = match write && at + 1 == last {
                     _ if within => Expr::index(items, index),
-                    true => {
-                        self.runtime.insert(Helper::At);
-                        Expr::index(items.clone(), Expr::call(Expr::helper("$at"), vec![items, index]))
-                    }
-                    false => {
-                        self.runtime.insert(Helper::Index);
-                        Expr::call(Expr::helper("$index"), vec![items, index])
-                    }
+                    true => Expr::index(items.clone(), Expr::call(Expr::helper("$at"), vec![items, index])),
+                    false => Expr::call(Expr::helper("$index"), vec![items, index]),
                 };
                 placed = false;
                 ty = ty.projection_ty(self.tcx, elem);
@@ -5137,11 +5126,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Std::MemTake => self.default_value(pointee, span)?,
                 _ => self.value_expr(values.next().expect("a second"), span)?,
             };
-            let (helper, name) = match known {
-                Std::Swap => (Helper::Exchange, "$exchange"),
-                _ => (Helper::Take, "$take"),
+            let name = match known {
+                Std::Swap => "$exchange",
+                _ => "$take",
             };
-            self.runtime.insert(helper);
             let call = Expr::call(Expr::var(name), vec![a, b]);
             if known == Std::Swap {
                 out.push(StmtKind::Expr(call).at(js_span));
@@ -5295,7 +5283,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 self.spill("index", index, out)
             };
-            self.runtime.insert(Helper::Index);
             let check = Expr::call(Expr::helper("$index"), vec![items.clone(), index.clone()]);
             out.push(StmtKind::Expr(check).at(self.js_span(span)));
             return Ok(Value::Ref(Expr::index(items, index)));
@@ -5354,18 +5341,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => exprs.next().expect("the value"),
             };
-            let (helper, name) = match op {
-                MapOp::OrInsert => (Helper::OrInsert, "$orInsert"),
-                _ => (Helper::OrInsertWith, "$orInsertWith"),
+            let name = match op {
+                MapOp::OrInsert => "$orInsert",
+                _ => "$orInsertWith",
             };
-            self.runtime.insert(helper);
             let inserted = Expr::call(Expr::var(name), vec![map.clone(), key.clone(), default]);
             if !self.is_cell(output) {
                 return Ok(Value::Expr(inserted));
             }
             self.flush(state, out)?;
             out.push(StmtKind::Expr(inserted).at(self.js_span(span)));
-            self.runtime.insert(Helper::MutGet);
             return Ok(Value::Expr(Expr::call(Expr::helper("$mutGet"), vec![map, key])));
         }
         // `&mut *s` of a `String`, `as_mut_str()`: a `&mut str` to all of

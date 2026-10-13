@@ -8,7 +8,6 @@ use super::drops::Drops;
 use super::recognition::trait_method;
 use super::{FnCx, R, representation::Num};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
-use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -198,7 +197,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut body = Vec::new();
             let copy = self.clone_value(Expr::var(&name), item_ty, span, &mut body)?;
             body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
-            self.runtime.insert(Helper::Repeat);
             return Ok(Expr::call(
                 Expr::helper("$repeat"),
                 vec![item, n, Expr::arrow(vec![name.into()], body)],
@@ -373,10 +371,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value
             }
         };
-        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
-            this.runtime.insert(helper);
-            Expr::call(Expr::helper(name), list)
-        };
+        let helper = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         Ok(match comb {
             Comb::Then | Comb::ThenSome => unreachable!("handled above"),
             // `??` would give a box for the value in it.
@@ -790,7 +785,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // `v.contains(&x)`: JS's `includes` for what `===` compares, and
             // `==` item by item for the rest (ADR 0053).
-            Comb::SplitOff => helper(self, Helper::SplitOff, "$splitOff", vec![subject, next()]),
+            Comb::SplitOff => helper("$splitOff", vec![subject, next()]),
             Comb::BinarySearch => {
                 let x = next();
                 let item = self
@@ -808,17 +803,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         vec!["each".into()],
                         vec![StmtKind::Return(Some(order)).at(js::Span::NONE)],
                     );
-                    return Ok(helper(
-                        self,
-                        Helper::BinarySearchBy,
-                        "$binarySearchBy",
-                        vec![subject, f],
-                    ));
+                    return Ok(helper("$binarySearchBy", vec![subject, f]));
                 }
                 if !ordered {
                     return Err(self.unsupported(span, &format!("`binary_search` of `{item}`s")));
                 }
-                helper(self, Helper::BinarySearch, "$binarySearch", vec![subject, x])
+                helper("$binarySearch", vec![subject, x])
             }
             Comb::Contains => {
                 let x = next();
@@ -845,7 +835,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => items,
                 };
                 let spread = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]);
-                helper(self, Helper::Extend, "$extend", vec![subject, spread])
+                helper("$extend", vec![subject, spread])
             }
             // Each item a clone, as `to_vec()` makes them.
             Comb::ExtendFromSlice => {
@@ -858,9 +848,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     items
                 };
-                helper(self, Helper::Extend, "$extend", vec![subject, items])
+                helper("$extend", vec![subject, items])
             }
-            Comb::BinarySearchBy => helper(self, Helper::BinarySearchBy, "$binarySearchBy", vec![subject, next()]),
+            Comb::BinarySearchBy => helper("$binarySearchBy", vec![subject, next()]),
             // `f(item)` compared with `b`, by its type's `Ord`.
             Comb::BinarySearchByKey => {
                 let (key, f) = (next(), next());
@@ -878,20 +868,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mapped = apply(f, vec![item]);
                 let body = vec![StmtKind::Return(Some(apply(compare, vec![mapped, key]))).at(js::Span::NONE)];
                 let by = Expr::arrow(vec!["item".into()], body);
-                helper(self, Helper::BinarySearchBy, "$binarySearchBy", vec![subject, by])
+                helper("$binarySearchBy", vec![subject, by])
             }
             Comb::Rotate { left, count } => {
                 let list = vec![subject, next(), Expr::str(count)];
                 if left {
-                    helper(self, Helper::RotateLeft, "$rotateLeft", list)
+                    helper("$rotateLeft", list)
                 } else {
-                    helper(self, Helper::RotateRight, "$rotateRight", list)
+                    helper("$rotateRight", list)
                 }
             }
-            Comb::Insert => helper(self, Helper::InsertAt, "$insertAt", vec![subject, next(), next()]),
-            Comb::Remove => helper(self, Helper::RemoveAt, "$removeAt", vec![subject, next()]),
-            Comb::Swap => helper(self, Helper::Swap, "$swap", vec![subject, next(), next()]),
-            Comb::Truncate => helper(self, Helper::Truncate, "$truncate", vec![subject, next()]),
+            Comb::Insert => helper("$insertAt", vec![subject, next(), next()]),
+            Comb::Remove => helper("$removeAt", vec![subject, next()]),
+            Comb::Swap => helper("$swap", vec![subject, next(), next()]),
+            Comb::Truncate => helper("$truncate", vec![subject, next()]),
             Comb::Dedup => {
                 let item = self
                     .slice_item(subject_ty)
@@ -899,7 +889,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if !self.eq_is_identity(item) {
                     return Err(self.unsupported(span, "`dedup` of what `===` doesn't compare"));
                 }
-                helper(self, Helper::Dedup, "$dedup", vec![subject])
+                helper("$dedup", vec![subject])
             }
             // Its closure takes `&mut` items: an object itself, or a cell of a
             // number or text, whose change is written back, as std's is.
@@ -911,12 +901,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "this call, of items a `&mut` can't be given to its closure"));
             }
             Comb::DedupBy => {
-                let (helper_of, name) = self.by_cells(
-                    subject_ty,
-                    (Helper::DedupBy, "$dedupBy"),
-                    (Helper::DedupByCells, "$dedupByCells"),
-                );
-                helper(self, helper_of, name, vec![subject, next()])
+                let name = self.by_cells(subject_ty, "$dedupBy", "$dedupByCells");
+                helper(name, vec![subject, next()])
             }
             // Its key's `==`, of what `===` compares, each item's key made once a
             // comparison, the later item's first, as std's are.
@@ -941,14 +927,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![a.into(), b.into()],
                     vec![StmtKind::Return(Some(same)).at(js::Span::NONE)],
                 );
-                let (helper_of, name) = self.by_cells(
-                    subject_ty,
-                    (Helper::DedupBy, "$dedupBy"),
-                    (Helper::DedupByCells, "$dedupByCells"),
-                );
-                helper(self, helper_of, name, vec![subject, same])
+                let name = self.by_cells(subject_ty, "$dedupBy", "$dedupByCells");
+                helper(name, vec![subject, same])
             }
-            Comb::SwapRemove => helper(self, Helper::SwapRemove, "$swapRemove", vec![subject, next()]),
+            Comb::SwapRemove => helper("$swapRemove", vec![subject, next()]),
             // Each new item its own, a clone, but the last, which is the value
             // given, as std moves it; one whose copies can't be told apart, it.
             Comb::Resize => {
@@ -964,16 +946,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
                     list.push(Expr::arrow(vec![name.into()], body));
                 }
-                helper(self, Helper::Resize, "$resize", list)
+                helper("$resize", list)
             }
-            Comb::ResizeWith => helper(self, Helper::ResizeWith, "$resizeWith", vec![subject, next(), next()]),
+            Comb::ResizeWith => helper("$resizeWith", vec![subject, next(), next()]),
             Comb::PopIf => {
-                let (helper_of, name) =
-                    self.by_cells(subject_ty, (Helper::PopIf, "$popIf"), (Helper::PopIfCell, "$popIfCell"));
-                helper(self, helper_of, name, vec![subject, next()])
+                let name = self.by_cells(subject_ty, "$popIf", "$popIfCell");
+                helper(name, vec![subject, next()])
             }
-            Comb::Windows => helper(self, Helper::Windows, "$windows", vec![subject, next()]),
-            Comb::Chunks => helper(self, Helper::Chunks, "$chunks", vec![subject, next()]),
+            Comb::Windows => helper("$windows", vec![subject, next()]),
+            Comb::Chunks => helper("$chunks", vec![subject, next()]),
             // Of strings, one string; of `Vec`s or arrays, one array.
             Comb::Concat
                 if self
@@ -988,12 +969,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// The helper of items a closure takes `&mut`: of objects, `objects`;
     /// of what a `&mut` to is a cell, a number or text, `cells` (ADR 0315).
-    fn by_cells(
-        &self,
-        items: Ty<'tcx>,
-        objects: (Helper, &'static str),
-        cells: (Helper, &'static str),
-    ) -> (Helper, &'static str) {
+    fn by_cells(&self, items: Ty<'tcx>, objects: &'static str, cells: &'static str) -> &'static str {
         match self.slice_item(items).is_some_and(|item| self.is_object(item)) {
             true => objects,
             false => cells,
@@ -1096,40 +1072,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `chain` and `zip` are lazy when either side is (ADR 0128):
             // `iterator_call` says so in `lazy`.
             IterComb::Zip if lazy => {
-                self.runtime.insert(Helper::LazyZip);
                 let other = next();
-                // Of two arrays, which MIR's eager chains pair as one,
-                // `$zip(a, b)`, whose import goes where nothing reads it.
-                if super::iterators::is_stepped_items(&items) && super::iterators::is_stepped_items(&other) {
-                    self.runtime.insert(Helper::Zip);
-                }
                 Expr::call(Expr::helper("$lazyZip"), vec![items, other])
             }
-            IterComb::Zip => {
-                self.runtime.insert(Helper::Zip);
-                Expr::call(Expr::helper("$zip"), vec![items, next()])
-            }
-            IterComb::Chain if lazy => {
-                self.runtime.insert(Helper::LazyChain);
-                Expr::call(Expr::helper("$lazyChain"), vec![items, next()])
-            }
+            IterComb::Zip => Expr::call(Expr::helper("$zip"), vec![items, next()]),
+            IterComb::Chain if lazy => Expr::call(Expr::helper("$lazyChain"), vec![items, next()]),
             IterComb::Chain => method(items, "concat", vec![next()]),
-            IterComb::TakeWhile if lazy => {
-                self.runtime.insert(Helper::LazyTakeWhile);
-                Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()])
-            }
-            IterComb::TakeWhile => {
-                self.runtime.insert(Helper::TakeWhile);
-                Expr::call(Expr::helper("$takeWhile"), vec![items, next()])
-            }
-            IterComb::SkipWhile if lazy => {
-                self.runtime.insert(Helper::LazySkipWhile);
-                Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()])
-            }
-            IterComb::SkipWhile => {
-                self.runtime.insert(Helper::SkipWhile);
-                Expr::call(Expr::helper("$skipWhile"), vec![items, next()])
-            }
+            IterComb::TakeWhile if lazy => Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()]),
+            IterComb::TakeWhile => Expr::call(Expr::helper("$takeWhile"), vec![items, next()]),
+            IterComb::SkipWhile if lazy => Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()]),
+            IterComb::SkipWhile => Expr::call(Expr::helper("$skipWhile"), vec![items, next()]),
             IterComb::Scan => {
                 let items = if lazy {
                     method(items, "toArray", Vec::new())
@@ -1137,7 +1089,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     items
                 };
                 let (init, f) = (next(), next());
-                self.runtime.insert(Helper::Scan);
                 Expr::call(Expr::helper("$scan"), vec![items, init, f])
             }
             IterComb::StepBy => {
@@ -1182,7 +1133,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         Expr::arrow(vec!["a".into(), "b".into()], body)
                     }
                 };
-                self.runtime.insert(if max { Helper::MaxBy } else { Helper::MinBy });
                 Expr::call(Expr::var(if max { "$maxBy" } else { "$minBy" }), vec![items, compare])
             }
             IterComb::Product => {
@@ -1237,7 +1187,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     items
                 };
-                self.runtime.insert(Helper::Partition);
                 Expr::call(Expr::helper("$partition"), vec![items, next()])
             }
             IterComb::Unzip => {
@@ -1250,7 +1199,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     items
                 };
-                self.runtime.insert(Helper::Unzip);
                 Expr::call(Expr::helper("$unzip"), vec![items])
             }
         })

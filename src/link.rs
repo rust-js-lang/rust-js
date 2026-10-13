@@ -24,15 +24,14 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
         .into_iter()
         .map(|mut item| {
             resolve(&mut item.module, &item.imports, item.reserved_names);
-            // What it asked for, and each helper its tree holds, which is
-            // asked for by being written.
+            // Each helper its tree reads, asked for by being written.
             let mut written = Vec::new();
             crate::js::each_item_expr_mut(&mut item.module.items, &mut |e| {
                 if let Some(name) = e.helper_name() {
                     written.extend(crate::runtime::helper_of(name));
                 }
             });
-            item.module.runtime = crate::runtime::resolve(item.runtime.into_iter().chain(written));
+            item.module.runtime = crate::runtime::resolve(written);
             item.module
         })
         .collect();

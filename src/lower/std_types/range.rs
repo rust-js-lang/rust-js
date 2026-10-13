@@ -6,7 +6,6 @@ use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::display::{Pretty, join};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 
@@ -134,7 +133,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if kind == RangeKind::Inclusive {
                 list.push(Expr::bool(true));
             }
-            self.runtime.insert(Helper::CharRange);
             return Ok(Expr::call(Expr::helper("$charRange"), list));
         }
         let Some(num) = index.and_then(Num::of) else {
@@ -149,18 +147,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ if kind == RangeKind::Inclusive => Expr::bin(Op::Add, end.clone(), num.literal(1)),
                     _ => end.clone(),
                 };
-                let (helper, name) = if num.big() {
-                    (Helper::BigRange, "$bigRange")
-                } else {
-                    (Helper::Range, "$range")
-                };
-                self.runtime.insert(helper);
+                let name = if num.big() { "$bigRange" } else { "$range" };
                 Expr::call(Expr::var(name), vec![start.clone(), end])
             }
-            (RangeKind::From, [start]) => {
-                self.runtime.insert(Helper::LazyRange);
-                Expr::call(Expr::helper("$lazyRange"), vec![start.clone()])
-            }
+            (RangeKind::From, [start]) => Expr::call(Expr::helper("$lazyRange"), vec![start.clone()]),
             _ => return Err(self.unsupported(span, &format!("iterating over `{ty}`"))),
         })
     }
@@ -263,12 +253,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
             }
             let range = values.into_iter().next().expect("the range");
-            let (helper, name) = match (op, kind) {
-                (RangeOp::Next, RangeKind::From) => (Helper::RangeFromNext, "$rangeFromNext"),
-                (RangeOp::Next, _) => (Helper::RangeNext, "$rangeNext"),
-                _ => (Helper::RangeNextBack, "$rangeNextBack"),
+            let name = match (op, kind) {
+                (RangeOp::Next, RangeKind::From) => "$rangeFromNext",
+                (RangeOp::Next, _) => "$rangeNext",
+                _ => "$rangeNextBack",
             };
-            self.runtime.insert(helper);
             return Ok(Expr::call(Expr::var(name), vec![range]));
         }
         let range = values.into_iter().next().expect("the range");

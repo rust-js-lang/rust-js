@@ -32,7 +32,6 @@ use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::runtime::Helper;
 use rustc_ast::visit::{self, Visitor};
 use rustc_hir::def::CtorKind;
 use rustc_hir::{self as hir, intravisit};
@@ -374,7 +373,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `serde_json::to_string(&v)` and `to_string_pretty`: `$toJson((json) =>
     /// { .. }, pretty)`, the steps for `v` in a function the writer calls.
     pub(super) fn json_text(&mut self, value: Expr, ty: Ty<'tcx>, pretty: bool, span: Span) -> R<Expr> {
-        self.runtime.insert(Helper::ToJson);
         let write = self.json_writer(ty, span)?;
         Ok(Expr::call(
             Expr::helper("$toJson"),
@@ -486,7 +484,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(inner) = self.option_of(ty) {
             // Of a type parameter, a `Some` may be boxed (ADR 0051).
             let payload = if self.boxed_payload(inner) {
-                self.runtime.insert(Helper::SomeValue);
                 Expr::call(Expr::helper("$someValue"), vec![value.clone()])
             } else {
                 value.clone()
@@ -711,7 +708,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             });
             let mut body = Vec::new();
             if attrs.skip_serializing {
-                self.runtime.insert(Helper::JsonFail);
                 let message = format!(
                     "the enum variant {}::{} cannot be serialized",
                     self.tcx.item_name(adt.did()),

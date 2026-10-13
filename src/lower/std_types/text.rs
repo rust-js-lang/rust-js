@@ -10,7 +10,6 @@ use crate::lower::recognition::{Std, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
-use crate::runtime::Helper;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -201,7 +200,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Rust's `char::is_whitespace` has it: `$trim(s)`, which trims U+0085
     /// and keeps U+FEFF, where JS's `trim()` does the other (ADR 0183).
     pub(in crate::lower) fn trimmed(&mut self, s: Expr, start: bool, end: bool) -> Expr {
-        self.runtime.insert(Helper::Trim);
         let name = match (start, end) {
             (true, true) => "$trim",
             (true, false) => "$trimStart",
@@ -219,21 +217,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given: Vec<Expr>,
         out: &mut Vec<Stmt>,
     ) -> (Expr, Option<Expr>) {
-        let helper = |cx: &mut Self, helper: Helper, name: &'static str, mut list: Vec<Expr>| {
-            cx.runtime.insert(helper);
+        let helper = |name: &'static str, mut list: Vec<Expr>| {
             list.insert(0, current.clone());
             Expr::call(Expr::helper(name), list)
         };
         match edit {
             StringEdit::Clear => (Expr::str(""), None),
-            StringEdit::Truncate => (helper(self, Helper::StrTruncate, "$strTruncate", given), None),
-            StringEdit::Insert => (helper(self, Helper::InsertStr, "$insertStr", given), None),
-            StringEdit::ReplaceRange => (helper(self, Helper::StrEdits, "$replaceRange", given), None),
-            StringEdit::ExtendFromWithin => (helper(self, Helper::StrEdits, "$strExtendWithin", given), None),
-            StringEdit::AsciiCase { upper } => (
-                helper(self, Helper::AsciiCase, "$asciiCase", vec![Expr::bool(upper)]),
-                None,
-            ),
+            StringEdit::Truncate => (helper("$strTruncate", given), None),
+            StringEdit::Insert => (helper("$insertStr", given), None),
+            StringEdit::ReplaceRange => (helper("$replaceRange", given), None),
+            StringEdit::ExtendFromWithin => (helper("$strExtendWithin", given), None),
+            StringEdit::AsciiCase { upper } => (helper("$asciiCase", vec![Expr::bool(upper)]), None),
             StringEdit::Retain => {
                 let kept = Expr::call(
                     Expr::member(
@@ -245,13 +239,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (Expr::call(Expr::member(kept, "join"), vec![Expr::str("")]), None)
             }
             StringEdit::Pop | StringEdit::Remove | StringEdit::SplitOff | StringEdit::Drain => {
-                let (helper_id, name, label) = match edit {
-                    StringEdit::Pop => (Helper::StrPop, "$strPop", "popped"),
-                    StringEdit::SplitOff => (Helper::StrEdits, "$strSplitOff", "split"),
-                    StringEdit::Drain => (Helper::StrEdits, "$strDrain", "drained"),
-                    _ => (Helper::StrRemove, "$strRemove", "removed"),
+                let (name, label) = match edit {
+                    StringEdit::Pop => ("$strPop", "popped"),
+                    StringEdit::SplitOff => ("$strSplitOff", "split"),
+                    StringEdit::Drain => ("$strDrain", "drained"),
+                    _ => ("$strRemove", "removed"),
                 };
-                let pair = helper(self, helper_id, name, given);
+                let pair = helper(name, given);
                 let pair = self.spill(label, pair, out);
                 (
                     Expr::index(pair.clone(), Expr::int(0)),
@@ -295,10 +289,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
-        let call = |cx: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
-            cx.runtime.insert(helper);
-            Expr::call(Expr::helper(name), list)
-        };
+        let call = |name: &'static str, list: Vec<Expr>| Expr::call(Expr::helper(name), list);
         Ok(match op {
             TextOp::Is(regex) => method(Expr::regex(regex), "test", vec![arg()]),
             TextOp::IsAscii => {
@@ -319,7 +310,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method(arg(), "replace", vec![Expr::regex(letters), letter])
             }
             TextOp::ToDigit | TextOp::IsDigit => {
-                self.runtime.insert(Helper::ToDigit);
                 let digit = Expr::call(Expr::helper("$toDigit"), vec![arg(), arg()]);
                 if op == TextOp::IsDigit {
                     Expr::bin(Op::Ne, digit, Expr::undefined())
@@ -343,18 +333,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let mapped = method(arg(), if upper { "toUpperCase" } else { "toLowerCase" }, Vec::new());
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![mapped])
             }
-            TextOp::SplitBy => {
-                self.runtime.insert(Helper::SplitBy);
-                Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()])
-            }
+            TextOp::SplitBy => Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()]),
             TextOp::ContainsBy => {
                 let chars = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]);
                 method(chars, "some", vec![arg()])
             }
-            TextOp::Lines => {
-                self.runtime.insert(Helper::Lines);
-                Expr::call(Expr::helper("$lines"), vec![arg()])
-            }
+            TextOp::Lines => Expr::call(Expr::helper("$lines"), vec![arg()]),
             // `Array.from(new TextEncoder().encode(s))`: an array of `u8`s, as a
             // slice of them is.
             TextOp::Bytes => {
@@ -362,38 +346,34 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let encoded = Expr::call(Expr::member(encoder, "encode"), vec![arg()]);
                 Expr::call(Expr::member(Expr::var("Array"), "from"), vec![encoded])
             }
-            TextOp::SplitN => call(self, Helper::SplitN, "$splitN", vec![arg(), arg(), arg()]),
+            TextOp::SplitN => call("$splitN", vec![arg(), arg(), arg()]),
             TextOp::Rsplit(limited) => {
                 let mut list = vec![arg()];
                 let limit = limited.then(&mut arg);
                 list.push(arg());
                 list.extend(limit);
-                call(self, Helper::Rsplit, "$rsplit", list)
+                call("$rsplit", list)
             }
-            TextOp::SplitTerminator => call(self, Helper::SplitTerminator, "$splitTerminator", vec![arg(), arg()]),
-            TextOp::SplitInclusive => call(self, Helper::StrSearch, "$splitInclusive", vec![arg(), arg()]),
-            TextOp::RsplitTerminator => call(self, Helper::StrSearch, "$rsplitTerminator", vec![arg(), arg()]),
-            TextOp::RmatchIndices => call(self, Helper::StrSearch, "$rmatchIndices", vec![arg(), arg()]),
-            TextOp::Rmatches => call(self, Helper::StrSearch, "$rmatches", vec![arg(), arg()]),
-            TextOp::StrSplitAtChecked => call(self, Helper::StrSearch, "$splitAtChecked", vec![arg(), arg()]),
-            TextOp::EncodeUtf16 => call(self, Helper::StrSearch, "$encodeUtf16", vec![arg()]),
-            TextOp::Escape { kind: "default", .. } => call(self, Helper::CharEscape, "$escapeDefault", vec![arg()]),
-            TextOp::Escape { kind: "unicode", .. } => call(self, Helper::CharEscape, "$escapeUnicode", vec![arg()]),
-            TextOp::Escape { str, .. } => call(self, Helper::CharEscape, "$escapeDebug", vec![arg(), Expr::bool(str)]),
+            TextOp::SplitTerminator => call("$splitTerminator", vec![arg(), arg()]),
+            TextOp::SplitInclusive => call("$splitInclusive", vec![arg(), arg()]),
+            TextOp::RsplitTerminator => call("$rsplitTerminator", vec![arg(), arg()]),
+            TextOp::RmatchIndices => call("$rmatchIndices", vec![arg(), arg()]),
+            TextOp::Rmatches => call("$rmatches", vec![arg(), arg()]),
+            TextOp::StrSplitAtChecked => call("$splitAtChecked", vec![arg(), arg()]),
+            TextOp::EncodeUtf16 => call("$encodeUtf16", vec![arg()]),
+            TextOp::Escape { kind: "default", .. } => call("$escapeDefault", vec![arg()]),
+            TextOp::Escape { kind: "unicode", .. } => call("$escapeUnicode", vec![arg()]),
+            TextOp::Escape { str, .. } => call("$escapeDebug", vec![arg(), Expr::bool(str)]),
             // Its `&mut str`, a cell of the `char`'s text (ADR 0099).
             TextOp::EncodeUtf8 => {
-                let written = call(self, Helper::CharEscape, "$encodeUtf8", vec![arg(), arg()]);
+                let written = call("$encodeUtf8", vec![arg(), arg()]);
                 Expr::object(vec![Prop::Field("value".into(), written)])
             }
-            TextOp::DecodeUtf16 => call(self, Helper::CharEscape, "$decodeUtf16", vec![arg()]),
-            TextOp::FromUtf16 { lossy: false } => call(self, Helper::StrSearch, "$fromUtf16", vec![arg()]),
-            TextOp::FromUtf16 { lossy: true } => call(self, Helper::StrSearch, "$fromUtf16Lossy", vec![arg()]),
-            TextOp::CharBoundaryNear { ceil: false } => {
-                call(self, Helper::StrSearch, "$floorCharBoundary", vec![arg(), arg()])
-            }
-            TextOp::CharBoundaryNear { ceil: true } => {
-                call(self, Helper::StrSearch, "$ceilCharBoundary", vec![arg(), arg()])
-            }
+            TextOp::DecodeUtf16 => call("$decodeUtf16", vec![arg()]),
+            TextOp::FromUtf16 { lossy: false } => call("$fromUtf16", vec![arg()]),
+            TextOp::FromUtf16 { lossy: true } => call("$fromUtf16Lossy", vec![arg()]),
+            TextOp::CharBoundaryNear { ceil: false } => call("$floorCharBoundary", vec![arg(), arg()]),
+            TextOp::CharBoundaryNear { ceil: true } => call("$ceilCharBoundary", vec![arg(), arg()]),
             // ASCII whitespace, `u8::is_ascii_whitespace`'s, which isn't JS's.
             TextOp::TrimAscii { start, end } => {
                 let regex = match (start, end) {
@@ -403,8 +383,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::call(Expr::member(arg(), "replace"), vec![Expr::regex(regex), Expr::str("")])
             }
-            TextOp::SplitAt => call(self, Helper::SplitAt, "$splitAt", vec![arg(), arg()]),
-            TextOp::StrSliceBounds => call(self, Helper::StrSlice, "$strSlice", vec![arg(), arg(), arg()]),
+            TextOp::SplitAt => call("$splitAt", vec![arg(), arg()]),
+            TextOp::StrSliceBounds => call("$strSlice", vec![arg(), arg(), arg()]),
             TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. } => {
                 return Err(self.unsupported(span, "a part of a string, of its value alone"));
             }
@@ -413,7 +393,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if checked {
                     list.push(Expr::bool(true));
                 }
-                call(self, Helper::SliceSplitAt, "$sliceSplitAt", list)
+                call("$sliceSplitAt", list)
             }
             // `v.length === 0 ? undefined : [v[0], v.slice(1)]`.
             TextOp::SliceSplitFirst { last } => {
@@ -444,21 +424,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if owned {
                     list.push(Expr::bool(true));
                 }
-                call(self, Helper::Utf8, "$fromUtf8", list)
+                call("$fromUtf8", list)
             }
-            TextOp::Utf8Unchecked => call(self, Helper::Utf8, "$utf8Decode", vec![arg()]),
+            TextOp::Utf8Unchecked => call("$utf8Decode", vec![arg()]),
             TextOp::FromUtf8Mut { unchecked } => {
                 let mut list = vec![arg()];
                 if unchecked {
                     list.push(Expr::bool(true));
                 }
-                call(self, Helper::Utf8, "$fromUtf8Mut", list)
+                call("$fromUtf8Mut", list)
             }
-            TextOp::Utf8Lossy => call(self, Helper::Utf8, "$utf8Lossy", vec![arg()]),
-            TextOp::EscapeAscii => call(self, Helper::Utf8, "$escapeAscii", vec![arg()]),
-            TextOp::Utf8Chunks => call(self, Helper::Utf8, "$utf8Chunks", vec![arg()]),
+            TextOp::Utf8Lossy => call("$utf8Lossy", vec![arg()]),
+            TextOp::EscapeAscii => call("$escapeAscii", vec![arg()]),
+            TextOp::Utf8Chunks => call("$utf8Chunks", vec![arg()]),
             TextOp::Utf8Part(name) => Expr::member(arg(), name),
-            TextOp::ParseErrorKind => call(self, Helper::DebugParseError, "$parseErrorKind", vec![arg()]),
+            TextOp::ParseErrorKind => call("$parseErrorKind", vec![arg()]),
             TextOp::SliceStartsWith { end } => {
                 let mut list = vec![arg(), arg()];
                 let eq = self.item_eq(generic_args.type_at(0), span)?;
@@ -466,17 +446,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(Expr::bool(end));
                 }
                 list.extend(eq);
-                call(self, Helper::SliceStartsWith, "$sliceStartsWith", list)
+                call("$sliceStartsWith", list)
             }
-            TextOp::BytesAsciiEq => call(self, Helper::BytesAsciiEq, "$bytesAsciiEq", vec![arg(), arg()]),
-            TextOp::MatchIndices => call(self, Helper::MatchIndices, "$matchIndices", vec![arg(), arg()]),
-            TextOp::Matches => call(self, Helper::Matches, "$matches", vec![arg(), arg()]),
+            TextOp::BytesAsciiEq => call("$bytesAsciiEq", vec![arg(), arg()]),
+            TextOp::MatchIndices => call("$matchIndices", vec![arg(), arg()]),
+            TextOp::Matches => call("$matches", vec![arg(), arg()]),
             TextOp::TrimMatches { start, end } => {
                 let mut list = vec![arg(), arg()];
                 if !(start && end) {
                     list.extend([Expr::bool(start), Expr::bool(end)]);
                 }
-                call(self, Helper::TrimMatches, "$trimMatches", list)
+                call("$trimMatches", list)
             }
             TextOp::Parse => {
                 let target = generic_args
@@ -485,12 +465,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .ok_or_else(|| self.unsupported(span, "this `parse`"))?;
                 self.parse_as(arg(), target, span, out)?
             }
-            TextOp::ByteLen => {
-                self.runtime.insert(Helper::ByteLen);
-                Expr::call(Expr::helper("$byteLen"), vec![arg()])
-            }
-            TextOp::FindBy(last) => call(self, Helper::FindBy, "$findBy", vec![arg(), arg(), Expr::bool(last)]),
-            TextOp::StartsBy { end } => call(self, Helper::StartsBy, "$startsBy", vec![arg(), arg(), Expr::bool(end)]),
+            TextOp::ByteLen => Expr::call(Expr::helper("$byteLen"), vec![arg()]),
+            TextOp::FindBy(last) => call("$findBy", vec![arg(), arg(), Expr::bool(last)]),
+            TextOp::StartsBy { end } => call("$startsBy", vec![arg(), arg(), Expr::bool(end)]),
             // Rust's ASCII whitespace: space, tab, line feed, form feed and
             // carriage return, not JS's `\s`.
             TextOp::SplitAsciiWhitespace => {
@@ -503,25 +480,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method(pieces, "filter", vec![nonempty])
             }
             TextOp::IsCharBoundary => {
-                let unit = call(self, Helper::CharBoundary, "$charBoundary", vec![arg(), arg()]);
+                let unit = call("$charBoundary", vec![arg(), arg()]);
                 Expr::bin(Op::Ne, unit, Expr::undefined())
             }
-            TextOp::CharLen { utf16: false } => call(self, Helper::ByteLen, "$byteLen", vec![arg()]),
+            TextOp::CharLen { utf16: false } => call("$byteLen", vec![arg()]),
             TextOp::CharLen { utf16: true } => Expr::member(arg(), "length"),
             TextOp::CharFromByte => Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![arg()]),
             TextOp::Find(last) => {
-                let (helper, name) = if last {
-                    (Helper::Rfind, "$rfind")
-                } else {
-                    (Helper::Find, "$find")
-                };
-                self.runtime.insert(helper);
+                let name = if last { "$rfind" } else { "$find" };
                 Expr::call(Expr::var(name), vec![arg(), arg()])
             }
-            TextOp::CharIndices => {
-                self.runtime.insert(Helper::CharIndices);
-                Expr::call(Expr::helper("$charIndices"), vec![arg()])
-            }
+            TextOp::CharIndices => Expr::call(Expr::helper("$charIndices"), vec![arg()]),
             TextOp::Slice
             | TextOp::StrSlice
             | TextOp::StrGet
@@ -545,38 +514,28 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         if let Some(num) = Num::of(target) {
             if num == Num::F64 {
-                self.runtime.insert(Helper::ParseF64);
                 return Ok(Expr::call(Expr::helper("$parseF64"), vec![text]));
             }
             // The digits' nearest `f32`, which through an `f64` alone can be
             // missed (ADR 0122).
             if num == Num::F32 {
-                self.runtime.insert(Helper::ParseF32);
                 return Ok(Expr::call(Expr::helper("$parseF32"), vec![text]));
             }
             let (lo, hi) = num.range();
             // A 64-bit one is read as a BigInt, exactly (ADR 0086).
-            let (helper, name) = if num.big() {
-                (Helper::ParseBig, "$parseBig")
-            } else {
-                (Helper::ParseInt, "$parseInt")
-            };
-            self.runtime.insert(helper);
+            let name = if num.big() { "$parseBig" } else { "$parseInt" };
             let parsed = Expr::call(Expr::var(name), vec![text, num.literal(lo), num.literal(hi as i128)]);
             // A `NonZero`'s, an error of `0` (ADR 0177).
             if crate::lower::recognition::is_non_zero_ty(target) {
-                self.runtime.insert(Helper::NonZeroOk);
                 let zero = Expr::str("number would be zero for non-zero type");
                 return Ok(Expr::call(Expr::helper("$nonZeroOk"), vec![parsed, zero]));
             }
             return Ok(parsed);
         }
         if target.is_bool() {
-            self.runtime.insert(Helper::ParseBool);
             return Ok(Expr::call(Expr::helper("$parseBool"), vec![text]));
         }
         if target.is_char() {
-            self.runtime.insert(Helper::ParseChar);
             return Ok(Expr::call(Expr::helper("$parseChar"), vec![text]));
         }
         if self.is_lang_adt(target, LangItem::String) {
@@ -621,7 +580,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // Checked as `slice::range` checks it, its end first, not as
         // `&v[a..b]` is: `v.push(...$copyRange(v, a, b))`.
         if op == TextOp::ExtendFromWithin {
-            self.runtime.insert(Helper::SliceRange);
             return Expr::call(
                 Expr::member(items, "push"),
                 vec![Expr::spread(Expr::call(Expr::helper("$copyRange"), list))],
@@ -631,7 +589,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             list.push(Expr::member(items, "length"));
         }
         list.extend(rest);
-        self.runtime.insert(Helper::Splice);
         Expr::call(Expr::helper("$splice"), list)
     }
 
@@ -651,12 +608,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `items` from `start` to `end`, or to their end, as `op` takes them.
     fn sliced(&mut self, op: TextOp, items: Expr, start: Expr, end: Option<Expr>) -> Expr {
-        let (helper, name) = match op {
-            TextOp::Drain => (Helper::Drain, "$drain"),
-            TextOp::StrSlice => (Helper::StrSlice, "$strSlice"),
-            TextOp::StrGet => (Helper::StrGet, "$strGet"),
-            TextOp::SliceGet => (Helper::SliceGet, "$sliceGet"),
-            _ => (Helper::SliceRange, "$slice"),
+        let name = match op {
+            TextOp::Drain => "$drain",
+            TextOp::StrSlice => "$strSlice",
+            TextOp::StrGet => "$strGet",
+            TextOp::SliceGet => "$sliceGet",
+            _ => "$slice",
         };
         // `&s[..]` of a string: all of it, which is never out of bounds, nor
         // inside a character.
@@ -664,13 +621,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return items;
         }
         // `&v[..]` of a slice: all of it, never out of bounds (ADR 0335).
-        if helper == Helper::SliceRange && start.as_int() == Some(0) && end.is_none() {
+        if name == "$slice" && start.as_int() == Some(0) && end.is_none() {
             return items;
         }
-        self.runtime.insert(helper);
         let mut list = vec![items, start];
         list.extend(end);
-        Expr::call(Expr::var(name), list)
+        Expr::call_helper(name, list)
     }
 
     /// Of `cell`, a `&mut str`'s, and what's `given`, a range's bounds or a
@@ -688,7 +644,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::StrGetMut => "$strGetMut",
             _ => "$strPart",
         };
-        self.runtime.insert(Helper::StrPart);
         Expr::call(Expr::var(name), list)
     }
 
@@ -744,7 +699,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // another, `$replacen`'s first that many.
                 if name == "replace" {
                     if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {
-                        self.runtime.insert(Helper::EmptyPattern);
                         return Ok(Some(Expr::call(Expr::helper("$replacen"), [vec![this], rest].concat())));
                     }
                     rest.truncate(2);
@@ -755,7 +709,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && !generic_args.types().next().is_some_and(|p| p.is_char())
                     && !matches!(&rest[0].kind, js::ExprKind::Str(s) if !s.is_empty());
                 if may_be_empty {
-                    self.runtime.insert(Helper::EmptyPattern);
                     let helper = if name == "split" { "$split" } else { "$replace" };
                     return Ok(Some(Expr::call(Expr::var(helper), [vec![this], rest].concat())));
                 }
@@ -765,24 +718,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::read(this, name, rest)
             }
             Std::StripPrefix | Std::StripSuffix | Std::SplitOnce | Std::RsplitOnce => {
-                let (helper, name) = match known {
-                    Std::StripPrefix => (Helper::StripPrefix, "$stripPrefix"),
-                    Std::StripSuffix => (Helper::StripSuffix, "$stripSuffix"),
-                    Std::SplitOnce => (Helper::SplitOnce, "$splitOnce"),
-                    _ => (Helper::RsplitOnce, "$rsplitOnce"),
+                let name = match known {
+                    Std::StripPrefix => "$stripPrefix",
+                    Std::StripSuffix => "$stripSuffix",
+                    Std::SplitOnce => "$splitOnce",
+                    _ => "$rsplitOnce",
                 };
-                self.runtime.insert(helper);
                 Expr::call(Expr::var(name), vec![arg(), arg()])
             }
-            Std::StripCircumfix => {
-                self.runtime.insert(Helper::StripCircumfix);
-                Expr::call(Expr::helper("$stripCircumfix"), vec![arg(), arg(), arg()])
-            }
+            Std::StripCircumfix => Expr::call(Expr::helper("$stripCircumfix"), vec![arg(), arg(), arg()]),
             Std::Chars => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]),
             Std::StringNew => Expr::str(""),
             Std::Trim { start, end } => self.trimmed(arg(), start, end),
             Std::AsciiCase { upper } => {
-                self.runtime.insert(Helper::AsciiCase);
                 let mut list = vec![arg()];
                 if upper {
                     list.push(Expr::bool(true));
@@ -790,7 +738,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::call(Expr::helper("$asciiCase"), list)
             }
             Std::AsciiEq => {
-                self.runtime.insert(Helper::AsciiCase);
                 let (a, b) = (arg(), arg());
                 Expr::bin(
                     Op::Eq,
