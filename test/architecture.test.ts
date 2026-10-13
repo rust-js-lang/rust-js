@@ -221,6 +221,14 @@ test("each runtime helper is asked for, or needed by another", () => {
   expect(unasked).toEqual([]);
 });
 
+// A helper is written as the runtime's, `Expr::helper("$cmp")`, which asks
+// for it (ADR 0103): its name written apart, `Expr::var("$cmp")`, and the
+// helper asked for apart, is what's left to move, a count that only falls.
+test("helpers' names written apart only fall", () => {
+  const apart = ["src/lower.rs", ...files("src/lower")].reduce((n, file) => n + read(file).split('Expr::var("$').length - 1, 0);
+  expect(apart).toBeLessThanOrEqual(182);
+});
+
 // Printing lays out what it's given: what a helper means, the same place
 // `$index(v, i)` names, or a statement's readable form, `s += t`, is
 // decided before it (the third architecture audit: the printer decided

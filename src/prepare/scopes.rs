@@ -298,6 +298,7 @@ impl Walk {
     fn expr(&mut self, e: &Expr) {
         match &e.kind {
             ExprKind::Var(name) => self.read(name),
+            ExprKind::Helper(name) => self.read(name),
             // What the printer writes of JS's own: `String(x)`, `undefined`,
             // `NaN` and `Infinity`.
             ExprKind::Stringed(a) => {

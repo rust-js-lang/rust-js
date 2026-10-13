@@ -4067,7 +4067,7 @@ fn checked_sets(stmts: &mut Vec<Stmt>) {
         {
             let checked = Expr::index(
                 items.clone(),
-                Expr::call(Expr::var("$at"), vec![items.clone(), index.clone()]),
+                Expr::call_helper("$at", vec![items.clone(), index.clone()]),
             );
             if let StmtKind::Assign(target, _) = &mut stmts[i + 1].kind {
                 *target = Expr {
@@ -4394,7 +4394,7 @@ fn lazy_range(e: &Expr) -> Option<Expr> {
         },
         false => range.end.clone(),
     };
-    Some(Expr::call(Expr::var("$lazyRange"), vec![range.start.clone(), end]))
+    Some(Expr::call_helper("$lazyRange", vec![range.start.clone(), end]))
 }
 
 /// A map of an array's items nothing reads, `next_back` having stepped its

@@ -1,6 +1,7 @@
 # 0103. The runtime is a package, `@rust-js/runtime`, as ReScript's is
 
-Status: Accepted. Replaces [0012](0012-panics-and-runtime-helpers.md)'s helpers,
+Status: Accepted. (Amended: a helper is written as the runtime's, which
+asks for it.) Replaces [0012](0012-panics-and-runtime-helpers.md)'s helpers,
 each module's own, and amends [0019](0019-one-js-file-per-module.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
@@ -52,6 +53,15 @@ compiler's version, released with it, as ReScript's is:
   scanned, which a string could fool). What only another helper uses,
   the package has for it. There's no other way to have them: every build,
   one file's or Cargo's, imports the package, as every ReScript module does.
+- **A helper is written as the runtime's, which asks for it:**
+  `Expr::helper("$lazyRange")`, a node of its own the linker finds, which
+  the module asks for, by the helper that declares it, by being written.
+  (Amended: a helper was asked for, `Helper::LazyRange`, and its name
+  written, `$lazyRange`, apart; one written and not asked for was a
+  ReferenceError where it runs, and tidying wrote two so, asked for ahead
+  by what it tidies, a helper's dependency that wasn't one; found by the
+  third architecture audit. The names written apart are being moved to
+  it, and a ratchet holds their count, which only falls.)
 - **A helper's state is the app's now, not each module's:** `$printed`, the
   unfinished line of a `print!` in a browser, is one buffer for every
   module, as Rust has one stdout.

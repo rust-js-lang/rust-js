@@ -872,6 +872,7 @@ fn expr(e: &mut Expr) {
         | ExprKind::GivenUndefined
         | ExprKind::Null
         | ExprKind::Var(_)
+        | ExprKind::Helper(_)
         | ExprKind::Symbol(_)
         | ExprKind::FunctionHole(_)
         | ExprKind::Import(_)

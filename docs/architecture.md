@@ -500,7 +500,8 @@ architecture audit found the rest.
   `{stem}.js`, takes every JS file the compiler wrote, and finds `main`
   by a regular expression over the JS; a manifest of it, which would say
   whether the program has a `main`, is what build hosts read.
-- **Runtime helpers as symbols:** lowering asks for a helper and writes its
-  name, `$cmp`, apart. One written and not asked for is refused as its
-  module is planned, not a JS error where it runs; as a symbol the linker
-  resolves, it couldn't be written so.
+- **Runtime helpers as symbols:** a helper written as the runtime's,
+  `Expr::helper("$cmp")`, is asked for by being written (ADR 0103); most
+  are still asked for, `Helper::Cmp`, and their names written apart,
+  `Expr::var("$cmp")`, which a ratchet holds to fall. One written and not
+  asked for is refused as its module is planned.

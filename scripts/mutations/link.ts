@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "            StmtKind::Function(_) => {}\n",
     tests: ["test/lowering.test.ts","-t","local function there"],
   },
+  {
+    name: "written-helper-unasked",
+    breaks: "a helper written as the runtime's, tidying's `$lazyRange(0, n)`, isn't asked for, and its module doesn't import it: a ReferenceError where it runs",
+    file: "src/link.rs",
+    find: "                    written.extend(crate::runtime::helper_of(name));\n",
+    replace: "                    let _ = name;\n",
+    tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped"],
+  },
 ];

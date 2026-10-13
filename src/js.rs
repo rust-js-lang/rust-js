@@ -670,6 +670,9 @@ pub struct Symbol {
 
 #[derive(Clone)]
 pub enum ExprKind {
+    /// A helper of the runtime's, `$cmp`, by the name it exports (ADR 0103):
+    /// written, it's asked for, as its module imports what its tree holds.
+    Helper(&'static str),
     Num(f64),
     /// A `u64` or an `i64` (ADR 0086): `5n`.
     BigInt(i128),
@@ -904,6 +907,18 @@ impl Expr {
 
     pub fn var(name: &str) -> Expr {
         Expr::new(ExprKind::Var(name.to_string()))
+    }
+
+    /// The runtime's helper `name` exports, `$cmp`: asked for by being
+    /// written. A name the runtime doesn't export is a bug of rust-js's.
+    pub fn helper(name: &'static str) -> Expr {
+        assert!(crate::runtime::exports(name), "the runtime exports no `{name}`");
+        Expr::new(ExprKind::Helper(name))
+    }
+
+    /// A call of the runtime's helper `name`, `$cmp(a, b)`.
+    pub fn call_helper(name: &'static str, args: Vec<Expr>) -> Expr {
+        Expr::call(Expr::helper(name), args)
     }
 
     pub fn drop_argument(item: u32, index: u32, drop: Expr) -> Expr {
@@ -1240,6 +1255,7 @@ impl Expr {
                 jsx.children.iter_mut().for_each(|c| c.each_mut(f));
             }
             ExprKind::Var(_)
+            | ExprKind::Helper(_)
             | ExprKind::Num(_)
             | ExprKind::BigInt(_)
             | ExprKind::BigUint(_)
@@ -1268,6 +1284,7 @@ impl Expr {
         };
         match &self.kind {
             ExprKind::Var(name) => read(name),
+            ExprKind::Helper(name) => read(name),
             ExprKind::Member(a, _)
             | ExprKind::OptionalMember(a, _)
             | ExprKind::Unary(_, a)
@@ -1357,6 +1374,7 @@ impl Expr {
             | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Var(_)
+            | ExprKind::Helper(_)
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
@@ -1480,7 +1498,8 @@ impl Expr {
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
-            | ExprKind::Regex(_) => self.kind.clone(),
+            | ExprKind::Regex(_)
+            | ExprKind::Helper(_) => self.kind.clone(),
         };
         Some(Expr {
             reads: false,
@@ -1663,6 +1682,7 @@ impl Expr {
             | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Var(_)
+            | ExprKind::Helper(_)
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
             | ExprKind::FunctionHole(_)

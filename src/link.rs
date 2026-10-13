@@ -24,7 +24,15 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
         .into_iter()
         .map(|mut item| {
             resolve(&mut item.module, &item.imports, item.reserved_names);
-            item.module.runtime = crate::runtime::resolve(item.runtime);
+            // What it asked for, and each helper its tree holds, which is
+            // asked for by being written.
+            let mut written = Vec::new();
+            crate::js::each_item_expr_mut(&mut item.module.items, &mut |e| {
+                if let ExprKind::Helper(name) = e.kind {
+                    written.extend(crate::runtime::helper_of(name));
+                }
+            });
+            item.module.runtime = crate::runtime::resolve(item.runtime.into_iter().chain(written));
             item.module
         })
         .collect();
@@ -204,6 +212,7 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
     match &mut e.kind {
         ExprKind::Symbol(_) => {}
         ExprKind::Var(n) => visitor.name(n),
+        ExprKind::Helper(n) => visitor.name(n),
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)

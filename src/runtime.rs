@@ -322,6 +322,17 @@ const PURE: &[&str] = &[
     "$displayF64",
 ];
 
+/// The helper that declares `name`, an export of the runtime's.
+pub(crate) fn helper_of(name: &str) -> Option<Helper> {
+    static OWNERS: std::sync::LazyLock<std::collections::HashMap<&'static str, Helper>> =
+        std::sync::LazyLock::new(|| {
+            (Helper::ALL.iter())
+                .flat_map(|&helper| declared(helper.source()).map(move |name| (name, helper)))
+                .collect()
+        });
+    OWNERS.get(name).copied()
+}
+
 /// Whether `name` is a helper whose call names a place, the same one each
 /// time it's given the same: `$index(v, i)`, an item, checked (ADR 0056).
 pub(crate) fn names_a_place(name: &str) -> bool {
@@ -403,9 +414,7 @@ impl Helper {
     fn dependencies(self) -> &'static [Helper] {
         match self {
             Helper::DebugF64 => &[Helper::DisplayF64],
-            // A range of numbers made where it's stepped is its numbers,
-            // made as they're stepped, `$lazyRange(a, b)` (`range_items`).
-            Helper::RangeNext | Helper::RangeInclusiveNext => &[Helper::CharStep, Helper::LazyRange],
+            Helper::RangeNext | Helper::RangeInclusiveNext => &[Helper::CharStep],
             Helper::RangeNextBack | Helper::RangeInclusiveNextBack => &[Helper::CharStep],
             Helper::FmtError => &[Helper::Print],
             Helper::DisplayF32 => &[Helper::F32Digits],

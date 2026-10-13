@@ -5296,8 +5296,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.spill("index", index, out)
             };
             self.runtime.insert(Helper::Index);
-            // And `$at`, the place tidy writes where it's set next.
-            self.runtime.insert(Helper::At);
             let check = Expr::call(Expr::var("$index"), vec![items.clone(), index.clone()]);
             out.push(StmtKind::Expr(check).at(self.js_span(span)));
             return Ok(Value::Ref(Expr::index(items, index)));
