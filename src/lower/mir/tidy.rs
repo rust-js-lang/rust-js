@@ -10,6 +10,8 @@ use crate::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
 use super::negate;
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
+mod decisions;
+
 /// What MIR's lowering, and THIR, say of a body for tidying it.
 pub(super) struct Hints<'h> {
     /// The name of the function's return place.
@@ -118,6 +120,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // The innermost first: what a loop ends with may be another, recovered.
     let mut taken = mentions.clone();
     bottom_up(body, &mut |stmts| loops(stmts, &mut taken));
+    // A match's tree of tests, its arms reached through a block MIR made:
+    // the chain of its arms, now that the loops are made.
+    bottom_up(body, &mut decisions::decisions);
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
     js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
     js::statement_lists(body, &mut unlabeled);
@@ -219,6 +224,12 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A check MIR wrote first in a chain's last `else`: the chain's arm.
     js::statement_lists(body, &mut |stmts| chained_checks(stmts));
     js::statement_lists(body, &mut unlabeled);
+    // A value a block MIR made gives where nothing else does: given first,
+    // and the block's `break`s that go where it ends anyway, gone.
+    js::statement_lists(body, &mut |stmts| decisions::default_values(stmts));
+    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
+    js::statement_lists(body, &mut unlabeled);
+    declarations(body);
     // `x != null && typeof x === "string"`: the `typeof` test, which says it.
     js::each_expr_mut(body, &mut typeof_tests);
     // A loop's test those read in place now, `while (true) { if (!(m.length

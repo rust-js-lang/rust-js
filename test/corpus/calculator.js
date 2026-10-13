@@ -92,70 +92,43 @@ function number(chars) {
 function tokenize(source) {
   const tokens = [];
   const chars = $iter(Array.from(source));
-  let name;
   while (true) {
     const c = $peek(chars);
     if (c == null) {
       return { TAG: "Ok", _0: tokens };
     }
-    bb57: {
-      bb21: {
-        bb22: {
-          if (c === " ") {
-            $next(chars);
-            break bb57;
-          } else if (c === ".") {
-            break bb21;
-          } else if (c !== "_") {
-            if (c === "+" || c === "-" || c === "*" || c === "/" || c === "^") {
-              tokens.push({ TAG: "Op", _0: c });
-              $next(chars);
-              break bb57;
-            } else if (c === "(") {
-              tokens.push("LParen");
-              $next(chars);
-              break bb57;
-            } else if (c === ")") {
-              tokens.push("RParen");
-              $next(chars);
-              break bb57;
-            } else if (c === ",") {
-              tokens.push("Comma");
-              $next(chars);
-              break bb57;
-            } else if (c !== "=") {
-              if (c >= "0") {
-                if (c <= "9") {
-                  break bb21;
-                }
-              }
-              if (c >= "a") {
-                if (c <= "z") {
-                  break bb22;
-                }
-              }
-              if (!(c >= "A") || !(c <= "Z")) {
-                return { TAG: "Err", _0: { TAG: "Unexpected", _0: c } };
-              }
-            } else {
-              tokens.push("Assign");
-              $next(chars);
-              break bb57;
-            }
-          }
-        }
-        name = "";
-        while (true) {
-          const c = $nextIf(chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
-          if (c != null) {
-            name += c;
-          } else {
-            tokens.push({ TAG: "Ident", _0: name });
-            break bb57;
-          }
+    if (c === " ") {
+      $next(chars);
+    } else if ((c >= "0" && c <= "9") || c === ".") {
+      tokens.push({ TAG: "Num", _0: number(chars) });
+    } else if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_") {
+      let name = "";
+      while (true) {
+        const c = $nextIf(chars, (c) => !!/^[\p{Alphabetic}\p{N}]$/u.test(c) || c === "_");
+        if (c != null) {
+          name += c;
+        } else {
+          tokens.push({ TAG: "Ident", _0: name });
+          break;
         }
       }
-      tokens.push({ TAG: "Num", _0: number(chars) });
+    } else if (c === "+" || c === "-" || c === "*" || c === "/" || c === "^") {
+      tokens.push({ TAG: "Op", _0: c });
+      $next(chars);
+    } else if (c === "(") {
+      tokens.push("LParen");
+      $next(chars);
+    } else if (c === ")") {
+      tokens.push("RParen");
+      $next(chars);
+    } else if (c === ",") {
+      tokens.push("Comma");
+      $next(chars);
+    } else if (c === "=") {
+      tokens.push("Assign");
+      $next(chars);
+    } else {
+      return { TAG: "Err", _0: { TAG: "Unexpected", _0: c } };
     }
   }
 }
@@ -256,27 +229,25 @@ const Parser = {
                     if (Parser.peek(parser) !== "RParen") {
                       const value = args;
                       const result$1 = Parser.expr(parser);
-                      bb127: {
-                        if (result$1.TAG !== "Err") {
-                          value.push(result$1._0);
-                          while (true) {
-                            if (Parser.peek(parser) === "Comma") {
-                              Parser.next(parser);
-                              const value = args;
-                              const result$1 = Parser.expr(parser);
-                              if (result$1.TAG !== "Err") {
-                                value.push(result$1._0);
-                                continue;
-                              } else {
-                                result = result$1;
-                                break bb127;
-                              }
+                      if (result$1.TAG !== "Err") {
+                        value.push(result$1._0);
+                        while (true) {
+                          if (Parser.peek(parser) === "Comma") {
+                            Parser.next(parser);
+                            const value = args;
+                            const result$1 = Parser.expr(parser);
+                            if (result$1.TAG !== "Err") {
+                              value.push(result$1._0);
+                              continue;
+                            } else {
+                              result = result$1;
+                              break;
                             }
-                            break bb69;
                           }
-                        } else {
-                          result = result$1;
+                          break bb69;
                         }
+                      } else {
+                        result = result$1;
                       }
                       break bb128;
                     }

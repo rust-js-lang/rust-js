@@ -660,7 +660,7 @@ test("string methods are JS's, and format! is a template literal", async () => {
   expect(js).toContain('  const c = windows ? "\\\\" : "/";');
   // A string literal pattern is `===` on the JS string, without `!= null` in `Some`.
   expect(js).toContain('  }\n  if (s === "abc" || s === "stats.rs") {');
-  expect(js).toContain("      if (value[0] === \"ab\") {");
+  expect(js).toContain("    if (value[0] === \"ab\") {");
 });
 
 // ADR 0033: enums with fields, in ReScript's shapes.
@@ -717,9 +717,8 @@ test("options are the value or undefined", async () => {
   // Let chains (ADR 0048): one test when the parts need nothing else,
   expect(js).toContain("  const h = half(n);\n  if (h != null && h > 2) {\n    return h;\n  }\n  return -1;");
   // an `if` inside for a `let` of a call, only made once the rest held, and
-  // an `else` of one statement at each level a test fails at, as a person
-  // writes it;
-  expect(js).toContain("  const h = half(n);\n  let v;\n  bb15: {\n    if (h != null && h !== 0) {\n      const q = counted(h);\n      if (q != null && q > 1) {\n        v = q;\n        break bb15;\n      }\n    }\n    v = 0;\n  }");
+  // the `else`'s value given first, as a person writes a default;
+  expect(js).toContain("  const h = half(n);\n  let v = 0;\n  if (h != null && h !== 0) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      v = q;\n    }\n  }");
   // a longer one after both, in a block the `then` leaves.
   expect(js).toContain("  const h = half(n);\n  if (h != null) {\n    const q = counted(h);\n    if (q != null && q > 1) {\n      return q;\n    }\n  }\n  calls = (calls + 10) | 0;\n  return -calls | 0;");
   expect([options.chained_long_else(8), options.chained_long_else(4), options.chained_long_else(3)]).toEqual([2, -11, -10]);

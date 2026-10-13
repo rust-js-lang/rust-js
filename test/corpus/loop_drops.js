@@ -303,23 +303,108 @@ function main() {
                                 throw error;
                               }
                               _217$live = true;
-                              bb209: {
-                                if (tmp$9) {
-                                  const row = tmp$9;
-                                  tmp$10 = undefined;
-                                  tmp$10 = [["x1"], ["x2"]];
+                              if (tmp$9) {
+                                const row = tmp$9;
+                                tmp$10 = undefined;
+                                tmp$10 = [["x1"], ["x2"]];
+                                try {
+                                  iter$8 = $iter(tmp$10);
+                                } catch (error) {
+                                  noisyDrop_drop(row);
+                                  for (const item of iter$7) {
+                                    noisyDrop_drop(item);
+                                  }
+                                  throw error;
+                                }
+                                while (true) {
                                   try {
-                                    iter$8 = $iter(tmp$10);
+                                    tmp$11 = $next(iter$8);
                                   } catch (error) {
+                                    for (const item of iter$8) {
+                                      noisyDrop_drop(item);
+                                    }
                                     noisyDrop_drop(row);
                                     for (const item of iter$7) {
                                       noisyDrop_drop(item);
                                     }
                                     throw error;
                                   }
-                                  while (true) {
+                                  _231$live = true;
+                                  if (!tmp$11) {
+                                    _231$live = false;
                                     try {
-                                      tmp$11 = $next(iter$8);
+                                      for (const item of iter$8) {
+                                        noisyDrop_drop(item);
+                                      }
+                                    } catch (error) {
+                                      noisyDrop_drop(row);
+                                      for (const item of iter$7) {
+                                        noisyDrop_drop(item);
+                                      }
+                                      throw error;
+                                    }
+                                    try {
+                                      noisyDrop_drop(row);
+                                    } catch (error) {
+                                      for (const item of iter$7) {
+                                        noisyDrop_drop(item);
+                                      }
+                                      throw error;
+                                    }
+                                    _217$live = false;
+                                    continue outer;
+                                  } else {
+                                    const cell = tmp$11;
+                                    if (cell[0] === "x2" && row[0] === "r1") {
+                                      try {
+                                        noisyDrop_drop(cell);
+                                      } catch (error) {
+                                        for (const item of iter$8) {
+                                          noisyDrop_drop(item);
+                                        }
+                                        noisyDrop_drop(row);
+                                        for (const item of iter$7) {
+                                          noisyDrop_drop(item);
+                                        }
+                                        throw error;
+                                      }
+                                      _231$live = false;
+                                      try {
+                                        for (const item of iter$8) {
+                                          noisyDrop_drop(item);
+                                        }
+                                      } catch (error) {
+                                        noisyDrop_drop(row);
+                                        for (const item of iter$7) {
+                                          noisyDrop_drop(item);
+                                        }
+                                        throw error;
+                                      }
+                                      try {
+                                        noisyDrop_drop(row);
+                                      } catch (error) {
+                                        for (const item of iter$7) {
+                                          noisyDrop_drop(item);
+                                        }
+                                        throw error;
+                                      }
+                                      break;
+                                    }
+                                    try {
+                                      console.log(`cell ${row[0]} ${cell[0]}`);
+                                    } catch (error) {
+                                      noisyDrop_drop(cell);
+                                      for (const item of iter$8) {
+                                        noisyDrop_drop(item);
+                                      }
+                                      noisyDrop_drop(row);
+                                      for (const item of iter$7) {
+                                        noisyDrop_drop(item);
+                                      }
+                                      throw error;
+                                    }
+                                    try {
+                                      noisyDrop_drop(cell);
                                     } catch (error) {
                                       for (const item of iter$8) {
                                         noisyDrop_drop(item);
@@ -330,94 +415,7 @@ function main() {
                                       }
                                       throw error;
                                     }
-                                    _231$live = true;
-                                    if (!tmp$11) {
-                                      _231$live = false;
-                                      try {
-                                        for (const item of iter$8) {
-                                          noisyDrop_drop(item);
-                                        }
-                                      } catch (error) {
-                                        noisyDrop_drop(row);
-                                        for (const item of iter$7) {
-                                          noisyDrop_drop(item);
-                                        }
-                                        throw error;
-                                      }
-                                      try {
-                                        noisyDrop_drop(row);
-                                      } catch (error) {
-                                        for (const item of iter$7) {
-                                          noisyDrop_drop(item);
-                                        }
-                                        throw error;
-                                      }
-                                      _217$live = false;
-                                      continue outer;
-                                    } else {
-                                      const cell = tmp$11;
-                                      if (cell[0] === "x2" && row[0] === "r1") {
-                                        try {
-                                          noisyDrop_drop(cell);
-                                        } catch (error) {
-                                          for (const item of iter$8) {
-                                            noisyDrop_drop(item);
-                                          }
-                                          noisyDrop_drop(row);
-                                          for (const item of iter$7) {
-                                            noisyDrop_drop(item);
-                                          }
-                                          throw error;
-                                        }
-                                        _231$live = false;
-                                        try {
-                                          for (const item of iter$8) {
-                                            noisyDrop_drop(item);
-                                          }
-                                        } catch (error) {
-                                          noisyDrop_drop(row);
-                                          for (const item of iter$7) {
-                                            noisyDrop_drop(item);
-                                          }
-                                          throw error;
-                                        }
-                                        try {
-                                          noisyDrop_drop(row);
-                                        } catch (error) {
-                                          for (const item of iter$7) {
-                                            noisyDrop_drop(item);
-                                          }
-                                          throw error;
-                                        }
-                                        break bb209;
-                                      }
-                                      try {
-                                        console.log(`cell ${row[0]} ${cell[0]}`);
-                                      } catch (error) {
-                                        noisyDrop_drop(cell);
-                                        for (const item of iter$8) {
-                                          noisyDrop_drop(item);
-                                        }
-                                        noisyDrop_drop(row);
-                                        for (const item of iter$7) {
-                                          noisyDrop_drop(item);
-                                        }
-                                        throw error;
-                                      }
-                                      try {
-                                        noisyDrop_drop(cell);
-                                      } catch (error) {
-                                        for (const item of iter$8) {
-                                          noisyDrop_drop(item);
-                                        }
-                                        noisyDrop_drop(row);
-                                        for (const item of iter$7) {
-                                          noisyDrop_drop(item);
-                                        }
-                                        throw error;
-                                      }
-                                      _231$live = false;
-                                    }
+                                    _231$live = false;
                                   }
                                 }
                               }

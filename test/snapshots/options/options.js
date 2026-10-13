@@ -139,16 +139,12 @@ export function chained_twice(n) {
     return half(m);
   };
   const h = half(n);
-  let v;
-  bb15: {
-    if (h != null && h !== 0) {
-      const q = counted(h);
-      if (q != null && q > 1) {
-        v = q;
-        break bb15;
-      }
+  let v = 0;
+  if (h != null && h !== 0) {
+    const q = counted(h);
+    if (q != null && q > 1) {
+      v = q;
     }
-    v = 0;
   }
   return [v, calls];
 }

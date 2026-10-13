@@ -11024,3 +11024,271 @@ pub fn run() -> (Vec<u32>, Vec<u32>) {
     expect((await import(join(dir, out))).run()).toEqual([[1, 2], [3, 4, 5]]);
   }
 });
+
+// A match MIR tests as a tree, an arm reached from more than one of its
+// leaves, `'0'..='9' | '.'`: an `if` chain of the arms, each tested where
+// it's written, not a labeled block each leaf breaks out of.
+test("a match's arms of more than one pattern are an if chain", async () => {
+  const dir = fixture("decision-chain");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Shape { Circle(f64), Sphere(f64), Square(f64), Rect { w: f64, h: f64 }, Line { w: f64 } }
+pub fn size(s: &Shape) -> f64 {
+    match s {
+        Shape::Circle(r) | Shape::Sphere(r) => r * 2.0,
+        Shape::Rect { w, .. } | Shape::Line { w } => *w,
+        Shape::Square(x) => *x,
+    }
+}
+pub fn shapes() -> Vec<f64> {
+    [Shape::Circle(1.0), Shape::Sphere(2.0), Shape::Square(3.0), Shape::Rect { w: 4.0, h: 5.0 }, Shape::Line { w: 6.0 }]
+        .iter()
+        .map(size)
+        .collect()
+}
+pub fn kind(c: char) -> u32 {
+    match c {
+        ' ' => 0,
+        '0'..='9' | '.' => 1,
+        'a'..='z' | 'A'..='Z' | '_' => 2,
+        '+' | '-' => 3,
+        _ => 4,
+    }
+}
+pub fn log(c: char, out: &mut Vec<u32>) {
+    match c {
+        ' ' => out.push(0),
+        '0'..='9' | '.' => out.push(1),
+        'a'..='z' | 'A'..='Z' | '_' => {
+            out.push(2);
+            out.push(2)
+        }
+        '+' | '-' => out.push(3),
+        _ => out.push(4),
+    }
+}
+pub fn logged(s: &str) -> Vec<u32> {
+    let mut out = Vec::new();
+    for c in s.chars() {
+        log(c, &mut out);
+    }
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+:/);
+  expect(js).toContain(`  if (s.TAG === "Circle" || s.TAG === "Sphere") {`);
+  expect(js).toContain(`  if (s.TAG === "Rect" || s.TAG === "Line") {`);
+  expect(js).toContain(`export function kind(c) {
+  if (c === " ") {
+    return 0;
+  }
+  if ((c >= "0" && c <= "9") || c === ".") {
+    return 1;
+  }
+  if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_") {
+    return 2;
+  }
+  if (c === "+" || c === "-") {
+    return 3;
+  }
+  return 4;
+}`);
+  expect(js).toContain(`  } else if ((c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_") {
+    out.push(2);
+    out.push(2);
+  } else if (c === "+" || c === "-") {`);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.shapes()).toEqual([2, 4, 3, 4, 6]);
+  const chars = [" ", "0", "5", "9", ".", "/", ":", "a", "z", "A", "Z", "_", "`", "{", "@", "[", "+", "-", "*", "é", "😀"];
+  expect(chars.map((c) => lib.kind(c))).toEqual([0, 1, 1, 1, 1, 4, 4, 2, 2, 2, 2, 2, 4, 4, 4, 4, 3, 3, 4, 4, 4]);
+  expect(lib.logged(chars.join(""))).toEqual([0, 1, 1, 1, 1, 4, 4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 3, 3, 4, 4, 4]);
+});
+
+// An arm that ends in a loop, which leaves the match where it ends:
+// the loop's own `break`, not a labeled block's.
+test("a match arm that ends in a loop leaves it with the loop's break", async () => {
+  const dir = fixture("arm-loop-exit");
+  writeFileSync(join(dir, "lib.rs"), `pub fn words(s: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut chars = s.chars().peekable();
+    while let Some(&c) = chars.peek() {
+        match c {
+            'a'..='z' => {
+                let mut w = String::new();
+                while let Some(c) = chars.next_if(|c| c.is_ascii_lowercase()) {
+                    w.push(c);
+                }
+                out.push(w);
+            }
+            _ => {
+                chars.next();
+            }
+        }
+    }
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+\b/);
+  expect(js).toContain(`    if (c >= "a" && c <= "z") {\n      let w = "";`);
+  expect(js).toContain(`          out.push(w);\n          break;\n`);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.words("ab cd,e")).toEqual(["ab", "cd", "e"]);
+  expect(lib.words("")).toEqual([]);
+});
+
+// Counted loops in each branch of a loop's body, after another loop: each
+// its own `for`, the branches' end where the `if` does, not the outer loop's.
+test("counted loops in a loop's branches stay where they're written", async () => {
+  const dir = fixture("branch-loops");
+  writeFileSync(join(dir, "lib.rs"), `pub fn scaled(seeds: &[u32]) -> Vec<f32> {
+    let mut out = Vec::new();
+    let mut power = 1.0f32;
+    for _ in 0..3 {
+        power *= 2.0;
+    }
+    out.push(power);
+    for &seed in seeds {
+        let mut x = seed as f32;
+        let scale = seed % 7;
+        if scale < 3 {
+            for _ in 0..scale + 1 {
+                x *= 0.5;
+            }
+        } else {
+            for _ in 0..scale - 3 {
+                x *= 2.0;
+            }
+        }
+        if seed % 2 == 0 {
+            x = -x;
+        }
+        out.push(x);
+    }
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toContain("$rangeNext");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.scaled([1, 5, 10, 13])).toEqual([8, 0.25, 20, -10, 104]);
+});
+
+// A value a block gives where nothing else does, `matches!(v, Some(x) if
+// ..)`'s `false`, given first: `let matched = false;`, then what sets it.
+test("a value a match gives where no arm sets it is given first", async () => {
+  const dir = fixture("default-value");
+  writeFileSync(join(dir, "lib.rs"), `fn half(n: i32) -> Option<i32> {
+    if n % 2 == 0 { Some(n / 2) } else { None }
+}
+pub fn chained(n: i32, calls: &mut u32) -> i32 {
+    let v = if let Some(h) = half(n) && h != 0 && let Some(q) = { *calls += 1; half(h) } && q > 1 { q } else { 0 };
+    v * 10 + *calls as i32
+}
+pub fn run() -> Vec<i32> {
+    let mut calls = 0;
+    [12, 4, 3, 0, 8].iter().map(|&n| chained(n, &mut calls)).collect()
+}
+fn fallback(calls: &mut u32) -> i32 {
+    *calls += 100;
+    -1
+}
+pub fn given(n: i32) -> (i32, u32) {
+    let mut calls = 0;
+    let v = match half(n) {
+        Some(h) if h > 1 => h,
+        _ => fallback(&mut calls),
+    };
+    (v, calls)
+}
+pub fn bumped(n: i32) -> (i32, i32) {
+    let mut v = 5;
+    let w = if let Some(h) = half(n) && { v += 1; h > v } { h } else { v };
+    (w, v)
+}
+pub fn set_first(n: i32) -> i32 {
+    let mut w = 3;
+    #[allow(unused_assignments)]
+    if let Some(h) = half(n) && { w = 7; h > 2 } { w = h; } else { w = 0; }
+    w
+}
+pub fn read_first(n: i32) -> (i32, Vec<i32>) {
+    let mut w = 3;
+    let mut seen = Vec::new();
+    if let Some(h) = half(n) && { seen.push(w); h > 2 } { w = h; } else { w = 0; }
+    (w, seen)
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  const chained = js.slice(js.indexOf("export function chained"), js.indexOf("export function run"));
+  expect(chained).not.toMatch(/\bbb\d+:/);
+  expect(chained).toContain("  let v = 0;\n");
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.run()).toEqual([31, 2, 2, 2, 23]);
+  // A default of a call is made where no arm gives one, not first.
+  expect([lib.given(8), lib.given(2), lib.given(3)]).toEqual([[4, 0], [-1, 100], [-1, 100]]);
+  // Not of what isn't a constant, nor where the block reads or sets it first.
+  expect([lib.bumped(4), lib.bumped(20)]).toEqual([[6, 6], [10, 6]]);
+  expect([lib.set_first(4), lib.set_first(8), lib.set_first(3)]).toEqual([0, 4, 0]);
+  expect([lib.read_first(4), lib.read_first(8)]).toEqual([[0, [3]], [4, [3]]]);
+});
+
+// An or-pattern's arm that changes what it binds, `*r *= 10.0`, after the
+// handle each alternative makes: written once, after the chain that makes
+// it, not copied into each alternative's arm.
+test("an or-pattern's arm that changes what it binds is written once", async () => {
+  const dir = fixture("or-pattern-shared");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Shape { Circle(f64), Sphere(f64), Square(f64) }
+pub fn grow(shapes: &mut [Shape]) {
+    for s in shapes.iter_mut() {
+        if let Shape::Circle(r) | Shape::Sphere(r) = s {
+            *r *= 10.0;
+        }
+    }
+}
+pub fn grown() -> Vec<f64> {
+    let mut shapes = vec![Shape::Circle(1.0), Shape::Square(2.0), Shape::Sphere(3.0)];
+    grow(&mut shapes);
+    shapes.iter().map(|s| match s { Shape::Circle(r) | Shape::Sphere(r) | Shape::Square(r) => *r }).collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js.match(/r\.value \*= 10;/g)).toHaveLength(1);
+  expect((await import(join(dir, "lib.js"))).grown()).toEqual([10, 2, 30]);
+});
+
+// Two matches whose arms bind the same names, `w` of each: each chain's
+// variables its own, as JS declares a name once in a block.
+test("matches binding the same names are chains of their own", async () => {
+  const dir = fixture("chains-same-names");
+  writeFileSync(join(dir, "lib.rs"), `pub enum Shape { Circle(f64), Sphere(f64), Square(f64), Rect { w: f64, h: f64 }, Line { w: f64 } }
+pub fn both(a: &Shape, b: &Shape) -> f64 {
+    let x = match a {
+        Shape::Rect { w, .. } | Shape::Line { w } => *w,
+        Shape::Circle(r) | Shape::Sphere(r) => r * 2.0,
+        Shape::Square(s) => *s,
+    };
+    let y = match b {
+        Shape::Rect { w, .. } | Shape::Line { w } => *w,
+        Shape::Circle(r) | Shape::Sphere(r) => r * 2.0,
+        Shape::Square(s) => *s,
+    };
+    x + y
+}
+pub fn sums() -> Vec<f64> {
+    vec![
+        both(&Shape::Rect { w: 1.0, h: 9.0 }, &Shape::Line { w: 2.0 }),
+        both(&Shape::Circle(1.0), &Shape::Square(5.0)),
+        both(&Shape::Sphere(2.0), &Shape::Rect { w: 3.0, h: 0.0 }),
+    ]
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).not.toMatch(/\bbb\d+:/);
+  expect((await import(join(dir, "lib.js"))).sums()).toEqual([3, 7, 7]);
+});

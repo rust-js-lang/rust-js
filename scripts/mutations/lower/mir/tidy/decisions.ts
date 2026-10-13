@@ -1,0 +1,95 @@
+// Mutations of src/lower/mir/tidy/decisions.rs (ADR 0364).
+import type { Mutation } from "../../../../mutations";
+
+const chain = ["test/lowering.test.ts", "-t", "arms of more than one pattern"];
+
+export const mutations: Mutation[] = [
+  {
+    name: "decisions-shared-assign-copied",
+    breaks: "an arm's shared assignment, `r.value *= 10`, is copied into each arm",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    if shared.len() > SHARED || !shared.iter().all(|s| ends(s) && size(s) == 1) {\n",
+    replace: "    if shared.len() > SHARED {\n",
+    tests: ["test/lowering.test.ts", "-t", "an or-pattern's arm that changes what it binds"],
+  },
+  {
+    name: "decisions-longer-tests-kept",
+    breaks: "a chain whose tests are longer than the tree's, `value[0] != null` twice, is written",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    if tests_made > written {\n",
+    replace: "    if false {\n",
+    tests: ["test/snapshots.test.ts", "-t", "strings"],
+  },
+  {
+    name: "decisions-impossible-path-kept",
+    breaks: "a path no value takes, `c < \"0\" && c >= \"A\"`, is one of an arm's tests",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        if now.is_empty() {\n            return None;\n        }\n",
+    replace: "",
+    tests: chain,
+  },
+  {
+    name: "decisions-arms-in-tree-order",
+    breaks: "the chain's arms are in the order MIR tests them, not the order written",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    order.sort_by_key(|&i| (written(i), i));\n",
+    replace: "",
+    tests: chain,
+  },
+  {
+    name: "decisions-whole-pattern-first",
+    breaks: "`'0'..='9' | '.'` is tested `c === \".\" || ..`, the `.` first",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            (holds, tests.last().and_then(written_at).unwrap_or(u32::MAX))\n",
+    replace: "            (false, tests.last().and_then(written_at).unwrap_or(u32::MAX))\n",
+    tests: chain,
+  },
+  {
+    name: "decisions-rest-after-chain",
+    breaks: "what follows the block stays after the chain though one arm alone goes on to it: an empty arm",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "    let takes_rest = going_on.len() == 1 && !after.is_empty();\n",
+    replace: "    let takes_rest = false;\n",
+    tests: chain,
+  },
+  {
+    name: "decisions-loop-exit-kept",
+    breaks: "an arm ending in a loop that leaves the match keeps the match a labeled block",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                    if !loop_breaks(body, label) {\n",
+    replace: "                    if true {\n",
+    tests: ["test/lowering.test.ts", "-t", "arm that ends in a loop"],
+  },
+  {
+    name: "default-value-of-a-call",
+    breaks: "a value a block gives last that's a call's is given first, the call made first",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && value.is_constant()\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+  },
+  {
+    name: "default-value-read-before",
+    breaks: "a value read in the block before its end is given first",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "            && js::mentions_in(rest, x) == given\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+  },
+  {
+    name: "default-value-set-not-left",
+    breaks: "a value the block sets and goes on from is given first, then set over",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "                if !breaks || js::mentions_in(",
+    replace: "                if false && !breaks || js::mentions_in(",
+    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+  },
+  {
+    name: "decisions-returned-block-taken",
+    breaks: "a block a `return` of what it makes follows is a chain, `result = \"Nothing\"` in one arm, not `return \"Nothing\"`",
+    file: "src/lower/mir/tidy/decisions.rs",
+    find: "        && matches!(value.kind, ExprKind::Var(_))\n",
+    replace: "        && false\n",
+    tests: ["test/snapshots.test.ts", "-t", "playground"],
+  },
+];

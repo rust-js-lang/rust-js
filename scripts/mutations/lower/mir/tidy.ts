@@ -2112,4 +2112,20 @@ export const mutations: Mutation[] = [
     replace: "        && false\n",
     tests: ["test/compiler.test.ts", "-t", "async code becomes async functions and await"],
   },
+  {
+    name: "mir-tidy-decisions-off",
+    breaks: "a match MIR tests as a tree stays a labeled block each leaf breaks out of",
+    file: "src/lower/mir/tidy.rs",
+    find: "    bottom_up(body, &mut decisions::decisions);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "arms of more than one pattern"],
+  },
+  {
+    name: "mir-tidy-default-values-off",
+    breaks: "`matches!(v, Some(x) if ..)`'s `false` stays the block's last statement, the block labeled",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut |stmts| decisions::default_values(stmts));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+  },
 ];

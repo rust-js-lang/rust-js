@@ -40,18 +40,14 @@ function both(take) {
 
 function guard(value) {
   let calls = 0;
-  let matched;
-  bb7: {
-    if (value != null) {
-      const x = { value: calls };
-      const value$1 = bump(x);
-      calls = x.value;
-      if (value$1 === value) {
-        matched = true;
-        break bb7;
-      }
+  let matched = false;
+  if (value != null) {
+    const x = { value: calls };
+    const value$1 = bump(x);
+    calls = x.value;
+    if (value$1 === value) {
+      matched = true;
     }
-    matched = false;
   }
   return (Math.imul(calls, 10) + (matched ? 1 : 0)) | 0;
 }

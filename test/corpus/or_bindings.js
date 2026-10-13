@@ -23,26 +23,15 @@ function shapeDebug_fmt(shape) {
 }
 
 function size(s) {
-  let r;
-  bb11: {
-    let w;
-    if (s.TAG === "Circle") {
-      r = s._0;
-      break bb11;
-    } else if (s.TAG === "Sphere") {
-      r = s._0;
-      break bb11;
-    } else if (s.TAG === "Rect") {
-      w = s.w;
-    } else {
-      if (s.TAG !== "Line") {
-        return s._0;
-      }
-      w = s.w;
-    }
+  if (s.TAG === "Circle" || s.TAG === "Sphere") {
+    const r = s._0;
+    return r * 2;
+  }
+  if (s.TAG === "Rect" || s.TAG === "Line") {
+    const w = s.w;
     return w;
   }
-  return r * 2;
+  return s._0;
 }
 
 function pick(p) {
@@ -73,22 +62,11 @@ function first_some(o) {
 }
 
 function text(t) {
-  let n;
-  bb11: {
-    let s;
-    if (t.TAG === "Word") {
-      s = t._0;
-    } else if (t.TAG === "Quoted") {
-      s = t._0;
-    } else if (t.TAG === "Num") {
-      n = t._0;
-      break bb11;
-    } else {
-      n = t._0;
-      break bb11;
-    }
+  if (t.TAG === "Word" || t.TAG === "Quoted") {
+    const s = t._0;
     return s;
   }
+  const n = t._0;
   return String(n);
 }
 
@@ -155,15 +133,8 @@ function main() {
     console.log("none");
   }
   const value$4 = $index(shapes, 4);
-  bb103: {
-    let w;
-    if (value$4.TAG === "Rect") {
-      w = value$4.w;
-    } else if (value$4.TAG === "Line") {
-      w = value$4.w;
-    } else {
-      break bb103;
-    }
+  if (value$4.TAG === "Rect" || value$4.TAG === "Line") {
+    const w = value$4.w;
     console.log(`width ${$displayF64(w)}`);
   }
   const r$3 = { TAG: "Err", _0: 9 };

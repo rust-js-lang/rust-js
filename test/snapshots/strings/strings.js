@@ -119,23 +119,17 @@ export function tagged(s) {
   const option = $splitOnce(s, "/");
   const top = option ? option[0] : undefined;
   const value = [top, s.endsWith("/")];
-  let n;
-  bb16: {
-    if (value[0] == null) {
-      n = 3;
-      break bb16;
-    } else if (value[0] != null) {
-      if (value[0] === "ab") {
-        n = 1;
-        break bb16;
-      } else if (value[1]) {
-        if (value[0] === "") {
-          n = 2;
-          break bb16;
-        }
+  let n = 4;
+  if (value[0] == null) {
+    n = 3;
+  } else if (value[0] != null) {
+    if (value[0] === "ab") {
+      n = 1;
+    } else if (value[1]) {
+      if (value[0] === "") {
+        n = 2;
       }
     }
-    n = 4;
   }
   return [n, top === "a" || top === "src"];
 }
