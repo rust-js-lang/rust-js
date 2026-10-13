@@ -1,6 +1,7 @@
 # 0002. Generate JS from THIR, not MIR
 
-Status: Accepted
+Status: **Superseded by [0364](0364-mir-lowering.md).** Bodies are lowered
+from their MIR; THIR is read beside it for shape and facts.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
