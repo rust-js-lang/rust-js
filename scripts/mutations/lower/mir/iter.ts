@@ -602,4 +602,28 @@ export const mutations: Mutation[] = [
       "char ranges step by code point"
     ]
   },
+  {
+    "name": "mir-iterable-collected-lazy",
+    "breaks": "a binding's list collected stays `Iterator.from(nodes).map(f).toArray()`, not `Array.from(nodes).map(f)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "None => match self.iterable_items(&it, iter_ty) {",
+    "replace": "None => match None::<Expr> {",
+    "tests": [
+      "test/compiler.test.ts",
+      "-t",
+      "methods are their type's object|webapi crate's bindings"
+    ]
+  },
+  {
+    "name": "mir-iterable-collected-generic",
+    "breaks": "a generic iterator collected is `Array.from(items)`, empty of an iterator with only a `next`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "        if matches!(source.kind(), ty::Param(_) | ty::Alias(..)) {\n            return None;\n        }\n        collected(",
+    "replace": "        collected(",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "only a next"
+    ]
+  },
 ];

@@ -37,7 +37,7 @@ function main() {
   console.log(`[${taken}] [${long}]`);
   const drained$1 = $strDrain(long, 2, 4);
   long = drained$1[0];
-  const removed = Iterator.from(drained$1[1]).toArray();
+  const removed = Array.from(drained$1[1]);
   console.log(`[${removed.map((item) => $debugStr(item, "'")).join(", ")}] [${long}]`);
   long = $strExtendWithin(long, 0, 2);
   long = $strExtendWithin(long, 1);

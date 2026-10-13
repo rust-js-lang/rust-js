@@ -217,7 +217,7 @@ function main() {
     inspected(bad._0);
   }
   console.log(`[${log.map((item) => $debugStr(item)).join(", ")}]`);
-  const value$17 = Iterator.from(good.TAG === "Ok" ? [good._0] : []).toArray();
+  const value$17 = Array.from(good.TAG === "Ok" ? [good._0] : []);
   console.log(
     `[${value$17.map((item) => String(item)).join(", ")}] ${Iterator.from(bad.TAG === "Ok" ? [bad._0] : []).reduce((n) => n + 1, 0)}`,
   );

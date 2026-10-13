@@ -182,6 +182,13 @@ pub fn selected(el: &webapi::Element, input: &webapi::HTMLInputElement) -> (Vec<
     (widths, label)
 }
 
+/// A list's items collected are `Array.from(list)`, each mapped as an
+/// array's, as react.dev's home page reads its hover targets.
+pub fn widths(el: &webapi::Element) -> Vec<f64> {
+    let nodes = el.query_selector_all("p");
+    webapi::node_list::iter(nodes).map(|p| p.get_bounding_client_rect().width()).collect()
+}
+
 /// A union a function gives is the enum a parameter of it takes, read as
 /// the member JS gives: `reader.result`, text or an `ArrayBuffer`, and a
 /// form's field, text or a `File`.

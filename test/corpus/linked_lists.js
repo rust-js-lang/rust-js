@@ -28,9 +28,7 @@ function main() {
   );
   const value$2 = list.includes(2);
   console.log(`${value$2} ${Iterator.from(list).reduce((a, b) => (a + b) >>> 0, 0)}`);
-  const doubled = Iterator.from(tail)
-    .map((x) => Math.imul(x, 2) >>> 0)
-    .toArray();
+  const doubled = Array.from(tail).map((x) => Math.imul(x, 2) >>> 0);
   for (const x of doubled) {
     $print(`${x} `);
   }

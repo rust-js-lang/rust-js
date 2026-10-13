@@ -129,9 +129,7 @@ export function on_errors(button) {
 
 export function listed(list, headers) {
   const count = Iterator.from(list).reduce((n) => n + 1, 0);
-  const names = Iterator.from(headers)
-    .map(([name]) => name)
-    .toArray();
+  const names = Array.from(headers).map(([name]) => name);
   return [count, names];
 }
 
@@ -143,6 +141,11 @@ export function selected(el, input) {
     .toArray();
   const label = input.labels?.item(0)?.htmlFor;
   return [widths, label];
+}
+
+export function widths(el) {
+  const nodes = el.querySelectorAll("p");
+  return Array.from(nodes).map((p) => p.getBoundingClientRect().width);
 }
 
 export function unions_read(reader, data) {

@@ -841,12 +841,14 @@ test("the webapi crate's bindings become plain JS", async () => {
   // `onerror`'s closure, given an event or a message, and `onbeforeunload`'s.
   expect(js).toContain('button.onerror = (e) => typeof e === "string";\n  window.onbeforeunload = () => undefined;\n  return !!button.onerror;');
   // `[Symbol.iterator]`, `Iterator.from(list)`.
-  expect(js).toContain("const count = Iterator.from(list).reduce((n) => n + 1, 0);\n  const names = Iterator.from(headers)\n    .map(([name]) => name)\n    .toArray();");
+  expect(js).toContain("const count = Iterator.from(list).reduce((n) => n + 1, 0);\n  const names = Array.from(headers).map(([name]) => name);");
+  // A list's items collected, `Array.from` of it.
+  expect(js).toContain("return Array.from(nodes).map((p) => p.getBoundingClientRect().width);");
   // An `ObservableArray`, an array.
   expect(js).toContain("document.adoptedStyleSheets = [sheet];\n  return document.adoptedStyleSheets.length;");
   // A function JS gives, an object.
   expect(js).toContain('return !!registry.get("x-card");');
-  const { round_trip, iterated, samples, texts, on_errors, listed, selected, unions_read, defined } = await import(join(target, "web_forms.js"));
+  const { round_trip, iterated, samples, texts, on_errors, listed, selected, widths, unions_read, defined } = await import(join(target, "web_forms.js"));
   expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.
   const form = new FormData();
@@ -857,6 +859,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   const p = (width: number) => ({ getBoundingClientRect: () => ({ width }) });
   const labels = [{ htmlFor: "name" }];
   expect(selected({ querySelectorAll: () => [p(1), p(2)] }, { labels: Object.assign(labels, { item: (n: number) => labels[n] }) })).toEqual([[1, 2], "name"]);
+  expect(widths({ querySelectorAll: () => [p(3), p(4)] })).toEqual([3, 4]);
   (globalThis as any).window = {};
   const button: any = {};
   expect(on_errors(button)).toBe(true);

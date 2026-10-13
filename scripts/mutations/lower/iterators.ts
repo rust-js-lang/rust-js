@@ -263,8 +263,8 @@ export const mutations: Mutation[] = [
     "name": "eager-flat-map-lazy",
     "breaks": "`flat_map` collected from MIR stays `xs.values().flatMap(\u2026).toArray()`",
     "file": "src/lower/iterators.rs",
-    "find": "\"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")",
-    "replace": "\"map\" | \"filter\" | \"take\" | \"drop\")",
+    "find": "\"map\" | \"filter\" | \"take\" | \"drop\" | \"flatMap\")\n        && let [f] = &args[..]",
+    "replace": "\"map\" | \"filter\" | \"take\" | \"drop\")\n        && let [f] = &args[..]",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -374,5 +374,17 @@ export const mutations: Mutation[] = [
     find: "        js::ExprKind::Var(helper) => !HELPERS.contains(&helper.as_str()),\n",
     replace: "",
     tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
+  },
+  {
+    "name": "collected-runtime-arrayed",
+    "breaks": "a chain collected is `Array.from($lazyChain(a, b))`, not `[...a, ...b]`",
+    "file": "src/lower/iterators.rs",
+    "find": "                {\n                    return None;\n                }\n                let items = Expr::call(",
+    "replace": "                {}\n                let items = Expr::call(",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a chain collected from MIR is a spread"
+    ]
   },
 ];

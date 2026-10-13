@@ -927,6 +927,34 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     Some((items, count))
 }
 
+/// Of `Iterator.from(list)` collected, `chain`, each item mapped or filtered
+/// on the way: the array it makes, as a page writes it,
+/// `Array.from(nodes).map(f)`. Not of the runtime's, `$lazyChain(a, b)`'s,
+/// read as their parts.
+pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
+    fn sourced(e: &Expr) -> Option<Expr> {
+        match &e.kind {
+            js::ExprKind::Call(callee, args)
+                if let js::ExprKind::Member(source, name) = &callee.kind
+                    && matches!(name.as_str(), "map" | "filter" | "take" | "drop" | "flatMap") =>
+            {
+                Some(Expr::call(Expr::member(sourced(source)?, name), args.clone()))
+            }
+            _ if is_iterator_from(e) => {
+                let list = iterated(e.clone());
+                if matches!(&list.kind, js::ExprKind::Call(f, _) if matches!(&f.kind, js::ExprKind::Var(f) if f.starts_with('$')))
+                {
+                    return None;
+                }
+                let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);
+                Some(Expr::call(Expr::var("$iter"), vec![items]))
+            }
+            _ => None,
+        }
+    }
+    eager_items(&sourced(chain)?, true, None).map(|(items, _)| items)
+}
+
 /// Of `Iterator.from($lazyChain(a, b))`, a `chain` MIR makes: what each part
 /// steps, `a` and `b`, which spread in turn as it steps them, `[...a, ...b]`;
 /// of a part `Iterator.from(xs)`, or `cloned()`'s `xs.map((x) => x)`, `xs`.

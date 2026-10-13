@@ -12,7 +12,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::iterators::made_array;
+use crate::lower::iterators::{collected, made_array};
 use crate::lower::recognition::{StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
@@ -503,7 +503,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if self.is_vec_like(output) {
                     match self.mapped_range(&it, iter_ty) {
                         Some(items) => items,
-                        None => method("toArray", it, Vec::new()),
+                        None => match self.iterable_items(&it, iter_ty) {
+                            Some(items) => items,
+                            None => method("toArray", it, Vec::new()),
+                        },
                     }
                 } else if self.is_lang_adt(output, LangItem::String) {
                     method("join", method("toArray", it, Vec::new()), vec![Expr::str("")])
@@ -649,6 +652,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Some(maps.into_iter().rev().fold(items, |items, (name, f)| {
             Expr::call(Expr::member(items, &name), vec![f])
         }))
+    }
+
+    /// Of `Iterator.from(list)` collected, `it`, each item mapped or
+    /// filtered on the way: the array it makes, `Array.from(nodes).map(f)`
+    /// of a binding's list. Not of a generic
+    /// value's, which may be an iterator with only a `next`, of which
+    /// `Array.from` makes an empty array (ADR 0140).
+    fn iterable_items(&self, it: &Expr, iter_ty: Ty<'tcx>) -> Option<Expr> {
+        let mut source = self.reveal(iter_ty);
+        while let ty::Adt(_, args) = source.kind()
+            && let Some(inner) = args.types().next()
+            && self.implements_iterator(inner)
+        {
+            source = inner;
+        }
+        if matches!(source.kind(), ty::Param(_) | ty::Alias(..)) {
+            return None;
+        }
+        collected(it)
     }
 
     /// Whether `ty` is an iterator: one whose `Item` is a type.

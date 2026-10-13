@@ -2015,6 +2015,30 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
   expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
 
+// ADR 0140: a generic iterator collected is `Iterator.from(it).toArray()`,
+// never `Array.from(it)`: it may be a binding's with only a `next`, of
+// which `Array.from` makes an empty array.
+test("a generic iterator collected keeps an iterator with only a next", async () => {
+  const dir = fixture("generic-next-only");
+  writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
+    #[link_name = "globalThis.counted"]
+    safe fn counted() -> Box<dyn Iterator<Item = u32>>;
+}
+fn plus_one<I: Iterator<Item = u32>>(items: I) -> Vec<u32> {
+    items.map(|x| x + 1).collect()
+}
+pub fn bumped() -> Vec<u32> {
+    plus_one(counted())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const lib = await import(join(dir, "mir.js"));
+  let n = 0;
+  (globalThis as any).counted = () => ({ next: () => (n < 2 ? { value: ++n, done: false } : { value: undefined, done: true }) });
+  expect(lib.bumped()).toEqual([2, 3]);
+  delete (globalThis as any).counted;
+});
+
 // ADR 0364: `for` over what `Object.keys` gives, a `Vec`, steps through
 // its array: `Object.keys(o)` is no JS iterator.
 test("a for over Object.keys steps through its array", async () => {
