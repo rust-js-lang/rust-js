@@ -46,4 +46,12 @@ export const mutations: Mutation[] = [
       "keeps its mappings in order"
     ]
   },
+  {
+    name: "transform-meaning-unchecked",
+    breaks: "a transform that renames a variable, or changes a text, of the same nodes is kept, another program",
+    file: "src/format.rs",
+    find: "            && a != b\n",
+    replace: "            && false\n",
+    tests: ["test/settings.test.ts", "-t", "changes the program"],
+  },
 ];

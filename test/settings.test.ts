@@ -53,10 +53,18 @@ test("a transform's text is written, and the map moved to it", () => {
 
 test("a transform that changes the program, or fails, is refused, and its input kept", () => {
   const plain = compile("");
-  for (const transform of [`["sh", "-c", "grep -v return"]`, `["sh", "-c", "cat; exit 3"]`]) {
+  // Of what it changes, its nodes, or what one is of the same nodes: a
+  // name, a text (the third architecture audit: the nodes alone were
+  // compared, and a name or a text changed was kept).
+  for (const transform of [
+    `["sh", "-c", "grep -v return"]`,
+    `["sh", "-c", "cat; exit 3"]`,
+    `["sed", "s/greeting/salutation/g"]`,
+    `["sed", "s/Hello/Howdy/"]`,
+  ]) {
     const out = compile(`transform = [${transform}, ["sh", "-c", "echo '// second'; cat"]]`);
     expect(out.code).toBe(0);
-    expect(out.stderr).toContain("warning: rust-js: the transform `sh` ");
+    expect(out.stderr).toContain("warning: rust-js: the transform `");
     // The next transform is run on what's kept.
     expect(out.js.replace(out.dir, "")).toBe(`// second\n${plain.js.replace(plain.dir, "")}`);
   }

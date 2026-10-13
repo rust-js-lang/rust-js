@@ -1,6 +1,7 @@
 # 0117. A crate's settings for the JS rust-js writes: its formatter's options, and hooks
 
-Status: Accepted, but for checks in Cargo's build, to come. Extends
+Status: Accepted, but for checks in Cargo's build, to come. (Amended: the
+same program is the same nodes, each meaning what it did.) Extends
 [0065](0065-format-with-oxfmt.md) and [0114](0114-app-cargo-toml.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
@@ -70,8 +71,11 @@ With neither, rust-js writes what it wrote before: oxfmt's layout.
 - **Its text must be the same program, laid out otherwise**: the same
   nodes, in the same order, but for JSX's text and the `{" "}` that stands
   for its spaces, which a formatter breaks otherwise; parentheses aren't
-  nodes. So `let` to `const` is a transform, and a fix that takes a
-  statement out isn't.
+  nodes. Each means what it did: a name, a literal's value, a template's
+  text, an operator. So `let` to `const` is a transform, and a fix that
+  takes a statement out isn't, nor one that renames a variable. (Amended:
+  the nodes' kinds alone were compared, and a name or a text changed was
+  kept; found by the third architecture audit.)
 - **A transform's text that isn't is refused, and its input kept**: one that
   exits otherwise than 0, can't be run, or changes the program, is warned
   of, with why, `took out a ReturnStatement`, and the module is written as

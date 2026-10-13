@@ -15,6 +15,8 @@
 //! programs have the same nodes in the same order. It can add a few (JSX's
 //! `{" "}`), which the pairing steps over.
 
+use std::collections::HashMap;
+
 use oxc_allocator::Allocator;
 use oxc_ast::AstKind;
 use oxc_ast::ast_kind::AstType;
@@ -66,8 +68,9 @@ pub fn transformed(
     let map = &map;
     let source_type = if jsx { SourceType::jsx() } else { SourceType::mjs() };
     let allocator = Allocator::default();
-    let before = node_starts(&allocator, code, source_type).map_err(|e| format!("was given JS it can't read: {e}"))?;
-    let after = node_starts(&allocator, &text, source_type).map_err(|e| format!("gave what isn't JS: {e}"))?;
+    let (before, meant) =
+        nodes(&allocator, code, source_type).map_err(|e| format!("was given JS it can't read: {e}"))?;
+    let (after, means) = nodes(&allocator, &text, source_type).map_err(|e| format!("gave what isn't JS: {e}"))?;
     let kinds = |nodes: Vec<(AstType, u32)>| nodes.into_iter().map(|(kind, _)| kind).collect::<Vec<_>>();
     let (was, is) = (kinds(layout_free(&before, code)), kinds(layout_free(&after, &text)));
     if let Some(at) = (0..was.len().max(is.len())).find(|&i| was.get(i) != is.get(i)) {
@@ -82,6 +85,14 @@ pub fn transformed(
             (None, None) => unreachable!("the kinds differ at {at}"),
         };
         return Err(format!("changed the program: it {change}"));
+    }
+    // Of the same nodes, what one means: a name, a value, an operator.
+    for (was, is) in layout_free(&before, code).into_iter().zip(layout_free(&after, &text)) {
+        if let (Some(a), Some(b)) = (meant.get(&was), means.get(&is))
+            && a != b
+        {
+            return Err(format!("changed the program: it made `{a}` `{b}`, a `{:?}`", was.0));
+        }
     }
     let map = moved(code, &text, map, &before, &after, js_file_name);
     Ok((text, map))
@@ -279,19 +290,69 @@ impl Map {
 /// Each node's kind and where it starts, in the order a visit meets them,
 /// or the first error parsing `code`.
 fn node_starts(allocator: &Allocator, code: &str, source_type: SourceType) -> Result<Vec<(AstType, u32)>, String> {
-    struct Starts(Vec<(AstType, u32)>);
-    impl<'a> Visit<'a> for Starts {
+    Ok(nodes(allocator, code, source_type)?.0)
+}
+
+/// What each node of `code` means beyond its kind, by its kind and where it
+/// starts: a name, a literal's value, a template's text, an operator.
+type Meanings = HashMap<(AstType, u32), String>;
+
+/// The nodes of `code`, each its kind and where it starts, in order, and
+/// what each means beyond its kind.
+fn nodes(
+    allocator: &Allocator,
+    code: &str,
+    source_type: SourceType,
+) -> Result<(Vec<(AstType, u32)>, Meanings), String> {
+    struct Nodes<'c> {
+        code: &'c str,
+        starts: Vec<(AstType, u32)>,
+        meanings: Meanings,
+    }
+    impl<'a> Visit<'a> for Nodes<'_> {
         fn enter_node(&mut self, kind: AstKind<'a>) {
-            self.0.push((kind.ty(), kind.span().start));
+            let at = (kind.ty(), kind.span().start);
+            self.starts.push(at);
+            if let Some(meaning) = meaning(&kind, self.code) {
+                self.meanings.insert(at, meaning);
+            }
         }
     }
     let parsed = parse_for_format(allocator, allocator.alloc_str(code), source_type);
     if let Some(error) = parsed.diagnostics.errors().next() {
         return Err(error.to_string());
     }
-    let mut starts = Starts(Vec::new());
-    starts.visit_program(&parsed.program);
-    Ok(starts.0)
+    let mut nodes = Nodes {
+        code,
+        starts: Vec::new(),
+        meanings: HashMap::new(),
+    };
+    nodes.visit_program(&parsed.program);
+    Ok((nodes.starts, nodes.meanings))
+}
+
+/// What `kind` means that a layout keeps: a name, a literal's value, a
+/// template's text, an operator; `None` of a node that's its kind alone.
+fn meaning(kind: &AstKind<'_>, code: &str) -> Option<String> {
+    Some(match kind {
+        AstKind::IdentifierReference(i) => i.name.to_string(),
+        AstKind::BindingIdentifier(i) => i.name.to_string(),
+        AstKind::IdentifierName(i) => i.name.to_string(),
+        AstKind::LabelIdentifier(i) => i.name.to_string(),
+        AstKind::JSXIdentifier(i) => i.name.to_string(),
+        AstKind::StringLiteral(s) => s.value.to_string(),
+        AstKind::NumericLiteral(n) => n.value.to_string(),
+        AstKind::BigIntLiteral(n) => n.value.to_string(),
+        AstKind::BooleanLiteral(b) => b.value.to_string(),
+        AstKind::RegExpLiteral(r) => code[r.span.start as usize..r.span.end as usize].to_string(),
+        AstKind::TemplateElement(t) => t.value.cooked.as_ref().unwrap_or(&t.value.raw).to_string(),
+        AstKind::BinaryExpression(e) => e.operator.as_str().to_string(),
+        AstKind::LogicalExpression(e) => e.operator.as_str().to_string(),
+        AstKind::UnaryExpression(e) => e.operator.as_str().to_string(),
+        AstKind::AssignmentExpression(e) => e.operator.as_str().to_string(),
+        AstKind::UpdateExpression(e) => format!("{}{}", e.operator.as_str(), e.prefix),
+        _ => return None,
+    })
 }
 
 /// Pair the nodes of the two programs: where the kinds differ, the
