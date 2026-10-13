@@ -145,7 +145,8 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "            if let ExprKind::Handle(place) = object.kind {\n",
     replace: "            if false && let ExprKind::Handle(place) = object.kind {\n",
-    tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
+    tests: ["test/corpus.test.ts", "-t", "^box_uninit.rs$"],
+    snapshots: true,
   },
   {
     name: "made-cell-value-kept",
@@ -169,7 +170,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "                value.tested()\n",
     replace: "                self.clone()\n",
-    tests: ["test/bindings.test.ts", "-t", "tested as JS tests it"],
+    tests: ["test/bindings.test.ts", "-t", "skips what's falsy is given test && value"],
   },
   {
     name: "test-parts-kept",
@@ -177,7 +178,7 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "                        _ => out.push(e.tested()),\n",
     replace: "                        _ => out.push(e.clone()),\n",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/lowering.test.ts", "-t", "if-let chains and loops from MIR read as written"],
   },
   {
     name: "items-by-kind",
@@ -242,7 +243,8 @@ export const mutations: Mutation[] = [
     file: "src/js.rs",
     find: "Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),",
     replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
-    tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
+    tests: ["test/corpus.test.ts", "-t", "^std_errors_boxed.rs$"],
+    snapshots: true,
   },
   {
     "name": "effects-keep-inert-items",

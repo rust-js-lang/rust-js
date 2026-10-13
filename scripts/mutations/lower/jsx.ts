@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
   },
   {
-    name: "spilled-attribute-copied",
-    breaks: "an attribute that reads the same before a child, `p.title`, is read into a `const` first",
-    file: "src/lower/jsx.rs",
-    find: "                let (base, value) = match prop {\n                    Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),\n                    Prop::Spread(value) => (\"props\", value),\n                };\n                if !self.reads_alike(value, out) {",
-    replace: "                let (base, value) = match prop {\n                    Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),\n                    Prop::Spread(value) => (\"props\", value),\n                };\n                if !value.is_constant() {",
-    tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
-  },
-  {
     name: "component-prop-copied",
     breaks: "a component's prop read from a variable is copied to another before its children, `const rest$1 = rest`",
     file: "src/lower/jsx.rs",
@@ -48,23 +40,15 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "            && adt.adt_def.is_struct()\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
     replace: "            && false\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
-    tests: ["test/jsx.test.ts", "-t", "its props as written, and children that change the base first"],
+    tests: ["test/jsx.test.ts", "-t", "a shared capture of a let reads alike, past an element.s key"],
   },
   {
     name: "props-read-before-constant-base",
     breaks: "a component's props are read into `const`s before its children where only a base's constant comes after them",
     file: "src/lower/jsx.rs",
-    find: "                (value.has_effects() && !self.reads_unchanging(children, out))\n                    || (children.has_effects() && !value.is_made_of_constants())",
-    replace: "                true",
+    find: "                value.has_effects() && !self.reads_unchanging(children, out)\n",
+    replace: "                true\n",
     tests: ["test/jsx.test.ts", "-t", "no dictionary"],
-  },
-  {
-    name: "base-read-before-children-that-change-it",
-    breaks: "`<Tally {..base}>{bump(&mut base)}</Tally>` reads `base.n` before `bump` changes it",
-    file: "src/lower/jsx.rs",
-    find: "\n                    || (children.has_effects() && !value.is_made_of_constants())",
-    replace: "",
-    tests: ["test/jsx.test.ts", "-t", "children that change the base"],
   },
   {
     name: "flattened-literal-spread",
@@ -123,46 +107,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "no dictionary"],
   },
   {
-    name: "jsx-prop-read-first-for-any-child",
-    breaks: "a prop before children that aren't simple is read into a `const` first, though their JS needs no statements",
-    file: "src/lower/jsx.rs",
-    find: "        if (!first.is_empty() && !simple) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
-    replace: "        if !simple || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
-    tests: ["test/jsx.test.ts", "-t", "a prop before children"],
-  },
-  {
-    name: "jsx-prop-read-first-for-reads",
-    breaks: "a child's statement that only reads makes the attributes before it `const`s first, `const className = props.className`",
-    file: "src/lower/jsx.rs",
-    find: "        if (!first.is_empty() && !simple) || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
-    replace: "        if !first.is_empty() || (name != \"children\" && !jsx.children.is_empty() && !alike) {\n",
-    tests: ["test/jsx.test.ts", "-t", "attribute before a child once"],
-  },
-  {
-    name: "comparison-spilled",
-    breaks: "a comparison of what reads the same is spilled before a later child's statement: `const condition = version === \"Canary\"`",
-    file: "src/lower/jsx.rs",
-    find: "            ) => self.reads_alike(a, out) && self.reads_alike(b, out),\n",
-    replace: "            ) => false && self.reads_alike(a, out) && self.reads_alike(b, out),\n",
-    tests: ["test/jsx.test.ts", "-t", "comparison of what reads the same"],
-  },
-  {
-    name: "comparison-of-anything-alike",
-    breaks: "a comparison of a variable written later reads alike, and JSX reads it after the write",
-    file: "src/lower/jsx.rs",
-    find: "            ) => self.reads_alike(a, out) && self.reads_alike(b, out),\n",
-    replace: "            ) => true,\n",
-    tests: ["test/jsx.test.ts"],
-  },
-  {
-    name: "negation-spilled",
-    breaks: "a negation of what reads the same is spilled before a later child's statement: `const condition = !done`",
-    file: "src/lower/jsx.rs",
-    find: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),\n",
-    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => false && self.reads_alike(a, out),\n",
-    tests: ["test/jsx.test.ts", "-t", "comparison of what reads the same"],
-  },
-  {
     name: "tag-as-children",
     breaks: "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
     file: "src/lower/jsx.rs",
@@ -174,9 +118,9 @@ export const mutations: Mutation[] = [
     name: "unchanging-children-read-first",
     breaks: "a component's children that read only a state's value, declared first, make every prop a `const` before the JSX, beside a computed `className`",
     file: "src/lower/jsx.rs",
-    find: "                (value.has_effects() && !self.reads_unchanging(children, out))\n",
+    find: "                value.has_effects() && !self.reads_unchanging(children, out)\n",
     replace: "                value.has_effects()\n",
-    tests: ["test/jsx.test.ts", "-t", "filtered child, in place"],
+    tests: ["test/jsx.test.ts", "-t", "flattened props where they're written, none given left out"],
   },
   {
     name: "field-read-hoisted",
@@ -184,42 +128,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "            js::ExprKind::Member(object, _) => {\n",
     replace: "            js::ExprKind::Member(object, _) if false => {\n",
-    tests: [
-      "test/jsx.test.ts",
-      "-t",
-      "field of what never changes in place"
-    ]
-  },
-  {
-    name: "conditional-hoisted",
-    breaks: "a conditional of what reads the same is read into a `const` before a later child's statement, `width={width}`",
-    file: "src/lower/jsx.rs",
-    find: "            js::ExprKind::Cond(test, yes, no) => {\n",
-    replace: "            js::ExprKind::Cond(test, yes, no) if false => {\n",
-    tests: [
-      "test/jsx.test.ts",
-      "-t",
-      "field of what never changes in place"
-    ]
-  },
-  {
-    name: "logical-hoisted",
-    breaks: "`done && status != null` is read into a `const condition` before a later child's statement",
-    file: "src/lower/jsx.rs",
-    find: "js::Op::LooseNe | js::Op::And | js::Op::Or,",
-    replace: "js::Op::LooseNe,",
-    tests: [
-      "test/jsx.test.ts",
-      "-t",
-      "comparison of what reads the same"
-    ]
-  },
-  {
-    name: "cell-field-in-place",
-    breaks: "a field through a `Cell`, `count.get()`, is read after what sets it, `<p>5</p>`, where it's `<p>0</p>`",
-    file: "src/lower/jsx.rs",
-    find: "                            && t.is_freeze(self.tcx, self.typing_env)\n",
-    replace: "",
     tests: [
       "test/jsx.test.ts",
       "-t",
@@ -235,7 +143,7 @@ export const mutations: Mutation[] = [
     tests: [
       "test/jsx.test.ts",
       "-t",
-      "field of what never changes in place"
+      "spreads a struct through a reference as the struct"
     ]
   },
   {
@@ -280,7 +188,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "if !matches!(none.kind, js::ExprKind::Undefined) {",
     replace: "if true {",
-    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
+    tests: ["test/jsx.test.ts", "-t", "tests an Option of an object by its truth"],
   },
   {
     name: "children-tuple-not-recursed",
@@ -288,7 +196,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: ".map(|(item, &field)| self.shown_if(field, item))",
     replace: ".map(|(item, _)| item)",
-    tests: ["test/jsx.test.ts", "-t", "the test && the child"],
+    tests: ["test/jsx.test.ts", "-t", "an element's props are an ElementType, rendered as a tag"],
   },
   {
     name: "base-spread-last",
@@ -331,14 +239,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
   },
   {
-    name: "captured-import-spilled",
-    breaks: "an import jsx! captures for a key that might do something is spilled, `const match = Fragment`, where it reads the same in place",
-    file: "src/lower/jsx.rs",
-    find: "                    || self.krate.imports[&self.module].values().any(|alias| alias == name)\n",
-    replace: "",
-    tests: ["test/lowering.test.ts", "-t", "import jsx! captures"],
-  },
-  {
     name: "binding-callback-returned",
     breaks: "a component's callback of a binding that may give a value returns it, `onRecord={() => globalThis.record(5)}`",
     file: "src/lower/jsx.rs",
@@ -363,22 +263,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
   },
   {
-    name: "optional-callback-kept",
-    breaks: "a component's callback in `Some` keeps its call a statement, `onNote={() => { globalThis.record(4); }}`",
-    file: "src/lower/jsx.rs",
-    find: "                return self.calls_for_nothing(adt.fields[0].expr);\n",
-    replace: "                return false;\n",
-    tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
-  },
-  {
-    name: "boxed-callback-kept",
-    breaks: "a component's callback in `Box::new` or `Rc::new` keeps its call a statement, `onSubmit={() => { submit(false); }}`",
-    file: "src/lower/jsx.rs",
-    find: "                    && matches!(self.std_fn(fun), Some(Std::Same | Std::Leak)) =>\n",
-    replace: "                    && false =>\n",
-    tests: ["test/lowering.test.ts", "-t", "callback returns a call that gives undefined"],
-  },
-  {
     name: "jsx-shown-if-ternary",
     breaks: "a child shown only if a test holds, `Option::map` to an element, is `t != null ? <p /> : undefined`, not the `t != null && <p />` a person writes",
     file: "src/lower/jsx.rs",
@@ -393,14 +277,6 @@ export const mutations: Mutation[] = [
     find: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && self.maps_js_object(child) =>",
     replace: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && false =>",
     tests: ["test/jsx.test.ts", "-t", "JSX tests an Option of an object"],
-  },
-  {
-    name: "component-child-shown-ternary",
-    breaks: "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
-    file: "src/lower/jsx.rs",
-    find: "                            self.shown_if(child, value)\n",
-    replace: "                            value\n",
-    tests: ["test/jsx.test.ts", "-t", "component's child shown if a test holds"],
   },
   {
     name: "key-last",
@@ -434,56 +310,20 @@ export const mutations: Mutation[] = [
     "name": "jsx-key-alike-moves-children",
     "breaks": "a component's key that reads the same anywhere puts its children in `const`s first",
     "file": "src/lower/jsx.rs",
-    "find": "        let alike = first.is_empty() && lowered.as_ref().is_some_and(|v| self.reads_alike(v, out));",
-    "replace": "        let alike = false && first.is_empty() && lowered.as_ref().is_some_and(|v| self.reads_alike(v, out));",
+    "find": "        if !simple {",
+    "replace": "        if true {",
     "tests": [
       "test/jsx.test.ts",
       "-t",
       "a key that reads alike keeps"
-    ]
-  },
-  {
-    "name": "jsx-key-any-alike",
-    "breaks": "a key that does something is printed before children it runs after, its call reordered",
-    "file": "src/lower/jsx.rs",
-    "find": "        let alike = first.is_empty() && lowered.as_ref().is_some_and(|v| self.reads_alike(v, out));",
-    "replace": "        let alike = true;",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "a key that reads alike keeps"
-    ]
-  },
-  {
-    "name": "jsx-constant-object-moves-children",
-    "breaks": "children that do something are put in a `const` before a flattened struct of nothing given",
-    "file": "src/lower/jsx.rs",
-    "find": "                    || (children.has_effects() && !value.is_made_of_constants())",
-    "replace": "                    || (children.has_effects() && !value.is_constant())",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "flattened struct of nothing given"
     ]
   },
   {
     "name": "referred-children-unspread",
     "breaks": "children given by reference are one array child, `{[a, b]}`, not each a child",
     "file": "src/lower/jsx.rs",
-    "find": "                            let child = self.referred_children(child);",
-    "replace": "                            let child = self.strip(child);",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
-  },
-  {
-    "name": "referred-children-reborrow-kept",
-    "breaks": "children given by a reborrow are read as the reference, so a test among them isn't `&&`",
-    "file": "src/lower/jsx.rs",
-    "find": "            ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => self.referred_children(arg),",
-    "replace": "            ExprKind::Borrow { arg, .. } => self.referred_children(arg),",
+    "find": "                        child_ty = self.thir[self.referred_children(child)].ty;",
+    "replace": "                        child_ty = self.thir[self.strip(child)].ty;",
     "tests": [
       "test/jsx.test.ts",
       "-t",

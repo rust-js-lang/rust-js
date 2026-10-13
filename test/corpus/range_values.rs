@@ -2,6 +2,7 @@
 // field, passed and returned, iterated where it's used, and asked whether
 // it contains a number.
 
+use std::collections::BTreeSet;
 use std::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
 
 const FROM: RangeFrom<i32> = 5..;
@@ -125,10 +126,12 @@ fn main() {
     // `char`s step past the surrogates, which no `char` is.
     let letters: String = ('a'..'e').collect();
     let around: Vec<char> = ('\u{d7fe}'..='\u{e001}').collect();
+    let mut kept = BTreeSet::new();
+    kept.extend('\u{d7fe}'..='\u{e001}');
     for c in 'x'..='z' {
         print!("{}", c);
     }
-    println!(" {} {:?} {}", letters, around, ("a".."m").contains(&"hat"));
+    println!(" {} {:?} {} {}", letters, around, kept.len(), ("a".."m").contains(&"hat"));
 }
 
 fn r_of(n: u32) -> Range<u32> {

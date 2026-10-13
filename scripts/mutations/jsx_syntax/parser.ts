@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "let (before, after) = (values[..*at].concat(), values[*at..].concat());",
     replace: "let (before, after) = (values.concat(), String::new());",
-    tests: ["test/jsx.test.ts", "-t", "flattened props come before a field"],
+    tests: ["test/jsx.test.ts", "-t", "takes a component.s flattened props where they.re written, none given left out"],
   },
   {
     name: "local-component-as-tag",
@@ -161,14 +161,6 @@ export const mutations: Mutation[] = [
     find: "if star.kind == TokenKind::Star && !rest.is_empty() =>",
     replace: "if false && star.kind == TokenKind::Star && !rest.is_empty() =>",
     tests: ["test/jsx.test.ts", "-t", "updated from a reference are spread"],
-  },
-  {
-    name: "pure-key-captured",
-    breaks: "a key that does nothing, a variable, is captured in order with the props, `const match = described(label)`",
-    file: "src/jsx_syntax/parser.rs",
-    find: ".position(|(name, value, _)| name == \"key\" && !does_nothing(value))",
-    replace: ".position(|(name, value, _)| name == \"key\" && (true || !does_nothing(value)))",
-    tests: ["test/jsx.test.ts", "-t", "key that does nothing"],
   },
   {
     name: "component-value-no-companion",

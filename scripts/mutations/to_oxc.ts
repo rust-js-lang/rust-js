@@ -120,7 +120,7 @@ export const mutations: Mutation[] = [
     file: "src/to_oxc.rs",
     find: "StmtKind::If(cond, then, Some(els)) if js::leaves(then) =>",
     replace: "StmtKind::If(cond, then, Some(els)) if true || js::leaves(then) =>",
-    tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
+    tests: ["test/lowering.test.ts", "-t", "branches from MIR read as a person writes them"],
   },
   {
     name: "reexport-unprinted",

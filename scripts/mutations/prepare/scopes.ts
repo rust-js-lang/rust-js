@@ -36,7 +36,8 @@ export const mutations: Mutation[] = [
     file: "src/prepare/scopes.rs",
     find: "                StmtKind::If(_, then, Some(els)) if js::leaves(then) => self.hoist(els),",
     replace: "                StmtKind::If(_, then, Some(els)) if false && js::leaves(then) => self.hoist(els),",
-    tests: ["test/lowering.test.ts", "-t", "reuses a name"],
+    tests: ["test/snapshots.test.ts", "-t", "^report: the generated JS"],
+    snapshots: true,
   },
   {
     name: "scopes-other-read-captured",

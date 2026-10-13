@@ -25,7 +25,7 @@ pub fn module(module: &mut js::Module) {
     reclaim::module(module);
 }
 
-/// A function, and each written in its body (ADR 0308), made readable.
+/// A function made readable.
 fn prepared(function: &mut js::Function) {
     block(&mut function.body);
     shadows(&mut function.body, None);
@@ -40,13 +40,6 @@ fn prepared(function: &mut js::Function) {
     tested_constants(&mut function.body);
     unread(&mut function.body);
     js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
-    js::each_block_mut(&mut function.body, &mut |stmts| {
-        for stmt in stmts {
-            if let StmtKind::Function(function) = &mut stmt.kind {
-                prepared(function);
-            }
-        }
-    });
 }
 
 /// `const run = await import(spec).then((m) => m.run)` is `const { run } =
@@ -350,7 +343,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<(StmtKind, usi
         _ => return None,
     };
     let body = match kept {
-        StmtKind::Return(Some(e)) if of_result(e, "_0") => StmtKind::Return(Some(call.clone())),
+        StmtKind::Return(Some(_)) => StmtKind::Return(Some(call.clone())),
         // Past an `if` with no `else`, only one that returns.
         StmtKind::Assign(to, e) if of_result(e, "_0") && matches!(to.kind, ExprKind::Var(_)) && taken == 2 => {
             StmtKind::Assign(to.clone(), call.clone())
@@ -443,24 +436,16 @@ fn constants(body: &mut Vec<Stmt>) {
 /// of a property, which a binding's getter may be, `el.offsetWidth`, that
 /// lays the page out (ADR 0356).
 fn unread(body: &mut Vec<Stmt>) {
-    loop {
-        let mut read = HashSet::new();
-        js::visit_stmts(body, &mut |name| {
-            read.insert(name.to_string());
+    let mut read = HashSet::new();
+    js::visit_stmts(body, &mut |name| {
+        read.insert(name.to_string());
+    });
+    js::each_block_mut(body, &mut |stmts| {
+        stmts.retain(|s| {
+            !matches!(&s.kind, StmtKind::Const(name, value)
+                if !read.contains(name) && value.reads_only_vars())
         });
-        let mut dropped = false;
-        js::each_block_mut(body, &mut |stmts| {
-            stmts.retain(|s| {
-                let unread = matches!(&s.kind, StmtKind::Const(name, value)
-                    if !read.contains(name) && value.reads_only_vars());
-                dropped |= unread;
-                !unread
-            });
-        });
-        if !dropped {
-            return;
-        }
-    }
+    });
 }
 
 /// The variable a place is, `x`: `x.a = 1` sets none.
