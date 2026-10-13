@@ -565,6 +565,28 @@ test("the builtins crate's number::to_fixed is JS's toFixed, not format!'s", () 
   expect(builtins.fixed(1234.5678, 2)).toEqual(["1234.57", "1234.57"]);
 });
 
+// JS's Math, where its answer isn't Rust's method's, for a program that
+// wants JS's: `round` a half up, `max` and `min` `NaN` of a `NaN` and
+// `-0` below `0`, `sign` `0` of a zero; and `random`, which Rust has none of.
+test("the builtins crate's math is JS's Math where Rust's methods differ", async () => {
+  expect(builtins.rounded(-2.5)).toEqual([-2, -3]);
+  expect(builtins.rounded(2.5)).toEqual([3, 3]);
+  expect(builtins.rounded(-0.4)).toEqual([-0, -0]);
+  const [max, rustMax, min, rustMin] = builtins.bounds(NaN, 1);
+  expect([Number.isNaN(max), rustMax, Number.isNaN(min), rustMin]).toEqual([true, 1, true, 1]);
+  expect(Object.is(builtins.bounds(-0, 0)[2], -0)).toBe(true);
+  expect(builtins.signs(0)).toEqual([0, 1]);
+  expect(Object.is(builtins.signs(-0)[0], -0)).toBe(true);
+  const r = builtins.random();
+  expect(r >= 0 && r < 1).toBe(true);
+  const js = await Bun.file(join(target, "builtins.js")).text();
+  expect(js).toContain("Math.round(x)");
+  expect(js).toContain("Math.max(a, b)");
+  expect(js).toContain("Math.min(a, b)");
+  expect(js).toContain("Math.sign(x)");
+  expect(js).toContain("Math.random()");
+});
+
 test("a throwing JS call is a Result, and ? returns early", async () => {
   expect(throws.sum_json("[1, 2, 3]")).toEqual({ TAG: "Ok", _0: 6 });
   const bad = throws.sum_json("[1, 2,");

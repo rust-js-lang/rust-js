@@ -143,6 +143,28 @@ pub fn fixed(x: f64, digits: usize) -> (String, String) {
     (js::number::to_fixed(x, digits as u32), format!("{x:.digits$}"))
 }
 
+/// `Math.round(x)`, as JS rounds, a half up, and `x.round()`, as Rust
+/// does, a half away from zero.
+pub fn rounded(x: f64) -> (f64, f64) {
+    (js::math::round(x), x.round())
+}
+
+/// `Math.max(a, b)` and `Math.min(a, b)`, `NaN` of a `NaN`, and Rust's, the
+/// other number.
+pub fn bounds(a: f64, b: f64) -> [f64; 4] {
+    [js::math::max(&[a, b]), a.max(b), js::math::min(&[a, b]), a.min(b)]
+}
+
+/// `Math.sign(x)`, `0` of a zero, and `x.signum()`, `1` of `0`.
+pub fn signs(x: f64) -> (f64, f64) {
+    (js::math::sign(x), x.signum())
+}
+
+/// `Math.random()`, from `0` up to `1`.
+pub fn random() -> f64 {
+    js::math::random()
+}
+
 /// `done` after `ms`.
 pub fn after(ms: u32, done: Box<dyn FnOnce()>) {
     js::set_timeout(done, ms);

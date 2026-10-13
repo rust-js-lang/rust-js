@@ -940,6 +940,45 @@ pub mod number {
     }
 }
 
+/// JS's [`Math`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math),
+/// where its answer isn't the `f64` method's: a program that wants JS's
+/// asks for it here. The rest, `x.sqrt()` say, are `Math`'s already
+/// (ADR 0283).
+pub mod math {
+    unsafe extern "Rust" {
+        /// [`Math.round(x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/round):
+        /// the nearest integer, a half up, `-2.5` to `-2`, where `x.round()`
+        /// takes it away from zero, to `-3`.
+        #[link_name = "Math.round"]
+        pub safe fn round(x: f64) -> f64;
+
+        /// [`Math.max(..values)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/max):
+        /// the largest, `NaN` if any is, and `0` above `-0`, where `a.max(b)`
+        /// is the other number of a `NaN`. Of none, `-Infinity`.
+        #[link_name = "Math.max"]
+        #[cfg_attr(rust_js, rust_js::variadic)]
+        pub safe fn max(values: &[f64]) -> f64;
+
+        /// [`Math.min(..values)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/min):
+        /// the smallest, `NaN` if any is, and `-0` below `0`, where `a.min(b)`
+        /// is the other number of a `NaN`. Of none, `Infinity`.
+        #[link_name = "Math.min"]
+        #[cfg_attr(rust_js, rust_js::variadic)]
+        pub safe fn min(values: &[f64]) -> f64;
+
+        /// [`Math.sign(x)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/sign):
+        /// `1`, `-1`, or `x` itself of a zero or `NaN`, where `x.signum()` is
+        /// `1` of `0`.
+        #[link_name = "Math.sign"]
+        pub safe fn sign(x: f64) -> f64;
+
+        /// [`Math.random()`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Math/random):
+        /// a number from `0` up to `1`, not one to make a secret of.
+        #[link_name = "Math.random"]
+        pub safe fn random() -> f64;
+    }
+}
+
 /// JS's [`JSON`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/JSON).
 /// A Rust value's JSON is serde's (ADR 0077): `JSON.stringify` of one, as
 /// rust-js has it in JS, isn't, since `None` is `undefined` and an `i64` a
