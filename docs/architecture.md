@@ -216,7 +216,11 @@ lowering's `Hints` say of it.
 Operation classification is side-effect-free. It identifies a supported
 operation and its representation requirements before emission. Prefer rustc
 identities and diagnostic items; unavoidable library-layout assumptions live in
-one recognition boundary and have toolchain-upgrade tests.
+one recognition boundary and have toolchain-upgrade tests. A lang item,
+`LangItem::String`, is rustc's identity for what the language itself uses,
+which any module may ask of `is_lang_item`; a std item known by its name, a
+diagnostic item or a symbol, `sym::Target`, is recognition's alone, as a
+rule holds.
 
 Its modules come in four kinds.
 
