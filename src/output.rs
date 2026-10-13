@@ -561,6 +561,9 @@ impl OutputPlan {
                     })
                     .collect(),
             };
+            // What Cargo is told of the build, then the manifest, last: a
+            // host that sees it sees all the build wrote.
+            artifacts.extend(std::mem::take(&mut extra));
             artifacts.push(Artifact {
                 path,
                 bytes: format!(
