@@ -771,10 +771,12 @@ pub(super) fn props_names(sess: &Session, item: &ast::Item) -> Vec<String> {
 /// one, `built` (ADR 0213), else they're a struct literal.
 pub(super) fn component(sess: &Session, item: &ast::Item, built: &HashSet<String>) -> Option<Box<ast::Item>> {
     let (ident, target, props, handle) = signature(sess, item)?;
-    // A constant's props are another component's, wherever it is, whose
-    // companion is beside them, imported with them.
+    // A constant's props, or a `thread_local!`'s memo's, are another
+    // component's, wherever it is, whose companion is beside them, imported
+    // with them.
     let companion = props.rsplit("::").next().is_some_and(|name| built.contains(name))
-        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty());
+        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty())
+        || (matches!(item.kind, ItemKind::Static(_)) && !props.is_empty() && !props.starts_with("::react::"));
     let pattern = if props.is_empty() {
         ""
     } else {

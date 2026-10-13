@@ -4148,6 +4148,42 @@ pub fn greet(name: &str) -> JSX::Element {
   expect(renderToStaticMarkup(greet("Ann"))).toBe("<b>Hi Ann</b>");
 });
 
+// A thread_local's memo of a component in another module takes its props
+// as that component does, an `Option` not given left out, as react.dev's
+// home page gives the memo'd CodeBlock only some of its props.
+test("a thread_local component of another module's props leaves out what isn't given", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+pub mod label {
+    use react::{JSX, jsx};
+    pub struct LabelProps<'a> {
+        pub text: &'a str,
+        pub title: Option<&'a str>,
+    }
+    pub fn Label(LabelProps { text, title }: LabelProps) -> JSX::Element {
+        jsx! { <b title={title}>{text}</b> }
+    }
+}
+pub mod memoized {
+    use super::label::{Label, LabelProps};
+    use react::{MemoExoticComponent, memo};
+    thread_local! {
+        pub static Memoized: MemoExoticComponent<LabelProps<'static>> = memo(Label);
+    }
+}
+use memoized::Memoized;
+use react::{JSX, jsx};
+
+pub fn greet(name: &str) -> JSX::Element {
+    let text = format!("Hi {name}");
+    jsx! { <Memoized text={&text} /> }
+}
+`);
+  run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("return <Memoized text={text} />;");
+  const { greet } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(greet("Ann"))).toBe("<b>Hi Ann</b>");
+});
+
 // Props a flattened struct holds, taken apart with the rest: its fields are
 // the props' own in JS, `{ title, frame }`, as written, as next/router's
 // `withRouter` gives react.dev's Seo its props and the router.

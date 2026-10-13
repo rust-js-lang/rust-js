@@ -306,8 +306,8 @@ export const mutations: Mutation[] = [
     "name": "const-component-props-literal",
     "breaks": "a constant's component, of props in another module, builds them as a struct literal, without their companion's defaults",
     "file": "src/jsx_syntax/parser.rs",
-    "find": "        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty());",
-    "replace": ";",
+    "find": "        || (matches!(item.kind, ItemKind::Const(_)) && !props.is_empty())\n",
+    "replace": "",
     "tests": [
       "test/jsx.test.ts",
       "-t",
@@ -348,6 +348,18 @@ export const mutations: Mutation[] = [
       "test/jsx.test.ts",
       "-t",
       "props updated from a reference are spread"
+    ]
+  },
+  {
+    "name": "static-component-props-literal",
+    "breaks": "a thread_local memo of a component in another module builds its props as a struct literal, an Option not given an error",
+    "file": "src/jsx_syntax/parser.rs",
+    "find": "        || (matches!(item.kind, ItemKind::Static(_)) && !props.is_empty() && !props.starts_with(\"::react::\"));",
+    "replace": ";",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "another module's props leaves out"
     ]
   },
 ];
