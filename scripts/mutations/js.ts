@@ -346,4 +346,16 @@ export const mutations: Mutation[] = [
     replace: "            && false\n",
     tests: ["test/bindings.test.ts","-t","as react.dev's Console does"],
   },
+  {
+    "name": "option-literal-tested",
+    "breaks": "an Option compared to a literal keeps its test, `option != null && option === \"index\"`",
+    "file": "src/js.rs",
+    "find": "        // `a != null && a === \"index\"` is `a === \"index\"`: no literal is\n        // `null` or `undefined`.\n        if op == Op::And\n",
+    "replace": "        // `a != null && a === \"index\"` is `a === \"index\"`: no literal is\n        // `null` or `undefined`.\n        if false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "compared to a literal needs no test"
+    ]
+  },
 ];

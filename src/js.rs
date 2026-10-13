@@ -1025,6 +1025,18 @@ impl Expr {
         {
             return rhs;
         }
+        // `a != null && a === "index"` is `a === "index"`: no literal is
+        // `null` or `undefined`.
+        if op == Op::And
+            && let ExprKind::Binary(Op::LooseNe, tested, null) = &lhs.kind
+            && matches!(null.kind, ExprKind::Null)
+            && let ExprKind::Binary(Op::Eq, a, b) = &rhs.kind
+            && [(a, b), (b, a)].iter().any(|(x, literal)| {
+                same_path(tested, x) && matches!(literal.kind, ExprKind::Str(_) | ExprKind::Bool(_) | ExprKind::Num(_))
+            })
+        {
+            return rhs;
+        }
         // `a != null && Array.isArray(a)` is `Array.isArray(a)`: no array is
         // `null` or `undefined`; and of `Array.isArray(a) && ..`, that.
         let mut first = &rhs;

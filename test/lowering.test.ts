@@ -2015,6 +2015,25 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
   expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
 
+// An Option compared to a literal is only that comparison, which none fails
+// anyway: `segments.at(-1) === "index"`, as react.dev's page route drops a
+// path's last `index`.
+test("an Option compared to a literal needs no test that it's there", async () => {
+  const dir = fixture("option-literal");
+  writeFileSync(join(dir, "lib.rs"), `pub fn trimmed(mut segments: Vec<String>) -> Vec<String> {
+    if segments.last().is_some_and(|last| last == "index") {
+        segments.pop();
+    }
+    segments
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('const option = segments.at(-1);\n  if (option === "index") {');
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.trimmed(["a", "index"]), lib.trimmed(["a"]), lib.trimmed([])]).toEqual([["a"], ["a"], []]);
+});
+
 // An insert whose answer goes unused is JS's own, `set.add(x)`, in a
 // thread-local's closure too, as react.dev's home page keeps its liked
 // videos and its caches.
