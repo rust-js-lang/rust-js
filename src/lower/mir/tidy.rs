@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::js::{self, Expr, ExprKind, Op, Prop, Stmt, StmtKind, UnaryOp};
+use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
 use super::negate;
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
@@ -4460,37 +4460,18 @@ fn range_items(e: &mut Expr) {
 /// `$lazyRange(a, b)` of `$iterator({ start: a, end: b }, $rangeNext)`, `a` a
 /// number (`range_items`).
 fn lazy_range(e: &Expr) -> Option<Expr> {
-    let ExprKind::Call(callee, args) = &e.kind else {
-        return None;
-    };
-    let (ExprKind::Var(iterator), [range, next]) = (&callee.kind, &args[..]) else {
-        return None;
-    };
-    let (ExprKind::Object(bounds), ExprKind::Var(next)) = (&range.kind, &next.kind) else {
-        return None;
-    };
-    let [Prop::Field(s, start), Prop::Field(f, end)] = &bounds[..] else {
-        return None;
-    };
-    let inclusive = match next.as_str() {
-        "$rangeNext" => false,
-        "$rangeInclusiveNext" => true,
-        _ => return None,
-    };
-    if iterator != "$iterator"
-        || (s.as_str(), f.as_str()) != ("start", "end")
-        || !matches!(start.kind, ExprKind::Num(_))
-    {
+    let range = iterators::stepped_range(e)?;
+    if range.back || !matches!(range.start.kind, ExprKind::Num(_)) {
         return None;
     }
-    let end = match inclusive {
-        true => match end.as_int() {
+    let end = match range.inclusive {
+        true => match range.end.as_int() {
             Some(n) => Expr::int(n + 1),
-            None => Expr::bin(Op::Add, end.clone(), Expr::int(1)),
+            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),
         },
-        false => end.clone(),
+        false => range.end.clone(),
     };
-    Some(Expr::call(Expr::var("$lazyRange"), vec![start.clone(), end]))
+    Some(Expr::call(Expr::var("$lazyRange"), vec![range.start.clone(), end]))
 }
 
 /// A map of an array's items nothing reads, `next_back` having stepped its

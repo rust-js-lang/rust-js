@@ -10322,7 +10322,8 @@ pub fn shown(msg: Option<&Unknown>, tagged: bool) -> Option<String> {
 
 // An iterator's adapter of a JS iterator, `.map(..)` of a range's, is a JS
 // iterator already: the next adapter is its own, not `Iterator.from(..)`'s,
-// as react.dev's useTocHighlight finds its anchors.
+// nor an array's made of it, `Array.from(..)`, as react.dev's
+// useTocHighlight finds its anchors.
 test("an adapter of a JS iterator is not made one again", async () => {
   const dir = fixture("iterator-from-adapter");
   writeFileSync(join(dir, "lib.rs"), `pub fn evens(n: u32) -> Vec<u32> {
@@ -10331,7 +10332,8 @@ test("an adapter of a JS iterator is not made one again", async () => {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  expect(js).not.toContain("Iterator.from(");
+  expect(js).not.toMatch(/(?:Iterator|Array)\.from\(/);
+  expect(js).toContain(".filter((x) => x > 5)\n    .toArray()");
   const lib = await import(join(dir, "mir.js"));
   expect(lib.evens(10)).toEqual([20, 40, 60, 80]);
 });

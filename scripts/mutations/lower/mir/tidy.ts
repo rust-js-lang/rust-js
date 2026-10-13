@@ -1820,8 +1820,8 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-range-items-eager",
     "breaks": "`(0..n).find(f)` from MIR is `$range(0, n).find(f)`, an array of all n numbers made before the first is tried",
     "file": "src/lower/mir/tidy.rs",
-    "find": "    Some(Expr::call(Expr::var(\"$lazyRange\"), vec![start.clone(), end]))\n",
-    "replace": "    Some(Expr::call(Expr::var(\"$iter\"), vec![Expr::call(Expr::var(\"$range\"), vec![start.clone(), end])]))\n",
+    "find": "    Some(Expr::call(Expr::var(\"$lazyRange\"), vec![range.start.clone(), end]))\n",
+    "replace": "    Some(Expr::call(Expr::var(\"$iter\"), vec![Expr::call(Expr::var(\"$range\"), vec![range.start.clone(), end])]))\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -1832,8 +1832,8 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-range-items-chars",
     "breaks": "a range of `char`s made where it's stepped is `$lazyRange(\"a\", \"e\")`, which counts text as numbers",
     "file": "src/lower/mir/tidy.rs",
-    "find": "|| !matches!(start.kind, ExprKind::Num(_))",
-    "replace": "|| false",
+    "find": "    if range.back || !matches!(range.start.kind, ExprKind::Num(_)) {\n",
+    "replace": "    if range.back {\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -1856,8 +1856,8 @@ export const mutations: Mutation[] = [
     "name": "mir-tidy-lazy-range-end-unfolded",
     "breaks": "`(1..=5).filter(f)` from MIR is `$lazyRange(1, 5 + 1)`, not `$lazyRange(1, 6)`",
     "file": "src/lower/mir/tidy.rs",
-    "find": "            Some(n) => Expr::int(n + 1),\n            None => Expr::bin(Op::Add, end.clone(), Expr::int(1)),\n",
-    "replace": "            Some(_) | None => Expr::bin(Op::Add, end.clone(), Expr::int(1)),\n",
+    "find": "            Some(n) => Expr::int(n + 1),\n            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
+    "replace": "            Some(_) | None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",

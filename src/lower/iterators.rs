@@ -147,6 +147,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var("$iter"), vec![items])
     }
 
+    /// `$iterator(value, next)`: a JS iterator of `value`, stepped by `next`,
+    /// a range's by its `$rangeNext`.
+    pub(super) fn stepped_by(&mut self, value: Expr, next: Expr) -> Expr {
+        self.runtime.insert(Helper::Iterator);
+        Expr::call(Expr::var("$iterator"), vec![value, next])
+    }
+
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
     /// type `ty`: `it.items.slice(it.at, it.end)`, copies of the items it
     /// `owns` that need one (ADR 0181).
@@ -1135,6 +1142,83 @@ pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
 
 pub(super) fn is_stepped_items(e: &Expr) -> bool {
     matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$iter"))
+}
+
+/// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
+/// `$iter` or a range's `$iterator`, a collection's `values()`, `keys()`
+/// or `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
+pub(super) fn is_js_iterator(e: &Expr) -> bool {
+    let js::ExprKind::Call(callee, _) = &e.kind else {
+        return false;
+    };
+    match &callee.kind {
+        js::ExprKind::Var(v) => v == "$iterator" || is_stepped_items(e),
+        // Not `Object.keys(o)`'s, an array.
+        js::ExprKind::Member(object, name) => match &object.kind {
+            js::ExprKind::Var(v) if v == "Object" => false,
+            js::ExprKind::Var(v) if v == "Iterator" => name == "from",
+            _ if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") => is_js_iterator(object),
+            _ => matches!(name.as_str(), "values" | "keys" | "entries"),
+        },
+        _ => false,
+    }
+}
+
+/// What `Iterator.from(x)` makes a JS iterator of, `x`: `Ok` of it, or
+/// `Err` of `e` itself, of anything else.
+pub(super) fn from_iterator(e: Expr) -> Result<Expr, Expr> {
+    match e.kind {
+        js::ExprKind::Call(callee, mut args)
+            if args.len() == 1
+                && matches!(&callee.kind, js::ExprKind::Member(object, name)
+                    if name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")) =>
+        {
+            Ok(args.pop().expect("one"))
+        }
+        kind => Err(Expr {
+            reads: false,
+            kind,
+            span: e.span,
+        }),
+    }
+}
+
+/// A range's numbers as `stepped_by` steps them, `$iterator({ start: a,
+/// end: b }, $rangeNext)`: its bounds, whether its end is in it, `a..=b`'s,
+/// and whether it's stepped from its end.
+pub(super) struct SteppedRange<'e> {
+    pub(super) start: &'e Expr,
+    pub(super) end: &'e Expr,
+    pub(super) inclusive: bool,
+    pub(super) back: bool,
+}
+
+pub(super) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
+    let js::ExprKind::Call(callee, args) = &e.kind else {
+        return None;
+    };
+    let (js::ExprKind::Var(iterator), [range, next]) = (&callee.kind, &args[..]) else {
+        return None;
+    };
+    let (js::ExprKind::Object(bounds), js::ExprKind::Var(next)) = (&range.kind, &next.kind) else {
+        return None;
+    };
+    let [js::Prop::Field(s, start), js::Prop::Field(f, end)] = &bounds[..] else {
+        return None;
+    };
+    let (inclusive, back) = match next.as_str() {
+        "$rangeNext" => (false, false),
+        "$rangeNextBack" => (false, true),
+        "$rangeInclusiveNext" => (true, false),
+        "$rangeInclusiveNextBack" => (true, true),
+        _ => return None,
+    };
+    (iterator == "$iterator" && (s.as_str(), f.as_str()) == ("start", "end")).then_some(SteppedRange {
+        start,
+        end,
+        inclusive,
+        back,
+    })
 }
 
 /// What `for (x of e)` steps through of `e`, `$iter(xs)`'s or

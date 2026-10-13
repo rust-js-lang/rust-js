@@ -272,16 +272,6 @@ test("tidying asks neither rustc nor the function being lowered", () => {
   }
 });
 
-// Whether a value is a JS iterator is one question, `is_lazy_value`: its
-// type says so, or a chain's consumer made it so (ADR 0139). Asked of the
-// type alone elsewhere, the two disagreed: `next()` of a chain took all
-// of it. Only iterators.rs reads the type's answer, and the marks.
-test("iterators.rs alone answers whether a value is lazy", () => {
-  for (const file of ["src/lower.rs", ...files("src/lower")].filter(f => f !== "src/lower/iterators.rs" && !f.includes("/recognition"))) {
-    expect(read(file), file).not.toMatch(/\.is_lazy_iter\(|\.chains\.\w/);
-  }
-});
-
 // What the front end keeps as it lowers a function is grouped by concern,
 // each group read and written by the module that owns it, which the rest
 // ask: `self.is_boxed(var)`, not `self.locals.mut_refs.boxes`. Six modules
@@ -327,8 +317,14 @@ test("each group of a function's state is read and written by its owner", () => 
 // owns it, which the rest ask: a generic iterator as a JS iterator, a
 // stepped one's `$iter`, and the box of a `Some` that looks like `None`.
 // Each was written in two to five modules (the second architecture audit).
+//
+// Whether a value is a JS iterator or an array is iterators.rs's question,
+// `is_js_iterator`, asked of the JS lowering from MIR makes (ADR 0364): it,
+// `Iterator.from`, and a range's `$iterator`, written and taken apart, were
+// in mir/iter.rs and tidy.rs too (the third architecture audit).
 const idioms: [string, RegExp, string[]][] = [
-  ["Iterator.from", /Expr::var\("Iterator"\),\s*"from"/, ["src/lower/iterators.rs"]],
+  ["Iterator.from", /Expr::var\("Iterator"\),\s*"from"|==\s*"Iterator"/, ["src/lower/iterators.rs"]],
+  ["$iterator", /"\$iterator"|Helper::Iterator\b/, ["src/lower/iterators.rs"]],
   ["$iter", /"\$iter"|Helper::Iter\b/, ["src/lower/iterators.rs"]],
   ["$lent", /"\$lent"|Helper::Lent\b/, ["src/lower/iterators.rs"]],
   ["$someNone", /\$someNone/, ["src/lower/std_types/option.rs"]],

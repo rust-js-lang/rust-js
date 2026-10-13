@@ -12,7 +12,7 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
-use crate::lower::iterators::{collected, made_array};
+use crate::lower::iterators::{collected, from_iterator, is_js_iterator, made_array, stepped_range};
 use crate::lower::recognition::{StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
@@ -211,16 +211,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(match (name, range) {
                 ("rev", Some(RangeKind::Exclusive)) => {
                     self.runtime.insert(Helper::RangeNextBack);
-                    self.helper(
-                        Helper::Iterator,
-                        "$iterator",
-                        vec![receiver, Expr::var("$rangeNextBack")],
-                    )
+                    self.stepped_by(receiver, Expr::var("$rangeNextBack"))
                 }
                 ("rev", Some(RangeKind::Inclusive)) => {
                     self.runtime.insert(Helper::RangeInclusiveNextBack);
                     let next_back = Expr::var("$rangeInclusiveNextBack");
-                    self.helper(Helper::Iterator, "$iterator", vec![receiver, next_back])
+                    self.stepped_by(receiver, next_back)
                 }
                 (_, Some(_)) => {
                     return Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR")));
@@ -542,19 +538,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.range_kind(ty) {
             Some(RangeKind::Exclusive) => {
                 self.runtime.insert(Helper::RangeNext);
-                Ok(self.helper(Helper::Iterator, "$iterator", vec![value, Expr::var("$rangeNext")]))
+                Ok(self.stepped_by(value, Expr::var("$rangeNext")))
             }
             Some(RangeKind::From) => {
                 self.runtime.insert(Helper::RangeFromNext);
-                Ok(self.helper(Helper::Iterator, "$iterator", vec![value, Expr::var("$rangeFromNext")]))
+                Ok(self.stepped_by(value, Expr::var("$rangeFromNext")))
             }
             Some(RangeKind::Inclusive) => {
                 self.runtime.insert(Helper::RangeInclusiveNext);
-                Ok(self.helper(
-                    Helper::Iterator,
-                    "$iterator",
-                    vec![value, Expr::var("$rangeInclusiveNext")],
-                ))
+                Ok(self.stepped_by(value, Expr::var("$rangeInclusiveNext")))
             }
             Some(_) => Err(self.unsupported(span, "iterating this range, from its MIR")),
             None if self.is_user_iterator(ty) => {
@@ -611,47 +603,25 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             maps.push((name.clone(), f.clone()));
             at = source;
         }
-        let js::ExprKind::Call(callee, args) = &at.kind else {
-            return None;
-        };
-        let (js::ExprKind::Var(iterator), [range, next]) = (&callee.kind, &args[..]) else {
-            return None;
-        };
-        let (js::ExprKind::Object(bounds), js::ExprKind::Var(next)) = (&range.kind, &next.kind) else {
-            return None;
-        };
-        let [js::Prop::Field(s, start), js::Prop::Field(e, end)] = &bounds[..] else {
-            return None;
-        };
+        let range = stepped_range(at)?;
         let numbers = (iter_ty.walk())
             .filter_map(|arg| arg.as_type())
             .find(|&t| matches!(self.range_kind(t), Some(RangeKind::Exclusive | RangeKind::Inclusive)))
             .and_then(|t| self.range_index(t))
             .and_then(Num::of)
             .is_some_and(|num| !num.big());
-        let (inclusive, back) = match next.as_str() {
-            "$rangeNext" => (false, false),
-            "$rangeNextBack" => (false, true),
-            "$rangeInclusiveNext" => (true, false),
-            "$rangeInclusiveNextBack" => (true, true),
-            _ => return None,
-        };
-        if iterator != "$iterator"
-            || (s.as_str(), e.as_str()) != ("start", "end")
-            || !numbers
-            || maps.iter().filter(|(_, f)| crate::lower::iterators::does(f)).count() > 1 && maps.len() > 1
-        {
+        if !numbers || maps.iter().filter(|(_, f)| crate::lower::iterators::does(f)).count() > 1 && maps.len() > 1 {
             return None;
         }
-        let end = match inclusive {
-            true => match end.as_int() {
+        let end = match range.inclusive {
+            true => match range.end.as_int() {
                 Some(n) => Expr::int(n + 1),
-                None => Expr::bin(js::Op::Add, end.clone(), Expr::int(1)),
+                None => Expr::bin(js::Op::Add, range.end.clone(), Expr::int(1)),
             },
-            false => end.clone(),
+            false => range.end.clone(),
         };
-        let mut items = self.helper(Helper::Range, "$range", vec![start.clone(), end]);
-        if back {
+        let mut items = self.helper(Helper::Range, "$range", vec![range.start.clone(), end]);
+        if range.back {
             items = Expr::call(Expr::member(items, "toReversed"), Vec::new());
         }
         Some(maps.into_iter().rev().fold(items, |items, (name, f)| {
@@ -737,11 +707,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 }
 
-/// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
-/// `$iter` or a range's `$iterator`, a collection's `values()`, `keys()`
-/// or `entries()`, or an iterator helper's of one, `.map(f)` of a range's.
-/// Whether `e` is an array's items made there, `$iter(xs)`, skipped or taken
-/// from, `.drop(1)`, by a count that does nothing (`len()`'s).
 /// `counted_chain`'s `$iter(xs).drop(1).take(2)`: the array it steps,
 /// `xs.slice(1).slice(0, 2)`.
 fn sliced(e: &Expr) -> Expr {
@@ -760,6 +725,8 @@ fn sliced(e: &Expr) -> Expr {
     }
 }
 
+/// Whether `e` is an array's items made there, `$iter(xs)`, skipped or taken
+/// from, `.drop(1)`, by a count that does nothing (`len()`'s).
 fn counted_chain(e: &Expr) -> bool {
     let mut at = e;
     let mut stages = 0;
@@ -787,41 +754,5 @@ fn range_bounds(range: &Expr) -> Option<(Expr, Expr)> {
         },
         _ if range.reads_same() => Some((Expr::member(range.clone(), "start"), Expr::member(range.clone(), "end"))),
         _ => None,
-    }
-}
-
-fn is_js_iterator(e: &Expr) -> bool {
-    let js::ExprKind::Call(callee, _) = &e.kind else {
-        return false;
-    };
-    match &callee.kind {
-        js::ExprKind::Var(v) => v == "$iterator" || crate::lower::iterators::is_stepped_items(e),
-        // Not `Object.keys(o)`'s, an array.
-        js::ExprKind::Member(object, name) => match &object.kind {
-            js::ExprKind::Var(v) if v == "Object" => false,
-            js::ExprKind::Var(v) if v == "Iterator" => name == "from",
-            _ if matches!(name.as_str(), "map" | "filter" | "flatMap" | "take" | "drop") => is_js_iterator(object),
-            _ => matches!(name.as_str(), "values" | "keys" | "entries"),
-        },
-        _ => false,
-    }
-}
-
-/// What `Iterator.from(x)` makes a JS iterator of, `x`: `Ok` of it, or
-/// `Err` of `e` itself, of anything else.
-fn from_iterator(e: Expr) -> Result<Expr, Expr> {
-    match e.kind {
-        js::ExprKind::Call(callee, mut args)
-            if args.len() == 1
-                && matches!(&callee.kind, js::ExprKind::Member(object, name)
-                    if name == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")) =>
-        {
-            Ok(args.pop().expect("one"))
-        }
-        kind => Err(Expr {
-            reads: false,
-            kind,
-            span: e.span,
-        }),
     }
 }

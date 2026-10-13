@@ -399,4 +399,36 @@ export const mutations: Mutation[] = [
       "arrays of arrays flattened"
     ]
   },
+  {
+    name: "mir-object-keys-iterated",
+    breaks: "`Object.keys(o)`, an array, is taken as a JS iterator and stepped as one",
+    file: "src/lower/iterators.rs",
+    find: "            js::ExprKind::Var(v) if v == \"Object\" => false,\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","a for over Object.keys"],
+  },
+  {
+    "name": "mir-adapter-not-js-iterator",
+    "breaks": "an adapter of a JS iterator, `.map(f)` of a range's, is made one again, `Iterator.from(..)`",
+    "file": "src/lower/iterators.rs",
+    "find": "            _ if matches!(name.as_str(), \"map\" | \"filter\" | \"flatMap\" | \"take\" | \"drop\") => is_js_iterator(object),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "an adapter of a JS iterator is not made one again"
+    ]
+  },
+  {
+    "name": "mir-range-inclusive-lazy",
+    "breaks": "`(1..=n).collect()` from MIR stays `$iterator(\u2026, $rangeInclusiveNext).toArray()`, not `$range(1, n + 1)`",
+    "file": "src/lower/iterators.rs",
+    "find": "        \"$rangeInclusiveNext\" => (true, false),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "a range mapped and collected"
+    ]
+  },
 ];

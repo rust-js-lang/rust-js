@@ -62,8 +62,8 @@ export const mutations: Mutation[] = [
     name: "mir-rev-range-forward",
     breaks: "`(1..4).rev()` steps the range from its start",
     file: "src/lower/mir/iter.rs",
-    find: "                        vec![receiver, Expr::var(\"$rangeNextBack\")],\n",
-    replace: "                        vec![receiver, Expr::var(\"$rangeNext\")],\n",
+    find: "self.stepped_by(receiver, Expr::var(\"$rangeNextBack\"))",
+    replace: "self.stepped_by(receiver, Expr::var(\"$rangeNext\"))",
     tests: ["test/corpus.test.ts","-t","iterator_back_ends"],
   },
   {
@@ -131,14 +131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","value_keys|user_hash|range_into_set"],
   },
   {
-    name: "mir-object-keys-iterated",
-    breaks: "`Object.keys(o)`, an array, is taken as a JS iterator and stepped as one",
-    file: "src/lower/mir/iter.rs",
-    find: "            js::ExprKind::Var(v) if v == \"Object\" => false,\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","a for over Object.keys"],
-  },
-  {
     name: "mir-made-array-iterator-from",
     breaks: "a `split`'s array MIR steps is `Iterator.from(…)`, so its chain stays a JS iterator's",
     file: "src/lower/mir/iter.rs",
@@ -179,18 +171,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-adapter-not-js-iterator",
-    "breaks": "an adapter of a JS iterator, `.map(f)` of a range's, is made one again, `Iterator.from(..)`",
-    "file": "src/lower/mir/iter.rs",
-    "find": "            _ if matches!(name.as_str(), \"map\" | \"filter\" | \"flatMap\" | \"take\" | \"drop\") => is_js_iterator(object),\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an adapter of a JS iterator is not made one again"
-    ]
-  },
-  {
     "name": "mir-mapped-range-lazy",
     "breaks": "a range mapped and collected stays `$iterator({ start, end }, $rangeNext).map(f).toArray()`, not `$range(a, b).map(f)`",
     "file": "src/lower/mir/iter.rs",
@@ -203,23 +183,11 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-range-inclusive-lazy",
-    "breaks": "`(1..=n).collect()` from MIR stays `$iterator(\u2026, $rangeInclusiveNext).toArray()`, not `$range(1, n + 1)`",
-    "file": "src/lower/mir/iter.rs",
-    "find": "            \"$rangeInclusiveNext\" => (true, false),\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected"
-    ]
-  },
-  {
     "name": "mir-range-back-forward",
     "breaks": "`(0..n).rev().collect()` from MIR is `$range(0, n)`, forwards",
     "file": "src/lower/mir/iter.rs",
-    "find": "        if back {\n",
-    "replace": "        if !back {\n",
+    "find": "        if range.back {\n",
+    "replace": "        if !range.back {\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -230,8 +198,8 @@ export const mutations: Mutation[] = [
     "name": "mir-range-unmapped-lazy",
     "breaks": "a range collected unmapped from MIR stays a lazy `$iterator(\u2026).toArray()`",
     "file": "src/lower/mir/iter.rs",
-    "find": "            || (s.as_str(), e.as_str()) != (\"start\", \"end\")\n",
-    "replace": "            || maps.is_empty()\n            || (s.as_str(), e.as_str()) != (\"start\", \"end\")\n",
+    "find": "        if !numbers\n",
+    "replace": "        if maps.is_empty()\n            || !numbers\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -314,8 +282,8 @@ export const mutations: Mutation[] = [
     "name": "mir-mapped-range-end-unfolded",
     "breaks": "`(1..=3).map(f).collect()` from MIR is `$range(1, 3 + 1).map(f)`, not `$range(1, 4)`",
     "file": "src/lower/mir/iter.rs",
-    "find": "                Some(n) => Expr::int(n + 1),\n                None => Expr::bin(js::Op::Add, end.clone(), Expr::int(1)),\n",
-    "replace": "                Some(_) | None => Expr::bin(js::Op::Add, end.clone(), Expr::int(1)),\n",
+    "find": "                Some(n) => Expr::int(n + 1),\n                None => Expr::bin(js::Op::Add, range.end.clone(), Expr::int(1)),\n",
+    "replace": "                Some(_) | None => Expr::bin(js::Op::Add, range.end.clone(), Expr::int(1)),\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",
