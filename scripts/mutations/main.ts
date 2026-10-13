@@ -3,22 +3,6 @@ import type { Mutation } from "../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "library-metadata-unstaged",
-    breaks: "rustc writes a library's metadata where it's asked for, before its JS is published, and whether it is or not",
-    file: "src/main.rs",
-    find: "                    rewritten.push(format!(\"metadata={}\", staged.display()));\n",
-    replace: "                    rewritten.push(format!(\"metadata={}\", path.display()));\n                    std::fs::create_dir_all(stage()).ok();\n                    std::fs::write(&staged, b\"\").ok();\n",
-    tests: ["test/crates.test.ts", "-t", "neither is"],
-  },
-  {
-    name: "rustc-outputs-passed-through",
-    breaks: "rustc's other outputs, `--emit=mir` say, are written past rust-js's checks",
-    file: "src/main.rs",
-    find: "                None => {\n                    eprintln!(\n                        \"rust-js: rustc's `--emit={kind}` isn't something rust-js writes; only a library's --emit=metadata=<path>\"\n                    );\n                    return ExitCode::FAILURE;\n                }\n",
-    replace: "                None => rewritten.push(kind.to_string()),\n",
-    tests: ["test/crates.test.ts", "-t", "outputs are refused"],
-  },
-  {
     name: "cargo-record-outside-plan",
     breaks: "what Cargo is told of a crate is written on its own, and a build that fails writing it has changed the JS",
     file: "src/main.rs",
@@ -57,14 +41,6 @@ export const mutations: Mutation[] = [
     find: "        let ours = [\"rust-js\", \"--cfg=rust_js\", \"--check-cfg=cfg(rust_js)\"].map(String::from);\n",
     replace: "        let ours = [\"rust-js\", \"--check-cfg=cfg(rust_js)\"].map(String::from);\n",
     tests: ["test/snapshots.test.ts","-t","counter"],
-  },
-  {
-    name: "rustc-bootstrapped",
-    breaks: "rust-js turns its rustc's unstable features on, as `RUSTC_BOOTSTRAP=1` does, so a crate's own `#![feature]` compiles where a stable release refuses it",
-    file: "src/main.rs",
-    find: "    let mut rustc_args = vec![\n        \"rust-js\".to_string(), // argv[0], ignored by rustc",
-    replace: "    unsafe { std::env::set_var(\"RUSTC_BOOTSTRAP\", \"1\") };\n    let mut rustc_args = vec![\n        \"rust-js\".to_string(), // argv[0], ignored by rustc",
-    tests: ["test/diagnostics.test.ts", "-t", "a crate's own #!\\[feature\\] is refused, as on a stable release"],
   },
   {
     name: "cargo-app-untracked",

@@ -279,3 +279,13 @@ pub mod deep {
   const inner = manifest.modules.find((m: { module: string[] }) => m.module.join("::") === "deep::inner");
   expect(named(inner.file, inner.links)).toEqual([["../lib.js", lib]]);
 });
+
+// A library's JS is found by its manifest (ADR 0042): one asked for without
+// a manifest is refused, before anything is written.
+test("a library is refused without its manifest", () => {
+  buildCompiler();
+  const dir = fixture("library-without-manifest");
+  writeFileSync(join(dir, "lib.rs"), "pub fn one() -> u32 { 1 }\n");
+  expect(() => run([compiler, join(dir, "lib.rs"), "--library"])).toThrow("--library requires --manifest");
+  expect(existsSync(join(dir, "lib.js"))).toBe(false);
+});

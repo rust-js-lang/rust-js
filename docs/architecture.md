@@ -149,7 +149,7 @@ module's `crate::` and `super::` paths and checks them against this table:
 
 | Layer | Modules | May use | May not |
 |---|---|---|---|
-| Driver | `main.rs`, `cargo.rs` | every layer | |
+| Driver | `main.rs`, `command.rs`, `cargo.rs` | every layer | |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
 | Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
 | Printing | `to_oxc.rs`, `format.rs`, `typescript.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript; a manifest's JSON and the `#[test]` runner's fixed template are the artifact planner's |
@@ -447,7 +447,7 @@ instead of inferring compiler output.
 
 | Responsibility | Code |
 | --- | --- |
-| Driver and syntax | `src/main.rs`, `src/cargo.rs`, `src/jsx_syntax.rs`, `src/jsx_syntax/` |
+| Driver and syntax | `src/main.rs`, `src/command.rs`, `src/cargo.rs`, `src/jsx_syntax.rs`, `src/jsx_syntax/` |
 | Analysis and lowering | `src/lower/analysis.rs`, `src/lower/pipeline.rs`, `src/lower.rs`, `src/lower/` |
 | Linking and runtime | `src/link.rs`, `src/reachability.rs`, `src/names.rs`, `src/runtime.rs`, `src/runtime/` |
 | JS tree and presentation | `src/js.rs`, `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/format.rs`, `src/typescript.rs` |

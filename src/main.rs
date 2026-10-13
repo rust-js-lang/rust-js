@@ -39,6 +39,7 @@ extern crate rustc_session;
 extern crate rustc_span;
 
 mod cargo;
+mod command;
 mod format;
 mod hooks;
 mod js;
@@ -244,240 +245,91 @@ fn main() -> ExitCode {
         cargo::Invocation::RustJs(args) => args,
         cargo::Invocation::Rustc(exit) => return exit,
     };
-    // `@rust-js/runtime`'s module (ADR 0103), for `runtime/index.js`.
-    if args.as_slice() == ["--runtime-module"] {
-        print!("{}", runtime::package_module());
-        return ExitCode::SUCCESS;
-    }
-    if args.as_slice() == ["--version-json"] {
-        println!(
-            "{}",
-            serde_json::to_string(&manifest::Compiler::current()).expect("serialize compiler identity")
-        );
-        return ExitCode::SUCCESS;
-    }
-    if args.as_slice() == ["--version"] {
-        let compiler = manifest::Compiler::current();
-        println!(
-            "rust-js {} ({}; ABI {})",
-            compiler.version, compiler.toolchain, compiler.abi
-        );
-        return ExitCode::SUCCESS;
-    }
-    if args.first().is_some_and(|arg| arg == "--rustc") {
-        // `cfg(rust_js)` says it's rust-js, as it says to a program: the crates'
-        // attributes of its tool are `cfg_attr(rust_js, ..)`, which a plain
-        // rustc, a user's own `cargo check`, leaves out (ADR 0113).
-        let ours = ["rust-js", "--cfg=rust_js", "--check-cfg=cfg(rust_js)"].map(String::from);
-        let rustc_args: Vec<String> = ours.into_iter().chain(args[1..].iter().cloned()).collect();
-        return rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut Syntax));
-    }
-    if args.first().is_some_and(|arg| arg == "--format-jsx") {
-        let input = match args.as_slice() {
-            [_] => "-",
-            [_, input] => input.as_str(),
-            _ => {
-                eprintln!("usage: rust-js --format-jsx [input.rs] (defaults to stdin; writes stdout)");
-                return ExitCode::FAILURE;
-            }
-        };
-        let mut formatter = jsx_syntax::formatting::Formatter::default();
-        let args = vec![
-            "rust-js".into(),
-            input.into(),
-            "--crate-type=lib".into(),
-            "--edition=2024".into(),
-        ];
-        let result = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&args, &mut formatter));
-        if let Some(output) = formatter.output {
-            print!("{output}");
+    let build = match command::parse(args) {
+        Ok(command::Command::Build(build)) => build,
+        Ok(command::Command::RuntimeModule) => {
+            print!("{}", runtime::package_module());
+            return ExitCode::SUCCESS;
         }
-        return result;
-    }
-    // Anything after `--` goes to rustc as-is, e.g. `-- --sysroot /sysroot`.
-    let (ours, to_rustc) = match args.iter().position(|a| a == "--") {
-        Some(i) => (&args[..i], &args[i + 1..]),
-        None => (&args[..], &[][..]),
-    };
-    let mut ours = ours.to_vec();
-    // Cargo's build (ADR 0101): its record of the sources is one of rustc's
-    // outputs rust-js lets rustc write, where Cargo asks.
-    let cargo = if let Some(i) = ours.iter().position(|arg| arg == "--cargo") {
-        ours.remove(i);
-        true
-    } else {
-        false
-    };
-    let export_library = if let Some(i) = ours.iter().position(|arg| arg == "--library") {
-        ours.remove(i);
-        true
-    } else {
-        false
-    };
-    let mut dependency_paths = Vec::new();
-    while let Some(i) = ours.iter().position(|arg| arg == "--dependency") {
-        if i + 1 >= ours.len() {
-            eprintln!("--dependency requires a manifest path");
-            return ExitCode::FAILURE;
-        }
-        dependency_paths.push(PathBuf::from(ours.remove(i + 1)));
-        ours.remove(i);
-    }
-    // Which of a crate's checks this build runs (ADR 0117): a save's, in the
-    // Vite server, or, by default, a build's, all of them.
-    let save = if let Some(i) = ours.iter().position(|arg| arg == "--hooks") {
-        let which = ours.get(i + 1).cloned().unwrap_or_default();
-        if which != "save" && which != "build" {
-            eprintln!("--hooks requires `save` or `build`");
-            return ExitCode::FAILURE;
-        }
-        ours.drain(i..=i + 1);
-        which == "save"
-    } else {
-        false
-    };
-    let manifest = if let Some(i) = ours.iter().position(|arg| arg == "--manifest") {
-        if i + 1 >= ours.len() {
-            eprintln!("--manifest requires a path");
-            return ExitCode::FAILURE;
-        }
-        let path = PathBuf::from(ours.remove(i + 1));
-        ours.remove(i);
-        Some(path)
-    } else {
-        None
-    };
-    let std_coverage = if let Some(i) = ours.iter().position(|arg| arg == "--std-coverage") {
-        if i + 1 >= ours.len() {
-            eprintln!("--std-coverage requires a path");
-            return ExitCode::FAILURE;
-        }
-        let path = PathBuf::from(ours.remove(i + 1));
-        ours.remove(i);
-        Some(path)
-    } else {
-        None
-    };
-    let ours = ours.as_slice();
-    let test = ours.first().is_some_and(|a| a == "--test");
-    let ours = if test { &ours[1..] } else { ours };
-    let (input, output) = match ours {
-        [input] => (PathBuf::from(input), PathBuf::from(input).with_extension("js")),
-        [input, flag, output] if flag == "-o" => (PathBuf::from(input), PathBuf::from(output)),
-        _ => {
-            eprintln!(
-                "usage: rust-js [--test] <input.rs> [-o <output.js>] [--manifest <file.json>] [--library] [--dependency <manifest.json>] [--hooks save|build] [-- <rustc flags>]"
+        Ok(command::Command::VersionJson) => {
+            println!(
+                "{}",
+                serde_json::to_string(&manifest::Compiler::current()).expect("serialize compiler identity")
             );
+            return ExitCode::SUCCESS;
+        }
+        Ok(command::Command::Version) => {
+            let compiler = manifest::Compiler::current();
+            println!(
+                "rust-js {} ({}; ABI {})",
+                compiler.version, compiler.toolchain, compiler.abi
+            );
+            return ExitCode::SUCCESS;
+        }
+        Ok(command::Command::Rustc(args)) => {
+            // `cfg(rust_js)` says it's rust-js, as it says to a program: the crates'
+            // attributes of its tool are `cfg_attr(rust_js, ..)`, which a plain
+            // rustc, a user's own `cargo check`, leaves out (ADR 0113).
+            let ours = ["rust-js", "--cfg=rust_js", "--check-cfg=cfg(rust_js)"].map(String::from);
+            let rustc_args: Vec<String> = ours.into_iter().chain(args).collect();
+            return rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut Syntax));
+        }
+        Ok(command::Command::FormatJsx(input)) => {
+            let mut formatter = jsx_syntax::formatting::Formatter::default();
+            let args = vec![
+                "rust-js".into(),
+                input,
+                "--crate-type=lib".into(),
+                "--edition=2024".into(),
+            ];
+            let result = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&args, &mut formatter));
+            if let Some(output) = formatter.output {
+                print!("{output}");
+            }
+            return result;
+        }
+        Err(error) => {
+            eprintln!("{error}");
             return ExitCode::FAILURE;
         }
     };
-
-    if export_library && manifest.is_none() {
-        eprintln!("--library requires --manifest");
-        return ExitCode::FAILURE;
-    }
-    let dependencies = match library::Dependencies::load(&dependency_paths, &output) {
+    let dependencies = match library::Dependencies::load(&build.dependencies, &build.output) {
         Ok(dependencies) => dependencies,
         Err(error) => {
             eprintln!("rust-js: {error}");
             return ExitCode::FAILURE;
         }
     };
-    let mut rustc_args = vec![
-        "rust-js".to_string(), // argv[0], ignored by rustc
-        input.display().to_string(),
-        "--crate-type=lib".to_string(),
-        "--edition=2024".to_string(),
-        // What rustc works out for the program, `usize::MAX`, `size_of` and
-        // `cfg(target_pointer_width)`, is for a 32-bit `usize`, as rust-js's is
-        // (ADR 0090). `cfg(rust_js)` says it's rust-js.
-        format!("--target={TARGET}"),
-        "--cfg=rust_js".to_string(),
-        // `#[cfg(browser)]` marks tests that need a real browser (ADR 0027):
-        // `-- --cfg browser` turns it on. Declaring any cfg makes rustc check them
-        // all, so `test` is declared too, as Cargo does.
-        "--check-cfg=cfg(browser, test, rust_js)".to_string(),
-    ];
-    if test {
-        rustc_args.push("--test".to_string());
-    }
-    // An edition or a target after `--` is the one: rustc takes only one.
-    if to_rustc
-        .iter()
-        .any(|arg| arg == "--edition" || arg.starts_with("--edition="))
-    {
-        rustc_args.retain(|arg| arg != "--edition=2024");
-    }
-    if to_rustc
-        .iter()
-        .any(|arg| arg == "--target" || arg.starts_with("--target="))
-    {
-        rustc_args.retain(|arg| !arg.starts_with("--target="));
-    }
-    rustc_args.extend(to_rustc.iter().cloned());
-    // `--emit=metadata=<path>` (ADR 0100): rustc writes it to a directory of
-    // its own beside the JS, and it's published with the JS, as an artifact
-    // of the same plan, checked for collisions with the rest, or not at all.
-    let mut metadata: Option<(PathBuf, PathBuf)> = None;
-    let mut dep_info: Option<(PathBuf, PathBuf)> = None;
-    // Named only when something is staged: WASI, the playground's, has no
-    // process id to name it by.
-    let beside = output
-        .parent()
-        .filter(|dir| !dir.as_os_str().is_empty())
-        .unwrap_or(std::path::Path::new("."))
-        .to_path_buf();
-    let stage = move || beside.join(format!(".rust-js-metadata-{}", std::process::id()));
-    // `--emit mir`, rustc's other spelling, as `--emit=mir`.
-    while let Some(i) = rustc_args.iter().position(|arg| arg == "--emit") {
-        let kinds = if i + 1 < rustc_args.len() {
-            rustc_args.remove(i + 1)
-        } else {
-            String::new()
-        };
-        rustc_args[i] = format!("--emit={kinds}");
-    }
-    for arg in rustc_args.iter_mut() {
-        let Some(kinds) = arg.strip_prefix("--emit=") else {
-            continue;
-        };
-        let mut rewritten = Vec::new();
-        for kind in kinds.split(',') {
-            match kind.strip_prefix("metadata") {
-                Some(rest) => {
-                    let Some(path) = rest.strip_prefix('=').map(PathBuf::from) else {
-                        eprintln!("rust-js: say where a library's metadata goes: --emit=metadata=<path>");
-                        return ExitCode::FAILURE;
-                    };
-                    let staged = stage().join(path.file_name().unwrap_or_default());
-                    rewritten.push(format!("metadata={}", staged.display()));
-                    metadata = Some((staged, path));
-                }
-                // rustc's other outputs are written after rust-js has published,
-                // past its checks, and are no part of what rust-js makes.
-                // Cargo's record of the sources (ADR 0101), staged as the
-                // metadata is, and published with it.
-                None if cargo && let Some(path) = kind.strip_prefix("dep-info=").map(PathBuf::from) => {
-                    let staged = stage().join(path.file_name().unwrap_or_default());
-                    rewritten.push(format!("dep-info={}", staged.display()));
-                    dep_info = Some((staged, path));
-                }
-                None => {
-                    eprintln!(
-                        "rust-js: rustc's `--emit={kind}` isn't something rust-js writes; only a library's --emit=metadata=<path>"
-                    );
-                    return ExitCode::FAILURE;
-                }
-            }
+    let (rustc_args, staged) = match build.rustc_args() {
+        Ok(args) => args,
+        Err(error) => {
+            eprintln!("rust-js: {error}");
+            return ExitCode::FAILURE;
         }
-        *arg = format!("--emit={}", rewritten.join(","));
-    }
-    if (metadata.is_some() || dep_info.is_some())
-        && let Err(error) = std::fs::create_dir_all(stage())
+    };
+    if staged.any()
+        && let Err(error) = std::fs::create_dir_all(&staged.dir)
     {
         eprintln!("rust-js: cannot stage the metadata: {error}");
         return ExitCode::FAILURE;
     }
+    let command::Build {
+        input,
+        output,
+        test,
+        cargo,
+        library: export_library,
+        dependencies: dependency_paths,
+        save,
+        manifest,
+        std_coverage,
+        ..
+    } = build;
+    let command::Staged {
+        dir: stage,
+        metadata,
+        dep_info,
+    } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
     let settings = match settings::read(&input, cargo) {
         Ok(settings) => settings,
@@ -530,7 +382,7 @@ fn main() -> ExitCode {
         _ => Ok(()),
     };
     if metadata.is_some() || dep_info.is_some() {
-        let _ = std::fs::remove_dir_all(stage());
+        let _ = std::fs::remove_dir_all(&stage);
     }
     // Once it's all written, the crate's checks of it. Cargo's build runs
     // rust-js for each crate, so its driver is to run them, once (ADR 0117).
@@ -549,7 +401,3 @@ fn main() -> ExitCode {
         }
     }
 }
-
-/// The target rustc checks programs for (ADR 0090): WebAssembly's, whose
-/// `usize` is 32 bits, as a JS one is here (ADR 0025). Nothing is made for it.
-const TARGET: &str = "wasm32-unknown-unknown";
