@@ -44,11 +44,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-promoted-const-unseen",
-    breaks: "a promoted `&LOG` of a thread local is a constant MIR can't name",
+    breaks: "a promoted `&HEADERS` is the constant's whole value, written where it's read, not `HEADERS[0]`",
     file: "src/lower/mir.rs",
     find: "    (Some(local) == referred).then_some(c)\n",
     replace: "    (Some(local) == referred).then_some(c).filter(|_| false)\n",
-    tests: ["test/corpus.test.ts","-t","thread_local"],
+    tests: ["test/compiler.test.ts", "-t", "the report's JS: function values"],
   },
   {
     name: "mir-box-not-copied-back",

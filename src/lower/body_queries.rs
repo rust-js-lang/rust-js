@@ -3,13 +3,12 @@
 
 use super::bindings::named_callback;
 use super::fn_def;
-use super::recognition::{SliceLength, StdItem, is_std_def, is_std_method, slice_length};
+use super::recognition::{SliceLength, StdItem, is_std_method, slice_length};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::{BindingMode, ByRef, Mutability};
 
 use rustc_middle::mir::{BinOp, BorrowKind, UnOp};
 use rustc_middle::thir::{self, ExprId, ExprKind, LocalVarId, LogicalOp, Pat, PatKind, Thir};
-use rustc_middle::ty::adjustment::PointerCoercion;
 use rustc_middle::ty::{self, TyCtxt};
 use rustc_span::Span;
 use rustc_span::def_id::{DefId, LocalModId};
@@ -126,7 +125,6 @@ impl<'a, 'tcx> BodyQuery<'a, 'tcx> {
 /// Type/representation facts depend on the current instantiation and stay elsewhere.
 #[derive(Default)]
 pub(super) struct BodyFacts {
-    pub(super) uses: HashMap<LocalVarId, usize>,
     pub(super) mutably_borrowed: HashSet<LocalVarId>,
     pub(super) stepped: HashSet<LocalVarId>,
     /// What a borrow lends, `g` of `&mut g`, as a closure's call does: read
@@ -136,8 +134,8 @@ pub(super) struct BodyFacts {
     /// index in bounds (`known_in_bounds`): each `a[i]`, and the function
     /// of each `Index::index(&v, i)`.
     pub(super) in_bounds: HashSet<ExprId>,
-    /// The closures a `let` names that only a hook's function is, each
-    /// written there, named (`named_callbacks`).
+    /// The closures a `let` names that a hook's function is, each written
+    /// there, named (`named_callbacks`).
     pub(super) named_callbacks: HashSet<LocalVarId>,
     /// The casts of an `f64` known to be a whole number in the integer's
     /// range, each the value as it is (`whole_casts`).
@@ -154,34 +152,24 @@ impl BodyFacts {
             ..Self::default()
         };
         for expr in thir.exprs.iter() {
-            match expr.kind {
-                ExprKind::VarRef { id } => {
-                    *facts.uses.entry(id).or_default() += 1;
+            if let ExprKind::Borrow { borrow_kind, arg } = expr.kind {
+                facts.lent.insert(strip(thir, arg));
+                if matches!(borrow_kind, BorrowKind::Mut { .. })
+                    && let Some(id) = query.root_var(arg)
+                {
+                    facts.mutably_borrowed.insert(id);
                 }
-                ExprKind::Borrow { borrow_kind, arg } => {
-                    facts.lent.insert(strip(thir, arg));
-                    if matches!(borrow_kind, BorrowKind::Mut { .. })
-                        && let Some(id) = query.root_var(arg)
-                    {
-                        facts.mutably_borrowed.insert(id);
-                    }
-                }
-                _ => {}
             }
         }
-        facts.named_callbacks = named_callbacks(tcx, thir, &facts.uses);
+        facts.named_callbacks = named_callbacks(tcx, thir);
         facts
     }
 }
 
-/// The closures a `let` names whose one use is as the function a
+/// The closures a `let` names that are the function a
 /// `#[rust_js::named_callback]` hook is given: each written there, named,
 /// `useEffect(function createBundler() { .. }, [])` (ADR 0297).
-fn named_callbacks<'tcx>(
-    tcx: TyCtxt<'tcx>,
-    thir: &Thir<'tcx>,
-    uses: &HashMap<LocalVarId, usize>,
-) -> HashSet<LocalVarId> {
+fn named_callbacks<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalVarId> {
     let closures: HashSet<LocalVarId> = thir
         .stmts
         .iter()
@@ -213,7 +201,6 @@ fn named_callbacks<'tcx>(
             && let Some(&first) = args.first()
             && let ExprKind::VarRef { id } = thir[strip(thir, first)].kind
             && closures.contains(&id)
-            && uses.get(&id) == Some(&1)
         {
             found.insert(id);
         }
@@ -221,8 +208,8 @@ fn named_callbacks<'tcx>(
     found
 }
 
-/// Where each variable is changed, as the body's order has it: set, lent as
-/// `&mut`, or bound by a `ref mut`, in whole or in part. A variable of the
+/// Where each variable is changed, as the body's order has it: set or lent
+/// as `&mut`, in whole or in part. A variable of the
 /// enclosing function a closure captures is the closure's too.
 fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
     let at = |span: Span| span.source_callsite();
@@ -234,7 +221,6 @@ fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
         }
     };
     let mut changes: HashMap<LocalVarId, Vec<Span>> = HashMap::new();
-    let mut taken_apart: Vec<(ExprId, &Pat<'_>)> = Vec::new();
     for expr in thir.exprs.iter() {
         let changed = match expr.kind {
             ExprKind::Assign { lhs, .. } | ExprKind::AssignOp { lhs, .. } => Some(lhs),
@@ -246,43 +232,11 @@ fn changes(thir: &Thir<'_>) -> HashMap<LocalVarId, Vec<Span>> {
                 mutability: Mutability::Mut,
                 arg,
             } => Some(arg),
-            ExprKind::Let { expr, ref pat } => {
-                taken_apart.push((expr, pat));
-                None
-            }
-            ExprKind::Match {
-                scrutinee, ref arms, ..
-            } => {
-                taken_apart.extend(arms.iter().map(|&arm| (scrutinee, &*thir[arm].pattern)));
-                None
-            }
             _ => None,
         };
         if let Some(var) = changed.and_then(root) {
             changes.entry(var).or_default().push(at(expr.span));
         }
-    }
-    for stmt in thir.stmts.iter() {
-        if let thir::StmtKind::Let {
-            ref pattern,
-            initializer: Some(init),
-            ..
-        } = stmt.kind
-        {
-            taken_apart.push((init, pattern));
-        }
-    }
-    for (subject, pat) in taken_apart {
-        let Some(var) = root(subject) else { continue };
-        pat.walk_always(|p| {
-            if let PatKind::Binding {
-                mode: BindingMode(ByRef::Yes(_, Mutability::Mut), _),
-                ..
-            } = p.kind
-            {
-                changes.entry(var).or_default().push(at(p.span));
-            }
-        });
     }
     changes
 }
@@ -538,71 +492,23 @@ pub(super) fn lent(thir: &Thir<'_>, e: ExprId) -> ExprId {
     }
 }
 
-/// The locals a body calls `next()` or `by_ref()` on, directly or through
-/// `&mut`, or iterates by `&mut` in a `for` loop: the
-/// ones that must know where they are (ADR 0071). So is one lent as a
-/// `&mut dyn Iterator`, or to a function of the crate's that takes a `&mut`
-/// to a generic iterator, which what it's lent to steps through.
+/// The locals a body calls `next()` on, directly or through `&mut`: the
+/// ones that must know where they are (ADR 0071).
 pub(super) fn stepped_locals<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalVarId> {
     let mut stepped = HashSet::new();
     for expr in thir.exprs.iter() {
-        if let ExprKind::PointerCoercion {
-            cast: PointerCoercion::Unsize,
-            source,
-            ..
-        } = expr.kind
-            && expr.ty.is_ref()
-            && super::recognition::is_dyn_iter(tcx, expr.ty)
-            && let ExprKind::VarRef { id } = thir[lent(thir, source)].kind
-        {
-            stepped.insert(id);
-        }
         let ExprKind::Call { fun, ref args, .. } = expr.kind else {
             continue;
         };
         let Some((def_id, _)) = fn_def(thir[fun].ty) else {
             continue;
         };
-        // `by_ref()` lends it to what steps through it, a loop or a chain.
-        let steps = is_std_method(tcx, def_id, StdItem::Iterator, "next")
-            || is_std_method(tcx, def_id, StdItem::DoubleEndedIterator, "next_back")
-            || is_std_method(tcx, def_id, StdItem::Iterator, "by_ref");
+        let steps = is_std_method(tcx, def_id, StdItem::Iterator, "next");
         let Some(&receiver) = args.first() else {
             continue;
         };
         if steps && let Some(id) = stepped_local(thir, receiver) {
             stepped.insert(id);
-        }
-        // `for x in &mut it` of an iterator, whose `into_iter()` is itself:
-        // a `break` leaves the rest in it, for what reads it after.
-        if is_std_def(tcx, tcx.parent(def_id), StdItem::IntoIterator)
-            && expr.ty == thir[receiver].ty
-            && matches!(
-                thir[strip(thir, receiver)].kind,
-                ExprKind::Borrow {
-                    borrow_kind: BorrowKind::Mut { .. },
-                    ..
-                }
-            )
-            && let Some(id) = stepped_local(thir, receiver)
-        {
-            stepped.insert(id);
-        }
-        if def_id.is_local() {
-            let inputs = tcx
-                .fn_sig(def_id)
-                .instantiate_identity()
-                .skip_normalization()
-                .skip_binder()
-                .inputs();
-            for (&arg, &input) in args.iter().zip(inputs) {
-                if let ty::Ref(_, inner, rustc_ast::Mutability::Mut) = *input.kind()
-                    && lends_iterator(tcx, def_id, inner)
-                    && let Some(id) = stepped_local(thir, arg)
-                {
-                    stepped.insert(id);
-                }
-            }
         }
     }
     stepped
@@ -618,21 +524,6 @@ fn stepped_local(thir: &Thir<'_>, e: ExprId) -> Option<LocalVarId> {
         ExprKind::VarRef { id } => Some(id),
         _ => None,
     }
-}
-
-/// Is `ty`, of `callee`'s parameter `&mut ty`, a generic iterator: a type
-/// parameter, an `impl Iterator` too, that `callee` bounds by `Iterator`?
-fn lends_iterator<'tcx>(tcx: TyCtxt<'tcx>, callee: rustc_span::def_id::DefId, ty: ty::Ty<'tcx>) -> bool {
-    matches!(ty.kind(), ty::Param(_))
-        && tcx
-            .clauses_of(callee)
-            .instantiate_identity(tcx)
-            .into_iter()
-            .any(|(clause, _)| {
-                clause.skip_normalization().as_trait_clause().is_some_and(|tr| {
-                    tr.self_ty().skip_binder() == ty && is_std_def(tcx, tr.def_id(), StdItem::Iterator)
-                })
-            })
 }
 
 /// Does `thir` read a static of `module`, or a `thread_local!`'s, whose

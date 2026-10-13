@@ -1635,13 +1635,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return Ok(None);
         }
-        // `s.borrow()` of std's where it's the same JS value: the value itself,
-        // written in place, as the types are known (ADR 0167).
-        if is_std_def(self.tcx, trait_id, StdItem::Borrow)
-            && self.recognition().borrows_as_itself(tr.self_ty(), tr.args.type_at(1))
-        {
-            return Ok(None);
-        }
         // Where the writer is known, `write!(c, ..)` is its own `write_str`, or
         // a string's `+=`, written in place (ADRs 0148, 0166): a dictionary is
         // for generic code (ADR 0180).

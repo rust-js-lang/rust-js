@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/items.rs",
     find: "            (JsForm::Call(name), None) => Expr::call(self.js_ref(&name), values),\n            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name), values),\n            (JsForm::Get(name), Some(this)) if values.is_empty() && !name.contains('#') => Expr::member(this, name),",
     replace: "            (JsForm::Call(name), None) => return Ok(self.js_ref(&name)),\n            (JsForm::New(name), None) => Expr::new_(self.js_ref(&name), values),\n            (JsForm::Get(name), Some(this)) if values.is_empty() && !name.contains('#') => Expr::member(this, name),",
-    tests: ["test/jsx.test.ts", "-t", "a binding is a value"],
+    tests: ["test/lowering.test.ts", "-t", "a crate function given as a callback is passed as itself"],
   },
   {
     name: "callee-unresolved",

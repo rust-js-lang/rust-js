@@ -10,7 +10,6 @@ use rustc_middle::mir::BorrowKind;
 use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt};
-use rustc_span::DesugaringKind;
 use rustc_span::def_id::DefId;
 use std::collections::{HashMap, HashSet};
 
@@ -24,19 +23,11 @@ pub(super) fn mutated_types<'tcx>(tcx: TyCtxt<'tcx>, all_bodies: &[&Body<'tcx>])
             // An enum something takes `&mut` of, or matches with a `ref mut`
             // binding, may have a variant's field changed through it.
             let enum_ty = |ty: Ty<'tcx>| matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if adt.is_enum());
-            // A range's bounds are changed by std's methods, as `next()` (ADR 0129),
-            // though not by a `for`, which steps through its own.
-            let range_ty = |ty: Ty<'tcx>| {
-                !expr.span.is_desugaring(DesugaringKind::ForLoop)
-                    && matches!(ty.peel_refs().kind(), ty::Adt(adt, _) if [LangItem::Range, LangItem::RangeInclusiveStruct, LangItem::RangeFrom]
-                    .into_iter()
-                    .any(|item| tcx.is_lang_item(adt.did(), item)))
-            };
             match expr.kind {
                 ExprKind::Borrow {
                     borrow_kind: BorrowKind::Mut { .. },
                     arg,
-                } if enum_ty(body.thir[arg].ty) || range_ty(body.thir[arg].ty) => {
+                } if enum_ty(body.thir[arg].ty) => {
                     mutated.insert(body.thir[arg].ty.peel_refs());
                 }
                 ExprKind::Match {

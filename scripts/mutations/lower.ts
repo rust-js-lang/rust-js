@@ -76,19 +76,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "constructor-value-unknown",
-    breaks: "`.map(Some)` and `.map(Shape::Circle)`, a constructor taken as a value, are refused",
+    breaks: "`NonZeroI32::new(n).map(Year)`, a constructor taken as a value, names what it wraps after the caller's `n`, `n$1`, not `value`",
     file: "src/lower.rs",
     find: "        if matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {",
     replace: "        if false && matches!(self.tcx.def_kind(def_id), DefKind::Ctor(_, CtorKind::Fn)) {",
-    tests: ["test/corpus.test.ts","-t","function_values"],
-  },
-  {
-    name: "byte-string-unknown",
-    breaks: "`b\"GET\"`, a byte string, is refused",
-    file: "src/lower.rs",
-    find: "            LitKind::ByteStr(ref bytes, _) =>",
-    replace: "            LitKind::ByteStr(ref bytes, _) if false =>",
-    tests: ["test/corpus.test.ts","-t","byte_strings"],
+    tests: ["test/corpus.test.ts", "-t", "nonzero"],
+    snapshots: true,
   },
   {
     name: "trait-fn-value-unknown",

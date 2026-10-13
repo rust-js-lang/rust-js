@@ -228,11 +228,11 @@ export const mutations: Mutation[] = [
   },
   {
     name: "known-into-through-dictionary",
-    breaks: "`\"paren\".into()`, of known types, is `{ into: (s) => s }.into(\"paren\")`, not `\"paren\"`",
+    breaks: "`i % 2` and `\"paren\".into()`, of known types, are a dictionary's call, `{ rem: .. }.rem(i, 2)`, not `i % 2`",
     file: "src/lower/traits.rs",
     find: "            && !tr.args.has_non_region_param()\n",
     replace: "            && false\n",
-    tests: ["test/snapshots.test.ts","-t","calc"],
+    tests: ["test/lowering.test.ts", "-t", "a range made where it's stepped from MIR is its numbers"],
   },
   {
     name: "into-without-from",
@@ -528,15 +528,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
   },
   {
-    name: "std-borrow-through-dictionary",
-    breaks: "`s.borrow()` of std's, where the types are known, is a dictionary's call, not the value",
-    file: "src/lower/traits.rs",
-    find: "        if is_std_def(self.tcx, trait_id, StdItem::Borrow)\n            && self.recognition().borrows_as_itself(tr.self_ty(), tr.args.type_at(1))\n        {\n            return Ok(None);",
-    replace: "        if is_std_def(self.tcx, trait_id, StdItem::Borrow)\n            && self.recognition().borrows_as_itself(tr.self_ty(), tr.args.type_at(1))\n            && false\n        {\n            return Ok(None);",
-    tests: ["test/corpus.test.ts", "-t", "generic_borrow"],
-    snapshots: true,
-  },
-  {
     name: "same-named-traits-collide",
     breaks: "two traits of one name for one type, serde's `de::Error` and `ser::Error`, are named the same, an error",
     file: "src/lower/traits.rs",
@@ -735,7 +726,8 @@ export const mutations: Mutation[] = [
     file: "src/lower/traits.rs",
     find: "            let pair = if receiver.has_effects() {",
     replace: "            let pair = if false && receiver.has_effects() {",
-    tests: ["test/traits.test.ts", "-t", "concrete, generic and dyn calls match native Rust"],
+    tests: ["test/corpus.test.ts", "-t", "std_errors_boxed"],
+    snapshots: true,
   },
   {
     name: "dictionary-uncached",

@@ -3,38 +3,6 @@ import type { Mutation } from "../../mutations";
 
 export const mutations: Mutation[] = [
   {
-    name: "dyn-iter-lent-not-stepped",
-    breaks: "a local lent as a `&mut dyn Iterator` stays an array, so what it's lent to starts it over",
-    file: "src/lower/body_queries.rs",
-    find: "            && let ExprKind::VarRef { id } = thir[lent(thir, source)].kind\n        {\n            stepped.insert(id);",
-    replace: "            && let ExprKind::VarRef { id } = thir[lent(thir, source)].kind\n        {\n            let _ = id;",
-    tests: ["test/corpus.test.ts", "-t", "dyn_iterators"],
-  },
-  {
-    name: "lent-local-unstepped",
-    breaks: "a `Vec`'s iterator lent to `skip(&mut it, 2)` is an array, which what it's lent to can't step",
-    file: "src/lower/body_queries.rs",
-    find: "                    && lends_iterator(tcx, def_id, inner)\n",
-    replace: "                    && false\n",
-    tests: ["test/corpus.test.ts", "-t", "lent_iterators"],
-  },
-  {
-    name: "by-ref-not-stepping",
-    breaks: "`for x in it.by_ref()` takes all of `it`, so what reads it after sees nothing",
-    file: "src/lower/body_queries.rs",
-    find: "            || is_std_method(tcx, def_id, StdItem::Iterator, \"by_ref\");",
-    replace: "            || false;",
-    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
-  },
-  {
-    name: "mut-loop-not-stepping",
-    breaks: "`for x in &mut it` that stops early leaves `it` as it was",
-    file: "src/lower/body_queries.rs",
-    find: "            && expr.ty == thir[receiver].ty\n",
-    replace: "            && expr.ty != expr.ty\n",
-    tests: ["test/corpus.test.ts", "-t", "iter_by_ref"],
-  },
-  {
     name: "other-module-static-unread",
     breaks: "a static made of another module's components is refused, as if JS hadn't imported them first",
     file: "src/lower/body_queries.rs",
@@ -57,22 +25,6 @@ export const mutations: Mutation[] = [
     find: "            ExprKind::Borrow {\n                borrow_kind: BorrowKind::Mut { .. },\n                arg,\n            }\n            | ExprKind::RawBorrow {",
     replace: "            ExprKind::RawBorrow {",
     tests: ["test/lowering.test.ts", "-t", "a binding names a variable set again|an index a condition shows"],
-  },
-  {
-    name: "steady-ignores-ref-mut",
-    breaks: "a `ref mut` binding doesn't change the variable it takes apart, so what an outer pattern bound of it is read after the change",
-    file: "src/lower/body_queries.rs",
-    find: "                changes.entry(var).or_default().push(at(p.span));",
-    replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a binding names a variable set again"],
-  },
-  {
-    name: "steady-ignores-let-ref-mut",
-    breaks: "a `let`'s `ref mut` binding doesn't change the variable it takes apart, so what an `if let` bound of it is read after the change",
-    file: "src/lower/body_queries.rs",
-    find: "            taken_apart.push((init, pattern));",
-    replace: "",
-    tests: ["test/lowering.test.ts", "-t", "a binding names a variable set again"],
   },
   {
     name: "bounds-is-empty-unread",
@@ -179,14 +131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "an index a condition shows"],
   },
   {
-    name: "named-callback-used-twice",
-    breaks: "a closure a hook is given and that's called besides is written at both, a function each",
-    file: "src/lower/body_queries.rs",
-    find: "            && uses.get(&id) == Some(&1)\n",
-    replace: "",
-    tests: ["test/jsx.test.ts", "-t", "a closure a let names for a hook"],
-  },
-  {
     name: "whole-bits-unbounded",
     breaks: "a `u64` cast of a whole `f64` is the number, not a BigInt",
     file: "src/lower/body_queries.rs",
@@ -241,13 +185,5 @@ export const mutations: Mutation[] = [
     find: "                    && unchanged_in(var, body)\n",
     replace: "                    && unchanged_in(var, body)\n                    && fixed(var)\n",
     tests: ["test/lowering.test.ts", "-t", "Console's loops"],
-  },
-  {
-    name: "next-back-not-stepped",
-    breaks: "a local only `next_back()` steps isn't a `$iter`",
-    file: "src/lower/body_queries.rs",
-    find: "\n            || is_std_method(tcx, def_id, StdItem::DoubleEndedIterator, \"next_back\")",
-    replace: "",
-    tests: ["test/corpus.test.ts","-t","iter_next_back"],
   },
 ];
