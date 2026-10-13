@@ -152,7 +152,7 @@ export const mutations: Mutation[] = [
     name: "made-cell-value-kept",
     breaks: "a cell made into a field is `{ value: 1 }.value`, where it's `1`",
     file: "src/js.rs",
-    find: "                && name == \"value\"\n",
+    find: "                && name == HELD\n",
     replace: "                && name == \"never\"\n",
     tests: ["test/lowering.test.ts", "-t", "cell in a field is the property"],
   },

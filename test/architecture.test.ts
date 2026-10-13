@@ -368,6 +368,11 @@ const idioms: [string, RegExp, string[]][] = [
   ["$iter", /"\$iter"|Helper::Iter\b/, ["src/lower/iterators.rs"]],
   ["$lent", /"\$lent"|Helper::Lent\b/, ["src/lower/iterators.rs"]],
   ["$someNone", /\$someNone/, ["src/lower/std_types/option.rs"]],
+  // What a box, a cell or a handle holds, and a `dyn` pair's dictionary
+  // (ADRs 0099, 0049): the JS tree's names of the fields, `js::HELD` and
+  // `js::DICTIONARY`, wherever they're written or read.
+  ["the held `value` field", /Expr::member\([^;]*?,\s*"value"\)|Field\("value"\.into\(\)|== "value"|HELD: &str = "value"/, ["src/js.rs"]],
+  ["the dictionary's `impl` field", /"impl"/, ["src/js.rs"]],
 ];
 test("a JS form of a concept is written by the concept's owner", () => {
   const strays: string[] = [];

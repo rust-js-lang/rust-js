@@ -1307,15 +1307,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // `dyn` does: `object.value.impl.scale(object.value, k)`.
             let mutable = matches!(inputs[0].kind(), ty::Ref(_, _, Mutability::Mut));
             let pair = match mutable {
-                true => Expr::member(object.clone(), "value"),
+                true => Expr::held(object.clone()),
                 false => object.clone(),
             };
             let dictionary = self
-                .super_evidence(principal, tr, Expr::member(pair.clone(), "impl"))
+                .super_evidence(principal, tr, Expr::member(pair.clone(), js::DICTIONARY))
                 .ok_or_else(|| self.no_evidence(span, tr))?;
             let this = match mutable {
                 true => pair,
-                false => Expr::member(pair, "value"),
+                false => Expr::held(pair),
             };
             let mut params: Vec<js::Pattern> = vec!["object".into()];
             let mut values = vec![this];
@@ -1554,7 +1554,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             };
             let principal = self.dyn_trait_ref(tr.self_ty(), tr.self_ty()).unwrap();
             let dictionary = self
-                .super_evidence(principal, tr, Expr::member(pair.clone(), "impl"))
+                .super_evidence(principal, tr, Expr::member(pair.clone(), js::DICTIONARY))
                 .ok_or_else(|| self.unsupported(span, "this trait object supertrait"))?;
             // A `&mut self` method is given the pair, whose `value` a box's is: a
             // number's impl writes the place it reads (ADR 0099).
@@ -1567,7 +1567,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .inputs()[0];
             let this = match receiver.kind() {
                 ty::Ref(_, _, Mutability::Mut) => pair,
-                _ => Expr::member(pair, "value"),
+                _ => Expr::held(pair),
             };
             values.insert(0, this);
             values.extend(self.own_evidence(id, generic_args, span)?);
@@ -1770,14 +1770,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let from = self.dyn_trait_ref(ty, ty).expect("a principal");
         let to = ty::TraitRef::new(self.tcx, writer, [ty]);
-        let Some(dictionary) = self.super_evidence(from, to, Expr::member(pair.clone(), "impl")) else {
+        let Some(dictionary) = self.super_evidence(from, to, Expr::member(pair.clone(), js::DICTIONARY)) else {
             return Ok(None);
         };
         // Read twice: once for its dictionary, once for its value.
         if !pair.reads_same() {
             return Err(self.unsupported(span, &format!("showing a `{ty}` made where it's shown")));
         }
-        let mut values = vec![Expr::member(pair, "value")];
+        let mut values = vec![Expr::held(pair)];
         values.extend(options);
         Ok(Some(Expr::call(Expr::member(dictionary, "fmt"), values)))
     }
@@ -1918,16 +1918,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value
             };
             let dictionary = self
-                .super_evidence(from, to, Expr::member(pair.clone(), "impl"))
+                .super_evidence(from, to, Expr::member(pair.clone(), js::DICTIONARY))
                 .ok_or_else(|| self.unsupported(span, "this trait upcast"))?;
             // A `&mut dyn Sub` as a `&mut dyn Super`: a pair on the first's
             // `value`, which its `&mut self` methods write (ADR 0099).
             if matches!(target.kind(), ty::Ref(_, _, Mutability::Mut)) {
-                return Ok(Expr::pair(Expr::member(pair, "value"), dictionary));
+                return Ok(Expr::pair(Expr::held(pair), dictionary));
             }
             return Ok(Expr::object(vec![
-                Prop::Field("value".into(), Expr::member(pair, "value")),
-                Prop::Field("impl".into(), dictionary),
+                Prop::Field(js::HELD.into(), Expr::held(pair)),
+                Prop::Field(js::DICTIONARY.into(), dictionary),
             ]));
         }
         let tr = self.dyn_trait_ref(target, self.pointee(source)).unwrap();
@@ -1937,9 +1937,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_cell(source) {
             return Ok(match value.kind {
                 js::ExprKind::Handle(place) => Expr::pair(*place, dictionary),
-                js::ExprKind::Object(mut props) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == "value") =>
+                js::ExprKind::Object(mut props) if matches!(props.as_slice(), [Prop::Field(name, _)] if name == js::HELD) =>
                 {
-                    props.push(Prop::Field("impl".into(), dictionary));
+                    props.push(Prop::Field(js::DICTIONARY.into(), dictionary));
                     Expr::object(props)
                 }
                 _ => {
@@ -1948,13 +1948,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     } else {
                         self.spill("cell", value, out)
                     };
-                    Expr::pair(Expr::member(cell, "value"), dictionary)
+                    Expr::pair(Expr::held(cell), dictionary)
                 }
             });
         }
         Ok(Expr::object(vec![
-            Prop::Field("value".into(), value),
-            Prop::Field("impl".into(), dictionary),
+            Prop::Field(js::HELD.into(), value),
+            Prop::Field(js::DICTIONARY.into(), dictionary),
         ]))
     }
 
@@ -2201,7 +2201,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // object itself: what's in it.
             for (i, value) in values.iter_mut().enumerate() {
                 if self.param_is_box(item.def_id, i) && !self.param_is_box(method, i) {
-                    *value = Expr::member(std::mem::replace(value, Expr::undefined()), "value");
+                    *value = Expr::held(std::mem::replace(value, Expr::undefined()));
                 }
             }
             // The drops its caller gives for its own type parameters, which it

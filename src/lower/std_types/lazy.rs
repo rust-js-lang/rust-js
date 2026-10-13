@@ -72,8 +72,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Some(lazy));
             }
             LazyOp::GetMut if self.is_boxable(item) => lazy.clone(),
-            LazyOp::Get if self.boxed_payload(item) => self.some(Expr::member(lazy.clone(), "value")),
-            _ => Expr::member(lazy.clone(), "value"),
+            LazyOp::Get if self.boxed_payload(item) => self.some(Expr::held(lazy.clone())),
+            _ => Expr::held(lazy.clone()),
         };
         let made = Expr::bin(Op::Eq, Expr::member(lazy, "init"), Expr::undefined());
         Ok(Some(Expr::cond(made, given, Expr::undefined())))

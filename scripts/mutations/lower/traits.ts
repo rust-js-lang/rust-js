@@ -376,7 +376,7 @@ export const mutations: Mutation[] = [
     name: "object-mut-receiver-unboxed",
     breaks: "a `&mut self` method of a `dyn` in generic code takes generic code's box for the pair, and JS throws",
     file: "src/lower/traits.rs",
-    find: "            let pair = match mutable {\n                true => Expr::member(object.clone(), \"value\"),",
+    find: "            let pair = match mutable {\n                true => Expr::held(object.clone()),",
     replace: "            let pair = match mutable {\n                true => object.clone(),",
     tests: ["test/corpus.test.ts", "-t", "dyn_generic"],
   },

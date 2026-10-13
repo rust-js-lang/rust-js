@@ -16,7 +16,7 @@ use std::collections::HashSet;
 /// A box of `place`, `{ value: place }`: a `&mut` to a value JS can't change
 /// in place, given to a call, which reads and writes its `value` (ADR 0074).
 pub(super) fn boxed(place: Expr) -> Expr {
-    Expr::object(vec![Prop::Field("value".into(), place)])
+    Expr::object(vec![Prop::Field(js::HELD.into(), place)])
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
@@ -24,7 +24,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// its `place`: an object's changed in place, `$assign(place, box.value)`,
     /// another's assigned (ADR 0074).
     pub(super) fn copied_back(&mut self, place: Expr, boxed: &str, object: bool, at: js::Span) -> Stmt {
-        let back = Expr::member(Expr::var(boxed), "value");
+        let back = Expr::held(Expr::var(boxed));
         match object {
             true => StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![place, back])).at(at),
             false => StmtKind::Assign(place, back).at(at),
@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.is_generic_boxed(pointee, self.tcx.param_env(def_id))
                     && !self.is_cell_pointee(self.instantiated(pointee, generic_args)) =>
             {
-                Expr::member(value, "value")
+                Expr::held(value)
             }
             _ => value,
         })

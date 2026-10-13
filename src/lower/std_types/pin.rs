@@ -52,10 +52,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (pin, f) = (arg(), arg());
                 apply(f, vec![pin])
             }
-            PinOp::Mut if handle && !self.is_boxable(target) => Expr::member(arg(), "value"),
+            PinOp::Mut if handle && !self.is_boxable(target) => Expr::held(arg()),
             PinOp::Mut => arg(),
             PinOp::Ref => match self.boxed_target(pointer) {
-                true => Expr::member(arg(), "value"),
+                true => Expr::held(arg()),
                 false => arg(),
             },
             // An object a `&mut` points at replaced whole in place (ADR 0147),
@@ -64,7 +64,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (pin, value) = (arg(), arg());
                 let js_span = self.js_span(span);
                 match handle || self.is_boxable(target) {
-                    true => out.push(StmtKind::Assign(Expr::member(pin, "value"), value).at(js_span)),
+                    true => out.push(StmtKind::Assign(Expr::held(pin), value).at(js_span)),
                     false => {
                         out.push(StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![pin, value])).at(js_span));
                     }

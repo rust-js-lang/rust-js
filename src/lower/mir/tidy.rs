@@ -3683,7 +3683,7 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
         if let ExprKind::Call(callee, _) = &e.kind
             && let ExprKind::Member(of, _) = &callee.kind
             && let ExprKind::Member(object, key) = &of.kind
-            && key == "impl"
+            && key == js::DICTIONARY
             && let ExprKind::Var(v) = &object.kind
             && is_temporary(v)
         {
@@ -3940,7 +3940,7 @@ fn map_counts(stmts: &mut Vec<Stmt>) {
             && (same(key, k) || matches!((&key.kind, &k.kind), (ExprKind::Str(a), ExprKind::Str(b)) if a == b))
             && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
             && matches!(&target.kind, ExprKind::Member(of, v)
-                if v == "value" && matches!(&of.kind, ExprKind::Var(h) if h == handle))
+                if v == js::HELD && matches!(&of.kind, ExprKind::Var(h) if h == handle))
             && js::mentions_in(&stmts[i + 3..], handle) == 0
         {
             let name = (std::iter::once("current".to_string()))
@@ -3950,7 +3950,7 @@ fn map_counts(stmts: &mut Vec<Stmt>) {
             let mut value = vec![StmtKind::Expr(value.clone()).at(js::Span::NONE)];
             js::each_expr_mut(&mut value, &mut |e| {
                 if let ExprKind::Member(of, v) = &e.kind
-                    && v == "value"
+                    && v == js::HELD
                     && matches!(&of.kind, ExprKind::Var(h) if h == handle)
                 {
                     *e = Expr::var(&name);
@@ -4671,7 +4671,7 @@ fn unread_maps(body: &mut Vec<Stmt>) {
 fn handles_in_place(body: &mut [Stmt]) {
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
-            && key == "value"
+            && key == js::HELD
             && let ExprKind::Handle(place) = &of.kind
             && place.reads_same()
         {
@@ -4731,7 +4731,7 @@ fn unguarded(body: &mut Vec<Stmt>) {
     let mut kept: HashMap<String, usize> = HashMap::new();
     js::each_expr_mut(&mut body.clone(), &mut |e| match &e.kind {
         ExprKind::Member(of, key)
-            if key == "value"
+            if key == js::HELD
                 && let ExprKind::Var(g) = &of.kind
                 && places.contains_key(g) =>
         {
@@ -4793,7 +4793,7 @@ fn unguarded(body: &mut Vec<Stmt>) {
     });
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
-            && key == "value"
+            && key == js::HELD
             && let ExprKind::Var(g) = &of.kind
             && let Some(place) = places.get(g)
         {
@@ -4827,7 +4827,7 @@ fn read_handles(body: &mut Vec<Stmt>) {
         let mut rest = body.clone();
         js::each_expr_mut(&mut rest, &mut |e| {
             if let ExprKind::Member(of, key) = &e.kind
-                && key == "value"
+                && key == js::HELD
                 && matches!(&of.kind, ExprKind::Var(v) if v == name)
             {
                 *e = Expr::undefined();
@@ -4858,7 +4858,7 @@ fn read_handles(body: &mut Vec<Stmt>) {
     });
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
-            && key == "value"
+            && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
             && let Some((_, place, at_once)) = read(v)
         {
@@ -4905,7 +4905,7 @@ fn plain_cells(body: &mut Vec<Stmt>) {
             match &stmt.kind {
                 StmtKind::Const(name, value)
                     if matches!(&value.kind, ExprKind::Object(props)
-                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == "value")) =>
+                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
                 {
                     cells.push(name.clone());
                 }
@@ -4963,7 +4963,7 @@ fn plain_cells(body: &mut Vec<Stmt>) {
     let mut each = body.clone();
     js::each_expr_mut(&mut each, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
-            && key == "value"
+            && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
             && let Some(cell) = named.get(v)
         {
@@ -5003,7 +5003,7 @@ fn plain_cells(body: &mut Vec<Stmt>) {
     });
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Member(of, key) = &e.kind
-            && key == "value"
+            && key == js::HELD
             && let ExprKind::Var(v) = &of.kind
             && let Some(cell) = of_plain(v)
         {

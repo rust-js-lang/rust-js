@@ -2325,7 +2325,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a call gives, `$strPart(..)`'s, the one it gives, there.
             Value::Ref(ref place)
                 if let js::ExprKind::Member(holder, field) = &place.kind
-                    && field == "value"
+                    && field == js::HELD
                     && match &holder.kind {
                         js::ExprKind::Var(name) => self.locals.mir.cells.contains(name),
                         js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
@@ -2776,7 +2776,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a guard's `value`, `*cell.borrow_mut() = w`, that place
             // given it.
             if self.counted_rc(pointee).is_some() || self.weak_of(pointee).is_some() {
-                if matches!(&target.kind, js::ExprKind::Member(_, field) if field == "value") {
+                if matches!(&target.kind, js::ExprKind::Member(_, field) if field == js::HELD) {
                     out.push(StmtKind::Assign(target, value).at(js_span));
                     return Ok(());
                 }
@@ -2854,7 +2854,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A box this function was given, given on as it is.
             if let js::ExprKind::Member(boxed, field) = &place.kind
-                && field == "value"
+                && field == js::HELD
                 && let js::ExprKind::Var(name) = &boxed.kind
                 && state.boxes.contains(name)
             {
@@ -3088,7 +3088,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && self.is_cell_pointee(*pointee)
             {
                 if !std::mem::take(&mut placed) {
-                    value = Expr::member(value, "value");
+                    value = Expr::held(value);
                 }
                 ty = ty.projection_ty(self.tcx, elem);
                 continue;
@@ -3458,7 +3458,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && self.tcx.is_mutable_static(def_id)
                     && self.krate.fns.contains_key(&def_id) =>
             {
-                Ok(Value::Ref(Expr::member(self.fn_ref(def_id), "value")))
+                Ok(Value::Ref(Expr::held(self.fn_ref(def_id))))
             }
             Operand::Constant(c) => Ok(Value::Expr(self.mir_const(state, c)?)),
             #[allow(unreachable_patterns)]
@@ -3733,7 +3733,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                         ..Expr::undefined()
                                     }
                                 }
-                                _ => Expr::member(cell, "value"),
+                                _ => Expr::held(cell),
                             };
                             return Ok(Value::Ref(place));
                         }
@@ -4822,7 +4822,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     {
                         let value = match value {
                             Value::Ref(place) => Value::Expr(place),
-                            value => Value::Expr(Expr::member(self.value_expr(value, span)?, "value")),
+                            value => Value::Expr(Expr::held(self.value_expr(value, span)?)),
                         };
                         (value, Ty::new_ref(tcx, region, target, m))
                     }
@@ -5023,8 +5023,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         {
             let value = self.value_expr(value.clone(), span)?;
             return Ok(Value::Expr(Expr::object(vec![
-                Prop::Field("value".into(), value),
-                Prop::Field("impl".into(), dictionary),
+                Prop::Field(js::HELD.into(), value),
+                Prop::Field(js::DICTIONARY.into(), dictionary),
             ])));
         }
         // A prop `jsx!` isn't given: none, which JSX leaves out (ADR 0213).

@@ -77,7 +77,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             self.spill("cell", cell, out)
                         }
                     };
-                    Expr::member(cell, "value")
+                    Expr::held(cell)
                 }
             };
             let place = &place;

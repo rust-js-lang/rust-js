@@ -46,8 +46,8 @@ export const mutations: Mutation[] = [
     name: "cell-get-mut-copy",
     breaks: "a number `Cell`'s `get_mut` gives the number, so a write through it is lost",
     file: "src/lower/std_types/cell.rs",
-    find: "                true => arg(),\n                false => Expr::member(arg(), \"value\"),\n",
-    replace: "                true => Expr::member(arg(), \"value\"),\n                false => Expr::member(arg(), \"value\"),\n",
+    find: "                true => arg(),\n                false => Expr::held(arg()),\n",
+    replace: "                true => Expr::held(arg()),\n                false => Expr::held(arg()),\n",
     tests: ["test/corpus.test.ts", "-t", "cell_deque_char_methods"],
   },
   {
@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "mir-quiet-local-borrow-not-inlined",
     breaks: "MIR's quiet thread-local's borrow stays a called arrow",
     file: "src/lower/std_types/cell.rs",
-    find: "                ..apply(f, vec![Expr::member(key, \"value\")])\n",
-    replace: "                ..Expr::call(f, vec![Expr::member(key, \"value\")])\n",
+    find: "                ..apply(f, vec![Expr::held(key)])\n",
+    replace: "                ..Expr::call(f, vec![Expr::held(key)])\n",
     tests: ["test/modules.test.ts","-t","thread-local only read and set"],
   },
 ];

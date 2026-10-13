@@ -350,7 +350,10 @@ a dictionary's cache, is never a name the runtime exports
 
 ## Owned output and source origins
 
-The JS tree remains small and independent of rustc and oxc. Lowering may use rustc
+The JS tree remains small and independent of rustc and oxc. It names the
+fields of the values it models: what a box, a cell or a handle holds,
+`js::HELD`, and a `dyn` pair's dictionary, `js::DICTIONARY`; no module
+spells them, as the architecture test holds. Lowering may use rustc
 types internally, but completed phase outputs do not expose `TyCtxt`, `DefId`, or
 borrowed rustc source files to printing or publication.
 

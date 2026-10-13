@@ -791,12 +791,12 @@ fn expr(e: &mut Expr) {
             vec![StmtKind::Assign((**place).clone(), Expr::var(&param)).at(place.span)],
         );
         let dictionary = match &e.kind {
-            ExprKind::Pair(_, dictionary) => Some(Prop::Field("impl".into(), (**dictionary).clone())),
+            ExprKind::Pair(_, dictionary) => Some(Prop::Field(js::DICTIONARY.into(), (**dictionary).clone())),
             _ => None,
         };
         let props = dictionary
             .into_iter()
-            .chain([Prop::Getter("value".into(), get), Prop::Setter("value".into(), set)])
+            .chain([Prop::Getter(js::HELD.into(), get), Prop::Setter(js::HELD.into(), set)])
             .collect();
         *e = Expr {
             span: e.span,

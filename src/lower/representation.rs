@@ -116,7 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if mutability == Mutability::Mut && self.is_cell_pointee(inner) {
                 value = match value.kind {
                     js::ExprKind::Handle(place) => *place,
-                    _ => Expr::member(value, "value"),
+                    _ => Expr::held(value),
                 };
             }
             ty = inner;
@@ -272,7 +272,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// counted (ADR 0362).
     pub(super) fn holding(&self, value: Expr, ty: Ty<'tcx>) -> Expr {
         match self.is_std_type(ty, StdItem::Cell) || self.plain_ref_cell(ty) {
-            true => Expr::member(value, "value"),
+            true => Expr::held(value),
             false => value,
         }
     }
@@ -675,7 +675,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
             .map(|&v| {
                 let js = const_js(tcx, v)?;
                 Some(match v.ty.kind() {
-                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => Expr::member(js, "value"),
+                    ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Cell) => Expr::held(js),
                     _ => js,
                 })
             })
@@ -744,7 +744,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                 ty::ValTreeKind::Branch(items) => items.first()?.try_to_value()?,
                 ty::ValTreeKind::Leaf(_) => return None,
             };
-            Some(Expr::object(vec![Prop::Field("value".into(), const_js(tcx, inner)?)]))
+            Some(Expr::object(vec![Prop::Field(js::HELD.into(), const_js(tcx, inner)?)]))
         }
         // An atomic is `{ value }` too (ADR 0096). What it holds is stored
         // as an integer of its size, in a struct that aligns it.
@@ -763,7 +763,7 @@ pub(super) fn const_js<'tcx>(tcx: TyCtxt<'tcx>, value: ty::Value<'tcx>) -> Optio
                     valtree: stored,
                 },
             )?;
-            Some(Expr::object(vec![Prop::Field("value".into(), inner)]))
+            Some(Expr::object(vec![Prop::Field(js::HELD.into(), inner)]))
         }
         // A range, `{ start, end }`, as one made at run time is (ADR 0129):
         // an inclusive one's `exhausted`, false of one not yet iterated.

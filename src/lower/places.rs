@@ -10,7 +10,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// a box of it where that's a cell, `{ value: s }` (ADR 0334).
     pub(super) fn leaked(&self, value: Expr, output: ty::Ty<'tcx>) -> Expr {
         match self.is_cell(output) {
-            true => Expr::object(vec![js::Prop::Field("value".into(), value)]),
+            true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value)]),
             false => value,
         }
     }

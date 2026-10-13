@@ -26,6 +26,15 @@ impl Span {
     }
 }
 
+/// The field a box, a cell or a handle holds the place it stands for in,
+/// `b.value` (ADR 0099): a `&mut` to what JS can't change in place, a
+/// `Cell`'s, an `Rc`'s, a guard's.
+pub const HELD: &str = "value";
+
+/// The field a `dyn` value's pair holds its dictionary in, `d.impl` (ADR
+/// 0049), beside its `value`.
+pub const DICTIONARY: &str = "impl";
+
 pub struct Module {
     pub header: String,
     /// `"use client"`, before its imports (ADR 0192).
@@ -971,6 +980,11 @@ impl Expr {
         Expr::new(ExprKind::Pair(Box::new(place), Box::new(dictionary)))
     }
 
+    /// What a box, a cell or a handle holds: `b.value` (`HELD`).
+    pub fn held(of: Expr) -> Expr {
+        Expr::member(of, HELD)
+    }
+
     pub fn member(object: Expr, property: impl Into<String>) -> Expr {
         let property = property.into();
         // `{ x: 0, y: 0 }.y`, a constant's field (`V::ZERO.y`), is `0`.
@@ -987,13 +1001,13 @@ impl Expr {
         // A handle's `value` is the place it's on (ADR 0099), and a cell
         // made here, `{ value: x }`, holds `x`: a cell in a field is the
         // property itself (ADR 0288).
-        if property == "value" {
+        if property == HELD {
             if let ExprKind::Handle(place) = object.kind {
                 return *place;
             }
             if let ExprKind::Object(props) = &object.kind
                 && let [Prop::Field(name, value)] = props.as_slice()
-                && name == "value"
+                && name == HELD
             {
                 return value.clone();
             }

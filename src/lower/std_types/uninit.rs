@@ -91,7 +91,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         } else {
                             self.spill("slot", slot, out)
                         };
-                        Expr::member(slot, "value")
+                        Expr::held(slot)
                     }
                 };
                 if op == UninitOp::Write {

@@ -19,8 +19,8 @@ impl Conversion {
         match self {
             Conversion::From(from) => Expr::call(from, vec![error]),
             Conversion::Dyn(dictionary) => Expr::object(vec![
-                Prop::Field("value".into(), error),
-                Prop::Field("impl".into(), dictionary),
+                Prop::Field(js::HELD.into(), error),
+                Prop::Field(js::DICTIONARY.into(), dictionary),
             ]),
         }
     }

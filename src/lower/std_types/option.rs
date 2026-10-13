@@ -410,7 +410,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Handle(place) => (*place.clone(), Expr::handle(*place)),
             _ => {
                 let cell = self.spill("option", option, out);
-                (Expr::member(cell.clone(), "value"), cell)
+                (Expr::held(cell.clone()), cell)
             }
         };
         Ok(Expr::cond(

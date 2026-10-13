@@ -113,7 +113,7 @@ pub fn lower_crate<'tcx>(
                 static_value(tcx, def_id)
                     .and_then(|v| const_js(tcx, v))
                     .map(|v| match mutability.is_mut() {
-                        true => Expr::object(vec![Prop::Field("value".into(), v)]),
+                        true => Expr::object(vec![Prop::Field(js::HELD.into(), v)]),
                         false => v,
                     }),
                 "statics",

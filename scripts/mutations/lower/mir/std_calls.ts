@@ -494,7 +494,7 @@ export const mutations: Mutation[] = [
     name: "mir-str-edit-part-refused",
     breaks: "MIR's string edit of a part a call gives, `tail(&mut s).make_ascii_uppercase()`, is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: "                        let cell = self.spill(\"part\", (**cell).clone(), out);\n                        Expr::member(cell, \"value\")\n",
+    find: "                        let cell = self.spill(\"part\", (**cell).clone(), out);\n                        Expr::held(cell)\n",
     replace: "                        return Err(self.unsupported(span, \"changing this string, from its MIR\"));\n",
     tests: ["test/corpus.test.ts", "-t", "str_mut"],
   },

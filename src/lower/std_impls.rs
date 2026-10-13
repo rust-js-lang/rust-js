@@ -248,21 +248,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::helper("$withBorrow"),
                     vec![place, Expr::arrow(vec!["value".into()], body)],
                 );
-                return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
+                return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let cell = match std(StdItem::RefCell) {
                     true => Expr::call(Expr::helper("$borrow"), vec![place]),
                     false => place,
                 };
-                let value = self.clone_value(Expr::member(cell, "value"), args.type_at(0), span, out)?;
-                return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
+                let value = self.clone_value(Expr::held(cell), args.type_at(0), span, out)?;
+                return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
             // A `OnceCell` holds an `Option` (ADR 0317).
             ty::Adt(_, args) if std(StdItem::OnceCell) => {
                 let option = Ty::new_option(self.tcx, args.type_at(0));
-                let value = self.clone_value(Expr::member(place, "value"), option, span, out)?;
-                return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
+                let value = self.clone_value(Expr::held(place), option, span, out)?;
+                return Ok(Expr::object(vec![Prop::Field(js::HELD.into(), value)]));
             }
             _ => {}
         }
@@ -540,7 +540,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Self::new_rc(self.default_value(args.type_at(0), span)?)
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) => self.default_value(args.type_at(0), span)?,
-            ty::Adt(..) if std(StdItem::OnceCell) => Expr::object(vec![Prop::Field("value".into(), Expr::undefined())]),
+            ty::Adt(..) if std(StdItem::OnceCell) => {
+                Expr::object(vec![Prop::Field(js::HELD.into(), Expr::undefined())])
+            }
             // `LazyCell::new(T::default)` (ADR 0318).
             ty::Adt(_, args) if std(StdItem::LazyCell) => {
                 let made = self.default_value(args.type_at(0), span)?;
@@ -548,7 +550,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::object(vec![Prop::Field("init".into(), init)])
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) || std(StdItem::Atomic) => Expr::object(
-                vec![Prop::Field("value".into(), self.default_value(args.type_at(0), span)?)],
+                vec![Prop::Field(js::HELD.into(), self.default_value(args.type_at(0), span)?)],
             ),
             ty::Adt(adt, _) if adt.is_enum() && !self.is_std(adt.did()) => {
                 let variant = self
@@ -755,13 +757,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             ty::Array(item, _) | ty::Slice(item) => self.eq_items(a, b, *item, span),
             ty::Adt(_, args) if self.is_vec_like(ty) => self.eq_items(a, b, args.type_at(0), span),
-            ty::Adt(_, args) if self.counted_rc(ty).is_some() => self.eq_value(
-                Expr::member(a, "value"),
-                Expr::member(b, "value"),
-                args.type_at(0),
-                span,
-                out,
-            ),
+            ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
+                self.eq_value(Expr::held(a), Expr::held(b), args.type_at(0), span, out)
+            }
             // Two `RefCell`s', each while it's borrowed (ADR 0328), held where
             // their values' `==` may ask.
             ty::Adt(_, args) if std(StdItem::RefCell) && !self.recognition().std_alone(args.type_at(0)) => {
@@ -788,17 +786,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ),
                     false => (a, b),
                 };
-                self.eq_value(
-                    Expr::member(a, "value"),
-                    Expr::member(b, "value"),
-                    args.type_at(0),
-                    span,
-                    out,
-                )
+                self.eq_value(Expr::held(a), Expr::held(b), args.type_at(0), span, out)
             }
             ty::Adt(_, args) if std(StdItem::OnceCell) => self.eq_value(
-                Expr::member(a, "value"),
-                Expr::member(b, "value"),
+                Expr::held(a),
+                Expr::held(b),
                 Ty::new_option(self.tcx, args.type_at(0)),
                 span,
                 out,

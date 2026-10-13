@@ -401,7 +401,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `RefCell`'s value (ADR 0320).
             ty::Adt(_, args) if self.is_std_type(ty, StdItem::RefCell) => {
-                self.drop_in(Expr::member(value, "value"), args.type_at(0), span, made, out)?
+                self.drop_in(Expr::held(value), args.type_at(0), span, made, out)?
             }
             // A counted `Rc`: `$rcDrop(rc, drop)`, `drop` what the last drops of
             // what it points at, if that has a destructor; a `Weak`: `$weakDrop`
@@ -460,11 +460,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A `dyn`'s: its dictionary's `$drop`, if what it holds has one.
             ty::Dynamic(..) => {
-                let drop = Expr::member(Expr::member(value.clone(), "impl"), "$drop");
+                let drop = Expr::member(Expr::member(value.clone(), js::DICTIONARY), "$drop");
                 out.push(
                     StmtKind::Expr(Expr {
                         reads: false,
-                        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![Expr::member(value, "value")]),
+                        kind: js::ExprKind::OptionalCall(Box::new(drop), vec![Expr::held(value)]),
                         span: js_span,
                     })
                     .at(js_span),
@@ -509,7 +509,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // `drop(&mut self)`: a `&mut` to what isn't an object is a
                     // box of it (ADR 0072).
                     let this = match self.is_boxable(ty) {
-                        true => Expr::object(vec![js::Prop::Field("value".into(), value.clone())]),
+                        true => Expr::object(vec![js::Prop::Field(js::HELD.into(), value.clone())]),
                         false => value.clone(),
                     };
                     let drop = self

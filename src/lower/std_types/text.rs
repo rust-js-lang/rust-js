@@ -367,7 +367,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Its `&mut str`, a cell of the `char`'s text (ADR 0099).
             TextOp::EncodeUtf8 => {
                 let written = call("$encodeUtf8", vec![arg(), arg()]);
-                Expr::object(vec![Prop::Field("value".into(), written)])
+                Expr::object(vec![Prop::Field(js::HELD.into(), written)])
             }
             TextOp::DecodeUtf16 => call("$decodeUtf16", vec![arg()]),
             TextOp::FromUtf16 { lossy: false } => call("$fromUtf16", vec![arg()]),

@@ -39,8 +39,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let item = generic_args.type_at(0);
         let mut arg = || values.next().expect("rustc checked the arguments");
         Ok(Some(match op {
-            OnceOp::New => Expr::object(vec![Prop::Field("value".into(), Expr::undefined())]),
-            OnceOp::Get => Expr::member(arg(), "value"),
+            OnceOp::New => Expr::object(vec![Prop::Field(crate::js::HELD.into(), Expr::undefined())]),
+            OnceOp::Get => Expr::held(arg()),
             // A `&mut` to an object is the object; to a number or text, a
             // `{ value }` box (ADR 0074), which the cell itself is once set.
             OnceOp::GetMut if self.boxed_payload(item) => {
@@ -54,12 +54,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.spill("cell", cell, out)
                 };
                 Expr::cond(
-                    Expr::bin(Op::LooseEq, Expr::member(cell.clone(), "value"), Expr::null()),
+                    Expr::bin(Op::LooseEq, Expr::held(cell.clone()), Expr::null()),
                     Expr::undefined(),
                     cell,
                 )
             }
-            OnceOp::GetMut => Expr::member(arg(), "value"),
+            OnceOp::GetMut => Expr::held(arg()),
             // What's set is `Some` of it, boxed where it looks like `None`
             // (ADR 0051), and std's panic of an init that inits it again.
             OnceOp::Set => Expr::call(Expr::helper("$onceSet"), vec![arg(), arg()]),

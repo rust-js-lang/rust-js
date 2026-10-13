@@ -131,7 +131,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A counted `Rc`'s `value` (ADR 0320).
             ty::Adt(_, args) if self.counted_rc(ty).is_some() => {
-                let (a, b) = (Expr::member(a, "value"), Expr::member(b, "value"));
+                let (a, b) = (Expr::held(a), Expr::held(b));
                 self.cmp_value(a, b, args.type_at(0), partial, span, out)
             }
             ty::Adt(_, args) if ty.is_box() || self.is_rc(ty) || self.recognition().pinned(ty).is_some() => {

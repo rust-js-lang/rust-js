@@ -25,11 +25,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js_span = self.js_span(span);
         Ok(Some(match known {
             // A `Cell` or `RefCell` is `{ value }`, so everyone sharing it sees a change.
-            Std::CellNew => Expr::object(vec![Prop::Field("value".into(), arg())]),
-            Std::CellGet => self.copy_if_needed(Expr::member(arg(), "value"), generic_args.type_at(0)),
+            Std::CellNew => Expr::object(vec![Prop::Field(js::HELD.into(), arg())]),
+            Std::CellGet => self.copy_if_needed(Expr::held(arg()), generic_args.type_at(0)),
             Std::CellSet => {
                 let (cell, value) = (arg(), arg());
-                out.push(StmtKind::Assign(Expr::member(cell, "value"), value).at(js_span));
+                out.push(StmtKind::Assign(Expr::held(cell), value).at(js_span));
                 Expr::undefined()
             }
             // What it held, and the new value in its place: `v`, its type's
@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).
             Std::CellGetMut => match self.is_boxable(generic_args.type_at(0)) {
                 true => arg(),
-                false => Expr::member(arg(), "value"),
+                false => Expr::held(arg()),
             },
             Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
                 Expr::call(Expr::helper("$refCellSwap"), vec![arg(), arg()])
@@ -76,8 +76,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     self.spill("cell", cell, out)
                 };
-                let updated = apply(arg(), vec![Expr::member(cell.clone(), "value")]);
-                out.push(StmtKind::Assign(Expr::member(cell, "value"), updated).at(js_span));
+                let updated = apply(arg(), vec![Expr::held(cell.clone())]);
+                out.push(StmtKind::Assign(Expr::held(cell), updated).at(js_span));
                 Expr::undefined()
             }
             Std::NotPoisoned => Expr::bool(false),
@@ -108,10 +108,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 match mutable && self.is_boxable(guard.types().next().expect("what it guards")) {
                     true => arg(),
-                    false => Expr::member(arg(), "value"),
+                    false => Expr::held(arg()),
                 }
             }
-            Std::Lock => Self::ok(Expr::member(arg(), "value")),
+            Std::Lock => Self::ok(Expr::held(arg())),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
             Std::Drop => {
                 let ty = tys[0];
@@ -168,7 +168,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         out.push(StmtKind::Expr(ordering).at(js_span));
                     }
                 }
-                let slot = Expr::member(cell, "value");
+                let slot = Expr::held(cell);
                 if known == Std::AtomicLoad {
                     return Ok(Some(slot));
                 }
@@ -246,7 +246,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             let (key, f) = (args.remove(0), args.remove(0));
             *e = Expr {
                 span: e.span,
-                ..apply(f, vec![Expr::member(key, "value")])
+                ..apply(f, vec![Expr::held(key)])
             };
         }
     });
@@ -255,7 +255,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             js::Item::Const(c)
                 if !c.export
                     && matches!(&c.value.kind, js::ExprKind::Object(props)
-                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == "value")) =>
+                        if matches!(props.as_slice(), [js::Prop::Field(key, _)] if key == js::HELD)) =>
             {
                 Some(c.name.clone())
             }
@@ -267,7 +267,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
         js::each_item_expr_mut(items, &mut |e| match &e.kind {
             js::ExprKind::Var(v) if *v == name => reads += 1,
             js::ExprKind::Member(of, key)
-                if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name) =>
+                if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name) =>
             {
                 values += 1;
             }
@@ -303,7 +303,7 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
                     for stmt in stmts.iter() {
                         if let StmtKind::Assign(target, _) = &stmt.kind
                             && matches!(&target.kind, js::ExprKind::Member(of, key)
-                                if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                                if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
                         {
                             sets += 1;
                         }
@@ -315,14 +315,14 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
         js::each_item_expr_mut(items, &mut |e| {
             if let js::ExprKind::Handle(place) = &e.kind
                 && matches!(&place.kind, js::ExprKind::Member(of, key)
-                    if key == "value" && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
+                    if key == js::HELD && matches!(&of.kind, js::ExprKind::Var(v) if *v == name))
             {
                 sets += 1;
             }
         });
         js::each_item_expr_mut(items, &mut |e| {
             if let js::ExprKind::Member(of, key) = &e.kind
-                && key == "value"
+                && key == js::HELD
                 && matches!(&of.kind, js::ExprKind::Var(v) if *v == name)
             {
                 *e = Expr {

@@ -1108,13 +1108,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // An atomic shows what it holds.
             ty::Adt(_, args) if std(StdItem::Atomic) => {
-                self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)
+                self.debug_string_with(Expr::held(value), args.type_at(0), span, pretty)
             }
             // `LazyCell(1)`, or `LazyCell(<uninit>)` where it isn't made yet.
             ty::Adt(adt, args) if std(StdItem::LazyCell) => {
                 let name = self.tcx.item_name(adt.did());
-                let shown =
-                    self.debug_string_with(Expr::member(Expr::var("lazy"), "value"), args.type_at(0), span, pretty)?;
+                let shown = self.debug_string_with(Expr::held(Expr::var("lazy")), args.type_at(0), span, pretty)?;
                 let made = Expr::bin(Op::Eq, Expr::member(Expr::var("lazy"), "init"), Expr::undefined());
                 let shown = Expr::cond(made, shown, Expr::str("<uninit>"));
                 let plain = join(vec![Expr::str(format!("{name}(")), shown.clone(), Expr::str(")")]);
@@ -1143,7 +1142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec!["value".into()],
                     vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)],
                 );
-                Ok(self.applied(f, Expr::member(value, "value")))
+                Ok(self.applied(f, Expr::held(value)))
             }
             ty::Adt(_, args) if std(StdItem::Cell) || std(StdItem::RefCell) => {
                 let name = if std(StdItem::Cell) { "Cell" } else { "RefCell" };
@@ -1158,7 +1157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         );
                         Expr::call(Expr::helper("$showBorrowed"), vec![value, show])
                     }
-                    false => self.debug_string_with(Expr::member(value, "value"), args.type_at(0), span, pretty)?,
+                    false => self.debug_string_with(Expr::held(value), args.type_at(0), span, pretty)?,
                 };
                 let plain = join(vec![
                     Expr::str(format!("{name} {{ value: ")),

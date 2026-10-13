@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "pin-mut-of-handle-unread",
     breaks: "`as_mut()` of a pinned `Box` of an object is the box of it, not the object",
     file: "src/lower/std_types/pin.rs",
-    find: "            PinOp::Mut if handle && !self.is_boxable(target) => Expr::member(arg(), \"value\"),\n",
+    find: "            PinOp::Mut if handle && !self.is_boxable(target) => Expr::held(arg()),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pin_box"],
   },

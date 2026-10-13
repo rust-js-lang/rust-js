@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.type_id_of(pair.clone(), self.pointee_of(any), span, out)?,
             self.type_fact_value(of, TypeFact::Id, span)?,
         );
-        let inside = Expr::member(pair.clone(), "value");
+        let inside = Expr::held(pair.clone());
         Ok(Some(match op {
             AnyOp::Is => is,
             // `Some` boxed where it looks like `None` (ADR 0051).
@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             return self.type_fact_value(ty, TypeFact::Id, span);
         };
-        let dictionary = Expr::member(value, "impl");
+        let dictionary = Expr::member(value, js::DICTIONARY);
         let any = match traits.principal_def_id() {
             id if id.is_some() && id == any_trait(self.tcx) => dictionary,
             _ => self
@@ -113,11 +113,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A pair made here, `{ value: v, impl }`: `v`.
             if let js::ExprKind::Object(props) = &value.kind
                 && let [Prop::Field(name, inside), _] = props.as_slice()
-                && name == "value"
+                && name == js::HELD
             {
                 return inside.clone();
             }
-            return Expr::member(value, "value");
+            return Expr::held(value);
         }
         let item = match *pointee.kind() {
             ty::Slice(item) | ty::Array(item, _) => Some(item),
@@ -131,7 +131,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let each = Expr::arrow(
                     vec!["item".into()],
-                    vec![StmtKind::Return(Some(Expr::member(Expr::var("item"), "value"))).at(js::Span::NONE)],
+                    vec![StmtKind::Return(Some(Expr::held(Expr::var("item")))).at(js::Span::NONE)],
                 );
                 Expr::call(Expr::member(value, "map"), vec![each])
             }

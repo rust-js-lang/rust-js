@@ -165,7 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn deref_value(&mut self, value: Expr, ty: Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
         // A counted `Rc`'s, its `value` (ADR 0320).
         if self.counted_rc(ty).is_some() {
-            return Ok(Expr::member(value, "value"));
+            return Ok(Expr::held(value));
         }
         let deref = self.tcx.require_lang_item(LangItem::Deref, span);
         if self.has_user_impl(deref, ty) {

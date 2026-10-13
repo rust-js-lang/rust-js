@@ -299,11 +299,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // its `value` the place.
                     Value::Ref(ref place)
                         if let js::ExprKind::Member(cell, field) = &place.kind
-                            && field == "value" =>
+                            && field == js::HELD =>
                     {
                         self.flush(state, out)?;
                         let cell = self.spill("part", (**cell).clone(), out);
-                        Expr::member(cell, "value")
+                        Expr::held(cell)
                     }
                     _ => return Err(self.unsupported(span, "changing this string, from its MIR")),
                 };

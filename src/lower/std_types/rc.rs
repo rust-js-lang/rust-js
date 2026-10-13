@@ -43,7 +43,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Rc::new(value)` of a counted one: `{ value, strong: 1, weak: 0 }`.
     pub(in crate::lower) fn new_rc(value: Expr) -> Expr {
         Expr::object(vec![
-            Prop::Field("value".into(), value),
+            Prop::Field(crate::js::HELD.into(), value),
             Prop::Field("strong".into(), Expr::int(1)),
             Prop::Field("weak".into(), Expr::int(0)),
         ])
@@ -139,7 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn through_rc(&self, rc: Expr, item: Ty<'tcx>) -> Expr {
         match self.is_boxable(item) {
             true => rc,
-            false => Expr::member(rc, "value"),
+            false => Expr::held(rc),
         }
     }
 }
@@ -166,7 +166,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (new, pointee) = self.recognition().rc_same(def_id, generic_args)?;
         self.krate.counted.counts(self.tcx, pointee).then(|| match new {
             true => Self::new_rc(value),
-            false => Expr::member(value, "value"),
+            false => Expr::held(value),
         })
     }
 
@@ -196,7 +196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     None => return (value, ty),
                 },
             };
-            value = Expr::member(value, "value");
+            value = Expr::held(value);
             ty = inside;
         }
     }

@@ -30,7 +30,7 @@ export const mutations: Mutation[] = [
     name: "generic-result-kept-as-cell",
     breaks: "`pick(true, &mut c, &mut d).n += 5` of an object `T` writes `n` on the handle, not on `c`",
     file: "src/lower/mut_refs.rs",
-    find: "self.instantiated(pointee, generic_args)) =>\n            {\n                Expr::member(value, \"value\")\n",
+    find: "self.instantiated(pointee, generic_args)) =>\n            {\n                Expr::held(value)\n",
     replace: "self.instantiated(pointee, generic_args)) =>\n            {\n                value\n",
     tests: ["test/corpus.test.ts","-t","generic_mut_ref_kept"],
   },
