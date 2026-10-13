@@ -29,6 +29,10 @@ impl Child<'_> {
 }
 
 impl ReactNode for Child<'_> {}
+
+// Text, a number or an object in JS, never `undefined`: a JS value of any
+// shape, `js::unknown_of(child)`, as react.dev's prepareMDX reads one.
+unsafe impl js::Defined for Child<'_> {}
 impl sealed::Sealed for Child<'_> {}
 
 /// [`Children.toArray(children)`](https://react.dev/reference/react/Children#children-toarray):

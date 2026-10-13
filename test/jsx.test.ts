@@ -865,7 +865,11 @@ pub struct ListProps<C: ReactNode> {
 }
 pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let mut keys: Vec<String> = Vec::new();
-    children::for_each_with_index(&children, |child, i| keys.push(format!("{}{i}", if child.is_some() { "k" } else { "n" })));
+    children::for_each_with_index(&children, |child, i| {
+        // A child, never \`undefined\`, as a JS value of any shape.
+        let typed = child.is_some_and(|child| react::js::get(react::js::unknown_of(child), "type").is_some());
+        keys.push(format!("{}{i}{}", if child.is_some() { "k" } else { "n" }, if typed { "e" } else { "" }));
+    });
     jsx! { <p>{keys.join(",")}</p> }
 }
 `);
@@ -875,6 +879,7 @@ pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
   const { List } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(List, null, "a", null, "b"))).toBe("<p>k0,n1,k2</p>");
+  expect(renderToStaticMarkup(createElement(List, null, createElement("b")))).toBe("<p>k0e</p>");
 });
 
 // A default import is named as the module's `use` renames it, `use
