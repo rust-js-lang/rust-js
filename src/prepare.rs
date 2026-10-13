@@ -659,10 +659,7 @@ impl Walk {
             match &stmt.kind {
                 StmtKind::Const(alias, value) => {
                     if let ExprKind::Var(of) = &value.kind
-                        && alias
-                            .strip_prefix(of.as_str())
-                            .and_then(|rest| rest.strip_prefix('$'))
-                            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+                        && crate::names::apart(alias).is_some_and(|(base, _)| base == of)
                     {
                         self.shadows.push((self.at, looped, alias.clone(), of.clone()));
                     }

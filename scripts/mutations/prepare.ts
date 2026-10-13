@@ -102,8 +102,8 @@ export const mutations: Mutation[] = [
     name: "alias-of-another-name",
     breaks: "`let kept = text` is `text`, not the name written",
     file: "src/prepare.rs",
-    find: "                        && alias\n                            .strip_prefix(of.as_str())\n                            .and_then(|rest| rest.strip_prefix('$'))\n                            .is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))\n",
-    replace: "                        && !alias.is_empty()\n",
+    find: "                        && crate::names::apart(alias).is_some_and(|(base, _)| base == of)",
+    replace: "                        && !alias.is_empty()",
     tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
   },
   {

@@ -23,12 +23,9 @@ pub(crate) fn unsuffixed_params(body: &mut [Stmt], module: &HashSet<String>) {
         for i in 0..params.len() {
             for k in 0..params[i].names().len() {
                 let name = params[i].names()[k].to_string();
-                let Some((base, n)) = name.rsplit_once('$') else {
+                let Some((base, _)) = crate::names::apart(&name) else {
                     continue;
                 };
-                if base.is_empty() || n.is_empty() || !n.bytes().all(|b| b.is_ascii_digit()) {
-                    continue;
-                }
                 let mut named = HashSet::new();
                 js::names_in(inner, &mut named);
                 named.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
@@ -146,7 +143,7 @@ fn locals(item: &mut js::Item) {
         };
         let suffix: usize = local[base.len() + 1..].parse().unwrap_or(0);
         let Some(to) = std::iter::once(base.to_string())
-            .chain((1..suffix).map(|i| format!("{base}${i}")))
+            .chain((1..suffix).map(|i| crate::names::given_apart(base, i)))
             .find(|to| tree.renames(&local, to))
         else {
             continue;
@@ -163,9 +160,12 @@ fn locals(item: &mut js::Item) {
 /// The name `name`, `label$1` or `Error$`, was given apart from, where it
 /// may be that name: one none of `mentioned` is, nor a word JS keeps.
 fn reclaimable<'a>(name: &'a str, mentioned: &HashSet<String>) -> Option<&'a str> {
-    let (base, suffix) = name.rsplit_once('$')?;
-    if base.is_empty() || base.contains('$') || !suffix.bytes().all(|b| b.is_ascii_digit()) || mentioned.contains(base)
-    {
+    // `label$1`, given apart, or `Error$`, named apart for good.
+    let base = match crate::names::apart(name) {
+        Some((base, _)) => base,
+        None => name.strip_suffix('$')?,
+    };
+    if base.is_empty() || base.contains('$') || mentioned.contains(base) {
         return None;
     }
     // A word JS keeps, `class`, is named apart for good.

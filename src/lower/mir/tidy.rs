@@ -3555,7 +3555,7 @@ fn tuple_reads(
         let mut held = Vec::new();
         for (k, item) in items.iter_mut().enumerate() {
             if last.is_some_and(|last| k < last && !fixed(item) || k == last) {
-                let name = format!("{t}${k}");
+                let name = crate::names::given_apart(&t, k);
                 held.push(StmtKind::Const(name.clone(), std::mem::replace(item, Expr::var(&name))).at(span));
             }
         }

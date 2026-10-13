@@ -128,7 +128,7 @@ fn module_path(tcx: TyCtxt<'_>, module: LocalModId) -> Vec<String> {
         .collect();
     namesakes.sort_by_key(|&m| (in_block(m), m.to_local_def_id().local_def_index));
     match namesakes.iter().position(|&m| m == module) {
-        Some(at) if at > 0 => path.push(format!("{name}${at}")),
+        Some(at) if at > 0 => path.push(crate::names::given_apart(&name.to_string(), at)),
         _ => path.push(name.to_string()),
     }
     path

@@ -5,21 +5,40 @@ use std::collections::HashSet;
 /// Pick an unused name: `x`, then `x$1`, `x$2`, ... Rust identifiers can't
 /// contain `$`, so these never clash with a user's name.
 pub(crate) fn fresh_in(taken: &mut HashSet<String>, base: &str) -> String {
-    let base = js_ident(base);
-    if taken.insert(base.clone()) {
-        return base;
+    fresh_apart(taken, &js_ident(base))
+}
+
+/// `base`, or given apart from what `taken` has, `base$1`, as `fresh_in`
+/// names, of a name that's fine as it is: a property's, `new` too.
+pub(crate) fn fresh_apart(taken: &mut HashSet<String>, base: &str) -> String {
+    if taken.insert(base.to_string()) {
+        return base.to_string();
     }
     // One given apart already, `caption$1`: the name it was given apart
     // from's next, `caption$2`, which reclaiming can make `caption` again
     // (ADR 0352).
-    let root = match base.rsplit_once('$') {
-        Some((root, k)) if !root.is_empty() && !k.is_empty() && k.bytes().all(|b| b.is_ascii_digit()) => root,
-        _ => &base,
-    };
+    let root = apart(base).map_or(base, |(root, _)| root);
     (1..)
-        .map(|k| format!("{root}${k}"))
+        .map(|k| given_apart(root, k))
         .find(|name| taken.insert(name.clone()))
         .unwrap()
+}
+
+/// `base` given apart the `k`th time, `caption$2`: the one spelling of a
+/// name given apart, which `apart` takes apart.
+pub(crate) fn given_apart(base: &str, k: usize) -> String {
+    format!("{base}${k}")
+}
+
+/// A name given apart, `caption$2`: what it was given apart from, and how
+/// many times, `("caption", 2)`. Not a word JS keeps, `Error$`, nor a
+/// name never given apart.
+pub(crate) fn apart(name: &str) -> Option<(&str, usize)> {
+    let (base, k) = name.rsplit_once('$')?;
+    if base.is_empty() || k.is_empty() || !k.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    Some((base, k.parse().ok()?))
 }
 
 /// The cache of a trait's dictionary, `$circleShape` of `circleShape()`,

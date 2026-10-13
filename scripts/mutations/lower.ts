@@ -113,8 +113,8 @@ export const mutations: Mutation[] = [
     name: "block-modules-one-file",
     breaks: "two modules of one name in blocks of a module, bitflags' macro's, are one file",
     file: "src/lower.rs",
-    find: "        Some(at) if at > 0 => path.push(format!(\"{name}${at}\")),",
-    replace: "        Some(at) if false && at > 0 => path.push(format!(\"{name}${at}\")),",
+    find: "        Some(at) if at > 0 => path.push(crate::names::given_apart(&name.to_string(), at)),",
+    replace: "        Some(at) if false && at > 0 => path.push(crate::names::given_apart(&name.to_string(), at)),",
     tests: ["test/corpus.test.ts","-t","block_modules"],
   },
   {
