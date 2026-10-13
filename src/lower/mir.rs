@@ -4940,13 +4940,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A std iterator's method: a JS iterator's, lazy as Rust's. A `&mut`
         // to one is it, an object its helpers step in place.
         if tcx.trait_of_assoc(def_id).is_some() {
-            let mut exprs = values
-                .clone()
-                .into_iter()
-                .map(|v| match v {
-                    Value::Ref(iterator) => Ok(iterator),
-                    v => self.value_expr(v, span),
-                })
+            let mut exprs = (values.clone().into_iter())
+                .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;
             // `v.iter().map(f).next_back()`: the map its temporary holds, which
             // nothing else reads, there, `next_back` stepping its source from

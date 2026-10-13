@@ -267,14 +267,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","box_uninit"],
   },
   {
-    name: "mir-iterator-ref-refused",
-    breaks: "a `&mut` to a std iterator is a handle on it, which JS can't step",
-    file: "src/lower/mir.rs",
-    find: "                    Value::Ref(iterator) => Ok(iterator),\n",
-    replace: "",
-    tests: ["test/corpus.test.ts","-t","generic_associated_types"],
-  },
-  {
     name: "mir-shift-amount-bigint",
     breaks: "`22i32 >> by` of an `i64` `by` shifts a number by a BigInt",
     file: "src/lower/mir.rs",
