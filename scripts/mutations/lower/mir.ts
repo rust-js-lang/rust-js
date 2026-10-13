@@ -3068,4 +3068,28 @@ export const mutations: Mutation[] = [
     replace: "            PlaceElem::ConstantIndex { from_end: true, .. } | PlaceElem::Subslice { .. } if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "slice_pattern_of_made_array"],
   },
+  {
+    "name": "local-add-discarded-helper",
+    "breaks": "a thread-local set's insert, its answer unused, stays `$add(LIKED, id)`, not `LIKED.add(id)`",
+    "file": "src/lower/mir.rs",
+    "find": "                            (\"$add\", 2) => Some(\"add\"),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "its answer unused"
+    ]
+  },
+  {
+    "name": "local-insert-discarded-helper",
+    "breaks": "a thread-local map's insert, its answer unused, stays `$insert(CACHE, key, n)`, not `CACHE.set(key, n)`",
+    "file": "src/lower/mir.rs",
+    "find": "                            (\"$insert\", 3) => Some(\"set\"),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "its answer unused"
+    ]
+  },
 ];

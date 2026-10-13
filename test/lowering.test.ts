@@ -2015,6 +2015,35 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
   expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
 
+// An insert whose answer goes unused is JS's own, `set.add(x)`, in a
+// thread-local's closure too, as react.dev's home page keeps its liked
+// videos and its caches.
+test("an insert in a thread-local's closure, its answer unused, is JS's own", async () => {
+  const dir = fixture("local-insert");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+thread_local! {
+    static LIKED: RefCell<HashSet<&'static str>> = RefCell::new(HashSet::new());
+    static CACHE: RefCell<HashMap<String, u32>> = RefCell::new(HashMap::new());
+}
+pub fn like(id: &'static str) -> bool {
+    LIKED.with_borrow_mut(|liked| liked.insert(id));
+    LIKED.with_borrow(|liked| liked.contains(id))
+}
+pub fn cache(key: &str, n: u32) -> Option<u32> {
+    CACHE.with_borrow_mut(|cache| cache.insert(key.to_string(), n));
+    CACHE.with_borrow(|cache| cache.get(key).copied())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("  LIKED.add(id);\n");
+  expect(js).toContain("  CACHE.set(key, n);\n");
+  expect(js).not.toContain("@rust-js/runtime");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.like("a"), lib.cache("k", 2)]).toEqual([true, 2]);
+});
+
 // ADR 0140: a generic iterator collected is `Iterator.from(it).toArray()`,
 // never `Array.from(it)`: it may be a binding's with only a `next`, of
 // which `Array.from` makes an empty array.
