@@ -4584,30 +4584,68 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             _ => None,
         })?;
+        let named = |var: thir::ExprId| match self.thir[var].kind {
+            thir::ExprKind::VarRef { id } => Some(id.0),
+            thir::ExprKind::UpvarRef { var_hir_id, .. } => Some(var_hir_id.0),
+            _ => None,
+        };
         let (var, deref) = match self.thir[base].kind {
-            thir::ExprKind::Deref { arg } if matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not)) => {
-                (strip(arg), true)
+            thir::ExprKind::Deref { arg }
+                if matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+                    && named(strip(arg)).is_some() =>
+            {
+                (Some(strip(arg)), true)
             }
             thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. }
                 if !bindings::has_flatten(self.tcx, ty) && (!self.is_copy(ty) || !self.contains_mutated(ty)) =>
             {
-                (base, false)
+                (Some(base), false)
             }
+            thir::ExprKind::VarRef { .. } | thir::ExprKind::UpvarRef { .. } => return None,
+            // Of a place no variable names, `..*unsafe { posts.get_unchecked(0) }`
+            // or `..posts[0]`, as react.dev's home page gives each BlogCard a
+            // post: the place MIR reads each of its fields from, `(*t).title`.
+            thir::ExprKind::Deref { arg }
+                if matches!(self.thir[arg].ty.kind(), ty::Ref(_, _, ty::Mutability::Not))
+                    && !bindings::has_flatten(self.tcx, ty) =>
+            {
+                (None, false)
+            }
+            thir::ExprKind::Index { .. } if !bindings::has_flatten(self.tcx, ty) => (None, false),
             _ => return None,
         };
-        let hir_id = match self.thir[var].kind {
-            thir::ExprKind::VarRef { id } => id.0,
-            thir::ExprKind::UpvarRef { var_hir_id, .. } => var_hir_id.0,
-            _ => return None,
-        };
-        let binding = self.tcx.hir_span(hir_id);
-        let place = (state.body.var_debug_info.iter()).find_map(|info| match info.value {
-            mir::VarDebugInfoContents::Place(place) if info.source_info.span == binding => Some(place),
-            _ => None,
-        })?;
-        let base = match deref {
-            true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
-            false => place,
+        let base = match var {
+            Some(var) => {
+                let binding = self.tcx.hir_span(named(var)?);
+                let place = (state.body.var_debug_info.iter()).find_map(|info| match info.value {
+                    mir::VarDebugInfoContents::Place(place) if info.source_info.span == binding => Some(place),
+                    _ => None,
+                })?;
+                match deref {
+                    true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
+                    false => place,
+                }
+            }
+            None => {
+                let mut read = None;
+                for (i, operand) in operands.iter_enumerated() {
+                    let Some(place) = operand.place() else { continue };
+                    let Some((PlaceElem::Field(f, _), rest)) = place.projection.split_last() else {
+                        continue;
+                    };
+                    let of = Place {
+                        local: place.local,
+                        projection: self.tcx.mk_place_elems(rest),
+                    };
+                    match read {
+                        _ if *f != i => continue,
+                        None => read = Some(of),
+                        Some(seen) if seen == of => {}
+                        Some(_) => return None,
+                    }
+                }
+                read?
+            }
         };
         // Each field read of it, the spread's, its own: one that needs no copy
         // of its own.

@@ -3955,6 +3955,18 @@ pub fn Again(props: &'static PanelProps<'static>) -> JSX::Element {
     jsx! { <Panel wide={Some(true)} {..*props} /> }
 }
 
+// All of them so, as react.dev's home page gives each BlogCard a post,
+// \`<BlogCard {...recentPosts[0]} />\`.
+pub fn Alone(posts: &'static [PanelProps<'static>]) -> JSX::Element {
+    jsx! { <Panel {..posts[0]} /> }
+}
+
+// Read through a reference no variable names, as react.dev's home page
+// writes it, unchecked.
+pub fn First(posts: &'static [PanelProps<'static>]) -> JSX::Element {
+    jsx! { <Panel {..*unsafe { posts.get_unchecked(0) }} /> }
+}
+
 fn described(title: Option<&str>) -> String {
     format!("{}-panel", title.unwrap_or(""))
 }
@@ -3968,9 +3980,12 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
+  expect(jsx).toContain("but the index is 0`);\n  }\n  return <Panel {...posts[0]} />;");
+  expect(jsx).toContain("export function First(posts) {\n  return <Panel {...posts[0]} />;\n}");
   // The key MIR holds is named as it's given, `key`.
   expect(jsx).toContain("<Panel key={key} {...props} wide />");
-  const { Again } = await import(join(dir, "lib.jsx"));
+  const { Again, Alone } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Alone([{ title: "a", wide: true }]))).toBe('<p title="a" data-wide="true"></p>');
   const tree = Again({ title: "t", wide: false, extra: 1 });
   expect(tree.props.extra).toBe(1);
   expect(renderToStaticMarkup(tree)).toBe('<p title="t" data-wide="true"></p>');

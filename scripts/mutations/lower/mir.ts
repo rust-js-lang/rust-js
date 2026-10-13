@@ -3092,4 +3092,28 @@ export const mutations: Mutation[] = [
       "its answer unused"
     ]
   },
+  {
+    "name": "struct-update-index-fields",
+    "breaks": "`{..posts[0]}` gives each field by name, `title={posts[0].title}`, not `{...posts[0]}`",
+    "file": "src/lower/mir.rs",
+    "find": "            thir::ExprKind::Index { .. } if !bindings::has_flatten(self.tcx, ty) => (None, false),\n",
+    "replace": "",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "props updated from a reference are spread"
+    ]
+  },
+  {
+    "name": "struct-update-deref-fields",
+    "breaks": "`{..*unsafe { posts.get_unchecked(0) }}` gives each field by name, not `{...posts[0]}`",
+    "file": "src/lower/mir.rs",
+    "find": "            {\n                (None, false)\n            }\n            thir::ExprKind::Index",
+    "replace": "            {\n                return None;\n            }\n            thir::ExprKind::Index",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "props updated from a reference are spread"
+    ]
+  },
 ];

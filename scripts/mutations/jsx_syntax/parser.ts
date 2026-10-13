@@ -338,4 +338,16 @@ export const mutations: Mutation[] = [
       "children declared any node"
     ]
   },
+  {
+    "name": "lone-struct-update-whole",
+    "breaks": "a component given only `{..posts[0]}` takes the struct whole, a move out of the slice rustc refuses",
+    "file": "src/jsx_syntax/parser.rs",
+    "find": "            && !struct_update\n            && let Some(props) = spread.clone()",
+    "replace": "            && let Some(props) = spread.clone()",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "props updated from a reference are spread"
+    ]
+  },
 ];

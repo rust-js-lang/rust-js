@@ -4157,15 +4157,23 @@ fn spread_spreads(e: &mut Expr) {
         ExprKind::Jsx(jsx) => &mut jsx.props,
         _ => return,
     };
-    *props = (std::mem::take(props).into_iter())
-        .flat_map(|prop| match prop {
-            js::Prop::Spread(Expr {
-                kind: ExprKind::Object(inner),
-                ..
-            }) if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))) => inner,
-            prop => vec![prop],
-        })
-        .collect();
+    // Down to what's spread, `{...{ ...{ ...b } }}`'s `b`, a copy made of a
+    // copy, as an element captured twice spills its props.
+    let flat = |prop: &js::Prop| {
+        matches!(prop, js::Prop::Spread(Expr { kind: ExprKind::Object(inner), .. })
+            if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))))
+    };
+    while props.iter().any(flat) {
+        *props = (std::mem::take(props).into_iter())
+            .flat_map(|prop| match prop {
+                js::Prop::Spread(Expr {
+                    kind: ExprKind::Object(inner),
+                    ..
+                }) if inner.iter().all(|p| matches!(p, js::Prop::Spread(_))) => inner,
+                prop => vec![prop],
+            })
+            .collect();
+    }
 }
 
 /// `const a = e; .. const b = a;`, where nothing else reads `a`, is `const
@@ -5651,5 +5659,28 @@ pub(super) fn copied_params(params: &[js::Pattern], body: &mut Vec<Stmt>) {
                 *v = param.clone();
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::spread_spreads;
+    use crate::js::{self, Expr, ExprKind, Prop};
+
+    /// An element captured twice spills its props twice, `{...{ ...{ ...post } }}`,
+    /// as react.dev's home page gives each BlogCard a post: `{...post}`.
+    #[test]
+    fn a_copy_of_a_copy_spreads_what_it_copies() {
+        let copy = |of: Expr| Expr::object(vec![Prop::Spread(of)]);
+        let mut card = Expr::jsx(js::Jsx {
+            tag: js::JsxTag::Component(Expr::var("BlogCard")),
+            props: vec![Prop::Spread(copy(copy(Expr::var("post"))))],
+            children: Vec::new(),
+        });
+        spread_spreads(&mut card);
+        let ExprKind::Jsx(jsx) = &card.kind else {
+            unreachable!("an element")
+        };
+        assert!(matches!(jsx.props.as_slice(), [Prop::Spread(Expr { kind: ExprKind::Var(v), .. })] if v == "post"));
     }
 }

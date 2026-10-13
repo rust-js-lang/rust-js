@@ -486,8 +486,11 @@ impl Jsx<'_> {
                     .collect(),
             );
         }
+        // JSX's `{...props}` alone is the props; Rust's `{..*post}` builds
+        // them field by field, each copied, as a struct update does.
         let mut expr = if attrs.is_empty()
             && !has_children
+            && !struct_update
             && let Some(props) = spread.clone()
         {
             call(
