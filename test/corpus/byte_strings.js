@@ -32,7 +32,7 @@ function method(line) {
 }
 
 function checksum(bytes) {
-  return bytes.map((b) => b).reduce((a, b) => (a + b) >>> 0, 0);
+  return bytes.reduce((a, b) => (a + b) >>> 0, 0);
 }
 
 function main() {

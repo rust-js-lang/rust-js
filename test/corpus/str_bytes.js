@@ -42,9 +42,7 @@ function main() {
   const length = Array.from(new TextEncoder().encode(word)).length;
   console.log(`${value} ${length} ${Array.from(word).length}`);
   console.log(`${Array.from(new TextEncoder().encode(word)).filter((b) => b >= 128).length}`);
-  const sum = Array.from(new TextEncoder().encode("abc"))
-    .map((b) => b)
-    .reduce((a, b) => (a + b) >>> 0, 0);
+  const sum = Array.from(new TextEncoder().encode("abc")).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${sum}`);
   console.log(
     `[${Array.from(new TextEncoder().encode("abc"))

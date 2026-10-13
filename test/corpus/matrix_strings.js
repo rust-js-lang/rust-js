@@ -93,9 +93,7 @@ function main() {
     const value$13 = Iterator.from($splitN(a, 2, " ")).toArray();
     const value$14 = Iterator.from($rsplit(a, " ")).toArray();
     const value$15 = $splitOnce(a, ",");
-    const value$16 = Array.from(new TextEncoder().encode(a))
-      .map((n) => n)
-      .reduce((a, b) => (a + b) >>> 0, 0);
+    const value$16 = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
     const value$17 = Iterator.from($charIndices(a)).toArray();
     const value$18 = $charBoundary(a, 1) !== undefined;
     const value$19 = $strGet(a, 0, 1);

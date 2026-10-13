@@ -110,10 +110,7 @@ function iDigits() {
   if ($iDigits === undefined) {
     $iDigits = {
       digit_iter: iDigits_digit_iter,
-      digit_sum: (self) =>
-        iDigits_digit_iter(self)
-          .map((d) => d)
-          .reduce((s, d) => (s + d) >>> 0, 0),
+      digit_sum: (self) => iDigits_digit_iter(self).reduce((s, d) => (s + d) >>> 0, 0),
     };
   }
   return $iDigits;

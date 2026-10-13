@@ -22,7 +22,7 @@ export function entry() {
 function main() {
   const words = ["héllo", "ab", ""];
   const bytes = words.map((s) => $byteLen(s));
-  const owned = words.map((s) => s);
+  const owned = words.slice();
   const sizes = owned.map((s) => $byteLen(s));
   const rows = [[1, 2], []];
   const counts = rows.map((x) => x.length);
@@ -30,8 +30,8 @@ function main() {
   console.log(
     `[${bytes.map((item) => String(item)).join(", ")}] [${owned.map((item) => $debugStr(item)).join(", ")}] [${sizes.map((item) => String(item)).join(", ")}] [${counts.map((item) => String(item)).join(", ")}] [${empty.map((item) => String(item)).join(", ")}]`,
   );
-  const names = ["a", "b"].map((s) => s);
-  const into = ["c"].map((s) => s);
+  const names = ["a", "b"].slice();
+  const into = ["c"].slice();
   const present = [1, 2].map((x) => $unwrap(x));
   const parsed = [
     { TAG: "Ok", _0: 3 },

@@ -2015,6 +2015,35 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
   expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
 
+// A map by what gives its value as it is, an untagged variant's constructor
+// or `String::as_str`, is no map: react.dev's page route gives Next.js its
+// paths, `.map(StaticPath::Params)`, and reads `NODE_ENV`.
+test("a map by what gives the value itself is none", async () => {
+  const dir = fixture("identity-map");
+  writeFileSync(join(dir, "lib.rs"), `#[cfg_attr(rust_js, rust_js::untagged)]
+pub enum Entry {
+    Name(String),
+    Pair(Pair),
+}
+pub struct Pair {
+    pub key: String,
+}
+pub fn entries(keys: Vec<String>) -> Vec<Entry> {
+    keys.into_iter().filter(|key| !key.is_empty()).map(|key| Pair { key }).map(Entry::Pair).collect()
+}
+pub fn production(env: Option<&String>) -> bool {
+    env.map(String::as_str) == Some("production")
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).not.toContain("(value) => value");
+  expect(js).toContain('return env === "production";');
+  const lib = await import(join(dir, "mir.js"));
+  expect(lib.entries(["a", "", "b"])).toEqual([{ key: "a" }, { key: "b" }]);
+  expect([lib.production("production"), lib.production(undefined), lib.production("dev")]).toEqual([true, false, false]);
+});
+
 // An Option compared to a literal is only that comparison, which none fails
 // anyway: `segments.at(-1) === "index"`, as react.dev's page route drops a
 // path's last `index`.

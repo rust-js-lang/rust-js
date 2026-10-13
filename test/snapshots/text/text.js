@@ -78,14 +78,11 @@ function sum(text) {
 }
 
 export function words(text) {
-  const words = text
-    .split(/\p{White_Space}+/u)
-    .filter((word) => word !== "")
-    .map((w) => w);
-  const lines = $lines(text).map((l) => l);
+  const words = text.split(/\p{White_Space}+/u).filter((word) => word !== "");
+  const lines = $lines(text);
   const value = sum(text);
   const total = value.TAG === "Ok" ? `sum ${value._0}` : `error: ${value._0}`;
-  const pieces = $splitBy(text, (c) => !!/^[0-9]$/.test(c) || c === "\r").map((p) => p);
+  const pieces = $splitBy(text, (c) => !!/^[0-9]$/.test(c) || c === "\r");
   return [words, lines, total, pieces, Array.from(text).some((c) => /^\p{Uppercase}$/u.test(c))];
 }
 

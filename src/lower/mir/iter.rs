@@ -376,7 +376,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match name {
-            "map" => method("map", it, vec![self.unary_callback(arg(), own)]),
+            // By what gives each as it is, an untagged variant's constructor,
+            // `map(StaticPath::Params)`: no step.
+            "map" => match self.unary_callback(arg(), own) {
+                f if f.is_identity() => it,
+                f => method("map", it, vec![f]),
+            },
             // Of items with a destructor: each it doesn't keep dropped as it
             // discards it (ADR 0098).
             "filter" => {

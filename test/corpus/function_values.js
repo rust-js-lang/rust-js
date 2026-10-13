@@ -30,7 +30,7 @@ function twice(f, x) {
 }
 
 function main() {
-  const found = [1, 2].map((value) => value);
+  const found = [1, 2].slice();
   const checked = [3].map((value) => ({ TAG: "Ok", _0: value }));
   const lengths = [1.5, 2.5].map((value) => [value]);
   const circles = [1, 2].map((value) => ({ TAG: "Circle", _0: value }));

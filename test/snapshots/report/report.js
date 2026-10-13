@@ -163,7 +163,7 @@ export function function_values(words) {
   const upper = words.map((w) => w.toUpperCase());
   const spaces = Array.from("a b	c").map((c) => /^\p{White_Space}$/u.test(c));
   const roots = [4, 2.25, 9].map((n) => Math.sqrt(n));
-  const owned = words.map((s) => s);
+  const owned = words.slice();
   return [upper, spaces, roots, owned];
 }
 

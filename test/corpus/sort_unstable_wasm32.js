@@ -22,7 +22,7 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const owned = text.split(" ").map((s) => s);
+  const owned = text.split(" ");
   $sortUnstable(owned, (a, b) => $cmp($byteLen(b), $byteLen(a)) < 0, "general8");
   console.log(`${owned.join(",")}`);
   const wide = $range(0, 50).map((i) => [

@@ -91,14 +91,14 @@ export function by_last_digit(v) {
 }
 
 export function sorted_words(words) {
-  const w = words.map((s) => s);
+  const w = words.slice();
   w.sort($cmp);
   w.reverse();
   return w;
 }
 
 export function by_length_then_name(words) {
-  const w = words.map((s) => s);
+  const w = words.slice();
   w.sort((a, b) => $cmp(!a, !b) || $cmp(a, b));
   return w;
 }

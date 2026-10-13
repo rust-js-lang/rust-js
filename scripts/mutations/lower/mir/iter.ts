@@ -626,4 +626,16 @@ export const mutations: Mutation[] = [
       "only a next"
     ]
   },
+  {
+    "name": "identity-map-step",
+    "breaks": "a map by an untagged variant constructor stays a step, `.map((value) => value)`",
+    "file": "src/lower/mir/iter.rs",
+    "find": "                f if f.is_identity() => it,\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "gives the value itself is none"
+    ]
+  },
 ];

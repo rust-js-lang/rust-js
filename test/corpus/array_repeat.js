@@ -18,7 +18,7 @@ function made(name, n) {
 function main() {
   const zeros = new Array(1024).fill(0);
   const flags = [true, true, true];
-  const arg = zeros.map((b) => b).reduce((a, b) => (a + b) >>> 0, 0);
+  const arg = zeros.reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${zeros.length} ${arg} [${flags.map((item) => String(item)).join(", ")}]`);
   const item = [0, 0, 0];
   const grid = Array.from({ length: 4 }, () => item.slice());

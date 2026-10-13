@@ -14,7 +14,7 @@ function apply(f, n) {
 
 function main() {
   const v = [1, 2, 3].map(double);
-  const o = v.map((value) => value);
+  const o = v.slice();
   console.log(
     `[${v.map((item) => String(item)).join(", ")}] [${o.map((item) => (item == null ? "None" : `Some(${item})`)).join(", ")}] ${apply(double, 5)}`,
   );

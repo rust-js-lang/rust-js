@@ -184,6 +184,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 {
                     return Ok(Some(option));
                 }
+                // By what gives it as it is, `map(String::as_str)`: the option.
+                if f.is_identity() {
+                    return Ok(Some(option));
+                }
                 let mapped = generic_args.type_at(1);
                 // `|_| 7` has no parameter left (ADR 0038): `Some(None)`.
                 let param = match &f.kind {

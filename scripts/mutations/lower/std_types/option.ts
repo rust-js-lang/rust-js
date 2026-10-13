@@ -244,4 +244,16 @@ export const mutations: Mutation[] = [
       "an option of an untagged enum never falsy"
     ]
   },
+  {
+    "name": "option-identity-map",
+    "breaks": "`env.map(String::as_str)` is `env != null ? env : undefined`, not `env`",
+    "file": "src/lower/std_types/option.rs",
+    "find": "                if f.is_identity() {\n                    return Ok(Some(option));\n                }\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "gives the value itself is none"
+    ]
+  },
 ];

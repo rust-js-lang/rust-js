@@ -118,7 +118,7 @@ function main() {
   const value$1 = $index(values, 8);
   const arg = $eq(copy, [1, 2, 3]);
   console.log(`${valueDebug_fmt(copy)} ${valueDebug_fmt(value$1)} ${arg}`);
-  const counts = [4, 5].map((value) => value);
+  const counts = [4, 5];
   const texts = values.filter((v) => typeof v === "string").length;
   const first = values.find((v) => typeof v === "bigint");
   const arg$1 = $eq($index(values, 0), { x: 1, y: 2 });
