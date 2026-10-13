@@ -3916,6 +3916,22 @@ pub fn Keyed(keys: Vec<Option<&'static str>>) -> JSX::Element {
   expect(renderToStaticMarkup(tree)).toBe("<ul><li>a</li><li>none</li></ul>");
 });
 
+// A key may be any JS number, as @types/react's `Key` has `number`:
+// react.dev's home page keys its progress bar by a restart count.
+test("an element's key may be a JS number", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx};
+
+pub fn Restarted(restart_id: f64) -> JSX::Element {
+    jsx! { <div key={restart_id}>{"bar"}</div> }
+}
+`);
+  run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<div key={restartId}>");
+  const { Restarted } = await import(join(dir, "lib.jsx"));
+  expect(Restarted(1.5).key).toBe("1.5");
+});
+
 // Props given whole through a reference, the rest of a child's own, are
 // spread, then the props named, as react.dev's CodeDiagram gives
 // CodeBlock a <pre>'s props, `{...child.props} noMargin={true}`: what the

@@ -479,6 +479,7 @@ impl Key for String {}
 impl Key for i32 {}
 impl Key for u32 {}
 impl Key for usize {}
+impl Key for f64 {}
 impl<T: Key + ?Sized> Key for &T {}
 impl<T: Key> Key for Option<T> {}
 
