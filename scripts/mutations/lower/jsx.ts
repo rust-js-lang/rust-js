@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "named props and the rest from a base"],
   },
   {
-    name: "component-prop-copied",
-    breaks: "a component's prop read from a variable is copied to another before its children, `const rest$1 = rest`",
-    file: "src/lower/jsx.rs",
-    find: "        } else if !self.reads_alike(value, out) {",
-    replace: "        } else if !value.is_constant() {",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
-  },
-  {
     name: "rest-field-not-spread",
     breaks: "a `Rest` a component passes on is a `rest` prop, not `{...rest}`",
     file: "src/lower/jsx.rs",
@@ -88,14 +80,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "            if attrs.iter().filter(|attr| effects(attr)).count() > 1 {",
     replace: "            if false {",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
-  },
-  {
-    name: "flattened-literal-read-whole",
-    breaks: "a flattened struct made here is read into a `const` whole, nested, and spread so",
-    file: "src/lower/jsx.rs",
-    find: "        if let js::ExprKind::Object(props) = &mut value.kind {",
-    replace: "        if let (false, js::ExprKind::Object(props)) = (true, &mut value.kind) {",
     tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
   },
   {
@@ -377,5 +361,13 @@ export const mutations: Mutation[] = [
     "tests": [
       "test/jsx.test.ts"
     ]
+  },
+  {
+    name: "props-read-in-jsx-order",
+    breaks: "props written out of the struct's order are made in the JSX's, not Rust's: `t` logged before `h`",
+    file: "src/lower/jsx.rs",
+    find: "        if !value.is_constant() {\n            let old = std::mem::replace(value, Expr::undefined());\n",
+    replace: "        if false {\n            let old = std::mem::replace(value, Expr::undefined());\n",
+    tests: ["test/jsx.test.ts", "-t", "flattened props where they"],
   },
 ];

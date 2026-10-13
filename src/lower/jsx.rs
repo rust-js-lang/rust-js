@@ -460,19 +460,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// `prop`'s value read into a `const` first where it isn't read alike
-    /// (ADR 0194), an object made here each of its values, so a flattened
-    /// struct's stays one, taken apart where it's given (ADR 0213).
+    /// `prop`'s value read into a `const` first, unless it's a constant (ADR
+    /// 0194). What reads the same where the prop is written, a variable, or a
+    /// flattened struct made here (ADR 0213), is read there again as tidy
+    /// writes what a `const` holds where it's read.
     fn read_first(&mut self, prop: &mut Prop, out: &mut Vec<Stmt>) {
         let (name, value) = match prop {
             Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
             Prop::Spread(value) => ("props", value),
         };
-        if let js::ExprKind::Object(props) = &mut value.kind {
-            for prop in props {
-                self.read_first(prop, out);
-            }
-        } else if !self.reads_alike(value, out) {
+        if !value.is_constant() {
             let old = std::mem::replace(value, Expr::undefined());
             *value = self.spill(&camel_case(&js_ident(name)), old, out);
         }

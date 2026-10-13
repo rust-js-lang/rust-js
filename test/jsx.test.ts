@@ -2152,6 +2152,10 @@ pub fn Looped() -> JSX::Element {
   const { App, Noted, Linked, Sized, Forward } = await import(join(dir, "lib.jsx"));
   expect(jsx).toContain("<ButtonLink href={href} {...props}>");
   expect(jsx).toContain('export function Looped() {\n  const href = note("h");\n  let n = 0;');
+  // A variable read as it is; a flattened struct made here, each field in
+  // its place.
+  expect(jsx).toContain('<ButtonLink target={note("t")} label={label} href={h}>');
+  expect(jsx).toContain('<ButtonLink label={note("l")} target={note("t")} id={note("i")} href={href}>');
   const { createElement } = await import("react");
   expect(renderToStaticMarkup(createElement(Forward, { href: "/f", target: "_t", id: "i" }))).toBe('<a href="/f" data-size="md" target="_t" id="i">F</a>');
   const logged: string[] = [];

@@ -29,7 +29,12 @@ reads alike: `width={p.size === "S" ? "12px" : "20px"}`, `todos.length ===
 (a `Cell`, an `Rc<RefCell<..>>`) or a JS object: what's done meanwhile
 changes it, a getter's `n.textContent` too. `p.title.map(|t| ..)`, which
 reads its option twice, reads such a field as it is too, where it was
-`const t = p.title`. (Amended: a field read went in a `const` first.)
+`const t = p.title`. (Amended: a field read went in a `const` first.) A
+component's prop read first is a `const` of whatever isn't a constant,
+and tidy writes back where it's read what reads the same there, a
+variable or a flattened struct made in place; the prop's lowering doesn't
+ask it apart. (Amended: it asked each prop whether it read alike, which
+tidy answered again.)
 
 **A value read first is named as what it's read into is**: an attribute's
 `const className`, a struct's field's `const href`, where a field made
