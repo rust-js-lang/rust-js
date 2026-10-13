@@ -239,12 +239,21 @@ impl ToText for &Unknown {}
 impl ToText for Option<&Unknown> {}
 impl ToText for f64 {}
 
-/// [`parseInt(text, radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
-/// the integer `text` starts with, in base `radix`, `NaN` of none: `"4x"` is 4,
-/// where Rust's `str::parse` is an `Err`. Of any value, of its text.
+/// [`parseInt(text)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
+/// the integer `text` starts with, `NaN` of none: `"4x"` is 4, where Rust's
+/// `str::parse` is an `Err`; in base 16 after a `0x`, else 10. Of any
+/// value, of its text.
 #[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
 #[allow(unused_variables)]
-pub fn parse_int<T: ToText>(text: T, radix: u32) -> f64 {
+pub fn parse_int<T: ToText>(text: T) -> f64 {
+    unreachable!()
+}
+
+/// [`parseInt(text, radix)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/parseInt):
+/// `parse_int`'s, in base `radix`.
+#[cfg_attr(rust_js, rust_js::link_name = "parseInt")]
+#[allow(unused_variables)]
+pub fn parse_int_with<T: ToText>(text: T, radix: u32) -> f64 {
     unreachable!()
 }
 

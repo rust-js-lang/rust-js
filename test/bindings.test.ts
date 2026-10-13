@@ -356,16 +356,16 @@ pub fn shown(text: &str) -> String {
 test("RegExp, Error, Symbol, weak collections and globals are JS's", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("js-objects");
-  writeFileSync(join(dir, "lib.rs"), `use js::{WeakKey, dict, js_error, parse_int, reg_exp, symbol, weak_map, weak_ref};
+  writeFileSync(join(dir, "lib.rs"), `use js::{WeakKey, dict, js_error, parse_int, parse_int_with, reg_exp, symbol, weak_map, weak_ref};
 pub fn matched(text: &str) -> Option<(String, u32, String, bool)> {
     let pattern = reg_exp::new(r"(?<word>[a-z]+)(\\d)", "g");
     let m = pattern.exec(text)?;
     let word = m.groups().and_then(|groups| dict::get(groups, "word").cloned()).unwrap_or_default();
     Some((m.get(2).unwrap_or_default(), m.index(), word + &m.full_match(), pattern.global()))
 }
-pub fn errors() -> (String, String, f64) {
+pub fn errors() -> (String, String, f64, f64) {
     let e = js_error::new("boom");
-    (e.name(), e.message(), parse_int("42px", 10))
+    (e.name(), e.message(), parse_int_with("42px", 10), parse_int("0x1f"))
 }
 pub fn symbols() -> (bool, Option<String>, Option<String>) {
     let a = symbol::for_("app");
@@ -386,12 +386,14 @@ pub fn weak(state: &'static State) -> (Option<u32>, bool) {
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("const m = pattern.exec(text);");
   expect(js).toContain('const e = new Error("boom");');
+  // A radix given or not, as TypeScript's `radix?`: `parseInt(text)` reads `0x` as hex.
+  expect(js).toContain('parseInt("42px", 10), parseInt("0x1f")]');
   expect(js).toContain('const a = Symbol.for("app");');
   expect(js).toContain("const seen = new WeakMap();\n  seen.set(state, state.n);\n  const r = new WeakRef(state);");
   const lib = await import(join(dir, "lib.js"));
   expect(lib.matched("ab cd7")).toEqual(["7", 3, "cdcd7", true]);
   expect(lib.matched("none")).toBe(undefined);
-  expect(lib.errors()).toEqual(["Error", "boom", 42]);
+  expect(lib.errors()).toEqual(["Error", "boom", 42, 31]);
   expect(lib.symbols()).toEqual([true, "app", "local"]);
   expect(lib.weak({ n: 5 })).toEqual([5, true]);
 });
@@ -1916,7 +1918,7 @@ pub fn text_of(value: Option<&Unknown>) -> String {
 }
 
 pub fn int_of(value: Option<&Unknown>) -> String {
-    number::to_string(js::parse_int(value, 10))
+    number::to_string(js::parse_int_with(value, 10))
 }
 
 pub fn float_of(value: &Unknown) -> String {
@@ -2035,7 +2037,7 @@ pub fn formatStr(inputArgs: Vec<Option<&'static Unknown>>) -> Vec<Option<&'stati
                         arg = Some(js::unknown_of(js::concat_text(arg)));
                     }
                     Some("d") | Some("i") => {
-                        arg = Some(js::unknown_of(number::to_string(js::parse_int(arg, 10))));
+                        arg = Some(js::unknown_of(number::to_string(js::parse_int_with(arg, 10))));
                     }
                     Some("f") => {
                         arg = Some(js::unknown_of(number::to_string(js::parse_float(arg))));
