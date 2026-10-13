@@ -19,6 +19,7 @@ use std::collections::HashMap;
 
 use oxc_allocator::Allocator;
 use oxc_ast::AstKind;
+use oxc_ast::ast::{Declaration, Statement};
 use oxc_ast::ast_kind::AstType;
 use oxc_ast_visit::Visit;
 use oxc_formatter::{
@@ -26,6 +27,7 @@ use oxc_formatter::{
     QuoteStyle, Semicolons, TrailingCommas, format, parse_for_format,
 };
 use oxc_formatter_core::{IndentStyle, IndentWidth, LineEnding, LineWidth};
+use oxc_parser::Parser;
 use oxc_sourcemap::{OwnedSourceMap, SourceMap, SourceMapBuilder};
 use oxc_span::{GetSpan, SourceType};
 
@@ -446,4 +448,109 @@ mod tests {
         }
         assert!(checked > 20, "only {checked} snapshots found");
     }
+}
+
+/// `code` laid out as oxfmt lays it out, with the crate's options (ADR 0117),
+/// checked as they were read, and its top-level statements apart as a
+/// person separates them (`spaced`); `map` moved to match.
+pub(crate) fn laid_out(
+    code: String,
+    map: String,
+    js_file_name: &str,
+    format: &crate::settings::Format,
+) -> (String, String) {
+    let options = options_of(format).expect("options checked as they were read");
+    let unformatted = SourceMap::from_json_string(&map).expect("the map just built");
+    let (code, map) = formatted(
+        &code,
+        &unformatted,
+        js_file_name.ends_with(".jsx"),
+        js_file_name,
+        &options,
+    )
+    .unwrap_or((code, map));
+    spaced(code, map, js_file_name)
+}
+
+/// `code`, laid out, with a blank line between two top-level statements
+/// where either is a function or spans lines, as a person separates them,
+/// and `map` moved to match. Its imports stay one block (ADR 0295). Read
+/// from its parse, so a line of a template literal is never taken for one.
+fn spaced(code: String, map: String, js_file_name: &str) -> (String, String) {
+    let blank = blank_lines_before(&code);
+    if blank.is_empty() {
+        return (code, map);
+    }
+    let mut spaced = String::with_capacity(code.len() + blank.len());
+    let mut lines = Vec::new();
+    let mut added = 0;
+    for (i, line) in code.lines().enumerate() {
+        if blank.contains(&i) {
+            spaced.push('\n');
+            added += 1;
+        }
+        spaced.push_str(line);
+        spaced.push('\n');
+        lines.push((i + added) as u32);
+    }
+    let map = SourceMap::from_json_string(&map).expect("the map just built");
+    (spaced, moved_lines(&map, &lines, js_file_name))
+}
+
+/// The lines of `code` that start a top-level statement to put a blank
+/// line before (`spaced`).
+fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
+    let allocator = Allocator::default();
+    let parsed = Parser::new(&allocator, code, SourceType::mjs().with_jsx(true)).parse();
+    if parsed.diagnostics.errors().next().is_some() {
+        return Default::default();
+    }
+    let line_of = |offset: u32| code[..offset as usize].matches('\n').count();
+    let function = |statement: &Statement<'_>| match statement {
+        Statement::FunctionDeclaration(_) => true,
+        Statement::ExportDeclaration(export) => matches!(export.declaration, Declaration::FunctionDeclaration(_)),
+        _ => false,
+    };
+    let lines = |statement: &Statement<'_>| {
+        let span = oxc_span::GetSpan::span(statement);
+        (line_of(span.start), line_of(span.end))
+    };
+    parsed
+        .program
+        .body
+        .windows(2)
+        .filter_map(|pair| {
+            let ((first, last), (next, next_last)) = (lines(&pair[0]), lines(&pair[1]));
+            let imports = matches!(pair[0], Statement::ImportDeclaration(_))
+                || matches!(pair[1], Statement::ImportDeclaration(_));
+            let apart = function(&pair[0]) || function(&pair[1]) || first < last || next < next_last;
+            (apart && !imports && last + 1 == next).then_some(next)
+        })
+        .collect()
+}
+
+/// `map` of code each of whose lines `lines` moves, line `i` to `lines[i]`;
+/// past the last, each moved as the last is.
+pub(crate) fn moved_lines(map: &SourceMap<'_>, lines: &[u32], js_file_name: &str) -> String {
+    let mut out = SourceMapBuilder::default();
+    out.set_file(js_file_name);
+    for (source, content) in map.get_sources().zip(map.get_source_contents()) {
+        out.set_source_and_content(source, content.unwrap_or_default());
+    }
+    // `add_name` deduplicates, so ids can change: translate them.
+    let name_ids: Vec<u32> = map.get_names().map(|name| out.add_name(name)).collect();
+    let last_shift = lines.last().map_or(0, |&last| last + 1 - lines.len() as u32);
+    for t in map.get_tokens() {
+        let line = t.get_dst_line();
+        let line = lines.get(line as usize).copied().unwrap_or(line + last_shift);
+        out.add_token(
+            line,
+            t.get_dst_col(),
+            t.get_src_line(),
+            t.get_src_col(),
+            t.get_source_id(),
+            t.get_name_id().map(|id| name_ids[id as usize]),
+        );
+    }
+    out.into_sourcemap().to_json_string()
 }

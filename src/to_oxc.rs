@@ -50,15 +50,16 @@ pub struct Output {
     pub map: String,
 }
 
-/// Print `module` as JS, with a source map pointing into `rust_source`.
+/// Print `module` as JS, with a source map pointing into `rust_source`,
+/// laid out as the formatter lays it out (`format::laid_out`). What the
+/// crate's transforms make of it, and the `sourceMappingURL`, are the
+/// artifact planner's.
 ///
 /// `source_path` is how the map names the Rust file (relative to the map),
-/// and `js_file_name` is the output's file name, for `sourceMappingURL`.
-/// `path_of` names a source the map points into, asked only for those it
-/// does; `primary` is the module's own, which the map names first.
-/// `format` is the formatter's options, and `layout` what the crate's
-/// transforms make of the formatted text and its map (ADR 0117).
-#[allow(clippy::too_many_arguments)]
+/// and `js_file_name` is the output's file name. `path_of` names a source
+/// the map points into, asked only for those it does; `primary` is the
+/// module's own, which the map names first. `format` is the formatter's
+/// options.
 pub fn emit(
     module: &Module,
     sources: &crate::program::Sources,
@@ -67,7 +68,6 @@ pub fn emit(
     source_path: &str,
     js_file_name: &str,
     format: &crate::settings::Format,
-    layout: &dyn Fn(String, String) -> (String, String),
 ) -> Output {
     let rust_source = sources.text.as_str();
     let allocator = Allocator::default();
@@ -206,15 +206,11 @@ pub fn emit(
     // The generated code, each line after the header: where each ends up,
     // to fix the map.
     let header_lines = code.matches('\n').count() as u32;
-    let mut places: Vec<Vec<Place>> = Vec::new();
+    let mut lines: Vec<u32> = Vec::new();
     for (out_line, line) in (header_lines..).zip(generated.code.lines()) {
         code.push_str(line);
         code.push('\n');
-        places.push(vec![Place {
-            from_col: 0,
-            line: out_line,
-            delta: 0,
-        }]);
+        lines.push(out_line);
     }
     // After everything it maps, so the map's lines stay where they are.
     if let Some(function) = &module.default_export {
@@ -233,125 +229,10 @@ pub fn emit(
         .collect();
     let paths: std::collections::HashMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
     let map = restore_sources(&map, sources, &paths, primary);
-    let mut map = shift_lines(&map, &places, js_file_name);
-    // Laid out as oxfmt lays it out, with the crate's options (ADR 0117), the
-    // map moved to match. They were checked as they were read.
-    let shifted = SourceMap::from_json_string(&map).expect("the map just built");
-    let options = crate::format::options_of(format).expect("options checked as they were read");
-    if let Some((formatted, formatted_map)) =
-        crate::format::formatted(&code, &shifted, js_file_name.ends_with(".jsx"), js_file_name, &options)
-    {
-        code = formatted;
-        map = formatted_map;
-    }
-    (code, map) = spaced(code, map, js_file_name);
-    (code, map) = layout(code, map);
-    code.push_str(&format!("//# sourceMappingURL={js_file_name}.map\n"));
+    let map = crate::format::moved_lines(&map, &lines, js_file_name);
+    // Laid out as oxfmt lays it out, with the crate's options (ADR 0117).
+    let (code, map) = crate::format::laid_out(code, map, js_file_name, format);
     Output { code, map }
-}
-
-/// `code`, laid out, with a blank line between two top-level statements
-/// where either is a function or spans lines, as a person separates them,
-/// and `map` moved to match. Its imports stay one block (ADR 0295). Read
-/// from its parse, so a line of a template literal is never taken for one.
-fn spaced(code: String, map: String, js_file_name: &str) -> (String, String) {
-    let blank = blank_lines_before(&code);
-    if blank.is_empty() {
-        return (code, map);
-    }
-    let mut spaced = String::with_capacity(code.len() + blank.len());
-    let mut places = Vec::new();
-    let mut added = 0;
-    for (i, line) in code.lines().enumerate() {
-        if blank.contains(&i) {
-            spaced.push('\n');
-            added += 1;
-        }
-        spaced.push_str(line);
-        spaced.push('\n');
-        places.push(vec![Place {
-            from_col: 0,
-            line: (i + added) as u32,
-            delta: 0,
-        }]);
-    }
-    let map = SourceMap::from_json_string(&map).expect("the map just built");
-    (spaced, shift_lines(&map, &places, js_file_name))
-}
-
-/// The lines of `code` that start a top-level statement to put a blank
-/// line before (`spaced`).
-fn blank_lines_before(code: &str) -> std::collections::HashSet<usize> {
-    let allocator = Allocator::default();
-    let parsed = Parser::new(&allocator, code, SourceType::mjs().with_jsx(true)).parse();
-    if parsed.diagnostics.errors().next().is_some() {
-        return Default::default();
-    }
-    let line_of = |offset: u32| code[..offset as usize].matches('\n').count();
-    let function = |statement: &Statement<'_>| match statement {
-        Statement::FunctionDeclaration(_) => true,
-        Statement::ExportDeclaration(export) => matches!(export.declaration, Declaration::FunctionDeclaration(_)),
-        _ => false,
-    };
-    let lines = |statement: &Statement<'_>| {
-        let span = oxc_span::GetSpan::span(statement);
-        (line_of(span.start), line_of(span.end))
-    };
-    parsed
-        .program
-        .body
-        .windows(2)
-        .filter_map(|pair| {
-            let ((first, last), (next, next_last)) = (lines(&pair[0]), lines(&pair[1]));
-            let imports = matches!(pair[0], Statement::ImportDeclaration(_))
-                || matches!(pair[1], Statement::ImportDeclaration(_));
-            let apart = function(&pair[0]) || function(&pair[1]) || first < last || next < next_last;
-            (apart && !imports && last + 1 == next).then_some(next)
-        })
-        .collect()
-}
-
-/// Where the part of a generated line from `from_col` on ends up: on output
-/// line `line`, `delta` columns over.
-struct Place {
-    from_col: u32,
-    line: u32,
-    delta: i64,
-}
-
-/// Rebuild `map` with each part of each generated line where `places` says.
-fn shift_lines(map: &SourceMap<'_>, places: &[Vec<Place>], js_file_name: &str) -> String {
-    let mut out = SourceMapBuilder::default();
-    out.set_file(js_file_name);
-    for (source, content) in map.get_sources().zip(map.get_source_contents()) {
-        out.set_source_and_content(source, content.unwrap_or_default());
-    }
-    // `add_name` deduplicates, so ids can change: translate them.
-    let name_ids: Vec<u32> = map.get_names().map(|name| out.add_name(name)).collect();
-    // Past the last line, lines keep the last one's shift.
-    let last_shift = places
-        .last()
-        .and_then(|parts| parts.last())
-        .map_or(0, |p| p.line + 1 - places.len() as u32);
-    for t in map.get_tokens() {
-        let (line, col) = (t.get_dst_line(), t.get_dst_col());
-        let (line, col) = match places
-            .get(line as usize)
-            .and_then(|parts| parts.iter().rev().find(|p| p.from_col <= col))
-        {
-            Some(place) => (place.line, (i64::from(col) + place.delta).max(0) as u32),
-            None => (line + last_shift, col),
-        };
-        out.add_token(
-            line,
-            col,
-            t.get_src_line(),
-            t.get_src_col(),
-            t.get_source_id(),
-            t.get_name_id().map(|id| name_ids[id as usize]),
-        );
-    }
-    out.into_sourcemap().to_json_string()
 }
 
 struct Cx<'a> {

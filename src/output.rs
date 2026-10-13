@@ -131,8 +131,7 @@ impl OutputPlan {
             let js_file_name = js_path.file_name().unwrap_or_default().to_string_lossy();
             let file = absolute(&js_path)?;
             let jsx = js_file_name.ends_with(".jsx");
-            let layout = |code, map| crate::hooks::transform(&self.settings, &file, jsx, &js_file_name, code, map);
-            let output = to_oxc::emit(
+            let printed = to_oxc::emit(
                 &js_module,
                 sources,
                 &path_of,
@@ -140,8 +139,13 @@ impl OutputPlan {
                 &relative_resolved(&dir, &own),
                 &js_file_name,
                 &self.settings.format,
-                &layout,
             );
+            // What the crate's transforms make of it (ADR 0117), then where
+            // its map is.
+            let (mut code, map) =
+                crate::hooks::transform(&self.settings, &file, jsx, &js_file_name, printed.code, printed.map);
+            code.push_str(&format!("//# sourceMappingURL={js_file_name}.map\n"));
+            let output = to_oxc::Output { code, map };
             let map_path = PathBuf::from(format!("{}.map", js_path.display()));
             for (path, text) in [(&js_path, &output.code), (&map_path, &output.map)] {
                 artifacts.push(Artifact {
