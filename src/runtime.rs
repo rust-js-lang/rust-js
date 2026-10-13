@@ -992,6 +992,13 @@ mod tests {
         assert!(missing.is_empty(), "{missing:#?}");
     }
 
+    // The names the `#[test]` runner imports of the runtime, by its template
+    // (`output.rs`), are ones the runtime has.
+    #[test]
+    fn test_runner_imports_are_the_runtimes() {
+        assert!(exports("$debug"));
+    }
+
     // Each helper said to be pure is one the runtime has.
     #[test]
     fn pure_helpers_are_the_runtimes() {

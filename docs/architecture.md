@@ -152,7 +152,7 @@ module's `crate::` and `super::` paths and checks them against this table:
 | Driver | `main.rs`, `cargo.rs` | every layer | |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
 | Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
-| Printing | `to_oxc.rs`, `format.rs`, `typescript.rs` | printing, owned output | be bypassed: only they make an artifact's text, by oxc or TypeScript |
+| Printing | `to_oxc.rs`, `format.rs`, `typescript.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript; a manifest's JSON and the `#[test]` runner's fixed template are the artifact planner's |
 
 Two owned modules start printing, and are named as its exceptions:
 `output.rs` prints each module it plans, its JS by oxc (`to_oxc.rs`) and
