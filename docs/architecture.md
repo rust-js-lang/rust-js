@@ -237,6 +237,7 @@ and answer. Each is checked to stay that way.
 |---|---|
 | `mir.rs` | A body from its MIR: its statements and terminators, places, calls (`mir_call`), aggregates, and the `&mut`s given to a call; temporaries folded where they're read |
 | `mir/cfg.rs`, `mir/drops.rs`, `mir/awaits.rs`, `mir/iter.rs` | A MIR body's control flow, made labeled blocks and loops; what each `Drop` drops, by rustc's drop elaboration, and its flags; `.await`; iterators, lazy as Rust's adapters are |
+| `mir/std_calls.rs` | A std call of its values and places, by its kind: `format_args!`'s parts, text, a map's, a `Vec`'s or a slice's, an iterator's, a place's, a value's, each saying `None` to the rest |
 | `mir/tidy.rs`, `mir/tidy/decisions.rs` | The JS of a body from its MIR, written as a person writes it: each rewrite changes nothing that runs; a match MIR tests as a tree, an `if` chain of its arms |
 | `lower.rs` | `FnCx` and its state, and what every module shares: diagnostics, names, constants |
 | `bodies.rs` | Entering and leaving a body inside the one being lowered, a closure's or a copied default's |
@@ -298,9 +299,12 @@ what's called:
          ├─ the crate's own function                 items.rs: fn_ref
          └─ one of std's: classify(f) = Some(known)
                └─ mir_std_call(known): what every std call must keep (drops,
-                  a `fmt::Error`, `Option` boxing), and the calls of places,
-                  `mem::swap` and `replace`
-                     └─ std_values(known)            std_types/values.rs
+                  a `fmt::Error`, `Option` boxing)
+                     ├─ of its values and places, by its kind
+                     │                               mir/std_calls.rs: mir_fmt_call,
+                     │     mir_text_call, mir_map_call, mir_vec_call ..
+                     └─ of its values alone: std_values(known)
+                                                     std_types/values.rs
                            └─ the module of its type: std_types/vec.rs  slice.rs
                               option.rs  cell.rs  number.rs  text.rs  map.rs ..
                               iterators.rs  combinators.rs  format_args.rs ..
@@ -473,8 +477,8 @@ architecture audit found the rest.
   edit-to-refresh latency on application-scale workloads (M5.1).
 - **Checks before a commit lands:** the check runs on each push to `main`,
   after it's pushed; nothing refuses a commit that fails it.
-- **Short dispatchers of calls from MIR:** `mir_call_values` and
-  `mir_std_call` are held to their lengths until they're split by domain.
+- **Short dispatchers of calls from MIR:** `mir_call_values` is held to
+  its length until it's split as `mir_std_call` was.
 - **Std's names from recognition alone:** `mir_iter_call` knows an
   iterator's method by its name, which recognition's own answers for it
   don't reach, and `mir_call` a `Debug` builder's kind and steps.

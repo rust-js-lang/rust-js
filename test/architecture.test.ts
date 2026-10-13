@@ -409,7 +409,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/recognition.rs", "    pub(super) fn classify(", 15],
   ["src/lower/mir.rs", "    fn mir_call(", 204],
   ["src/lower/mir.rs", "    fn mir_call_values(", 483],
-  ["src/lower/mir.rs", "    fn mir_std_call(", 942],
+  ["src/lower/mir.rs", "    fn mir_std_call(", 261],
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {
