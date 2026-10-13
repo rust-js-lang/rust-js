@@ -1257,4 +1257,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "pretty_debug|std_methods"],
   },
+  {
+    name: "iterator-method-of-any-trait",
+    breaks: "a method of the crate's own trait named as std's iterator method is, `by_ref`, is taken for std's",
+    file: "src/lower/recognition.rs",
+    find: "            _ if !is_std_def(self.tcx, trait_id, StdItem::Iterator) => return None,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "own_trait_by_ref"],
+  },
 ];

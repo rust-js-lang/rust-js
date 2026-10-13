@@ -283,7 +283,7 @@ outside its owner, and how much each module knows of the rest.
 | A map's or a set's JS: a `Map` or a `Set`, and a call whose answer nothing reads, JS's own method (ADR 0059) | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
-| Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step` |
+| Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
 | Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
 | A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
 
@@ -486,9 +486,6 @@ architecture audit found the rest.
 - **Short dispatchers of calls from MIR:** `mir_call` (118 lines),
   `mir_call_values` (306) and `mir_std_call` (261) are held to their
   lengths, each lowered as what's left in it goes where its kind is.
-- **Std's names from recognition alone:** `mir_iter_call` knows an
-  iterator's method by its name, which recognition's own answers for it
-  don't reach.
 - **Runtime helpers as symbols:** lowering asks for a helper and writes its
   name, `$cmp`, apart; one written and not asked for is a JS error when it
   runs, not a compile error.

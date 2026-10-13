@@ -13,7 +13,7 @@ use rustc_span::def_id::DefId;
 
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 use crate::lower::iterators::{collected, from_iterator, is_js_iterator, made_array, stepped_range};
-use crate::lower::recognition::{StdItem, is_std_def, std_item};
+use crate::lower::recognition::{IterMethod, StdItem, is_std_def, std_item};
 use crate::lower::representation::Num;
 use crate::lower::std_types::heap::HeapOp;
 use crate::lower::std_types::range::RangeKind;
@@ -36,8 +36,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let Some(trait_id) = tcx.trait_of_assoc(def_id) else {
             return Ok(None);
         };
+        // Its name, for what's refused of it, and to ask of the crate's impl.
         let name = tcx.item_name(def_id);
         let name = name.as_str();
+        let std_method = self.recognition().iterator_method(def_id);
         let receiver_ty = arg_tys.first().copied().unwrap_or(tcx.types.unit);
         let iter_ty = receiver_ty.peel_refs();
         // One taken by value, `items.fold(..)`'s, dropped as it's done, which
@@ -58,7 +60,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `x.into_iter()`: a range stays one, an iterator is itself, and a
         // collection's items are a JS iterator of them.
-        if is_std_def(tcx, trait_id, StdItem::IntoIterator) && name == "into_iter" {
+        if std_method == Some(IterMethod::IntoIter) {
             let value = values.into_iter().next().expect("the receiver");
             // A generic one is an array or a JS iterator, as its caller has
             // it: `Iterator.from` takes either (ADR 0061).
@@ -82,10 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `String::from_iter(items)`, `items.collect()` into a `String`: an
         // array's joined, or a JS iterator's items.
-        if self.recognition().is_from_iterator(trait_id)
-            && name == "from_iter"
-            && self.is_lang_adt(output, LangItem::String)
-        {
+        if std_method == Some(IterMethod::FromIter) && self.is_lang_adt(output, LangItem::String) {
             let items = values.into_iter().next().expect("the items");
             let given = receiver_ty.peel_refs();
             let items = match given.is_array() || given.is_slice() || self.is_vec_like(given) {
@@ -96,12 +95,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `next_back(&mut it)` and `len(&it)`: of what knows its back, a
         // range or a `$iter` (ADR 0071); not a lazy or a generic one.
-        let recognition = self.recognition();
-        let (double_ended, exact) = (
-            recognition.double_ended_iterator() == Some(trait_id),
-            recognition.exact_size_iterator() == Some(trait_id),
-        );
-        if (double_ended && name == "next_back") || (exact && name == "len") {
+        if matches!(std_method, Some(IterMethod::NextBack | IterMethod::Len)) {
             // The crate's own `len()`, std's: its `size_hint()`, exact.
             let own_len = || -> R<bool> {
                 let args = self.args_of(trait_id, iter_ty);
@@ -109,7 +103,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .resolve_instance(def_id, args)?
                     .is_some_and(|i| self.is_rust_fn(i.def_id())))
             };
-            if self.is_user_iterator(iter_ty) && name == "len" && !own_len()? {
+            if self.is_user_iterator(iter_ty) && std_method == Some(IterMethod::Len) && !own_len()? {
                 let it = values.into_iter().next().expect("the receiver");
                 let mut made = Vec::new();
                 let len = self.exact_len_of(it, iter_ty, span, &mut made)?;
@@ -134,17 +128,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 || (self.recognition().is_peekable(iter_ty)
                     && matches!(iter_ty.kind(), ty::Adt(_, args)
                         if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())));
-            return Ok(Some(match (name, self.range_kind(iter_ty)) {
-                ("next_back", Some(RangeKind::Exclusive)) => {
+            return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
+                (Some(IterMethod::NextBack), Some(RangeKind::Exclusive)) => {
                     self.helper(Helper::RangeNextBack, "$rangeNextBack", vec![it])
                 }
-                ("next_back", Some(RangeKind::Inclusive)) => {
+                (Some(IterMethod::NextBack), Some(RangeKind::Inclusive)) => {
                     self.helper(Helper::RangeInclusiveNextBack, "$rangeInclusiveNextBack", vec![it])
                 }
                 // A map of an array's items, `v.iter().map(f)`: its source's
                 // last item, mapped, as Rust's `Map::next_back` maps that one
                 // alone.
-                ("next_back", None)
+                (Some(IterMethod::NextBack), None)
                     if !boxed
                         && crate::lower::iterators::is_items_map(&it)
                         && let js::ExprKind::Call(callee, args) = &it.kind
@@ -159,18 +153,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         crate::lower::calls::apply(args[0].clone(), vec![last]),
                     )
                 }
-                ("next_back", None) if array && boxed => self.helper(Helper::NextBackSome, "$nextBackSome", vec![it]),
-                ("next_back", None) if array => self.helper(Helper::NextBack, "$nextBack", vec![it]),
-                ("len", None) if array => Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at")),
+                (Some(IterMethod::NextBack), None) if array && boxed => {
+                    self.helper(Helper::NextBackSome, "$nextBackSome", vec![it])
+                }
+                (Some(IterMethod::NextBack), None) if array => self.helper(Helper::NextBack, "$nextBack", vec![it]),
+                (Some(IterMethod::Len), None) if array => {
+                    Expr::bin(Op::Sub, Expr::member(it.clone(), "end"), Expr::member(it, "at"))
+                }
                 // A chain made here of an array's items, which nothing else
                 // steps, skipped or taken from, no closure of its to run: its
                 // items' count, `$iter(xs).drop(1).toArray().length`, which is
                 // `xs.slice(1).length`.
-                ("len", None) if counted_chain(&it) => {
+                (Some(IterMethod::Len), None) if counted_chain(&it) => {
                     Expr::member(Expr::call(Expr::member(it, "toArray"), Vec::new()), "length")
                 }
                 // A range of numbers' count, none where it ends before it starts.
-                ("len", Some(RangeKind::Exclusive))
+                (Some(IterMethod::Len), Some(RangeKind::Exclusive))
                     if let Some((start, end)) = range_bounds(&it)
                         && self
                             .range_index(iter_ty)
@@ -197,23 +195,23 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `next_back`; of a range, stepped from its end; of items made
         // already, an array's, a `$iter` of them; not of a lazy one, whose
         // closures would run in another order (ADR 0164).
-        if is_std_def(tcx, trait_id, StdItem::Iterator) && matches!(name, "rev" | "peekable") {
+        if matches!(std_method, Some(IterMethod::Rev | IterMethod::Peekable)) {
             let receiver = values.into_iter().next().expect("the receiver");
             if self.is_user_iterator(iter_ty) {
                 return match self.own_next_back(iter_ty)? {
-                    Some(double_ended) if name == "rev" => self
+                    Some(double_ended) if std_method == Some(IterMethod::Rev) => self
                         .user_iterator(receiver, iter_ty, double_ended, "next_back", span)
                         .map(Some),
                     _ => Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR"))),
                 };
             }
             let range = self.range_kind(iter_ty);
-            return Ok(Some(match (name, range) {
-                ("rev", Some(RangeKind::Exclusive)) => {
+            return Ok(Some(match (std_method, range) {
+                (Some(IterMethod::Rev), Some(RangeKind::Exclusive)) => {
                     self.runtime.insert(Helper::RangeNextBack);
                     self.stepped_by(receiver, Expr::var("$rangeNextBack"))
                 }
-                ("rev", Some(RangeKind::Inclusive)) => {
+                (Some(IterMethod::Rev), Some(RangeKind::Inclusive)) => {
                     self.runtime.insert(Helper::RangeInclusiveNextBack);
                     let next_back = Expr::var("$rangeInclusiveNextBack");
                     self.stepped_by(receiver, next_back)
@@ -226,28 +224,30 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // One a variable or a field holds, its `$iter`, stepped or
                         // not: what's left of it.
                         Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {
-                            match name {
-                                "peekable" => return Ok(Some(receiver)),
+                            match std_method {
+                                Some(IterMethod::Peekable) => return Ok(Some(receiver)),
                                 _ => self.helper(Helper::Rest, "$rest", vec![receiver]),
                             }
                         }
                         Some(_) => match self.std_iterator(receiver, iter_ty) {
-                            it if name == "peekable" => return Ok(Some(it)),
+                            it if std_method == Some(IterMethod::Peekable) => return Ok(Some(it)),
                             // Of one just made, the array, which `toReversed`
                             // copies anyway.
-                            it if name == "rev" && crate::lower::iterators::is_stepped_items(&it) => {
+                            it if std_method == Some(IterMethod::Rev)
+                                && crate::lower::iterators::is_stepped_items(&it) =>
+                            {
                                 crate::lower::iterators::iterated(it)
                             }
                             it => self.helper(Helper::Rest, "$rest", vec![it]),
                         },
                         // A `$iter` of an array, just made: the array.
-                        None if crate::lower::iterators::is_stepped_items(&receiver) => match name {
-                            "peekable" => return Ok(Some(receiver)),
+                        None if crate::lower::iterators::is_stepped_items(&receiver) => match std_method {
+                            Some(IterMethod::Peekable) => return Ok(Some(receiver)),
                             _ => crate::lower::iterators::iterated(receiver),
                         },
                         // Of such an array's skipped and taken from, the array
                         // sliced: no closure runs over it.
-                        None if name == "rev" && counted_chain(&receiver) => sliced(&receiver),
+                        None if std_method == Some(IterMethod::Rev) && counted_chain(&receiver) => sliced(&receiver),
                         None => match from_iterator(receiver) {
                             Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
                             Err(_) => {
@@ -257,8 +257,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                         },
                     };
-                    let items = match name {
-                        "rev" => Expr::call(Expr::member(items, "toReversed"), Vec::new()),
+                    let items = match std_method {
+                        Some(IterMethod::Rev) => Expr::call(Expr::member(items, "toReversed"), Vec::new()),
                         _ => items,
                     };
                     self.stepped_items(items)
@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
         // finds it (ADR 0170).
-        if is_std_def(tcx, trait_id, StdItem::Iterator) && name == "size_hint" && !self.is_user_iterator(iter_ty) {
+        if std_method == Some(IterMethod::SizeHint) && !self.is_user_iterator(iter_ty) {
             let mut it = values.into_iter().next().expect("the receiver");
             // A `map`'s is its source's, as Rust's `Map` passes it on; its
             // closure, unrun, is made for nothing.
@@ -291,12 +291,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // `by_ref()` of the crate's iterator: a `&mut` to it, it itself, which
         // its own `next` steps.
-        if name == "by_ref" && self.is_user_iterator(iter_ty) {
+        if std_method == Some(IterMethod::ByRef) && self.is_user_iterator(iter_ty) {
             return Ok(values.into_iter().next());
         }
         // `next` of a `&mut` to the crate's iterator, `by_ref()`'s: std's of a
         // `&mut I`, which is `I`'s own, of what the `&mut` is to.
-        if name == "next"
+        if std_method == Some(IterMethod::Next)
             && self.is_user_iterator(iter_ty)
             && let ty::Ref(_, through, _) = receiver_ty.kind()
             && through.is_ref()
@@ -315,14 +315,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // itself are its trait's; the rest, `map`, `fuse`, `collect`, std's
         // of a JS iterator its `next` steps (`as_js_iterator`).
         let own = self.is_user_iterator(iter_ty)
-            && (name == "next" || self.recognition().user_impl_defines(trait_id, iter_ty, name));
+            && (std_method == Some(IterMethod::Next) || self.recognition().user_impl_defines(trait_id, iter_ty, name));
         if !is_std_def(tcx, trait_id, StdItem::Iterator) || own {
             return Ok(None);
         }
         let mut values = values.into_iter();
         let receiver = values.next().expect("the receiver");
         // `next(&mut it)`: a range's start moved, or the JS iterator stepped.
-        if name == "next" {
+        if std_method == Some(IterMethod::Next) {
             let item = self.option_of(output).expect("`next` gives an `Option`");
             return Ok(Some(match self.range_kind(iter_ty) {
                 Some(RangeKind::Exclusive) => self.helper(Helper::RangeNext, "$rangeNext", vec![receiver]),
@@ -346,24 +346,27 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // An item with a destructor a method may leave undropped, `filter`'s
         // or `count`'s: what std drops, refused till it's dropped here.
         let keeps_each = matches!(
-            name,
-            "map"
-                | "for_each"
-                | "fold"
-                | "collect"
-                | "any"
-                | "all"
-                | "position"
-                | "enumerate"
-                | "by_ref"
-                | "fuse"
-                | "sum"
-                | "product"
-                | "count"
+            std_method,
+            Some(
+                IterMethod::Map
+                    | IterMethod::ForEach
+                    | IterMethod::Fold
+                    | IterMethod::Collect
+                    | IterMethod::Any
+                    | IterMethod::All
+                    | IterMethod::Position
+                    | IterMethod::Enumerate
+                    | IterMethod::ByRef
+                    | IterMethod::Fuse
+                    | IterMethod::Sum
+                    | IterMethod::Product
+                    | IterMethod::Count
+            )
         );
         let dropping = item.filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
         // `filter` and `skip_while` drop each they discard, below.
-        if !keeps_each && !matches!(name, "filter" | "skip_while") && dropping.is_some() {
+        if !keeps_each && !matches!(std_method, Some(IterMethod::Filter | IterMethod::SkipWhile)) && dropping.is_some()
+        {
             return Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")));
         }
         let mut arg = || values.next().expect("rustc checked the arguments");
@@ -371,16 +374,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // itself, which takes no more than it's given (ADR 0279).
         let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
-        Ok(Some(match name {
+        Ok(Some(match std_method {
             // By what gives each as it is, an untagged variant's constructor,
             // `map(StaticPath::Params)`: no step.
-            "map" => match self.unary_callback(arg(), own) {
+            Some(IterMethod::Map) => match self.unary_callback(arg(), own) {
                 f if f.is_identity() => it,
                 f => method("map", it, vec![f]),
             },
             // Of items with a destructor: each it doesn't keep dropped as it
             // discards it (ADR 0098).
-            "filter" => {
+            Some(IterMethod::Filter) => {
                 let test = self.unary_callback(arg(), own);
                 let test = match dropping {
                     Some(item) => self.dropping_discarded(test, item, false, span, made)?,
@@ -388,41 +391,41 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 method("filter", it, vec![test])
             }
-            "flat_map" => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
-            "take" => method("take", it, vec![arg()]),
-            "skip" => method("drop", it, vec![arg()]),
-            "for_each" => method("forEach", it, vec![self.unary_callback(arg(), own)]),
-            "any" => method("some", it, vec![self.unary_callback(arg(), own)]),
-            "all" => method("every", it, vec![self.unary_callback(arg(), own)]),
+            Some(IterMethod::FlatMap) => method("flatMap", it, vec![self.unary_callback(arg(), own)]),
+            Some(IterMethod::Take) => method("take", it, vec![arg()]),
+            Some(IterMethod::Skip) => method("drop", it, vec![arg()]),
+            Some(IterMethod::ForEach) => method("forEach", it, vec![self.unary_callback(arg(), own)]),
+            Some(IterMethod::Any) => method("some", it, vec![self.unary_callback(arg(), own)]),
+            Some(IterMethod::All) => method("every", it, vec![self.unary_callback(arg(), own)]),
             // Of what looks like `None`: the first kept, boxed.
-            "find" => {
+            Some(IterMethod::Find) => {
                 let test = self.unary_callback(arg(), own);
                 match item.is_some_and(|item| self.boxed_payload(item)) {
                     true => self.helper(Helper::NextSome, "$nextSome", vec![method("filter", it, vec![test])]),
                     false => method("find", it, vec![test]),
                 }
             }
-            "position" => {
+            Some(IterMethod::Position) => {
                 let found = self.unary_callback(arg(), own);
                 self.helper(Helper::Position, "$position", vec![it, found])
             }
             // Each item of both in turn, till one differs or either ends, as
             // Rust's `eq` steps them; `ne` its negation.
-            "eq" | "ne" => {
+            Some(IterMethod::Eq | IterMethod::Ne) => {
                 let Some(item) = item else { return Ok(None) };
                 let other = arg();
                 let mut list = vec![it, other];
                 list.extend(self.item_eq(item, span)?);
                 let same = self.helper(Helper::CmpItems, "$iterEq", list);
-                match name {
-                    "eq" => same,
+                match std_method {
+                    Some(IterMethod::Eq) => same,
                     _ => Expr::unary(js::UnaryOp::Not, same),
                 }
             }
             // The pairing, `(x, i) => [i, x]`, in place of which a
             // callback that takes the pair apart is given each item and its
             // index, of an array (`eager_chains`).
-            "enumerate" => {
+            Some(IterMethod::Enumerate) => {
                 let pair = Expr::array(vec![Expr::var("i"), Expr::var("x")]);
                 let f = Expr::arrow(
                     vec!["x".into(), "i".into()],
@@ -430,7 +433,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 method("map", it, vec![f])
             }
-            "fold" => {
+            Some(IterMethod::Fold) => {
                 let init = arg();
                 // Given after what it starts from.
                 let own = arg_tys.get(2).is_some_and(|ty| self.is_crate_fn_item(*ty));
@@ -438,7 +441,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 method("reduce", it, vec![f, init])
             }
             // Each item counted, and dropped as `count` drops it.
-            "count" => {
+            Some(IterMethod::Count) => {
                 let n = self.fresh("n");
                 let x = self.fresh("item");
                 let mut body = Vec::new();
@@ -452,11 +455,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(StmtKind::Return(Some(Expr::bin(Op::Add, Expr::var(&n), Expr::int(1)))).at(js::Span::NONE));
                 method("reduce", it, vec![Expr::arrow(params, body), Expr::int(0)])
             }
-            "sum" | "product" => {
+            Some(IterMethod::Sum | IterMethod::Product) => {
                 let num = Num::of(output)
                     .ok_or_else(|| self.unsupported(span, &format!("`{name}` of a `{output}`, from its MIR")))?;
-                let (op, start) = match name {
-                    "sum" => (Op::Add, 0),
+                let (op, start) = match std_method {
+                    Some(IterMethod::Sum) => (Op::Add, 0),
                     _ => (Op::Mul, 1),
                 };
                 let (a, b) = (self.fresh("a"), self.fresh("b"));
@@ -467,14 +470,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
                 // Rust's float `Sum` starts at -0.0, an empty sum's and one of
                 // negative zeros' sign kept.
-                let start = match (name, num.float()) {
-                    ("sum", true) => Expr::num(-0.0),
+                let start = match (std_method, num.float()) {
+                    (Some(IterMethod::Sum), true) => Expr::num(-0.0),
                     _ => num.literal(start),
                 };
                 method("reduce", it, vec![f, start])
             }
-            "copied" => it,
-            "cloned" => match item {
+            Some(IterMethod::Copied) => it,
+            Some(IterMethod::Cloned) => match item {
                 Some(item) if self.is_copy(item.peel_refs()) => it,
                 Some(item) => {
                     let x = self.fresh("item");
@@ -486,17 +489,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 None => return Ok(None),
             },
             // Of all the items, in order, as of an array.
-            "max" | "min" => {
+            Some(IterMethod::Max | IterMethod::Min) => {
                 let items = method("toArray", it, Vec::new());
-                self.extreme_of(name == "max", items, item, span)?
+                self.extreme_of(std_method == Some(IterMethod::Max), items, item, span)?
             }
-            "last" => {
+            Some(IterMethod::Last) => {
                 let items = method("toArray", it, Vec::new());
                 self.last_of(items, item, made)
             }
-            "by_ref" => it,
-            "fuse" => it,
-            "collect" => {
+            Some(IterMethod::ByRef) => it,
+            Some(IterMethod::Fuse) => it,
+            Some(IterMethod::Collect) => {
                 // Into a heap: its items in heap order, `$heapFrom`.
                 if self.is_std_type(output, StdItem::BinaryHeap) {
                     let items = method("toArray", it, Vec::new());

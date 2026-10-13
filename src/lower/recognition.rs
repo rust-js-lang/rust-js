@@ -2830,6 +2830,52 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         self.tcx.is_diagnostic_item(sym::FromIterator, trait_id)
     }
 
+    /// The method of std's iterator traits `def_id` is: `Iterator`'s,
+    /// `DoubleEndedIterator`'s `next_back`, `ExactSizeIterator`'s `len`,
+    /// `IntoIterator`'s `into_iter` or `FromIterator`'s `from_iter`.
+    pub(super) fn iterator_method(&self, def_id: DefId) -> Option<IterMethod> {
+        let trait_id = self.tcx.trait_of_assoc(def_id)?;
+        let name = self.tcx.item_name(def_id);
+        Some(match name.as_str() {
+            "into_iter" if is_std_def(self.tcx, trait_id, StdItem::IntoIterator) => IterMethod::IntoIter,
+            "from_iter" if self.is_from_iterator(trait_id) => IterMethod::FromIter,
+            "next_back" if self.double_ended_iterator() == Some(trait_id) => IterMethod::NextBack,
+            "len" if self.exact_size_iterator() == Some(trait_id) => IterMethod::Len,
+            _ if !is_std_def(self.tcx, trait_id, StdItem::Iterator) => return None,
+            "next" => IterMethod::Next,
+            "size_hint" => IterMethod::SizeHint,
+            "rev" => IterMethod::Rev,
+            "peekable" => IterMethod::Peekable,
+            "by_ref" => IterMethod::ByRef,
+            "fuse" => IterMethod::Fuse,
+            "map" => IterMethod::Map,
+            "filter" => IterMethod::Filter,
+            "skip_while" => IterMethod::SkipWhile,
+            "flat_map" => IterMethod::FlatMap,
+            "take" => IterMethod::Take,
+            "skip" => IterMethod::Skip,
+            "for_each" => IterMethod::ForEach,
+            "any" => IterMethod::Any,
+            "all" => IterMethod::All,
+            "find" => IterMethod::Find,
+            "position" => IterMethod::Position,
+            "eq" => IterMethod::Eq,
+            "ne" => IterMethod::Ne,
+            "enumerate" => IterMethod::Enumerate,
+            "fold" => IterMethod::Fold,
+            "count" => IterMethod::Count,
+            "sum" => IterMethod::Sum,
+            "product" => IterMethod::Product,
+            "copied" => IterMethod::Copied,
+            "cloned" => IterMethod::Cloned,
+            "max" => IterMethod::Max,
+            "min" => IterMethod::Min,
+            "last" => IterMethod::Last,
+            "collect" => IterMethod::Collect,
+            _ => return None,
+        })
+    }
+
     /// `VecDeque::iter()`'s, over the array a `VecDeque` is.
     pub(super) fn is_deque_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
@@ -4133,6 +4179,46 @@ pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtRes
         "is_err" => FmtResultAnswer::Is(false),
         _ => return None,
     })
+}
+
+/// A method of std's iterator traits that lowering from MIR writes as JS's
+/// own (ADRs 0036, 0139, 0364): `iterator_method`'s answer.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum IterMethod {
+    IntoIter,
+    FromIter,
+    Next,
+    NextBack,
+    Len,
+    SizeHint,
+    Rev,
+    Peekable,
+    ByRef,
+    Fuse,
+    Map,
+    Filter,
+    SkipWhile,
+    FlatMap,
+    Take,
+    Skip,
+    ForEach,
+    Any,
+    All,
+    Find,
+    Position,
+    Eq,
+    Ne,
+    Enumerate,
+    Fold,
+    Count,
+    Sum,
+    Product,
+    Copied,
+    Cloned,
+    Max,
+    Min,
+    Last,
+    Collect,
 }
 
 /// A `Debug` builder of std's, by its type, which a `Formatter`'s
