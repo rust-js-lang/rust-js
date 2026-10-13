@@ -566,8 +566,8 @@ export const mutations: Mutation[] = [
     name: "mir-module-name-made-as-const",
     breaks: "a static's component made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir.rs",
-    find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),\n",
-    replace: "            js::ExprKind::Var(name) => self.locals.alike.contains(name),\n",
+    find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),\n",
+    replace: "            js::ExprKind::Var(name) => self.locals.mir.alike.contains(name),\n",
     tests: ["test/jsx.test.ts"],
   },
   {
@@ -582,7 +582,7 @@ export const mutations: Mutation[] = [
     name: "mir-alike-variable-made-as-const",
     breaks: "a variable nothing changes, a tag, made before it's used is a `const` of a temporary's name, no tag",
     file: "src/lower/mir.rs",
-    find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),\n",
+    find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),\n",
     replace: "            js::ExprKind::Var(name) => self.module_names.contains(name),\n",
     tests: ["test/jsx.test.ts"],
   },
@@ -734,7 +734,7 @@ export const mutations: Mutation[] = [
     name: "mir-plain-field-as-const",
     breaks: "a field of plain data read twice is a `const _5 = route.title;`, not read where it's used",
     file: "src/lower/mir.rs",
-    find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.plain.contains(name))\n",
+    find: "                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name))\n",
     replace: "                false\n",
     tests: ["test/lowering.test.ts","-t","a match guard.s binding from MIR is what it binds"],
   },
@@ -1154,7 +1154,7 @@ export const mutations: Mutation[] = [
     "name": "mir-checked-index-copied",
     "breaks": "a parameter MIR checks an element's place at is copied first, `const index = i;`",
     "file": "src/lower/mir.rs",
-    "find": "                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.alike.contains(v))\n",
+    "find": "                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
@@ -1256,7 +1256,7 @@ export const mutations: Mutation[] = [
     "name": "mir-stored-paths-unknown",
     "breaks": "a getter's `bool` stored in a local isn't known as one, `!!(element.isContentEditable || ..)`",
     "file": "src/lower/mir.rs",
-    "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.paths.entry(path).or_insert(bool) &= bool;\n        }\n        let unread",
+    "find": "            let bool = state.body.local_decls[local].ty.is_bool();\n            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;\n        }\n        let unread",
     "replace": "        }\n        let unread",
     "tests": ["test/lowering.test.ts", "-t", "or chain of a getter's bool"]
   },
@@ -1280,7 +1280,7 @@ export const mutations: Mutation[] = [
     "name": "mir-variant-test-not-bool",
     "breaks": "a variant's test function isn't known to give a `bool`, `!!(isValidElement(child) && ..)`",
     "file": "src/lower/mir.rs",
-    "find": "                    self.locals.paths.entry(path).or_insert(true);\n",
+    "find": "                    self.locals.mir.paths.entry(path).or_insert(true);\n",
     "replace": "",
     "tests": ["test/jsx.test.ts"]
   },
@@ -1324,7 +1324,7 @@ export const mutations: Mutation[] = [
     "name": "mir-array-items-not-plain",
     "breaks": "an array of JS's values isn't known to keep its items past calls, so `[...first, ...]` holds what's made after",
     "file": "src/lower/mir.rs",
-    "find": "                self.locals.plain.insert(format!(\"...{name}\"));\n",
+    "find": "                self.locals.mir.plain.insert(format!(\"...{name}\"));\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
@@ -1436,7 +1436,7 @@ export const mutations: Mutation[] = [
     "name": "mir-plain-fields-unknown",
     "breaks": "a plain field of a struct holding a `Cell`, `q.title`, isn't known to read the same",
     "file": "src/lower/mir.rs",
-    "find": "            self.locals.plain.extend(fields);\n",
+    "find": "            self.locals.mir.plain.extend(fields);\n",
     "replace": "            drop(fields);\n",
     "tests": [
       "test/jsx.test.ts"
@@ -1832,7 +1832,7 @@ export const mutations: Mutation[] = [
     name: "mir-field-value-collapsed",
     breaks: "MIR's `&mut list.value`, a struct's field named `value`, given as `list` itself",
     file: "src/lower/mir.rs",
-    find: "                        js::ExprKind::Var(name) => self.locals.cells.contains(name),\n",
+    find: "                        js::ExprKind::Var(name) => self.locals.mir.cells.contains(name),\n",
     replace: "                        js::ExprKind::Var(_) => true,\n",
     tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
   },

@@ -354,7 +354,7 @@ export const mutations: Mutation[] = [
     name: "mir-alike-unknown",
     breaks: "what MIR says reads alike doesn't, so JSX reads each attribute into a `const` first",
     file: "src/lower/jsx.rs",
-    find: "                self.locals.alike.contains(name)\n",
+    find: "                self.alike_local(name)\n",
     replace: "                false\n",
     tests: ["test/jsx.test.ts"],
   },

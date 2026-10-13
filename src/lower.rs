@@ -178,38 +178,9 @@ struct Locals {
     /// A props pattern's rest, JS's `...props`, by its name: the keys the
     /// pattern names, which it never holds (ADRs 0195, 0205).
     rests: HashMap<String, Vec<String>>,
-    /// Of a body lowered from its MIR (ADR 0364): the names of its locals
-    /// that read the same wherever they're read, assigned once and never
-    /// borrowed, and of those of plain Rust data, whose fields don't change
-    /// either, which `reads_alike` and `plain_value` ask of.
-    /// And of the others' arrays, their items, `...items`.
-    alike: HashSet<String>,
-    plain: HashSet<String>,
-    /// And the names of its cells, `&mut`s to what JS can't change in
-    /// place: a box or a handle, whose `value` is what it points at, unlike
-    /// a struct's field of that name.
-    cells: HashSet<String>,
-    /// Of a body lowered from its MIR, the temporaries a function that skips
-    /// what's falsy is given, whose `test ? value : undefined` is given as
-    /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
-    falsy: HashSet<String>,
-    /// And the temporaries such a `test && value` tests: read for their
-    /// truth alone.
-    tested: HashSet<String>,
-    /// Of a body lowered from its MIR, the `const`s it made of what an
-    /// element made ahead of a branch reads, which tidy reads in place
-    /// where it can.
-    captured: HashSet<String>,
-    /// Of a body lowered from its MIR, where each closure it makes that
-    /// passes on what it's given to Rust's function is written: an array
-    /// method's, the function itself (ADR 0279).
-    forwarding: Vec<js::Span>,
-    /// And where each is written of one call whose JS gives `undefined`
-    /// anyway, a handler's: `() => f()` (ADR 0040).
-    concise: Vec<js::Span>,
-    /// Of a body lowered from its MIR, each field path it reads,
-    /// `element.editable`, and whether it's a `bool` each time.
-    paths: HashMap<String, bool>,
+    /// What lowering a body from its MIR found of its variables (ADR 0364),
+    /// mir.rs's, which the rest ask of it.
+    mir: mir::Found,
 }
 
 /// How a Rust struct or tuple type is represented in JS (ADR 0020).

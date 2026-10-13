@@ -298,6 +298,10 @@ test("tidying asks neither rustc nor the function being lowered", () => {
 // read by, unseen (the third architecture audit).
 const owners: Record<string, string[]> = {
   "self.drop_state": ["src/lower/drops.rs"],
+  // What lowering from MIR found of a body's variables, nine sets once
+  // fields of `Locals` that mir.rs wrote and jsx.rs and binding_calls.rs
+  // read (the third architecture audit).
+  "self.locals.mir": ["src/lower/mir.rs"],
   "self.writing": ["src/lower/display.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
   "self.given": ["src/lower/traits.rs"],

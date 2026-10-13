@@ -21,7 +21,7 @@ mod std_calls;
 mod tidy;
 mod writer;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -122,6 +122,71 @@ enum Value<'tcx> {
 type ParamPattern = (usize, js::Pattern, Vec<(Local, String)>);
 
 /// What's known of a body's locals.
+/// What lowering a body from its MIR found of its variables, which goes
+/// with them where a body inside it is lowered (`Locals`): each read and
+/// written here alone, and asked of by the rest, `alike_local`.
+#[derive(Default)]
+pub(super) struct Found {
+    /// Of a body lowered from its MIR (ADR 0364): the names of its locals
+    /// that read the same wherever they're read, assigned once and never
+    /// borrowed, and of those of plain Rust data, whose fields don't change
+    /// either, which `reads_alike` and `plain_value` ask of.
+    /// And of the others' arrays, their items, `...items`.
+    pub(super) alike: HashSet<String>,
+    pub(super) plain: HashSet<String>,
+    /// And the names of its cells, `&mut`s to what JS can't change in
+    /// place: a box or a handle, whose `value` is what it points at, unlike
+    /// a struct's field of that name.
+    pub(super) cells: HashSet<String>,
+    /// Of a body lowered from its MIR, the temporaries a function that skips
+    /// what's falsy is given, whose `test ? value : undefined` is given as
+    /// `test && value` (`#[rust_js::skips_falsy]`) where it's moved to.
+    pub(super) falsy: HashSet<String>,
+    /// And the temporaries such a `test && value` tests: read for their
+    /// truth alone.
+    pub(super) tested: HashSet<String>,
+    /// Of a body lowered from its MIR, the `const`s it made of what an
+    /// element made ahead of a branch reads, which tidy reads in place
+    /// where it can.
+    pub(super) captured: HashSet<String>,
+    /// Of a body lowered from its MIR, where each closure it makes that
+    /// passes on what it's given to Rust's function is written: an array
+    /// method's, the function itself (ADR 0279).
+    pub(super) forwarding: Vec<js::Span>,
+    /// And where each is written of one call whose JS gives `undefined`
+    /// anyway, a handler's: `() => f()` (ADR 0040).
+    pub(super) concise: Vec<js::Span>,
+    /// Of a body lowered from its MIR, each field path it reads,
+    /// `element.editable`, and whether it's a `bool` each time.
+    pub(super) paths: HashMap<String, bool>,
+}
+
+impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// Whether `name`, a local of the body lowered from its MIR, reads the
+    /// same wherever it's read: assigned once and never borrowed.
+    pub(super) fn alike_local(&self, name: &str) -> bool {
+        self.locals.mir.alike.contains(name)
+    }
+
+    /// Whether `name`, such a local, is plain Rust data, whose fields don't
+    /// change either.
+    pub(super) fn plain_local(&self, name: &str) -> bool {
+        self.locals.mir.plain.contains(name)
+    }
+
+    /// `name`, a temporary a `test && value` given what skips what's falsy
+    /// tests: read for its truth alone.
+    pub(super) fn note_tested(&mut self, name: &str) {
+        self.locals.mir.tested.insert(name.to_string());
+    }
+
+    /// `name`, a temporary given to what skips what's falsy, whose `test ?
+    /// value : undefined` is given as `test && value` where it's moved to.
+    pub(super) fn note_falsy(&mut self, name: &str) {
+        self.locals.mir.falsy.insert(name.to_string());
+    }
+}
+
 struct Locals {
     /// Each one's JS name, empty for one of `()`, which holds nothing.
     names: IndexVec<Local, String>,
@@ -403,9 +468,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.tcx.dcx().span_err(e.span, super::calls::ptr_eq_refused(of)));
             }
         }
-        let outer_falsy = std::mem::take(&mut self.locals.falsy);
-        let outer_tested = std::mem::take(&mut self.locals.tested);
-        let outer_captured = std::mem::take(&mut self.locals.captured);
+        let outer_falsy = std::mem::take(&mut self.locals.mir.falsy);
+        let outer_tested = std::mem::take(&mut self.locals.mir.tested);
+        let outer_captured = std::mem::take(&mut self.locals.mir.captured);
         let drops = self.mir_elaboration(mir_body);
         let patterns = match captures {
             None => self.mir_param_patterns(mir_body),
@@ -592,7 +657,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         state.own_names = state.locals.names.iter().filter(|n| !n.is_empty()).cloned().collect();
         for (local, name) in state.locals.names.iter_enumerated() {
             if !name.is_empty() && self.is_cell(mir_body.local_decls[local].ty) {
-                self.locals.cells.insert(name.clone());
+                self.locals.mir.cells.insert(name.clone());
             }
         }
         // What reads the same wherever it's read.
@@ -607,7 +672,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 continue;
             }
-            self.locals.alike.insert(name.clone());
+            self.locals.mir.alike.insert(name.clone());
             let is_plain = |ty: Ty<'tcx>| {
                 ty.walk().all(|arg| match arg.kind() {
                     ty::GenericArgKind::Type(t) => {
@@ -645,14 +710,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => Vec::new(),
             };
             if plain {
-                self.locals.plain.insert(name.clone());
+                self.locals.mir.plain.insert(name.clone());
             }
-            self.locals.plain.extend(fields);
+            self.locals.mir.plain.extend(fields);
             // Of an array, of what may be JS's, its items, which only a
             // `&mut` changes: `...items` (`read_past_calls`).
             let ty = mir_body.local_decls[local].ty.peel_refs();
             if !plain && !through_mut && (ty.is_slice() || ty.is_array() || self.is_vec_like(ty)) {
-                self.locals.plain.insert(format!("...{name}"));
+                self.locals.mir.plain.insert(format!("...{name}"));
             }
         }
         let mut out = Vec::new();
@@ -717,8 +782,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.pop();
         }
         // A closure's own, which it named, apart from its body's.
-        let falsy = std::mem::replace(&mut self.locals.falsy, outer_falsy);
-        let tested = std::mem::replace(&mut self.locals.tested, outer_tested);
+        let falsy = std::mem::replace(&mut self.locals.mir.falsy, outer_falsy);
+        let tested = std::mem::replace(&mut self.locals.mir.tested, outer_tested);
         // Where each `match` is written whose arms are each a variant of its
         // own, with no field, guard or binding: one that may read a table by
         // what's matched (ADR 0233), as tidy's `table_reads` tells.
@@ -863,7 +928,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .filter(|e| matches!(e.kind, thir::ExprKind::Loop { .. }) && !e.ty.is_unit() && !e.ty.is_never())
             .map(|e| self.js_span(e.span.source_callsite()))
             .collect();
-        let captured = std::mem::replace(&mut self.locals.captured, outer_captured);
+        let captured = std::mem::replace(&mut self.locals.mir.captured, outer_captured);
         // A name each of whose locals is a `bool`, and one each of whose
         // locals is an integer.
         let mut booleans = std::collections::HashSet::new();
@@ -905,13 +970,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         numbers.retain(|name| !not_numbers.contains(name));
         // And each field path that's a `bool` each time it's read.
         booleans.extend(
-            (self.locals.paths.iter())
+            (self.locals.mir.paths.iter())
                 .filter(|&(_, &b)| b)
                 .map(|(path, _)| path.clone()),
         );
         // And the module's imports, whose fields JS's modules never change
         // either, `HighlightStyle.define`, as `reads_alike` has them.
-        let mut plain = self.locals.plain.clone();
+        let mut plain = self.locals.mir.plain.clone();
         plain.extend(
             self.krate
                 .imports
@@ -941,8 +1006,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 booleans: &booleans,
                 numbers: &numbers,
                 plain: &plain,
-                forwarding: &self.locals.forwarding.clone(),
-                concise: &self.locals.concise.clone(),
+                forwarding: &self.locals.mir.forwarding.clone(),
+                concise: &self.locals.mir.concise.clone(),
             },
         );
         tidy::destructured_params(&mut params, &mut out);
@@ -1346,10 +1411,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if forwarding || concise {
             let span = self.js_span(span);
             if forwarding {
-                self.locals.forwarding.push(span);
+                self.locals.mir.forwarding.push(span);
             }
             if concise {
-                self.locals.concise.push(span);
+                self.locals.mir.concise.push(span);
             }
             return Ok(Expr {
                 span,
@@ -1999,14 +2064,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 for stmt in &made[before..] {
                     match &stmt.kind {
                         StmtKind::Const(name, _) => {
-                            self.locals.captured.insert(name.clone());
-                            self.locals.alike.insert(name.clone());
+                            self.locals.mir.captured.insert(name.clone());
+                            self.locals.mir.alike.insert(name.clone());
                             state.own_names.insert(name.clone());
                         }
                         // What a branch's element reads, set where its test
                         // holds: no `const`, but MIR's too.
                         StmtKind::Let(name, None) => {
-                            self.locals.captured.insert(name.clone());
+                            self.locals.mir.captured.insert(name.clone());
                             state.own_names.insert(name.clone());
                         }
                         _ => {}
@@ -2203,14 +2268,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// nothing changes or a field of plain data in one, of type `ty`.
     fn reads_same_anywhere(&self, e: &Expr, ty: Ty<'tcx>) -> bool {
         let alike = |e: &Expr| match &e.kind {
-            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),
+            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.mir.alike.contains(name),
             js::ExprKind::Symbol(_) => true,
             js::ExprKind::Member(..) => {
                 let mut root = e;
                 while let js::ExprKind::Member(object, _) = &root.kind {
                     root = object;
                 }
-                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.plain.contains(name))
+                matches!(&root.kind, js::ExprKind::Var(name) if self.locals.mir.plain.contains(name))
             }
             _ => e.is_constant(),
         };
@@ -2264,7 +2329,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if let js::ExprKind::Member(holder, field) = &place.kind
                     && field == "value"
                     && match &holder.kind {
-                        js::ExprKind::Var(name) => self.locals.cells.contains(name),
+                        js::ExprKind::Var(name) => self.locals.mir.cells.contains(name),
                         js::ExprKind::Call(..) | js::ExprKind::Object(_) => true,
                         _ => false,
                     } =>
@@ -2518,7 +2583,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && let Some(path) = tidy::field_path(e).or_else(|| tidy::call_path(e))
         {
             let bool = state.body.local_decls[local].ty.is_bool();
-            *self.locals.paths.entry(path).or_insert(bool) &= bool;
+            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;
         }
         let unread = !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local];
         if place.projection.is_empty() && (state.locals.names[local].is_empty() || unread) {
@@ -2608,7 +2673,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let held = |value: &Value<'tcx>| match value {
             Value::Place(target)
                 if same_place(state, target)
-                    && root_var(target).is_some_and(|root| self.locals.alike.contains(root)) =>
+                    && root_var(target).is_some_and(|root| self.locals.mir.alike.contains(root)) =>
             {
                 Some(target.clone())
             }
@@ -2926,7 +2991,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // tidy writes an `||` of as one.
         if let Some(path) = tidy::field_path(&e) {
             let bool = place.ty(state.body, self.tcx).ty.is_bool();
-            *self.locals.paths.entry(path).or_insert(bool) &= bool;
+            *self.locals.mir.paths.entry(path).or_insert(bool) &= bool;
         }
         Ok(e)
     }
@@ -4186,7 +4251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // a `bool`, which tidy writes a test of as one.
             test.clone().each_mut(&mut |e| {
                 if let Some(path) = tidy::call_path(e) {
-                    self.locals.paths.entry(path).or_insert(true);
+                    self.locals.mir.paths.entry(path).or_insert(true);
                 }
             });
             return test;
@@ -5224,7 +5289,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // A variable that reads the same wherever it's read, a parameter,
             // read where it's set too.
             let index = if index.is_constant()
-                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.alike.contains(v))
+                || matches!(&index.kind, js::ExprKind::Var(v) if self.locals.mir.alike.contains(v))
             {
                 index
             } else {

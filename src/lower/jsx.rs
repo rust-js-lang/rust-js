@@ -132,7 +132,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && self.reads_alike(object, out)
             }
             js::ExprKind::Var(name) => {
-                self.locals.alike.contains(name)
+                self.alike_local(name)
                     || self
                         .locals
                         .vars
@@ -158,7 +158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// interior mutability anywhere in its type, nor a JS object, whose
     /// properties are getters.
     pub(super) fn plain_value(&self, name: &str) -> bool {
-        self.locals.plain.contains(name)
+        self.plain_local(name)
             || self.locals.vars.iter().any(|(id, var)| {
                 !var.mutable
                     && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name)

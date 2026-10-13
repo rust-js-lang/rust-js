@@ -273,6 +273,7 @@ outside its owner, and how much each module knows of the rest.
 
 | Concept | Owner | What the others ask |
 |---|---|---|
+| What lowering from MIR found of a body's variables, `mir::Found` (ADR 0364) | `mir.rs` | `alike_local`, `plain_local`, `note_tested`, `note_falsy` |
 | What dropping runs, and where | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
 | Whether a value is a JS iterator or an array, and its JS: `Iterator.from`, a range's `$iterator` (ADRs 0061, 0364) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped_by`, `stepped_range` |
 | An array's items stepped, `$iter`, and a generic iterator lent, `$lent` (ADR 0071) | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
