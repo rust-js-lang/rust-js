@@ -11,7 +11,7 @@ use super::std_types::text::TextOp;
 use super::{FnCx, R, camel_case, global};
 use crate::js;
 use crate::js::{Expr, Op, StmtKind};
-use rustc_middle::thir::ExprId;
+
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
 use rustc_span::def_id::DefId;
@@ -202,12 +202,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .flatten()
             .or_else(|| self.resolve_into(def_id, args))
             .unwrap_or((def_id, args))
-    }
-
-    /// Which std function `fun` is, if rust-js knows what it means in JS.
-    pub(super) fn std_fn(&self, fun: ExprId) -> Option<Std> {
-        let (def_id, args) = fn_def(self.thir[self.strip(fun)].ty)?;
-        self.recognition().classify(def_id, args)
     }
 
     /// A std function taken as a value, `str::trim` in `.map(str::trim)`:

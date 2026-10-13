@@ -1,6 +1,9 @@
 function $rest(it) {
-  // What's left of a stepped iterator.
-  const rest = it.items.slice(it.at);
+  // A JS iterator, a generic one's (ADR 0061): what's left of it.
+  if (it.items === undefined) {
+    return Array.from(it);
+  }
+  const rest = it.items.slice(it.at, it.end);
   it.at = it.end;
   return rest;
 }

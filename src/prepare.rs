@@ -343,7 +343,7 @@ fn try_catch(made: &Stmt, tested: &Stmt, rest: &[Stmt]) -> Option<(StmtKind, usi
         _ => return None,
     };
     let body = match kept {
-        StmtKind::Return(Some(_)) => StmtKind::Return(Some(call.clone())),
+        StmtKind::Return(Some(e)) if of_result(e, "_0") => StmtKind::Return(Some(call.clone())),
         // Past an `if` with no `else`, only one that returns.
         StmtKind::Assign(to, e) if of_result(e, "_0") && matches!(to.kind, ExprKind::Var(_)) && taken == 2 => {
             StmtKind::Assign(to.clone(), call.clone())
