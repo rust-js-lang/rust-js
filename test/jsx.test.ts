@@ -5923,6 +5923,83 @@ pub fn Diagram(
   expect(renderToStaticMarkup(createElement(lib.Diagram, { ...props, captionPosition: "top" }))).toBe(figure(caption + images));
 });
 
+// react.dev's SandboxShell: its expand button, shown if a test holds among
+// Sandpack's `SandpackLayout`'s children, is `test && <button>` in place.
+// The layout's props flatten a `<div>`'s attributes before `children`, so
+// its companion must build them in that order: else `className` is built
+// after the children, and the button's values are `let`s set before the JSX.
+test("react.dev's SandboxShell shows its expand button in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+#[rust_js::camel_case]
+const _: () = ();
+use react::attributes::HtmlHTMLAttributes;
+use react::{JSX, ReactNode, jsx, use_state};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+#[derive(Default)]
+pub struct SandpackLayoutProps<'a, C> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: HtmlHTMLAttributes<'a>,
+    pub children: C,
+}
+#[rust_js::link_name = "./sandpack.js#SandpackLayout"]
+pub fn SandpackLayout<C: ReactNode>(_: SandpackLayoutProps<'_, C>) -> JSX::Element {
+    unreachable!()
+}
+pub enum DisplayDirection {
+    #[cfg_attr(rust_js, rust_js::name = "up")]
+    Up,
+    #[cfg_attr(rust_js, rust_js::name = "down")]
+    Down,
+}
+pub struct IconChevronProps {
+    pub class_name: Option<&'static str>,
+    pub display_direction: Option<DisplayDirection>,
+}
+pub fn IconChevron(props: IconChevronProps) -> JSX::Element {
+    let up = matches!(props.display_direction, Some(DisplayDirection::Up));
+    jsx! { <svg className={cn(&[up.then_some("rotate-180"), props.class_name])} /> }
+}
+pub struct SandboxShellProps {
+    pub is_expandable: bool,
+}
+pub fn SandboxShell(SandboxShellProps { is_expandable }: SandboxShellProps) -> JSX::Element {
+    let (isExpanded, setIsExpanded) = use_state(false);
+    jsx! {
+        <SandpackLayout
+            className={Some(&cn(&[
+                (!(is_expandable || *isExpanded)).then_some("rounded-b-lg overflow-hidden"),
+                (*isExpanded).then_some("sp-layout-expanded"),
+            ]))}>
+            {(is_expandable || *isExpanded).then(|| jsx! {
+                <button
+                    translate="yes"
+                    className="sandpack-expand"
+                    onClick={move |_| setIsExpanded.set(!*isExpanded)}>
+                    <span className="flex">
+                        <IconChevron
+                            className={Some("inline")}
+                            displayDirection={Some(if *isExpanded { DisplayDirection::Up } else { DisplayDirection::Down })}
+                        />
+                        {if *isExpanded { "Show less" } else { "Show more" }}
+                    </span>
+                </button>
+            })}
+        </SandpackLayout>
+    }
+}
+`, { "sandpack.js": 'import { createElement } from "react"; export function SandpackLayout({ className, children }) { return createElement("div", { className }, children); }\n' });
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("{(isExpandable || isExpanded) && (\n        <button");
+  expect(jsx).toContain('<IconChevron className="inline" displayDirection={isExpanded ? "up" : "down"} />\n            {isExpanded ? "Show less" : "Show more"}');
+  expect(jsx).not.toContain("const condition");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(lib.SandboxShell, { isExpandable: true }))).toBe('<div class=""><button translate="yes" class="sandpack-expand"><span class="flex"><svg class="inline"></svg>Show more</span></button></div>');
+  expect(renderToStaticMarkup(createElement(lib.SandboxShell, { isExpandable: false }))).toBe('<div class="rounded-b-lg overflow-hidden"></div>');
+});
+
 // react.dev's InlineToc: a node's `RefCell` of children, only borrowed for a
 // moment, to push, to count and to pass on, is the array itself, not a cell
 // with `$borrow` and `$unborrow` around each use.

@@ -7679,6 +7679,209 @@ pub fn extractSectionedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<Sectio
   expect(lib.extractSectionedRoutes(routes, "x").map((s: { heading: string; pages: unknown[]; sub_groups: unknown[] }) => [s.heading, s.pages.length, s.sub_groups.length])).toEqual([["A", 1, 1]]);
 });
 
+// react.dev's llms.txt groups its routes: an `else if` the loop's body ends
+// with, after an `if` that doesn't end in a `continue`, stays an `else if`,
+// not a `continue` MIR's block for it makes and an `if` after.
+test("react.dev's llms.txt groups its routes with an else-if at the loop's end", async () => {
+  const dir = fixture("mir-grouped-routes");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case, dead_code)]
+pub struct RouteItem {
+    title: Option<String>,
+    path: Option<String>,
+    routes: Option<Vec<RouteItem>>,
+    has_section_header: Option<bool>,
+}
+
+pub struct Page {
+    title: String,
+    url: String,
+}
+
+pub struct SubGroup {
+    heading: String,
+    pages: Vec<Page>,
+}
+
+pub fn extractGroupedRoutes(routes: &[RouteItem], baseUrl: &str) -> Vec<SubGroup> {
+    let mut groups: Vec<SubGroup> = Vec::new();
+
+    for route in routes {
+        // Skip section headers
+        if route.has_section_header == Some(true) {
+            continue;
+        }
+
+        // Skip external links
+        if route.path.as_ref().is_some_and(|path| path.starts_with("http")) {
+            continue;
+        }
+
+        // Route with children - create a group
+        if let Some(title) = &route.title
+            && let Some(children) = &route.routes
+            && !children.is_empty()
+        {
+            let mut pages: Vec<Page> = Vec::new();
+
+            // Include parent page if it has a path
+            if let Some(path) = &route.path {
+                pages.push(Page {
+                    title: title.clone(),
+                    url: format!("{baseUrl}{path}.md"),
+                });
+            }
+
+            // Add child pages
+            for child in children {
+                if let Some(childTitle) = &child.title
+                    && let Some(childPath) = &child.path
+                    && !childPath.starts_with("http")
+                {
+                    pages.push(Page {
+                        title: childTitle.clone(),
+                        url: format!("{baseUrl}{childPath}.md"),
+                    });
+                }
+            }
+
+            if !pages.is_empty() {
+                groups.push(SubGroup {
+                    heading: title.clone(),
+                    pages,
+                });
+            }
+        }
+        // Single page without children - group under its own heading
+        else if let Some(title) = &route.title
+            && let Some(path) = &route.path
+        {
+            groups.push(SubGroup {
+                heading: title.clone(),
+                pages: vec![Page {
+                    title: title.clone(),
+                    url: format!("{baseUrl}{path}.md"),
+                }],
+            });
+        }
+    }
+
+    groups
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("        groups.push({ heading: route.title, pages });\n      }\n    } else if (route.title != null && route.path != null) {\n");
+  expect(js).not.toContain("\n    if (route.title != null && route.path != null) {");
+  const lib = await import(join(dir, "mir.js"));
+  const routes = [
+    { has_section_header: true, title: "H", path: "/h" },
+    { title: "E", path: "https://e" },
+    { title: "G", path: "/g", routes: [{ title: "c", path: "/c" }, { title: "x", path: "http://x" }] },
+    { title: "T", path: "/t" },
+    { title: "N" },
+  ];
+  const grouped = lib.extractGroupedRoutes(routes, "b").map((g: { heading: string; pages: { url: string }[] }) => [g.heading, g.pages.map((p) => p.url)]);
+  expect(grouped).toEqual([["G", ["b/g.md", "b/c.md"]], ["T", ["b/t.md"]]]);
+});
+
+// react.dev's CodeBlock places its inline decorators: a loop's body ending
+// in an `if`'s branch, here its last insert past the `panic!`s' `if`s, ends
+// with no `continue` MIR's block for it makes, which does nothing there.
+test("react.dev's CodeBlock places its decorators with no continue at the loop's end", async () => {
+  const dir = fixture("mir-decorator-ends");
+  writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
+
+pub struct InlineDecorator {
+    pub line: u32,
+    pub start_column: u32,
+    pub end_column: u32,
+    pub class_name: String,
+}
+
+pub fn ends(lines: &[&str], inline_decorators: Vec<InlineDecorator>) -> Vec<(u32, String)> {
+    let mut decorator_starts = HashMap::new();
+    let mut decorator_ends = HashMap::new();
+    for decorator in inline_decorators {
+        // Find where inline highlight starts and ends.
+        let mut decorator_start = 0;
+        for i in 0..decorator.line - 1 {
+            decorator_start += lines[i as usize].len() as u32 + 1;
+        }
+        decorator_start += decorator.start_column;
+        let decorator_end = decorator_start + (decorator.end_column - decorator.start_column);
+        if decorator_starts.contains_key(&decorator_start) {
+            panic!("Already opened decorator at {decorator_start}");
+        }
+        decorator_starts.insert(decorator_start, decorator.class_name.clone());
+        if decorator_ends.contains_key(&decorator_end) {
+            panic!("Already closed decorator at {decorator_end}");
+        }
+        decorator_ends.insert(decorator_end, decorator.class_name);
+    }
+    let mut out: Vec<(u32, String)> = decorator_ends.into_iter().collect();
+    out.sort();
+    out
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain("    decoratorEnds.set(decoratorEnd, decorator.class_name);\n  }\n");
+  expect(js).not.toContain("continue;");
+  const lib = await import(join(dir, "mir.js"));
+  const decorator = (line: number, start_column: number, end_column: number, class_name: string) => ({ line, start_column, end_column, class_name });
+  expect(lib.ends(["ab", "cde"], [decorator(2, 1, 3, "k"), decorator(1, 0, 1, "s")])).toEqual([[1, "s"], [6, "k"]]);
+  expect(() => lib.ends(["ab"], [decorator(1, 0, 1, "a"), decorator(1, 1, 1, "b")])).toThrow("Already closed decorator at 1");
+});
+
+// react.dev's Console clears its logs when Sandpack starts for the first
+// time or refreshes: two `matches!`s joined by `||` are one `if (a || b)`,
+// not the first held in a `const` and an empty `if` of the negated tests.
+test("react.dev's Console clears its logs on an or of two matches", async () => {
+  const dir = fixture("mir-console-or");
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+#[cfg_attr(rust_js, rust_js::tag = "type")]
+pub enum SandpackMessage {
+    #[cfg_attr(rust_js, rust_js::name = "start")]
+    Start {
+        #[cfg_attr(rust_js, rust_js::name = "firstLoad")]
+        first_load: Option<bool>,
+    },
+    #[cfg_attr(rust_js, rust_js::name = "refresh")]
+    Refresh,
+    #[cfg_attr(rust_js, rust_js::name = "console")]
+    Console { log: Vec<String>, codesandbox: Option<bool> },
+    #[cfg_attr(rust_js, rust_js::otherwise)]
+    Other(&'static str),
+}
+
+pub fn listener(setLogs: &'static dyn Fn(Vec<String>)) -> Box<dyn Fn(&'static SandpackMessage)> {
+    Box::new(move |message: &'static SandpackMessage| {
+        if matches!(message, SandpackMessage::Start { first_load: Some(true) })
+            || matches!(message, SandpackMessage::Refresh)
+        {
+            setLogs(Vec::new());
+        }
+        if let SandpackMessage::Console {
+            log,
+            codesandbox: Some(true),
+        } = message
+        {
+            setLogs(log.clone());
+        }
+    })
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('    if ((message.type === "start" && message.firstLoad) || message.type === "refresh") {\n      setLogs([]);\n    }\n');
+  expect(js).not.toContain("const value");
+  const lib = await import(join(dir, "mir.js"));
+  const set: string[][] = [];
+  const listen = lib.listener((logs: string[]) => set.push(logs));
+  for (const message of [{ type: "start", firstLoad: true }, { type: "start" }, { type: "refresh" }, { type: "console", log: ["a"], codesandbox: true }, { type: "console", log: ["b"] }, { type: "done" }]) listen(message);
+  expect(set).toEqual([[], [], ["a"]]);
+});
+
 // A \`match\`'s arms from MIR are tested in the order they're written, an
 // arm that tests a field first, \`Done { ok: true }\`, where it's written,
 // not where its test is spanned, the \`match\`.

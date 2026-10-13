@@ -80,7 +80,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
     replace: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops"],
+    tests: ["test/lowering.test.ts","-t","react.dev's Console clears its logs"],
   },
   {
     name: "mir-tidy-not-de-morgan",
@@ -200,14 +200,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        let one = (conditions.iter()).any(|(first, then)| within(first, span) && within(then, inner.span));\n",
     replace: "        let one = true;\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
-  },
-  {
-    name: "mir-tidy-broken-chain-unbound",
-    breaks: "a chain of `if let`s whose levels bind a value first stays a labeled block",
-    file: "src/lower/mir/tidy.rs",
-    find: "        ] if bound\n",
-    replace: "        ] if bound.is_empty() && bound\n",
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
   {
@@ -1753,7 +1745,7 @@ export const mutations: Mutation[] = [
     "tests": [
       "test/lowering.test.ts",
       "-t",
-      "an else-if at a loop's end from MIR"
+      "react.dev's llms.txt groups its routes"
     ]
   },
   {
@@ -1765,7 +1757,7 @@ export const mutations: Mutation[] = [
     "tests": [
       "test/lowering.test.ts",
       "-t",
-      "an else-if at a loop's end from MIR"
+      "react.dev's CodeBlock places its decorators"
     ]
   },
   {

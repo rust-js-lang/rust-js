@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "let (before, after) = (values[..*at].concat(), values[*at..].concat());",
     replace: "let (before, after) = (values.concat(), String::new());",
-    tests: ["test/jsx.test.ts", "-t", "flattened props come before a field"],
+    tests: ["test/jsx.test.ts", "-t", "react.dev's SandboxShell shows its expand button"],
   },
   {
     name: "local-component-as-tag",

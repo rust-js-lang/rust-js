@@ -2771,35 +2771,18 @@ fn or_chain(body: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>, Vec<Stm
     Some((tests, otherwise, then.to_vec()))
 }
 
-/// Of `if (a) { if (b) { s; break l; } }`: `[a, b]` and `s`. What a level
-/// binds before its test, `if (a) { const x = o.x; if (x) { … } }`, a read
-/// that does nothing, comes first in `s`, and a test reads its value,
-/// `a && o.x`, as `if let`s chained with `&&` read.
+/// Of `if (a) { if (b) { s; break l; } }`: `[a, b]` and `s`.
 fn broken_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, Vec<Stmt>)> {
     match stmts {
         [
-            bound @ ..,
             Stmt {
                 kind: StmtKind::If(test, inner, None),
                 ..
             },
-        ] if bound
-            .iter()
-            .all(|s| matches!(&s.kind, StmtKind::Const(_, value) if value.reads_same())) =>
-        {
+        ] => {
             let (mut tests, otherwise) = broken_chain(inner, label)?;
             tests.insert(0, test.clone());
-            for stmt in bound.iter().rev() {
-                let StmtKind::Const(name, value) = &stmt.kind else {
-                    unreachable!("matched")
-                };
-                for test in &mut tests {
-                    *test = test.substitute(&|v| (v == name).then(|| value.clone()))?;
-                }
-            }
-            let mut body = bound.to_vec();
-            body.extend(otherwise);
-            Some((tests, body))
+            Some((tests, otherwise))
         }
         [
             rest @ ..,
