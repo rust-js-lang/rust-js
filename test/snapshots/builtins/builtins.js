@@ -145,6 +145,10 @@ export function stop(id) {
   clearInterval(id);
 }
 
+export function at(at, done) {
+  setTimeout(done, at - Date.now());
+}
+
 async function doubled(n) {
   return Math.imul(n, 2) >>> 0;
 }

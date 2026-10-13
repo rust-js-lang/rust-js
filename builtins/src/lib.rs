@@ -616,7 +616,7 @@ unsafe extern "Rust" {
     /// [`setTimeout(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setTimeout):
     /// `callback` once, after at least `ms` milliseconds.
     #[link_name = "setTimeout"]
-    pub safe fn set_timeout(callback: Box<dyn FnOnce()>, ms: u32) -> &'static TimeoutId;
+    pub safe fn set_timeout(callback: Box<dyn FnOnce()>, ms: f64) -> &'static TimeoutId;
 
     /// [`clearTimeout(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout):
     /// the timeout's `callback` won't run, if it hasn't; of none, nothing,
@@ -627,7 +627,7 @@ unsafe extern "Rust" {
     /// [`setInterval(callback, ms)`](https://developer.mozilla.org/docs/Web/API/Window/setInterval):
     /// `callback` every `ms` milliseconds, until it's cleared.
     #[link_name = "setInterval"]
-    pub safe fn set_interval(callback: Box<dyn FnMut()>, ms: u32) -> &'static IntervalId;
+    pub safe fn set_interval(callback: Box<dyn FnMut()>, ms: f64) -> &'static IntervalId;
 
     /// [`clearInterval(id)`](https://developer.mozilla.org/docs/Web/API/Window/clearInterval):
     /// the interval's `callback` doesn't run again; of none, nothing, as
