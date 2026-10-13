@@ -79,6 +79,7 @@ and dependency set.
 flowchart TB
     CLI["Command-line host"]
     Vite["Vite host: watch, overlay, refresh"]
+    Next["Next.js host: compile beside the app, then run next"]
     Browser["Playground host: editor and worker lifecycle"]
     Build["Build adapter: resolve inputs, prepare dependencies, cache"]
     Native["Native compiler process"]
@@ -91,6 +92,7 @@ flowchart TB
 
     CLI --> Build
     Vite --> Build
+    Next --> Build
     Browser --> Worker
     Build --> Native
     Native --> Core
@@ -111,6 +113,10 @@ in a browser.
 Vite owns rebuild scheduling and development feedback. It does not know where
 binding source files live or how to build React or Serde metadata. Installed
 compiler and binding packages can be used without a source checkout.
+`next-plugin` is the same for Next.js: it compiles the app's Rust to JS
+and JSX beside it, as a Cargo build's copies are (ADR 0101), so Next.js
+and its Fast Refresh see them as the app's own, and then runs `next`
+(ADR 0192).
 
 ## The pipeline
 
@@ -142,11 +148,12 @@ module's `crate::` and `super::` paths and checks them against this table:
 |---|---|---|---|
 | Driver | `main.rs`, `cargo.rs` | every layer | |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
-| Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
-| Printing | `to_oxc.rs`, `format.rs` | printing, owned output | be bypassed: only they use oxc |
+| Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
+| Printing | `to_oxc.rs`, `format.rs`, `typescript.rs` | printing, owned output | be bypassed: only they make an artifact's text, by oxc or TypeScript |
 
 Two owned modules start printing, and are named as its exceptions:
-`output.rs` prints each module it plans (`to_oxc.rs`), and `hooks.rs`
+`output.rs` prints each module it plans, its JS by oxc (`to_oxc.rs`) and
+its declarations by TypeScript (`typescript.rs`, ADR 0207), and `hooks.rs`
 formats what a hook returns (`format.rs`). Another exception is a change
 to this table and its test. Within a layer, no modules use each other in
 a cycle: a helper more than one needs, as `paths.rs`'s, has its own home.
@@ -174,14 +181,15 @@ analysis gate passes.
 ## Inside the front end
 
 The front end turns one function's MIR into JS, its THIR read beside it
-for names, spans and facts. `FnCx` holds what that takes. Its state is
-grouped by concern, each group read and written only by the module that
-owns it, which others ask: what a generic item is given
-(`Given`), what writing to a `Formatter` knows (`display::Writing`), what
-iterator chains are beyond their types (`iterators::Chains`), which locals
-are stepped through (`iterators::Stepping`), what the `&mut`s to values JS
-can't change in place are (`mut_refs::MutRefs`, in `Locals`), what walks of
-types found (`TypeWalks`), and what's dropped where (`drops::DropState`).
+for names, spans and facts ([ADR 0364](decisions/0364-mir-lowering.md)).
+`FnCx` holds what a function takes. Its state is grouped by concern, each
+group read and written only by the module that owns it, which others ask:
+what a generic item is given (`Given`), what writing to a `Formatter`
+knows (`display::Writing`), what walks of types found (`TypeWalks`), the
+recursive types being cloned (`cloning`), and what's dropped where
+(`drops::DropState`). A body lowered from its MIR has a state of its own
+beside it, `mir::State`: its temporaries, labels, captures, drop flags
+and the places its `&mut`s are to.
 
 State follows three lifetimes:
 
@@ -190,15 +198,17 @@ State follows three lifetimes:
 - **Function:** local bindings, allocated names, scopes, and accumulated symbol
   and helper dependencies. Nested function contexts inherit only what they need
   and return their dependencies explicitly.
-- **Expression invocation:** evaluated operands, saved struct fields, branch
-  statements, and destination information. These are local values or explicit
-  arguments, never a single shared scratch slot on the function context.
+- **Body:** a MIR body's temporaries, made and not yet used, in the order
+  they're made, and its blocks' labels: `mir::State`, never a shared
+  scratch slot on the function context.
 
-An expression result makes its prerequisite statements and resulting value
-explicit. The common sequencing engine evaluates operands in Rust order and
-captures earlier values when later prerequisites could change them. Branch,
-loop, closure, and short-circuit prerequisites remain inside their own execution
-regions. A statement destination remains explicit: return, assign, or discard.
+MIR says what runs, in the order it runs: each value in a temporary of its
+own, each borrow, move and check. So the JS is correct as it's made, and
+made readable only where that's proved to change nothing: blocks become
+labeled blocks and loops (`mir/cfg.rs`), a temporary used once is written
+where it's used where nothing runs between that could see it (`fold`), and
+`mir/tidy.rs` writes the body as a person writes it, from the JS and what
+lowering's `Hints` say of it.
 
 Operation classification is side-effect-free. It identifies a supported
 operation and its representation requirements before emission. Prefer rustc
@@ -207,14 +217,14 @@ one recognition boundary and have toolchain-upgrade tests.
 
 Its modules come in four kinds.
 
-**Questions, which emit nothing.** They read THIR and types, and answer.
-Each is checked to stay that way.
+**Questions, which emit nothing.** They read THIR, MIR's facts and types,
+and answer. Each is checked to stay that way.
 
 | Module | Answers |
 |---|---|
-| `recognition.rs`, `recognition/` | Which std function or method a call is, a `Std`: `classify` asks what's known by identity, then a trait's method, then a type's own |
-| `body_queries.rs` | What a body has: `for` loops, `.await`, places, stepped iterators |
-| `effects.rs` | What evaluating an expression, or calling a closure, can do that can be seen |
+| `recognition.rs`, `recognition/` | Which std function or method a call is, a `Std`: `classify` asks what's known by identity, then a trait's method, then a type's own; and std's names and layout, `StdItem`, `cell_value_field`, `deref_target` |
+| `body_queries.rs` | What a body has, found once before it's lowered: `for` loops, the indexes a condition shows in bounds, the callbacks a hook is given, the casts of whole numbers, the statics it reads |
+| `effects.rs` | What evaluating an expression, or calling a closure, can do that can be seen, which the destructors' facts ask |
 | `drops/types.rs` | What dropping a type runs, and what a pattern moves, asked through a `DropQuery`: types, the crate's facts, which type parameters have drops, and the bounds of the dictionaries given, never `FnCx` |
 | `drops/facts.rs` | What a body owns and moves, found before it's lowered, from a `DropQuery` and the body's THIR |
 | `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs |
@@ -225,83 +235,96 @@ Each is checked to stay that way.
 
 | Module | Lowers |
 |---|---|
-| `mir.rs`, `mir/` | A body from its MIR: its control flow (`cfg.rs`) made labeled blocks and loops, temporaries folded where they're used, drops (`drops.rs`), `.await` (`awaits.rs`), iterators (`iter.rs`), then written as a person writes it (`tidy.rs`) |
-| `lower.rs` | Dispatch of expressions and statements, destinations, evaluation order |
-| `bodies.rs` | Functions, closures and nested bodies: setup, captures, entry and exit |
-| `patterns.rs` | Bindings, destructuring, `match`, `if let` and let-chains |
-| `loops.rs` | Loops and labels |
-| `places.rs` | Reading, borrowing and writing places, and `mem::swap` and `replace` of them |
+| `mir.rs` | A body from its MIR: its statements and terminators, places, calls (`mir_call`), aggregates, and the `&mut`s given to a call; temporaries folded where they're read |
+| `mir/cfg.rs`, `mir/drops.rs`, `mir/awaits.rs`, `mir/iter.rs` | A MIR body's control flow, made labeled blocks and loops; what each `Drop` drops, by rustc's drop elaboration, and its flags; `.await`; iterators, lazy as Rust's adapters are |
+| `mir/tidy.rs`, `mir/tidy/decisions.rs` | The JS of a body from its MIR, written as a person writes it: each rewrite changes nothing that runs; a match MIR tests as a tree, an `if` chain of its arms |
+| `lower.rs` | `FnCx` and its state, and what every module shares: diagnostics, names, constants |
+| `bodies.rs` | Entering and leaving a body inside the one being lowered, a closure's or a copied default's |
+| `patterns.rs` | A pattern's JS, a binding's or a parameter's, and its defaults |
+| `loops.rs`, `places.rs` | A `for` over the crate's own `IntoIterator`; a place that's leaked |
 | `mut_refs.rs` | A `&mut` to a value JS can't change in place, given to a call or given back by one: a box, the place, or a std call's items |
 | `drops.rs` | Destructors: scopes, flags, temporaries, and the JS that drops |
 | `representation.rs` | How each Rust value is represented: its shape, an `Option`'s payload, a cell, a number |
 | `copies.rs` | When a value is copied: where it's read, if something changes one of its kind in place |
 | `support.rs` | What rust-js can represent, and the error where a value it can't is made or bound |
 | `aggregates.rs` | Structs, variants and tuple structs made, by fields or a struct update, and constructors as values |
-| `std_types/result.rs` | `?`, and the `From` that converts its error |
-| `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs` (hashed and B-tree maps and sets), `heap.rs` (`BinaryHeap`), `text.rs`, `number.rs`, `option.rs`, `cell.rs`, `range.rs`, `channel.rs` (ADR 0314) |
+| `std_types/` | std's data structures and values, one module each, as its `mod.rs` tables them: `vec.rs` and `slice.rs` (`Vec`, `VecDeque`, slices, arrays), `map.rs`, `heap.rs`, `text.rs`, `number.rs`, `option.rs`, `result.rs` (`?` and the `From` of its error), `cell.rs`, `rc.rs`, `cow.rs`, `once.rs`, `lazy.rs`, `range.rs`, `channel.rs`, `pin.rs`, `uninit.rs`, `any.rs`; and `values.rs`, which hands a std call to its type's module (ADR 0314) |
+| `iterators.rs`, `combinators.rs` | Iterator chains and what ends them, and whether a value is a JS iterator or an array; `Option`'s and `Result`'s combinators, and more adapters |
 | `items.rs` | References to items: what a function or a binding is in JS, whether it's the crate's, which impl a call runs |
 | `traits.rs`, `std_impls.rs`, `ordering.rs` | Traits: dictionaries, evidence, `dyn`, calls of an impl's method; `Clone`, `Default`, `PartialEq`, `Ord` |
 | `display.rs`, `format_args.rs`, `format_spec.rs` | `Display` and `Debug`, `format_args!`, placeholders' options |
 | `serde.rs`, `serde/` | serde's derives and serde_json |
-| `jsx.rs`, `jsx_api.rs`, `bindings.rs` | JSX, and bindings to JavaScript |
+| `jsx.rs`, `jsx_api.rs`, `bindings.rs`, `binding_calls.rs`, `untagged.rs` | JSX, bindings to JavaScript and a binding's call, and untagged enums, told apart by their payload's kind (ADR 0214) |
+| `declarations.rs` | A module's TypeScript declarations, what it exports as Rust types it (ADR 0196) |
 | `library.rs`, `sources.rs`, `pipeline.rs` | Libraries' contracts, source files, and the crate as a whole |
 
 **Who owns what.** A concept that more than one module needs has one
 module that owns it: its state, the questions about it, and the JS it's
 written as, which the others ask for. [architecture.test.ts](../test/architecture.test.ts)
-holds the ones below to it, and `bun run architecture` shows where each
-stands: what's read outside its owner, and how much each module knows of
-the rest.
+holds the ones below to it, and checks that each function the table names
+is there; `bun run architecture` shows where each stands: what's read
+outside its owner, and how much each module knows of the rest.
 
 | Concept | Owner | What the others ask |
 |---|---|---|
-| What dropping runs, and where | `drops.rs`, `drops/` | `drop_value`, `moved`, `temporary`, `enter_body_drops` |
-| Whether a value is a JS iterator or an array | `iterators.rs` | `is_lazy_value`, `mark_lazy_chain`, `dyn_iterator` |
-| Locals stepped through, `$iter`s, and a generic iterator as a JS iterator (ADRs 0061, 0071) | `iterators.rs` | `steps_through`, `stepped_value`, `is_stepping`, `js_iterator`, `stepped_items` |
-| `&mut`s to values JS can't change in place | `mut_refs.rs` | `is_boxed`, `is_alias`, `slot`, `is_item_call` |
-| Writing to a `Formatter` | `display.rs` | `written`, `formatter_answer`, `with_dyn_debug` |
+| What dropping runs, and where | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
+| Whether a value is a JS iterator or an array, and its JS: `Iterator.from`, a range's `$iterator` (ADRs 0061, 0364) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped_by`, `stepped_range` |
+| An array's items stepped, `$iter`, and a generic iterator lent, `$lent` (ADR 0071) | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
+| `&mut`s to values JS can't change in place, given to a call | `mut_refs.rs` | `mut_borrowed`, `nested_mut_object` |
+| Writing to a `Formatter` | `display.rs` | `formatter_answer`, `written_of`, `writer_call` |
 | What a function or a binding is in JS | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Dictionaries and evidence: where a given one is, by its bound (`EvidenceQuery`), and its JS | `traits.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | The box of a `Some` that looks like `None` (ADR 0051) | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
 | When a value is copied | `copies.rs` | `copy_if_needed`, `contains_mutated` |
-| A cell, a lock, and the place its guard names (ADRs 0025, 0144) | `std_types/cell.rs`; `places.rs` for the place | `ref_place`, `guarded_cell` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
-| Std's names: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method` |
+| Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target` |
 | Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
+| A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
 
-**Calls.** A call is lowered by `calls.rs::call`, a short dispatcher;
-what a function is in JS is `items.rs`'s, and a `&mut` given to one
-`mut_refs.rs`'s:
+**Calls.** A call is lowered from MIR by `mir_call`, which hands it on by
+what's called:
 
 ```text
- call(f, args)
-   ├─ the crate's own function, a binding, a closure, a trait's method
-   │     └─► special_call
-   └─ one of std's: classify(f) = Some(known)
-         └─► std_call(known): what every std call must keep (drops, Option boxing)
-               └─► the domain that knows it, asked in turn:
-                     std_types/vec.rs  std_types/option.rs  std_types/cell.rs  std_types/number.rs
-                     iterators.rs  std_types/text.rs  format_args.rs
-                     std_types/map.rs  std_types/range.rs  combinators.rs  serde/value.rs ..
+ mir_call(f, args)                                   mir.rs
+   ├─ a write to a `Formatter`, a `Debug` builder's step, a function value,
+   │     `js::import!`, a struct update's `..Default::default()`
+   └─ mir_call_values(f, its arguments' values)
+         ├─ an iterator's method                     mir/iter.rs: mir_iter_call
+         ├─ a trait's method of the crate's, or a dictionary's
+         │                                           traits.rs: trait_call
+         ├─ a binding                                binding_calls.rs: binding_values
+         ├─ the crate's own function                 items.rs: fn_ref
+         └─ one of std's: classify(f) = Some(known)
+               └─ mir_std_call(known): what every std call must keep (drops,
+                  a `fmt::Error`, `Option` boxing), and the calls of places,
+                  `mem::swap` and `replace`
+                     └─ std_values(known)            std_types/values.rs
+                           └─ the module of its type: std_types/vec.rs  slice.rs
+                              option.rs  cell.rs  number.rs  text.rs  map.rs ..
+                              iterators.rs  combinators.rs  format_args.rs ..
 ```
 
-Each domain's function lowers its `Std` variants and says `None` to the
-rest. `std_call`'s own match names every variant a domain lowers, so a new
-`Std` variant is a compile error until something lowers it.
+`std_values` names every `Std` variant, so a new variant is a compile
+error until something lowers it. `mir_call_values` and `mir_std_call` are
+held to the lengths they have: what's new goes to its type's module, not
+the dispatcher.
 
 **Iterators.** Whether a value is a JS iterator or an array is one
-question, `iterators::is_lazy_value`: its type says so (an endless source,
-an iterator of the crate's own), or a chain's consumer made it so, when a
-stage does what can be seen ([ADR 0139](decisions/0139-lazy-chains.md)).
-Only `iterators.rs` reads either answer.
+question, `iterators::is_js_iterator`, asked of the JS lowering from MIR
+makes: a chain stays a JS iterator, whose helpers are lazy as Rust's
+adapters are, until something ends it ([ADR 0139](decisions/0139-lazy-chains.md),
+[ADR 0364](decisions/0364-mir-lowering.md)). Only `iterators.rs` writes or
+takes apart `Iterator.from` and a range's `$iterator`.
 
 **Runtime helpers.** The JS that generated code imports from
 `@rust-js/runtime`: each is a file, `src/runtime/<name>.js`, which
 `runtime.rs` names and orders, and the package is made from them
 ([ADR 0103](decisions/0103-runtime-package.md)). Lowering asks for the
 helpers a module needs; `output.rs` imports the ones its prepared tree
-reads, and the printer is given that list.
+reads, and the printer is given that list. A name the compiler makes for
+a module of its own, a dictionary's cache, is never a name the runtime
+exports (`runtime::exports`).
 
 ## Owned output and source origins
 
@@ -401,14 +424,16 @@ instead of inferring compiler output.
 
 | Responsibility | Code |
 | --- | --- |
-| Driver and syntax | `src/main.rs`, `src/jsx_syntax.rs` |
+| Driver and syntax | `src/main.rs`, `src/cargo.rs`, `src/jsx_syntax.rs`, `src/jsx_syntax/` |
 | Analysis and lowering | `src/lower/analysis.rs`, `src/lower/pipeline.rs`, `src/lower.rs`, `src/lower/` |
-| Linking and runtime | `src/link.rs`, `src/names.rs`, `src/runtime.rs`, `src/runtime/` |
-| JS tree and presentation | `src/js.rs`, `src/prepare.rs`, `src/to_oxc.rs`, `src/format.rs` |
+| Linking and runtime | `src/link.rs`, `src/reachability.rs`, `src/names.rs`, `src/runtime.rs`, `src/runtime/` |
+| JS tree and presentation | `src/js.rs`, `src/prepare.rs`, `src/prepare/`, `src/to_oxc.rs`, `src/format.rs`, `src/typescript.rs` |
 | Owned modules and source origins | `src/program.rs`, `src/lower/sources.rs` |
+| Libraries, settings and hooks | `src/library.rs`, `src/settings.rs`, `src/hooks.rs`, `src/paths.rs` |
 | Artifact planning, manifest and publication | `src/output.rs`, `src/manifest.rs`, `src/publish.rs` |
-| Build adapter and native host | `tooling/build.js`, `tooling/manifest.js`, `vite-plugin/index.js` |
+| Build adapter and native hosts | `tooling/build.js`, `tooling/manifest.js`, `tooling/cargo.js`, `vite-plugin/index.js`, `next-plugin/index.js` |
 | Browser host | `wasm/web/compile-rust.ts`, `tooling/publish.js`, `wasm/web/compiler-client.js`, `wasm/web/compiler-worker.js`, `wasm/web/rust/compiler.rs` |
+| Bindings: JS's builtins, the web's APIs, React, Node, Next.js, serde | `builtins/`, `webapi/`, `react/`, `node/`, `next/`, `serde/` |
 
 ## Where a change goes
 
@@ -435,8 +460,9 @@ reads as a person would write it, and run the checks
 
 ## Not yet
 
-The boundaries above hold today. These are targets the
-[roadmap](../ROADMAP.md) tracks:
+The boundaries above hold today. These are targets: the
+[roadmap](../ROADMAP.md) tracks the first four, and the third
+architecture audit found the rest.
 
 - **A numbered ES baseline and environment matrix** for running output
   directly, without the application's transformations (M1.1, M5.2).
@@ -444,5 +470,15 @@ The boundaries above hold today. These are targets the
   packaged releases beyond macOS arm64 (M4).
 - **Measured budgets** for phase time, peak memory, generated bytes, and
   edit-to-refresh latency on application-scale workloads (M5.1).
-- **Required checks:** the check workflow runs when started by hand, not on
-  each push or pull request.
+- **Checks before a commit lands:** the check runs on each push to `main`,
+  after it's pushed; nothing refuses a commit that fails it.
+- **One owner for each concept lowering from MIR meets:** `mir.rs` writes
+  places, the boxes of the `&mut`s it gives a call and their copies back,
+  writes to a `Formatter`, a static's cell and `Option`'s boxes itself,
+  where the modules above own them; and `mir_call_values` and
+  `mir_std_call` are held to their lengths until they're split.
+- **An iterator's method by `classify`:** `mir_iter_call` knows one by its
+  name, which recognition's own answers for it don't reach.
+- **Runtime helpers as symbols:** lowering asks for a helper and writes its
+  name, `$cmp`, apart; one written and not asked for is a JS error when it
+  runs, not a compile error.
