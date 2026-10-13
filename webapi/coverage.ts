@@ -119,7 +119,7 @@ function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string
       named = "";
     }
     if (/^pub mod /.test(l)) type = struct;
-    const impl = l.match(/^impl (\w+) \{$/)?.[1];
+    const impl = l.match(/^impl(?:<\w+>)? (\w+)(?:<\w+>)? \{$/)?.[1];
     if (impl) type = impl;
     if (l === "pub trait EventTargetExt: IsA<EventTarget> {") type = "EventTarget";
     if (l === "}") type = "";
