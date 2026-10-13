@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn json_value(&mut self, text: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let read = self.json_reader(ty, span)?;
         self.use_reader();
-        Ok(Expr::call(Expr::var("$fromJson"), vec![text, read]))
+        Ok(Expr::call(Expr::helper("$fromJson"), vec![text, read]))
     }
 
     /// `function orderDeserialize_deserialize(json) { .. }`: the derived
@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// The function that reads a `ty` as serde's impl for it does:
     /// `$json.u32`, `$json.vec($json.string)`, `orderDeserialize_deserialize`.
     pub(in crate::lower) fn json_reader(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        let reader = |name: &str| Expr::member(Expr::var("$json"), name);
+        let reader = |name: &str| Expr::member(Expr::helper("$json"), name);
         let unsupported = |this: &Self| this.unsupported(span, &format!("deserializing `{ty}`"));
         if let Some(read) = self.serde_evidence(ty, false) {
             return Ok(read);
@@ -212,7 +212,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An object's key, from inside its quotes: a string, a number or a `bool`.
     fn json_key_reader(&mut self, ty: Ty<'tcx>, span: Span) -> R<Expr> {
-        let key = |name: &str| Expr::member(Expr::member(Expr::var("$json"), "key"), name);
+        let key = |name: &str| Expr::member(Expr::member(Expr::helper("$json"), "key"), name);
         if self.is_lang_adt(ty, LangItem::String) {
             return Ok(key("string"));
         }
@@ -257,7 +257,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let shown = self.display_string(Expr::var(&e), error, span)?;
             let display = Expr::arrow(vec![e.into()], vec![StmtKind::Return(Some(shown)).at(js::Span::NONE)]);
             return Ok(Expr::call(
-                Expr::member(Expr::var("$json"), "tried"),
+                Expr::member(Expr::helper("$json"), "tried"),
                 vec![value, display],
             ));
         }

@@ -376,7 +376,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn json_text(&mut self, value: Expr, ty: Ty<'tcx>, pretty: bool, span: Span) -> R<Expr> {
         self.runtime.insert(Helper::ToJson);
         let write = self.json_writer(ty, span)?;
-        Ok(Expr::call(Expr::var("$toJson"), vec![value, write, Expr::bool(pretty)]))
+        Ok(Expr::call(
+            Expr::helper("$toJson"),
+            vec![value, write, Expr::bool(pretty)],
+        ))
     }
 
     /// The writer (`serialize`) or reader of a type parameter: a generic
@@ -484,7 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // Of a type parameter, a `Some` may be boxed (ADR 0051).
             let payload = if self.boxed_payload(inner) {
                 self.runtime.insert(Helper::SomeValue);
-                Expr::call(Expr::var("$someValue"), vec![value.clone()])
+                Expr::call(Expr::helper("$someValue"), vec![value.clone()])
             } else {
                 value.clone()
             };
@@ -715,7 +718,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     rust_name
                 );
                 body.push(
-                    StmtKind::Throw(Expr::call(Expr::var("$jsonError"), vec![Expr::str(message)])).at(js::Span::NONE),
+                    StmtKind::Throw(Expr::call(Expr::helper("$jsonError"), vec![Expr::str(message)]))
+                        .at(js::Span::NONE),
                 );
             } else {
                 let fields: Vec<(Expr, Ty<'tcx>)> = variant

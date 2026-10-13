@@ -45,7 +45,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     given.push(Expr::bool(true));
                 }
                 self.runtime.insert(Helper::Borrow);
-                Expr::call(Expr::var("$replaceWith"), given)
+                Expr::call(Expr::helper("$replaceWith"), given)
             }
             Std::CellReplace | Std::CellTake => {
                 let item = generic_args.type_at(0);
@@ -53,7 +53,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cell = match self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) {
                     true => {
                         self.runtime.insert(Helper::Borrow);
-                        Expr::call(Expr::var("$borrowMut"), vec![cell])
+                        Expr::call(Expr::helper("$borrowMut"), vec![cell])
                     }
                     false => cell,
                 };
@@ -62,7 +62,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => self.default_value(item, span)?,
                 };
                 self.runtime.insert(Helper::CellReplace);
-                Expr::call(Expr::var("$cellReplace"), vec![cell, next])
+                Expr::call(Expr::helper("$cellReplace"), vec![cell, next])
             }
             // A `&mut` to what it holds: the object itself, or for a number or
             // text the cell, the `{ value }` box a `&mut` to one is (ADR 0074).
@@ -72,11 +72,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             },
             Std::CellSwap if self.is_std_type(tys[0].peel_refs(), StdItem::RefCell) => {
                 self.runtime.insert(Helper::Borrow);
-                Expr::call(Expr::var("$refCellSwap"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$refCellSwap"), vec![arg(), arg()])
             }
             Std::CellSwap => {
                 self.runtime.insert(Helper::CellReplace);
-                Expr::call(Expr::var("$cellSwap"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$cellSwap"), vec![arg(), arg()])
             }
             // `c.value = f(c.value)`.
             Std::CellUpdate => {
@@ -252,7 +252,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::HashSet<&str>) {
     js::each_item_expr_mut(items, &mut |e| {
         if let js::ExprKind::Call(callee, args) = &mut e.kind
-            && matches!(&callee.kind, js::ExprKind::Var(f) if f == "$withBorrow" || f == "$withBorrowMut")
+            && matches!(callee.helper_name(), Some("$withBorrow" | "$withBorrowMut"))
             && let [key, _] = args.as_slice()
             && matches!(&key.kind, js::ExprKind::Var(v) if quiet.contains(v.as_str()))
         {

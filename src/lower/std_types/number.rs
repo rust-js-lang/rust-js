@@ -176,9 +176,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let width = Expr::int(num.bits().into());
         let signed = Expr::bool(num.signed());
         let bytes = Expr::int((num.bits() / 8).into());
-        let call = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+        let call = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
             this.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         let ops = matches!(
             op,
@@ -314,9 +314,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Num::I16 => Expr::bin(Op::BitAnd, x, Expr::int(0xffff)),
             _ => x,
         };
-        let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
             this.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         // An `f32`'s result is rounded to one, but for those that are exact
         // already (ADR 0122).
@@ -681,9 +681,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let (lo, hi) = (num.literal(lo), num.literal(hi as i128));
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
-        let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
             this.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         // A 128-bit one's width, where a helper takes it: 64 is the default.
         let width = |mut list: Vec<Expr>| {
@@ -1179,7 +1179,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // rounded twice, which can miss it (ADR 0122).
             (source, Num::F32) if source.big() => {
                 self.runtime.insert(Helper::BigToF32);
-                Ok(Expr::call(Expr::var("$bigToF32"), vec![v]))
+                Ok(Expr::call(Expr::helper("$bigToF32"), vec![v]))
             }
             // Up to 16 bits, an `f32` holds it exactly; a 32-bit one, an `f64`
             // does, rounded once.
@@ -1294,9 +1294,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Some(match known {
             Std::Duration(op) => {
                 let nanos = |n: i64| Expr::bigint(i128::from(n));
-                let helper = |cx: &mut Self, name: &str, args: Vec<Expr>| {
+                let helper = |cx: &mut Self, name: &'static str, args: Vec<Expr>| {
                     cx.runtime.insert(Helper::Duration);
-                    Expr::call(Expr::var(name), args)
+                    Expr::call(Expr::helper(name), args)
                 };
                 match op {
                     DurationOp::New => {
@@ -1354,7 +1354,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // already. A `&[T; N]` is the slice's.
                 let fresh = matches!(&slice.kind, js::ExprKind::Array(_))
                     || matches!(&slice.kind, js::ExprKind::Call(callee, _)
-                        if matches!(&callee.kind, js::ExprKind::Var(name) if name == "$slice"));
+                        if callee.helper_name() == Some("$slice"));
                 let slice = if slice.reads_same() {
                     slice
                 } else {
@@ -1386,7 +1386,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (lo, hi) = num.range();
                 self.runtime.insert(Helper::TryFromInt);
                 let tried = Expr::call(
-                    Expr::var("$tryFromInt"),
+                    Expr::helper("$tryFromInt"),
                     vec![arg(), num.literal(lo), num.literal(hi as i128)],
                 );
                 // A `NonZero`'s, an error of `0` (ADR 0177), its message as the
@@ -1395,7 +1395,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => {
                         self.runtime.insert(Helper::NonZeroOk);
                         Expr::call(
-                            Expr::var("$nonZeroOk"),
+                            Expr::helper("$nonZeroOk"),
                             vec![tried, Expr::str("number would be zero for non-zero type")],
                         )
                     }
@@ -1404,15 +1404,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::FromDigit => {
                 self.runtime.insert(Helper::FromDigit);
-                Expr::call(Expr::var("$fromDigit"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$fromDigit"), vec![arg(), arg()])
             }
             Std::FromU32 => {
                 self.runtime.insert(Helper::FromU32);
-                Expr::call(Expr::var("$fromU32"), vec![arg()])
+                Expr::call(Expr::helper("$fromU32"), vec![arg()])
             }
             Std::Cmp => {
                 self.runtime.insert(Helper::Cmp);
-                Expr::call(Expr::var("$cmp"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$cmp"), vec![arg(), arg()])
             }
             Std::MaxOf(max) => {
                 let num = Num::of(tys[0].peel_refs());

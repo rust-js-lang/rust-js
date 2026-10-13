@@ -68,7 +68,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => out.push(StmtKind::Assign(Expr::member(pin, "value"), value).at(js_span)),
                     false => {
                         self.runtime.insert(Helper::Assign);
-                        out.push(StmtKind::Expr(Expr::call(Expr::var("$assign"), vec![pin, value])).at(js_span));
+                        out.push(StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![pin, value])).at(js_span));
                     }
                 }
                 Expr::undefined()

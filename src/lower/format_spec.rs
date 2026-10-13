@@ -217,7 +217,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if num == Num::F32 {
                     args.push(Expr::bool(true));
                 }
-                let text = Expr::call(Expr::var("$lowerExp"), args);
+                let text = Expr::call(Expr::helper("$lowerExp"), args);
                 // `1.2E3`, but `inf` and `NaN` as they are.
                 if upper {
                     Expr::call(Expr::member(text, "replace"), vec![Expr::str("e"), Expr::str("E")])
@@ -230,7 +230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && num.is_some_and(Num::float) =>
             {
                 self.runtime.insert(Helper::ToFixed);
-                Expr::call(Expr::var("$toFixed"), vec![value, digits])
+                Expr::call(Expr::helper("$toFixed"), vec![value, digits])
             }
             // `{:.3}` of a string: its first three `char`s.
             Std::FmtDisplay if precision.is_some() && self.is_string_like(ty) => {
@@ -258,7 +258,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let text = if spec.plus && num.is_some() {
             self.runtime.insert(Helper::Plus);
-            Expr::call(Expr::var("$plus"), vec![text])
+            Expr::call(Expr::helper("$plus"), vec![text])
         } else {
             text
         };
@@ -279,7 +279,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Expr::call(Expr::member(text, "padStart"), vec![width, Expr::str("0")]));
             }
             self.runtime.insert(Helper::ZeroPad);
-            return Ok(Expr::call(Expr::var("$zeroPad"), vec![text, width]));
+            return Ok(Expr::call(Expr::helper("$zeroPad"), vec![text, width]));
         }
         let align = spec.align.unwrap_or(if num.is_some() { '>' } else { '<' });
         let fill = spec.fill.to_string();
@@ -297,7 +297,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if spec.fill != ' ' {
             args.push(Expr::str(fill));
         }
-        Ok(Expr::call(Expr::var("$pad"), args))
+        Ok(Expr::call(Expr::helper("$pad"), args))
     }
 }
 

@@ -57,9 +57,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if self.is_boxable(item) {
                         given.push(Expr::bool(true));
                     }
-                    Expr::call(Expr::var("$peekMutTop"), given)
+                    Expr::call(Expr::helper("$peekMutTop"), given)
                 }
-                _ => Expr::call(Expr::var("$peekMutPop"), vec![guard]),
+                _ => Expr::call(Expr::helper("$peekMutPop"), vec![guard]),
             });
         }
         let item = self

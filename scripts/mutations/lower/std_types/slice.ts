@@ -159,8 +159,8 @@ export const mutations: Mutation[] = [
     name: "array-windows-of-one",
     breaks: "`array_windows::<N>()` are of one",
     file: "src/lower/std_types/slice.rs",
-    find: "                Expr::call(Expr::var(\"$windows\"), vec![arg(), Expr::int(n as i128)])",
-    replace: "                Expr::call(Expr::var(\"$windows\"), vec![arg(), Expr::int(1)])",
+    find: "                Expr::call(Expr::helper(\"$windows\"), vec![arg(), Expr::int(n as i128)])",
+    replace: "                Expr::call(Expr::helper(\"$windows\"), vec![arg(), Expr::int(1)])",
     tests: ["test/corpus.test.ts","-t","slice_arrays"],
   },
   {

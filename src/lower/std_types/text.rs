@@ -219,10 +219,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         given: Vec<Expr>,
         out: &mut Vec<Stmt>,
     ) -> (Expr, Option<Expr>) {
-        let helper = |cx: &mut Self, helper: Helper, name: &str, mut list: Vec<Expr>| {
+        let helper = |cx: &mut Self, helper: Helper, name: &'static str, mut list: Vec<Expr>| {
             cx.runtime.insert(helper);
             list.insert(0, current.clone());
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         match edit {
             StringEdit::Clear => (Expr::str(""), None),
@@ -295,9 +295,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
         let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
-        let call = |cx: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+        let call = |cx: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
             cx.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         Ok(match op {
             TextOp::Is(regex) => method(Expr::regex(regex), "test", vec![arg()]),
@@ -320,7 +320,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::ToDigit | TextOp::IsDigit => {
                 self.runtime.insert(Helper::ToDigit);
-                let digit = Expr::call(Expr::var("$toDigit"), vec![arg(), arg()]);
+                let digit = Expr::call(Expr::helper("$toDigit"), vec![arg(), arg()]);
                 if op == TextOp::IsDigit {
                     Expr::bin(Op::Ne, digit, Expr::undefined())
                 } else {
@@ -345,7 +345,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::SplitBy => {
                 self.runtime.insert(Helper::SplitBy);
-                Expr::call(Expr::var("$splitBy"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$splitBy"), vec![arg(), arg()])
             }
             TextOp::ContainsBy => {
                 let chars = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]);
@@ -353,7 +353,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::Lines => {
                 self.runtime.insert(Helper::Lines);
-                Expr::call(Expr::var("$lines"), vec![arg()])
+                Expr::call(Expr::helper("$lines"), vec![arg()])
             }
             // `Array.from(new TextEncoder().encode(s))`: an array of `u8`s, as a
             // slice of them is.
@@ -487,7 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::ByteLen => {
                 self.runtime.insert(Helper::ByteLen);
-                Expr::call(Expr::var("$byteLen"), vec![arg()])
+                Expr::call(Expr::helper("$byteLen"), vec![arg()])
             }
             TextOp::FindBy(last) => call(self, Helper::FindBy, "$findBy", vec![arg(), arg(), Expr::bool(last)]),
             TextOp::StartsBy { end } => call(self, Helper::StartsBy, "$startsBy", vec![arg(), arg(), Expr::bool(end)]),
@@ -520,7 +520,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             TextOp::CharIndices => {
                 self.runtime.insert(Helper::CharIndices);
-                Expr::call(Expr::var("$charIndices"), vec![arg()])
+                Expr::call(Expr::helper("$charIndices"), vec![arg()])
             }
             TextOp::Slice
             | TextOp::StrSlice
@@ -546,13 +546,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(num) = Num::of(target) {
             if num == Num::F64 {
                 self.runtime.insert(Helper::ParseF64);
-                return Ok(Expr::call(Expr::var("$parseF64"), vec![text]));
+                return Ok(Expr::call(Expr::helper("$parseF64"), vec![text]));
             }
             // The digits' nearest `f32`, which through an `f64` alone can be
             // missed (ADR 0122).
             if num == Num::F32 {
                 self.runtime.insert(Helper::ParseF32);
-                return Ok(Expr::call(Expr::var("$parseF32"), vec![text]));
+                return Ok(Expr::call(Expr::helper("$parseF32"), vec![text]));
             }
             let (lo, hi) = num.range();
             // A 64-bit one is read as a BigInt, exactly (ADR 0086).
@@ -567,17 +567,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if crate::lower::recognition::is_non_zero_ty(target) {
                 self.runtime.insert(Helper::NonZeroOk);
                 let zero = Expr::str("number would be zero for non-zero type");
-                return Ok(Expr::call(Expr::var("$nonZeroOk"), vec![parsed, zero]));
+                return Ok(Expr::call(Expr::helper("$nonZeroOk"), vec![parsed, zero]));
             }
             return Ok(parsed);
         }
         if target.is_bool() {
             self.runtime.insert(Helper::ParseBool);
-            return Ok(Expr::call(Expr::var("$parseBool"), vec![text]));
+            return Ok(Expr::call(Expr::helper("$parseBool"), vec![text]));
         }
         if target.is_char() {
             self.runtime.insert(Helper::ParseChar);
-            return Ok(Expr::call(Expr::var("$parseChar"), vec![text]));
+            return Ok(Expr::call(Expr::helper("$parseChar"), vec![text]));
         }
         if self.is_lang_adt(target, LangItem::String) {
             let ok = Expr::object(vec![
@@ -624,7 +624,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::SliceRange);
             return Expr::call(
                 Expr::member(items, "push"),
-                vec![Expr::spread(Expr::call(Expr::var("$copyRange"), list))],
+                vec![Expr::spread(Expr::call(Expr::helper("$copyRange"), list))],
             );
         }
         if list.len() == 2 {
@@ -632,7 +632,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         list.extend(rest);
         self.runtime.insert(Helper::Splice);
-        Expr::call(Expr::var("$splice"), list)
+        Expr::call(Expr::helper("$splice"), list)
     }
 
     /// `items` in `range`, a `range_ty`, as `op` takes them, of their
@@ -745,7 +745,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if name == "replace" {
                     if !matches!(rest[2].kind, js::ExprKind::Num(n) if n == 1.0) {
                         self.runtime.insert(Helper::EmptyPattern);
-                        return Ok(Some(Expr::call(Expr::var("$replacen"), [vec![this], rest].concat())));
+                        return Ok(Some(Expr::call(Expr::helper("$replacen"), [vec![this], rest].concat())));
                     }
                     rest.truncate(2);
                 }
@@ -776,7 +776,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::StripCircumfix => {
                 self.runtime.insert(Helper::StripCircumfix);
-                Expr::call(Expr::var("$stripCircumfix"), vec![arg(), arg(), arg()])
+                Expr::call(Expr::helper("$stripCircumfix"), vec![arg(), arg(), arg()])
             }
             Std::Chars => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]),
             Std::StringNew => Expr::str(""),
@@ -787,15 +787,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if upper {
                     list.push(Expr::bool(true));
                 }
-                Expr::call(Expr::var("$asciiCase"), list)
+                Expr::call(Expr::helper("$asciiCase"), list)
             }
             Std::AsciiEq => {
                 self.runtime.insert(Helper::AsciiCase);
                 let (a, b) = (arg(), arg());
                 Expr::bin(
                     Op::Eq,
-                    Expr::call(Expr::var("$asciiCase"), vec![a]),
-                    Expr::call(Expr::var("$asciiCase"), vec![b]),
+                    Expr::call(Expr::helper("$asciiCase"), vec![a]),
+                    Expr::call(Expr::helper("$asciiCase"), vec![b]),
                 )
             }
             Std::ToString => {

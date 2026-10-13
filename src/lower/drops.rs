@@ -435,21 +435,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     args.push(drop);
                 }
-                out.push(StmtKind::Expr(Expr::call(Expr::var("$rcDrop"), args)).at(js_span));
+                out.push(StmtKind::Expr(Expr::call(Expr::helper("$rcDrop"), args)).at(js_span));
             }
             // A heap's `PeekMut` (ADR 0333).
             ty::Adt(..) if self.recognition().peek_mut_of(ty).is_some() => {
                 self.runtime.insert(Helper::HeapOps);
-                out.push(StmtKind::Expr(Expr::call(Expr::var("$peekMutDrop"), vec![value])).at(js_span));
+                out.push(StmtKind::Expr(Expr::call(Expr::helper("$peekMutDrop"), vec![value])).at(js_span));
             }
             // A guard: `$unborrow(cell)` (ADR 0328).
             ty::Adt(..) if self.is_guard(ty) => {
                 self.runtime.insert(Helper::Borrow);
-                out.push(StmtKind::Expr(Expr::call(Expr::var("$unborrow"), vec![value])).at(js_span));
+                out.push(StmtKind::Expr(Expr::call(Expr::helper("$unborrow"), vec![value])).at(js_span));
             }
             ty::Adt(..) if self.weak_of(ty).is_some() => {
                 self.runtime.insert(Helper::Rc);
-                out.push(StmtKind::Expr(Expr::call(Expr::var("$weakDrop"), vec![value])).at(js_span));
+                out.push(StmtKind::Expr(Expr::call(Expr::helper("$weakDrop"), vec![value])).at(js_span));
             }
             // What a closure holds: the variables it took, where it was made.
             // Only there, or in a closure made inside it, can JS see them.

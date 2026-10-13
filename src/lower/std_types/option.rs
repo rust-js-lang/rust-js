@@ -73,7 +73,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.typed_debug(&mut list, error, span)?;
                 }
                 self.runtime.insert(Helper::UnwrapOk);
-                Expr::call(Expr::var("$unwrapOk"), list)
+                Expr::call(Expr::helper("$unwrapOk"), list)
             }
             Std::UnwrapErr => {
                 let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
@@ -81,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     self.typed_debug(&mut list, value, span)?;
                 }
                 self.runtime.insert(Helper::UnwrapErr);
-                Expr::call(Expr::var("$unwrapErr"), list)
+                Expr::call(Expr::helper("$unwrapErr"), list)
             }
             // `r.TAG === "Ok" ? r._0 : d`, with `r` computed once, and `d` too,
             // before the test, as Rust does.
@@ -128,7 +128,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::Unwrap);
                 // `expect` has a message too.
                 let list = (0..tys.len()).map(|_| arg()).collect();
-                let unwrapped = Expr::call(Expr::var("$unwrap"), list);
+                let unwrapped = Expr::call(Expr::helper("$unwrap"), list);
                 if self.boxed_payload(generic_args.type_at(0)) {
                     self.some_value(unwrapped)
                 } else {
@@ -359,7 +359,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Some` of `items[index]`, or `None` if there's none (ADR 0051).
     pub(in crate::lower) fn some_at(&mut self, items: Expr, index: Expr) -> Expr {
         self.runtime.insert(Helper::SomeAt);
-        Expr::call(Expr::var("$someAt"), vec![items, index])
+        Expr::call(Expr::helper("$someAt"), vec![items, index])
     }
 
     /// `Some(value)` of what could look like `None` (ADR 0051): `$some(value)`,
@@ -374,7 +374,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return value;
         }
         self.runtime.insert(Helper::Some);
-        Expr::call(Expr::var("$some"), vec![value])
+        Expr::call(Expr::helper("$some"), vec![value])
     }
 
     /// An `Option<T>`'s items, as its `iter()` gives them (ADR 0128):
@@ -434,19 +434,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What's in an `Option` of a generic `T` (ADR 0051): `$someValue(option)`.
     pub(in crate::lower) fn some_value(&mut self, option: Expr) -> Expr {
         self.runtime.insert(Helper::SomeValue);
-        Expr::call(Expr::var("$someValue"), vec![option])
+        Expr::call(Expr::helper("$someValue"), vec![option])
     }
 }
 
 /// What `$someValue(option)` reads, of an `Option` of a generic `T`.
 pub(in crate::lower) fn some_value_of(e: &Expr) -> Option<&Expr> {
     match &e.kind {
-        js::ExprKind::Call(callee, args) if matches!(&callee.kind, js::ExprKind::Var(f) if f == "$someValue") => {
-            match args.as_slice() {
-                [option] => Some(option),
-                _ => None,
-            }
-        }
+        js::ExprKind::Call(callee, args) if callee.helper_name() == Some("$someValue") => match args.as_slice() {
+            [option] => Some(option),
+            _ => None,
+        },
         _ => None,
     }
 }

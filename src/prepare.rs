@@ -134,7 +134,7 @@ fn same_place(a: &js::Expr, b: &js::Expr) -> bool {
         }
         // `$index(v, i).hits`: an item, checked the same each time (ADR 0056).
         (ExprKind::Call(f, xs), ExprKind::Call(g, ys)) => {
-            matches!((&f.kind, &g.kind), (ExprKind::Var(f), ExprKind::Var(g)) if f == g && crate::runtime::names_a_place(f))
+            matches!((f.helper_name(), g.helper_name()), (Some(f), Some(g)) if f == g && crate::runtime::names_a_place(f))
                 && xs.len() == ys.len()
                 && xs.iter().zip(ys).all(|(x, y)| {
                     same_place(x, y) || matches!((&x.kind, &y.kind), (ExprKind::Num(x), ExprKind::Num(y)) if x == y)
@@ -478,7 +478,7 @@ fn tried(e: &Expr) -> Option<&Expr> {
     let ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
-    let (ExprKind::Var(helper), [thunk]) = (&callee.kind, args.as_slice()) else {
+    let (Some(helper), [thunk]) = (callee.helper_name(), args.as_slice()) else {
         return None;
     };
     let ExprKind::Arrow(params, thunk) = &thunk.kind else {
@@ -872,7 +872,6 @@ fn expr(e: &mut Expr) {
         | ExprKind::GivenUndefined
         | ExprKind::Null
         | ExprKind::Var(_)
-        | ExprKind::Helper(_)
         | ExprKind::Symbol(_)
         | ExprKind::FunctionHole(_)
         | ExprKind::Import(_)

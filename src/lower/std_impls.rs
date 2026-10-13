@@ -136,7 +136,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A channel's sender: one more, of the same queue (ADR 0142).
         if self.recognition().channel_end(ty) == Some(super::recognition::ChannelEnd::Sender) {
             self.runtime.insert(Helper::Channel);
-            return Ok(Expr::call(Expr::var("$cloneSender"), vec![place]));
+            return Ok(Expr::call(Expr::helper("$cloneSender"), vec![place]));
         }
         // A counted `Rc`, or a `Weak`: one more, of the same value (ADR 0320).
         if self.counted_rc(ty).is_some() || self.weak_of(ty).is_some() {
@@ -249,7 +249,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 body.push(StmtKind::Return(Some(value)).at(js::Span::NONE));
                 self.runtime.insert(Helper::Borrow);
                 let value = Expr::call(
-                    Expr::var("$withBorrow"),
+                    Expr::helper("$withBorrow"),
                     vec![place, Expr::arrow(vec!["value".into()], body)],
                 );
                 return Ok(Expr::object(vec![Prop::Field("value".into(), value)]));
@@ -258,7 +258,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let cell = match std(StdItem::RefCell) {
                     true => {
                         self.runtime.insert(Helper::Borrow);
-                        Expr::call(Expr::var("$borrow"), vec![place])
+                        Expr::call(Expr::helper("$borrow"), vec![place])
                     }
                     false => place,
                 };
@@ -754,7 +754,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if !self.custom_eq(ty) {
             self.runtime.insert(Helper::Eq);
-            return Ok(Expr::call(Expr::var("$eq"), vec![a, b]));
+            return Ok(Expr::call(Expr::helper("$eq"), vec![a, b]));
         }
         // Each is read more than once below.
         let a = if a.reads_same() { a } else { self.spill("left", a, out) };
@@ -777,9 +777,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let eq = self.eq_value(Expr::var("x"), Expr::var("y"), args.type_at(0), span, &mut body)?;
                 body.push(StmtKind::Return(Some(eq)).at(js::Span::NONE));
                 self.runtime.insert(Helper::Borrow);
-                let inner = Expr::call(Expr::var("$withBorrow"), vec![b, Expr::arrow(vec!["y".into()], body)]);
+                let inner = Expr::call(
+                    Expr::helper("$withBorrow"),
+                    vec![b, Expr::arrow(vec!["y".into()], body)],
+                );
                 Ok(Expr::call(
-                    Expr::var("$withBorrow"),
+                    Expr::helper("$withBorrow"),
                     vec![
                         a,
                         Expr::arrow(vec!["x".into()], vec![StmtKind::Return(Some(inner)).at(js::Span::NONE)]),
@@ -791,8 +794,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => {
                         self.runtime.insert(Helper::Borrow);
                         (
-                            Expr::call(Expr::var("$borrow"), vec![a]),
-                            Expr::call(Expr::var("$borrow"), vec![b]),
+                            Expr::call(Expr::helper("$borrow"), vec![a]),
+                            Expr::call(Expr::helper("$borrow"), vec![b]),
                         )
                     }
                     false => (a, b),
@@ -849,7 +852,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // `{ TAG: "Line", _0: .. }` (ADR 0033): a variant with a custom
                 // part compares its fields, and `$eq` the rest.
                 self.runtime.insert(Helper::Eq);
-                let mut value = Expr::call(Expr::var("$eq"), vec![a.clone(), b.clone()]);
+                let mut value = Expr::call(Expr::helper("$eq"), vec![a.clone(), b.clone()]);
                 for variant in adt.variants().iter().rev() {
                     let fields = self.variant_fields(variant, args);
                     if !fields.iter().any(|&(_, t)| self.custom_eq(t)) {
@@ -928,10 +931,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let same = self.eq_value(Expr::var("a"), Expr::var("b"), ty, span, &mut body)?;
         if body.is_empty()
             && let js::ExprKind::Call(callee, _) = &same.kind
-            && let js::ExprKind::Var(name) = &callee.kind
-            && name == "$eq"
+            && callee.helper_name() == Some("$eq")
         {
-            return Ok(Expr::var("$eq"));
+            return Ok(Expr::helper("$eq"));
         }
         body.push(StmtKind::Return(Some(same)).at(js::Span::NONE));
         Ok(Expr::arrow(vec!["a".into(), "b".into()], body))

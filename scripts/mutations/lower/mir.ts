@@ -2264,7 +2264,7 @@ export const mutations: Mutation[] = [
     name: "mir-writer-error-ignored",
     breaks: "MIR's writer's `Err(fmt::Error)` is nothing, the writer going on",
     file: "src/lower/mir.rs",
-    find: "let thrown = Expr::call(Expr::var(\"$fmtError\"), Vec::new());",
+    find: "let thrown = Expr::call(Expr::helper(\"$fmtError\"), Vec::new());",
     replace: "let thrown = Expr::undefined();",
     tests: ["test/corpus.test.ts","-t","fmt_error"],
   },

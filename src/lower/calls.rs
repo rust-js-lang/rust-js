@@ -51,11 +51,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::Try);
                 let span = value.span;
                 let thunk = Expr::arrow(Vec::new(), vec![StmtKind::Return(Some(value)).at(span)]);
-                Expr::call(Expr::var("$try"), vec![thunk])
+                Expr::call(Expr::helper("$try"), vec![thunk])
             }
             Catching::PromiseResult => {
                 self.runtime.insert(Helper::Settle);
-                Expr::call(Expr::var("$settle"), vec![value])
+                Expr::call(Expr::helper("$settle"), vec![value])
             }
             Catching::Direct => value,
         }

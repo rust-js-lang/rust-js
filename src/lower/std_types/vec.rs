@@ -58,11 +58,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let clone = self.clone_arg(item, span)?;
                 self.runtime.insert(Helper::JoinWith);
-                Expr::call(Expr::var("$joinWith"), vec![arg(), arg(), Expr::bool(spread), clone])
+                Expr::call(Expr::helper("$joinWith"), vec![arg(), arg(), Expr::bool(spread), clone])
             }
             Std::Method("pop") if boxed => {
                 self.runtime.insert(Helper::Pop);
-                Expr::call(Expr::var("$pop"), vec![arg()])
+                Expr::call(Expr::helper("$pop"), vec![arg()])
             }
             Std::First if boxed => {
                 let items = arg();
@@ -117,7 +117,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Std::Append => {
                 self.runtime.insert(Helper::Append);
-                Expr::call(Expr::var("$append"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$append"), vec![arg(), arg()])
             }
             Std::Push => {
                 let (v, x) = (arg(), arg());
@@ -131,7 +131,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Len => Expr::member(arg(), "length"),
             Std::Index => {
                 self.runtime.insert(Helper::Index);
-                Expr::call(Expr::var("$index"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$index"), vec![arg(), arg()])
             }
             Std::Clear => {
                 out.push(StmtKind::Assign(Expr::member(arg(), "length"), Expr::num(0)).at(js_span));
@@ -140,7 +140,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Retain => {
                 self.runtime.insert(Helper::Retain);
                 let (v, keep) = (arg(), arg());
-                Expr::call(Expr::var("$retain"), vec![v, keep])
+                Expr::call(Expr::helper("$retain"), vec![v, keep])
             }
             _ => return Ok(None),
         }))

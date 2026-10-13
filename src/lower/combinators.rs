@@ -200,7 +200,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             body.push(StmtKind::Return(Some(copy)).at(js::Span::NONE));
             self.runtime.insert(Helper::Repeat);
             return Ok(Expr::call(
-                Expr::var("$repeat"),
+                Expr::helper("$repeat"),
                 vec![item, n, Expr::arrow(vec![name.into()], body)],
             ));
         }
@@ -373,9 +373,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 value
             }
         };
-        let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
             this.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         Ok(match comb {
             Comb::Then | Comb::ThenSome => unreachable!("handled above"),
@@ -1103,32 +1103,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if super::iterators::is_stepped_items(&items) && super::iterators::is_stepped_items(&other) {
                     self.runtime.insert(Helper::Zip);
                 }
-                Expr::call(Expr::var("$lazyZip"), vec![items, other])
+                Expr::call(Expr::helper("$lazyZip"), vec![items, other])
             }
             IterComb::Zip => {
                 self.runtime.insert(Helper::Zip);
-                Expr::call(Expr::var("$zip"), vec![items, next()])
+                Expr::call(Expr::helper("$zip"), vec![items, next()])
             }
             IterComb::Chain if lazy => {
                 self.runtime.insert(Helper::LazyChain);
-                Expr::call(Expr::var("$lazyChain"), vec![items, next()])
+                Expr::call(Expr::helper("$lazyChain"), vec![items, next()])
             }
             IterComb::Chain => method(items, "concat", vec![next()]),
             IterComb::TakeWhile if lazy => {
                 self.runtime.insert(Helper::LazyTakeWhile);
-                Expr::call(Expr::var("$lazyTakeWhile"), vec![items, next()])
+                Expr::call(Expr::helper("$lazyTakeWhile"), vec![items, next()])
             }
             IterComb::TakeWhile => {
                 self.runtime.insert(Helper::TakeWhile);
-                Expr::call(Expr::var("$takeWhile"), vec![items, next()])
+                Expr::call(Expr::helper("$takeWhile"), vec![items, next()])
             }
             IterComb::SkipWhile if lazy => {
                 self.runtime.insert(Helper::LazySkipWhile);
-                Expr::call(Expr::var("$lazySkipWhile"), vec![items, next()])
+                Expr::call(Expr::helper("$lazySkipWhile"), vec![items, next()])
             }
             IterComb::SkipWhile => {
                 self.runtime.insert(Helper::SkipWhile);
-                Expr::call(Expr::var("$skipWhile"), vec![items, next()])
+                Expr::call(Expr::helper("$skipWhile"), vec![items, next()])
             }
             IterComb::Scan => {
                 let items = if lazy {
@@ -1138,7 +1138,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let (init, f) = (next(), next());
                 self.runtime.insert(Helper::Scan);
-                Expr::call(Expr::var("$scan"), vec![items, init, f])
+                Expr::call(Expr::helper("$scan"), vec![items, init, f])
             }
             IterComb::StepBy => {
                 let n = next();
@@ -1238,7 +1238,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     items
                 };
                 self.runtime.insert(Helper::Partition);
-                Expr::call(Expr::var("$partition"), vec![items, next()])
+                Expr::call(Expr::helper("$partition"), vec![items, next()])
             }
             IterComb::Unzip => {
                 let into = generic_args.types().skip(3).all(|into| self.is_vec_like(into));
@@ -1251,7 +1251,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     items
                 };
                 self.runtime.insert(Helper::Unzip);
-                Expr::call(Expr::var("$unzip"), vec![items])
+                Expr::call(Expr::helper("$unzip"), vec![items])
             }
         })
     }

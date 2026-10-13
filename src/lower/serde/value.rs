@@ -46,18 +46,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ]));
                 }
                 let writer = self.json_writer(ty, span)?;
-                Ok(Expr::call(Expr::var("$toJsonValue"), vec![value, writer]))
+                Ok(Expr::call(Expr::helper("$toJsonValue"), vec![value, writer]))
             }
             JsonCall::FromValue(ty) => {
                 let value = values.remove(0);
                 let reader = self.json_reader(ty, span)?;
                 self.use_value();
                 self.runtime.insert(Helper::FromJson);
-                Ok(Expr::call(Expr::var("$fromJsonValue"), vec![value, reader]))
+                Ok(Expr::call(Expr::helper("$fromJsonValue"), vec![value, reader]))
             }
             JsonCall::Index => {
                 self.use_value();
-                Ok(Expr::call(Expr::var("$jsonIndex"), values))
+                Ok(Expr::call(Expr::helper("$jsonIndex"), values))
             }
             JsonCall::Equal {
                 other,
@@ -82,7 +82,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Json::Value => self.json_value_from(x, from, span)?,
                     Json::Number if Num::of(from.peel_refs()).is_some_and(|n| !n.float()) => {
                         self.use_value();
-                        Expr::call(Expr::var("$jsonInt"), vec![x])
+                        Expr::call(Expr::helper("$jsonInt"), vec![x])
                     }
                     _ => return Err(self.unsupported(span, &format!("`{to}::from` of `{from}`"))),
                 })
@@ -125,8 +125,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let json = self.json_type(ty)?;
         self.use_value();
         Some(match json {
-            Json::Value => Expr::call(Expr::var("$jsonValueText"), vec![value, Expr::bool(pretty)]),
-            Json::Number => Expr::call(Expr::var("$jsonNumberText"), vec![value]),
+            Json::Value => Expr::call(Expr::helper("$jsonValueText"), vec![value, Expr::bool(pretty)]),
+            Json::Number => Expr::call(Expr::helper("$jsonNumberText"), vec![value]),
             Json::Map => return None,
         })
     }
@@ -138,9 +138,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.use_value();
         Some(match json {
             // Pretty as `{:#?}` asks (ADR 0137).
-            Json::Value if matches!(pretty, Pretty::Plain) => Expr::call(Expr::var("$debugJsonValue"), vec![value]),
-            Json::Value => Expr::call(Expr::var("$debugJsonValue"), vec![value, pretty.alternate()]),
-            Json::Number => Expr::call(Expr::var("$debugJsonNumber"), vec![value]),
+            Json::Value if matches!(pretty, Pretty::Plain) => Expr::call(Expr::helper("$debugJsonValue"), vec![value]),
+            Json::Value => Expr::call(Expr::helper("$debugJsonValue"), vec![value, pretty.alternate()]),
+            Json::Number => Expr::call(Expr::helper("$debugJsonNumber"), vec![value]),
             Json::Map => return None,
         })
     }
@@ -150,7 +150,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.use_value();
         // `Number::from_f64(x)`: `None` unless it's finite.
         match method {
-            JsonMethod::NumberFromF64 => return Ok(Expr::call(Expr::var("$jsonNumberOfF64"), values)),
+            JsonMethod::NumberFromF64 => return Ok(Expr::call(Expr::helper("$jsonNumberOfF64"), values)),
             JsonMethod::Unsupported { owner, name } => {
                 return Err(self.unsupported(span, &format!("`{owner}::{name}`")));
             }
@@ -207,8 +207,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(match self.recognition().json_conversion(from) {
             Some(JsonConversion::Tag(tag)) => variant(tag, value),
             Some(JsonConversion::Null) => Expr::str("Null"),
-            Some(JsonConversion::Float) => Expr::call(Expr::var("$jsonFloat"), vec![value]),
-            Some(JsonConversion::Integer) => variant("Number", Expr::call(Expr::var("$jsonInt"), vec![value])),
+            Some(JsonConversion::Float) => Expr::call(Expr::helper("$jsonFloat"), vec![value]),
+            Some(JsonConversion::Integer) => variant("Number", Expr::call(Expr::helper("$jsonInt"), vec![value])),
             Some(JsonConversion::Same) => value,
             Some(JsonConversion::Vector(item)) => {
                 let arrow = convert(self, item)?;
@@ -216,7 +216,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             Some(JsonConversion::Option(item)) => {
                 let arrow = convert(self, item)?;
-                Expr::call(Expr::var("$jsonOption"), vec![value, arrow])
+                Expr::call(Expr::helper("$jsonOption"), vec![value, arrow])
             }
             None => return Err(self.unsupported(span, &format!("`Value::from` of `{from}`"))),
         })
@@ -238,7 +238,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .json_comparison(other_ty)
             .ok_or_else(|| self.unsupported(span, &format!("`==` of a `Value` and a `{other_ty}`")))?;
         Ok(Expr::call(
-            Expr::var("$jsonValueEq"),
+            Expr::helper("$jsonValueEq"),
             vec![value, other, Expr::str(kind)],
         ))
     }

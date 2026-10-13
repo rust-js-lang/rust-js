@@ -178,7 +178,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (text, caught) = (self.fresh("text"), self.fresh("error"));
             append_written(&Expr::var(&text), value, true, js_span, &mut body);
             let failed = Expr::call(
-                Expr::var("$fmtPrintFailed"),
+                Expr::helper("$fmtPrintFailed"),
                 vec![Expr::var(&caught), Expr::var(&text), Expr::bool(error)],
             );
             out.push(StmtKind::Let(text.clone(), Some(Expr::str(""))).at(js_span));
@@ -194,7 +194,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         body.push(StmtKind::Return(Some(value)).at(js_span));
         Expr::call(
-            Expr::var("$fmtOrPanic"),
+            Expr::helper("$fmtOrPanic"),
             vec![Expr::arrow(Vec::new(), body), Expr::str(message)],
         )
     }

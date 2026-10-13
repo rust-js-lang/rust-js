@@ -209,11 +209,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Some(match (std_method, range) {
                 (Some(IterMethod::Rev), Some(RangeKind::Exclusive)) => {
                     self.runtime.insert(Helper::RangeNextBack);
-                    self.stepped_by(receiver, Expr::var("$rangeNextBack"))
+                    self.stepped_by(receiver, Expr::helper("$rangeNextBack"))
                 }
                 (Some(IterMethod::Rev), Some(RangeKind::Inclusive)) => {
                     self.runtime.insert(Helper::RangeInclusiveNextBack);
-                    let next_back = Expr::var("$rangeInclusiveNextBack");
+                    let next_back = Expr::helper("$rangeInclusiveNextBack");
                     self.stepped_by(receiver, next_back)
                 }
                 (_, Some(_)) => {
@@ -541,15 +541,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.range_kind(ty) {
             Some(RangeKind::Exclusive) => {
                 self.runtime.insert(Helper::RangeNext);
-                Ok(self.stepped_by(value, Expr::var("$rangeNext")))
+                Ok(self.stepped_by(value, Expr::helper("$rangeNext")))
             }
             Some(RangeKind::From) => {
                 self.runtime.insert(Helper::RangeFromNext);
-                Ok(self.stepped_by(value, Expr::var("$rangeFromNext")))
+                Ok(self.stepped_by(value, Expr::helper("$rangeFromNext")))
             }
             Some(RangeKind::Inclusive) => {
                 self.runtime.insert(Helper::RangeInclusiveNext);
-                Ok(self.stepped_by(value, Expr::var("$rangeInclusiveNext")))
+                Ok(self.stepped_by(value, Expr::helper("$rangeInclusiveNext")))
             }
             Some(_) => Err(self.unsupported(span, "iterating this range, from its MIR")),
             None if self.is_user_iterator(ty) => {
@@ -692,7 +692,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,
             js::ExprKind::Var(_) if own => f,
-            js::ExprKind::Var(name) if name == "$f64Max" || name == "$f64Min" => f,
+            _ if matches!(f.helper_name(), Some("$f64Max" | "$f64Min")) => f,
             _ => {
                 let (a, b) = (self.fresh("a"), self.fresh("b"));
                 let call = Expr::call(f, vec![Expr::var(&a), Expr::var(&b)]);
@@ -704,9 +704,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn helper(&mut self, helper: Helper, name: &str, args: Vec<Expr>) -> Expr {
+    pub(super) fn helper(&mut self, helper: Helper, name: &'static str, args: Vec<Expr>) -> Expr {
         self.runtime.insert(helper);
-        Expr::call(Expr::var(name), args)
+        Expr::call(Expr::helper(name), args)
     }
 }
 

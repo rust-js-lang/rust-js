@@ -595,8 +595,8 @@ export const mutations: Mutation[] = [
     name: "mut-string-writer-one-level",
     breaks: "a `&mut String` taken by value as a writer is written as the `String` itself, and its text is lost",
     file: "src/lower/traits.rs",
-    find: "return Ok(Expr::var(\"$mutStringWriter\"));",
-    replace: "return Ok(Expr::var(\"$stringWriter\"));",
+    find: "return Ok(Expr::helper(\"$mutStringWriter\"));",
+    replace: "return Ok(Expr::helper(\"$stringWriter\"));",
     tests: ["test/corpus.test.ts", "-t", "generic_writers"],
   },
   {

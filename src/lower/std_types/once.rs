@@ -65,20 +65,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // (ADR 0051), and std's panic of an init that inits it again.
             OnceOp::Set => {
                 self.runtime.insert(Helper::OnceSet);
-                Expr::call(Expr::var("$onceSet"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$onceSet"), vec![arg(), arg()])
             }
             // A `OnceLock`'s that sets it deadlocks in Rust: rust-js's error.
             OnceOp::GetOrInit if self.recognition().is_lock_cell(tys[0].peel_refs()) => {
                 self.runtime.insert(Helper::GetOrInitLock);
-                Expr::call(Expr::var("$getOrInitLock"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$getOrInitLock"), vec![arg(), arg()])
             }
             OnceOp::GetOrInit => {
                 self.runtime.insert(Helper::GetOrInit);
-                Expr::call(Expr::var("$getOrInit"), vec![arg(), arg()])
+                Expr::call(Expr::helper("$getOrInit"), vec![arg(), arg()])
             }
             OnceOp::Take => {
                 self.runtime.insert(Helper::CellReplace);
-                Expr::call(Expr::var("$cellReplace"), vec![arg(), Expr::undefined()])
+                Expr::call(Expr::helper("$cellReplace"), vec![arg(), Expr::undefined()])
             }
         }))
     }

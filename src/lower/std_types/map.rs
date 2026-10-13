@@ -127,10 +127,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let compare = self.cmp_fn(args.type_at(0), false, span)?;
         Ok(if self.is_set(ty) {
             self.runtime.insert(Helper::SortedKeys);
-            Expr::call(Expr::var("$sortedKeys"), vec![map, compare])
+            Expr::call(Expr::helper("$sortedKeys"), vec![map, compare])
         } else {
             self.runtime.insert(Helper::SortedEntries);
-            Expr::call(Expr::var("$sortedEntries"), vec![map, compare])
+            Expr::call(Expr::helper("$sortedEntries"), vec![map, compare])
         })
     }
 
@@ -174,9 +174,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let method = |object: Expr, name: &str, list: Vec<Expr>| Expr::call(Expr::member(object, name), list);
-        let helper = |this: &mut Self, helper: Helper, name: &str, list: Vec<Expr>| {
+        let helper = |this: &mut Self, helper: Helper, name: &'static str, list: Vec<Expr>| {
             this.runtime.insert(helper);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         // The map or set a method of ADR 0325's is of, its type's arguments, and
         // a B-tree's keys' `cmp` where the method orders them.
@@ -200,9 +200,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         let mut values = values.into_iter();
         let mut arg = || values.next().expect("rustc checked the arguments");
-        let map_ops = |cx: &mut Self, name: &str, list: Vec<Expr>| {
+        let map_ops = |cx: &mut Self, name: &'static str, list: Vec<Expr>| {
             cx.runtime.insert(Helper::MapOps);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         Ok(match op {
             MapOp::Clear => method(arg(), "clear", Vec::new()),
@@ -410,7 +410,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && matches!(receiver.peel_refs().kind(), ty::Adt(_, map) if map.types().nth(1).is_some_and(|value| self.is_boxable(value)));
         self.runtime.insert(Helper::ExtractIf);
         Ok(Expr::call(
-            Expr::var("$mapExtractIf"),
+            Expr::helper("$mapExtractIf"),
             vec![m, f, entries, Expr::bool(handles), Expr::bool(set)],
         ))
     }
@@ -454,7 +454,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         };
         self.runtime.insert(Helper::MapOps);
         let range = Expr::call(
-            Expr::var("$treeRange"),
+            Expr::helper("$treeRange"),
             vec![
                 m.clone(),
                 cmp,
@@ -471,7 +471,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(range);
         }
         self.runtime.insert(Helper::MutEntries);
-        Ok(Expr::call(Expr::var("$mutEntries"), vec![m, range]))
+        Ok(Expr::call(Expr::helper("$mutEntries"), vec![m, range]))
     }
 
     /// Eligibility for JS Map/Set equality. A string-shaped enum alone is

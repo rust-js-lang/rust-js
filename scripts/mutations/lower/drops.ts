@@ -166,7 +166,7 @@ export const mutations: Mutation[] = [
     name: "guard-drop-unrun",
     breaks: "a guard dropped leaves its cell borrowed",
     file: "src/lower/drops.rs",
-    find: "                out.push(StmtKind::Expr(Expr::call(Expr::var(\"$unborrow\"), vec![value])).at(js_span));\n",
+    find: "                out.push(StmtKind::Expr(Expr::call(Expr::helper(\"$unborrow\"), vec![value])).at(js_span));\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "refcell_borrows"],
   },

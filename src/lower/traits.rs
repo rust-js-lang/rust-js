@@ -1076,12 +1076,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 |ty: Ty<'tcx>| self.is_lang_adt(ty, LangItem::String) || self.recognition().is_formatter_type(ty);
             if text(ty) {
                 self.runtime.insert(Helper::StringWriter);
-                return Ok(Expr::var("$stringWriter"));
+                return Ok(Expr::helper("$stringWriter"));
             }
             if let ty::Ref(_, inner, Mutability::Mut) = *ty.kind() {
                 if text(inner) {
                     self.runtime.insert(Helper::StringWriter);
-                    return Ok(Expr::var("$mutStringWriter"));
+                    return Ok(Expr::helper("$mutStringWriter"));
                 }
                 if self.is_object(inner) {
                     return self.dictionary(ty::TraitRef::new(self.tcx, tr.def_id, [inner]), span);
@@ -1812,7 +1812,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if self.is_string_like(from) {
             self.runtime.insert(Helper::StringError);
-            return Ok(Some(Expr::call(Expr::var("$stringError"), Vec::new())));
+            return Ok(Some(Expr::call(Expr::helper("$stringError"), Vec::new())));
         }
         // One of std's parse errors, which is its message (ADR 0063).
         if self.is_parse_error(from)
@@ -1821,14 +1821,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::ParseErrorDyn);
             let name = self.tcx.item_name(adt.did());
             return Ok(Some(Expr::call(
-                Expr::var("$parseErrorDyn"),
+                Expr::helper("$parseErrorDyn"),
                 vec![Expr::str(name.as_str())],
             )));
         }
         // serde_json's, shown as serde_json shows it.
         if self.is_json_error(from) {
             self.runtime.insert(Helper::JsonErrorDyn);
-            return Ok(Some(Expr::call(Expr::var("$jsonErrorDyn"), Vec::new())));
+            return Ok(Some(Expr::call(Expr::helper("$jsonErrorDyn"), Vec::new())));
         }
         let error = std_item(self.tcx, StdItem::Error);
         let tr = ty::TraitRef::new(self.tcx, error, [from]);
@@ -2317,7 +2317,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             );
             body.push(
                 StmtKind::Return(Some(Expr::call(
-                    Expr::var("$traitImpl"),
+                    Expr::helper("$traitImpl"),
                     vec![Expr::var(cache), keys, make],
                 )))
                 .at(js::Span::NONE),

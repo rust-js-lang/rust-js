@@ -78,10 +78,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.push(Expr::bool(true));
             }
             self.runtime.insert(Helper::CollectOptions);
-            Expr::call(Expr::var("$collectOptions"), list)
+            Expr::call(Expr::helper("$collectOptions"), list)
         } else {
             self.runtime.insert(Helper::CollectResults);
-            Expr::call(Expr::var("$collectResults"), vec![items])
+            Expr::call(Expr::helper("$collectResults"), vec![items])
         })
     }
 
@@ -89,21 +89,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// can't close it, as its lender goes on stepping it (ADR 0071).
     pub(super) fn lent_iterator(&mut self, it: Expr) -> Expr {
         self.runtime.insert(Helper::Lent);
-        Expr::call(Expr::var("$lent"), vec![it])
+        Expr::call(Expr::helper("$lent"), vec![it])
     }
 
     /// `$iter(items)`: a JS iterator of an array that knows where it is
     /// (ADR 0071).
     pub(super) fn stepped_items(&mut self, items: Expr) -> Expr {
         self.runtime.insert(Helper::Iter);
-        Expr::call(Expr::var("$iter"), vec![items])
+        Expr::call(Expr::helper("$iter"), vec![items])
     }
 
     /// `$iterator(value, next)`: a JS iterator of `value`, stepped by `next`,
     /// a range's by its `$rangeNext`.
     pub(super) fn stepped_by(&mut self, value: Expr, next: Expr) -> Expr {
         self.runtime.insert(Helper::Iterator);
-        Expr::call(Expr::var("$iterator"), vec![value, next])
+        Expr::call(Expr::helper("$iterator"), vec![value, next])
     }
 
     /// What's left of `it`, a `$iter` of std's iterator over an array, of
@@ -203,7 +203,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         };
         self.runtime.insert(Helper::ExactLen);
-        Ok(Expr::call(Expr::var("$exactLen"), vec![hint]))
+        Ok(Expr::call(Expr::helper("$exactLen"), vec![hint]))
     }
 
     /// An iterator of the crate's as a JS one, stepped by its trait's
@@ -254,7 +254,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.runtime.insert(Helper::SomeValue);
             list.push(Expr::bool(true));
         }
-        Ok(Expr::call(Expr::var("$iterator"), list))
+        Ok(Expr::call(Expr::helper("$iterator"), list))
     }
 
     /// What an iterator of type `iterator` yields: its `Item`.
@@ -436,11 +436,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.push(self.clone_fn("value", item, span)?);
                 }
                 self.runtime.insert(Helper::Repeating);
-                Expr::call(Expr::var("$repeating"), list)
+                Expr::call(Expr::helper("$repeating"), list)
             }
             Std::IterSource(IterSource::RepeatWith) => {
                 self.runtime.insert(Helper::RepeatingWith);
-                Expr::call(Expr::var("$repeatingWith"), vec![arg()])
+                Expr::call(Expr::helper("$repeatingWith"), vec![arg()])
             }
             // Their closures' `Option`s: a `Some` that looks like `None` is boxed (ADR 0051).
             Std::IterSource(source @ (IterSource::Successors | IterSource::FromFn)) => {
@@ -679,7 +679,7 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
         };
         // `next()`'s, `$next(chain)`, of an iterator made here of an array
         // whose stages do nothing: its first item, `xs[0]`.
-        if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$next")
+        if callee.helper_name() == Some("$next")
             && let [chain] = &args[..]
             && let Some((items, _)) = eager_items(chain, false, None)
         {
@@ -709,7 +709,7 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
         }
         // `$position`'s, of the array, lent or not: what it steps has no
         // `return` to close.
-        if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$position")
+        if callee.helper_name() == Some("$position")
             && let [chain, f] = &args[..]
             && let Some((items, _)) = eager_items(chain, false, None)
         {
@@ -833,12 +833,12 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
         [zipped]
             if is_iterator_from(at)
                 && let js::ExprKind::Call(zip, sides) = &zipped.kind
-                && matches!(&zip.kind, js::ExprKind::Var(f) if f == "$lazyZip")
+                && zip.helper_name() == Some("$lazyZip")
                 && let [a, b] = &sides[..]
                 && is_stepped_items(a)
                 && is_stepped_items(b) =>
         {
-            Expr::call(Expr::var("$zip"), vec![iterated(a.clone()), iterated(b.clone())])
+            Expr::call(Expr::helper("$zip"), vec![iterated(a.clone()), iterated(b.clone())])
         }
         _ => return None,
     };
@@ -910,7 +910,7 @@ pub(in crate::lower) fn collected(chain: &Expr) -> Option<Expr> {
                     return None;
                 }
                 let items = Expr::call(Expr::member(Expr::var("Array"), "from"), vec![list]);
-                Some(Expr::call(Expr::var("$iter"), vec![items]))
+                Some(Expr::call(Expr::helper("$iter"), vec![items]))
             }
             _ => None,
         }
@@ -925,7 +925,7 @@ fn chained(e: &Expr) -> Option<Vec<Expr>> {
     fn part(e: &Expr) -> Vec<Expr> {
         match &e.kind {
             js::ExprKind::Call(callee, args) => match (&callee.kind, args.as_slice()) {
-                (js::ExprKind::Var(v), [a, b]) if v == "$lazyChain" => [part(a), part(b)].concat(),
+                (_, [a, b]) if callee.helper_name() == Some("$lazyChain") => [part(a), part(b)].concat(),
                 (js::ExprKind::Member(of, m), [f]) if m == "map" && f.is_identity() => part(of),
                 _ if is_stepped_items(e) || is_iterator_from(e) => part(&args[0]),
                 _ => vec![e.clone()],
@@ -940,7 +940,7 @@ fn chained(e: &Expr) -> Option<Vec<Expr>> {
     let js::ExprKind::Call(callee, _) = &chain.kind else {
         return None;
     };
-    (is_iterator_from(e) && matches!(&callee.kind, js::ExprKind::Var(v) if v == "$lazyChain")).then(|| part(chain))
+    (is_iterator_from(e) && callee.helper_name() == Some("$lazyChain")).then(|| part(chain))
 }
 
 /// Whether `e` is `Iterator.from(x)`.
@@ -954,9 +954,7 @@ fn is_iterator_from(e: &Expr) -> bool {
 /// steps; or `e` itself.
 pub(super) fn unlent(e: &Expr) -> &Expr {
     match &e.kind {
-        js::ExprKind::Call(lent, of) if matches!(&lent.kind, js::ExprKind::Var(v) if v == "$lent") && of.len() == 1 => {
-            &of[0]
-        }
+        js::ExprKind::Call(lent, of) if lent.helper_name() == Some("$lent") && of.len() == 1 => &of[0],
         _ => e,
     }
 }
@@ -1085,7 +1083,7 @@ pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
     {
         method == "map"
             && f.reads_only_vars()
-            && matches!(&iter.kind, js::ExprKind::Var(name) if name == "$iter")
+            && iter.helper_name() == Some("$iter")
             && items.iter().all(Expr::reads_only_vars)
     } else {
         false
@@ -1093,7 +1091,7 @@ pub(in crate::lower) fn is_items_map(e: &Expr) -> bool {
 }
 
 pub(super) fn is_stepped_items(e: &Expr) -> bool {
-    matches!(&e.kind, js::ExprKind::Call(callee, _) if matches!(&callee.kind, js::ExprKind::Var(v) if v == "$iter"))
+    matches!(&e.kind, js::ExprKind::Call(callee, _) if callee.helper_name() == Some("$iter"))
 }
 
 /// Whether `e` is a JS iterator as it's made: `Iterator.from(..)`, a
@@ -1103,8 +1101,10 @@ pub(super) fn is_js_iterator(e: &Expr) -> bool {
     let js::ExprKind::Call(callee, _) = &e.kind else {
         return false;
     };
+    if callee.helper_name().is_some() {
+        return callee.helper_name() == Some("$iterator") || is_stepped_items(e);
+    }
     match &callee.kind {
-        js::ExprKind::Var(v) => v == "$iterator" || is_stepped_items(e),
         // Not `Object.keys(o)`'s, an array.
         js::ExprKind::Member(object, name) => match &object.kind {
             js::ExprKind::Var(v) if v == "Object" => false,
@@ -1149,16 +1149,16 @@ pub(super) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     let js::ExprKind::Call(callee, args) = &e.kind else {
         return None;
     };
-    let (js::ExprKind::Var(iterator), [range, next]) = (&callee.kind, &args[..]) else {
+    let (Some(iterator), [range, next]) = (callee.helper_name(), &args[..]) else {
         return None;
     };
-    let (js::ExprKind::Object(bounds), js::ExprKind::Var(next)) = (&range.kind, &next.kind) else {
+    let (js::ExprKind::Object(bounds), Some(next)) = (&range.kind, next.helper_name()) else {
         return None;
     };
     let [js::Prop::Field(s, start), js::Prop::Field(f, end)] = &bounds[..] else {
         return None;
     };
-    let (inclusive, back) = match next.as_str() {
+    let (inclusive, back) = match next {
         "$rangeNext" => (false, false),
         "$rangeNextBack" => (false, true),
         "$rangeInclusiveNext" => (true, false),
@@ -1180,7 +1180,7 @@ pub(super) fn iterated(e: Expr) -> Expr {
         js::ExprKind::Call(callee, mut args)
             if args.len() == 1
                 && match &callee.kind {
-                    js::ExprKind::Var(f) => f == "$iter",
+                    _ if callee.helper_name().is_some() => callee.helper_name() == Some("$iter"),
                     js::ExprKind::Member(object, from) => {
                         from == "from" && matches!(&object.kind, js::ExprKind::Var(v) if v == "Iterator")
                     }

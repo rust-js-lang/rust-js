@@ -1028,7 +1028,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         body.pop();
                     }
                     let error = self.fresh("error");
-                    let written = Expr::call(Expr::var("$fmtWritten"), vec![Expr::var(&error), Expr::var(name)]);
+                    let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::var(name)]);
                     let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
                     out.push(StmtKind::TryCatch(body, Some(error), handler).at(js::Span::NONE));
                     out.push(StmtKind::Return(Some(Expr::var(name))).at(js::Span::NONE));
@@ -2369,7 +2369,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Rvalue::Aggregate(kind, _) if matches!(**kind, AggregateKind::Adt(..)) => {
                         self.flush(state, out)?;
                         self.runtime.insert(Helper::FmtError);
-                        let thrown = Expr::call(Expr::var("$fmtError"), Vec::new());
+                        let thrown = Expr::call(Expr::helper("$fmtError"), Vec::new());
                         out.push(StmtKind::Expr(thrown).at(self.js_span(span)));
                         Ok(())
                     }
@@ -2786,7 +2786,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "an `Rc` or a `Weak` written through a `&mut`, from its MIR"));
             }
             self.runtime.insert(Helper::Assign);
-            let assigned = Expr::call(Expr::var("$assign"), vec![target, value]);
+            let assigned = Expr::call(Expr::helper("$assign"), vec![target, value]);
             out.push(StmtKind::Expr(assigned).at(js_span));
             return Ok(());
         }
@@ -3080,11 +3080,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ if within => Expr::index(items, index),
                     true => {
                         self.runtime.insert(Helper::At);
-                        Expr::index(items.clone(), Expr::call(Expr::var("$at"), vec![items, index]))
+                        Expr::index(items.clone(), Expr::call(Expr::helper("$at"), vec![items, index]))
                     }
                     false => {
                         self.runtime.insert(Helper::Index);
-                        Expr::call(Expr::var("$index"), vec![items, index])
+                        Expr::call(Expr::helper("$index"), vec![items, index])
                     }
                 };
                 placed = false;
@@ -5296,7 +5296,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.spill("index", index, out)
             };
             self.runtime.insert(Helper::Index);
-            let check = Expr::call(Expr::var("$index"), vec![items.clone(), index.clone()]);
+            let check = Expr::call(Expr::helper("$index"), vec![items.clone(), index.clone()]);
             out.push(StmtKind::Expr(check).at(self.js_span(span)));
             return Ok(Value::Ref(Expr::index(items, index)));
         }
@@ -5312,9 +5312,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .into_iter();
             let entry = exprs.next().expect("the entry");
             let (map, key) = match entry.kind {
-                js::ExprKind::Call(callee, parts)
-                    if parts.len() == 2 && matches!(&callee.kind, js::ExprKind::Var(v) if v == "$entry") =>
-                {
+                js::ExprKind::Call(callee, parts) if parts.len() == 2 && callee.helper_name() == Some("$entry") => {
                     let [map, key]: [Expr; 2] = parts.try_into().ok().expect("two");
                     (map, key)
                 }
@@ -5368,7 +5366,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.flush(state, out)?;
             out.push(StmtKind::Expr(inserted).at(self.js_span(span)));
             self.runtime.insert(Helper::MutGet);
-            return Ok(Value::Expr(Expr::call(Expr::var("$mutGet"), vec![map, key])));
+            return Ok(Value::Expr(Expr::call(Expr::helper("$mutGet"), vec![map, key])));
         }
         // `&mut *s` of a `String`, `as_mut_str()`: a `&mut str` to all of
         // it, the same place the `&mut String` is.

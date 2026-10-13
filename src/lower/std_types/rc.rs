@@ -61,7 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Expr> {
         let mut given = vec![place.clone(), self.clone_arg(item, span)?];
         given.extend(self.drop_function(item, span)?);
-        let made = Expr::call(Expr::var("$makeMut"), given);
+        let made = Expr::call(Expr::helper("$makeMut"), given);
         out.push(StmtKind::Assign(place.clone(), made).at(self.js_span(span)));
         Ok(self.through_rc(place, item))
     }
@@ -84,7 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.counted_here(pointee, span)?;
         }
         self.runtime.insert(Helper::Rc);
-        let helper = |name: &str, args: Vec<Expr>| Expr::call(Expr::var(name), args);
+        let helper = |name: &'static str, args: Vec<Expr>| Expr::call_helper(name, args);
         Ok(match op {
             RcOp::WeakNew => Expr::object(vec![
                 Prop::Field("strong".into(), Expr::int(0)),

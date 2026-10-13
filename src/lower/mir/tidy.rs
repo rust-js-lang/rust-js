@@ -430,16 +430,16 @@ fn for_of(
     let ExprKind::Call(callee, args) = &next.kind else {
         return None;
     };
-    let step = match (&callee.kind, args.as_slice()) {
+    let step = match (callee.helper_name(), args.as_slice()) {
         (
-            ExprKind::Var(f),
+            Some(f),
             [
                 Expr {
                     kind: ExprKind::Var(it),
                     ..
                 },
             ],
-        ) if it == iter => f.as_str(),
+        ) if it == iter => f,
         _ => return None,
     };
     if !matches!(step, "$next" | "$nextSome" | "$rangeNext")
@@ -485,7 +485,7 @@ fn for_of(
     // test, and `$someValue` takes it out: JS's `for` binds it as it is.
     if step == "$nextSome" {
         let unboxed = |value: &Expr| match &value.kind {
-            ExprKind::Call(f, args) if matches!(&f.kind, ExprKind::Var(f) if f == "$someValue") => {
+            ExprKind::Call(f, args) if f.helper_name() == Some("$someValue") => {
                 matches!(args.as_slice(), [Expr { kind: ExprKind::Var(v), .. }] if v == item)
             }
             _ => false,
@@ -2064,7 +2064,7 @@ fn array_values(e: &mut Expr) {
     // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
     // all of them, `cs.join("")`.
     if let ExprKind::Call(callee, args) = &e.kind
-        && matches!(&callee.kind, ExprKind::Var(f) if f == "$restStr")
+        && callee.helper_name() == Some("$restStr")
         && let [it] = &args[..]
         && crate::lower::iterators::is_stepped_items(it)
         && let ExprKind::Call(_, items) = &it.kind
@@ -4058,7 +4058,7 @@ fn checked_sets(stmts: &mut Vec<Stmt>) {
     while i + 1 < stmts.len() {
         if let StmtKind::Expr(check) = &stmts[i].kind
             && let ExprKind::Call(f, args) = &check.kind
-            && matches!(&f.kind, ExprKind::Var(v) if v == "$index")
+            && f.helper_name() == Some("$index")
             && let [items, index] = &args[..]
             && let StmtKind::Assign(target, _) = &stmts[i + 1].kind
             && let ExprKind::Index(of, at) = &target.kind
@@ -4451,7 +4451,7 @@ fn unguarded(body: &mut Vec<Stmt>) {
         let ExprKind::Handle(place) = &args.first()?.kind else {
             return None;
         };
-        (matches!(&callee.kind, ExprKind::Var(f) if f == "$borrow" || f == "$borrowMut") && place.reads_same())
+        (matches!(callee.helper_name(), Some("$borrow" | "$borrowMut")) && place.reads_same())
             .then(|| (name.clone(), (**place).clone()))
     };
     js::each_block_mut(&mut body.clone(), &mut |stmts| {
@@ -4486,7 +4486,7 @@ fn unguarded(body: &mut Vec<Stmt>) {
             *kept.entry(g.clone()).or_default() += 1;
         }
         ExprKind::Call(callee, args)
-            if matches!(&callee.kind, ExprKind::Var(f) if f == "$unborrow")
+            if callee.helper_name() == Some("$unborrow")
                 && let [a] = args.as_slice()
                 && let ExprKind::Var(g) = &a.kind
                 && places.contains_key(g) =>
@@ -4517,7 +4517,7 @@ fn unguarded(body: &mut Vec<Stmt>) {
         stmts.retain(|stmt| {
             !matches!(&stmt.kind, StmtKind::Expr(e)
             if matches!(&e.kind, ExprKind::Call(callee, args)
-                if matches!(&callee.kind, ExprKind::Var(f) if f == "$unborrow")
+                if callee.helper_name() == Some("$unborrow")
                     && matches!(args.as_slice(), [a] if matches!(&a.kind, ExprKind::Var(g) if places.contains_key(g)))))
         });
     });

@@ -114,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .is_some_and(|value| self.boxed_payload(value)) =>
             {
                 self.runtime.insert(Helper::DictGet);
-                Expr::call(Expr::var("$dictGet"), vec![this, args.remove(0)])
+                Expr::call(Expr::helper("$dictGet"), vec![this, args.remove(0)])
             }
             (JsForm::GetIndex, Some(this)) if args.len() == 1 => keyed(this, args.remove(0)),
             (JsForm::In, Some(this)) if args.len() == 1 => Expr::bin(Op::In, args.remove(0), this),

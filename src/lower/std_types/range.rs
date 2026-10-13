@@ -135,7 +135,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 list.push(Expr::bool(true));
             }
             self.runtime.insert(Helper::CharRange);
-            return Ok(Expr::call(Expr::var("$charRange"), list));
+            return Ok(Expr::call(Expr::helper("$charRange"), list));
         }
         let Some(num) = index.and_then(Num::of) else {
             return Err(self.unsupported(span, &format!("iterating over `{ty}`")));
@@ -159,7 +159,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             (RangeKind::From, [start]) => {
                 self.runtime.insert(Helper::LazyRange);
-                Expr::call(Expr::var("$lazyRange"), vec![start.clone()])
+                Expr::call(Expr::helper("$lazyRange"), vec![start.clone()])
             }
             _ => return Err(self.unsupported(span, &format!("iterating over `{ty}`"))),
         })

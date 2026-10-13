@@ -670,9 +670,6 @@ pub struct Symbol {
 
 #[derive(Clone)]
 pub enum ExprKind {
-    /// A helper of the runtime's, `$cmp`, by the name it exports (ADR 0103):
-    /// written, it's asked for, as its module imports what its tree holds.
-    Helper(&'static str),
     Num(f64),
     /// A `u64` or an `i64` (ADR 0086): `5n`.
     BigInt(i128),
@@ -910,10 +907,21 @@ impl Expr {
     }
 
     /// The runtime's helper `name` exports, `$cmp`: asked for by being
-    /// written. A name the runtime doesn't export is a bug of rust-js's.
+    /// written, as the linker asks for each its module's tree reads. A name
+    /// the runtime doesn't export is a bug of rust-js's. No other variable
+    /// is named so: Rust's names have no `$`, and the compiler's own are
+    /// named apart from the runtime's (`names::dictionary_cache`).
     pub fn helper(name: &'static str) -> Expr {
         assert!(crate::runtime::exports(name), "the runtime exports no `{name}`");
-        Expr::new(ExprKind::Helper(name))
+        Expr::var(name)
+    }
+
+    /// The runtime's helper this is, by the name it exports (ADR 0103).
+    pub fn helper_name(&self) -> Option<&str> {
+        match &self.kind {
+            ExprKind::Var(name) if name.starts_with('$') && crate::runtime::exports(name) => Some(name),
+            _ => None,
+        }
     }
 
     /// A call of the runtime's helper `name`, `$cmp(a, b)`.
@@ -1255,7 +1263,6 @@ impl Expr {
                 jsx.children.iter_mut().for_each(|c| c.each_mut(f));
             }
             ExprKind::Var(_)
-            | ExprKind::Helper(_)
             | ExprKind::Num(_)
             | ExprKind::BigInt(_)
             | ExprKind::BigUint(_)
@@ -1284,7 +1291,6 @@ impl Expr {
         };
         match &self.kind {
             ExprKind::Var(name) => read(name),
-            ExprKind::Helper(name) => read(name),
             ExprKind::Member(a, _)
             | ExprKind::OptionalMember(a, _)
             | ExprKind::Unary(_, a)
@@ -1374,7 +1380,6 @@ impl Expr {
             | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Var(_)
-            | ExprKind::Helper(_)
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
@@ -1498,8 +1503,7 @@ impl Expr {
             | ExprKind::Symbol(_)
             | ExprKind::FunctionHole(_)
             | ExprKind::Import(_)
-            | ExprKind::Regex(_)
-            | ExprKind::Helper(_) => self.kind.clone(),
+            | ExprKind::Regex(_) => self.kind.clone(),
         };
         Some(Expr {
             reads: false,
@@ -1682,7 +1686,6 @@ impl Expr {
             | ExprKind::GivenUndefined
             | ExprKind::Null
             | ExprKind::Var(_)
-            | ExprKind::Helper(_)
             | ExprKind::Symbol(_)
             | ExprKind::Regex(_)
             | ExprKind::FunctionHole(_)
@@ -1724,7 +1727,7 @@ impl Expr {
             // The runtime's that only read what they're given, make a value
             // of it, or its text, `$jsonIndex(v, "a")`, `$debugStr(s)`: what
             // their arguments do.
-            ExprKind::Call(callee, args) if matches!(&callee.kind, ExprKind::Var(helper) if crate::runtime::is_pure(helper)) => {
+            ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {
                 args.iter().any(Expr::has_effects)
             }
             ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,

@@ -343,18 +343,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "lazy-zip-no-zip-import",
-    "breaks": "MIR's `$zip(a, b)` of two arrays has no import, a `ReferenceError`",
-    "file": "src/lower/combinators.rs",
-    "find": "                    self.runtime.insert(Helper::Zip);\n                }\n                Expr::call(Expr::var(\"$lazyZip\")",
-    "replace": "                }\n                Expr::call(Expr::var(\"$lazyZip\")",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
-  },
-  {
     name: "extend-range-as-array",
     breaks: "`extend` of a range takes its object as an array, `Array.from({ start, end })`, which adds nothing",
     file: "src/lower/combinators.rs",

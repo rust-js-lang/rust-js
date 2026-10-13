@@ -184,9 +184,9 @@ pub(in crate::lower) enum SliceOp {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A call of one of the views' helpers (ADR 0335).
-    pub(in crate::lower) fn view_call(&mut self, name: &str, list: Vec<Expr>) -> Expr {
+    pub(in crate::lower) fn view_call(&mut self, name: &'static str, list: Vec<Expr>) -> Expr {
         self.runtime.insert(Helper::View);
-        Expr::call(Expr::var(name), list)
+        Expr::call(Expr::helper(name), list)
     }
 
     /// How a slice's `starts_with` and `strip_*` compare its items (ADR
@@ -360,7 +360,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             list.push(Expr::bool(true));
         }
         self.runtime.insert(Helper::ExtractIf);
-        Expr::call(Expr::var("$extractIf"), list)
+        Expr::call(Expr::helper("$extractIf"), list)
     }
 
     /// `slots.write_copy_of_slice(src)`, of `values`, the slots and the
@@ -384,9 +384,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.runtime.insert(Helper::SliceOps);
         if clone {
             let clone = self.clone_arg(item, span)?;
-            return Ok(Expr::call(Expr::var("$writeCloneOfSlice"), vec![slots, source, clone]));
+            return Ok(Expr::call(
+                Expr::helper("$writeCloneOfSlice"),
+                vec![slots, source, clone],
+            ));
         }
-        let copy = Expr::call(Expr::var("$copyFromSlice"), vec![slots.clone(), source]);
+        let copy = Expr::call(Expr::helper("$copyFromSlice"), vec![slots.clone(), source]);
         out.push(StmtKind::Expr(copy).at(self.js_span(span)));
         Ok(slots)
     }
@@ -440,7 +443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> Expr {
         self.runtime.insert(Helper::SliceOps);
         Expr::call(
-            Expr::var("$copyWithin"),
+            Expr::helper("$copyWithin"),
             vec![items, start, end.unwrap_or_else(Expr::undefined), dest],
         )
     }
@@ -457,9 +460,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
-        let helper = |cx: &mut Self, name: &str, list: Vec<Expr>| {
+        let helper = |cx: &mut Self, name: &'static str, list: Vec<Expr>| {
             cx.runtime.insert(Helper::SliceOps);
-            Expr::call(Expr::var(name), list)
+            Expr::call(Expr::helper(name), list)
         };
         let item = || generic_args.type_at(0);
         let mut values = values.into_iter();
@@ -613,7 +616,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             SliceOp::ArrayWindows => {
                 let n = self.chunk_length(generic_args, span)?;
                 self.runtime.insert(Helper::Windows);
-                Expr::call(Expr::var("$windows"), vec![arg(), Expr::int(n as i128)])
+                Expr::call(Expr::helper("$windows"), vec![arg(), Expr::int(n as i128)])
             }
             SliceOp::AsChunks {
                 back,

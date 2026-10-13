@@ -28,7 +28,7 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
             // asked for by being written.
             let mut written = Vec::new();
             crate::js::each_item_expr_mut(&mut item.module.items, &mut |e| {
-                if let ExprKind::Helper(name) = e.kind {
+                if let Some(name) = e.helper_name() {
                     written.extend(crate::runtime::helper_of(name));
                 }
             });
@@ -212,7 +212,6 @@ fn expr(e: &mut Expr, visitor: &mut Visitor<'_>) {
     match &mut e.kind {
         ExprKind::Symbol(_) => {}
         ExprKind::Var(n) => visitor.name(n),
-        ExprKind::Helper(n) => visitor.name(n),
         ExprKind::Member(a, _)
         | ExprKind::OptionalMember(a, _)
         | ExprKind::Unary(_, a)

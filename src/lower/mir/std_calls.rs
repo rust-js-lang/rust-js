@@ -139,7 +139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     list.pop();
                 }
                 self.runtime.insert(Helper::AssertFailed);
-                Expr::call(Expr::var("$assertFailed"), list)
+                Expr::call(Expr::helper("$assertFailed"), list)
             }
             // A writer of the crate's own: what `write!` and `write_char` give
             // its `write_str` (ADR 0166).
@@ -195,7 +195,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut written = Vec::new();
                     crate::lower::display::append_written(&place, value, true, js_span, &mut written);
                     let caught = self.fresh("error");
-                    let partial = Expr::call(Expr::var("$fmtPartial"), vec![Expr::var(&caught)]);
+                    let partial = Expr::call(Expr::helper("$fmtPartial"), vec![Expr::var(&caught)]);
                     let handler = vec![
                         StmtKind::Assign(place.clone(), Expr::bin(Op::Add, place.clone(), partial)).at(js_span),
                         StmtKind::Throw(Expr::var(&caught)).at(js_span),
@@ -293,7 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         let mut list = vec![whole.clone(), Expr::bool(upper)];
                         list.extend(bounds);
                         self.runtime.insert(Helper::AsciiCase);
-                        let edited = Expr::call(Expr::var("$asciiCase"), list);
+                        let edited = Expr::call(Expr::helper("$asciiCase"), list);
                         out.push(StmtKind::Assign(whole, edited).at(self.js_span(span)));
                         return Ok(Some(Value::Expr(Expr::undefined())));
                     }

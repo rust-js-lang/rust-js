@@ -46,7 +46,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `$cmp(a, b)`, of strings or `char`s: their `Ordering` by code point.
     pub(super) fn text_order(&mut self, a: Expr, b: Expr) -> Expr {
         self.runtime.insert(Helper::Cmp);
-        Expr::call(Expr::var("$cmp"), vec![a, b])
+        Expr::call(Expr::helper("$cmp"), vec![a, b])
     }
 
     /// `a < b` and the rest, of strings or `char`s, by code point, as Rust
@@ -59,7 +59,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Expr::bin(op, a, b);
         }
         self.runtime.insert(Helper::Cmp);
-        Expr::bin(op, Expr::call(Expr::var("$cmp"), vec![a, b]), Expr::int(0))
+        Expr::bin(op, Expr::call(Expr::helper("$cmp"), vec![a, b]), Expr::int(0))
     }
 
     /// Is `ty` `Ord`, so that its `partial_cmp` is never `None`?
@@ -87,11 +87,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `f64`'s `NaN` isn't ordered at all.
         if partial && Num::of(ty).is_some_and(Num::float) {
             self.runtime.insert(Helper::PartialCmp);
-            return Ok(Expr::call(Expr::var("$partialCmp"), vec![a, b]));
+            return Ok(Expr::call(Expr::helper("$partialCmp"), vec![a, b]));
         }
         if self.is_primitive_ord(ty) || self.is_text_ord(ty) {
             self.runtime.insert(Helper::Cmp);
-            return Ok(Expr::call(Expr::var("$cmp"), vec![a, b]));
+            return Ok(Expr::call(Expr::helper("$cmp"), vec![a, b]));
         }
         let (ord, partial_ord) = (self.ord_trait(), self.partial_ord_trait());
         if self.is_unknown(ty) {
@@ -161,7 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 variants.sort_by_key(|&(_, value)| value);
                 let names = variants.into_iter().map(|(name, _)| Expr::str(name)).collect();
                 self.runtime.insert(Helper::CmpIn);
-                Ok(Expr::call(Expr::var("$cmpIn"), vec![Expr::array(names), a, b]))
+                Ok(Expr::call(Expr::helper("$cmpIn"), vec![Expr::array(names), a, b]))
             }
             // One with fields, the crate's, tagged: by its variant, as the
             // derive orders them, then, of the same, its fields in turn.
@@ -183,7 +183,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let (at_a, at_b) = (place(self, &a), place(self, &b));
                 self.runtime.insert(Helper::Cmp);
-                let order = Expr::call(Expr::var("$cmp"), vec![at_a, at_b]);
+                let order = Expr::call(Expr::helper("$cmp"), vec![at_a, at_b]);
                 // Of the same variant, its fields, each in turn.
                 let mut same = Expr::int(0);
                 for &(v, _) in variants.iter().rev() {
@@ -213,7 +213,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             .expect("a field"),
                         false => {
                             self.runtime.insert(Helper::ThenCmp);
-                            Expr::call(Expr::var("$thenCmp"), orders)
+                            Expr::call(Expr::helper("$thenCmp"), orders)
                         }
                     };
                     same = Expr::cond(self.variant_test(a.clone(), ty, *adt, v), fields, same);
@@ -258,7 +258,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .expect("some parts"));
                 }
                 self.runtime.insert(Helper::ThenCmp);
-                Ok(Expr::call(Expr::var("$thenCmp"), orders))
+                Ok(Expr::call(Expr::helper("$thenCmp"), orders))
             }
         }
     }
@@ -267,7 +267,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     fn cmp_items(&mut self, a: Expr, b: Expr, item: Ty<'tcx>, partial: bool, span: Span) -> R<Expr> {
         let compare = self.cmp_fn(item, partial, span)?;
         self.runtime.insert(Helper::CmpItems);
-        Ok(Expr::call(Expr::var("$cmpItems"), vec![a, b, compare]))
+        Ok(Expr::call(Expr::helper("$cmpItems"), vec![a, b, compare]))
     }
 
     /// `(a, b) => <their Ordering>`, or the function itself: `$cmp`,

@@ -65,7 +65,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 "Ok" => Ok(Expr::undefined()),
                 _ if self.is_fmt_result(ty) => {
                     self.runtime.insert(Helper::FmtError);
-                    Ok(Expr::call(Expr::var("$fmtError"), Vec::new()))
+                    Ok(Expr::call(Expr::helper("$fmtError"), Vec::new()))
                 }
                 _ => Err(self.unsupported(span, "an `io::Error`")),
             };

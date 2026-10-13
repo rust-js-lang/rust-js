@@ -943,7 +943,6 @@ impl<'a> Cx<'a> {
                 unreachable!("a chain is printed whole, above")
             }
             ExprKind::Var(name) => Expression::new_identifier(sp, self.name(name), b),
-            ExprKind::Helper(name) => Expression::new_identifier(sp, self.name(name), b),
             // A property that isn't a JS name, `files["worker-bundle"]`, by its
             // key: `files.worker-bundle` would be a subtraction.
             ExprKind::Member(object, property) if !member_name(property) => {

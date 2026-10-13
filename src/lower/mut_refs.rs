@@ -29,7 +29,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match object {
             true => {
                 self.runtime.insert(Helper::Assign);
-                StmtKind::Expr(Expr::call(Expr::var("$assign"), vec![place, back])).at(at)
+                StmtKind::Expr(Expr::call(Expr::helper("$assign"), vec![place, back])).at(at)
             }
             false => StmtKind::Assign(place, back).at(at),
         }
