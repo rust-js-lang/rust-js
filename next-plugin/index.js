@@ -7,6 +7,7 @@ import { existsSync, watch } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve, sep } from "node:path";
 import { createNativeBuilder, findCompiler } from "@rust-js/build/build";
+import { readsCargo } from "@rust-js/build/cargo";
 import { writePatch } from "@rust-js/build/patch";
 
 /**
@@ -33,13 +34,16 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   if (others.length) throw new Error(`rust-js: ${manifestPath} has several packages; the app's Rust is one`);
 
   // One `cargo check` of the whole crate, which writes each module's JS
-  // beside its Rust (ADR 0041), or an error, rustc's.
+  // beside its Rust (ADR 0041), or an error, rustc's. Its manifests say
+  // what it read, a source outside the workspace too.
+  let manifests = [];
   async function compile() {
     try {
       // A Pages Router route's directory gets no declarations, which
       // Turbopack would take as routes (ADR 0276).
       const routes = [join(app, "pages"), join(app, "src/pages")];
-      await builder.checkCargo({ manifestPath, packageName, inSource: true, routes });
+      const built = await builder.checkCargo({ manifestPath, packageName, inSource: true, routes });
+      manifests = [...built.manifests.values()];
       return true;
     } catch (error) {
       log(error instanceof Error ? error.message : String(error));
@@ -66,14 +70,26 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
       }
     };
     const changed = (file) => {
-      if (!/\.rs$|(^|[\\/])Cargo\.(toml|lock)$/.test(file) || file.startsWith(target + sep)) return;
+      if (!builder.watchFiles.includes(file) && !readsCargo(file, { workspace, target, manifests })) return;
       pending = true;
       active ??= drain().finally(() => {
         active = undefined;
+        watchOutside();
       });
     };
     watchers.push(watch(workspace, { recursive: true }, (_, name) => name && changed(resolve(workspace, name))));
     for (const file of builder.watchFiles) if (existsSync(file)) watchers.push(watch(file, () => changed(file)));
+    // Each source rust-js read outside the workspace, a module by `#[path]`
+    // or a file an `include_str!` reads, as the last build has them.
+    const outside = new Set();
+    const watchOutside = () => {
+      for (const file of manifests.flatMap((manifest) => manifest.sources)) {
+        if (file.startsWith(workspace + sep) || outside.has(file) || !existsSync(file)) continue;
+        outside.add(file);
+        watchers.push(watch(file, () => changed(file)));
+      }
+    };
+    watchOutside();
   }
 
   const next = createRequire(join(app, "package.json")).resolve("next/dist/bin/next");

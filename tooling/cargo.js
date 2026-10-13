@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 
+import { parseManifest } from "./manifest.js";
 import { commit, fingerprint } from "./publish.js";
 
 const execute = promisify(execFile);
@@ -140,7 +141,8 @@ export async function planCargoLibraries({ manifestPath, toolchain, target, pack
  * declarations.
  * `files` is every module's JS, where it's served from.
  * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, routes?: string[] }} options
- * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, files: string[] }>}
+ * `manifests` is each crate's, validated, as the compiler wrote it.
+ * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: string[] }>}
  */
 export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, routes = [] }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
@@ -169,7 +171,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     if (!marker || !existsSync(marker)) continue;
     // Its own manifest, then those of the libraries it was compiled with.
     const library = readFileSync(marker, "utf8").split("\n")[0];
-    const built = existsSync(library) ? JSON.parse(readFileSync(library, "utf8")) : { artifacts: [{ file: library }] };
+    const built = existsSync(library) ? parseManifest(readFileSync(library, "utf8")) : { artifacts: [{ file: library }] };
     // What it published, as it published it, for a build Cargo has as done
     // too: Cargo checks its own outputs, not rust-js's.
     const changed = built.artifacts.find(({ file, hash }) => !existsSync(file) || fingerprint(readFileSync(file)) !== hash);
@@ -187,11 +189,29 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (!js) throw new Error(`rust-js compiled no library of ${packageName ?? manifest}`);
   // Each with its crate's name, as Cargo has it: the app's manifest, a
   // program's, has no library to say it (ADR 0360).
-  const manifests = [...crates].map(([crate, { manifest }]) => ({ crate, ...JSON.parse(readFileSync(manifest, "utf8")) }));
-  if (!inSource) return { js, crates, files: manifests.flatMap(({ modules }) => modules.map((module) => module.file)) };
+  const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
+  const manifests = [...validated].map(([crate, manifest]) => ({ crate, ...manifest }));
+  if (!inSource) return { js, crates, manifests: validated, files: manifests.flatMap(({ modules }) => modules.map((module) => module.file)) };
   const moved = writeInSource(manifests, ledger, routes);
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
-  return { js: moved.get(js), crates, files: [...moved.values()] };
+  return { js: moved.get(js), crates, manifests: validated, files: [...moved.values()] };
+}
+
+/**
+ * Whether `file` is an input of a Cargo build (ADR 0101): what Cargo reads
+ * of its `workspace`, its Rust and its manifests, not what it writes in its
+ * `target` directory; or a source rust-js read, wherever it is, of the
+ * build's `manifests`: a module by `#[path]` outside the workspace, or a
+ * file an `include_str!` reads. A host rebuilds when one changes.
+ * @param {string} file
+ * @param {{ workspace: string, target?: string, manifests: Iterable<{ sources: string[] }> }} build
+ * @returns {boolean}
+ */
+export function readsCargo(file, { workspace, target, manifests }) {
+  const read = /\.rs$|(^|[\\/])Cargo\.(toml|lock)$/.test(file)
+    && file.startsWith(workspace + sep)
+    && !(target && file.startsWith(target + sep));
+  return read || [...manifests].some((manifest) => manifest.sources.includes(file));
 }
 
 /**

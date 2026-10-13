@@ -482,6 +482,21 @@ test("Vite delegates build preparation and validates build results", () => {
   expect(plugin).toContain("parseManifest");
 });
 
+// Each host of a Cargo build, Vite's and Next.js's, asks the builder what
+// its inputs are and is given its manifests validated: neither tells a
+// Cargo input by a pattern of its own, nor reads a manifest's JSON (the
+// third architecture audit: Next.js's told them its own way, and missed
+// some).
+test("each Cargo host asks the builder what a build read", () => {
+  for (const file of ["vite-plugin/index.js", "next-plugin/index.js"]) {
+    const plugin = read(file);
+    expect(plugin, file).toContain("createNativeBuilder");
+    expect(plugin, file).toContain("readsCargo(");
+    expect(plugin, file).not.toMatch(/Cargo\\\.\(toml\|lock\)|react\/build\.sh|libreact\.rmeta|rust-toolchain\.toml/);
+  }
+  expect(read("tooling/cargo.js")).toContain("parseManifest(readFileSync(manifest");
+});
+
 test("native and WASI compiler dependency versions agree", () => {
   const dependencies = (path: string) => {
     const section = read(path).split("[dependencies]\n")[1].split(/\n\[/)[0];

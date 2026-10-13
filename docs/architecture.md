@@ -116,7 +116,10 @@ compiler and binding packages can be used without a source checkout.
 `next-plugin` is the same for Next.js: it compiles the app's Rust to JS
 and JSX beside it, as a Cargo build's copies are (ADR 0101), so Next.js
 and its Fast Refresh see them as the app's own, and then runs `next`
-(ADR 0192).
+(ADR 0192). Each host of a Cargo build is given its manifests validated by
+the builder, `checkCargo`, and asks it what the build read, `readsCargo`:
+Cargo's inputs in the workspace, and each source rust-js read, outside it
+too; neither tells them its own way.
 
 ## The pipeline
 

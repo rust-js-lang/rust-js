@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { createNativeBuilder, findCompiler } from "@rust-js/build/build";
+import { readsCargo } from "@rust-js/build/cargo";
 import { parseManifest } from "@rust-js/build/manifest";
 import { writePatch } from "@rust-js/build/patch";
 
@@ -65,7 +66,7 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
       inSource: cargo.inSource ?? true,
     });
     manifests.clear();
-    for (const [name, { manifest }] of built.crates) manifests.set(name, parseManifest(await readFile(manifest, "utf8")));
+    for (const [name, manifest] of built.manifests) manifests.set(name, manifest);
     entry = built.js;
     failures.clear();
     // Its imports name each module's file, `.jsx` or `.js`: no aliases.
@@ -153,12 +154,7 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
     const file = resolve(path);
     const common = builder?.watchFiles.includes(file);
     if (cargo) {
-      // What Cargo reads of the workspace, and each source rust-js read,
-      // wherever it is: a module by `#[path]` outside it. Cargo's own
-      // outputs aren't.
-      const read = /\.rs$|(^|[\\/])Cargo\.(toml|lock)$/.test(file) && file.startsWith(workspace + sep) && !(targetDir && file.startsWith(targetDir + sep));
-      const source = [...manifests.values()].some(manifest => manifest.sources.includes(file));
-      if (common || read || source) void schedule(crates);
+      if (common || readsCargo(file, { workspace, target: targetDir, manifests: manifests.values() })) void schedule(crates);
       return;
     }
     if (!common && !file.endsWith(".rs")) return;
