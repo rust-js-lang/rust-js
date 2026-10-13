@@ -76,10 +76,20 @@ export function App() {
     };
   }, []);
   const live = () => source.current?.state;
-  const run = (files, loaded, rootJs, test) => {
+  const run = (compiled, loaded, test) => {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
-    const value = prepare(files, loaded.modules, loaded.styles, rootJs, test, n);
+    const tests = compiled.tests;
+    const value = prepare(
+      compiled.files,
+      loaded.modules,
+      loaded.styles,
+      compiled.root,
+      compiled.main,
+      tests,
+      test,
+      n,
+    );
     if (value === "Nothing") {
       setProgram(undefined);
     } else if (value.TAG === "Blocked") {
@@ -104,7 +114,6 @@ export function App() {
     }
     const sources = Project.sources(project, live());
     const root = project.root;
-    const rootJs = jsName(project.root);
     const shown = output.TAG === "Files" ? output.shown : "";
     setStatus(say(test ? "Compiling the tests…" : "Compiling…", "Plain"));
     startTransition(async () => {
@@ -114,12 +123,10 @@ export function App() {
       if (r.ok) {
         const files = Array.from(r.files).map(([path, text]) => [path, text]);
         const count = files.length;
-        const rootJsx = `${rootJs}x`;
-        const rootJs$1 = files.some(([path]) => path === rootJsx) ? rootJsx : rootJs;
-        const shown$1 = files.some(([path]) => path === shown) ? shown : rootJs$1;
+        const shown$1 = files.some(([path]) => path === shown) ? shown : r.root;
         setOutput({ TAG: "Files", files, shown: shown$1 });
         setStatus(say(`Compiled: ${count} JS file${count === 1 ? "" : "s"}.`, "Good"));
-        run(r.files, loaded$1, rootJs$1, test);
+        run(r, loaded$1, test);
       } else {
         setOutput({ TAG: "Diagnostics", _0: r.stderr });
         setProgram(undefined);

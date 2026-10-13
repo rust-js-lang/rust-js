@@ -183,13 +183,17 @@ const FRAME_STYLE: &str = r#"<style>
   pre { margin: 2px 0 8px 1.5em; white-space: pre-wrap; font-size: 13px; }
 </style>"#;
 
-/// The page that runs the root module's `main()`, or with `test`, the
-/// crate's tests, and reports as run number `run`.
+/// The page that runs the root module's `main()`, if it exports one
+/// (`main`), or with `test`, the crate's tests by their runner (`tests`),
+/// as the compiler's manifest says, and reports as run number `run`.
+#[allow(clippy::too_many_arguments)]
 pub fn prepare(
     files: &HashMap<String, String>,
     modules: &[(String, String)],
     styles: &[(String, String)],
     root_file: &str,
+    main: bool,
+    tests: Option<&str>,
     test: bool,
     run: u32,
 ) -> Prepared {
@@ -212,22 +216,13 @@ pub fn prepare(
         })
         .collect();
     sources.extend(modules.iter().cloned());
-    let tests = match root_file.strip_suffix(".jsx").or_else(|| root_file.strip_suffix(".js")) {
-        Some(stem) => format!("{stem}.test.js"),
-        None => root_file.to_string(),
+    let runnable = match test {
+        true => tests,
+        false => main.then_some(root_file),
     };
-    // `main`, sync or async (ADR 0029).
-    let has_main = reg_exp::new(r"^export (async )?function main\(\)", "m");
-    let runnable = if test {
-        sources.iter().any(|(path, _)| *path == tests)
-    } else {
-        sources
-            .iter()
-            .any(|(path, code)| path == root_file && has_main.test(code))
-    };
-    if !runnable {
+    let Some(entry_file) = runnable else {
         return Prepared::Nothing;
-    }
+    };
     // A stylesheet a module imports, `import "todomvc-app-css/index.css";`
     // (ADR 0028), is the page's, as a bundler makes it: in a `<style>`, in
     // the order imported, and the program's look, not the frame's.
@@ -275,7 +270,7 @@ pub fn prepare(
     }
     let report = |message: &str| format!("parent.postMessage({{ run: {run}, {message} }}, \"*\")");
     let linked = link(&sources);
-    let entry = json::stringify(&format!("rust-js:{}", if test { &tests } else { root_file }));
+    let entry = json::stringify(&format!("rust-js:{entry_file}"));
     let start = if test {
         format!("await import({entry});\n{TEST_RUNNER}")
     } else {

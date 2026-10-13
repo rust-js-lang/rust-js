@@ -49,6 +49,8 @@ unsafe extern "Rust" {
     safe fn examples_json(this: &Response) -> Promise<Vec<Example>>;
     #[link_name = "json"]
     safe fn packages_json(this: &Response) -> Promise<Packages>;
+    #[link_name = "JSON.parse"]
+    safe fn manifest_of(text: &str) -> Manifest;
     /// An object's fields, as `(name, text)`: `packages.json`'s modules.
     #[link_name = "Object.entries"]
     safe fn text_fields(object: &JsObject) -> Vec<(String, String)>;
@@ -119,6 +121,19 @@ pub struct Example {
 struct Packages {
     modules: &'static JsObject,
     styles: &'static JsObject,
+}
+
+/// What rust-js says it wrote (ADR 0091): each module's JS, what each
+/// exports, and its tests' runner. The playground reads it, not the JS.
+struct Manifest {
+    modules: Vec<ManifestModule>,
+    tests: Option<String>,
+}
+
+struct ManifestModule {
+    module: Vec<String>,
+    file: String,
+    exports: Vec<String>,
 }
 
 /// What the page needs before it can compile anything.
@@ -279,6 +294,12 @@ pub struct Compiled {
     pub ok: bool,
     /// The JS files, `path → text`.
     pub files: HashMap<String, String>,
+    /// The root module's, `lib.js` or `lib.jsx`.
+    pub root: String,
+    /// Whether it exports `main`, what running the program calls.
+    pub main: bool,
+    /// The `#[test]` functions' runner, of a compile with `test`.
+    pub tests: Option<String>,
     pub stderr: String,
     pub instantiate: f64,
     pub run: f64,
@@ -326,14 +347,14 @@ fn directory_of(sources: &HashMap<String, String>) -> HashMap<String, &'static I
     top
 }
 
-/// Every `.js` or `.jsx` file under a WASI directory, as `path → text`.
-fn js_files_in(folder: &WasiDirectory, prefix: &str, found: &mut Vec<(String, String)>) {
+/// Every file under a WASI directory, as `path → text`.
+fn texts_in(folder: &WasiDirectory, prefix: &str, found: &mut HashMap<String, String>) {
     for (name, &entry) in contents(folder).iter() {
         if is_directory(entry) {
-            js_files_in(as_directory(entry), &format!("{prefix}{name}/"), found);
-        } else if is_file(entry) && (name.ends_with(".js") || name.ends_with(".jsx")) {
+            texts_in(as_directory(entry), &format!("{prefix}{name}/"), found);
+        } else if is_file(entry) {
             let text = text_decoder::new().decode_with_input(file_data(as_file(entry)));
-            found.push((format!("{prefix}{name}"), text));
+            found.insert(format!("{prefix}{name}"), text);
         }
     }
 }
@@ -381,7 +402,13 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
     if test {
         args.push("--test".to_string());
     }
-    for arg in [format!("/in/{root_file}"), "-o".to_string(), out_file] {
+    for arg in [
+        format!("/in/{root_file}"),
+        "-o".to_string(),
+        out_file,
+        "--manifest".to_string(),
+        "/out/manifest.json".to_string(),
+    ] {
         args.push(arg);
     }
     for arg in ["--", "--target", "wasm32-unknown-unknown", "--sysroot", "/sysroot"] {
@@ -432,15 +459,42 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         ),
     };
 
-    let mut files = Vec::new();
+    // What it wrote, as its manifest says: each module's JS, and the runner.
+    let mut written = HashMap::new();
     if ok {
-        js_files_in(preopen_dir(out_dir), "", &mut files);
+        texts_in(preopen_dir(out_dir), "", &mut written);
+    }
+    let path = |file: &str| file.strip_prefix("/out/").unwrap_or(file).to_string();
+    let mut files = HashMap::new();
+    let (mut root, mut main, mut tests) = (String::new(), false, None);
+    if let Some(text) = written.get("manifest.json") {
+        let manifest = manifest_of(text);
+        for module in &manifest.modules {
+            let file = path(&module.file);
+            if module.module.is_empty() {
+                root = file.clone();
+                main = module.exports.iter().any(|name| name == "main");
+            }
+            if let Some(text) = written.get(&file) {
+                files.insert(file, text.clone());
+            }
+        }
+        if let Some(runner) = &manifest.tests {
+            let file = path(runner);
+            if let Some(text) = written.get(&file) {
+                files.insert(file.clone(), text.clone());
+            }
+            tests = Some(file);
+        }
     }
     let memory = exported_memory(instance.exports()).buffer();
     Compiled {
         exit,
         ok,
-        files: files.into_iter().collect(),
+        files,
+        root,
+        main,
+        tests,
         stderr: stderr.borrow().join("\n"),
         instantiate: t1 - t0,
         run: t2 - t1,

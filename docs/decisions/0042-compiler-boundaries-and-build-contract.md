@@ -1,6 +1,7 @@
 # 0042. Compiler phases and a manifest for build tools
 
-Status: Accepted. Extends 0006, 0018, 0019, 0040 and 0041.
+Status: Accepted. (Amended: a module's exports, and the tests' runner.)
+Extends 0006, 0018, 0019, 0040 and 0041.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -54,8 +55,15 @@ The version-1 JSON manifest records:
 
 - `input`, `output`: the input and requested output paths.
 - `sources`: source files loaded by rustc, including modules emitting no JS.
-- `modules`: Rust module path segments, final `file`, `map`, `source`, and generated module `imports`.
+- `modules`: Rust module path segments, final `file`, `map`, `source`, and generated module `imports`,
+  and `exports`, what each exports by name, `default` its default export's.
 - `artifacts`: generated file paths and stable content fingerprints.
+- `tests`: of a build with `--test`, the runner of its `#[test]` functions.
+
+(Amended: a host read what a module exports, a program's `main`, of its JS
+by a regular expression, and named the tests' runner by its own rule, as
+the playground did; found by the third architecture audit. Both are
+optional, absent of an older compiler's manifest.)
 
 Native paths are absolute. The requested `output` can end in `.js` while the
 actual root module's `file` ends in `.jsx`. Consumers must use final filenames,

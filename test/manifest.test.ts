@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
 import { createNativeBuilder, pruneUnused } from "../tooling/build.js";
-import { buildCompiler, compiler, fixture, installRuntime, root as repository } from "./support";
+import { buildCompiler, compiler, fixture, installRuntime, root as repository, run } from "./support";
 
 const manifest = {
   version: 1, input: "/virtual/lib.rs", output: "/virtual/lib.js",
@@ -16,10 +16,39 @@ const manifest = {
 test("hosts reject incompatible and malformed manifests before consuming paths", () => {
   for (const value of [null, { ...manifest, version: 2 }, { ...manifest, sources: [123] },
     { ...manifest, output: "relative.js" }, { ...manifest, artifacts: [] },
-    { ...manifest, modules: [{ ...manifest.modules[0], imports: ["/missing.js"] }] }]) {
+    { ...manifest, modules: [{ ...manifest.modules[0], imports: ["/missing.js"] }] },
+    { ...manifest, modules: [{ ...manifest.modules[0], exports: [1] }] },
+    { ...manifest, tests: "/virtual/missing.test.js" }]) {
     expect(() => parseManifest(JSON.stringify(value))).toThrow();
   }
   expect(parseManifest(JSON.stringify(manifest))).toEqual(manifest);
+});
+
+// What a module exports, and the runner of a build's `#[test]` functions,
+// a host reads of the manifest, not of the JS: the playground ran a
+// program's `main` by a regular expression over its JS, and named its
+// tests' runner by its own rule (the third architecture audit).
+test("a manifest says what each module exports, and where its tests' runner is", () => {
+  buildCompiler();
+  const dir = fixture("manifest-exports");
+  writeFileSync(join(dir, "lib.rs"), `mod util {
+    pub fn helper() -> u32 { 1 }
+}
+pub use util::helper;
+pub const LIMIT: u32 = 3;
+pub async fn main() {}
+fn private() {}
+#[test]
+fn adds() { assert_eq!(util::helper() + 1, 2); }
+`);
+  const out = join(dir, "out");
+  run([compiler, "--test", join(dir, "lib.rs"), "-o", join(out, "lib.js"), "--manifest", join(out, "manifest.json")]);
+  const read = parseManifest(readFileSync(join(out, "manifest.json"), "utf8"));
+  const root = read.modules.find((module: { module: string[] }) => module.module.length === 0);
+  // And, built to run them, its `#[test]` functions, which the runner imports.
+  expect([...root.exports].sort()).toEqual(["LIMIT", "adds", "helper", "main"]);
+  expect(read.tests).toBe(join(realpathSync(out), "lib.test.js"));
+  expect(existsSync(read.tests)).toBe(true);
 });
 
 test("compiler identities reject incompatible ABI and missing version fields", () => {

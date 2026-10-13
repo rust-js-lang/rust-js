@@ -498,7 +498,3 @@ architecture audit found the rest.
 - **Short dispatchers of calls from MIR:** `mir_call` (118 lines),
   `mir_call_values` (306) and `mir_std_call` (261) are held to their
   lengths, each lowered as what's left in it goes where its kind is.
-- **The playground reads a manifest:** its host names the output,
-  `{stem}.js`, takes every JS file the compiler wrote, and finds `main`
-  by a regular expression over the JS; a manifest of it, which would say
-  whether the program has a `main`, is what build hosts read.

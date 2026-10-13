@@ -45,6 +45,10 @@ pub struct Manifest {
     pub sources: Vec<PathBuf>,
     pub modules: Vec<Module>,
     pub artifacts: Vec<Artifact>,
+    /// Its `#[test]` functions' runner, `<output>.test.js`, of a build with
+    /// `--test` (ADR 0026): what a host runs them by.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tests: Option<PathBuf>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -61,6 +65,10 @@ pub struct Module {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub located: bool,
     pub imports: Vec<PathBuf>,
+    /// What it exports, by name, `default` its default export's: what a
+    /// host may call of it, a program's `main`, without reading its JS.
+    #[serde(default)]
+    pub exports: Vec<String>,
     /// Where its JS names another module's file, `"./util.js"`, by the
     /// compiler's parse of it: what a host that copies the files elsewhere
     /// rewrites, and nothing else (ADR 0101). Written even where there's

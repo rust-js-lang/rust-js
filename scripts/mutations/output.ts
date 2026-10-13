@@ -202,4 +202,20 @@ export const mutations: Mutation[] = [
     replace: "        let file = self\n            .js_path(to)\n            .with_extension(\"js\")\n            .file_name()",
     tests: ["test/emission.test.ts", "-t", "mixed JS and JSX modules use their final paths in imports and the manifest"],
   },
+  {
+    name: "exports-unlisted",
+    breaks: "a module's exported function isn't in its manifest's `exports`, and a host can't tell a program has a `main`",
+    file: "src/output.rs",
+    find: "        js::Item::Function(function) if function.export => Some(function.name.clone()),\n",
+    replace: "        js::Item::Function(function) if false => Some(function.name.clone()),\n",
+    tests: ["test/manifest.test.ts", "-t", "what each module exports"],
+  },
+  {
+    name: "tests-runner-unrecorded",
+    breaks: "a `--test` build's manifest doesn't say where its tests' runner is",
+    file: "src/output.rs",
+    find: "                tests,\n            };",
+    replace: "                tests: None,\n            };",
+    tests: ["test/manifest.test.ts", "-t", "what each module exports"],
+  },
 ];

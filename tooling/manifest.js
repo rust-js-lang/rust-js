@@ -52,9 +52,11 @@ export function parseManifest(text) {
         && strings(module.module) && path(module.file) && path(module.map)
         && (module.types === undefined || path(module.types))
         && (module.source === null || path(module.source)) && paths(module.imports)
+        && (module.exports === undefined || strings(module.exports))
         && links(module.links) && links(module.type_links))
       || !Array.isArray(result.artifacts) || !result.artifacts.every(artifact => object(artifact)
-        && path(artifact.file) && typeof artifact.hash === "string" && /^[0-9a-f]{16}$/.test(artifact.hash))) {
+        && path(artifact.file) && typeof artifact.hash === "string" && /^[0-9a-f]{16}$/.test(artifact.hash))
+      || (result.tests !== undefined && !path(result.tests))) {
     throw new Error("Invalid rust-js manifest: expected absolute paths, modules and fingerprinted artifacts");
   }
   const artifacts = new Set(result.artifacts.map(artifact => artifact.file));
@@ -63,7 +65,8 @@ export function parseManifest(text) {
       || modules.size !== result.modules.length
       || result.modules.some(module => !artifacts.has(module.file) || !artifacts.has(module.map)
         || (module.types !== undefined && !artifacts.has(module.types))
-        || module.imports.some(file => !modules.has(file)))) {
+        || module.imports.some(file => !modules.has(file)))
+      || (result.tests !== undefined && !artifacts.has(result.tests))) {
     throw new Error("Invalid rust-js manifest: inconsistent module artifacts or imports");
   }
   return result;

@@ -123,10 +123,20 @@ pub fn App() -> JSX::Element {
     let live = move || source.current().map(|view| editor_state(view));
 
     // Run what a compile wrote, in the Result frame.
-    let run = move |files: &HashMap<String, String>, loaded: &Loaded, root_js: &str, test: bool| {
+    let run = move |compiled: &Compiled, loaded: &Loaded, test: bool| {
         let n = runs.current() + 1;
         runs.set_current(n);
-        match prepare(files, &loaded.modules, &loaded.styles, root_js, test, n) {
+        let tests = compiled.tests.as_deref();
+        match prepare(
+            &compiled.files,
+            &loaded.modules,
+            &loaded.styles,
+            &compiled.root,
+            compiled.main,
+            tests,
+            test,
+            n,
+        ) {
             Prepared::Nothing => set_program.set(None),
             Prepared::Blocked(imports) => {
                 set_program.set(None);
@@ -155,7 +165,6 @@ pub fn App() -> JSX::Element {
         }
         let sources = project.sources(live());
         let root = project.root.clone();
-        let root_js = js_name(&project.root);
         let shown = match output {
             Output::Files { shown, .. } => shown.clone(),
             _ => String::new(),
@@ -176,24 +185,18 @@ pub fn App() -> JSX::Element {
                     .map(|(path, text)| (path.clone(), text.clone()))
                     .collect();
                 let count = files.len();
-                let root_jsx = format!("{root_js}x");
-                let root_js = if files.iter().any(|(path, _)| *path == root_jsx) {
-                    root_jsx
-                } else {
-                    root_js
-                };
                 // Keep showing the same file if it's still there; otherwise the root's.
                 let shown = if files.iter().any(|(path, _)| *path == shown) {
                     shown
                 } else {
-                    root_js.clone()
+                    r.root.clone()
                 };
                 set_output.set(Output::Files { files, shown });
                 set_status.set(say(
                     format!("Compiled: {count} JS file{}.", if count == 1 { "" } else { "s" }),
                     Tone::Good,
                 ));
-                run(&r.files, loaded, &root_js, test);
+                run(&r, loaded, test);
             } else {
                 set_output.set(Output::Diagnostics(r.stderr.clone()));
                 set_program.set(None);

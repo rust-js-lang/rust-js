@@ -456,11 +456,13 @@ impl OutputPlan {
                 source: module.file.as_deref().map(absolute).transpose()?,
                 located: module.located,
                 imports,
+                exports: exports(module),
                 links: Vec::new(),
                 type_links: Vec::new(),
             });
         }
         let test_artifact = self.tests(&lowered.tests);
+        let tests = test_artifact.as_ref().map(|test| absolute(&test.path)).transpose()?;
         if let Some(test) = &test_artifact {
             planned.push(absolute(&test.path)?);
         }
@@ -560,6 +562,7 @@ impl OutputPlan {
                         hash: fingerprint(&a.bytes),
                     })
                     .collect(),
+                tests,
             };
             // What Cargo is told of the build, then the manifest, last: a
             // host that sees it sees all the build wrote.
@@ -576,6 +579,22 @@ impl OutputPlan {
         artifacts.extend(extra);
         Ok(ArtifactPlan { artifacts, stale })
     }
+}
+
+/// What `module` exports, by name, as it's printed: its exported functions,
+/// constants and namespaces, what it re-exports, by the name it gives, and
+/// `default`, of its default export.
+fn exports(module: &program::LoweredModule) -> Vec<String> {
+    let own = module.items.iter().filter_map(|item| match item {
+        js::Item::Function(function) if function.export => Some(function.name.clone()),
+        js::Item::Const(constant) if constant.export => Some(constant.name.clone()),
+        js::Item::Namespace(namespace) if namespace.export => Some(namespace.name.clone()),
+        _ => None,
+    });
+    let reexported =
+        (module.reexports.iter()).flat_map(|reexport| reexport.named.iter().map(|(_, alias)| alias.clone()));
+    let default = module.default_export.as_ref().map(|_| "default".to_string());
+    own.chain(reexported).chain(default).collect()
 }
 
 /// What a build writes and what it leaves stale, constructed by `plan` alone,

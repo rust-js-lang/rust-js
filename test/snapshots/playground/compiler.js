@@ -13,6 +13,7 @@ import {
   $borrowMut,
   $extend,
   $rsplitOnce,
+  $stripPrefix,
   $stripSuffix,
   $try,
   $unborrow,
@@ -149,13 +150,13 @@ function directoryOf(sources) {
   return top;
 }
 
-function jsFilesIn(folder, prefix, found) {
+function textsIn(folder, prefix, found) {
   for (const [name, entry] of Array.from(folder.contents)) {
     if (entry instanceof Directory) {
-      jsFilesIn(entry, `${prefix}${name}/`, found);
-    } else if (entry instanceof File && (name.endsWith(".js") || name.endsWith(".jsx"))) {
+      textsIn(entry, `${prefix}${name}/`, found);
+    } else if (entry instanceof File) {
       const text = new TextDecoder().decode(entry.data);
-      found.push([prefix + name, text]);
+      found.set(prefix + name, text);
     }
   }
 }
@@ -209,7 +210,7 @@ export async function compile(loaded, sources, rootFile, test) {
   if (test) {
     args.push("--test");
   }
-  for (const arg of [`/in/${rootFile}`, "-o", outFile]) {
+  for (const arg of [`/in/${rootFile}`, "-o", outFile, "--manifest", "/out/manifest.json"]) {
     args.push(arg);
   }
   for (const arg of ["--", "--target", "wasm32-unknown-unknown", "--sysroot", "/sysroot"]) {
@@ -246,26 +247,64 @@ export async function compile(loaded, sources, rootFile, test) {
     const e = started._0;
     exit = `trap (${e instanceof Error ? e.message : String(e)})`;
   }
-  const files = [];
+  const written = new Map();
   if (ok) {
-    jsFilesIn(outDir.dir, "", files);
+    textsIn(outDir.dir, "", written);
+  }
+  const path = (file) => $stripPrefix(file, "/out/") ?? file;
+  const files = new Map();
+  let root = "";
+  let main = false;
+  let tests;
+  const text = written.get("manifest.json");
+  if (text != null) {
+    const manifest = JSON.parse(text);
+    for (const module of manifest.modules) {
+      const file = path(module.file);
+      if (module.module.length === 0) {
+        root = file;
+        main = module.exports.includes("main");
+      }
+      const text = written.get(file);
+      if (text != null) {
+        files.set(file, text);
+      }
+    }
+    if (manifest.tests != null) {
+      const file = path(manifest.tests);
+      const text = written.get(file);
+      if (text != null) {
+        files.set(file, text);
+      }
+      tests = file;
+    }
   }
   const memory = instance.exports.memory.buffer;
-  const value = new Map(files);
-  const value$1 = $borrow(stderr, true);
+  const value = $borrow(stderr, true);
   let tmp;
   let tmp$1;
   let tmp$2;
   try {
-    tmp = value$1.value.join("\n");
+    tmp = value.value.join("\n");
     tmp$1 = t1 - t0;
     tmp$2 = t2 - t1;
   } catch (error) {
-    $unborrow(value$1);
+    $unborrow(value);
     throw error;
   }
   const memory$1 = memory.byteLength;
-  $unborrow(value$1);
-  return { exit, ok, files: value, stderr: tmp, instantiate: tmp$1, run: tmp$2, memory: memory$1 };
+  $unborrow(value);
+  return {
+    exit,
+    ok,
+    files,
+    root,
+    main,
+    tests,
+    stderr: tmp,
+    instantiate: tmp$1,
+    run: tmp$2,
+    memory: memory$1,
+  };
 }
 //# sourceMappingURL=compiler.js.map
