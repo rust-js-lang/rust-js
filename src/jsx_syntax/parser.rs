@@ -396,8 +396,8 @@ impl Jsx<'_> {
         // Capture only when the separate key or spread would change that
         // order. Ordinary components must stay ordinary JSX expressions.
         // `{..base}` is Rust's struct update, evaluated last, as Rust's is.
-        // A ref that does nothing, read where it's moved to, is read the
-        // same: only one that might do something is captured (ADR 0254).
+        // A key or ref that does nothing, read where it's moved to, is read
+        // the same: only one that might do something is captured (ADR 0254).
         let capture = attrs
             .iter()
             .position(|(name, _, _)| name == "key")

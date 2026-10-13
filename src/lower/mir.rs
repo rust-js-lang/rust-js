@@ -1227,20 +1227,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Err(self.unsupported(span, "this closure, without its MIR"));
         };
         let mut captures = Vec::new();
-        // What it shares a reference to nothing changes while it runs
-        // (borrowck says so): there, it reads alike.
-        let mut shared = Vec::new();
         let upvars = match self.tcx.type_of(def_id).skip_binder().kind() {
             ty::Closure(_, args) => args.as_closure().upvar_tys().to_vec(),
             _ => Vec::new(),
         };
         for (i, value) in captured.into_iter().enumerate() {
-            if let Value::Place(place) = &value
-                && let js::ExprKind::Var(name) = &place.kind
-                && self.locals.alike.insert(name.clone())
-            {
-                shared.push(name.clone());
-            }
             captures.push(match value {
                 Value::Ref(place) | Value::Place(place) => (place, true),
                 // A `&mut` to a variable of the maker's own, an object: the
@@ -1296,9 +1287,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let lowered = self.mir_function(mir, Some(captures));
         self.thir = outer;
         self.body_facts = outer_facts;
-        for name in shared {
-            self.locals.alike.remove(&name);
-        }
         let (mut params, mut stmts) = lowered?;
         // The functions written in it, in its body (ADR 0308).
         let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())

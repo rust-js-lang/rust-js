@@ -11,14 +11,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "closure_drops"],
   },
   {
-    name: "drop-deref-temporary",
-    breaks: "a temporary dereferenced in place, as a method call through a returned `Box`, is never dropped",
-    file: "src/lower/drops/facts.rs",
-    find: "                | ExprKind::Index { lhs: arg, .. }\n                | ExprKind::Deref { arg },\n",
-    replace: "                | ExprKind::Index { lhs: arg, .. },\n",
-    tests: ["test/corpus.test.ts", "-t", "drop_deref_temporary"],
-  },
-  {
     name: "unsize-array-as-dyn",
     breaks: "an array unsized to a slice in a trait's default method is taken for a `dyn`, and rejected",
     file: "src/lower/drops/facts.rs",
@@ -80,8 +72,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        if used_in_place && !self.momentary(e) {",
     replace: "        if used_in_place {",
-    tests: ["test/corpus.test.ts", "-t", "^locks"],
-    snapshots: true,
+    tests: ["test/jsx.test.ts", "-t", "react.dev's InlineToc nests its headings in a field's array"],
   },
   {
     name: "quiet-ignores-calls",
@@ -97,14 +88,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/drops/facts.rs",
     find: "        if asks || (!is_place(&expr.kind) && self.drops(expr.ty)) {",
     replace: "        if asks {",
-    tests: ["test/lowering.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
-  },
-  {
-    name: "quiet-shared-asks",
-    breaks: "two shared borrows in one statement are each held",
-    file: "src/lower/drops/facts.rs",
-    find: "                    if self.shared\n",
-    replace: "                    if false && self.shared\n",
     tests: ["test/lowering.test.ts", "-t", "a field's RefCell only borrowed for a moment is its value"],
   },
   {

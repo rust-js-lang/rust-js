@@ -12,7 +12,7 @@ export function App() {
   if (value === "List") {
     page = <ContactList />;
   } else if (value.TAG === "Contact") {
-    page = <ContactPage id={value._0} key={value._0} />;
+    page = <ContactPage key={value._0} id={value._0} />;
   } else if (value === "New") {
     page = <NewContactForm />;
   } else {

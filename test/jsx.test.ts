@@ -5671,6 +5671,365 @@ pub fn SidebarLink(
   expect(renderToStaticMarkup(createElement(lib.SidebarLink, { href: "https://x", selected: true, title: "T", level: 0, version: "major", isPending: false }))).toContain('<a href="https://x" class="p-2 pe-2');
 });
 
+// react.dev's Preview: its error's test, `!!error`, a negation of a state's
+// value, reads the same after a later child's statement, its overlay's
+// `&&`, so it's `error && (..)` in place, not `const condition = !!error`.
+test("react.dev's Preview tests its error in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx, use_state};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub struct ErrorType {
+    pub message: String,
+}
+pub struct ErrorMessageProps<'a> {
+    pub error: &'a ErrorType,
+}
+pub fn ErrorMessage(ErrorMessageProps { error }: ErrorMessageProps) -> JSX::Element {
+    jsx! { <pre>{error.message.as_str()}</pre> }
+}
+pub struct LoadingOverlayProps {
+    pub dependencies_loading: bool,
+}
+pub fn LoadingOverlay(LoadingOverlayProps { dependencies_loading }: LoadingOverlayProps) -> Option<JSX::Element> {
+    dependencies_loading.then(|| jsx! { <p /> })
+}
+pub fn Preview(is_expanded: bool, rawError: Option<&'static ErrorType>) -> JSX::Element {
+    let (bundlerIsReady, _) = use_state(false);
+    let (iframeComputedHeight, _) = use_state::<Option<f64>>(None);
+    let (error, _) = use_state(rawError);
+    let error = *error;
+    jsx! {
+        <div>
+            {error.map(|error| jsx! {
+                <div className={cn(&[Some("z-50"), is_expanded.then_some("sticky top-8 ")])}>
+                    <ErrorMessage error={error} />
+                </div>
+            })}
+            <LoadingOverlay dependencies_loading={!*bundlerIsReady && iframeComputedHeight.is_none()} />
+        </div>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("{error && (");
+  expect(jsx).not.toContain("const condition");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(() => lib.Preview(true, { message: "boom" })))).toBe('<div><div class="z-50 sticky top-8 "><pre>boom</pre></div><p></p></div>');
+  expect(renderToStaticMarkup(createElement(() => lib.Preview(false, undefined)))).toBe("<div><p></p></div>");
+});
+
+// react.dev's Page: its feed's test, `isHomePage || isBlogIndex`, shows an
+// import, `Head`, which no later child's statement can change, so it's in
+// place, not `const condition = ..` before them.
+test("react.dev's Page tests its home and blog index in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, ReactNode, jsx};
+fn cn(parts: &[Option<&str>]) -> String {
+    parts.iter().flatten().copied().collect::<Vec<_>>().join(" ")
+}
+pub struct HeadProps<C: ReactNode> {
+    pub children: C,
+}
+#[rust_js::link_name = "./head.js#default"]
+pub fn Head<C: ReactNode>(_: HeadProps<C>) -> JSX::Element {
+    unreachable!()
+}
+pub fn Page(cleaned_path: &str) -> JSX::Element {
+    let is_home_page = cleaned_path == "/";
+    let is_blog_index = cleaned_path == "/blog";
+    jsx! {
+        <>
+            {(is_home_page || is_blog_index).then(|| jsx! {
+                <Head>
+                    <link rel="alternate" type="application/rss+xml" title="React Blog RSS Feed" href="/rss.xml" />
+                </Head>
+            })}
+            <div className={cn(&[is_home_page.then_some("grid")])} />
+        </>
+    }
+}
+`, { "head.js": 'import { createElement } from "react"; export default function Head({ children }) { return createElement("head", null, children); }\n' });
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("{(isHomePage || isBlogIndex) && (");
+  expect(jsx).not.toContain("const condition");
+  const lib = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(lib.Page("/blog"))).toBe('<head><link rel="alternate" type="application/rss+xml" title="React Blog RSS Feed" href="/rss.xml"/></head><div class=""></div>');
+  expect(renderToStaticMarkup(lib.Page("/learn"))).toBe('<div class=""></div>');
+});
+
+// react.dev's NavigationBar: its options, a component shown if a test holds
+// among Headless UI's `Listbox`'s children, are `test && <Listbox.Options>`
+// in place (ADR 0235), not the component and its items held in `let`s
+// before a later child's closure, `{!!condition && <Component>}`.
+test("react.dev's NavigationBar shows its options in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use std::collections::HashMap;
+use react::attributes::HtmlHTMLAttributes;
+use react::{JSX, ReactNode, jsx, use_state};
+pub struct ListboxProps<T, C> {
+    pub value: Option<T>,
+    pub children: C,
+}
+#[rust_js::link_name = "./listbox.js#Listbox"]
+pub fn Listbox<T, C: ReactNode>(_: ListboxProps<T, C>) -> JSX::Element {
+    unreachable!()
+}
+#[derive(Default)]
+pub struct ListboxOptionsProps<'a, C> {
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub props: HtmlHTMLAttributes<'a>,
+    pub children: C,
+}
+#[rust_js::link_name = "./listbox.js#Listbox.Options"]
+pub fn ListboxOptions<C: ReactNode>(_: ListboxOptionsProps<'_, C>) -> JSX::Element {
+    unreachable!()
+}
+pub struct PlaygroundProps<'a> {
+    pub content: &'a str,
+}
+pub fn Playground(PlaygroundProps { content }: PlaygroundProps) -> JSX::Element {
+    jsx! { <pre>{content}</pre> }
+}
+pub fn NavigationBar(activeFile: &'static str, visibleFiles: &'static [String], files: &'static HashMap<&'static str, String>) -> JSX::Element {
+    let (showDropdown, _) = use_state(true);
+    let isMultiFile = visibleFiles.len() > 1;
+    jsx! {
+        <div>
+            <Listbox value={Some(activeFile.to_string())}>
+                <span>{activeFile}</span>
+                {(isMultiFile && *showDropdown).then(|| jsx! {
+                    <ListboxOptions className={Some("absolute mt-0.5")}>
+                        {visibleFiles.iter().map(|filePath| jsx! { <li key={filePath.as_str()}>{filePath.as_str()}</li> }).collect::<Vec<_>>()}
+                    </ListboxOptions>
+                })}
+            </Listbox>
+            {activeFile.ends_with(".tsx").then(|| jsx! { <Playground content={files.get(activeFile).map(|file| file.as_str()).unwrap_or("")} /> })}
+        </div>
+    }
+}
+`, { "listbox.js": 'import { createElement } from "react"; export function Listbox({ children }) { return createElement("div", null, children); } Listbox.Options = function Options({ className, children }) { return createElement("ul", { className }, children); };\n' });
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain('{isMultiFile && showDropdown && (\n          <Listbox.Options className="absolute mt-0.5">');
+  expect(jsx).not.toContain("let Component");
+  const lib = await import(join(dir, "lib.jsx"));
+  const files = new Map([["App.tsx", "code"]]);
+  expect(renderToStaticMarkup(createElement(() => lib.NavigationBar("App.tsx", ["App.tsx", "a.ts"], files)))).toBe('<div><div><span>App.tsx</span><ul class="absolute mt-0.5"><li>App.tsx</li><li>a.ts</li></ul></div><pre>code</pre></div>');
+  expect(renderToStaticMarkup(createElement(() => lib.NavigationBar("a.ts", ["a.ts"], files)))).toBe("<div><div><span>a.ts</span></div></div>");
+});
+
+// react.dev's Diagram: its images' srcs, `withBasePath(..)` made before
+// MIR's block for the caption's test, are read in place, and the test,
+// `matches!(.., None | Some(Bottom))`, is `(.. == null || .. === "bottom") &&`,
+// not `let tmp = true` set in an `if` before the JSX.
+test("react.dev's Diagram writes its images' srcs and caption test in place", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+#[rust_js::camel_case]
+const _: () = ();
+use react::{JSX, jsx};
+pub struct ImageProps<'a> {
+    pub src: &'a str,
+    pub alt: &'a str,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+}
+#[rust_js::link_name = "./image.js#default"]
+pub fn Image(_: ImageProps) -> JSX::Element {
+    unreachable!()
+}
+pub fn withBasePath(path: &str) -> String {
+    if path.starts_with('/') && !path.starts_with("//") {
+        format!("/base{path}")
+    } else {
+        path.to_string()
+    }
+}
+#[derive(Clone, Copy, PartialEq)]
+pub enum CaptionPosition {
+    #[cfg_attr(rust_js, rust_js::name = "top")]
+    Top,
+    #[cfg_attr(rust_js, rust_js::name = "bottom")]
+    Bottom,
+}
+pub struct DiagramProps<'a> {
+    pub name: &'a str,
+    pub alt: &'a str,
+    pub height: u32,
+    pub width: u32,
+    pub children: &'a str,
+    pub caption_position: Option<CaptionPosition>,
+}
+struct CaptionProps<'a> {
+    text: &'a str,
+}
+fn Caption(CaptionProps { text }: CaptionProps) -> JSX::Element {
+    jsx! {
+        <div className="w-full flex justify-center">
+            <figcaption className="p-1 sm:p-2 mt-0 sm:mt-0 text-gray-40 text-base lg:text-lg text-center leading-tight table-caption max-w-lg">
+                {text}
+            </figcaption>
+        </div>
+    }
+}
+pub fn Diagram(
+    DiagramProps {
+        name,
+        alt,
+        height,
+        width,
+        children,
+        caption_position,
+    }: DiagramProps,
+) -> JSX::Element {
+    jsx! {
+        <figure className="flex flex-col px-0 p-0 sm:p-10 first:mt-0 mt-10 sm:mt-0 justify-center items-center">
+            {(caption_position == Some(CaptionPosition::Top)).then(|| jsx! { <Caption text={children} /> })}
+            <div className="dark-image">
+                <Image
+                    src={withBasePath(&format!("/images/docs/diagrams/{name}.dark.png")).as_str()}
+                    alt={alt}
+                    height={Some(height)}
+                    width={Some(width)}
+                />
+            </div>
+            <div className="light-image">
+                <Image
+                    src={withBasePath(&format!("/images/docs/diagrams/{name}.png")).as_str()}
+                    alt={alt}
+                    height={Some(height)}
+                    width={Some(width)}
+                />
+            </div>
+            {matches!(caption_position, None | Some(CaptionPosition::Bottom)).then(|| jsx! { <Caption text={children} /> })}
+        </figure>
+    }
+}
+`, { "image.js": 'import { createElement } from "react"; export default function Image({ src, alt, width, height }) { return createElement("i", { "data-src": src, title: alt, "data-size": `${width}x${height}` }); }\n' });
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("src={withBasePath(`/images/docs/diagrams/${name}.dark.png`)}");
+  expect(jsx).toContain('{(captionPosition == null || captionPosition === "bottom") && <Caption text={children} />}');
+  expect(jsx).not.toContain("let tmp");
+  const lib = await import(join(dir, "lib.jsx"));
+  const props = { name: "d", alt: "A", height: 1, width: 2, children: "C" };
+  const caption = '<div class="w-full flex justify-center"><figcaption class="p-1 sm:p-2 mt-0 sm:mt-0 text-gray-40 text-base lg:text-lg text-center leading-tight table-caption max-w-lg">C</figcaption></div>';
+  const images = '<div class="dark-image"><i data-src="/base/images/docs/diagrams/d.dark.png" title="A" data-size="2x1"></i></div><div class="light-image"><i data-src="/base/images/docs/diagrams/d.png" title="A" data-size="2x1"></i></div>';
+  const figure = (inside: string) => `<figure class="flex flex-col px-0 p-0 sm:p-10 first:mt-0 mt-10 sm:mt-0 justify-center items-center">${inside}</figure>`;
+  expect(renderToStaticMarkup(createElement(lib.Diagram, props))).toBe(figure(images + caption));
+  expect(renderToStaticMarkup(createElement(lib.Diagram, { ...props, captionPosition: "top" }))).toBe(figure(caption + images));
+});
+
+// react.dev's InlineToc: a node's `RefCell` of children, only borrowed for a
+// moment, to push, to count and to pass on, is the array itself, not a cell
+// with `$borrow` and `$unborrow` around each use.
+test("react.dev's InlineToc nests its headings in a field's array", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+#[rust_js::camel_case]
+const _: () = ();
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+use react::{Context, JSX, ReactNode, create_context, jsx, use_context, use_memo};
+pub struct TocItem {
+    pub url: String,
+    pub text: JSX::Element,
+    pub depth: u32,
+}
+thread_local! {
+    pub static TocContext: Context<&'static [TocItem]> = create_context(&[]);
+    pub static IsInTocContext: Context<bool> = create_context(false);
+}
+pub struct ChildrenProps<C> {
+    pub children: C,
+}
+fn UL<C: ReactNode>(ChildrenProps { children }: ChildrenProps<C>) -> JSX::Element {
+    jsx! { <ul>{children}</ul> }
+}
+fn LI<C: ReactNode>(ChildrenProps { children }: ChildrenProps<C>) -> JSX::Element {
+    jsx! { <li>{children}</li> }
+}
+pub struct LinkProps<'a, C> {
+    pub href: Option<&'a str>,
+    pub children: C,
+}
+fn Link<C: ReactNode>(LinkProps { href, children }: LinkProps<C>) -> JSX::Element {
+    jsx! { <a href={href.unwrap_or_default()}>{children}</a> }
+}
+pub struct NestedTocNode {
+    pub item: Option<&'static TocItem>,
+    pub children: RefCell<Vec<Rc<NestedTocNode>>>,
+}
+fn calculateNestedToc(toc: &'static [TocItem]) -> Rc<NestedTocNode> {
+    let mut currentAncestors: HashMap<u32, Rc<NestedTocNode>> = HashMap::new();
+    let root = Rc::new(NestedTocNode {
+        item: None,
+        children: RefCell::new(vec![]),
+    });
+    let startIndex = 1; // Skip "Overview"
+    for i in startIndex..toc.len() {
+        let item = &toc[i];
+        let currentParent = currentAncestors
+            .get(&(item.depth - 1))
+            .cloned()
+            .unwrap_or_else(|| root.clone());
+        let node = Rc::new(NestedTocNode {
+            item: Some(item),
+            children: RefCell::new(vec![]),
+        });
+        currentParent.children.borrow_mut().push(node.clone());
+        currentAncestors.insert(item.depth, node);
+    }
+    root
+}
+pub fn InlineToc() -> Option<JSX::Element> {
+    let toc = use_context(&TocContext);
+    let root = use_memo(move || calculateNestedToc(toc), (toc,));
+    if root.children.borrow().len() < 2 {
+        return None;
+    }
+    Some(jsx! {
+        <IsInTocContext value={true}>
+            <InlineTocItem items={&root.children.borrow()} />
+        </IsInTocContext>
+    })
+}
+pub struct InlineTocItemProps<'a> {
+    pub items: &'a [Rc<NestedTocNode>],
+}
+fn InlineTocItem(InlineTocItemProps { items }: InlineTocItemProps) -> JSX::Element {
+    jsx! {
+        <UL>
+            {items.iter().map(|node| {
+                // Only the root has no item.
+                let item = node.item.unwrap();
+                jsx! {
+                    <LI key={&item.url}>
+                        <Link href={Some(item.url.as_str())}>{item.text}</Link>
+                        {if node.children.borrow().len() > 0 { Some(jsx! { <InlineTocItem items={&node.children.borrow()} /> }) } else { None }}
+                    </LI>
+                }
+            }).collect::<Vec<_>>()}
+        </UL>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("const root = { children: [] };");
+  expect(jsx).toContain("currentParent.children.push(node);");
+  expect(jsx).toContain("root.children.length < 2");
+  expect(jsx).not.toContain("$borrow");
+  const lib = await import(join(dir, "lib.jsx"));
+  const toc = [["#o", "Overview", 2], ["#a", "A", 2], ["#b", "B", 3], ["#c", "C", 2]].map(([url, text, depth]) => ({ url, text, depth }));
+  const render = (items: object[]) => renderToStaticMarkup(createElement(lib.TocContext, { value: items }, createElement(lib.InlineToc)));
+  expect(render(toc)).toBe('<ul><li><a href="#a">A</a><ul><li><a href="#b">B</a></li></ul></li><li><a href="#c">C</a></li></ul>');
+  expect(render(toc.slice(0, 3))).toBe("");
+});
+
 // ADR 0040: a component's handler of one call whose JS gives `undefined`,
 // held by MIR ahead of a borrow's call, is `() => f()` where it's read in
 // place, as react.dev's ExpandableExample toggles.

@@ -144,7 +144,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "let (before, after) = (values[..*at].concat(), values[*at..].concat());",
     replace: "let (before, after) = (values.concat(), String::new());",
-    tests: ["test/jsx.test.ts", "-t", "takes a component.s flattened props where they.re written, none given left out"],
+    tests: ["test/jsx.test.ts", "-t", "flattened props come before a field"],
   },
   {
     name: "local-component-as-tag",

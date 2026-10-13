@@ -4,6 +4,7 @@ use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
 use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 
+use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{self, ExprId, ExprKind};
 use rustc_middle::ty;
@@ -113,14 +114,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `value` reads the same wherever it's read: a constant, a
-    /// function, or a variable nothing writes again, a `const` of `out`'s,
-    /// and a field of a plain Rust value of one.
+    /// function, an import, or a variable nothing writes again, a `const`
+    /// of `out`'s, a field of a plain Rust value of one, and `!` of them,
+    /// which runs no code of its own: `!done`.
     fn reads_alike(&self, value: &Expr, out: &[Stmt]) -> bool {
         match &value.kind {
             js::ExprKind::Symbol(_) | js::ExprKind::Arrow(..) | js::ExprKind::AsyncArrow(..) => true,
+            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),
             // `p.size`: a field can't change while its value doesn't, where the
             // value is plain Rust data. A JS object's getter, `n.textContent`,
-            // can, and so can what's reached through a `&mut`.
+            // can, and so can what's reached through a `Cell` or a `&mut`.
             // So can't a props pattern's rest's, a JS object of what it was
             // given (ADR 0195).
             js::ExprKind::Member(object, _) => {
@@ -133,8 +136,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     || self
                         .locals
                         .vars
-                        .values()
-                        .any(|var| !var.mutable && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name))
+                    .values()
+                    .any(|var| !var.mutable && matches!(&var.place.kind, js::ExprKind::Var(n) if n == name))
                     || out
                         .iter()
                         .any(|s| matches!(&s.kind, StmtKind::Const(n, _) if n == name))
@@ -143,14 +146,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             && &f.name == name
                             && matches!(self.tcx.def_kind(*id), DefKind::Fn | DefKind::AssocFn)
                     })
+                    // An import's binding, which JS never lets the module change.
+                    || self.krate.imports[&self.module].values().any(|alias| alias == name)
             }
             _ => value.is_constant(),
         }
     }
 
     /// Whether `name` is a variable nothing writes again of plain Rust data,
-    /// whose fields can't change while it doesn't: no `&mut` or raw pointer
-    /// anywhere in its type, nor a JS object, whose properties are getters.
+    /// whose fields can't change while it doesn't: no `&mut`, raw pointer or
+    /// interior mutability anywhere in its type, nor a JS object, whose
+    /// properties are getters.
     pub(super) fn plain_value(&self, name: &str) -> bool {
         self.locals.plain.contains(name)
             || self.locals.vars.iter().any(|(id, var)| {
@@ -298,8 +304,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Read before the children, where a prop after them, a base's, is
         // made after them, as Rust makes it, and the order shows: it does
-        // something. Children that read only what never changes read the
-        // same after.
+        // something, or reads what children that do something might change,
+        // `{..base}` of `bump(&mut base)`. A constant is made nowhere, nor
+        // is an object of them, a flattened struct none of whose fields is
+        // given, and children that read only what never changes read the same after.
         if let Some(i) = fields
             .iter()
             .position(|p| matches!(p, Prop::Field(name, _) if name == "children"))
@@ -379,11 +387,17 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         unreachable!("a struct's fields")
                     };
                     let mut child_ty = types.into_iter().find(|(n, _)| *n == name).expect("the field").1;
-                    // Given by reference, to children of any node, `&(a, b)`,
-                    // what's referred to.
-                    if let Some(&child) = given.get(&name) {
-                        child_ty = self.thir[self.referred_children(child)].ty;
-                    }
+                    // Shown only if a test holds, `test && <el />`, as an
+                    // element's child is (ADR 0235). Given by reference, to
+                    // children of any node, `&(a, b)`, what's referred to.
+                    let value = match given.get(&name) {
+                        Some(&child) => {
+                            let child = self.referred_children(child);
+                            child_ty = self.thir[child].ty;
+                            self.shown_if(child, value)
+                        }
+                        None => value,
+                    };
                     children = self.spread_children(value, child_ty, out);
                 }
                 // A callback of one call whose JS gives `undefined` anyway
@@ -467,14 +481,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Where each prop `props`, a struct of type `ty`, is given is written,
     /// by its name: a field's value's place, and a flattened struct's made
     /// here, each of its own (ADR 0213).
-    /// Whether `e`, a prop's callback, is a closure of one call whose JS
-    /// gives `undefined` whatever it is: a function of the crate's that
-    /// gives `()`, a closure of its own, or a binding that says so,
-    /// `#[rust_js::returns_undefined]` (ADR 0040).
+    /// Whether `e`, a prop's callback, boxed, counted or in `Some`, is a
+    /// closure of one call whose JS gives `undefined` whatever it is: a
+    /// function of the crate's that gives `()`, a closure of its own, or a
+    /// binding that says so, `#[rust_js::returns_undefined]` (ADR 0040).
     fn calls_for_nothing(&self, e: ExprId) -> bool {
         let e = self.strip(e);
         let closure = match self.thir[e].kind {
             ExprKind::PointerCoercion { source, .. } => return self.calls_for_nothing(source),
+            ExprKind::Adt(ref adt)
+                if self.tcx.is_lang_item(adt.adt_def.did(), LangItem::Option) && adt.fields.len() == 1 =>
+            {
+                return false;
+            }
             ExprKind::Closure(ref closure) => closure,
             _ => return false,
         };
@@ -735,16 +754,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "children" => (self.jsx_children(given, &mut first), None),
             _ => (Vec::new(), Some(given.value)),
         };
-        // The receiver is evaluated before the argument: statements
-        // introduced by an argument must not jump ahead of any deferred
-        // receiver evaluations. These temporaries preserve Rust evaluation
-        // order, independently of output formatting.
+        // The receiver is evaluated before the argument. JSX prints attributes
+        // before children; later attributes must not jump ahead of earlier
+        // children. Likewise, statements introduced by an argument must not
+        // jump ahead of any deferred receiver evaluations. These temporaries
+        // preserve Rust evaluation order, independently of output formatting.
         let js::ExprKind::Jsx(jsx) = &mut element.kind else {
             unreachable!("checked above")
         };
         if !simple {
-            // A constant attribute, and a child read already, a `const` of its
-            // own, is read as it is (ADR 0194).
+            // One read already, a `const` of its own, is read as it is (ADR 0194).
             for prop in &mut jsx.props {
                 let (base, value) = match prop {
                     Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),

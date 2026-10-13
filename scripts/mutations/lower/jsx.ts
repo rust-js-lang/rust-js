@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "            && adt.adt_def.is_struct()\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
     replace: "            && false\n            && fields.len() == adt.adt_def.non_enum_variant().fields.len()",
-    tests: ["test/jsx.test.ts", "-t", "a shared capture of a let reads alike, past an element.s key"],
+    tests: ["test/jsx.test.ts","-t","a shared capture of a let reads alike, past an element.s key"],
   },
   {
     name: "props-read-before-constant-base",
@@ -107,6 +107,14 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "no dictionary"],
   },
   {
+    name: "negation-spilled",
+    breaks: "a negation of what reads the same is spilled before a later child's statement: `const condition = !done`",
+    file: "src/lower/jsx.rs",
+    find: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => self.reads_alike(a, out),\n",
+    replace: "            js::ExprKind::Unary(js::UnaryOp::Not, a) => false && self.reads_alike(a, out),\n",
+    tests: ["test/jsx.test.ts", "-t", "react.dev.s Preview tests its error in place"],
+  },
+  {
     name: "tag-as-children",
     breaks: "`react::tag(Comp)` is read as a DOM element taking `Comp` as children",
     file: "src/lower/jsx.rs",
@@ -120,7 +128,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "                value.has_effects() && !self.reads_unchanging(children, out)\n",
     replace: "                value.has_effects()\n",
-    tests: ["test/jsx.test.ts", "-t", "flattened props where they're written, none given left out"],
+    tests: ["test/jsx.test.ts","-t","flattened props where they're written, none given left out"],
   },
   {
     name: "field-read-hoisted",
@@ -140,11 +148,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "                            && !self.is_js_object(t)\n",
     replace: "",
-    tests: [
-      "test/jsx.test.ts",
-      "-t",
-      "spreads a struct through a reference as the struct"
-    ]
+    tests: ["test/jsx.test.ts","-t","spreads a struct through a reference as the struct"],
   },
   {
     name: "rest-base-each-field",
@@ -188,7 +192,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: "if !matches!(none.kind, js::ExprKind::Undefined) {",
     replace: "if true {",
-    tests: ["test/jsx.test.ts", "-t", "tests an Option of an object by its truth"],
+    tests: ["test/jsx.test.ts","-t","tests an Option of an object by its truth"],
   },
   {
     name: "children-tuple-not-recursed",
@@ -196,7 +200,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/jsx.rs",
     find: ".map(|(item, &field)| self.shown_if(field, item))",
     replace: ".map(|(item, _)| item)",
-    tests: ["test/jsx.test.ts", "-t", "an element's props are an ElementType, rendered as a tag"],
+    tests: ["test/jsx.test.ts","-t","an element's props are an ElementType, rendered as a tag"],
   },
   {
     name: "base-spread-last",
@@ -239,6 +243,14 @@ export const mutations: Mutation[] = [
     tests: ["test/jsx.test.ts", "-t", "calls a function with nothing"],
   },
   {
+    name: "captured-import-spilled",
+    breaks: "an import jsx! captures for a key that might do something is spilled, `const match = Fragment`, where it reads the same in place",
+    file: "src/lower/jsx.rs",
+    find: "                    || self.krate.imports[&self.module].values().any(|alias| alias == name)\n",
+    replace: "",
+    tests: ["test/jsx.test.ts", "-t", "react.dev.s Page tests its home and blog index in place"],
+  },
+  {
     name: "binding-callback-returned",
     breaks: "a component's callback of a binding that may give a value returns it, `onRecord={() => globalThis.record(5)}`",
     file: "src/lower/jsx.rs",
@@ -277,6 +289,14 @@ export const mutations: Mutation[] = [
     find: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && self.maps_js_object(child) =>",
     replace: "            js::ExprKind::Unary(js::UnaryOp::Not, not)\n                if let js::ExprKind::Unary(js::UnaryOp::Not, x) = &not.kind\n                    && false =>",
     tests: ["test/jsx.test.ts", "-t", "JSX tests an Option of an object"],
+  },
+  {
+    name: "component-child-shown-ternary",
+    breaks: "a component's child shown only if a test holds is `test ? <el /> : undefined`, where an element's is `test && <el />`",
+    file: "src/lower/jsx.rs",
+    find: "                            self.shown_if(child, value)\n",
+    replace: "                            value\n",
+    tests: ["test/jsx.test.ts", "-t", "react.dev.s NavigationBar shows its options in place"],
   },
   {
     name: "key-last",
@@ -322,8 +342,8 @@ export const mutations: Mutation[] = [
     "name": "referred-children-unspread",
     "breaks": "children given by reference are one array child, `{[a, b]}`, not each a child",
     "file": "src/lower/jsx.rs",
-    "find": "                        child_ty = self.thir[self.referred_children(child)].ty;",
-    "replace": "                        child_ty = self.thir[self.strip(child)].ty;",
+    "find": "                            let child = self.referred_children(child);",
+    "replace": "                            let child = self.strip(child);",
     "tests": [
       "test/jsx.test.ts",
       "-t",

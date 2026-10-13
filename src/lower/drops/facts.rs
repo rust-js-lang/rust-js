@@ -476,8 +476,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                 ExprKind::Borrow { arg, .. }
                 | ExprKind::RawBorrow { arg, .. }
                 | ExprKind::Field { lhs: arg, .. }
-                | ExprKind::Index { lhs: arg, .. }
-                | ExprKind::Deref { arg },
+                | ExprKind::Index { lhs: arg, .. },
             ) => *arg == child,
             // `..Default::default()`, used in place.
             Some(ExprKind::Adt(adt))
@@ -504,12 +503,12 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
         }
         // The borrow: `c.borrow()`, or `m.lock()` of `m.lock().unwrap()`.
         let mut made = e;
-        let (fun, mutable) = loop {
+        let fun = loop {
             let ExprKind::Call { fun, ref args, .. } = self.thir[strip(self.thir, made)].kind else {
                 return false;
             };
             match fn_def(self.thir[fun].ty).and_then(|(id, args)| recognition.classify(id, args)) {
-                Some(Std::Borrow { mutable, .. }) => break (fun, mutable),
+                Some(Std::Borrow { .. }) => break fun,
                 Some(Std::UnwrapOk) => made = args[0],
                 _ => return false,
             }
@@ -538,7 +537,6 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
             cx: self.cx,
             thir: self.thir,
             own: fun,
-            shared: !mutable,
             quiet: true,
         };
         quiet.visit_expr(&self.thir[extent]);
@@ -559,7 +557,6 @@ struct Quiet<'c, 'q, 'a, 'tcx> {
     cx: &'c DropQuery<'q, 'tcx>,
     thir: &'a Thir<'tcx>,
     own: ExprId,
-    shared: bool,
     quiet: bool,
 }
 
@@ -580,15 +577,6 @@ impl<'c, 'q, 'a, 'tcx> Visitor<'a, 'tcx> for Quiet<'c, 'q, 'a, 'tcx> {
         }
         let asks = match expr.kind {
             ExprKind::Call { fun, ref args, .. } if fun != self.own => match fn_def(self.thir[fun].ty) {
-                Some((id, args))
-                    if self.shared
-                        && matches!(
-                            self.cx.recognition.classify(id, args),
-                            Some(Std::Borrow { mutable: false, .. })
-                        ) =>
-                {
-                    false
-                }
                 Some((id, generic_args)) => {
                     self.cx.recognition.may_ask_borrows(id, generic_args)
                         || args.iter().any(|&a| match *self.thir[a].ty.kind() {

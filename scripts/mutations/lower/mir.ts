@@ -480,7 +480,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "        if let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
     replace: "        if false && let Some(last) = state.pending.iter().rposition(|(local, _)| !read.contains(local)) {\n",
-    tests: ["test/jsx.test.ts"],
+    tests: ["test/jsx.test.ts", "-t", "react.dev's Diagram writes its images' srcs and caption test in place"],
   },
   {
     name: "mir-object-copied-back-rebound",
@@ -808,14 +808,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "            js::ExprKind::Var(name) => self.module_names.contains(name) || self.locals.alike.contains(name),\n",
     replace: "            js::ExprKind::Var(name) => self.module_names.contains(name),\n",
-    tests: ["test/jsx.test.ts"],
-  },
-  {
-    name: "mir-shared-capture-changes",
-    breaks: "what a closure shares a reference to may change while it runs, so a tag of it is a temporary's `const`",
-    file: "src/lower/mir.rs",
-    find: "                && self.locals.alike.insert(name.clone())\n",
-    replace: "                && false\n",
     tests: ["test/jsx.test.ts"],
   },
   {
