@@ -188,15 +188,11 @@ test("modules don't use each other in a cycle", () => {
   expect(cycles).toEqual([]);
 });
 
+// Any mention of a rustc crate, `use rustc_middle as m;` too, whose
+// paths, `m::ty`, name no `rustc_` (found in the third architecture audit).
 test("owned compiler output and downstream phases do not depend on rustc", () => {
   for (const file of sources.filter(file => layerOf(file) === "owned" || layerOf(file) === "printing")) {
-    expect(read(file), file).not.toMatch(/(?:use\s+|\b)rustc_\w+::/);
-  }
-});
-
-test("linking uses owned output without lowering dependencies", () => {
-  for (const file of ["src/reachability.rs", "src/link.rs", "src/names.rs"]) {
-    expect(read(file), file).not.toMatch(/(?:crate|super)::lower\b/);
+    expect(read(file), file).not.toMatch(/\brustc_\w+/);
   }
 });
 
@@ -212,14 +208,19 @@ test("runtime imports are chosen before printing", () => {
 
 test("oxc APIs stay behind the printing and formatting adapters", () => {
   for (const file of sources.filter(file => layerOf(file) !== "printing")) {
-    expect(read(file), file).not.toMatch(/\boxc_\w+::/);
+    expect(read(file), file).not.toMatch(/\boxc_\w+/);
   }
 });
 
-test("lowering and artifact planning cannot publish files", () => {
-  for (const file of ["src/lower.rs", ...files("src/lower"), "src/output.rs"]) {
-    expect(read(file), file).not.toMatch(/(?:std::fs|fs)::(?:write|rename|remove_file|create_dir|create_dir_all|File::create)\b/);
-  }
+// Files are written by the publisher, and by the driver, which stages a
+// build and writes a report it's asked for: no other module, by any of
+// std's ways to (found in the third architecture audit: the rule was of
+// lowering and artifact planning alone, and of four of the ways).
+test("only the publisher and the driver write files", () => {
+  const writes = /\bfs::(?:write|rename|remove_\w+|create_dir\w*|copy|hard_link)\b|\bFile::(?:create|options)\b|\bOpenOptions\b/;
+  const writers = ["src/publish.rs", "src/main.rs"];
+  expect(sources.filter(file => !writers.includes(file) && writes.test(read(file)))).toEqual([]);
+  for (const file of writers) expect(read(file), file).toMatch(writes);
 });
 
 test("library recognition cannot access function emission state", () => {
@@ -261,6 +262,16 @@ test("the destructors' facts are found without emitting", () => {
   expect(read("src/lower/drops/types.rs")).not.toMatch(/\bExpr\b/);
 });
 
+// Tidying a body lowered from its MIR (ADR 0364) rewrites JS as JS, from
+// what lowering's `Hints` say of it: it asks neither rustc nor the function
+// being lowered, so it's understood from the JS alone (the third
+// architecture audit).
+test("tidying asks neither rustc nor the function being lowered", () => {
+  for (const file of ["src/lower/mir/tidy.rs", ...files("src/lower/mir/tidy")]) {
+    expect(read(file), file).not.toMatch(/\brustc_\w+|\bTyCtxt\b|\btcx\b|\bFnCx\b|\bDefId\b/);
+  }
+});
+
 // Whether a value is a JS iterator is one question, `is_lazy_value`: its
 // type says so, or a chain's consumer made it so (ADR 0139). Asked of the
 // type alone elsewhere, the two disagreed: `next()` of a chain took all
@@ -282,13 +293,13 @@ test("iterators.rs alone answers whether a value is lazy", () => {
 // modules read it, four of them instantiating a copied default's arguments
 // each its own way (the second architecture audit). Each walk's cache of
 // what it found of a type is its walk's own. A path is matched across line
-// breaks, `self\n.given\n.type_facts`, which a formatter makes of a long one.
+// breaks, `self\n.given\n.type_facts`, which a formatter makes of a long one,
+// and through a getter, `self.walks().mutated`, which five of them were
+// read by, unseen (the third architecture audit).
 const owners: Record<string, string[]> = {
-  "self.drop_state": ["src/lower/drops.rs", "src/lower/drops/types.rs"],
-  "self.chains": ["src/lower/iterators.rs"],
+  "self.drop_state": ["src/lower/drops.rs"],
   "self.stepping": ["src/lower/iterators.rs"],
   "self.writing": ["src/lower/display.rs"],
-  ".mut_refs.": ["src/lower/mut_refs.rs"],
   "self.cloning": ["src/lower/std_impls.rs"],
   "self.given": ["src/lower/traits.rs"],
   "self.walks.representable": ["src/lower/support.rs"],
@@ -297,9 +308,10 @@ const owners: Record<string, string[]> = {
   "self.walks.clones": ["src/lower/std_impls.rs"],
   "self.walks.clone_assumed": ["src/lower/std_impls.rs"],
 };
-// `self.given`, matched as `self . given` with any space around each dot.
+// `self.given`, matched as `self . given` with any space around each dot,
+// and `self.walks().mutated` as `self.walks.mutated`.
 const statePattern = (state: string) =>
-  new RegExp(`${state.split(".").join("\\s*\\.\\s*")}${state.endsWith(".") ? "" : "\\b"}`);
+  new RegExp(`${state.split(".").join("\\s*(?:\\(\\s*\\))?\\s*\\.\\s*")}${state.endsWith(".") ? "" : "\\b"}`);
 test("each group of a function's state is read and written by its owner", () => {
   const strays: string[] = [];
   for (const file of ["src/lower.rs", ...files("src/lower")]) {
@@ -332,14 +344,25 @@ test("a JS form of a concept is written by the concept's owner", () => {
   expect(strays).toEqual([]);
 });
 
+// A rule of an owner is of what its owner has: one of state that's gone,
+// or spelled so it's never found, holds whatever the others do. Seven of
+// the twelve rules of state matched nothing, and passed (the third
+// architecture audit).
+test("each owner's rule finds what its owner has", () => {
+  const unfound = [
+    ...Object.entries(owners).map(([state, allowed]) => [state, statePattern(state), allowed] as const),
+    ...idioms,
+  ].filter(([, pattern, allowed]) => !allowed.some(file => pattern.test(read(file))));
+  expect(unfound.map(([what]) => what)).toEqual([]);
+});
+
 // A question recognition answers is asked of it, or through shortcuts.rs,
 // where each shortcut is one line, so where it's answered is plain. They
 // were in ten modules once, each looking like that module's own.
 test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
   const forward = /^ {4}(?:pub\([^)]*\) )?fn (\w+)(?:<[^>]*>)?\([^{]*\{\n\s+self\.recognition\(\)\.\w+\([^;{}]*\)\n {4}\}\n/gm;
   for (const file of ["src/lower.rs", ...files("src/lower")].filter(f => f !== "src/lower/shortcuts.rs" && !f.includes("/recognition"))) {
-    // iterators.rs's own way to the answer its rule keeps it alone in asking.
-    const found = [...read(file).matchAll(forward)].map(m => m[1]).filter(name => !(file.endsWith("/iterators.rs") && name === "is_lazy_iter"));
+    const found = [...read(file).matchAll(forward)].map(m => m[1]);
     expect([file, found]).toEqual([file, []]);
   }
   const shortcuts = read("src/lower/shortcuts.rs");
@@ -348,17 +371,28 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 });
 
 // What's called is told by a dispatcher that hands it to what knows it, a
-// std function to its domain's (vecs.rs, options.rs, cells.rs, ..). It was
-// a function of a thousand lines once: what's new goes where its kind is,
-// not in the dispatcher.
-test("the dispatcher of what's called stays short", () => {
+// std function to its domain's (std_types/, iterators.rs, ..). It was a
+// function of a thousand lines once: what's new goes where its kind is,
+// not in the dispatcher. Lowering from MIR (ADR 0364) grew it back, its std
+// calls' `mir_std_call` to 942 lines, which the rule, of `classify` alone,
+// didn't see (the third architecture audit): each is held to the length it
+// has, and its cap lowered as it's split, never raised.
+const dispatchers: [string, string, number][] = [
+  ["src/lower/recognition.rs", "    pub(super) fn classify(", 15],
+  ["src/lower/mir.rs", "    fn mir_call(", 204],
+  ["src/lower/mir.rs", "    fn mir_call_values(", 483],
+  ["src/lower/mir.rs", "    fn mir_std_call(", 942],
+];
+test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {
     const lines = read(file).split("\n");
     const start = lines.findIndex(line => line.startsWith(signature));
     expect(start, signature).toBeGreaterThanOrEqual(0);
     return lines.findIndex((line, k) => k > start && line === "    }") - start;
   };
-  expect(length("src/lower/recognition.rs", "    pub(super) fn classify(")).toBeLessThanOrEqual(15);
+  for (const [file, signature, cap] of dispatchers) {
+    expect(length(file, signature), signature).toBeLessThanOrEqual(cap);
+  }
 });
 
 // Recognition is what the rest asks: it asks neither the destructors'

@@ -36,14 +36,14 @@ const owned: [string, string][] = [
   ["given", "traits.rs"],
   ["writing", "display.rs"],
   ["stepping", "iterators.rs"],
-  ["chains", "iterators.rs"],
   ["drop_state", "drops"],
   ["cloning", "std_impls.rs"],
   ["walks", ""],
 ];
 const stateLines: string[] = [];
 for (const [group, owner] of owned) {
-  const pattern = new RegExp(`self\\s*\\.\\s*${group}\\s*\\.\\s*([a-z_]+)`, "g");
+  // Through a getter too, `self.walks().mutated`.
+  const pattern = new RegExp(`self\\s*\\.\\s*${group}\\s*(?:\\(\\s*\\))?\\s*\\.\\s*([a-z_]+)`, "g");
   for (const [name, text] of sources) {
     if (owner && name.includes(owner)) continue;
     const fields = new Map<string, number>();
@@ -87,7 +87,7 @@ section(
 // Which modules' methods each module calls: how much of the front end it knows.
 const owners = new Map<string, string>();
 for (const [name, text] of sources) {
-  for (const match of text.matchAll(/^\s*pub\(super\) fn ([a-z_0-9]+)/gm)) owners.set(match[1], name);
+  for (const match of text.matchAll(/^\s*pub\((?:super|in crate::lower)\) fn ([a-z_0-9]+)/gm)) owners.set(match[1], name);
 }
 section(
   "Modules each module calls into, most first",
