@@ -55,6 +55,27 @@ impl Module {
         each_item_expr_mut(&mut self.items, f);
     }
 
+    /// What it holds that only an earlier phase makes and resolves, which
+    /// the printer is never given (`to_oxc.rs`): a symbol linking names, a
+    /// function's hole or a drop's argument the pipeline fills, a handle
+    /// preparation writes, an `import()` of a module the output plan gives
+    /// its specifier. The first, by what it is, if any.
+    pub fn unprintable(&mut self) -> Option<&'static str> {
+        let mut found = None;
+        self.each_expr_mut(&mut |e| {
+            let kind = match &e.kind {
+                ExprKind::Symbol(_) => "a module's symbol",
+                ExprKind::FunctionHole(_) => "a function's hole",
+                ExprKind::DropArgument(..) => "a drop's argument",
+                ExprKind::Handle(_) | ExprKind::Pair(..) => "a `&mut`'s handle",
+                ExprKind::Import(ImportFrom::Module(_)) => "an `import()` of a module without its specifier",
+                _ => return,
+            };
+            found.get_or_insert(kind);
+        });
+        found
+    }
+
     /// Each variable its code reads, a helper's `$cmp` or its own: what it
     /// imports of the package is the helpers among them (ADR 0103), found
     /// in its tree, not in its text, where a string can spell one.
@@ -1790,4 +1811,33 @@ pub fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
             names_in(body, names);
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn module_of(value: Expr) -> Module {
+        Module {
+            header: String::new(),
+            directives: Vec::new(),
+            packages: Vec::new(),
+            imports: Vec::new(),
+            reexports: Vec::new(),
+            helpers: Vec::new(),
+            items: vec![Item::Statements(vec![StmtKind::Expr(value).at(Span::NONE)])],
+            caches: Vec::new(),
+            default_export: None,
+        }
+    }
+
+    // What only an earlier phase resolves is found however deep it is.
+    #[test]
+    fn unprintable_finds_what_an_earlier_phase_resolves() {
+        let handle = Expr::call(Expr::var("f"), vec![Expr::handle(Expr::var("n"))]);
+        assert_eq!(module_of(handle).unprintable(), Some("a `&mut`'s handle"));
+        let import = Expr::new(ExprKind::Import(ImportFrom::Module(vec!["a".into()])));
+        assert!(module_of(import).unprintable().is_some());
+        assert_eq!(module_of(Expr::var("x")).unprintable(), None);
+    }
 }

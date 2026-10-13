@@ -102,6 +102,14 @@ impl OutputPlan {
                 }
             });
             crate::prepare::module(&mut js_module);
+            // What only an earlier phase resolves, left: a compiler's
+            // mistake, refused, not printed.
+            if let Some(what) = js_module.unprintable() {
+                return Err(format!(
+                    "rust-js left {what} in {} for printing: a bug of rust-js's",
+                    js_path.display()
+                ));
+            }
             // Of the helpers it asked for, and what they use, the names its
             // prepared tree reads (ADR 0103).
             let helper_sources: Vec<&'static str> = module.runtime.iter().map(|helper| helper.source()).collect();

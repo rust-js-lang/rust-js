@@ -356,8 +356,11 @@ borrowed rustc source files to printing or publication.
 
 Symbolic references use explicit symbol identities rather than special strings
 masquerading as JavaScript identifiers. Linking resolves them into ordinary
-names. The linked output contract forbids unresolved references; validate that
-invariant before printing.
+names. The linked output contract forbids unresolved references: the
+artifact planner refuses a module that holds what only an earlier phase
+resolves, a symbol, a function's hole, a drop's argument, a handle, an
+`import()` without its specifier (`js::Module::unprintable`), before it's
+printed.
 
 Source origins use compiler-owned file identities and spans. They retain the
 origin of copied trait bodies, macro expansions, and cross-module code, so output
