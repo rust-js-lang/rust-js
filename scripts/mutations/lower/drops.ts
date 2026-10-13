@@ -235,7 +235,7 @@ export const mutations: Mutation[] = [
     breaks: "a `RefCell` field only ever borrowed for a moment is a cell from MIR, `{ value: [] }`",
     file: "src/lower/drops.rs",
     find: "        if self.krate.library {\n            return HashSet::new();\n        }\n",
-    replace: "        if self.krate.library || super::mir_mode() {\n            return HashSet::new();\n        }\n",
+    replace: "        if true {\n            return HashSet::new();\n        }\n",
     tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
   },
   {
