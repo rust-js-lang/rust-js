@@ -237,6 +237,7 @@ and answer. Each is checked to stay that way.
 |---|---|
 | `mir.rs` | A body from its MIR: its statements and terminators, places, calls (`mir_call`), aggregates, and the `&mut`s given to a call; temporaries folded where they're read |
 | `mir/cfg.rs`, `mir/drops.rs`, `mir/awaits.rs`, `mir/iter.rs` | A MIR body's control flow, made labeled blocks and loops; what each `Drop` drops, by rustc's drop elaboration, and its flags; `.await`; iterators, lazy as Rust's adapters are |
+| `mir/writer.rs` | A writer's `Formatter` from MIR: which locals are it, its `Debug` builders, what's refused of it, and a call that writes to it, whose JS `display.rs` writes |
 | `mir/calls.rs` | A call of what isn't std's: a closure's, a binding's, the crate's own function's, and an operator's that assigns through a `&mut` |
 | `mir/std_calls.rs` | A std call of its values and places, by its kind: `format_args!`'s parts, text, a map's, a `Vec`'s or a slice's, an iterator's, a place's, a value's, each saying `None` to the rest |
 | `mir/tidy.rs`, `mir/tidy/decisions.rs` | The JS of a body from its MIR, written as a person writes it: each rewrite changes nothing that runs; a match MIR tests as a tree, an `if` chain of its arms |
@@ -273,7 +274,7 @@ outside its owner, and how much each module knows of the rest.
 | Whether a value is a JS iterator or an array, and its JS: `Iterator.from`, a range's `$iterator` (ADRs 0061, 0364) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped_by`, `stepped_range` |
 | An array's items stepped, `$iter`, and a generic iterator lent, `$lent` (ADR 0071) | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
 | `&mut`s to values JS can't change in place, given to a call: a box, `{ value: place }`, and what's copied back (ADR 0074) | `mut_refs.rs` | `boxed`, `copied_back`, `mut_borrowed`, `nested_mut_object` |
-| Writing to a `Formatter` | `display.rs` | `formatter_answer`, `written_of`, `writer_call` |
+| Writing to a `Formatter`: its JS; of MIR, which locals are it and its builders (ADRs 0054, 0136) | `display.rs`; `mir/writer.rs` | `formatter_answer`, `written_of`, `builder_written`, `mir_writer_call` |
 | What a function or a binding is in JS | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Dictionaries and evidence: where a given one is, by its bound (`EvidenceQuery`), and its JS | `traits.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
 | What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
@@ -282,7 +283,7 @@ outside its owner, and how much each module knows of the rest.
 | A map's or a set's JS: a `Map` or a `Set`, and a call whose answer nothing reads, JS's own method (ADR 0059) | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
-| Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target` |
+| Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step` |
 | Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
 | A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
 
@@ -291,8 +292,8 @@ what's called:
 
 ```text
  mir_call(f, args)                                   mir.rs
-   ├─ a write to a `Formatter`, a `Debug` builder's step, a function value,
-   │     `js::import!`, a struct update's `..Default::default()`
+   ├─ a write to a `Formatter`, a `Debug` builder's step   mir/writer.rs
+   ├─ a function value, `js::import!`, a struct update's `..Default::default()`
    └─ mir_call_values(f, its arguments' values)
          ├─ an iterator's method                     mir/iter.rs: mir_iter_call
          ├─ a trait's method of the crate's, or a dictionary's
@@ -482,12 +483,12 @@ architecture audit found the rest.
   edit-to-refresh latency on application-scale workloads (M5.1).
 - **Checks before a commit lands:** the check runs on each push to `main`,
   after it's pushed; nothing refuses a commit that fails it.
-- **Short dispatchers of calls from MIR:** `mir_call` (204 lines),
+- **Short dispatchers of calls from MIR:** `mir_call` (118 lines),
   `mir_call_values` (306) and `mir_std_call` (261) are held to their
   lengths, each lowered as what's left in it goes where its kind is.
 - **Std's names from recognition alone:** `mir_iter_call` knows an
   iterator's method by its name, which recognition's own answers for it
-  don't reach, and `mir_call` a `Debug` builder's kind and steps.
+  don't reach.
 - **Runtime helpers as symbols:** lowering asks for a helper and writes its
   name, `$cmp`, apart; one written and not asked for is a JS error when it
   runs, not a compile error.

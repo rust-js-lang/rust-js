@@ -4135,6 +4135,70 @@ pub(super) fn fmt_result_answer(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FmtRes
     })
 }
 
+/// A `Debug` builder of std's, by its type, which a `Formatter`'s
+/// `debug_struct(..)` and the like make (ADR 0136).
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum DebugBuilder {
+    Struct,
+    Tuple,
+    List,
+    Set,
+    Map,
+}
+
+/// A step of a `Debug` builder, by its method: what it's given, then what
+/// it writes.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) enum BuilderStep {
+    Field,
+    Entry,
+    Entries,
+    Finish { non_exhaustive: bool },
+}
+
+/// The `Debug` builder `did`, a type, is: std's `DebugStruct` and the like.
+pub(super) fn debug_builder(tcx: TyCtxt<'_>, did: DefId) -> Option<DebugBuilder> {
+    if !std_path(tcx, did).starts_with("std::fmt::") {
+        return None;
+    }
+    Some(match tcx.item_name(did).as_str() {
+        "DebugStruct" => DebugBuilder::Struct,
+        "DebugTuple" => DebugBuilder::Tuple,
+        "DebugList" => DebugBuilder::List,
+        "DebugSet" => DebugBuilder::Set,
+        "DebugMap" => DebugBuilder::Map,
+        _ => return None,
+    })
+}
+
+/// The step of a `Debug` builder `def_id`, a method, is.
+pub(super) fn builder_step(tcx: TyCtxt<'_>, def_id: DefId) -> Option<BuilderStep> {
+    let owner = tcx
+        .type_of(tcx.inherent_impl_of_assoc(def_id)?)
+        .instantiate_identity()
+        .skip_normalization();
+    let ty::Adt(builder, _) = owner.kind() else {
+        return None;
+    };
+    debug_builder(tcx, builder.did())?;
+    Some(match tcx.item_name(def_id).as_str() {
+        "field" => BuilderStep::Field,
+        "entry" => BuilderStep::Entry,
+        "entries" => BuilderStep::Entries,
+        "finish" => BuilderStep::Finish { non_exhaustive: false },
+        "finish_non_exhaustive" => BuilderStep::Finish { non_exhaustive: true },
+        _ => return None,
+    })
+}
+
+/// Whether `def_id`, a `Formatter`'s method, makes a `Debug` builder:
+/// `debug_struct(..)` and the like, not what writes one whole,
+/// `debug_struct_field1_finish`.
+pub(super) fn makes_debug_builder(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    let name = tcx.item_name(def_id);
+    name.as_str().starts_with("debug_") && !name.as_str().ends_with("_finish")
+}
+
 /// The question `def_id` asks of a `Formatter`: `f.width()` and the like.
 pub(super) fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FormatterQuery> {
     if !std_path(tcx, def_id).starts_with("std::fmt::Formatter") {

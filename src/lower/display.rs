@@ -6,7 +6,7 @@
 use super::bindings;
 
 use super::format_spec::{Options, Radix};
-use super::recognition::{ChannelError, FmtResultAnswer, FormatterQuery, Std};
+use super::recognition::{BuilderStep, ChannelError, DebugBuilder, FmtResultAnswer, FormatterQuery, Std};
 use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
 use super::{FnCx, R};
@@ -454,16 +454,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// What a `Debug` builder of `kind`, `"DebugStruct"` say, writes as
+    /// What a `Debug` builder of `kind`, a `DebugStruct` say, writes as
     /// its `finish` (ADR 0136): its type's name, then each step, `field`,
     /// `entry` or `entries`, of its arguments but the builder, and their
     /// types, as pretty as this writer is (ADR 0137).
     #[allow(clippy::type_complexity)]
     pub(super) fn builder_written(
         &mut self,
-        kind: &str,
+        kind: DebugBuilder,
         type_name: Option<Expr>,
-        steps: Vec<(String, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>)>,
+        steps: Vec<(BuilderStep, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>)>,
         non_exhaustive: bool,
         span: Span,
     ) -> R<Expr> {
@@ -474,7 +474,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Many(Expr),
         }
         let mut parts = Vec::new();
-        for (name, values, generic_args) in &steps {
+        for &(step, ref values, generic_args) in &steps {
             // A `&dyn Debug` is the string it shows already (ADR 0060).
             let debug_of = |this: &mut Self, (value, ty): (Expr, Ty<'tcx>)| -> R<Expr> {
                 match this.is_dyn_debug(ty) {
@@ -483,28 +483,29 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             };
             let mut values = values.iter().cloned();
-            let part = match (kind, name.as_str()) {
-                ("DebugStruct", "field") => {
+            let part = match (kind, step) {
+                (DebugBuilder::Struct, BuilderStep::Field) => {
                     let (field, value) = (values.next().expect("a name"), values.next().expect("a value"));
                     let shown = debug_of(self, value)?;
                     Part::One(join(vec![field.0, Expr::str(": "), shown]))
                 }
-                ("DebugTuple", "field") | ("DebugList" | "DebugSet", "entry") => {
+                (DebugBuilder::Tuple, BuilderStep::Field)
+                | (DebugBuilder::List | DebugBuilder::Set, BuilderStep::Entry) => {
                     let value = values.next().expect("a value");
                     Part::One(debug_of(self, value)?)
                 }
-                ("DebugMap", "entry") => {
+                (DebugBuilder::Map, BuilderStep::Entry) => {
                     let (key, value) = (values.next().expect("a key"), values.next().expect("a value"));
                     let key = debug_of(self, key)?;
                     let value = debug_of(self, value)?;
                     Part::One(join(vec![key, Expr::str(": "), value]))
                 }
-                ("DebugList" | "DebugSet" | "DebugMap", "entries") => {
+                (DebugBuilder::List | DebugBuilder::Set | DebugBuilder::Map, BuilderStep::Entries) => {
                     let items = values.next().expect("the entries").0;
                     let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
                     let iterable = *tys.last().expect("the entries' type");
                     let items = self.iter_source(items, iterable, span)?;
-                    let shown = if kind == "DebugMap" {
+                    let shown = if kind == DebugBuilder::Map {
                         let pair = Expr::var("entry");
                         let key =
                             self.debug_string_with(Expr::index(pair.clone(), Expr::int(0)), tys[0], span, &pretty)?;
@@ -519,7 +520,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     Part::Many(Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items, each]))
                 }
-                _ => return Err(self.unsupported(span, &format!("a `Debug` builder's `{name}`"))),
+                _ => return Err(self.unsupported(span, "this step of a `Debug` builder")),
             };
             parts.push(part);
         }
@@ -587,22 +588,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             arrays.fold(first, |all, next| Expr::call(Expr::member(all, "concat"), vec![next]))
         };
         let pretty_open = match kind {
-            "DebugStruct" => type_name.clone().map(|name| join(vec![name, Expr::str(" {")])),
-            "DebugTuple" => type_name.clone().map(|name| join(vec![name, Expr::str("(")])),
-            "DebugList" => Some(Expr::str("[")),
+            DebugBuilder::Struct => type_name.clone().map(|name| join(vec![name, Expr::str(" {")])),
+            DebugBuilder::Tuple => type_name.clone().map(|name| join(vec![name, Expr::str("(")])),
+            DebugBuilder::List => Some(Expr::str("[")),
             _ => Some(Expr::str("{")),
         };
         let pretty_close = match kind {
-            "DebugTuple" => ")",
-            "DebugList" => "]",
+            DebugBuilder::Tuple => ")",
+            DebugBuilder::List => "]",
             _ => "}",
         };
         let has_parts = !parts.is_empty();
         let rest = non_exhaustive.then_some("..");
         let empty = parts.is_empty() && !non_exhaustive;
         let written = match kind {
-            "DebugStruct" | "DebugTuple" if empty => type_name.expect("a type's name"),
-            "DebugStruct" => {
+            DebugBuilder::Struct | DebugBuilder::Tuple if empty => type_name.expect("a type's name"),
+            DebugBuilder::Struct => {
                 let inside = separated(parts, rest);
                 join(vec![
                     type_name.expect("a type's name"),
@@ -611,7 +612,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Expr::str(" }"),
                 ])
             }
-            "DebugTuple" => {
+            DebugBuilder::Tuple => {
                 let inside = separated(parts, rest);
                 join(vec![
                     type_name.expect("a type's name"),
@@ -621,7 +622,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ])
             }
             _ => {
-                let (open, close) = if kind == "DebugList" { ("[", "]") } else { ("{", "}") };
+                let (open, close) = if kind == DebugBuilder::List {
+                    ("[", "]")
+                } else {
+                    ("{", "}")
+                };
                 if empty {
                     Expr::str(format!("{open}{close}"))
                 } else {

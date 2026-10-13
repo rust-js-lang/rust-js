@@ -1241,4 +1241,20 @@ export const mutations: Mutation[] = [
     replace: "        .filter_by_name_unhygienic(sym::value)\n",
     tests: ["test/compiler.test.ts", "test/lowering.test.ts", "-t", "untagged enum"],
   },
+  {
+    name: "debug-struct-builder-unknown",
+    breaks: "`f.debug_struct(\"P\")`'s builder isn't known, and a writer's `Debug` of a struct by one is refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"DebugStruct\" => DebugBuilder::Struct,\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a writer's Debug builder from its MIR"],
+  },
+  {
+    name: "builder-entries-unknown",
+    breaks: "a `Debug` builder's `entries(..)` isn't known, and a writer's list of them is refused",
+    file: "src/lower/recognition.rs",
+    find: "        \"entries\" => BuilderStep::Entries,\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "pretty_debug|std_methods"],
+  },
 ];
