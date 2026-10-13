@@ -163,6 +163,7 @@ pub fn statement_lists(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>))
             | StmtKind::Let(..)
             | StmtKind::Destructure { .. }
             | StmtKind::Assign(..)
+            | StmtKind::Compound(..)
             | StmtKind::Expr(_)
             | StmtKind::Break(_)
             | StmtKind::Continue(_)
@@ -185,7 +186,7 @@ pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
             | StmtKind::Expr(e)
             | StmtKind::Return(Some(e))
             | StmtKind::Throw(e) => e.each_mut(f),
-            StmtKind::Assign(a, b) => {
+            StmtKind::Assign(a, b) | StmtKind::Compound(_, a, b) => {
                 a.each_mut(f);
                 b.each_mut(f);
             }
@@ -259,7 +260,7 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
                     value.visit_vars(read);
                 }
             }
-            StmtKind::Assign(target, value) => {
+            StmtKind::Assign(target, value) | StmtKind::Compound(_, target, value) => {
                 target.visit_vars(read);
                 value.visit_vars(read);
             }
@@ -596,6 +597,9 @@ pub enum StmtKind {
     },
     /// `target = value`, where `target` is a variable, `a.b` or `a[0]`.
     Assign(Expr, Expr),
+    /// `target op= value`, `s += t`: what preparation makes of
+    /// `target = target op value`, as JS writes a string built up.
+    Compound(Op, Expr, Expr),
     Expr(Expr),
     If(Expr, Vec<Stmt>, Option<Vec<Stmt>>),
     While {
@@ -1700,26 +1704,7 @@ impl Expr {
             // The runtime's that only read what they're given, make a value
             // of it, or its text, `$jsonIndex(v, "a")`, `$debugStr(s)`: what
             // their arguments do.
-            ExprKind::Call(callee, args)
-                if matches!(&callee.kind, ExprKind::Var(helper) if [
-                    "$jsonInt",
-                    "$jsonFloat",
-                    "$jsonNumberOfF64",
-                    "$jsonValueText",
-                    "$jsonNumberText",
-                    "$debugJsonValue",
-                    "$debugJsonNumber",
-                    "$displayJsonError",
-                    "$debugJsonError",
-                    "$jsonValueAs",
-                    "$jsonGet",
-                    "$jsonIndex",
-                    "$debugStr",
-                    "$debugF64",
-                    "$displayF64",
-                ]
-                .contains(&helper.as_str())) =>
-            {
+            ExprKind::Call(callee, args) if matches!(&callee.kind, ExprKind::Var(helper) if crate::runtime::is_pure(helper)) => {
                 args.iter().any(Expr::has_effects)
             }
             ExprKind::Call(..) | ExprKind::OptionalCall(..) | ExprKind::New(..) => true,

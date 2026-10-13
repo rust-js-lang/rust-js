@@ -6,7 +6,7 @@
 
 use std::collections::HashSet;
 
-use crate::js::{self, Expr, ExprKind, JsxTag, Prop, Stmt, StmtKind};
+use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind};
 
 mod reclaim;
 mod scopes;
@@ -23,6 +23,65 @@ pub fn module(module: &mut js::Module) {
         }
     }
     reclaim::module(module);
+    compound(module);
+}
+
+/// `target = target op value` as JS writes it, `target op= value`: `s += t`
+/// of a string built up, `r *= 2`, `x ??= d`. Of every statement, a
+/// closure's in a constant too.
+fn compound(module: &mut js::Module) {
+    let mut each = |stmts: &mut Vec<Stmt>| {
+        for stmt in stmts.iter_mut() {
+            let StmtKind::Assign(target, value) = &mut stmt.kind else {
+                continue;
+            };
+            let ExprKind::Binary(op, lhs, rhs) = &mut value.kind else {
+                continue;
+            };
+            let compounds = matches!(op, Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce);
+            if compounds && same_place(lhs, target) {
+                let (op, rhs) = (*op, std::mem::replace(&mut **rhs, Expr::undefined()));
+                let target = std::mem::replace(target, Expr::undefined());
+                stmt.kind = StmtKind::Compound(op, target, rhs);
+            }
+        }
+    };
+    for item in &mut module.items {
+        match item {
+            js::Item::Statements(stmts) => js::each_block_mut(stmts, &mut each),
+            js::Item::Const(constant) => constant.value.each_mut(&mut |e| {
+                if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &mut e.kind {
+                    js::each_block_mut(body, &mut each);
+                }
+            }),
+            js::Item::Function(_) | js::Item::Namespace(_) => {}
+        }
+        for function in item.functions_mut() {
+            js::each_block_mut(&mut function.body, &mut each);
+        }
+    }
+}
+
+/// Are `a` and `b` the same variable or property path: `s`, `a.b`?
+fn same_place(a: &js::Expr, b: &js::Expr) -> bool {
+    match (&a.kind, &b.kind) {
+        (ExprKind::Var(a), ExprKind::Var(b)) => a == b,
+        (ExprKind::Member(a, x), ExprKind::Member(b, y)) => x == y && same_place(a, b),
+        // `counts[name]`, `files["/a"]`: a key that reads the same.
+        (ExprKind::Index(a, i), ExprKind::Index(b, j)) => {
+            same_place(a, b)
+                && (same_place(i, j) || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j))
+        }
+        // `$index(v, i).hits`: an item, checked the same each time (ADR 0056).
+        (ExprKind::Call(f, xs), ExprKind::Call(g, ys)) => {
+            matches!((&f.kind, &g.kind), (ExprKind::Var(f), ExprKind::Var(g)) if f == g && crate::runtime::names_a_place(f))
+                && xs.len() == ys.len()
+                && xs.iter().zip(ys).all(|(x, y)| {
+                    same_place(x, y) || matches!((&x.kind, &y.kind), (ExprKind::Num(x), ExprKind::Num(y)) if x == y)
+                })
+        }
+        _ => false,
+    }
 }
 
 /// A function made readable.
@@ -537,7 +596,7 @@ impl Walk {
                         self.shadows.push((self.at, looped, alias.clone(), of.clone()));
                     }
                 }
-                StmtKind::Assign(target, _) => {
+                StmtKind::Assign(target, _) | StmtKind::Compound(_, target, _) => {
                     if let ExprKind::Var(name) = &target.kind {
                         self.sets.push((self.at, name.clone()));
                     }

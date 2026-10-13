@@ -134,7 +134,7 @@ fn block(body: &mut [Stmt], visitor: &mut Visitor<'_>) {
                 pattern(p, visitor);
                 expr(value, visitor);
             }
-            StmtKind::Assign(a, b) => {
+            StmtKind::Assign(a, b) | StmtKind::Compound(_, a, b) => {
                 expr(a, visitor);
                 expr(b, visitor);
             }

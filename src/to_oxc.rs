@@ -652,22 +652,24 @@ impl<'a> Cx<'a> {
                 Statement::new_variable_declaration(sp, kind, ArenaVec::from_iter_in([declarator], b), false, b)
             }
             StmtKind::Assign(target, value) => {
-                // `s = s + t` is `s += t`, as JS writes a string built up, and
-                // `r = r * 2` is `r *= 2`.
-                let compound = |op: &Op| match op {
-                    Op::Add => Some(AssignmentOperator::Addition),
-                    Op::Sub => Some(AssignmentOperator::Subtraction),
-                    Op::Mul => Some(AssignmentOperator::Multiplication),
-                    Op::Div => Some(AssignmentOperator::Division),
-                    Op::Rem => Some(AssignmentOperator::Remainder),
-                    Op::Coalesce => Some(AssignmentOperator::LogicalNullish),
-                    _ => None,
-                };
-                let (operator, value) = match &value.kind {
-                    ExprKind::Binary(op, lhs, rhs) if same_place(lhs, target) && compound(op).is_some() => {
-                        (compound(op).unwrap_or(AssignmentOperator::Assign), &**rhs)
-                    }
-                    _ => (AssignmentOperator::Assign, value),
+                let assign = Expression::new_assignment_expression(
+                    sp,
+                    AssignmentOperator::Assign,
+                    self.assignment_target(target),
+                    self.expr(value),
+                    b,
+                );
+                Statement::new_expression_statement(sp, assign, b)
+            }
+            StmtKind::Compound(op, target, value) => {
+                let operator = match op {
+                    Op::Add => AssignmentOperator::Addition,
+                    Op::Sub => AssignmentOperator::Subtraction,
+                    Op::Mul => AssignmentOperator::Multiplication,
+                    Op::Div => AssignmentOperator::Division,
+                    Op::Rem => AssignmentOperator::Remainder,
+                    Op::Coalesce => AssignmentOperator::LogicalNullish,
+                    _ => unreachable!("preparation compounds these alone"),
                 };
                 let assign = Expression::new_assignment_expression(
                     sp,
@@ -1476,28 +1478,6 @@ fn binary_op(op: Op) -> Result<BinaryOperator, LogicalOperator> {
         Op::Rem => BinaryOperator::Remainder,
         Op::Pow => BinaryOperator::Exponential,
     })
-}
-
-/// Are `a` and `b` the same variable or property path: `s`, `a.b`?
-fn same_place(a: &js::Expr, b: &js::Expr) -> bool {
-    match (&a.kind, &b.kind) {
-        (ExprKind::Var(a), ExprKind::Var(b)) => a == b,
-        (ExprKind::Member(a, x), ExprKind::Member(b, y)) => x == y && same_place(a, b),
-        // `counts[name]`, `files["/a"]`: a key that reads the same.
-        (ExprKind::Index(a, i), ExprKind::Index(b, j)) => {
-            same_place(a, b)
-                && (same_place(i, j) || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j))
-        }
-        // `$index(v, i).hits`: an item, checked the same each time (ADR 0056).
-        (ExprKind::Call(f, xs), ExprKind::Call(g, ys)) => {
-            matches!((&f.kind, &g.kind), (ExprKind::Var(f), ExprKind::Var(g)) if f == "$index" && g == "$index")
-                && xs.len() == ys.len()
-                && xs.iter().zip(ys).all(|(x, y)| {
-                    same_place(x, y) || matches!((&x.kind, &y.kind), (ExprKind::Num(x), ExprKind::Num(y)) if x == y)
-                })
-        }
-        _ => false,
-    }
 }
 
 /// A positive finite number as JS's `Number.prototype.toString` writes it:

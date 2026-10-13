@@ -249,6 +249,7 @@ fn declared_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut String)) {
                 declared_mut(&mut function.body, f);
             }
             StmtKind::Assign(..)
+            | StmtKind::Compound(..)
             | StmtKind::Expr(_)
             | StmtKind::Break(_)
             | StmtKind::Continue(_)

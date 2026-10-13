@@ -286,6 +286,7 @@ outside its owner, and how much each module knows of the rest.
 | Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target`, `debug_builder`, `builder_step`, `iterator_method` |
 | Std's data structures, each by its name and where std defines it (ADR 0314) | `recognition/registry.rs` | `data_structures` |
 | A trait dictionary's cache, apart from the runtime's helpers (ADR 0049) | `names.rs` | `dictionary_cache` |
+| What a runtime helper is: one the package exports, one whose call does only what its arguments do, one that names a place | `runtime.rs` | `exports`, `is_pure`, `names_a_place` |
 
 **Calls.** A call is lowered from MIR by `mir_call`, which hands it on by
 what's called:

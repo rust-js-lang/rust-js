@@ -302,6 +302,38 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
     })
 }
 
+/// The helpers that only read what they're given and make a value of it,
+/// or its text, `$jsonIndex(v, "a")`, `$debugStr(s)`: a call of one does
+/// what its arguments do, and nothing else.
+const PURE: &[&str] = &[
+    "$jsonInt",
+    "$jsonFloat",
+    "$jsonNumberOfF64",
+    "$jsonValueText",
+    "$jsonNumberText",
+    "$debugJsonValue",
+    "$debugJsonNumber",
+    "$displayJsonError",
+    "$debugJsonError",
+    "$jsonValueAs",
+    "$jsonGet",
+    "$jsonIndex",
+    "$debugStr",
+    "$debugF64",
+    "$displayF64",
+];
+
+/// Whether `name` is a helper whose call names a place, the same one each
+/// time it's given the same: `$index(v, i)`, an item, checked (ADR 0056).
+pub(crate) fn names_a_place(name: &str) -> bool {
+    name == "$index"
+}
+
+/// Whether `name` is a helper whose call does only what its arguments do.
+pub(crate) fn is_pure(name: &str) -> bool {
+    PURE.contains(&name)
+}
+
 /// Whether `@rust-js/runtime` exports `name`: a name any module may import.
 pub(crate) fn exports(name: &str) -> bool {
     static EXPORTS: std::sync::LazyLock<std::collections::HashSet<&'static str>> = std::sync::LazyLock::new(|| {
@@ -908,5 +940,17 @@ impl Helper {
             Helper::AssertFailed => include_str!("runtime/assert_failed.js"),
             Helper::Rem => include_str!("runtime/rem.js"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Each helper said to be pure is one the runtime has.
+    #[test]
+    fn pure_helpers_are_the_runtimes() {
+        let missing: Vec<_> = PURE.iter().filter(|name| !exports(name)).collect();
+        assert!(missing.is_empty(), "{missing:?}");
     }
 }

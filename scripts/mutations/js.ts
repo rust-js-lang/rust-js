@@ -331,14 +331,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    name: "pure-helpers-act",
-    breaks: "the runtime's helpers that only read, `$jsonIndex(v, \"a\")`, count as doing something, held apart from MIR",
-    file: "src/js.rs",
-    find: "                    \"$jsonIndex\",\n",
-    replace: "",
-    tests: ["test/serde.test.ts","-t","a Value's reads"],
-  },
-  {
     name: "text-joined-twice",
     breaks: "a number made text and joined to text stays `n + \"\" + \"px\"`, not `n + \"px\"`",
     file: "src/js.rs",

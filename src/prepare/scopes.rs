@@ -224,7 +224,7 @@ impl Walk {
                 pattern.defaults().into_iter().for_each(|d| self.expr(d));
                 self.expr(value);
             }
-            StmtKind::Assign(target, value) => {
+            StmtKind::Assign(target, value) | StmtKind::Compound(_, target, value) => {
                 self.expr(target);
                 self.expr(value);
             }

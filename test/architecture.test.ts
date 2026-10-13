@@ -206,6 +206,16 @@ test("runtime imports are chosen before printing", () => {
   expect(read("src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
+// Printing lays out what it's given: what a helper means, the same place
+// `$index(v, i)` names, or a statement's readable form, `s += t`, is
+// decided before it (the third architecture audit: the printer decided
+// both).
+test("printing names no runtime helper", () => {
+  for (const file of sources.filter(file => layerOf(file) === "printing")) {
+    expect(read(file), file).not.toMatch(/"\$[a-zA-Z]/);
+  }
+});
+
 test("oxc APIs stay behind the printing and formatting adapters", () => {
   for (const file of sources.filter(file => layerOf(file) !== "printing")) {
     expect(read(file), file).not.toMatch(/\boxc_\w+/);

@@ -324,4 +324,20 @@ export const mutations: Mutation[] = [
     replace: "                StmtKind::Return(Some(_)) => StmtKind::Return(Some(value.clone())),\n",
     tests: ["test/bindings.test.ts","-t","node's modules are imported"],
   },
+  {
+    name: "same-place-index",
+    breaks: "`counts[name] = counts[name] ?? v` isn't `counts[name] ??= v`",
+    file: "src/prepare.rs",
+    find: "        // `counts[name]`, `files[\"/a\"]`: a key that reads the same.\n        (ExprKind::Index(a, i), ExprKind::Index(b, j)) => {\n            same_place(a, b)\n                && (same_place(i, j) || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j))\n        }\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","property read of what may be None"],
+  },
+  {
+    name: "coalesce-assign-spelled-out",
+    breaks: "`SEEN = SEEN ?? n`, not `SEEN ??= n`",
+    file: "src/prepare.rs",
+    find: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem | Op::Coalesce);",
+    replace: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem);",
+    tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
+  },
 ];
