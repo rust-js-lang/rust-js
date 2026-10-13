@@ -3657,6 +3657,27 @@ pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> JSX::Element {
     .toEqual(['<div style="width:7px;color:red"></div>', '<div style="width:6px"></div>']);
 });
 
+// A state's setter is a function, as @types/react's `Dispatch` is: given
+// where a prop wants one, as react.dev's home page gives `setSearchText`.
+test("a state's setter is given as the function it is", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, jsx, use_state};
+pub struct InputProps<'a> { pub value: &'a str, pub on_change: &'a dyn Fn(String) }
+pub fn Input(InputProps { value, on_change }: InputProps) -> JSX::Element {
+    let _ = on_change;
+    jsx! { <b>{value}</b> }
+}
+pub fn Search() -> JSX::Element {
+    let (text, set_text) = use_state(String::from("a"));
+    jsx! { <Input value={text.as_str()} on_change={&*set_text} /> }
+}
+`);
+  run(args);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("<Input value={text} on_change={setText} />");
+  const { Search } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(Search))).toBe("<b>a</b>");
+});
+
 // A style kept, in state say, is given by reference as it is, as react.dev's
 // home page keeps `{ width, height, transform }`s for its hover overlays.
 test("JSX styles are given by reference", async () => {

@@ -708,6 +708,17 @@ impl<T> Dispatch<SetStateAction<T>> {
     }
 }
 
+/// The setter is the function it is, as @types/react's `Dispatch` is, where
+/// a prop wants one: `onChange={&*set_text}` is `onChange={setText}`.
+impl<T> Deref for Dispatch<SetStateAction<T>> {
+    type Target = dyn Fn(T);
+
+    fn deref(&self) -> &(dyn Fn(T) + 'static) {
+        // Never runs: rust-js compiles this `Deref` to the setter itself.
+        unreachable!()
+    }
+}
+
 /// @types/react's names of what a hook takes and gives, a prop's say: a
 /// reducer, [`use_reducer`]'s, which turns the state and an action into the
 /// next state; what sends it actions, which `use_reducer` gives; an effect,
