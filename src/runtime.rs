@@ -218,7 +218,6 @@ helpers! {
     Trim,
     FmtError,
     Duration,
-    SliceEnd,
     ByteLen,
     StrSlice,
     Find,
@@ -417,7 +416,7 @@ impl Helper {
             Helper::AsciiCase => &[Helper::ByteLen, Helper::StrSlice],
             Helper::StrTruncate => &[Helper::ByteLen, Helper::CharBoundary],
             Helper::StrEdits => &[Helper::ByteLen, Helper::CharBoundary, Helper::SliceIndexFail],
-            Helper::SliceRange | Helper::SliceEnd | Helper::Drain | Helper::Splice => &[Helper::SliceIndexFail],
+            Helper::SliceRange | Helper::Drain | Helper::Splice => &[Helper::SliceIndexFail],
             Helper::SortUnstable => &[Helper::View, Helper::MutAt],
             Helper::ExtractIf => &[Helper::SliceIndexFail, Helper::MutAt, Helper::MutGet],
             Helper::View => &[Helper::SliceIndexFail, Helper::MutAt, Helper::Chunks, Helper::SliceOps],
@@ -428,7 +427,14 @@ impl Helper {
                 Helper::SliceIndexFail,
             ],
             Helper::CharEscape => &[Helper::DebugStr],
-            Helper::MapOps => &[Helper::SortedEntries, Helper::SortedKeys],
+            Helper::MapOps => &[
+                Helper::SortedEntries,
+                Helper::SortedKeys,
+                Helper::MutEntries,
+                Helper::MutGet,
+            ],
+            Helper::BigDivEuclid => &[Helper::BigDiv],
+            Helper::BigRemEuclid => &[Helper::BigRem],
             Helper::StrSearch => &[
                 Helper::Rsplit,
                 Helper::MatchIndices,
@@ -921,7 +927,6 @@ impl Helper {
             // `s.char_indices()`: each `char`, with where it starts in UTF-8 bytes.
             Helper::CharIndices => include_str!("runtime/char_indices.js"),
             // `for x in &mut v[a..b]` (ADR 0099): where it ends, with `$slice`'s panics.
-            Helper::SliceEnd => include_str!("runtime/slice_end.js"),
             // `v.drain(a..b)`: the items, out of `v`, with `$slice`'s panics.
             Helper::Drain => include_str!("runtime/drain.js"),
             // `v.split_off(at)`: the items from `at` on, out of `v`.
@@ -946,6 +951,46 @@ impl Helper {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Each `$` name a helper's JS reads is declared by it or by a helper
+    // it depends on: its dependencies, a table kept by hand, are what it
+    // needs (the third architecture audit).
+    #[test]
+    fn helpers_depend_on_what_they_read() {
+        let mut missing = Vec::new();
+        for helper in Helper::ALL {
+            let closure = resolve([*helper]);
+            let known: std::collections::HashSet<&str> = closure.iter().flat_map(|h| declared(h.source())).collect();
+            for line in helper
+                .source()
+                .lines()
+                .filter(|line| !line.trim_start().starts_with("//"))
+            {
+                let bytes = line.as_bytes();
+                for (at, _) in line.match_indices('$') {
+                    let name: String = line[at + 1..]
+                        .chars()
+                        .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+                        .collect();
+                    // A name, not a property's key: `x.$value`, `{ $value: v }`, `"$value"`.
+                    let word_before =
+                        at > 0 && (bytes[at - 1].is_ascii_alphanumeric() || b"_.\"'".contains(&bytes[at - 1]));
+                    let keyed = line[at + 1 + name.len()..].trim_start().starts_with(':');
+                    if keyed {
+                        continue;
+                    }
+                    let name = format!("${name}");
+                    if name.len() > 1 && !word_before && !known.contains(name.as_str()) {
+                        let own = declared(helper.source()).next().unwrap_or("a helper");
+                        missing.push(format!("{own}'s helper reads {name}"));
+                    }
+                }
+            }
+        }
+        missing.sort();
+        missing.dedup();
+        assert!(missing.is_empty(), "{missing:#?}");
+    }
 
     // Each helper said to be pure is one the runtime has.
     #[test]

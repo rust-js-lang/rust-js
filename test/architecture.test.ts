@@ -206,6 +206,21 @@ test("runtime imports are chosen before printing", () => {
   expect(read("src/runtime.rs")).not.toMatch(/fn imported_helpers\([^)]*code: &str/);
 });
 
+// Each runtime helper is one lowering asks for, or another helper needs: a
+// helper nothing asks for is JS the package ships for nothing (the third
+// architecture audit: `$sliceEnd`'s, since THIR's lowering went).
+test("each runtime helper is asked for, or needed by another", () => {
+  const runtime = read("src/runtime.rs");
+  const list = runtime.slice(runtime.indexOf("helpers! {"), runtime.indexOf("}", runtime.indexOf("helpers! {")));
+  const helpers = [...list.matchAll(/^\s+([A-Z]\w*),/gm)].map(m => m[1]);
+  expect(helpers.length).toBeGreaterThan(200);
+  const deps = runtime.slice(runtime.indexOf("fn dependencies"), runtime.indexOf("pub fn source"));
+  const needed = new Set([...deps.matchAll(/=> &\[([^\]]*)\]/g)].flatMap(m => [...m[1].matchAll(/Helper::(\w+)/g)].map(n => n[1])));
+  const asking = sources.filter(file => file !== "src/runtime.rs").map(read).join("\n");
+  const unasked = helpers.filter(name => !needed.has(name) && !new RegExp(`Helper::${name}\\b`).test(asking));
+  expect(unasked).toEqual([]);
+});
+
 // Printing lays out what it's given: what a helper means, the same place
 // `$index(v, i)` names, or a statement's readable form, `s += t`, is
 // decided before it (the third architecture audit: the printer decided

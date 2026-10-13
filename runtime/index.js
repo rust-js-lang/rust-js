@@ -6427,11 +6427,6 @@ export function $debugDuration(duration) {
   return `${whole}${fraction}${unit}`;
 }
 
-export function $sliceEnd(items, start, end = items.length) {
-  if (start > end || end > items.length) $sliceIndexFail(start, end, items.length);
-  return end;
-}
-
 export function $byteLen(s) {
   let bytes = 0;
   for (let i = 0; i < s.length; i++) {
