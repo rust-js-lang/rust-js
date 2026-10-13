@@ -2160,4 +2160,16 @@ export const mutations: Mutation[] = [
       "a for loop of a mut binding"
     ]
   },
+  {
+    "name": "lazy-flatmap-stepped",
+    "breaks": "a lazy flatten of arrays keeps `$iter(item)`",
+    "file": "src/lower/mir/tidy.rs",
+    "find": "        *each = Expr::var(param);\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arrays of arrays flattened"
+    ]
+  },
 ];

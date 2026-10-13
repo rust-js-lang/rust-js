@@ -921,7 +921,11 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
     let items = (stages.into_iter().rev()).fold(source, |items, (name, f)| match name {
         "take" => Expr::call(Expr::member(items, "slice"), vec![Expr::int(0), f.clone()]),
         "drop" => Expr::call(Expr::member(items, "slice"), vec![f.clone()]),
-        "flatMap" => array_method(items, name, flattened.next().expect("made")),
+        // Each item an array, as it is: `flat()`, which takes arrays apart.
+        "flatMap" => match flattened.next().expect("made") {
+            f if f.is_identity() => Expr::call(Expr::member(items, "flat"), Vec::new()),
+            f => array_method(items, name, f),
+        },
         name => array_method(items, name, f.clone()),
     });
     Some((items, count))

@@ -2015,6 +2015,50 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
   expect(lib.made({ a: 1 }, { b: 2 })).toEqual({ a: 1, b: 2 });
 });
 
+// Arrays of arrays flattened are `flat()`, as react.dev's page route gathers
+// each directory's Markdown, `files.flat().filter(..)`; of sets, whose items
+// `flat()` wouldn't take apart, or in Rust's order, each item stepped.
+test("arrays of arrays flattened are flat()", async () => {
+  const dir = fixture("flatten-arrays");
+  writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
+use std::collections::BTreeSet;
+pub fn markdown(groups: Vec<Vec<String>>) -> Vec<String> {
+    groups.into_iter().flatten().filter(|s| s.ends_with(".md")).collect()
+}
+pub fn all(groups: Vec<Vec<u32>>) -> Vec<u32> {
+    groups.into_iter().flatten().collect()
+}
+pub fn of_sets(groups: Vec<BTreeSet<u32>>) -> Vec<u32> {
+    groups.into_iter().flatten().collect()
+}
+pub fn logged(groups: Vec<Vec<u32>>) -> (Vec<u32>, Vec<String>) {
+    let log = RefCell::new(Vec::new());
+    let kept = groups
+        .into_iter()
+        .flatten()
+        .map(|n| {
+            log.borrow_mut().push(format!("m{n}"));
+            n
+        })
+        .filter(|n| {
+            log.borrow_mut().push(format!("f{n}"));
+            *n > 1
+        })
+        .collect();
+    (kept, log.into_inner())
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('return groups.flat().filter((s) => s.endsWith(".md"));');
+  expect(js).toContain("return groups.flat();");
+  expect(js).not.toContain("$iter");
+  const lib = await import(join(dir, "mir.js"));
+  expect([lib.markdown([["a.md", "b"], ["c.md"]]), lib.all([[1], [2, 3]])]).toEqual([["a.md", "c.md"], [1, 2, 3]]);
+  expect(lib.logged([[1, 2], [3]])).toEqual([[2, 3], ["m1", "f1", "m2", "f2", "m3", "f3"]]);
+  expect(lib.of_sets([new Set([1, 2]), new Set([3])])).toEqual([1, 2, 3]);
+});
+
 // A map by what gives its value as it is, an untagged variant's constructor
 // or `String::as_str`, is no map: react.dev's page route gives Next.js its
 // paths, `.map(StaticPath::Params)`, and reads `NODE_ENV`.

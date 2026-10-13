@@ -387,4 +387,16 @@ export const mutations: Mutation[] = [
       "a chain collected from MIR is a spread"
     ]
   },
+  {
+    "name": "flat-of-arrays-flatmap",
+    "breaks": "arrays of arrays flattened eagerly are `flatMap((item) => item)`, not `flat()`",
+    "file": "src/lower/iterators.rs",
+    "find": "            f if f.is_identity() => Expr::call(Expr::member(items, \"flat\"), Vec::new()),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arrays of arrays flattened"
+    ]
+  },
 ];

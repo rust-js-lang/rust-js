@@ -1069,6 +1069,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // which is `x`: the `Some`s.
             IterComb::Flatten => match item_ty() {
                 Some(item) if self.option_of(item.peel_refs()).is_some() => method(items, "filter", vec![present()]),
+                // Of arrays, each stepped as an array is, `$iter(item)`: what
+                // `flat()` takes apart where the chain is made eager.
+                Some(item)
+                    if lazy && {
+                        let item = item.peel_refs();
+                        item.is_array() || item.is_slice() || self.is_vec_like(item)
+                    } =>
+                {
+                    let stepped = self.stepped_items(Expr::var("item"));
+                    let each = Expr::arrow(
+                        vec!["item".into()],
+                        vec![StmtKind::Return(Some(stepped)).at(js::Span::NONE)],
+                    );
+                    method(items, "flatMap", vec![each])
+                }
                 _ if lazy => {
                     let each = Expr::arrow(
                         vec!["item".into()],

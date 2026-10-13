@@ -2015,6 +2015,24 @@ fn logical_returns(
 /// for an iterator helper alone, which nothing else steps: `xs.values()
 /// .filter(f)`, the array's own iterator.
 fn array_values(e: &mut Expr) {
+    // Each array of a lazy `flatMap`, `(item) => $iter(item)`, left lazy:
+    // the array, which an iterator's `flatMap` steps the same.
+    if let ExprKind::Call(callee, args) = &mut e.kind
+        && matches!(&callee.kind, ExprKind::Member(_, m) if m == "flatMap")
+        && let [f] = args.as_mut_slice()
+        && let ExprKind::Arrow(params, body) = &mut f.kind
+        && let [js::Pattern::Name(param)] = params.as_slice()
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(each)),
+                ..
+            },
+        ] = body.as_mut_slice()
+        && crate::lower::iterators::is_stepped_items(each)
+        && matches!(&iterated(each.clone()).kind, ExprKind::Var(v) if v == param)
+    {
+        *each = Expr::var(param);
+    }
     // A set or a map made of an array's `$iter`, `new Set($iter(xs))`: of
     // the array, whose items it steps the same.
     if let ExprKind::New(class, args) = &mut e.kind

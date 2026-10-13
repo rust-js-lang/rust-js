@@ -366,4 +366,16 @@ export const mutations: Mutation[] = [
       "char ranges step by code point"
     ]
   },
+  {
+    "name": "flatten-arrays-lazy",
+    "breaks": "arrays of arrays flattened stay a lazy `flatMap`, never `flat()`",
+    "file": "src/lower/combinators.rs",
+    "find": "                    item.is_array() || item.is_slice() || self.is_vec_like(item)\n",
+    "replace": "                    false\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "arrays of arrays flattened"
+    ]
+  },
 ];
