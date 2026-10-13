@@ -83,15 +83,6 @@ pub fn emit(
     let mut body = ArenaVec::new_in(b);
     let mut items = module.items.as_slice();
     while let [item, rest @ ..] = items {
-        // Constants side by side that each read a property of one object
-        // are its destructuring, as JS writes it: `const { Intro, p: P } =
-        // MDXComponents;`.
-        let read = read_together(items);
-        if read.len() > 1 {
-            body.push(cx.destructured(&read));
-            items = &items[read.len()..];
-            continue;
-        }
         match item {
             js::Item::Namespace(n) => body.push(cx.namespace(n)),
             js::Item::Const(c) => body.push(cx.constant(c)),
@@ -544,19 +535,6 @@ impl<'a> Cx<'a> {
 
     /// `const { Intro, p: P } = MDXComponents;` of constants each reading a
     /// property of the object, `read_together`'s.
-    fn destructured(&self, read: &[(&js::Const, &js::Expr, &str)]) -> Statement<'a> {
-        let b = &self.b;
-        let sp = span(read[0].0.span);
-        let fields = read
-            .iter()
-            .map(|(constant, _, property)| (property.to_string(), js::Pattern::Name(constant.name.clone()), None))
-            .collect();
-        let id = self.pattern(&js::Pattern::Object(fields, None));
-        let declarator = VariableDeclarator::new(sp, id, None, Some(self.expr(read[0].1)), false, b);
-        let declarators = ArenaVec::from_iter_in([declarator], b);
-        Declaration::new_variable_declaration(sp, VariableDeclarationKind::Const, declarators, false, b).into()
-    }
-
     fn constant(&self, c: &js::Const) -> Statement<'a> {
         let b = &self.b;
         let sp = span(c.span);
@@ -804,7 +782,7 @@ impl<'a> Cx<'a> {
             js::Pattern::Object(fields, rest) => {
                 let fields = fields.iter().map(|(field, var, default)| {
                     // A field that isn't a JS name, `data-platform`, is quoted.
-                    let key = if js_identifier(field) {
+                    let key = if crate::names::is_identifier(field) {
                         PropertyKey::new_static_identifier(SPAN, self.name(field), b)
                     } else {
                         PropertyKey::new_string_literal(SPAN, self.name(field), None, b)
@@ -1341,7 +1319,7 @@ impl<'a> Cx<'a> {
                 let computed = name == "__proto__";
                 // A key that isn't a JS name, like a CSS custom property's
                 // `--gap`, is quoted.
-                let key = if computed || !js_identifier(name) {
+                let key = if computed || !crate::names::is_identifier(name) {
                     PropertyKey::new_string_literal(SPAN, self.name(name), None, b)
                 } else {
                     PropertyKey::new_static_identifier(SPAN, self.name(name), b)
@@ -1568,48 +1546,10 @@ fn restore_sources<'a>(
     out.into_sourcemap()
 }
 
-/// The constants at the start of `items`, none exported nor set, that each
-/// read a property of one variable, `const P = MDXComponents.p;`: each,
-/// the variable, and the property.
-fn read_together(items: &[js::Item]) -> Vec<(&js::Const, &js::Expr, &str)> {
-    fn read(item: &js::Item) -> Option<(&js::Const, &js::Expr, &str)> {
-        match item {
-            js::Item::Const(constant) if !constant.export && !constant.mutable => match &constant.value.kind {
-                ExprKind::Member(object, property)
-                    if matches!(object.kind, ExprKind::Var(_)) && js_identifier(property) =>
-                {
-                    Some((constant, &**object, property.as_str()))
-                }
-                _ => None,
-            },
-            _ => None,
-        }
-    }
-    let mut together: Vec<(&js::Const, &js::Expr, &str)> = Vec::new();
-    for item in items {
-        match read(item) {
-            Some(one) if together.first().is_none_or(|first| same_var(first.1, one.1)) => together.push(one),
-            _ => break,
-        }
-    }
-    together
-}
-
-/// Whether `a` and `b` are one variable.
-fn same_var(a: &js::Expr, b: &js::Expr) -> bool {
-    matches!((&a.kind, &b.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b)
-}
-
-/// Is `name` a JS name, which a key may be as it is?
 /// Whether `.property` can be written as it is: a JS name, or a path of
 /// them, `target.value`, which lowering writes as one.
 fn member_name(property: &str) -> bool {
-    property.split('.').all(js_identifier)
-}
-
-fn js_identifier(name: &str) -> bool {
-    name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
-        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
+    property.split('.').all(crate::names::is_identifier)
 }
 
 /// Where `code`, a module rust-js wrote, or its `declarations`, names another

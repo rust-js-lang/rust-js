@@ -340,4 +340,28 @@ export const mutations: Mutation[] = [
     replace: "Op::Add | Op::Sub | Op::Mul | Op::Div | Op::Rem);",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
+  {
+    "name": "constants-not-destructured",
+    "breaks": "constants each reading a property of one object stay apart, not its destructuring",
+    "file": "src/prepare.rs",
+    "find": "        module.items.push(match fields.len() {\n            1 => js::Item::Const(first),\n",
+    "replace": "        module.items.push(match fields.len() * 0 + 1 {\n            1 => js::Item::Const(first),\n",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
+  },
+  {
+    "name": "constants-of-two-objects-destructured",
+    "breaks": "constants reading properties of two objects are destructured from the first",
+    "file": "src/prepare.rs",
+    "find": "            && same_var(&object, of)\n",
+    "replace": "            && (true || same_var(&object, of))\n",
+    "tests": [
+      "test/jsx.test.ts",
+      "-t",
+      "children declared any node"
+    ]
+  },
 ];

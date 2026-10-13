@@ -198,8 +198,8 @@ export const mutations: Mutation[] = [
     name: "pattern-key-unquoted",
     breaks: "a destructured field that isn't a JS name is bare, `{ data-platform: dataPlatform }`, which JS can't parse",
     file: "src/to_oxc.rs",
-    find: "                    let key = if js_identifier(field) {",
-    replace: "                    let key = if true || js_identifier(field) {",
+    find: "                    let key = if crate::names::is_identifier(field) {",
+    replace: "                    let key = if true || crate::names::is_identifier(field) {",
     tests: ["test/jsx.test.ts", "-t", "hyphenated name is quoted"],
   },
   {
@@ -230,7 +230,7 @@ export const mutations: Mutation[] = [
     name: "object-key-unquoted",
     breaks: "an object's key that isn't a JS name, `data-marked`, is written bare, `{ data-marked: \"yes\" }`, which doesn't parse",
     file: "src/to_oxc.rs",
-    find: "                let key = if computed || !js_identifier(name) {",
+    find: "                let key = if computed || !crate::names::is_identifier(name) {",
     replace: "                let key = if computed {",
     tests: ["test/jsx.test.ts", "test/react.test.ts", "-t", "JSX components clone some of their children|React's and React DOM's APIs are hand-written React, and they run"],
   },
@@ -355,30 +355,6 @@ export const mutations: Mutation[] = [
       "test/jsx.test.ts",
       "-t",
       "adjacent text children stay apart"
-    ]
-  },
-  {
-    "name": "constants-not-destructured",
-    "breaks": "constants each reading a property of one object stay apart, not its destructuring",
-    "file": "src/to_oxc.rs",
-    "find": "        if read.len() > 1 {",
-    "replace": "        if read.len() > 1000 {",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
-    ]
-  },
-  {
-    "name": "constants-of-two-objects-destructured",
-    "breaks": "constants reading properties of two objects are destructured from the first",
-    "file": "src/to_oxc.rs",
-    "find": "            Some(one) if together.first().is_none_or(|first| same_var(first.1, one.1)) => together.push(one),",
-    "replace": "            Some(one) => together.push(one),",
-    "tests": [
-      "test/jsx.test.ts",
-      "-t",
-      "children declared any node"
     ]
   },
 ];

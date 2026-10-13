@@ -113,6 +113,12 @@ pub(crate) fn kept_word(name: &str) -> bool {
     KEPT.contains(&name)
 }
 
+/// Whether `name` is a JS name, which a key or a property may be as it is.
+pub(crate) fn is_identifier(name: &str) -> bool {
+    name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_' || c == '$')
+        && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
+}
+
 /// Rust names that mean something else in JS get a `$` suffix.
 pub(crate) fn js_ident(name: &str) -> String {
     if KEPT.contains(&name) || GLOBALS.contains(&name) {

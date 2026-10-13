@@ -24,6 +24,61 @@ pub fn module(module: &mut js::Module) {
     }
     reclaim::module(module);
     compound(module);
+    read_together(module);
+}
+
+/// Constants side by side that each read a property of one variable,
+/// `const P = MDXComponents.p;`, none exported nor set: its destructuring,
+/// as JS writes it, `const { Intro, p: P } = MDXComponents;`.
+fn read_together(module: &mut js::Module) {
+    // What a constant reads, the variable and the property, if it's one.
+    fn read(item: &js::Item) -> Option<(&Expr, &str)> {
+        match item {
+            js::Item::Const(constant) if !constant.export && !constant.mutable => match &constant.value.kind {
+                ExprKind::Member(object, property)
+                    if matches!(object.kind, ExprKind::Var(_)) && crate::names::is_identifier(property) =>
+                {
+                    Some((&**object, property.as_str()))
+                }
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+    let same_var = |a: &Expr, b: &Expr| matches!((&a.kind, &b.kind), (ExprKind::Var(a), ExprKind::Var(b)) if a == b);
+    let mut items = std::mem::take(&mut module.items).into_iter().peekable();
+    while let Some(item) = items.next() {
+        let Some((object, property)) = read(&item).map(|(object, property)| (object.clone(), property.to_string()))
+        else {
+            module.items.push(item);
+            continue;
+        };
+        let js::Item::Const(first) = item else {
+            unreachable!("a constant reads")
+        };
+        let mut fields = vec![(property, js::Pattern::Name(first.name.clone()), None)];
+        while let Some(next) = items.peek()
+            && let Some((of, property)) = read(next)
+            && same_var(&object, of)
+        {
+            let property = property.to_string();
+            let Some(js::Item::Const(constant)) = items.next() else {
+                unreachable!("a constant reads")
+            };
+            fields.push((property, js::Pattern::Name(constant.name), None));
+        }
+        module.items.push(match fields.len() {
+            1 => js::Item::Const(first),
+            _ => js::Item::Statements(vec![
+                StmtKind::Destructure {
+                    pattern: js::Pattern::Object(fields, None),
+                    value: object,
+                    mutable: false,
+                }
+                .at(first.span),
+            ]),
+        });
+    }
 }
 
 /// `target = target op value` as JS writes it, `target op= value`: `s += t`
