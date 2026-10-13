@@ -338,4 +338,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "array_repeat"],
     snapshots: true,
   },
+  {
+    name: "declared-functions-unprepared",
+    breaks: "a function declared in a body is passed over by each pass over a module's lists, `s = s + t` left so",
+    file: "src/js.rs",
+    find: "                    own(&mut function.body, f);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "nested_fn_prepared"],
+    snapshots: true,
+  },
 ];

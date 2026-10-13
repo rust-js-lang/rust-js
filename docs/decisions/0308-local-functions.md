@@ -70,3 +70,11 @@ const onLint = linter(async (props) => {
   `let`, one calling another module's, and one a static calls; mutations
   write them at the module's top, at the body's end, in the `try`,
   unlinked, unprepared, and the static's in its body.
+
+## Since
+
+- **Its body is prepared as the body it's in**: each pass over a module's
+  lists of statements, `s += t` and no `else` after a branch that leaves,
+  reaches it, as it reaches a closure's (`js::each_block_mut`).
+  (Amended: they passed it over, `s = s + t` left so; `nested_fn_prepared`
+  runs it against native Rust.)

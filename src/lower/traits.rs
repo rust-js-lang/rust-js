@@ -2235,8 +2235,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             params.extend(names);
             params.extend(drop_names);
             values.extend(evidence);
+            // What generic code takes for an associated type bound by
+            // `Iterator`, `fn items(&self) -> Self::Iter`, is a JS iterator
+            // (ADR 0061): a range or the crate's own iterator the impl gives,
+            // made one, as one given where a generic iterator goes is.
+            let declared_output = (self.tcx.fn_sig(item.def_id).instantiate_identity())
+                .skip_normalization()
+                .skip_binder()
+                .output();
+            let output = (self.tcx.fn_sig(method).instantiate(self.tcx, instance.args))
+                .skip_normalization()
+                .skip_binder()
+                .output();
+            let iterates = matches!(declared_output.kind(), ty::Alias(..))
+                && (self
+                    .declared_bounds(declared_output, self.tcx.param_env(item.def_id))
+                    .into_iter())
+                .any(|id| is_std_def(self.tcx, id, StdItem::Iterator))
+                && (self.range_kind(output).is_some() || self.is_user_iterator(output));
+            let call = Expr::call(callee.clone(), values.clone());
+            let call = match iterates {
+                true => Some(self.as_js_iterator(call, output, span)?),
+                false => None,
+            };
             // One that passes on just what it's given, in order, is the method.
-            let passed = values.len() == params.len()
+            let passed = call.is_none()
+                && values.len() == params.len()
                 && values
                     .iter()
                     .zip(&params)
@@ -2246,7 +2270,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 Expr::arrow(
                     params.into_iter().map(Into::into).collect(),
-                    vec![StmtKind::Return(Some(Expr::call(callee, values))).at(js::Span::NONE)],
+                    vec![StmtKind::Return(Some(call.unwrap_or_else(|| Expr::call(callee, values)))).at(js::Span::NONE)],
                 )
             };
             props.push(Prop::Field(bindings::fn_name(self.tcx, item.def_id), value));

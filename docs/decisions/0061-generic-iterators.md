@@ -55,7 +55,12 @@ rust-js knows. A generic `I` could be either form, depending on the caller.
   so is: a `&mut` to one, `advance(&mut items)`, is the JS iterator it
   steps. (Amended: only where-clauses were read, so a `&mut` to one was a
   box, and what stepped it was given the box, a `TypeError`;
-  `generic_associated_types` runs it against native Rust.)
+  `generic_associated_types` runs it against native Rust.) And an impl's
+  value for one, a range or an iterator of the crate's, `type Iter =
+  Range<u32>`, is made a JS iterator where its trait's dictionary gives
+  it, as one given where a generic iterator goes is; a call of the impl's
+  own method still gives the range. (Amended: the range itself, which
+  generic code's `for .. of` threw on.)
 - `next()` on a generic iterator is still an error. Generic code uses the
   adapters, `for`, and what consumes one.
 - A range handed over as a value (`total(0..3)`) is still an error, as a

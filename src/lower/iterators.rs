@@ -129,14 +129,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.range_kind(ty.peel_refs()).is_none() {
             return false;
         }
+        // Bound so where the callee says, as `declared_bounds` reads it.
         let env = ty::TypingEnv::post_analysis(self.tcx, callee);
-        [StdItem::Iterator, StdItem::IntoIterator].into_iter().any(|item| {
-            let tr = ty::TraitRef::new(self.tcx, std_item(self.tcx, item), [input]);
-            matches!(
-                self.tcx.codegen_select_candidate(env.as_query_input(tr)),
-                Ok(rustc_middle::traits::ImplSource::Param(_))
-            )
-        })
+        (self.declared_bounds(input, env.param_env).into_iter())
+            .any(|id| std_item(self.tcx, StdItem::Iterator) == id || std_item(self.tcx, StdItem::IntoIterator) == id)
     }
 
     /// An iterator of the crate's own as a JS one, `$iterator(it,

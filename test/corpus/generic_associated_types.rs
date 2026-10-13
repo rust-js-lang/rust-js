@@ -85,6 +85,55 @@ impl Filled for Byte {
     }
 }
 
+// An associated type bound by `Iterator` an impl gives a range, or an
+// iterator of the crate's, for: a JS iterator in generic code.
+trait Source {
+    type Iter: Iterator<Item = u32>;
+    fn numbers(&self) -> Self::Iter;
+}
+
+struct Upto(u32);
+
+impl Source for Upto {
+    type Iter = std::ops::Range<u32>;
+    fn numbers(&self) -> std::ops::Range<u32> {
+        0..self.0
+    }
+}
+
+struct Down(u32);
+
+impl Iterator for Down {
+    type Item = u32;
+    fn next(&mut self) -> Option<u32> {
+        (self.0 > 0).then(|| {
+            self.0 -= 1;
+            self.0
+        })
+    }
+}
+
+struct From3;
+
+impl Source for From3 {
+    type Iter = Down;
+    fn numbers(&self) -> Down {
+        Down(3)
+    }
+}
+
+fn total<I: Iterator<Item = u32>>(it: I) -> u32 {
+    let mut n = 0;
+    for x in it {
+        n += x;
+    }
+    n
+}
+
+fn summed<S: Source>(s: &S) -> u32 {
+    total(s.numbers())
+}
+
 fn main() {
     let shelf = Shelf { books: vec!["Dune".to_string(), "Emma".to_string()] };
     let counts = Counts(vec![3, 1, 4]);
@@ -95,4 +144,5 @@ fn main() {
     println!("{:?} {:?} {:?}", second(&shelf), second(&counts), second(&Countdown(5)));
     println!("{:?}", shelf.items().map(|b| b.len()).collect::<Vec<_>>());
     println!("{:?} {:?}", Byte(7).filled::<3>(), Byte(1).filled::<0>());
+    println!("{} {} {:?}", summed(&Upto(4)), summed(&From3), Upto(2).numbers());
 }

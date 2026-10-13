@@ -825,4 +825,12 @@ export const mutations: Mutation[] = [
     replace: "        Ok(match self.is_rust_fn(def_id) {",
     tests: ["test/corpus.test.ts", "-t", "user_as_mut"],
   },
+  {
+    name: "dictionary-iterator-unmade",
+    breaks: "an impl's range for an associated type bound by `Iterator` is given to generic code as a range, which `for .. of` can't step",
+    file: "src/lower/traits.rs",
+    find: "                && (self.range_kind(output).is_some() || self.is_user_iterator(output));\n",
+    replace: "                && false;\n",
+    tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
+  },
 ];

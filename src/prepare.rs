@@ -300,7 +300,17 @@ fn block(body: &mut Vec<Stmt>) {
                 expr(test);
                 block(body);
             }
-            _ => {}
+            // A function declared in a body (ADR 0308), as the one it's in.
+            StmtKind::Function(function) => block(&mut function.body),
+            StmtKind::Compound(_, a, b) => {
+                expr(a);
+                expr(b);
+            }
+            StmtKind::Let(_, None)
+            | StmtKind::Return(None)
+            | StmtKind::Break(_)
+            | StmtKind::Continue(_)
+            | StmtKind::Directive(_) => {}
         }
     }
 }

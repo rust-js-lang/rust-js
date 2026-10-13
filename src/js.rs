@@ -129,12 +129,25 @@ pub fn returning_its_call(value: &mut Expr) {
 }
 
 /// Each list of statements in `stmts`, itself first, then each nested one,
-/// a closure's body too: for a pass that changes them.
+/// a closure's body too, and a function's declared in them, `function
+/// inner() { .. }` (ADR 0308): for a pass that changes them. Each once.
 pub fn each_block_mut(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
-    statement_lists(stmts, f);
+    // `stmts`' own lists, and those of the functions declared in them.
+    fn own(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+        statement_lists(stmts, &mut |list| {
+            f(list);
+            for stmt in list.iter_mut() {
+                if let StmtKind::Function(function) = &mut stmt.kind {
+                    own(&mut function.body, f);
+                }
+            }
+        });
+    }
+    own(stmts, f);
+    // Each closure, however deep, a declared function's too.
     each_expr_mut(stmts, &mut |e| match &mut e.kind {
-        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => statement_lists(body, f),
-        ExprKind::Function(function) => statement_lists(&mut function.body, f),
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => own(body, f),
+        ExprKind::Function(function) => own(&mut function.body, f),
         _ => {}
     });
 }

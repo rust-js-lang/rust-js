@@ -5,13 +5,15 @@ import {
   $checked,
   $debugStr,
   $iter,
+  $iterator,
   $nextSome,
+  $rangeNext,
   $someAt,
   $someValue,
   $successors,
 } from "@rust-js/runtime";
 
-var $shelfContainer, $countsContainer, $countdownContainer, $byteFilled;
+var $shelfContainer, $countsContainer, $countdownContainer, $byteFilled, $uptoSource, $from3Source;
 
 export function entry() {
   main();
@@ -107,6 +109,48 @@ function byteFilled_filled(byte, N) {
   return new Array(N).fill(byte[0]);
 }
 
+function uptoSource() {
+  if ($uptoSource === undefined) {
+    $uptoSource = { numbers: (arg0) => $iterator(uptoSource_numbers(arg0), $rangeNext) };
+  }
+  return $uptoSource;
+}
+
+function uptoSource_numbers(upto) {
+  return { start: 0, end: upto[0] };
+}
+
+function downIterator_next(down) {
+  const value = () => {
+    down[0] = (down[0] - 1) >>> 0;
+    return down[0];
+  };
+  return down[0] > 0 ? value() : undefined;
+}
+
+function from3Source() {
+  if ($from3Source === undefined) {
+    $from3Source = { numbers: (arg0) => $iterator(from3Source_numbers(arg0), downIterator_next) };
+  }
+  return $from3Source;
+}
+
+function from3Source_numbers(from3) {
+  return [3];
+}
+
+function total(it) {
+  let n = 0;
+  for (const x of it) {
+    n = (n + x) >>> 0;
+  }
+  return n;
+}
+
+function summed(s, SSource) {
+  return total(SSource.numbers(s));
+}
+
 function main() {
   const shelf = { books: ["Dune", "Emma"] };
   const counts = [[3, 1, 4]];
@@ -144,6 +188,11 @@ function main() {
     `[${value$9.map((item) => String(item)).join(", ")}] [${byteFilled_filled([1], 0)
       .map((item) => String(item))
       .join(", ")}]`,
+  );
+  const value$10 = summed([4], uptoSource());
+  const value$11 = summed(undefined, from3Source());
+  console.log(
+    `${value$10} ${value$11} ${((range) => `${range.start}..${range.end}`)(uptoSource_numbers([2]))}`,
   );
 }
 //# sourceMappingURL=case.js.map
