@@ -74,20 +74,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// closure, or an iterator (ADR 0061).
     pub(super) fn is_generic_boxed(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> bool {
         self.is_unknown(ty)
-            && !self.bound_by(ty, param_env, |id| {
+            && !self.declared_bounds(ty, param_env).into_iter().any(|id| {
                 self.tcx.fn_trait_kind_from_def_id(id).is_some()
                     || is_std_def(self.tcx, id, StdItem::Iterator)
                     || is_std_def(self.tcx, id, StdItem::IntoIterator)
             })
-    }
-
-    /// Is `ty`, a type parameter, bound by a trait `which` says, in `param_env`?
-    fn bound_by(&self, ty: Ty<'tcx>, param_env: ty::ParamEnv<'tcx>, which: impl Fn(DefId) -> bool) -> bool {
-        param_env.caller_bounds().iter().any(|clause| {
-            clause
-                .as_trait_clause()
-                .is_some_and(|tr| tr.self_ty().skip_binder() == ty && which(tr.def_id()))
-        })
     }
 
     /// A JS function: a closure, a function, a `dyn Fn` and the like, or a
@@ -99,7 +90,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match ty.kind() {
             ty::Closure(..) | ty::FnDef(..) | ty::FnPtr(..) => true,
             ty::Dynamic(predicates, ..) => predicates.principal_def_id().is_some_and(fn_trait),
-            _ if self.is_unknown(ty) => self.bound_by(ty, self.typing_env.param_env, fn_trait),
+            _ if self.is_unknown(ty) => (self.declared_bounds(ty, self.typing_env.param_env).into_iter()).any(fn_trait),
             _ => false,
         }
     }

@@ -199,6 +199,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.recognition().is_generic_iter(ty)
     }
 
+    /// The traits a type only a caller knows is bound by (ADR 0106).
+    pub(super) fn declared_bounds(
+        &self,
+        ty: ty::Ty<'tcx>,
+        param_env: ty::ParamEnv<'tcx>,
+    ) -> Vec<rustc_span::def_id::DefId> {
+        self.recognition().declared_bounds(ty, param_env)
+    }
+
     /// `serde_json::Value`, `Number` or `Map`.
     pub(in crate::lower) fn json_type(&self, ty: Ty<'tcx>) -> Option<Json> {
         self.recognition().json_type(ty)

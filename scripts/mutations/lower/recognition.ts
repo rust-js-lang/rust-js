@@ -203,11 +203,11 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "evidence_paths"],
   },
   {
-    name: "projection-iterator-taken-as-array",
-    breaks: "`s.items().count()` of an unknown associated iterator that's lazy is `undefined`, its `length`",
+    name: "projection-bounds-undeclared",
+    breaks: "an associated type's bound in its trait, `type Iter: Iterator`, isn't seen: a `&mut` to one is boxed, and what steps it is given the box",
     file: "src/lower/recognition.rs",
-    find: "            ty::Param(_)\n                | ty::Alias(\n                    _,\n                    ty::AliasTy {\n                        kind: ty::Projection { .. },\n                        ..\n                    }\n                )\n        );\n        unknown && {",
-    replace: "            ty::Param(_)\n        );\n        unknown && {",
+    find: "            ) => Some(self.tcx.item_bounds(*def_id).skip_binder()),\n",
+    replace: "            ) => Some(ty::List::empty()),\n",
     tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
   },
   {

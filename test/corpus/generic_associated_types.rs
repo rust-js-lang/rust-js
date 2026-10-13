@@ -3,7 +3,7 @@
 // bound on one is in its trait's dictionary, one for every `Iter<'a>`. One
 // with a const parameter and no bound is the type it is where it's used.
 // In generic code, an `Iter<'a>` may be an array or a lazy JS iterator, as
-// a type parameter may.
+// a type parameter may, and a `&mut` to one is the JS iterator it steps.
 trait Container {
     type Item<'a>: std::fmt::Debug
     where
@@ -57,6 +57,16 @@ fn first<C: Container>(c: &C) -> Option<C::Item<'_>> {
     c.items().next()
 }
 
+fn advance<I: Iterator>(it: &mut I) {
+    it.next();
+}
+
+fn second<C: Container>(c: &C) -> Option<C::Item<'_>> {
+    let mut items = c.items();
+    advance(&mut items);
+    items.next()
+}
+
 fn show<C: Container>(c: &C) -> String {
     format!("{:?}", c.last())
 }
@@ -82,6 +92,7 @@ fn main() {
     println!("{} {} {}", count(&shelf), count(&counts), count(&Countdown(3)));
     println!("{:?} {} {}", Countdown(2).last(), show(&shelf), show(&Countdown(1)));
     println!("{:?} {:?} {:?}", first(&shelf), first(&counts), first(&Countdown(5)));
+    println!("{:?} {:?} {:?}", second(&shelf), second(&counts), second(&Countdown(5)));
     println!("{:?}", shelf.items().map(|b| b.len()).collect::<Vec<_>>());
     println!("{:?} {:?}", Byte(7).filled::<3>(), Byte(1).filled::<0>());
 }

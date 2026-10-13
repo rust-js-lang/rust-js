@@ -3785,24 +3785,35 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(ty))
             .unwrap_or(ty);
-        let unknown = matches!(
-            ty.kind(),
-            ty::Param(_)
-                | ty::Alias(
-                    _,
-                    ty::AliasTy {
-                        kind: ty::Projection { .. },
-                        ..
-                    }
-                )
-        );
-        unknown && {
-            let tr = ty::TraitRef::new(self.tcx, trait_id, [ty]);
-            matches!(
-                self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
-                Ok(rustc_middle::traits::ImplSource::Param(_))
-            )
-        }
+        self.declared_bounds(ty, self.typing_env.param_env).contains(&trait_id)
+    }
+
+    /// The traits `ty`, a type only a caller knows, is bound by, their
+    /// supertraits too: a type parameter's where-clauses', and an associated
+    /// type's, and its trait's declaration's, `type Iter: Iterator` (ADR
+    /// 0106). None of a type that's known.
+    pub(super) fn declared_bounds(&self, ty: ty::Ty<'tcx>, param_env: ty::ParamEnv<'tcx>) -> Vec<DefId> {
+        let declared = match ty.kind() {
+            ty::Alias(
+                _,
+                ty::AliasTy {
+                    kind: ty::Projection { def_id },
+                    ..
+                },
+            ) => Some(self.tcx.item_bounds(*def_id).skip_binder()),
+            _ => None,
+        };
+        let unknown = declared.is_some() || matches!(ty.kind(), ty::Param(_));
+        let clauses = param_env.caller_bounds().iter().filter(|clause| {
+            clause
+                .as_trait_clause()
+                .is_some_and(|bound| bound.self_ty().skip_binder() == ty)
+        });
+        let clauses = clauses.chain(declared.into_iter().flatten());
+        clauses
+            .filter(|_| unknown)
+            .filter_map(|clause| clause.as_trait_clause().map(|bound| bound.def_id()))
+            .collect()
     }
 
     pub(super) fn is_generic_iter(&self, ty: ty::Ty<'tcx>) -> bool {

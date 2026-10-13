@@ -79,6 +79,16 @@ function first(c, CContainer) {
   return $nextSome(CContainer.items(c));
 }
 
+function advance(it) {
+  $nextSome(it);
+}
+
+function second(c, CContainer) {
+  const items = CContainer.items(c);
+  advance(items);
+  return $nextSome(items);
+}
+
 function show(c, CContainer) {
   return ((value) =>
     value == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(value))})`)(
@@ -117,6 +127,11 @@ function main() {
   console.log(
     `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first([5], countdownContainer()))}`,
   );
+  const value$7 = second(shelf, shelfContainer());
+  const value$8 = second(counts, countsContainer());
+  console.log(
+    `${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${((value) => (value == null ? "None" : `Some(${value})`))(second([5], countdownContainer()))}`,
+  );
   console.log(
     `[${shelfContainer_items(shelf)
       .map((b) => $byteLen(b))
@@ -124,9 +139,9 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$7 = byteFilled_filled([7], 3);
+  const value$9 = byteFilled_filled([7], 3);
   console.log(
-    `[${value$7.map((item) => String(item)).join(", ")}] [${byteFilled_filled([1], 0)
+    `[${value$9.map((item) => String(item)).join(", ")}] [${byteFilled_filled([1], 0)
       .map((item) => String(item))
       .join(", ")}]`,
   );
