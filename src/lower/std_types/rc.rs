@@ -67,7 +67,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An `Rc`'s or a `Weak`'s function, of its arguments' values, `tys`
-    /// their types: what THIR and MIR both lower it to (ADR 0364).
+    /// their types (ADR 0364).
     pub(in crate::lower) fn rc_values(
         &mut self,
         op: RcOp,

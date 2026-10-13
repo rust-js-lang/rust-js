@@ -288,7 +288,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A variable's of `ty`, refused where what it holds drops as JS can't
-    /// drop it, as THIR's facts refuse the binding (ADR 0321).
+    /// drop it (ADR 0321).
     pub(in crate::lower) fn check_held_drops(&self, ty: Ty<'tcx>, span: Span) -> R<()> {
         match self.drops(self.reveal(ty)) {
             Drops::Unsupported(t, what) => Err(self.unsupported(span, &describe(t, what))),
@@ -732,8 +732,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// What THIR's facts refuse of the closures of the body being lowered
-    /// that hold a value with a destructor, refused from MIR too: one made
-    /// where JS can't see what it took, given away uncalled, or assigned.
+    /// that hold a value with a destructor: one made where JS can't see what
+    /// it took, given away uncalled, or assigned.
     pub(in crate::lower) fn check_closure_drops(&self) -> R<()> {
         let facts = find_facts(&self.drop_query(), self.thir, self.body_owner);
         let mut failed = None;

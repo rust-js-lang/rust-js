@@ -24,15 +24,18 @@ an error", and the page says what's current.
  rustc front end  (parse, expand macros, resolve names, type check)
    │
    ├──► THIR of every function ──copy──┐        (0004)
-   │                                   │
+   ├──► MIR of every body ─────copy────┤        (0364)
    ▼                                   │
  rustc analysis (borrow check, lints)  │
    │                                   │
    ├── any error? ──► stop, write nothing  (0006)
    │                                   │
    ▼                                   ▼
- Compilation::Stop               lower.rs: THIR ──► JS AST, with spans  (0008–0015)
- (no rustc codegen)                    │
+ Compilation::Stop               mir.rs: MIR ──► JS AST, with spans  (0364)
+ (no rustc codegen)                    │  THIR read beside it: names, spans, facts
+                                       ▼
+                                 mir/tidy.rs: written as a person writes it
+                                       │
                                        ▼
                                  prepare.rs: readability preparation
                                        |

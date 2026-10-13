@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-crate-fn-item-callback-wrapped",
-    "breaks": "a crate function given as a callback from MIR is `(item) => is_rule(item)`, not `is_rule` as THIR has it",
+    "breaks": "a crate function given as a callback from MIR is `(item) => is_rule(item)`, not `is_rule`",
     "file": "src/lower/mir/iter.rs",
     "find": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n            js::ExprKind::Var(_) if own => f,\n",
     "replace": "            js::ExprKind::Arrow(params, _) if params.len() <= 1 => f,\n",

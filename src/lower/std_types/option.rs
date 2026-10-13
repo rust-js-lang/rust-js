@@ -654,8 +654,8 @@ pub(in crate::lower) enum OptionPlaceOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `option_place`'s, of the `Option`'s place, a variable or a field, its
-    /// item's type and what's given: THIR's and MIR's.
+    /// An `Option`'s method that writes its place, of the place, a variable
+    /// or a field, its item's type and what's given.
     pub(in crate::lower) fn option_place_values(
         &mut self,
         op: OptionPlaceOp,

@@ -163,8 +163,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A map's or a set's method, of its arguments' values, `tys` their
-    /// types: what THIR and MIR both lower it to (ADR 0364). `discarded`:
-    /// whether what it gives is unused.
+    /// types (ADR 0364). `discarded`: whether what it gives
+    /// is unused.
     pub(in crate::lower) fn map_values(
         &mut self,
         op: MapOp,
@@ -398,7 +398,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `m.extract_if(f)`, or a B-tree's `extract_if(range, f)`, of the map's
-    /// value and type, the range's, and the test's: THIR's and MIR's.
+    /// value and type, the range's, and the test's.
     pub(in crate::lower) fn map_extract_if_values(
         &mut self,
         (m, receiver): (Expr, Ty<'tcx>),
@@ -429,7 +429,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A B-tree's range of its keys (ADR 0325), of the tree's value and
-    /// type, and the range's: THIR's and MIR's.
+    /// type, and the range's.
     pub(in crate::lower) fn tree_range_values(
         &mut self,
         (m, receiver): (Expr, Ty<'tcx>),

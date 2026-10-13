@@ -16,12 +16,12 @@ use rustc_span::def_id::DefId;
 /// arguments, and whether its value is used.
 #[derive(Clone, Copy)]
 pub(super) struct Call<'c, 'tcx> {
-    /// The function, as THIR has it: none of a call lowered from MIR, whose
-    /// arguments are their values alone (ADR 0364).
+    /// The function's THIR expression: none, as a call is lowered from
+    /// MIR, its arguments their values alone (ADR 0364).
     pub(super) fun: Option<ExprId>,
     pub(super) def_id: DefId,
     pub(super) generic_args: ty::GenericArgsRef<'tcx>,
-    /// Its arguments, as THIR has them: none of one lowered from MIR.
+    /// Its arguments' THIR expressions: none, as for `fun`.
     pub(super) args: &'c [ExprId],
     /// Each argument's type.
     pub(super) tys: &'c [Ty<'tcx>],

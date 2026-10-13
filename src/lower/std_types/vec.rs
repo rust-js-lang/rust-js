@@ -142,7 +142,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::Len => Expr::member(arg(), "length"),
             Std::Index => match (call.fun, args.first()) {
                 (Some(fun), Some(&items)) => self.checked_index(fun, items, vec![arg(), arg()]),
-                // Of a call from MIR, checked: what's in bounds is THIR's to say.
+                // Checked: THIR's facts say what's in bounds by the call's
+                // expression, which a call lowered from MIR doesn't have.
                 _ => {
                     self.runtime.insert(Helper::Index);
                     Expr::call(Expr::var("$index"), vec![arg(), arg()])

@@ -219,8 +219,8 @@ pub fn App() -> JSX::Element {
 // prop written before them: JSX reads its props, then its children, as Rust
 // does. A `Link` whose props flatten an anchor's is such a child, as
 // react.dev's `Breadcrumbs` has it.
-// A list of children a chain collects: an array's `map`, from MIR too (ADR
-// 0364), each item given its index as THIR's is.
+// A list of children a chain collects: an array's `map`, each item given
+// its index.
 test("a list of children a chain collects is an array's map", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -241,8 +241,7 @@ pub fn List(items: Vec<&'static str>) -> JSX::Element {
 });
 
 // An \`if\` given as a child, of an element or a value, is a conditional
-// child, \`{link ? <a /> : author}\`, from MIR too (ADR 0364), its test as
-// it's written.
+// child, \`{link ? <a /> : author}\`, its test as it's written.
 test("an if given as a child is a conditional child", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx};
@@ -286,8 +285,8 @@ pub fn Pick(href: &'static str) -> JSX::Element {
 });
 
 // A namespace import's component, \`Menu.Item\`, is its tag where it's
-// written, from MIR too (ADR 0364): JS never lets another module change an
-// import, so what's made before it can't change what it reads.
+// written: JS never lets another module change an import, so what's made
+// before it can't change what it reads.
 test("a namespace import's component is a tag where it's written", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx};
@@ -329,8 +328,8 @@ pub fn Nav() -> JSX::Element {
 });
 
 // What an element reads, made before a branch in its tree, \`a || b\`'s, is
-// read where it's written, from MIR too (ADR 0364): its call runs first
-// there as it ran first before.
+// read where it's written: its call runs first there as it ran first
+// before.
 test("what an element reads, made before a branch in its tree, is read where it's written", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -356,8 +355,7 @@ pub fn Page(home: bool, blog: bool, content: &str) -> JSX::Element {
 
 // What an element reads that MIR makes ahead of it, \`&base(..)\`'s borrowed
 // value, read where it's written past what does nothing before it there, a
-// namespace's tag too: the tree is the order the program makes them in,
-// from MIR too (ADR 0364).
+// namespace's tag too: the tree is the order the program makes them in.
 test("what an element reads past elements before it is read where it's written", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx};
@@ -400,8 +398,8 @@ pub fn Nav() -> JSX::Element {
 });
 
 // A let-else of what \`filter\` keeps, its \`else\` an element: a guard first,
-// \`if (!href)\`, as THIR writes it, from MIR too (ADR 0364), where the
-// \`return\` is reached through what the component drops.
+// \`if (!href)\`, where the \`return\` is reached through what the component
+// drops.
 test("a let-else of what filter keeps, returning an element, is a guard first", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -437,8 +435,8 @@ pub fn Link(LinkProps { href, class_name, items }: LinkProps) -> JSX::Element {
 });
 
 // A let-else of what \`filter\` keeps, then an early \`return\`: guards first, each
-// \`return\` where it's written, from MIR too (ADR 0364), whose value the
-// branches make and one \`return\` gave back.
+// \`return\` where it's written, whose value the branches make and MIR's
+// one \`return\` gave back.
 test("a let-else of what filter keeps, then an early return, are guards first", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx};
@@ -479,8 +477,7 @@ pub fn FooterLink<C: ReactNode>(FooterLinkProps { href, children, is_header }: F
 });
 
 // What elements read, made before branches in their tree, each a call:
-// each read where it's written, the last first, then the one before it,
-// from MIR too (ADR 0364).
+// each read where it's written, the last first, then the one before it.
 test("what elements read before branches, each a call, is read where it's written", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -510,7 +507,7 @@ pub fn Page(home: bool, blog: bool, content: &str) -> JSX::Element {
 });
 
 // A closure a \`let\` names, only a hook's function: written there, named by
-// the \`let\` (ADR 0297), from MIR too (ADR 0364).
+// the \`let\` (ADR 0297).
 test("a hook's closure a let names is a named function where it's given", async () => {
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_effect, use_state};
@@ -2148,7 +2145,7 @@ pub fn Looped() -> JSX::Element {
   // MIR's first prop read in place, made after `label` as Rust makes it.
   expect(jsx).toContain('<ButtonLink target={note("t")} label={label} href={h}>');
   // Each made first is named as its field is, as a person names it.
-  // MIR names only `href`, made before the rest; THIR names each.
+  // Of these, only `href`, made before the rest, is named.
   expect(jsx).toContain('<ButtonLink label={note("l")} target={note("t")} id={note("i")} href={href}>');
   expect(jsx).toContain('<ButtonLink href="/t" target={t}>');
   // MIR reads `target` in place, made after `href`.
@@ -3894,7 +3891,7 @@ pub fn Keyed(props: &'static PanelProps<'static>) -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain("<Panel {...props} wide />");
-  // MIR's held key named as it's given, `key`, where THIR's is a `match`.
+  // The key MIR holds is named as it's given, `key`.
   expect(jsx).toContain("<Panel key={key} {...props} wide />");
   const { Again } = await import(join(dir, "lib.jsx"));
   const tree = Again({ title: "t", wide: false, extra: 1 });
@@ -4494,10 +4491,9 @@ pub fn Shown(a: bool, b: bool) -> JSX::Element {
   expect([renderToStaticMarkup(lib.Shown(true, true)), renderToStaticMarkup(lib.Shown(true, false))]).toEqual(["<div><b>x</b></div>", "<div></div>"]);
 });
 
-// ADR 0364: from MIR as from THIR, a component of the crate's is its
-// function, a prop not given is left out, and an attribute is read before
-// a child that assigns what it read, but one that reads what never changes,
-// which reads alike after.
+// ADR 0364: a component of the crate's is its function, a prop not given is
+// left out, and an attribute is read before a child that assigns what it
+// read, but one that reads what never changes, which reads alike after.
 test("an attribute is read before a child that assigns what it read", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -4519,10 +4515,10 @@ pub fn App() -> JSX::Element {
   expect(renderToStaticMarkup(lib.App())).toBe('<div title="one" lang="en"><b>x</b>five</div>');
 });
 
-// ADR 0364: from MIR as from THIR, a component's flattened props given in
-// part are the attributes given, not what `jsx!`'s `..Default::default()`
-// and its omitted props leave out, and the component takes them apart as
-// its pattern does, the rest its `...props`.
+// ADR 0364: a component's flattened props given in part are the attributes
+// given, not what `jsx!`'s `..Default::default()` and its omitted props
+// leave out, and the component takes them apart as its pattern does, the
+// rest its `...props`.
 test("flattened props given in part are the attributes given", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx};
@@ -4570,8 +4566,8 @@ pub fn Noted() -> JSX::Element {
   expect(renderToStaticMarkup(lib.Noted())).toBe('<a href="/n" target="_blank">N</a>');
 });
 
-// ADR 0364: from MIR as from THIR, a static's component is its static,
-// wherever its tag is read, as after a prop a branch makes.
+// ADR 0364: a static's component is its static, wherever its tag is read,
+// as after a prop a branch makes.
 test("a static component given a prop a branch makes is its static", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, MemoExoticComponent, jsx, memo};
@@ -4597,9 +4593,9 @@ pub fn App(big: bool) -> JSX::Element {
   expect([true, false].map((big) => renderToStaticMarkup(lib.App(big)))).toEqual(["<b>10</b>", "<b>1</b>"]);
 });
 
-// ADR 0364: from MIR as from THIR, what's made before a prop a branch makes
-// stays what it is: a style being given its fields, and a tag a closure
-// reads of a local it shares.
+// ADR 0364: what's made before a prop a branch makes stays what it is: a
+// style being given its fields, and a tag a closure reads of a local it
+// shares.
 test("a style and a tag made before a prop's branch stay what they are", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{CSSProperties, JSX, jsx};
@@ -4631,8 +4627,8 @@ pub fn App(small: bool) -> JSX::Element {
   ]);
 });
 
-// ADR 0364: from MIR as from THIR, a context's provider read before its
-// children's branch is a tag, capitalized as JSX reads one.
+// ADR 0364: a context's provider read before its children's branch is a
+// tag, capitalized as JSX reads one.
 test("a provider read before its children's branch is a tag", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{Context, JSX, create_context, jsx};
@@ -4678,8 +4674,7 @@ pub fn Repeated(step: u32) -> JSX::Element {
 });
 
 // ADR 0235: a child shown only where a test holds, `if shown { hint } else
-// { None }`, is `shown && hint`, from MIR as from THIR, as react.dev's
-// Challenge shows its hint.
+// { None }`, is `shown && hint`, as react.dev's Challenge shows its hint.
 test("a child shown where a test holds is test && child", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -4719,8 +4714,8 @@ pub fn Lines(file: &'static str, code: &'static str) -> JSX::Element {
 });
 
 // A `let` pattern of a struct through a reference, `use_context`'s, takes
-// it apart where it's made, from MIR as from THIR, as react.dev's
-// IllustrationBlock reads `{ isInBlock }` of its context.
+// it apart where it's made, as react.dev's IllustrationBlock reads
+// `{ isInBlock }` of its context.
 test("a let pattern of a struct through a reference takes it apart", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{Context, JSX, create_context, jsx, use_context};
@@ -4743,8 +4738,8 @@ pub fn Block() -> JSX::Element {
 });
 
 // A `let` pattern of props with a flattened field takes the rest apart,
-// `{ alt, ...rest }`, from MIR as from THIR, as react.dev's Image spreads
-// what it isn't given: the rest has no `alt`.
+// `{ alt, ...rest }`, as react.dev's Image spreads what it isn't given:
+// the rest has no `alt`.
 test("a let pattern's flattened field is the rest of what it takes apart", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::attributes::ImgHTMLAttributes;
@@ -5029,8 +5024,8 @@ pub fn TopNav(TopNavProps { mut items, crumbs, section }: TopNavProps) -> JSX::E
 });
 
 // ADR 0364: a struct update of a flattened props rest, `..props.html` and
-// `..props`, made ahead of a branch, spreads the rest once, as THIR: a
-// rest nothing changes reads its properties alike later, so it isn't copied,
+// `..props`, made ahead of a branch, spreads the rest once: a rest nothing
+// changes reads its properties alike later, so it isn't copied,
 // `{...{ ...props }}`, as react.dev's Link gives ExternalLink its props.
 test("a flattened rest updated ahead of a branch is spread once", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
@@ -5177,10 +5172,10 @@ pub fn App(names: Vec<&'static str>) -> JSX::Element {
   expect(renderToStaticMarkup(createElement(() => result.App(["a"])))).toBe("<nav><h2>On this page</h2><i>a</i><b>dark</b></nav>");
 });
 
-// ADR 0364: a component's `key` written first is first from MIR as from
-// THIR: MIR's prop values are placed by where THIR's fields are written, as
-// react.dev's PageHeading keys each Tag.
-test("a component's key goes where it's written from MIR", async () => {
+// ADR 0364: a component's `key` written first is first: MIR's prop values
+// are placed where their fields are written, as react.dev's PageHeading
+// keys each Tag.
+test("a component's key goes where it's written", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
 pub struct TagProps<'a> {
@@ -5309,9 +5304,8 @@ pub fn Preview(error: Option<&'static Failure>, expanded: bool) -> JSX::Element 
 });
 
 // ADR 0235: a child shown where a state's `bool` holds, `if *show_hint {
-// hint } else { None }`, is `showHint && hint` from MIR as from THIR: the
-// state, read through its handle, is a `bool`, as react.dev's Challenge
-// shows its hint.
+// hint } else { None }`, is `showHint && hint`: the state, read through its
+// handle, is a `bool`, as react.dev's Challenge shows its hint.
 test("a child shown where a state's bool holds is an and", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, ReactNode, jsx, use_state};
@@ -5377,10 +5371,9 @@ pub fn Buttons(recipes: bool, shown: bool, toggle: &'static dyn Fn()) -> JSX::El
 });
 
 // `&dyn Any` values given to a JS module's function, `define(vec![&a, &b])`,
-// are the values, `HighlightStyle.define([a, b])`, from MIR as from THIR, no
-// `{ value, impl }` pairs unwrapped, read in place past the import's
-// member, which no call changes, as react.dev's CodeBlock defines its
-// highlighting.
+// are the values, `HighlightStyle.define([a, b])`, no `{ value, impl }`
+// pairs unwrapped, read in place past the import's member, which no call
+// changes, as react.dev's CodeBlock defines its highlighting.
 test("dyn values given to a JS module's function are the values", async () => {
   const { dir, args } = compile(`use std::any::Any;
 pub struct Highlight;
@@ -5665,7 +5658,7 @@ pub fn SidebarLink(
 
 // ADR 0040: a component's handler of one call whose JS gives `undefined`,
 // held by MIR ahead of a borrow's call, is `() => f()` where it's read in
-// place, as THIR writes it, as react.dev's ExpandableExample toggles.
+// place, as react.dev's ExpandableExample toggles.
 test("a held handler of one call is a concise arrow", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::webapi::MouseEvent;
@@ -5702,8 +5695,8 @@ pub fn Example(deep: bool) -> JSX::Element {
 });
 
 // A variant's test function, `isValidElement(child)`, gives a `bool`, so a
-// pattern's test of it is no `!!(..)`, from MIR as from THIR, as react.dev's
-// CodeDiagram keeps its images.
+// pattern's test of it is no `!!(..)`, as react.dev's CodeDiagram keeps its
+// images.
 test("a variant's test function is a bool in a test", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::children::{self, Child};
@@ -5960,9 +5953,9 @@ thread_local! {
   expect(renderToStaticMarkup(createElement(lib.Client, props))).toBe("<p>1</p>");
 });
 
-// ADR 0364: what MIR holds for a prop or a child, made before a later
-// one's statements, is named as THIR names it, after the prop, `const href
-// = made("h")`, or a child's `children`, not `value`.
+// ADR 0364: what MIR holds for a prop or a child, made before a later one's
+// statements, is named after the prop, `const href = made("h")`, or a
+// child's `children`, not `value`.
 test("a value held for a prop is named after it", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
@@ -5995,15 +5988,15 @@ pub fn Looped() -> JSX::Element {
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
   expect(jsx).toContain('const href = made("h");');
-  // MIR's child too, where THIR's is a `tmp`.
+  // A child's too.
   expect(jsx).toContain('const children = made("L");');
   const lib = await import(join(dir, "lib.jsx"));
   expect(renderToStaticMarkup(lib.Looped())).toBe('<a href="h" title="two">L2</a>');
 });
 
 // ADR 0364: JS's JSX runtime makes a `key` after the children, so a key
-// that does something is made first, held, in source order: what's read
-// in it waits on the children too, from MIR as from THIR.
+// that does something is made first, held, in source order: what's read in
+// it waits on the children too.
 test("a key that does something is made before the children", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};

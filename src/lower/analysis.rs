@@ -265,9 +265,9 @@ pub(super) struct AnalyzedCrate<'a, 'tcx> {
     /// The thread-locals that are their module's variable, each whether it's
     /// set, a `let` (ADR 0270).
     pub plain_locals: HashMap<LocalDefId, bool>,
-    /// Of MIR's, the thread-locals THIR would make plain: what their
-    /// borrows' closures are given is what's in them, as nothing borrows
-    /// them meanwhile (ADR 0328).
+    /// The thread-locals only read and set in their own module, which
+    /// `plain_statics` makes plain: what their borrows' closures are given is
+    /// what's in them, as nothing borrows them meanwhile (ADR 0328).
     pub quiet_locals: HashSet<LocalDefId>,
     /// The cells that are their function's variable, each to the one it's a
     /// clone of, or itself (ADR 0287).

@@ -52,7 +52,7 @@ pub(super) struct Hints<'h> {
     /// is written (ADR 0279).
     pub(super) forwarding: &'h [js::Span],
     /// Where each closure of one call whose JS gives `undefined` is written:
-    /// a component's handler of one, `() => f()`, as THIR's (ADR 0040).
+    /// a component's handler of one, `() => f()` (ADR 0040).
     pub(super) concise: &'h [js::Span],
 }
 
@@ -134,8 +134,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         logical_returns(stmts, logicals, conditions, returns, booleans)
     });
     // What's given where `false` is skipped as `undefined` is, `test &&
-    // value`, as THIR gives it there: one read there alone, which nothing
-    // else tells from `undefined`.
+    // value`: one read there alone, which nothing else tells from
+    // `undefined`.
     let falsy: HashSet<&String> = falsy.iter().filter(|name| js::mentions_in(body, name) == 1).collect();
     // A test of one read there alone is read for its truth: `!!a || b`'s,
     // `a || b`.
@@ -199,12 +199,12 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
     js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
-    // $iter(xs);`: the array's, as THIR's; and a range made there, its
+    // $iter(xs);`: the array's; and a range made there, its
     // numbers made as they're stepped.
     js::each_expr_mut(body, &mut range_items);
     eager_chains(body);
     // Of each, a callback that passes what it's given on to Rust's function,
-    // `(x, i) => f(x, i)`: `f` itself, as THIR's.
+    // `(x, i) => f(x, i)`: `f` itself.
     js::each_expr_mut(body, &mut |e| passed_on(e, forwarding));
     // An element's place checked, then set: the place the check gives.
     js::statement_lists(body, &mut checked_sets);
@@ -258,7 +258,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         }
     });
     // A handler of one call a component's given, `() => { f(); }`, held then
-    // read in place: `() => f()`, as THIR gives one where it's made.
+    // read in place: `() => f()`.
     js::each_expr_mut(body, &mut |e| {
         if let ExprKind::Jsx(jsx) = &mut e.kind {
             for prop in &mut jsx.props {
@@ -310,7 +310,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     body.retain(|stmt| !matches!(&stmt.kind, StmtKind::Let(name, None) if !mentions.contains_key(name)));
     // A `const` nothing reads, of a value made only to be dropped, `drop(vec![..])`'s:
-    // what making it does, as THIR's.
+    // what making it does.
     js::statement_lists(body, &mut |stmts| unread_made(stmts, &mentions));
     // Its jumps then, of the loop they're now in, unnamed.
     let mut headed = false;
@@ -474,7 +474,7 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
         },
         // A range's end, read once by Rust, is read each step by JS's `for`:
         // one that reads the same then, a constant or a variable the body
-        // doesn't assign; else a `const end` of it first, as THIR writes it.
+        // doesn't assign; else a `const end` of it first.
         _ => {
             let ExprKind::Object(props) = &source.kind else {
                 return None;
@@ -491,7 +491,7 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
             if start_key != "start" || end_key != "end" || mutable {
                 return None;
             }
-            // A count the body doesn't read, Rust's `_`: `i`, as THIR names it.
+            // A count the body doesn't read, Rust's `_`: `i`.
             let name = match name.as_str() {
                 "_" => std::iter::once("i".to_string())
                     .chain((1..).map(|k| format!("i${k}")))
@@ -788,7 +788,7 @@ fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
     }
     // `if (c) { s } else { return; }`, a `let … else`'s `return` the program
     // wrote: `if (!c) { return; } s`, its binding first, `const b = x; if (b
-    // == null) { return; }`, as THIR guards it.
+    // == null) { return; }`.
     if let Some(Stmt {
         kind: StmtKind::If(_, then, Some(otherwise)),
         ..
@@ -1369,7 +1369,7 @@ fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
 }
 
 /// `?` of a `Result`, `if (r.TAG !== "Err") { s } else { return r; }`: its
-/// `return` first, `if (r.TAG === "Err") { return r; } s`, as THIR writes it.
+/// `return` first, `if (r.TAG === "Err") { return r; } s`.
 fn tried_first(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -1404,7 +1404,7 @@ fn tried_first(stmts: &mut Vec<Stmt>) {
 
 /// A loop's body `if (t) { a; continue; } rest`, `a` written after `rest`,
 /// each of which always leaves: `if (!t) { rest } a`, in the order the
-/// program wrote them, as THIR's; `a`'s last `continue` goes on anyway.
+/// program wrote them; `a`'s last `continue` goes on anyway.
 fn written_order_steps(stmts: &mut [Stmt]) {
     for stmt in stmts {
         let (StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. }) = &mut stmt.kind
@@ -1469,7 +1469,7 @@ fn unread_made(stmts: &mut Vec<Stmt>, mentions: &HashMap<String, usize>) {
 
 /// `while (true) { if (c) { body; continue; } rest }`, a loop MIR tests at
 /// its head whose `rest`, what's after it, always leaves elsewhere: `while
-/// (c) { body } rest`, as THIR writes it, where nothing else jumps in it
+/// (c) { body } rest`, where nothing else jumps in it
 /// to the loop, as `rest`'s jumps would go to another once it's outside.
 fn while_heads(stmts: &mut Vec<Stmt>) -> bool {
     let mut headed = false;
@@ -1865,7 +1865,7 @@ fn pattern_of(parts: &[Part]) -> Option<js::Pattern> {
 
 /// A parameter MIR names, `_2`, whose parts the body reads where it starts
 /// and reads nowhere else, `(_2) => { const i = _2[0]; const c = _2[1]; … }`:
-/// taken apart where it's given, `([i, c]) => …`, as THIR writes a pattern.
+/// taken apart where it's given, `([i, c]) => …`.
 pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stmt>) {
     // An `async fn`'s too, `__arg0`, which its body's `let` takes apart,
     // of the copy its body holds, `__arg0$1`.
@@ -1929,7 +1929,7 @@ pub(super) fn destructured_params(params: &mut [js::Pattern], body: &mut Vec<Stm
 /// with `&&` or `||` where `t` is tested: one value returned, `t ? a : b`,
 /// as the program wrote it, each test before it folded in, `s !== "en" &&
 /// (t ? a : b)`; not where it wrote a `return`, nor of an `if`'s condition,
-/// whose branches it returns, as THIR's.
+/// whose branches it returns.
 fn logical_returns(
     stmts: &mut Vec<Stmt>,
     logicals: &[js::Span],
@@ -1992,7 +1992,7 @@ fn array_values(e: &mut Expr) {
         return;
     }
     // The rest of a string's `chars()` not stepped, `$restStr($iter(cs))`:
-    // all of them, `cs.join("")`, as THIR's.
+    // all of them, `cs.join("")`.
     if let ExprKind::Call(callee, args) = &e.kind
         && matches!(&callee.kind, ExprKind::Var(f) if f == "$restStr")
         && let [it] = &args[..]
@@ -2007,7 +2007,7 @@ fn array_values(e: &mut Expr) {
         return;
     }
     // Each item with its index, `enumerate()`'s `.map((x, i) => [i, x])`:
-    // the array's `entries()`, as THIR's.
+    // the array's `entries()`.
     if let ExprKind::Call(callee, args) = &e.kind
         && let ExprKind::Member(it, name) = &callee.kind
         && name == "map"
@@ -2063,8 +2063,8 @@ fn pairs_index(f: &Expr) -> bool {
 
 /// `let t; try { t = a; } catch { t = b; } x = t;`, a temporary each way
 /// through a statement gives its value last, then given to a variable: the
-/// variable given it there, as THIR gives a match's value, where the
-/// statement reads the variable nowhere.
+/// variable given it there, where the statement reads the variable
+/// nowhere.
 fn forwarded_values(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 2 < stmts.len() {
@@ -2121,7 +2121,7 @@ fn last_assigns(stmts: &[Stmt], t: &str) -> bool {
 
 /// `const t = q.title;` of plain data, which nothing changes, held by MIR,
 /// a temporary or what an element reads: `q.title` where `t` is read, each
-/// time, as THIR reads it.
+/// time.
 fn plain_reads(stmts: &mut Vec<Stmt>, plain: &HashSet<String>, captured: &HashSet<String>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -2262,7 +2262,7 @@ fn nested_pattern(parts: &[(&[Step], &str, Option<&Expr>)]) -> Option<js::Patter
 /// `const _3 = e; … if (_3) { const current = _3; … }`: a temporary that a
 /// variable the program names takes, in a block inside where it's read,
 /// `if let Some(current) = r.current()`'s, where nothing else is named so:
-/// `const current = e;`, read by that name, as THIR binds it.
+/// `const current = e;`, read by that name.
 fn named_temporaries(body: &mut Vec<Stmt>) {
     // How often each name is declared, and read, in the whole body.
     let mut declared: HashMap<String, usize> = HashMap::new();
@@ -2466,8 +2466,8 @@ fn branch_values(
                     && ((small(yes) && small(no)) || is_temporary(x))
                     // Nor each adding to it, `out += a`, as written.
                     && !(updates(x, yes) && updates(x, no))
-                    // Nor the function's value an `if` makes, which each returns, as
-                    // THIR's; a `match`'s is one value.
+                    // Nor the function's value an `if` makes, which each returns; a
+                    // `match`'s is one value.
                     && !(x == result && written_if(span)) =>
             {
                 // The value the program wrote first, first: `a || b ? x : y` of
@@ -2564,7 +2564,7 @@ fn branch_values(
         && !declared(&body).any(|name| declared(before).any(|n| n == name))
     {
         // `f` the program wrote, a `let … else`'s else: `if (!(a && b)) {
-        // return f; } t`, as THIR guards it.
+        // return f; } t`.
         let test = (tests.into_iter())
             .rev()
             .reduce(|b, a| Expr::bin(Op::And, a, b))
@@ -2648,8 +2648,8 @@ fn returned_chain(stmts: &[Stmt]) -> Option<(Vec<Expr>, Expr)> {
 /// itself, of more branches, nor an element, which reads best returned or
 /// assigned as it is, nor a function.
 fn small(e: &Expr) -> bool {
-    // An element of two levels at most, `<b>Save</b>`, a value as THIR
-    // writes one; one of more reads best as a branch of its own.
+    // An element of two levels at most, `<b>Save</b>`, a value; one of more
+    // reads best as a branch of its own.
     fn levels(e: &Expr) -> usize {
         match &e.kind {
             ExprKind::Jsx(jsx) => 1 + jsx.children.iter().map(levels).max().unwrap_or(0),
@@ -3133,7 +3133,7 @@ fn same_test(a: &Expr, b: &Expr) -> bool {
 
 /// `if (raw) { const error = raw; .. }`, a pattern's binding of a variable,
 /// `if let Some(error) = raw`, which MIR copies where `raw` is borrowed:
-/// `raw` where `error` is read, as THIR binds it, where the block sets
+/// `raw` where `error` is read, where the block sets
 /// neither again, declares neither, nor reads `error` in a closure, which
 /// may run after; a `let`-`else`'s too, after the test that leaves.
 fn copied_bindings(stmts: &mut Vec<Stmt>) {
@@ -3413,16 +3413,16 @@ fn unwrapped_values(stmts: &mut [Stmt]) {
     }
 }
 
-/// `_4`, a temporary MIR holds still, read more than once: named as THIR
-/// names one, after the field it reads, `routes` of `tree.routes`, a
-/// trait object's whose method is called, `receiver`, else `value`, or
-/// `tmp` of a `let` its branches set, a name no other in the function
-/// has, its parameters' and closures' too.
+/// `_4`, a temporary MIR holds still, read more than once: named after the
+/// field it reads, `routes` of `tree.routes`, a trait object's whose method
+/// is called, `receiver`, else `value`, or `tmp` of a `let` its branches
+/// set, a name no other in the function has, its parameters' and closures'
+/// too.
 pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
     let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
     names_in(body, &mut taken);
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the
-    // prop's name, `href`, or `children`, as THIR names one it holds.
+    // prop's name, `href`, or `children`.
     let mut given: HashMap<String, String> = HashMap::new();
     js::each_expr_mut(&mut body.clone(), &mut |e| {
         // A trait object's, `_5.impl.add(_5.value)`: its `receiver`.
@@ -3495,9 +3495,9 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
 
 /// An arrow's parameter its function's names made unique, `(value$1) =>
 /// f(value$1)`, is the name it was made of where the arrow names nothing
-/// else so, `(value) => f(value)`, as JS's arrows shadow, and THIR names
-/// them: once nothing's left to name. Not a name of the module's, which
-/// THIR's closures keep apart.
+/// else so, `(value) => f(value)`, as JS's arrows shadow: once nothing's
+/// left to name. Not a name of the module's, which a closure's parameters
+/// stay apart from.
 pub(super) fn unsuffixed_params(body: &mut [Stmt], module: &HashSet<String>) {
     js::each_expr_mut(body, &mut |e| {
         let (ExprKind::Arrow(params, inner) | ExprKind::AsyncArrow(params, inner)) = &mut e.kind else {
@@ -3643,8 +3643,8 @@ fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr)>
 /// `test ? yes : no`: `test && yes` where `no` is `false`, and `test || no`
 /// where `yes` is `true`, the test `!!test` where it's not a `bool`.
 fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<String>) -> Expr {
-    // Where the test itself is the value, of what's not a `bool`, `!!c`, as
-    // THIR writes it; its negation too, `!!o` of `!o`'s, `is_some()`'s.
+    // Where the test itself is the value, of what's not a `bool`, `!!c`;
+    // its negation too, `!!o` of `!o`'s, `is_some()`'s.
     let truth = |test: Expr| match is_boolean(&test, booleans) {
         true => test,
         false => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, test)),
@@ -3735,7 +3735,7 @@ fn truth_of(e: Expr) -> Expr {
 /// `$orInsert(m, k, 0); const h = $mutGet(m, k); h.value = f(h.value);`,
 /// MIR's `*m.entry(k).or_insert(0) += 1`, the handle read nowhere else: the
 /// value there or put in, then set, `const current = $orInsert(m, k, 0);
-/// m.set(k, f(current));`, as THIR writes it.
+/// m.set(k, f(current));`.
 fn map_counts(stmts: &mut Vec<Stmt>) {
     let call_of = |e: &Expr, helper: &str| match &e.kind {
         ExprKind::Call(callee, args) if matches!(&callee.kind, ExprKind::Var(f) if f == helper) => Some(args.clone()),
@@ -4065,8 +4065,8 @@ fn passed_on(e: &mut Expr, forwarding: &[js::Span]) {
 }
 
 /// `$index(xs, i); xs[i] = v;`, an element's place MIR checks, then sets:
-/// `xs[$at(xs, i)] = v;`, the place `$at` checks, as THIR writes it. `v`
-/// is made before either, as Rust makes it.
+/// `xs[$at(xs, i)] = v;`, the place `$at` checks. `v` is made before
+/// either, as Rust makes it.
 fn checked_sets(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
@@ -4178,9 +4178,9 @@ fn aliases(body: &mut Vec<Stmt>, captured: &HashSet<String>) {
     });
 }
 
-/// A `let x;` MIR declares first, where it's first named, as THIR declares
-/// it: before the first statement that names it, and in the one branch of
-/// an `if` that does; in a loop's body that assigns it before it's read.
+/// A `let x;` MIR declares first, where it's first named: before the first
+/// statement that names it, and in the one branch of an `if` that does; in
+/// a loop's body that assigns it before it's read.
 fn sunk_lets(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
@@ -4448,7 +4448,7 @@ fn unread_maps(body: &mut Vec<Stmt>) {
 
 /// A handle made only to read or write its value there, `Cell::set` of
 /// `&self.n`'s `({ get value() { .. }, set value(value) { .. } }).value =
-/// v`: its place, `t.n = v`, as THIR's. Of a place that reads the same
+/// v`: its place, `t.n = v`. Of a place that reads the same
 /// alone: of one that computes, `a[f()]`, the setter would compute it after
 /// `v`, where the place itself is computed before.
 fn handles_in_place(body: &mut [Stmt]) {
@@ -4591,9 +4591,8 @@ fn unguarded(body: &mut Vec<Stmt>) {
 /// `const h = { get value() { return o.f; }, .. }`, a `&Cell`'s handle on a
 /// field, whose `value` alone is used, the handle never given: read before
 /// anything could set `o.f`, `const h = o.f`, `h` where its `value` is
-/// read, as THIR reads a cell field a pattern binds where it's bound (ADR
-/// 0287); else `o.f` where its `value` is, the `o` it was made of, as MIR
-/// holds a reference written again before it's made.
+/// read (ADR 0287); else `o.f` where its `value` is, the `o` it was made
+/// of, as MIR holds a reference written again before it's made.
 fn read_handles(body: &mut Vec<Stmt>) {
     let mut handles: Vec<(String, Expr, bool)> = Vec::new();
     js::statement_lists(&mut body.clone(), &mut |stmts| {
@@ -4679,9 +4678,8 @@ fn read_at_once(stmts: &[Stmt], at: usize, name: &str) -> bool {
 
 /// `const n = { value: x }`, a cell, and `const m = n`, its clones, whose
 /// `value` alone is read and set, by those names: `let n = x`, `n` where
-/// each reads its `value`, as THIR keeps a cell only its function uses
-/// (ADR 0287). Nothing else has it, so nothing else sees it change; its
-/// closures, which share the `let`, too.
+/// each reads its `value` (ADR 0287). Nothing else has it, so nothing else
+/// sees it change; its closures, which share the `let`, too.
 fn plain_cells(body: &mut Vec<Stmt>) {
     let mut cells: Vec<String> = Vec::new();
     let mut clones: HashMap<String, String> = HashMap::new();
@@ -4810,8 +4808,8 @@ fn named_callbacks(stmts: &mut Vec<Stmt>, callbacks: &HashSet<String>) {
             && callbacks.contains(name)
             && matches!(value.kind, ExprKind::Arrow(..) | ExprKind::AsyncArrow(..))
             && !value.mentions_var(name)
-            // Nor one reading what it would be named, `step` of `step$1`,
-            // as THIR leaves it (ADR 0297).
+            // Nor one reading what it would be named, `step` of `step$1`
+            // (ADR 0297).
             && name.split('$').next().is_none_or(|base| {
                 let mut reads = false;
                 value.visit_vars(&mut |v| reads |= v == base);
@@ -5050,7 +5048,7 @@ fn tail_jumps(stmts: &mut [Stmt]) {
 }
 
 /// `const h = x ? x : undefined; if (h == null) { exit }`, a `let … else`
-/// of what `filter` keeps: `if (!x) { exit }`, as THIR tests it, `h` and
+/// of what `filter` keeps: `if (!x) { exit }`, `h` and
 /// what binds it then `x`, which it is; and `if (h != null) { s }`, `h`
 /// read there alone, `if (x) { s }`.
 fn filtered_guards(stmts: &mut Vec<Stmt>, changing: &HashSet<String>) {
@@ -5286,8 +5284,8 @@ fn loop_exits(
     }
     let Some(Stmt { kind, span }) = body.last() else { return };
     // Nor of a loop the program wrote a `return` in, which MIR may not span,
-    // nor a `loop` whose `break a` gives the function's value, which THIR
-    // returns where it breaks.
+    // nor a `loop` whose `break a` gives the function's value, which is
+    // returned where it breaks.
     if let Some((written, ..)) = written_loop(loops, *span)
         && (returns.iter().any(|r| written.lo <= r.lo && r.hi <= written.hi) || valued.contains(written))
     {
@@ -5335,8 +5333,7 @@ fn loop_exits(
 
 /// An or-pattern of constants as MIR tests it, each alternative failing, one
 /// inside another, `if (s !== "a") { if (s !== "e") { b } } t`, where `b`
-/// and `t` leave: its arm first, `if (s === "a" || s === "e") { t } b`, as
-/// THIR writes one.
+/// and `t` leave: its arm first, `if (s === "a" || s === "e") { t } b`.
 fn or_tests(stmts: &mut Vec<Stmt>) {
     // Each test, `s !== "a"`, of one subject, and what the last guards.
     fn chain<'s>(stmt: &'s Stmt, subject: &mut Option<&'s Expr>, tests: &mut Vec<&'s Expr>) -> Option<&'s [Stmt]> {
@@ -5385,7 +5382,7 @@ fn or_tests(stmts: &mut Vec<Stmt>) {
 }
 
 /// A pattern's test as MIR makes it of a bound a type has anyway, a
-/// constant, `if (true) { s }`: its branch, `s`, as THIR writes a range's.
+/// constant, `if (true) { s }`: its branch, `s`.
 fn pattern_tests(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {

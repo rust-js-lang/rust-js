@@ -5,27 +5,6 @@ import { buildCompiler, buildSerde, buildWebapi, compiler, fixture, root, target
 
 beforeAll(buildCompiler, 600_000);
 
-// From MIR (ADR 0364): what it words otherwise, or `null` where it lowers
-// it as Rust runs it, which a `thir-compile-fail` corpus case checks.
-const fromMir: Record<string, string | null> = {
-  "a Debug builder kept in a variable": "a `Debug` builder kept in a variable",
-  "a ref mut bound at two places of a | pattern": null,
-  "a guard of a | pattern binding at two places": null,
-  "next() of a RangeInclusive kept as a value": null,
-  "a temporary with a destructor": null,
-  "an or-pattern whose alternatives move parts no variant tells apart": null,
-  "len of a Peekable": null,
-  "a writer of the crate's that fails": null,
-  "next() of an iterator in a field": null,
-  "a std &mut to a number bound and kept": null,
-  "lending an iterator kept in a field": null,
-  "last of owned items": "`last` of items with a destructor",
-  "len of a chain whose closure prints": "`len()` of a lazy or generic `std::iter::Map`",
-  "size_hint of an iterator whose hint isn't exact": "`size_hint()` of a `std::str::Chars<'_>`",
-  "peekable of a lazy iterator": "`peekable` of a `C`",
-  "assigning to a Value's key": "`std::ops::IndexMut::index_mut`",
-};
-
 for (const [name, source, message, crate] of [
   ["type error", 'pub fn f() -> i32 { "wrong" }', "mismatched types"],
   ["borrow error", 'pub fn f() -> i32 { let mut x = 1; let r = &x; x = 2; *r }', "borrowed"],
@@ -33,11 +12,6 @@ for (const [name, source, message, crate] of [
   // ADR 0122: an `f32`'s bits aren't yet: a NaN's payload is JS's to keep or not.
   // ADR 0123: what `..` binds is a copy, as `&v[a..b]` is (ADR 0063), so one to write through can't be.
   ["a &mut rest of a slice pattern", "pub fn f(v: &mut [u32]) { if let [_, rest @ ..] = v { rest[0] = 1; } }", "a `&mut` to part of a slice"],
-  // ADR 0124: a choice of places, `p[0] === 0 ? p[1] : p[0]`, can't be written through.
-  ["a ref mut bound at two places of a | pattern", "pub fn f(p: &mut (i32, i32)) { if let (0, x) | (x, 0) = p { *x += 1; } }", "a `ref mut` bound at another place in each alternative of a `|` pattern"],
-  // A guard is tried with each alternative in turn, which a choice of places, the first's, isn't:
-  // `(3, 42)` takes this arm in Rust, with `a` 42 (rustc's issue-70413).
-  ["a guard of a | pattern binding at two places", "pub fn f(p: (i32, i32)) -> i32 { match p { (a, _) | (_, a) if a > 10 => a, _ => 0 } }", "a guard of a `|` pattern binding a name at another place in each alternative"],
   ["camelCase fields that collide", '#![allow(non_snake_case)]\n#[rust_js::camel_case]\nconst _: () = ();\npub struct P { pub first_name: u32, pub firstName: u32 }\npub fn f(p: &P) -> u32 { p.first_name + p.firstName }', "both `firstName` in JS"],
   // A binding's nullable parameter is one of its own, an `Option` (ADR 0275).
   ["a nullable parameter that isn't an Option", '#[rust_js::link_name = "f"]\n#[rust_js::nullable(n)]\n#[allow(unused_variables)]\npub fn f(n: u32) {}', "names no parameter of this function that's an `Option`"],
@@ -74,15 +48,12 @@ for (const [name, source, message, crate] of [
   ["B-tree keyed by a struct", '#[derive(PartialEq, Eq, PartialOrd, Ord)] pub struct P { pub x: u32 }\npub fn f() -> usize { let m: std::collections::BTreeMap<P, u32> = std::collections::BTreeMap::new(); m.len() }', "does not support values of type `P`"],
   ["== on maps", 'pub fn f(a: &std::collections::HashMap<u32, u32>, b: &std::collections::HashMap<u32, u32>) -> bool { a == b }', "`==` on"],
   ["parse to a type without FromStr support", 'pub fn f(s: &str) -> bool { s.parse::<std::net::IpAddr>().is_ok() }', "does not support"],
-  ["next() of a RangeInclusive kept as a value", 'pub fn f(r: &mut std::ops::RangeInclusive<u32>) -> Option<u32> { r.next() }', "kept as a value"],
   // A string's byte offsets are counted (ADR 0138), but not yet of a closure's matches.
   // `a + b` of a `T: Add` is its dictionary's (ADR 0108); `a += b` isn't yet.
   ["an assigning operator in generic code", 'pub fn f<T: std::ops::AddAssign>(a: &mut T, b: T) { *a += b; }', "does not support"],
   ["an Rc's raw pointer", 'pub fn f(r: &std::rc::Rc<u32>) -> bool { std::rc::Rc::as_ptr(r).is_null() }', "does not support"],
   ["a heap of options", 'pub fn f() -> bool { let mut h = std::collections::BinaryHeap::new(); h.push(Some(1u32)); h.pop().is_some() }', "a heap of"],
   ["a pointer of the crate's own to a dyn", "#![feature(derive_coerce_pointee)]\nuse std::ops::Deref;\n#[derive(std::marker::CoercePointee)] #[repr(transparent)] pub struct Ptr<'a, #[pointee] T: ?Sized> { ptr: &'a T }\nimpl<T: ?Sized> Deref for Ptr<'_, T> { type Target = T; fn deref(&self) -> &T { self.ptr } }\npub trait Get { fn get(&self) -> u32; }\npub struct V(u32);\nimpl Get for V { fn get(&self) -> u32 { self.0 } }\npub fn f() -> u32 { let v = V(10); let p: Ptr<dyn Get> = Ptr { ptr: &v }; p.get() }", "does not support unsizing a `Ptr<'_, dyn Get>`"],
-  // A let-chain's condition's temporaries end at its `&&`, its `let`s' with the `if`: not yet (ADR 0098).
-  ["a temporary with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\nimpl D { pub fn n(&self) -> u32 { 1 } }\npub fn f(b: bool) -> u32 { if D.n() == 1 && let true = b { 1 } else { 0 } }', "does not support a temporary with a destructor"],
   // A `dyn` of std's traits has no dictionary to carry a drop (ADR 0098).
   ["a Box<dyn Send> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let _: Box<dyn Send> = Box::new(D); }', "a `dyn` of a value with a destructor"],
   ["an Rc<dyn> of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let _: std::rc::Rc<dyn Send> = std::rc::Rc::new(D); }', "a `dyn` of a value with a destructor"],
@@ -91,9 +62,7 @@ for (const [name, source, message, crate] of [
   ["a destructor given where a generic fold takes none", 'pub struct Counter(pub u32);\nimpl Iterator for Counter { type Item = u32; fn next(&mut self) -> Option<u32> { if self.0 < 3 { self.0 += 1; Some(self.0) } else { None } } }\nimpl Drop for Counter { fn drop(&mut self) {} }\nfn total<I: Iterator<Item = u32>>(items: I) -> u32 { items.fold(0, |a, b| a + b) }\npub fn f() -> u32 { total(Counter(0)) }', "giving `total`'s `I` a type with a destructor, where it takes none"],
   ["a destructor given through a generic function", 'pub struct Counter(pub u32);\nimpl Iterator for Counter { type Item = u32; fn next(&mut self) -> Option<u32> { if self.0 < 3 { self.0 += 1; Some(self.0) } else { None } } }\nimpl Drop for Counter { fn drop(&mut self) {} }\nfn total<I: Iterator<Item = u32>>(items: I) -> u32 { items.fold(0, |a, b| a + b) }\nfn relay<J: Iterator<Item = u32>>(j: J) -> u32 { total(j) }\npub fn f() -> u32 { relay(Counter(0)) }', "giving `relay`'s `J` a type with a destructor, where it takes none"],
   ["a destructor given where an impl's method takes none, through its dictionary", 'pub trait Empty { fn empty(&mut self); }\npub struct Wrap<T>(pub Vec<T>);\nimpl<T> Empty for Wrap<T> { fn empty(&mut self) { self.0.clear(); } }\npub struct Loud;\nimpl Drop for Loud { fn drop(&mut self) {} }\nfn g<E: Empty>(e: &mut E) { e.empty(); }\npub fn f() { let mut w = Wrap(vec![Loud]); g(&mut w); }', "giving `<Wrap<T> as Empty>`'s `T` a type with a destructor, where it takes none"],
-  // Which alternative matched, where both may, is the value's to know (ADR 0191).
-  ["an or-pattern whose alternatives move parts no variant tells apart", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(p: (Option<D>, Option<D>)) -> Option<D> { match p { (Some(t), _) | (_, Some(t)) => Some(t), _ => None } }', "moving part of a value with a destructor"],
-  ["last of owned items", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: Vec<D>) -> Option<D> { v.into_iter().last() }', "`std::iter::Iterator::last` of a value with a destructor"],
+  ["last of owned items", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(v: Vec<D>) -> Option<D> { v.into_iter().last() }', "`last` of items with a destructor"],
   // `ok_or_else` keeps its value, but its function, unrun for a `Some`, is dropped.
   ["ok_or_else whose function holds a value with a destructor", 'pub struct D(pub u32);\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f(o: Option<D>, held: D) -> Result<D, u32> { o.ok_or_else(move || { let h = held; h.0 }) }', "`std::option::Option::<T>::ok_or_else` of a value with a destructor"],
   // A size of a type parameter is its caller's (ADR 0145), but `size_of_val` of an unsized one is the value's.
@@ -103,24 +72,20 @@ for (const [name, source, message, crate] of [
   // `collect()` into a `Result` or an `Option` is of an array (ADR 0036).
   ["collecting into a Result of a String", 'pub fn f(v: Vec<Result<char, ()>>) -> Result<String, ()> { v.into_iter().collect() }', "collecting into a"],
   // `len()` takes no item, so it runs none of a chain's closures (ADR 0036).
-  ["len of a chain whose closure prints", 'pub fn f(v: &[u32]) -> usize { v.iter().map(|x| { println!("{x}"); x }).len() }', "`len()` of an iterator whose closures do what can be seen"],
-  ["len of a Peekable", 'pub fn f(v: &[u32]) -> usize { let mut p = v.iter().peekable(); p.peek(); p.len() }', "`len()` of a `Peekable`"],
+  ["len of a chain whose closure prints", 'pub fn f(v: &[u32]) -> usize { v.iter().map(|x| { println!("{x}"); x }).len() }', "`len()` of a lazy or generic `std::iter::Map`"],
   ["an Rc of a value with a destructor", 'pub struct D;\nimpl Drop for D { fn drop(&mut self) {} }\npub fn f() { let r = std::rc::Rc::new(D); drop(r); }', "a std type holding a value with a destructor, `std::rc::Rc<D>`"],
   // A builder's steps are a chain's (ADR 0136): one a loop steps is no chain.
-  ["a Debug builder kept in a variable", "use std::fmt;\npub struct L(pub Vec<u32>);\nimpl fmt::Debug for L { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { let mut d = f.debug_list(); for x in &self.0 { d.entry(x); } d.finish() } }", "values of type `&mut dyn std::fmt::Write`"],
-  ["a writer of the crate's that fails", "use std::fmt::{self, Write};\npub struct Full(pub usize);\nimpl Write for Full { fn write_str(&mut self, s: &str) -> fmt::Result { if s.len() > self.0 { return Err(fmt::Error); } self.0 -= s.len(); Ok(()) } }", "a `fmt::Error` of a writer of the crate's"],
+  ["a Debug builder kept in a variable", "use std::fmt;\npub struct L(pub Vec<u32>);\nimpl fmt::Debug for L { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { let mut d = f.debug_list(); for x in &self.0 { d.entry(x); } d.finish() } }", "a `Debug` builder kept in a variable"],
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "`std::collections::HashMap::<K, V, S, A>::get` of a `Name` as what its own `Borrow` gives"],
   ["items joined through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(v: &[Name]) -> String { v.join(\",\") }", "`std::slice::<impl [T]>::join` of a `Name` as what its own `Borrow` gives"],
-  ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "calling `std::iter::Iterator::size_hint`"],
+  ["size_hint of an iterator whose hint isn't exact", "pub fn f(s: &str) -> usize { s.chars().size_hint().0 }", "`size_hint()` of a `std::str::Chars<'_>`"],
   ["comparing paths, which compares their components", "use std::path::Path;\npub fn f(a: &Path, b: &Path) -> bool { a == b }", "`==` on `std::path::Path`"],
   ["a user impl of a std trait", 'pub struct C;\nimpl std::hash::Hasher for C { fn finish(&self) -> u64 { 0 } fn write(&mut self, _: &[u8]) {} }', "user implementations of `std::hash::Hasher`"],
   ["comparing another crate's struct", 'pub fn f(a: std::time::Instant, b: std::time::Instant) -> bool { a < b }', "does not support"],
-  ["next() of an iterator in a field", 'pub struct L<\'a> { c: std::str::Chars<\'a> }\npub fn f(l: &mut L) -> Option<char> { l.c.next() }', "make it a `Peekable`"],
-  ["peekable of a lazy iterator", 'pub struct C(u32);\nimpl Iterator for C { type Item = u32; fn next(&mut self) -> Option<u32> { self.0 += 1; Some(self.0) } }\npub fn f() -> Option<u32> { let mut p = C(0).peekable(); p.peek().copied() }', "`peekable` of a lazy iterator"],
+  ["peekable of a lazy iterator", 'pub struct C(u32);\nimpl Iterator for C { type Item = u32; fn next(&mut self) -> Option<u32> { self.0 += 1; Some(self.0) } }\npub fn f() -> Option<u32> { let mut p = C(0).peekable(); p.peek().copied() }', "`peekable` of a `C`"],
   ["a new closure assigned through a &mut to one", 'pub fn replace<F: FnMut()>(f: &mut F, g: F) { *f = g; }', "assigning a whole value through a `&mut`"],
   ["a collection of the crate's extending a Vec", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\npub fn f(v: &mut Vec<i32>, b: Bag) { v.extend(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
   ["a collection of the crate's given to generic code", "struct Bag { items: Vec<i32> }\nimpl IntoIterator for Bag { type Item = i32; type IntoIter = std::vec::IntoIter<i32>; fn into_iter(self) -> Self::IntoIter { self.items.into_iter() } }\nfn count<I: IntoIterator>(i: I) -> usize { i.into_iter().count() }\npub fn f(b: Bag) -> usize { count(b) }", "a `Bag`, whose `IntoIterator` is the crate's"],
-  ["a std &mut to a number bound and kept", "use std::collections::HashMap;\npub fn f(m: &mut HashMap<u32, i32>) { let k; match m.get_mut(&1) { Some(v) => k = v, None => return } *k += 1; }", "a `&mut i32` from a std call used as a value"],
   ["a generic &mut T to an object in a struct", "pub struct C { pub n: i32 }\npub struct H<'a, T> { pub r: &'a mut T }\nfn get<'a, T>(h: H<'a, T>) -> &'a mut T { h.r }\npub fn f(c: &mut C) { get(H { r: c }).n += 1; }", "a `&mut C` inside a generic function's parameters or result"],
   ["generic &mut Ts to objects returned in a Vec", "pub struct C { pub n: i32 }\nfn to_vec<T>(a: &mut T) -> Vec<&mut T> { vec![a] }\npub fn f(c: &mut C) -> usize { to_vec(c).len() }", "a `&mut C` inside a generic function's parameters or result"],
   ["a generic &mut T to an object in an Option", "pub struct C { pub n: i32 }\nfn set<T>(o: Option<&mut T>, v: T) { if let Some(r) = o { *r = v; } }\npub fn f(c: &mut C) { set(Some(c), C { n: 7 }); }", "a `&mut C` inside a generic function's parameters or result"],
@@ -138,10 +103,9 @@ for (const [name, source, message, crate] of [
   // A trait's method is called through a dictionary, whose `&mut self` is a handle (ADR 0099).
   ["a &mut to a generic iterator in a trait's method", 'pub trait Step { fn step(&mut self) -> Option<u32>; }\nimpl<I: Iterator<Item = u32>> Step for I { fn step(&mut self) -> Option<u32> { self.next() } }', "of a trait's method"],
   // A generic iterator a struct of the crate's holds, which a range given
-  // it isn't a JS iterator of, stepped through a `&mut` to the field: from
-  // MIR as from THIR, refused (rustc's iter-map-fold-type-length threw).
+  // it isn't a JS iterator of, stepped through a `&mut` to the field:
+  // refused (rustc's iter-map-fold-type-length threw).
   ["a &mut to a generic iterator in a field", "pub struct Iter<I>(I);\nimpl<I: Iterator> Iterator for Iter<I> { type Item = I::Item; fn next(&mut self) -> Option<I::Item> { self.0.next() } }\npub fn f() -> usize { Iter(0..3).count() }", "`&mut` to a `I`"],
-  ["lending an iterator kept in a field", 'pub struct P { pub v: std::vec::IntoIter<u32> }\nfn first<I: Iterator<Item = u32>>(it: &mut I) -> Option<u32> { it.next() }\npub fn f(p: &mut P) -> Option<u32> { first(&mut p.v) }', "lending an iterator that isn't a local"],
   ["{:.2e}", 'pub fn f(x: f64) -> String { format!("{:.2e}", x) }', "`{:.2e}` and the like"],
   ["malformed import", '#[rust_js::import("./style.css")]\nconst _: () = ();\npub fn f() {}', "write it"],
   ["malformed binding", '#[rust_js::link_name(123)] pub fn f() {}', "a binding needs"],
@@ -168,7 +132,7 @@ for (const [name, source, message, crate] of [
   ["reading a u128", 'pub fn f(s: &str) -> bool { serde_json::from_str::<u128>(s).is_ok() }', "does not support", "serde"],
   ["reading a BinaryHeap", 'pub fn f(s: &str) -> bool { serde_json::from_str::<std::collections::BinaryHeap<u32>>(s).is_ok() }', "deserializing", "serde"],
   ["unsupported Value method", 'pub fn f(v: &serde_json::Value) -> bool { v.pointer("/name").is_some() }', "`Value::pointer`", "serde"],
-  ["assigning to a Value's key", 'pub fn f() -> String { let mut v = serde_json::json!({}); v["k"] = serde_json::json!(1); v.to_string() }', "assigning to this place", "serde"],
+  ["assigning to a Value's key", 'pub fn f() -> String { let mut v = serde_json::json!({}); v["k"] = serde_json::json!(1); v.to_string() }', "`std::ops::IndexMut::index_mut`", "serde"],
   // A JSON object's keys are strings: serde_json refuses a struct's (ADR 0121).
   ["a map keyed by a struct in JSON", '#[derive(PartialEq, Eq, Hash, serde::Serialize)] pub struct P { pub x: u32 }\npub fn f(m: &std::collections::HashMap<P, u32>) -> String { serde_json::to_string(m).unwrap() }', "a map key of", "serde"],
 ] as [string, string, string, string?][]) {
@@ -178,27 +142,20 @@ for (const [name, source, message, crate] of [
     writeFileSync(input, source);
     const crates = crate === "js" ? (buildWebapi(), ["--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]) : crate ? buildSerde() : [];
     const args = [compiler, input, "-o", output, "--manifest", manifest, ...(crates.length ? ["--", ...crates] : [])];
-    for (const [expected, mode] of [[name in fromMir ? fromMir[name] : message, {}]] as const) {
-      const env = { ...process.env, ...mode };
-      rmSync(output, { force: true });
-      rmSync(output + ".map", { force: true });
-      rmSync(manifest, { force: true });
-      const rejected = Bun.spawnSync(args, { env });
-      if (expected === null) {
-        expect(rejected.exitCode, rejected.stderr.toString()).toBe(0);
-        continue;
-      }
-      expect(rejected.exitCode).not.toBe(0);
-      expect(rejected.stderr.toString()).toContain(expected);
-      expect(rejected.stderr.toString()).toContain("lib.rs:");
-      expect(existsSync(output)).toBe(false);
-      expect(existsSync(manifest)).toBe(false);
-      writeFileSync(output, "last successful build");
-      writeFileSync(output + ".map", "previous map");
-      expect(Bun.spawnSync(args, { env }).exitCode).not.toBe(0);
-      expect(readFileSync(output, "utf8")).toBe("last successful build");
-      expect(readFileSync(output + ".map", "utf8")).toBe("previous map");
-    }
+    rmSync(output, { force: true });
+    rmSync(output + ".map", { force: true });
+    rmSync(manifest, { force: true });
+    const rejected = Bun.spawnSync(args);
+    expect(rejected.exitCode).not.toBe(0);
+    expect(rejected.stderr.toString()).toContain(message);
+    expect(rejected.stderr.toString()).toContain("lib.rs:");
+    expect(existsSync(output)).toBe(false);
+    expect(existsSync(manifest)).toBe(false);
+    writeFileSync(output, "last successful build");
+    writeFileSync(output + ".map", "previous map");
+    expect(Bun.spawnSync(args).exitCode).not.toBe(0);
+    expect(readFileSync(output, "utf8")).toBe("last successful build");
+    expect(readFileSync(output + ".map", "utf8")).toBe("previous map");
   });
 }
 

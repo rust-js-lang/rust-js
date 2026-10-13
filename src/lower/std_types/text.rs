@@ -262,7 +262,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A string's or a slice's method of its arguments' values, `tys`
-    /// their types: what THIR and MIR both lower it to (ADR 0364).
+    /// their types (ADR 0364).
     pub(in crate::lower) fn text_values(
         &mut self,
         op: TextOp,
@@ -603,7 +603,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A `Vec`'s range, read as `range_read` reads it, `range`, replaced by
     /// `rest`, `$splice(v, a, b, items)`, or pushed again, `v.push(
-    /// ...$copyRange(v, a, b))` (ADR 0315): THIR's and MIR's. Of all of it,
+    /// ...$copyRange(v, a, b))` (ADR 0315). Of all of it,
     /// `..`, `range` is the `Vec` itself.
     pub(in crate::lower) fn range_edit(&mut self, op: TextOp, range: Expr, rest: Vec<Expr>) -> Expr {
         let mut list = match range.kind {
@@ -635,8 +635,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Expr::call(Expr::var("$splice"), list)
     }
 
-    /// `slice_range`'s, of its operands' values (ADR 0364): `items`, and
-    /// `range`, a `range_ty`.
+    /// `items` in `range`, a `range_ty`, as `op` takes them, of their
+    /// values (ADR 0364).
     pub(in crate::lower) fn slice_range_values(
         &mut self,
         op: TextOp,
@@ -674,7 +674,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Of `cell`, a `&mut str`'s, and what's `given`, a range's bounds or a
-    /// `split_at_mut`'s index: the part, THIR's and MIR's.
+    /// `split_at_mut`'s index: the part.
     pub(in crate::lower) fn str_part_values(&mut self, op: TextOp, cell: Expr, given: Vec<Expr>) -> Expr {
         let mut list = vec![cell];
         list.extend(given);

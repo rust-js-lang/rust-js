@@ -1466,7 +1466,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "held-arg-named-value",
-    "breaks": "an argument MIR holds, `format!`'s, is named `value`, not `arg` as THIR names it",
+    "breaks": "an argument MIR holds, `format!`'s, is named `value`, not `arg`",
     "file": "src/lower/mir/tidy.rs",
     "find": "(None, _) if is_held_arg(name) => \"arg\".to_string(),",
     "replace": "(None, _) if is_held_arg(name) => \"value\".to_string(),",
@@ -1906,7 +1906,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-tidy-param-module-name-reused",
-    breaks: "MIR's closure parameter takes a name of the module's, as THIR's never does",
+    breaks: "MIR's closure parameter takes a name of the module's",
     file: "src/lower/mir/tidy.rs",
     find: "                if named.contains(base) || module.contains(base) {\n",
     replace: "                if named.contains(base) {\n",
@@ -1918,7 +1918,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                StmtKind::Return(Some(value)) if stmt.span.is_none() => stmt.span = value.span,\n",
     replace: "",
-    tests: ["test/emission.test.ts","-t","fib-mir"],
+    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
   },
   {
     name: "mir-tidy-if-span-of-test-kept",
@@ -1926,7 +1926,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                StmtKind::If(test, ..) if !test.span.is_none() => stmt.span = test.span,\n",
     replace: "",
-    tests: ["test/emission.test.ts","-t","fib-mir"],
+    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
   },
   {
     name: "mir-tidy-receiver-named-value",

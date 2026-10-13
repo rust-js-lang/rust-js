@@ -1650,7 +1650,7 @@ pub fn asked() -> bool {
 // ADR 0221: a binding that skips what's falsy, `#[rust_js::skips_falsy]`, as
 // classnames does, is given an argument shown only if a test holds as `test
 // && value`, as react.dev writes `cn('a', isExpanded && 'sp-layout-expanded')`.
-// From MIR too (ADR 0364), where a test that branches makes it a temporary.
+// So too where a test that branches makes it a temporary of MIR's (ADR 0364).
 test("a binding that skips what's falsy is given test && value", async () => {
   const dir = fixture("skips-falsy");
   writeFileSync(join(dir, "cn.js"), 'export default (...classes) => classes.filter(Boolean).join(" ");\n');
@@ -1807,7 +1807,6 @@ pub async fn rooted() -> u32 {
     module.default()()
 }
 `);
-  // From MIR too (ADR 0364).
   for (const [out, env] of [["mir.js", {}]] as const) {
     run([compiler, join(dir, "lib.rs"), "-o", join(dir, out), ...withWeb], 600_000, env);
     const js = readFileSync(join(dir, out), "utf8");
@@ -2019,9 +2018,9 @@ pub fn year(year: f64) -> String {
   expect([key(undefined, 0), key(null, 1), key({}, 2), key("a", 3)]).toEqual(["undefined-0", "null-1", "[object Object]-2", "a-3"]);
 });
 
-// react.dev's Console's `formatStr`, from MIR too (ADR 0364): the string a
+// react.dev's Console's `formatStr` (ADR 0364): the string a
 // replace is of read where it's replaced, past what its callback captures.
-test("a value replaced in place from MIR is read where it's replaced, as THIR's", async () => {
+test("a value replaced in place is read where it's replaced", async () => {
   const withJs = ["--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
   const dir = fixture("mir-format-str");
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]

@@ -128,7 +128,7 @@ pub(super) fn decode_template(template: &[u8]) -> Option<Vec<Piece>> {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A standard stream's, of its arguments' values: it holds nothing JS
-    /// needs, and a write to one is `print!`'s (ADR 0132). THIR's and MIR's.
+    /// needs, and a write to one is `print!`'s (ADR 0132).
     pub(in crate::lower) fn stream_values(
         &mut self,
         op: StreamOp,

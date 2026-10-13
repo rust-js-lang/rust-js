@@ -18,8 +18,8 @@ pub(in crate::lower) enum CowOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `cow_call`'s, of the `Cow`'s value, its place for `to_mut()`, and its
-    /// type: THIR's and MIR's.
+    /// A `Cow`'s method, of the `Cow`'s value, its place for `to_mut()`,
+    /// and its type.
     pub(in crate::lower) fn cow_values(
         &mut self,
         op: CowOp,

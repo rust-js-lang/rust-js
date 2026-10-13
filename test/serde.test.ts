@@ -24,7 +24,7 @@ fn main() { println!("{}", serde_json::to_string(&report()).unwrap()); }
   return built.binary;
 }
 
-/** The case's JS, from THIR and from MIR (ADR 0364), each loaded. */
+/** The case's JS, built and loaded. */
 async function compiled(dir: string) {
   const modules = [];
   for (const [out, env] of [["cases.js", {}]] as const) {
@@ -265,7 +265,7 @@ test("serde: a string beginning with U+FEFF keeps it", async () => {
 });
 
 // A `Value`'s reads, which only read, written where they're used, and an
-// `Option` of one shown held first, `const value = ..`, from MIR as from THIR.
+// `Option` of one shown held first, `const value = ..`.
 test("serde: a Value's reads are written in place", async () => {
   const dir = fixture("serde-reads");
   writeFileSync(join(dir, "cases.rs"), `use serde_json::json;

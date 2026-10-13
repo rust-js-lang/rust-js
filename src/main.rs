@@ -4,10 +4,11 @@
 //! the same with rustc:
 //!
 //! ```text
-//!   .rs ─► rustc: parse, resolve, type check ─► THIR ──┐ (copied)
+//!   .rs ─► rustc: parse, resolve, type check ─► THIR ──┐ (copied: shape, facts)
 //!                                                │      │
-//!                                   borrowck (MIR)      ▼
-//!                                                │   lower.rs ─► js.rs ─► prepare.rs ─► to_oxc.rs ─► .js + .js.map
+//!                                               MIR ────┤ (copied: what runs)
+//!                                                │      ▼
+//!                                       borrowck │   lower.rs ─► js.rs ─► prepare.rs ─► to_oxc.rs ─► .js + .js.map
 //!                          errors? stop here ◄───┘
 //! ```
 //!

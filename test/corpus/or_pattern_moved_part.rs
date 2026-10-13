@@ -1,4 +1,6 @@
-// What THIR refuses, MIR lowers as Rust runs it (ADR 0364).
+// An or-pattern whose alternatives move parts no variant tells apart,
+// `(Some(t), _) | (_, Some(t))`: `t` is the part that matched, and the
+// other is dropped.
 pub struct D(u32);
 impl Drop for D { fn drop(&mut self) { println!("drop {}", self.0); } }
 pub fn f(p: (Option<D>, Option<D>)) -> Option<D> { match p { (Some(t), _) | (_, Some(t)) => Some(t), _ => None } }

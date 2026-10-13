@@ -16,11 +16,12 @@ the stable release `1.99.0`; [rust-toolchain.toml](../rust-toolchain.toml) is th
 truth. This follows [ADR 0003](decisions/0003-pin-nightly-toolchain.md) and
 [ADR 0109](decisions/0109-stable-release.md).
 
-The compiler uses rustc's internal APIs and THIR, so a toolchain upgrade is a
-deliberate compatibility change. Update the pin, adapt frontend and lowering
-assumptions, rebuild matching dependencies and WASI artifacts, and run the
-conformance, snapshot, and native/browser parity suites together. Compiler
-metadata and caches must not be reused across incompatible toolchains.
+The compiler uses rustc's internal APIs, THIR and MIR, so a toolchain upgrade
+is a deliberate compatibility change. Update the pin, adapt frontend and
+lowering assumptions, rebuild matching dependencies and WASI artifacts, and
+run the conformance, snapshot, and native/browser parity suites together.
+Compiler metadata and caches must not be reused across incompatible
+toolchains.
 
 Older application source may compile under the pinned frontend within our
 supported language subset. That does not promise the behavior or diagnostics
@@ -114,16 +115,18 @@ compiler and binding packages can be used without a source checkout.
 ## The pipeline
 
 rust-js reuses rustc for everything up to type checking and borrow
-checking, as ReScript reuses OCaml's, and writes JavaScript from rustc's
-THIR:
+checking, as ReScript reuses OCaml's, and writes JavaScript from each
+body's MIR, with its THIR read beside it:
 
 ```text
- .rs ─► rustc: parse, resolve, type check, borrow check ─► THIR (copied out)
+ .rs ─► rustc: parse, resolve, type check, borrow check ─► THIR, MIR (copied out)
                                                               │
  ┌─ front end: src/lower.rs, src/lower/ ──────────────────────▼──────────────┐
  │  analysis  ─► what the whole crate is: dictionaries, drops, laziness ...  │
  │  pipeline  ─► each function, lowered with its own FnCx                    │
- │  THIR expression ─► expr() or stmt() ─► our JS AST (src/js.rs)            │
+ │  mir.rs    ─► each body's MIR, its blocks structured ─► our JS AST        │
+ │               (src/js.rs); its THIR read for names, spans and facts       │
+ │  tidy.rs   ─► that JS, written as a person writes it                      │
  └──────────────────────────────────┬────────────────────────────────────────┘
                                     ▼  owned output: no rustc types from here
  reachability, link, names, prepare (readability), output, publish
@@ -150,9 +153,9 @@ a cycle: a helper more than one needs, as `paths.rs`'s, has its own home.
 
 **Who owns each phase.** A failure at any phase produces diagnostics and
 prevents publication; rustc remains the authority on Rust validity. THIR
-is captured before rustc's analysis consumes it, but capturing a body
-doesn't authorize emitting it: lowering starts only once the analysis gate
-passes.
+and MIR are captured before rustc's analysis consumes them, but capturing
+a body doesn't authorize emitting it: lowering starts only once the
+analysis gate passes.
 
 | Owner | Owns | Does not own |
 | --- | --- | --- |
@@ -170,9 +173,10 @@ passes.
 
 ## Inside the front end
 
-The front end turns one function's THIR into JS. `FnCx` holds what that
-takes. Its state is grouped by concern, each group read and written only
-by the module that owns it, which others ask: what a generic item is given
+The front end turns one function's MIR into JS, its THIR read beside it
+for names, spans and facts. `FnCx` holds what that takes. Its state is
+grouped by concern, each group read and written only by the module that
+owns it, which others ask: what a generic item is given
 (`Given`), what writing to a `Formatter` knows (`display::Writing`), what
 iterator chains are beyond their types (`iterators::Chains`), which locals
 are stepped through (`iterators::Stepping`), what the `&mut`s to values JS
@@ -221,6 +225,7 @@ Each is checked to stay that way.
 
 | Module | Lowers |
 |---|---|
+| `mir.rs`, `mir/` | A body from its MIR: its control flow (`cfg.rs`) made labeled blocks and loops, temporaries folded where they're used, drops (`drops.rs`), `.await` (`awaits.rs`), iterators (`iter.rs`), then written as a person writes it (`tidy.rs`) |
 | `lower.rs` | Dispatch of expressions and statements, destinations, evaluation order |
 | `bodies.rs` | Functions, closures and nested bodies: setup, captures, entry and exit |
 | `patterns.rs` | Bindings, destructuring, `match`, `if let` and let-chains |

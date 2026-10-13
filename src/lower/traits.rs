@@ -1381,9 +1381,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// What THIR and MIR both refuse of a call of `def_id`: a collection of
-    /// the crate's taken as any `IntoIterator`, and a type taken as what its
-    /// own `Borrow` gives (ADRs 0160, 0167).
+    /// What's refused of a call of `def_id`: a collection of the crate's
+    /// taken as any `IntoIterator`, and a type taken as what its own
+    /// `Borrow` gives (ADRs 0160, 0167).
     pub(in crate::lower) fn check_call_takes(
         &self,
         def_id: DefId,

@@ -266,7 +266,7 @@ test("extern items from JS modules become import statements", async () => {
   expect(leaf).toContain('return join(join$1("a", "leaf"));');
 });
 
-// What async.rs does, built as THIR or MIR lowers it.
+// What async.rs does, as its JS runs it.
 async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
   expect(await asyncs.sum(2, 3)).toBe(10);
   expect(await asyncs.twice(1)).toBe(4);
@@ -320,13 +320,9 @@ async function asyncsRun(asyncs: Record<string, (...args: any[]) => any>) {
 }
 
 // ADR 0029: `async fn` is an `async function`, `.await` is `await`, and a
-// future is a JS promise. From MIR too (ADR 0364).
+// future is a JS promise.
 test("async code becomes async functions and await", async () => {
-  // Its bodies lowered from their MIR (ADR 0364).
-  const withWeb = ["--", "--extern", `webapi=${join(target, "libwebapi.rmeta")}`, "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target];
-  run([compiler, "test/async.rs", "-o", join(target, "mir-async", "async.js"), ...withWeb], 600_000);
-  const mirAsyncs = await import(join(target, "mir-async", "async.js"));
-  for (const lib of [asyncs, mirAsyncs]) await asyncsRun(lib);
+  await asyncsRun(asyncs);
 
   const js = await Bun.file(join(target, "async.js")).text();
   // A namespace's functions, an overload, and a Rust struct as the import object.
@@ -340,13 +336,10 @@ test("async code becomes async functions and await", async () => {
   expect(js).toContain("export async function swap([a, b]) {\n  return [await setTimeout(0, b), a];");
   expect(js).toContain("export async function given({ params }) {\n");
   // An `async` block is an async arrow, called; an `async` closure, an async
-  // arrow: from MIR too.
-  const mirJs = await Bun.file(join(target, "mir-async", "async.js")).text();
-  for (const lowered of [js, mirJs]) {
-    expect(lowered).toContain("  const d = await double(n);\n  return await double(d);\n");
-    expect(lowered).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
-    expect(lowered).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");
-  }
+  // arrow.
+  expect(js).toContain("  const d = await double(n);\n  return await double(d);\n");
+  expect(js).toContain("const block = (async () => ((await double(x)) + 1) >>> 0");
+  expect(js).toContain("const add = async (y) => ((await setTimeout(0, y)) + x) >>> 0;");
   // A closure of an `async` block, an async arrow.
   expect(js).toContain("const loading = async () => {\n    const value = $borrowMut(taskLog, true);");
   // A future in a variable is the promise; `.await` on it is `await`.

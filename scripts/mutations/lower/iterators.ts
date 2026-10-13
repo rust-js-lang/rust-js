@@ -257,7 +257,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "spread-chain-lazy",
-    "breaks": "a chain MIR makes for one spread stays `$iter(more).filter(..)`, not THIR's array",
+    "breaks": "a chain MIR makes for one spread stays `$iter(more).filter(..)`, not an array",
     "file": "src/lower/iterators.rs",
     "find": "            *value = items;\n",
     "replace": "",

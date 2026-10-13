@@ -1,4 +1,4 @@
-//! What each `Drop` of a MIR body drop            match state.body.basic_blocks[block].terminator().kind { (ADR 0364), as rustc's drop
+//! What each `Drop` of a MIR body drops (ADR 0364), as rustc's drop
 //! elaboration finds it: rustc's dataflow of what's initialized says,
 //! before each, whether what it drops is there, isn't, or may be, which a
 //! flag of its own then says as the body runs, set where rustc sets it.

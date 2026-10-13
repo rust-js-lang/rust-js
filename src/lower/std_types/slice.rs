@@ -293,7 +293,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// An unstable sort or a selection, `v.sort_unstable_by(f)`, of its
     /// operands as JS: JS's stable sort where ties can't be told apart, else
-    /// std's own, picked by the item's type (ADR 0342). THIR's and MIR's.
+    /// std's own, picked by the item's type (ADR 0342).
     pub(in crate::lower) fn unstable_sort_values(
         &mut self,
         op: SliceOp,
@@ -366,7 +366,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `slots.write_copy_of_slice(src)`, of `values`, the slots and the
     /// source: `$copyFromSlice(slots, src)`, then `slots`; a clone of each
     /// from `$writeCloneOfSlice`, whose `assert_eq!` says why it panics.
-    /// THIR's and MIR's.
     pub(in crate::lower) fn uninit_write_values(
         &mut self,
         clone: bool,
@@ -395,7 +394,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `s.split_off(..n)` and the like of a slice read as `read`, with the
     /// range's bounds, or `split_off_first`'s or `last`'s, `end`: a `const`
     /// of what's left, `[0]`, which the slice's place is given, and what it
-    /// takes, `[1]` (ADR 0338). THIR's and MIR's.
+    /// takes, `[1]` (ADR 0338).
     pub(in crate::lower) fn split_off_values(
         &mut self,
         (end, mutable): (Option<bool>, bool),
@@ -446,9 +445,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         )
     }
 
-    /// One of `SliceOp`'s that its operands, as JS, say all of, `values`:
-    /// THIR's and MIR's; `stepping`, of `Remainder`, whether what it's
-    /// called on is stepped through a `&mut`, a `$iter`.
+    /// One of `SliceOp`'s that its operands, as JS, say all of, `values`;
+    /// `stepping`, of `Remainder`, whether what it's called on is stepped
+    /// through a `&mut`, a `$iter`.
     pub(in crate::lower) fn slice_values(
         &mut self,
         op: SliceOp,

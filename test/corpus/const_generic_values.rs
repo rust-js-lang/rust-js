@@ -1,5 +1,5 @@
 // A const parameter is a value its caller gives (ADR 0107), and `[x; N]`
-// an array of `N` of them, from MIR as from THIR.
+// an array of `N` of them.
 fn filled<const N: usize>(x: u8) -> [u8; N] {
     [x; N]
 }

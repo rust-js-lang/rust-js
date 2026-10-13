@@ -20,7 +20,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     // ── Closures (ADR 0022) ─────────────────────────────────────────────
 
-    /// Start lowering `thir`, a body inside the one being lowered, as
+    /// Start lowering `body`, a body inside the one being lowered, as
     /// `nested` says it starts. Each body finds its own stepped iterators
     /// (ADR 0071) and is checked for what it drops (ADR 0098). A body that
     /// fails leaves the state as it is: its whole item fails with it.
@@ -72,7 +72,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// Finish the body `enter_body` started, and go back to the enclosing one:
     /// the drop functions it declares, for its top.
     /// `from_mir`: a body lowered from its MIR, whose drops are its own
-    /// (ADR 0364), not THIR's to check.
+    /// (ADR 0364), which THIR's facts don't check (`check_drops`).
     pub(super) fn leave_body(&mut self, enclosing: Enclosing<'a, 'tcx>, from_mir: bool) -> R<Vec<Stmt>> {
         let hoisted = self.leave_body_drops(enclosing.drops, from_mir)?;
         self.thir = enclosing.thir;

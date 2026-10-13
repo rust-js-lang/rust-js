@@ -1,6 +1,5 @@
 // `?` returns an `Err` or a `None` early and gives what's inside
-// otherwise (ADR 0052), from MIR as from THIR: an early `return`, as a
-// person writes it.
+// otherwise (ADR 0052): an early `return`, as a person writes it.
 #[derive(Debug)]
 struct Odd(u32);
 

@@ -42,7 +42,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let iter_ty = receiver_ty.peel_refs();
         // One taken by value, `items.fold(..)`'s, dropped as it's done, which
         // JS doesn't: of a generic iterator, one its callers give none with a
-        // destructor (ADR 0190); of the crate's own with one, refused, THIR's.
+        // destructor (ADR 0190); of the crate's own with one, refused.
         if !receiver_ty.is_ref()
             && is_std_def(tcx, trait_id, StdItem::Iterator)
             && self.drops(receiver_ty) != crate::lower::drops::Drops::Nothing
@@ -81,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(None);
         }
         // `String::from_iter(items)`, `items.collect()` into a `String`: an
-        // array's joined, as THIR's, or a JS iterator's items.
+        // array's joined, or a JS iterator's items.
         if self.recognition().is_from_iterator(trait_id)
             && name == "from_iter"
             && self.is_lang_adt(output, LangItem::String)
@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             recognition.exact_size_iterator() == Some(trait_id),
         );
         if (double_ended && name == "next_back") || (exact && name == "len") {
-            // The crate's own `len()`, std's: its `size_hint()`, exact, as THIR's.
+            // The crate's own `len()`, std's: its `size_hint()`, exact.
             let own_len = || -> R<bool> {
                 let args = self.args_of(trait_id, iter_ty);
                 Ok(self
@@ -165,7 +165,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // A chain made here of an array's items, which nothing else
                 // steps, skipped or taken from, no closure of its to run: its
                 // items' count, `$iter(xs).drop(1).toArray().length`, which is
-                // `xs.slice(1).length`, as THIR's.
+                // `xs.slice(1).length`.
                 ("len", None) if counted_chain(&it) => {
                     Expr::member(Expr::call(Expr::member(it, "toArray"), Vec::new()), "length")
                 }
@@ -236,14 +236,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             }
                             it => self.helper(Helper::Rest, "$rest", vec![it]),
                         },
-                        // A `$iter` of an array THIR's lowering made, just made: the
-                        // array.
+                        // A `$iter` of an array, just made: the array.
                         None if crate::lower::iterators::is_stepped_items(&receiver) => match name {
                             "peekable" => return Ok(Some(receiver)),
                             _ => crate::lower::iterators::iterated(receiver),
                         },
                         // Of such an array's skipped and taken from, the array
-                        // sliced, as THIR's: no closure runs over it.
+                        // sliced: no closure runs over it.
                         None if name == "rev" && counted_chain(&receiver) => sliced(&receiver),
                         None => match from_iterator(receiver) {
                             Ok(items) => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![items]),
@@ -263,7 +262,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }));
         }
         // `size_hint()` of a `$iter`, exact, or of a generic one, as `$sizeHint`
-        // finds it, as THIR's (ADR 0170).
+        // finds it (ADR 0170).
         if is_std_def(tcx, trait_id, StdItem::Iterator) && name == "size_hint" && !self.is_user_iterator(iter_ty) {
             let mut it = values.into_iter().next().expect("the receiver");
             // A `map`'s is its source's, as Rust's `Map` passes it on; its
@@ -310,7 +309,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // Of the crate's iterator, its own `next` and what its impl writes
         // itself are its trait's; the rest, `map`, `fuse`, `collect`, std's
-        // of a JS iterator its `next` steps (`as_js_iterator`), as THIR's.
+        // of a JS iterator its `next` steps (`as_js_iterator`).
         let own = self.is_user_iterator(iter_ty)
             && (name == "next" || self.recognition().user_impl_defines(trait_id, iter_ty, name));
         if !is_std_def(tcx, trait_id, StdItem::Iterator) || own {
@@ -359,19 +358,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 | "count"
         );
         let dropping = item.filter(|&item| self.drops(item) != crate::lower::drops::Drops::Nothing);
-        // `filter` and `skip_while` drop each they discard, below and THIR's.
+        // `filter` and `skip_while` drop each they discard, below.
         if !keeps_each && !matches!(name, "filter" | "skip_while") && dropping.is_some() {
             return Err(self.unsupported(span, &format!("`{name}` of items with a destructor, from its MIR")));
         }
         let mut arg = || values.next().expect("rustc checked the arguments");
         // A function of the crate given as the callback, `filter(is_rule)`:
-        // itself, as THIR's, which takes no more than it's given (ADR 0279).
+        // itself, which takes no more than it's given (ADR 0279).
         let own = arg_tys.get(1).is_some_and(|ty| self.is_crate_fn_item(*ty));
         let method = |name: &str, it: Expr, args: Vec<Expr>| Expr::call(Expr::member(it, name), args);
         Ok(Some(match name {
             "map" => method("map", it, vec![self.unary_callback(arg(), own)]),
             // Of items with a destructor: each it doesn't keep dropped as it
-            // discards it, THIR's (ADR 0098).
+            // discards it (ADR 0098).
             "filter" => {
                 let test = self.unary_callback(arg(), own);
                 let test = match dropping {
@@ -386,7 +385,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "for_each" => method("forEach", it, vec![self.unary_callback(arg(), own)]),
             "any" => method("some", it, vec![self.unary_callback(arg(), own)]),
             "all" => method("every", it, vec![self.unary_callback(arg(), own)]),
-            // Of what looks like `None`: the first kept, boxed, THIR's.
+            // Of what looks like `None`: the first kept, boxed.
             "find" => {
                 let test = self.unary_callback(arg(), own);
                 match item.is_some_and(|item| self.boxed_payload(item)) {
@@ -411,7 +410,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => Expr::unary(js::UnaryOp::Not, same),
                 }
             }
-            // THIR's pairing, `(x, i) => [i, x]`, in place of which a
+            // The pairing, `(x, i) => [i, x]`, in place of which a
             // callback that takes the pair apart is given each item and its
             // index, of an array (`eager_chains`).
             "enumerate" => {
@@ -458,7 +457,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec![StmtKind::Return(Some(total)).at(js::Span::NONE)],
                 );
                 // Rust's float `Sum` starts at -0.0, an empty sum's and one of
-                // negative zeros' sign kept, as THIR's.
+                // negative zeros' sign kept.
                 let start = match (name, num.float()) {
                     ("sum", true) => Expr::num(-0.0),
                     _ => num.literal(start),
@@ -477,7 +476,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 None => return Ok(None),
             },
-            // Of all the items, in order, as THIR's of an array.
+            // Of all the items, in order, as of an array.
             "max" | "min" => {
                 let items = method("toArray", it, Vec::new());
                 self.extreme_of(name == "max", items, item, span)?
@@ -489,7 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             "by_ref" => it,
             "fuse" => it,
             "collect" => {
-                // Into a heap: its items in heap order, `$heapFrom`, THIR's.
+                // Into a heap: its items in heap order, `$heapFrom`.
                 if self.is_std_type(output, StdItem::BinaryHeap) {
                     let items = method("toArray", it, Vec::new());
                     self.heap_values(HeapOp::From, vec![items], output, span)?
@@ -503,8 +502,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else if self.option_of(output).is_some() || self.recognition().is_result(output) {
                     self.collect_fallible(it, output, item, span)?
                 } else if self.is_map(output) {
-                    // A map or a set of what its key is, as THIR's `From` of
-                    // items makes one (ADR 0121).
+                    // A map or a set of what its key is, as a `From` of items
+                    // makes one (ADR 0121).
                     let key = match output.kind() {
                         ty::Adt(_, args) => args.types().next(),
                         _ => None,
@@ -547,16 +546,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.user_iterator(value, ty, trait_id, "next", span)
             }
             // A generic one, which may be given an array (ADR 0061): JS's
-            // iterator of it, as THIR's.
+            // iterator of it.
             None if matches!(ty.kind(), ty::Param(_)) && !is_js_iterator(&value) => Ok(self.js_iterator(value)),
             None => Ok(value),
         }
     }
 
-    /// A std iterator of type `ty` made of `value`, the array or the text
-    /// THIR's lowering makes of it, as MIR steps it: over an array, a
-    /// `$iter`, which knows where it is, so a clone of it does (ADR 0181);
-    /// another, the JS iterator of `value`.
+    /// A std iterator of type `ty` made of `value`, an array or a text, as
+    /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
+    /// clone of it does (ADR 0181); another, the JS iterator of `value`.
     pub(super) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
         match self.array_source(ty) {
             Some(_) => match from_iterator(value) {
@@ -564,7 +562,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(items) | Err(items) => items,
             },
             None if is_js_iterator(&value) => value,
-            // An array THIR's lowering makes of it, `s.split(",")`'s, or a
+            // An array made of it, `s.split(",")`'s, or a
             // `VecDeque`'s or a slice's `iter_mut()`'s, an array: a `$iter`
             // of it, as of an array's.
             None if made_array(&value)
@@ -580,7 +578,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `$iterator({ start: a, end: b }, $rangeNext).map(f)`, a range of
     /// numbers `iter_ty` steps, each item mapped, all collected: its array's,
-    /// `$range(a, b).map(f)`, as THIR's, made as big as what's collected
+    /// `$range(a, b).map(f)`, made as big as what's collected
     /// anyway; what more than one map does in Rust's order, one item through
     /// them all at a time, only lazily. Not filtered, which may keep few of
     /// many, `$lazyRange(a, b).filter(f)` (`range_items`). Of `a..=b`,
@@ -681,8 +679,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// As `unary_callback`, of a function of two: `reduce`'s, given an index
-    /// too. `f64::max`'s and `f64::min`'s helpers take two alone, as THIR
-    /// gives them.
+    /// too. `f64::max`'s and `f64::min`'s helpers take two alone.
     fn binary_callback(&mut self, f: Expr, own: bool) -> Expr {
         match &f.kind {
             js::ExprKind::Arrow(params, _) if params.len() <= 2 => f,

@@ -69,8 +69,8 @@ impl<'tcx> Mir<'tcx> {
         promoted: IndexVec<Promoted, mir::Body<'tcx>>,
     ) -> Mir<'tcx> {
         // A call that can't throw, a binding marked so or `unwrap_unchecked`,
-        // has nothing to clean up, as THIR's (ADR 0301): rustc's dataflow of
-        // what's there, which says what's dropped, follows no unwinding of it.
+        // has nothing to clean up (ADR 0301): rustc's dataflow of what's there,
+        // which says what's dropped, follows no unwinding of it.
         for data in body.basic_blocks.as_mut() {
             if let TerminatorKind::Call { func, unwind, .. } = &mut data.terminator_mut().kind
                 && let Some((id, _)) = func.const_fn_def()
@@ -202,7 +202,7 @@ struct State<'m, 'tcx> {
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
     /// Whether what the call being lowered gives back is read by nothing,
-    /// `map.insert(k, v);`'s, as THIR's `Call::discarded` says.
+    /// `map.insert(k, v);`'s.
     discarding: bool,
     /// Where each `return` the program wrote is, of the body THIR has.
     returns: Vec<js::Span>,
@@ -214,21 +214,20 @@ struct State<'m, 'tcx> {
     /// is, or the tuple's list of them.
     places: std::collections::HashMap<Local, Value<'tcx>>,
     /// The indexes whose bounds check is where the element is read, `false`,
-    /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`, as THIR checks
-    /// them (`deferred_check`).
+    /// `$index(xs, i)`, or written, `true`, `xs[$at(xs, i)]`
+    /// (`deferred_check`).
     deferred: std::collections::HashMap<Local, bool>,
     /// The block whose statements are being lowered.
     at: BasicBlock,
-    /// Each variable a pattern binds in an enum's variant, `Some(title)`:
-    /// what it's bound to, where that reads the same anywhere, is it, as THIR
-    /// reads it.
+    /// Each variable a pattern binds in an enum's variant, `Some(title)`: what
+    /// it's bound to, where that reads the same anywhere, is it.
     payloads: std::collections::HashSet<Local>,
     /// The temporaries a `let`'s pattern takes apart, `let S { a, .. } =
-    /// f();`'s: kept, for tidy to destructure, as THIR's pattern reads.
+    /// f();`'s: kept, for tidy to destructure as the pattern reads.
     patterned: std::collections::HashSet<Local>,
     /// The `Option`s made only `Some(..)` or `None` and read only by
-    /// `#[rust_js::nullable]` fields: their `None` is `null` where it's
-    /// made, `c ? v : null`, as THIR's `nullable` makes it (ADR 0275).
+    /// `#[rust_js::nullable]` fields: their `None` is `null` where it's made,
+    /// `c ? v : null` (ADR 0275).
     null_nones: std::collections::HashSet<Local>,
     /// Each struct JSX gives a component as its props, and those of their
     /// flattened fields: JSX takes them apart (ADR 0213).
@@ -241,7 +240,7 @@ struct State<'m, 'tcx> {
     builders: HashMap<Local, Local>,
     built: HashMap<Local, Built<'tcx>>,
     /// Each variable a `let` binds: where the `let` is written, which its
-    /// declaration maps to, as THIR's did.
+    /// declaration maps to.
     let_spans: HashMap<Local, js::Span>,
 }
 
@@ -260,13 +259,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.krate.fns.get(&def_id).is_none() {
             return Err(self.unsupported(span, "this item from its MIR"));
         }
-        // A component's props with a default taken apart, as THIR's are.
+        // A component's props with a default, given where JS takes them apart
+        // (ADR 0212).
         for param in &self.thir.params {
             self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;
         }
         // A trait's method is called through a dictionary, whose `&mut` to a
         // generic iterator is a handle on it, not what it steps (ADRs 0071,
-        // 0099): refused, as THIR refuses it; a range so given threw.
+        // 0099): refused; a range so given threw.
         if self.tcx.trait_of_assoc(def_id).is_some() || self.tcx.trait_impl_of_assoc(def_id).is_some() {
             for param in &self.thir.params {
                 if let ty::Ref(_, inner, ty::Mutability::Mut) = *param.ty.kind()
@@ -353,8 +353,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             tidy::copied_params(&params, &mut out);
         }
         // The functions written in its body, each declared before what's
-        // written after it, as THIR's (ADR 0308); a closure's in its own,
-        // where `mir_closure` put them, unless it's lowered otherwise.
+        // written after it (ADR 0308); a closure's in its own, where
+        // `mir_closure` put them, unless it's lowered otherwise.
         let mut placed = std::collections::HashSet::new();
         js::each_expr_mut(&mut out, &mut |e| {
             if let js::ExprKind::FunctionHole(index) = e.kind {
@@ -386,10 +386,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         captures: Option<Vec<(Expr, bool)>>,
     ) -> R<(Vec<js::Pattern>, Vec<Stmt>)> {
         let mir_body = &mir.body;
-        // What THIR refuses of its closures holding what has a destructor.
+        // What THIR's drop facts refuse of its closures holding what has a
+        // destructor.
         self.check_closure_drops()?;
         // `std::ptr::eq` of a Rust value, whose pointer MIR makes first,
-        // refused as THIR refuses it (ADR 0285).
+        // refused (ADR 0285).
         for e in self.thir.exprs.iter() {
             if let thir::ExprKind::Call { fun, .. } = e.kind
                 && let Some((id, args)) = fn_def(self.thir[fun].ty)
@@ -523,7 +524,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (false, false) => 0,
         };
         // A parameter or a result of a type JS can't hold, a `&mut` to a
-        // `&mut [i32]` whose place it can't share: refused, as THIR's.
+        // `&mut [i32]` whose place it can't share: refused.
         let def_span = self.tcx.def_span(mir_body.source.def_id());
         for local in mir_body.args_iter().skip(skip).filter(|&l| Some(l) != formatter) {
             self.check_value_ty(mir_body.local_decls[local].ty, def_span)?;
@@ -538,7 +539,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|local| {
                 state.locals.declared[local] = true;
                 // One the program names nothing and reads nowhere, `_: Ref`,
-                // is `_`, as THIR's.
+                // is `_`.
                 if !state.locals.user[local] && state.locals.reads[local] == 0 && !state.locals.borrowed[local] {
                     state.locals.names[local] = String::new();
                 }
@@ -593,7 +594,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.locals.cells.insert(name.clone());
             }
         }
-        // What reads the same wherever it's read, as THIR's variables say.
+        // What reads the same wherever it's read.
         for (local, name) in state.locals.names.iter_enumerated() {
             if name.is_empty()
                 // A variable the program names, assigned once each way, as a
@@ -900,7 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .map(|(path, _)| path.clone()),
         );
         // And the module's imports, whose fields JS's modules never change
-        // either, `HighlightStyle.define`, as THIR's `reads_alike` has them.
+        // either, `HighlightStyle.define`, as `reads_alike` has them.
         let mut plain = self.locals.plain.clone();
         plain.extend(
             self.krate
@@ -940,7 +941,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match self.writer_fails() {
                 // One that may fail gives what it wrote before, in front of
                 // what what it called did (ADR 0187): `let f = ""; try { .. }
-                // catch (error) { .. } return f;`, as THIR's.
+                // catch (error) { .. } return f;`.
                 true => {
                     self.runtime.insert(Helper::FmtError);
                     let made = (out.iter()).position(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name));
@@ -1132,10 +1133,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
-    /// Parameters taken apart where they're given, as THIR takes them: a
-    /// props struct's, its fields' defaults and its rest among them (ADRs
-    /// 0195, 0212). Each its index, THIR's pattern, which names what it
-    /// binds, and the local MIR binds each to, by value.
+    /// Parameters taken apart where they're given: a props struct's, its
+    /// fields' defaults and its rest among them (ADRs 0195, 0212). Each its
+    /// index, THIR's pattern, which names what it binds, and the local MIR
+    /// binds each to, by value.
     fn mir_param_patterns(&mut self, body: &mir::Body<'tcx>) -> Vec<ParamPattern> {
         let mut patterns = Vec::new();
         for (i, param) in self.thir.params.iter().enumerate() {
@@ -1273,8 +1274,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             });
         }
-        // What its drop drops, where it's made: what it holds, THIR's
-        // `closure_made` (ADR 0098); a reference it holds drops nothing.
+        // What its drop drops, where it's made: what it holds, `closure_made`
+        // (ADR 0098); a reference it holds drops nothing.
         let held: Vec<(Expr, Ty<'tcx>)> = (captures.iter().zip(&upvars))
             .map(|((e, _), &ty)| (e.clone(), ty))
             .collect();
@@ -1290,7 +1291,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.locals.alike.remove(&name);
         }
         let (mut params, mut stmts) = lowered?;
-        // The functions written in it, in its body, as THIR's (ADR 0308).
+        // The functions written in it, in its body (ADR 0308).
         let written: Vec<rustc_span::def_id::DefId> = (self.krate.local_functions.keys())
             .filter(|&&id| self.tcx.parent(id) == def_id)
             .copied()
@@ -1321,8 +1322,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::async_arrow(params, body));
         }
         // A closure of `()` that only spawns an async block is that block's
-        // async arrow, as THIR's: it starts the same, and gives back a
-        // promise where nothing reads its `()` (ADR 0257).
+        // async arrow: it starts the same, and gives back a promise where
+        // nothing reads its `()` (ADR 0257).
         if let ty::Closure(_, args) = self.tcx.type_of(def_id).skip_binder().kind()
             && written.is_empty()
             && directives.is_empty()
@@ -1362,7 +1363,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A hole for each function of `written`, before the first statement of
     /// `out` written after it, or the `return` that ends it: a function
-    /// declaration's, which JS hoists, as THIR places it (ADR 0308).
+    /// declaration's, which JS hoists (ADR 0308).
     fn place_written(&self, written: Vec<rustc_span::def_id::DefId>, out: &mut Vec<Stmt>) {
         let mut written: Vec<(u32, rustc_span::def_id::DefId)> = (written.into_iter())
             .map(|id| (self.js_span(self.tcx.def_span(id)).lo, id))
@@ -1399,9 +1400,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `?`'s own `val`, what its `Continue` holds: a temporary.
         let continued = self.continued(body);
         for info in &body.var_debug_info {
-            // A variable a std macro makes, `format_args!`'s `args`, isn't
-            // one the program names, nor `.await`'s `result`; a derived
-            // impl's parameters, its `self` and its `f`, are, as THIR's.
+            // A variable a std macro makes, `format_args!`'s `args`, isn't one
+            // the program names, nor `.await`'s `result`; a derived impl's
+            // parameters, its `self` and its `f`, are.
             if let mir::VarDebugInfoContents::Place(place) = info.value
                 && place.projection.is_empty()
                 && user[place.local].is_none()
@@ -1410,7 +1411,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 && !continued.contains(&place.local)
             {
                 // A method's `self`, named after its type, `counter` for a
-                // `Counter`, as THIR names it.
+                // `Counter`.
                 let name = match body.local_decls[place.local].ty.peel_refs().kind() {
                     ty::Adt(adt, _) if info.name.as_str() == "self" => {
                         super::lower_first(self.tcx.item_name(adt.did()).as_str())
@@ -1503,7 +1504,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if body.local_decls[local].ty.is_unit() || body.local_decls[local].ty.is_never() {
                 continue;
             }
-            // Bound by a parameter's pattern, as THIR names it.
+            // Bound by a parameter's pattern: the name THIR's pattern gives it.
             if let Some((_, name)) = named.iter().find(|(l, _)| *l == local) {
                 locals.names[local] = name.clone();
                 continue;
@@ -1741,8 +1742,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (None, false) => Some(self.read_local(state, ret, &mut out)?),
                 };
                 self.flush(state, &mut out)?;
-                // Where what it gives was written, as THIR's: MIR's `return`
-                // is where the body ends, which the source map has nothing of.
+                // Where what it gives was written: MIR's `return` is where the
+                // body ends, which the source map has nothing of.
                 let span = match &value {
                     Some(value) if !value.span.is_none() => value.span,
                     _ => self.js_span(span),
@@ -1834,8 +1835,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let then = self.mir_branch(state, block, target)?;
                     let branches_panic = [panics(state.body, target), chain_panics];
                     // Its test where its arm's pattern is, a `match`'s, or its
-                    // `if`, as THIR's, which its `if` takes once it's tidied
-                    // (`tidy`): till then, as tidying reads it, where it's tested.
+                    // `if`, which its `if` takes once it's tidied (`tidy`): till
+                    // then, as tidying reads it, where it's tested.
                     let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));
                     let test = Expr {
                         span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),
@@ -1854,7 +1855,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 unwind,
             } if self.known_in_bounds(msg, span) || checked_by_division(msg) => {
                 // `args[i]` THIR's facts know is in bounds, of `0..args.len()`:
-                // unchecked, as THIR writes it.
+                // unchecked.
                 let _ = (cond, expected, unwind);
                 out.extend(self.mir_branch(state, block, *target)?);
             }
@@ -2063,9 +2064,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// Where the `if` whose condition MIR's switch is was written, `if c`,
-    /// its `if` first, for the source map, as THIR's: the switch is where
-    /// its condition is.
+    /// Where the `if` whose condition MIR's switch is was written, `if c`, its
+    /// `if` first, for the source map: the switch is where its condition is.
     fn if_span(&self, span: Span) -> Span {
         (self.thir.exprs.iter())
             .find_map(|e| match e.kind {
@@ -2077,9 +2077,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .unwrap_or(span)
     }
 
-    /// The pattern of the arm written at `at` of the `match` whose switch
-    /// MIR's at `span`, its `match x`, is, for the source map, as THIR's
-    /// tests are.
+    /// The pattern of the arm written at `at` of the `match` whose switch MIR's
+    /// at `span`, its `match x`, is, for the source map.
     fn arm_span(&self, span: Span, at: rustc_span::BytePos) -> Option<Span> {
         let arms = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
             thir::ExprKind::Match { arms, .. } if e.span.lo() == span.lo() && e.span.contains(span) => Some(arms),
@@ -2336,7 +2335,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // What the function gives, a variable of its own nothing reads after:
-        // that, handed over uncopied, as THIR's. Not of a `Cell` in it, which
+        // that, handed over uncopied. Not of a `Cell` in it, which
         // a drop after may set.
         let handed;
         let rvalue = match rvalue {
@@ -2351,7 +2350,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => rvalue,
         };
         // A named constant only read or lent shared, `XS.contains(&x)`'s: the
-        // one there is, uncopied, as THIR's, as nothing changes it.
+        // one there is, uncopied, as nothing changes it.
         // Not what the function gives, which its caller may change.
         if place.projection.is_empty()
             && place.local != mir::RETURN_PLACE
@@ -2368,7 +2367,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A `&mut` a variable keeps to a variable that's a `&mut` itself,
         // `let outer = &mut list`: `list`, where it's used, so `*outer = ..`
-        // gives `list` it, as THIR's.
+        // gives `list` it.
         if place.projection.is_empty()
             && state.locals.user[place.local]
             && state.locals.writes[place.local] == 1
@@ -2435,7 +2434,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         state.binding_var = place.projection.is_empty() && state.locals.user[place.local];
         // A flattened struct a `match`'s pattern binds, which JS's props hold
-        // flat, among their other fields, as THIR says.
+        // flat, among their other fields.
         if state.binding_var
             && let Rvalue::Use(Operand::Move(read) | Operand::Copy(read), _) = rvalue
             && let Some((base, PlaceElem::Field(field, _))) = read.as_ref().last_projection()
@@ -2456,9 +2455,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `rest = p.rest` of a `let`'s pattern, `let P { href, rest, .. } = p`:
-    /// what's left of the props, each of their other fields named, as THIR
-    /// names them, `const { href: _href, title: _title, ...rest } = p;`,
-    /// whose names tidy makes the pattern's where it binds them.
+    /// what's left of the props, each of their other fields named,
+    /// `const { href: _href, title: _title, ...rest } = p;`, whose names tidy
+    /// makes the pattern's where it binds them.
     fn mir_let_rest(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -2605,8 +2604,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         // A `&mut` a variable keeps, `let first = &mut h.list[0]`: its place
-        // fixed where it's borrowed, what it's in and where, as THIR's
-        // `fixed_place`, so what changes `h.list` later changes no borrow.
+        // fixed where it's borrowed, what it's in and where (`fixed_kept`), so
+        // what changes `h.list` later changes no borrow.
         let value = match value {
             Value::Ref(target) if place.projection.is_empty() && state.locals.user[local] => {
                 Value::Ref(self.fixed_kept(state, target, out)?)
@@ -2625,7 +2624,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // A shared reference a temporary or a variant's binding holds, made
         // once, to a place of a variable nothing changes, `&route.title`: the
-        // place, read where it's used, as THIR reads a reference (ADR 0023);
+        // place, read where it's used (ADR 0023);
         // borrowck keeps it the same meanwhile.
         // And a tuple of them, `format_args!`'s.
         let held = |value: &Value<'tcx>| match value {
@@ -2691,7 +2690,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(());
         }
         if place.projection.is_empty() && !state.locals.declared[local] {
-            // A variable of a type JS can't hold, refused as THIR's binding.
+            // A variable of a type JS can't hold: refused.
             self.check_variable(state, local, span)?;
             self.flush(state, out)?;
             state.locals.declared[local] = true;
@@ -2720,7 +2719,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let target = self.mir_place(state, place, span, out)?;
         self.flush(state, out)?;
         // `*r = v` of a `&mut` to an object: the object becomes `v`, so each
-        // name for it sees it, as THIR's `assign` writes it.
+        // name for it sees it.
         let decls = &state.body.local_decls;
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
             && matches!(
@@ -2735,7 +2734,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // given another, not the one it holds changed, which every
             // owner would see.
             // Of a guard's `value`, `*cell.borrow_mut() = w`, that place
-            // given it, as THIR's.
+            // given it.
             if self.counted_rc(pointee).is_some() || self.weak_of(pointee).is_some() {
                 if matches!(&target.kind, js::ExprKind::Member(_, field) if field == "value") {
                     out.push(StmtKind::Assign(target, value).at(js_span));
@@ -2748,9 +2747,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             out.push(StmtKind::Expr(assigned).at(js_span));
             return Ok(());
         }
-        // `*r = v` of a `&mut` the variable `r` is, to what's neither an
-        // object nor a cell, a closure: JS would only give `r` another,
-        // THIR's (not an alias `r` names a place by, `*outer = ..`).
+        // `*r = v` of a `&mut` the variable `r` is, to what's neither an object
+        // nor a cell, a closure: JS would only give `r` another, so it's
+        // refused (not an alias `r` names a place by, `*outer = ..`).
         if let Some((base, PlaceElem::Deref)) = place.as_ref().last_projection()
             && base.projection.is_empty()
             && matches!(target.kind, js::ExprKind::Var(ref name) if *name == state.locals.names[base.local])
@@ -2773,10 +2772,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Vec<Expr>> {
-        // What's called, as THIR's `boxed_callee` says: a trait's method
-        // resolved to its impl's, whose parameters say which are boxes, or
-        // the crate's trait's own, a dictionary's; not a `dyn`'s, whose pair
-        // is its `&mut`, nor std's.
+        // What's called: a trait's method resolved to its impl's, whose
+        // parameters say which are boxes, or the crate's trait's own, a
+        // dictionary's; not a `dyn`'s, whose pair is its `&mut`, nor std's.
         let fn_id = match self.tcx.trait_of_assoc(def_id) {
             None => Some(def_id),
             Some(trait_id) => match self.impl_method(def_id, generic_args)? {
@@ -2886,9 +2884,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(exprs)
     }
 
-    /// A variable the program declares, refused as THIR refuses its
-    /// binding: of what drops as JS can't drop it, or of a type JS can't
-    /// hold. Not std's MIR put in the body, nor a JS iterator.
+    /// A variable the program declares, refused: of what drops as JS can't drop
+    /// it, or of a type JS can't hold. Not std's MIR put in the body,
+    /// nor a JS iterator.
     fn check_variable(&self, state: &State<'_, 'tcx>, local: Local, span: Span) -> R<()> {
         let ty = state.body.local_decls[local].ty;
         if !state.locals.user[local] || inlined(state.body, local) || self.implements_iterator(ty) {
@@ -3028,7 +3026,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let index = self.read_local(state, local, out)?;
                 // A constant index of an array as long as that: nothing to
-                // check, `items[0]`, as THIR's.
+                // check, `items[0]`.
                 let within = match (&index.kind, ty.ty.kind()) {
                     (js::ExprKind::Num(k), ty::Array(_, len)) => len
                         .try_to_target_usize(self.tcx)
@@ -3093,7 +3091,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // and a pointer, a `static mut`'s.
             PlaceElem::Deref if ty.ty.is_ref() || ty.ty.is_box() || ty.ty.is_raw_ptr() => base,
             // JS's props have no `rest`: what's left of them is taken apart
-            // from the rest, `{ href, ...rest }` (ADR 0195), as THIR says.
+            // from the rest, `{ href, ...rest }` (ADR 0195).
             PlaceElem::Field(_, field_ty) if bindings::is_rest(self.tcx, field_ty) => {
                 // Bound by a pattern other than a `let`'s, a `match`'s.
                 return Err(self.unsupported(
@@ -3117,8 +3115,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 from_end: false,
                 ..
             } => Expr::index(base, Expr::int(offset.into())),
-            // Counted from the end, a slice pattern's suffix: `xs[xs.length -
-            // 1]`, or of an array, its index, as THIR's patterns read it.
+            // Counted from the end, a slice pattern's suffix:
+            // `xs[xs.length - 1]`, or of an array, its index.
             PlaceElem::ConstantIndex {
                 offset, from_end: true, ..
             } if base.reads_same() => {
@@ -3277,7 +3275,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
         // A `Copy` value a variable holds, of a type changed in place: a copy
-        // of it, as THIR's `copy_if_needed` makes. A temporary's is its own,
+        // of it. A temporary's is its own,
         // but not what it refers to, a static's.
         let copied = matches!(operand, Operand::Copy(place)
             if place.is_indirect() || !state.pending.iter().any(|(l, _)| *l == place.local));
@@ -3324,9 +3322,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // first, its fields read by its name.
         let mut in_order = items[..field].iter().all(|item| movable(state, item))
             && (movable(state, &items[field]) || items[field + 1..].iter().all(|item| movable(state, item)));
-        // None read yet: each that does something held first, in order, as
-        // THIR holds them, the rest read where they are: `_arg`, named for
-        // what it's given as once tidied, `const key = …`, or `arg`.
+        // None read yet: each that does something held first, in order, the
+        // rest read where they are: `_arg`, named for what it's given as once
+        // tidied, `const key = …`, or `arg`.
         let acting: Vec<usize> = (items.iter().enumerate())
             .filter(|(_, item)| !movable(state, item) && matches!(item, Value::Expr(e) if e.has_effects()))
             .map(|(k, _)| k)
@@ -3414,7 +3412,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             {
                 self.mir_operand_read(state, &Operand::Constant(Box::new(referred)), out)
             }
-            // A function as a value, `.map(double)` or `f as fn()`: THIR's.
+            // A function as a value, `.map(double)` or `f as fn()`.
             Operand::Constant(c) if let Some((def_id, args)) = fn_def(c.ty()) => {
                 match self.fn_item_value(def_id, args, c.ty(), c.span, out)? {
                     Some(f) => Ok(Value::Expr(f)),
@@ -3502,8 +3500,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
             }
         }
-        // A named constant, as THIR's lowering writes one (ADR 0031); a
-        // `const { .. }` block, its value, or as one (ADR 0127).
+        // A named constant (ADR 0031); a `const { .. }` block, its value, or as
+        // one (ADR 0127).
         if let Const::Unevaluated(uv, _) = c.const_
             && uv.promoted.is_none()
         {
@@ -3572,7 +3570,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             None => return Err(self.unsupported(c.span, "this constant, from its MIR")),
         };
-        // One written across lines keeps them, a template literal, as THIR's.
+        // One written across lines keeps them, a template literal.
         Ok(match &value.kind {
             js::ExprKind::Str(text) if text.contains('\n') && super::literal_across_lines(tcx, c.span) => {
                 Expr::lines(text.as_str())
@@ -3706,8 +3704,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     return Err(self.unsupported(span, "a `&mut` to part of a slice, from its MIR"));
                 }
                 // A generic iterator a field holds, stepped through a `&mut` to
-                // it: what it's given, a range say, may be no JS iterator, as
-                // a caller's argument is made one; refused, as THIR refuses it.
+                // it: what it's given, a range say, may be no JS iterator, as a
+                // caller's argument is made one; refused.
                 let borrowed = place.ty(decls, tcx).ty;
                 if matches!(kind, BorrowKind::Mut { .. })
                     && place.projection.iter().any(|elem| matches!(elem, PlaceElem::Field(..)))
@@ -3822,9 +3820,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::BinaryOp(op, operands) => {
                 let (l, r) = &**operands;
                 let (ty, r_ty) = (l.ty(decls, tcx), r.ty(decls, tcx));
-                // A range pattern's test, `2 <= k`: the value first, `k >= 2`,
-                // as THIR writes it; of a bound the type has anyway, `0 <= k`
-                // of a `u8`, none.
+                // A range pattern's test, `2 <= k`: the value first, `k >= 2`;
+                // of a bound the type has anyway, `0 <= k` of a `u8`, none.
                 let flipped = match op {
                     BinOp::Le => Some(BinOp::Ge),
                     BinOp::Lt => Some(BinOp::Gt),
@@ -3847,8 +3844,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let (r, l) = (self.value_expr(r, span)?, self.value_expr(l, span)?);
                     return Ok(Value::Expr(self.binary(flipped, r, l, None, ty, span)?));
                 }
-                // A constant's value, a named one's too, as THIR knows it: a
-                // division by it that can't panic is JS's.
+                // A constant's value, a named one's too: a division by it that
+                // can't panic is JS's.
                 let known = match r {
                     Operand::Constant(c) => {
                         (c.const_.try_eval_scalar_int(tcx, self.typing_env)).map(|n| match r_ty.is_signed() {
@@ -3894,19 +3891,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     UnOp::PtrMetadata => Expr::member(a, "length"),
                 }
             }
-            // A reference made another kind of reference is the same value:
-            // an array's a slice's (ADR 0023). One made a `dyn` is THIR's: a
-            // `dyn Iterator` the JS iterator, another its `{ value, impl }`.
+            // A reference made another kind of reference is the same value: an
+            // array's a slice's (ADR 0023). One made a `dyn`: a `dyn Iterator`
+            // the JS iterator, another its `{ value, impl }`.
             Rvalue::Cast(mir::CastKind::PointerCoercion(coercion, _), operand, to) => {
                 use rustc_middle::ty::adjustment::PointerCoercion;
-                // Through a reference, a `Box` or an `Rc`, as THIR's `unsize_trait` sees it.
+                // Through a reference, a `Box` or an `Rc`, as `unsize_trait` sees it.
                 let to_dyn = matches!(self.pointee(*to).kind(), ty::Dynamic(..));
                 match coercion {
                     PointerCoercion::Unsize if to_dyn => {
                         let from = operand.ty(decls, tcx);
                         // What owns a value with a destructor drops it through
                         // its dictionary's `$drop`: of a `dyn Send`, or of what
-                        // rust-js can't drop, there's nowhere for it, THIR's.
+                        // rust-js can't drop, there's nowhere for it, refused.
                         if !to.is_ref()
                             && let ty::Dynamic(predicates, ..) = self.pointee(*to).kind()
                             && match self.drops(self.pointee(from)) {
@@ -3956,7 +3953,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Rvalue::Cast(_, operand, to) => {
                 let from = operand.ty(decls, tcx);
                 // An enum's discriminant, `ordering as i32`'s: the enum made a
-                // number, as THIR's `cast` makes it.
+                // number, as `cast` makes it.
                 let v = match self.mir_operand(state, operand, out)? {
                     Value::Discriminant(value, enum_ty) => {
                         return Ok(Value::Expr(self.cast(value, enum_ty, *to, span)?));
@@ -3985,8 +3982,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Discriminant(subject, ty));
             }
             Rvalue::Aggregate(kind, operands) => return self.mir_aggregate(state, kind, operands, span, out),
-            // `[x; N]`, as THIR's lowering writes it (ADR 0107); an item
-            // that's a constant is a named one's, or a literal, `Copy`.
+            // `[x; N]` (ADR 0107); an item that's a constant is a named one's,
+            // or a literal, `Copy`.
             Rvalue::Repeat(operand, count) => {
                 let item_ty = operand.ty(decls, tcx);
                 let constant = matches!(operand, Operand::Constant(_));
@@ -4012,8 +4009,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Value<'tcx>> {
-        // `P { x, ..base }`, where THIR says it is (`written_base`): its
-        // other fields `base`'s, `{ ...base, x }`, as THIR writes it (ADR 0250).
+        // `P { x, ..base }`, where THIR says it is (`written_base`): its other
+        // fields `base`'s, `{ ...base, x }` (ADR 0250).
         if let AggregateKind::Adt(did, VariantIdx::ZERO, args, None, None) = *kind
             && self.tcx.adt_def(did).is_struct()
             && let ty = Ty::new_adt(self.tcx, self.tcx.adt_def(did), args)
@@ -4077,9 +4074,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Whether `operand`, an `Option`, is `null` or a value already, as a
-    /// `#[rust_js::nullable]` field is (ADR 0275): such a field, moved
-    /// where it's read, or bound to a variable, or a `Some(..)`, as THIR's
-    /// `nullable` says.
+    /// `#[rust_js::nullable]` field is (ADR 0275): such a field, moved where
+    /// it's read, or bound to a variable, or a `Some(..)`.
     fn nulled(&self, state: &State<'_, 'tcx>, operand: &Operand<'tcx>) -> bool {
         let Some(place) = operand.place() else {
             return false;
@@ -4173,7 +4169,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     .find(|(_, d)| d.val == value)
                     .map(|(v, _)| v)
                     .ok_or_else(|| self.unsupported(span, "this discriminant, from its MIR"))?;
-                // An untagged enum's variants JS can't tell apart, THIR's (ADR 0214).
+                // An untagged enum's variants JS can't tell apart: refused (ADR 0214).
                 if bindings::is_untagged(self.tcx, adt.did())
                     && let Some(other) = self.untagged_alike(*enum_ty, adt.variant(variant))
                 {
@@ -4356,7 +4352,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let mut typed = Vec::new();
             for (value, ty) in values.into_iter().zip(tys) {
                 let value = self.value_expr(value, span)?;
-                // `entries(v.iter())`'s fresh `$iter(v)`: all of `v`, as THIR's.
+                // `entries(v.iter())`'s fresh `$iter(v)`: all of `v`.
                 let value = match step == "entries" {
                     true => super::iterators::iterated(value),
                     false => value,
@@ -4446,9 +4442,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(Expr::call(callee, exprs)));
         };
         // `..Default::default()` of a struct whose `Default` is derived, an
-        // update's base: as THIR makes it, each default the update reads,
-        // none it replaces that does nothing, a component's `children: C`
-        // among them, which needs no dictionary then (`update_default`).
+        // update's base: each default the update reads, none it replaces that
+        // does nothing, a component's `children: C` among them, which needs no
+        // dictionary then (`update_default`).
         if args.is_empty()
             && let Some(fields) = self.default_base_at(span)?
         {
@@ -4613,10 +4609,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// The base of a struct update, THIR's at `span`, which THIR spreads
-    /// whole, `..*item` of a shared reference or `..hit` of a variable (ADR
-    /// 0250): its place, the variable's by its debug info. MIR reads a field
-    /// of it at most, `Props { title, ..props }`, or none, every field given,
+    /// The base of a struct update, THIR's at `span`, where it's spread whole,
+    /// `..*item` of a shared reference or `..hit` of a variable (ADR 0250): its
+    /// place, the variable's by its debug info. MIR reads a field of it at most,
+    /// `Props { title, ..props }`, or none, every field given,
     /// `Hit { url, ..*item }`, which MIR alone can't tell from `level: a.level`.
     fn written_base(
         &self,
@@ -4658,8 +4654,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             true => place.project_deeper(&[PlaceElem::Deref], self.tcx),
             false => place,
         };
-        // Each field read of it, the spread's, its own, as THIR's: one that
-        // needs no copy of its own.
+        // Each field read of it, the spread's, its own: one that needs no copy
+        // of its own.
         let Shape::Object(fields) = self.shape(ty) else {
             return None;
         };
@@ -4727,9 +4723,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// THIR's update whose base is the call at `span`, MIR's there, of a
-    /// derived `Default`, `P { a, ..Default::default() }`: the base's fields
-    /// as THIR makes them, each default the update reads. `None` of another, or
-    /// where a default the update replaces is made still, for its effects.
+    /// derived `Default`, `P { a, ..Default::default() }`: the base's fields,
+    /// each default the update reads. `None` of another, or where a default the
+    /// update replaces is made still, for its effects.
     fn default_base_at(&mut self, span: Span) -> R<Option<Vec<(String, Expr)>>> {
         let strip = |e| super::body_queries::strip(self.thir, e);
         let found = (self.thir.exprs.iter()).find_map(|e| match &e.kind {
@@ -4758,9 +4754,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok((!kept).then_some(props))
     }
 
-    /// Whether THIR's cast at `span`, MIR's there, is of a float it knows
-    /// whole and in the target's range: the value as it is, as THIR writes
-    /// it (`whole_casts`).
+    /// Whether THIR's cast at `span`, MIR's there, is of a float it knows whole
+    /// and in the target's range: the value as it is (`whole_casts`).
     fn whole_cast_at(&self, span: Span) -> bool {
         let mut casts = (self.thir.exprs.iter_enumerated())
             .filter(|(_, e)| matches!(e.kind, thir::ExprKind::Cast { .. }) && e.span.source_equal(span));
@@ -4808,7 +4803,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let sig = tcx.instantiate_bound_regions_with_erased(sig);
         let inputs: Vec<Ty<'tcx>> = sig.inputs().to_vec();
         let params: Vec<String> = match inputs.len() {
-            // Named by its type, as THIR's: `(s) => ..` of a string.
+            // Named by its type: `(s) => ..` of a string.
             1 => vec![self.fresh(self.parameter_name(inputs[0].peel_refs()))],
             n => (0..n)
                 .map(|i| self.fresh(["a", "b", "c", "d", "e", "f"].get(i).copied().unwrap_or("arg")))
@@ -4840,10 +4835,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let arg_tys = arg_tys.to_vec();
         let tcx = self.tcx;
-        // What THIR refuses of a call: the crate's collection or `Borrow`
-        // where std's code takes JS's (ADRs 0160, 0167).
+        // What's refused of a call: the crate's collection or `Borrow` where
+        // std's code takes JS's (ADRs 0160, 0167).
         self.check_call_takes(def_id, generic_args, span)?;
-        // serde_json's `Value` and what makes one, THIR's (ADR 0083).
+        // serde_json's `Value` and what makes one (ADR 0083).
         if let Some(operation) = self.recognition().json_call(def_id, generic_args) {
             let exprs = values
                 .into_iter()
@@ -4852,7 +4847,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(self.json_call_values(operation, exprs, span)?));
         }
         // `x == &mut 1`, `p > q`, of `&mut`s to what JS can't change in place:
-        // of what they point at, as THIR's (ADR 0099), not the handles.
+        // of what they point at (ADR 0099), not the handles.
         if let Some(trait_id) = tcx.trait_of_assoc(def_id)
             && matches!(
                 self.recognition().trait_call(def_id, trait_id),
@@ -4912,7 +4907,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "methods of a `fmt::Result`, from its MIR"));
             };
             // In a crate where one may be an `Err`: of what `$fmtTry` caught,
-            // tested, THIR's (ADR 0187).
+            // tested (ADR 0187).
             if self.krate.any_failing {
                 let mut values = values.into_iter();
                 let result = self.value_expr(values.next().expect("the result"), span)?;
@@ -4935,11 +4930,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }));
         }
         // `x?`: `Try::branch(x)`, kept as `x` (`Value::Branch`), and what it
-        // returns, `FromResidual::from_residual(r)`, THIR's (ADR 0052).
+        // returns, `FromResidual::from_residual(r)` (ADR 0052).
         if tcx.is_lang_item(def_id, LangItem::TryTraitBranch) {
             let ty = arg_tys[0];
-            // Of one that may be an `Err`: its error thrown on, THIR's
-            // `fmt_check` (ADR 0187), and what's left never breaks.
+            // Of one that may be an `Err`: its error thrown on, `fmt_check`
+            // (ADR 0187), and what's left never breaks.
             if self.is_fmt_result(ty) && self.krate.any_failing {
                 let tried = self.value_expr(values.into_iter().next().expect("what's tried"), span)?;
                 self.flush(state, out)?;
@@ -5108,7 +5103,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // std's, `write!` to a `String` say, takes its place below.
         let gives_ref = values.iter().any(|v| matches!(v, Value::Ref(_)));
         // Not one that's a binding, a default method's `get ruleId` called
-        // through a generic's bound: the binding, below, as THIR's.
+        // through a generic's bound: the binding, below.
         // Nor `BinaryHeap::from(items)`, which std's own lowering heaps; nor
         // std's that's the same JS value, a `Box`'s `as_ref()` (ADR 0331).
         if !matches!(known, Some(Std::Any(_) | Std::Same))
@@ -5130,8 +5125,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Ok(Value::Expr(call));
             }
         }
-        // `cmp::max(a, b)` of what isn't a number: `Ord::max(a, b)`'s, as
-        // THIR's (ADR 0136).
+        // `cmp::max(a, b)` of what isn't a number:
+        // `Ord::max(a, b)`'s (ADR 0136).
         if known.is_none()
             && let Some(name) = self.recognition().cmp_extreme(def_id)
         {
@@ -5144,7 +5139,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         // `Box<dyn Error>` from an error or a message, by std's `From`, or the
-        // `Into` it gives, as THIR's (ADR 0141): `{ value, impl }`.
+        // `Into` it gives (ADR 0141): `{ value, impl }`.
         if let Some((to, from)) = self.converted(def_id, generic_args)
             && let Some(dictionary) = self.dyn_error_from(to, from, span)?
             && let [value] = &values[..]
@@ -5160,7 +5155,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Expr(Expr::undefined()));
         }
         // A binding: the JS function, method, property or operator it names
-        // (ADRs 0019, 0020), given its arguments as THIR gives them.
+        // (ADRs 0019, 0020), given its arguments.
         if bindings::is_binding(tcx, def_id) {
             if rustc_hir::find_attr!(tcx, def_id, RustcEiiForeignItem) {
                 return Err(self.unsupported(span, "externally implementable items, `#[eii]`,"));
@@ -5265,7 +5260,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
             let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
             // An iterator of the crate's, or a range, where a generic iterator
-            // goes: a JS iterator, as THIR's `iterator_arg` makes (ADR 0061).
+            // goes: a JS iterator (ADR 0061).
             let inputs = tcx.fn_sig(def_id).instantiate_identity().skip_binder().inputs();
             for ((expr, &input), &given) in exprs.iter_mut().zip(inputs).zip(&arg_tys) {
                 let (input, given) = match *input.kind() {
@@ -5294,9 +5289,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 span,
                 out,
             )?;
-            // A std iterator THIR's lowering makes an array of, `bytes()`'s:
-            // a JS iterator, which MIR steps. Not one that's the string it
-            // shows, an escape's; nor a `T` it gives, `unwrap_or`'s, its value.
+            // A std iterator `mir_std_call` makes an array of, `bytes()`'s: a
+            // JS iterator, which MIR steps. Not one that's the string it shows,
+            // an escape's; nor a `T` it gives, `unwrap_or`'s, its value.
             return Ok(match value {
                 Value::Expr(e)
                     if self.implements_iterator(output)
@@ -5315,10 +5310,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `mem::swap`, `mem::replace`, `mem::take`, `Option::take` and
-    /// `Option::replace`, as THIR's are: of a `&mut` to a place, writing each
-    /// in turn, `const t = a; a = b; b = t;`, which nothing else can see
-    /// while the call has it; of a `&mut` to an object, the object changed in
-    /// place, `$exchange(a, b)`, `$take(a, v)` (ADR 0147).
+    /// `Option::replace`: of a `&mut` to a place, writing each in turn,
+    /// `const t = a; a = b; b = t;`, which nothing else can see while the call
+    /// has it; of a `&mut` to an object, the object changed in place,
+    /// `$exchange(a, b)`, `$take(a, v)` (ADR 0147).
     fn mir_swap_or_replace(
         &mut self,
         state: &mut State<'_, 'tcx>,
@@ -5333,10 +5328,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let values = values.into_iter();
         self.flush(state, out)?;
         // Of a `&mut` to a variable, `&mut current`, an object's too: the
-        // variable, given its new value, as THIR's; a swap's, of two. One
-        // of this body's own, which holds the value itself: a closure's
-        // capture may be a name for a `&mut` to it, which assigning would
-        // only rebind.
+        // variable, given its new value; a swap's, of two. One of this body's
+        // own, which holds the value itself: a closure's capture may be a name
+        // for a `&mut` to it, which assigning would only rebind.
         let borrowed = if known == Std::Swap { 2 } else { 1 };
         let variables = (0..borrowed).all(|i| self.borrows_variable(def_id, span, i));
         let own = |e: &Expr| {
@@ -5403,8 +5397,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// A std function of its arguments' values, as THIR's are lowered once
-    /// they're values (`std_values`).
+    /// A std function of its arguments' values, lowered once they're values
+    /// (`std_values`).
     #[allow(clippy::too_many_arguments)]
     fn std_by_values(
         &mut self,
@@ -5444,8 +5438,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     ) -> R<Value<'tcx>> {
         let first_ty = || generic_args.types().next();
         let tcx = self.tcx;
-        // `format!`, `print!` and `to_string()` of what may fail: in a `try`,
-        // a `fmt::Error` std's panic, as THIR's `failing_consumer` (ADR 0187).
+        // `format!`, `print!` and `to_string()` of what may fail: in a `try`, a
+        // `fmt::Error` std's panic (ADR 0187).
         let fails = match known {
             Std::Format | Std::Print { .. } => matches!(values.first(), Some(Value::Fmt(Std::FmtNew, ..))),
             Std::ToString => first_ty().is_some_and(|ty| self.fmt_may_fail(self.display_trait(), ty)),
@@ -5469,14 +5463,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if self.refuses_boxed_option(known, output) {
             return Err(self.unsupported(span, "this call, for an `Option` of what could look like `None`"));
         }
-        // A value with a destructor taken, refused as THIR refuses it; a chain
-        // that owns its items is `mir_iter_call`'s, so none here does.
+        // A value with a destructor taken, refused; a chain that owns its items
+        // is `mir_iter_call`'s, so none here does.
         // `skip_while` drops what it skips (below), and what's left of it,
         // undrained, is refused where it's dropped.
         let drained = known == Std::IterComb(IterComb::SkipWhile);
         self.check_takes_drops(known, def_id, arg_tys, drained, span)?;
         // `v[i]` THIR knows is in bounds, `v[0]` after `v.is_empty()`'s test
-        // fails, or of an array long enough: unchecked, as THIR writes it.
+        // fails, or of an array long enough: unchecked.
         if known == Std::Index
             && let Some((fun, args)) = self.thir_call(def_id, span)
             && let [items_id, _] = args[..]
@@ -5529,7 +5523,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Ref(Expr::index(items, index)));
         }
         // `m.entry(k).or_insert(v)`: the value put in if the key's missing,
-        // THIR's `$orInsert`, which is the value, an object; of a number,
+        // `$orInsert`, which is the value, an object; of a number,
         // `*m.entry(k).or_insert(0) += 1`, a handle on the key's value,
         // `$mutGet`'s (ADR 0152). The entry is `$entry(m, k)`, `{ TAG, _0: [m, k] }`.
         if let Std::Map(op @ (MapOp::OrInsert | MapOp::OrInsertWith | MapOp::OrDefault)) = known {
@@ -5607,7 +5601,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Value::Ref(place.clone()));
         }
         // A `&mut` it made to an item JS can't change in place: a handle on
-        // each, as THIR's `item_handles` makes (ADR 0152).
+        // each (ADR 0152).
         if let Some(cell) = self.makes_items_of(output, generic_args, arg_tys) {
             let exprs = values
                 .iter()
@@ -5662,7 +5656,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     value => self.value_expr(value, span)?,
                 };
                 // An `Option` shown, read twice, `v == null ? "None" : ..`: held
-                // first, as THIR's argument is, where nothing it does moves.
+                // first, where nothing it does moves.
                 let value = match known == Std::FmtDebug
                     && self.option_of(ty.peel_refs()).is_some()
                     && !value.reads_same()
@@ -5698,7 +5692,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             };
                             let (kind, ty, value) = item(i).ok_or_else(bad)?;
                             // `{:#?}` of a `&dyn Debug` made elsewhere, the string it
-                            // showed there, not pretty, THIR's (ADR 0137).
+                            // showed there, not pretty (ADR 0137).
                             if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {
                                 return Err(self.unsupported(span, "`{:#?}` of a `&dyn Debug` made elsewhere"));
                             }
@@ -5756,7 +5750,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.range_call(op, exprs, arg_tys, span, out)?
             }
             // `s.push_str(t)`, `write!(s, ..)`: JS strings don't change, so `s`
-            // gets a new one, as THIR's `push_str` writes it.
+            // gets a new one.
             Std::PushStr => {
                 let place = match values.next() {
                     Some(Value::Ref(place)) => place,
@@ -5769,7 +5763,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let given = values.next().expect("what's pushed");
                 // A `write!` of what may fail: piece by piece, what came before
-                // written, its `fmt::Result` the error, if any, THIR's (ADR 0187).
+                // written, its `fmt::Result` the error, if any (ADR 0187).
                 if matches!(given, Value::Fmt(Std::FmtNew, ..)) && fixed_place(&place) {
                     let value = self.value_expr(given, span)?;
                     self.flush(state, out)?;
@@ -5818,7 +5812,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let made = matches!(exprs[0].kind, js::ExprKind::Call(..));
                 self.comb_values(comb, (exprs, arg_tys), made, generic_args, span, out)?
             }
-            // A B-tree's range of its keys, THIR's (ADR 0325).
+            // A B-tree's range of its keys (ADR 0325).
             Std::Map(MapOp::TreeRange { mutable }) => {
                 let [m, range]: [Value<'tcx>; 2] =
                     values.collect::<Vec<_>>().try_into().ok().expect("a tree and a range");
@@ -5826,7 +5820,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.tree_range_values((m, arg_tys[0]), (range, arg_tys[1]), mutable, span, out)?
             }
             // A deque's `range_mut(a..b)`: a view of those items, each a box
-            // where it's one JS can't change in place, THIR's.
+            // where it's one JS can't change in place.
             Std::Slice(SliceOp::DequeRangeMut) => {
                 let items = self.value_expr(values.next().expect("the items"), span)?;
                 let range = self.value_expr(values.next().expect("the range"), span)?;
@@ -5839,7 +5833,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => view,
                 }
             }
-            // A map's or a set's `extract_if`, a B-tree's of a range, THIR's.
+            // A map's or a set's `extract_if`, a B-tree's of a range.
             Std::Map(MapOp::ExtractIf) => {
                 let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 let f = exprs.pop().expect("the test");
@@ -5851,7 +5845,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.map_extract_if_values((m, arg_tys[0]), range, f, span, out)?
             }
             // A map's or a set's method, but an entry's value or a range, which
-            // THIR takes apart from its places.
+            // is lowered from its places.
             Std::Map(op)
                 if !matches!(
                     op,
@@ -5865,12 +5859,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?
             }
-            // An iterator's combinator: THIR's, of a JS iterator, lazy as Rust's;
-            // one a `&mut` lends, stepped through what can't close it.
+            // An iterator's combinator, of a JS iterator, lazy as Rust's; one a
+            // `&mut` lends, stepped through what can't close it.
             Std::IterComb(comb) => {
                 let iter_ty = arg_tys[0].peel_refs();
                 // Items with a destructor a combinator may leave undropped; not
-                // `skip_while`'s, each dropped as it's skipped, THIR's.
+                // `skip_while`'s, each dropped as it's skipped.
                 let dropping = self
                     .iterator_item(iter_ty)
                     .filter(|&item| self.drops(item) != super::drops::Drops::Nothing);
@@ -5908,7 +5902,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.iter_comb(comb, it, exprs.into_iter(), generic_args, iter_ty, true, span, out)?
             }
-            // `v.sort()`, `v.sort_by_key(key)`: in place, THIR's.
+            // `v.sort()`, `v.sort_by_key(key)`: in place.
             Std::Sort | Std::SortByKey => {
                 let items = self.value_expr(values.next().expect("the items"), span)?;
                 let key = match known {
@@ -5921,14 +5915,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let values: Vec<Value<'tcx>> = values.collect();
                 return self.mir_swap_or_replace(state, (known, def_id), values, arg_tys, span, out);
             }
-            // `v.sort_unstable_by(f)` and a selection, THIR's (ADR 0342).
+            // `v.sort_unstable_by(f)` and a selection (ADR 0342).
             Std::Slice(op @ (SliceOp::SortUnstable { with } | SliceOp::SelectNth { with })) => {
                 let values = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.unstable_sort_values(op, with, values, generic_args, span, out)?
             }
-            // The rest of a slice's own that their operands say all of, THIR's:
-            // not one giving a `&mut`, a view, nor `remainder`, which asks
-            // whether its iterator is stepped.
+            // The rest of a slice's own that their operands say all of: not one
+            // giving a `&mut`, a view, nor `remainder`, which asks whether its
+            // iterator is stepped.
             Std::Slice(op)
                 if !matches!(
                     op,
@@ -5941,9 +5935,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         | SliceOp::UninitDrop
                         | SliceOp::CopyWithin
                 ) && (known.gives_its_cell() || !output.walk().any(|arg| {
-                    // A `&mut` to items, a view of them, THIR's (ADR 0335); not
-                    // to one item, which a number's is a box of, but where the
-                    // op makes that box itself, `split_first_mut`'s.
+                    // A `&mut` to items, a view of them (ADR 0335); not to one
+                    // item, which a number's is a box of, but where the op
+                    // makes that box itself, `split_first_mut`'s.
                     arg.as_type().is_some_and(|t| {
                         matches!(t.kind(), ty::Ref(_, inner, ty::Mutability::Mut) if !inner.is_slice() && !inner.is_array())
                     })
@@ -5954,7 +5948,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A chunks' `remainder()`: from MIR, which steps a std iterator as
             // a `$iter` (`std_iterator`), its items'; of one made there, the
-            // array's, as THIR's.
+            // array's.
             Std::Slice(SliceOp::Remainder) => {
                 let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 let made = match &exprs[0].kind {
@@ -5970,7 +5964,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.slice_values(SliceOp::Remainder, exprs, stepping, generic_args, span, out)?
             }
             // `v.copy_within(a..b, at)` and `v.extract_if(range, f)`: of the
-            // range's bounds, THIR's.
+            // range's bounds.
             Std::Slice(SliceOp::CopyWithin) => {
                 let items = self.value_expr(values.next().expect("the items"), span)?;
                 let range = self.value_expr(values.next().expect("the range"), span)?;
@@ -5989,7 +5983,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.extract_if_values(items, bounds, f, generic_args.type_at(0))
             }
             // A part of a string as a `&mut str` (ADR 0334), of the cell its
-            // `&mut` is, THIR's.
+            // `&mut` is.
             Std::Text(op @ (TextOp::StrPart { .. } | TextOp::StrGetMut | TextOp::StrSplitAtMut { .. })) => {
                 let cell = self.value_expr(values.next().expect("the string"), span)?;
                 let mut given = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
@@ -6000,7 +5994,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 self.str_part_values(op, cell, given)
             }
-            // `serde_json::to_string(&v)` and `from_str(s)`, THIR's (ADR 0081).
+            // `serde_json::to_string(&v)` and `from_str(s)` (ADR 0081).
             Std::ToJson(pretty) => {
                 let value = self.value_expr(values.next().expect("the value"), span)?;
                 let ty = generic_args.types().next().expect("`to_string::<T>`");
@@ -6012,7 +6006,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.json_value(text, ty, span)?
             }
             // A slice of `MaybeUninit`s written from a slice, and each item
-            // dropped, THIR's (ADR 0332).
+            // dropped (ADR 0332).
             Std::Slice(SliceOp::UninitWrite { clone }) => {
                 let values = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.flush(state, out)?;
@@ -6026,7 +6020,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::undefined()
             }
             // `s.split_off(..n)` and the like: the slice's place given what's
-            // left, THIR's (ADR 0338).
+            // left (ADR 0338).
             Std::Slice(SliceOp::SplitOff { end, mutable }) => {
                 // Of a `&mut [T]`, which a `&mut` to isn't a cell: the
                 // variable `rest.split_off_mut(..)` borrows, not one holding a
@@ -6054,7 +6048,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 out.push(StmtKind::Assign(place, left).at(self.js_span(span)));
                 Expr::index(split, Expr::int(1))
             }
-            // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items, THIR's (ADR 0335).
+            // `&mut v[a..b]`, `get_mut(a..b)`: a view of those items (ADR 0335).
             Std::Slice(SliceOp::View { checked }) => {
                 let items = self.value_expr(values.next().expect("the items"), span)?;
                 let range = self.value_expr(values.next().expect("the range"), span)?;
@@ -6096,7 +6090,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.rc_values(op, (exprs, arg_tys), span, out)?
             }
             // A string's or a slice's method, but one of a range or a part of
-            // it, which THIR lowers from its place.
+            // it, which is lowered from its place.
             Std::Text(op)
                 if !matches!(
                     op,
@@ -6116,7 +6110,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.text_values(op, exprs, arg_tys, generic_args, span, out)?
             }
             // A `Peekable`'s or a slice's or string's iterator's own: of a `$iter`, which
-            // knows where it is (ADR 0071), as THIR's `step_call` of one.
+            // knows where it is (ADR 0071).
             Std::Step(op @ (StepOp::Peek | StepOp::NextIf | StepOp::NextIfEq | StepOp::AsSlice | StepOp::AsStr))
                 if op == StepOp::AsStr
                     || arg_tys.first().is_some_and(|t| {
@@ -6164,7 +6158,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                 }
             }
-            // `vec![item; n]`: each a clone, as THIR's of what it can't remake.
+            // `vec![item; n]`: each a clone, of what it can't remake.
             Std::FromElem => {
                 let item = self.value_expr(values.next().expect("the item"), span)?;
                 let n = self.value_expr(values.next().expect("the count"), span)?;
@@ -6174,10 +6168,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let n = self.value_expr(values.next().expect("the number"), span)?;
                 self.non_zero_new(n, arg_tys[0], span, out)?
             }
-            // `s.insert(i, c)` and the rest: `s` given its new text, as THIR's
-            // `string_edit` writes it; what it took out, its value.
+            // `s.insert(i, c)` and the rest: `s` given its new text; what it
+            // took out, its value.
             // A `Vec`'s range replaced, `splice`, or pushed again,
-            // `extend_from_within`: THIR's `range_edit`.
+            // `extend_from_within`: `range_edit`.
             Std::Text(op @ (TextOp::Splice | TextOp::ExtendFromWithin)) => {
                 let mut exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 let rest = exprs.split_off(2);
@@ -6186,7 +6180,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.range_edit(op, range, rest)
             }
             // A writer of the crate's own: what `write!` and `write_char` give
-            // its `write_str` (ADR 0166), THIR's.
+            // its `write_str` (ADR 0166).
             Std::UserWrite => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 let trait_id = tcx.trait_of_assoc(def_id).expect("`fmt::Write`'s method");
@@ -6195,13 +6189,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.trait_call(write_str, generic_args, exprs, span, out)?
                     .ok_or_else(|| self.unsupported(span, "this writer's `write_str`"))?
             }
-            // A standard stream's, `writeln!(io::stderr(), ..)`, THIR's.
+            // A standard stream's, `writeln!(io::stderr(), ..)`.
             Std::Stream(op) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.flush(state, out)?;
                 self.stream_values(op, exprs, span, out)
             }
-            // A `Wrapping`'s operator, `a * Wrapping(2)`, `w += x`, THIR's.
+            // A `Wrapping`'s operator, `a * Wrapping(2)`, `w += x`.
             Std::WrappingOp(op, assign) => {
                 let target = match (assign, values.next().expect("the `Wrapping`")) {
                     (true, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => place,
@@ -6219,13 +6213,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.flush(state, out)?;
                 self.wrapping_values(op, assign, arg_tys[0].peel_refs(), target, rhs, span, out)?
             }
-            // A `BinaryHeap`'s, and its `peek_mut()` guard's, THIR's.
+            // A `BinaryHeap`'s, and its `peek_mut()` guard's.
             Std::Heap(op) => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.heap_values(op, exprs, arg_tys[0], span)?
             }
             // A `Cow`'s `into_owned()`, its deref, and its `to_mut()` of what's
-            // its own place, THIR's.
+            // its own place.
             Std::Cow(op) => {
                 let cow = match (op, values.next().expect("the `Cow`")) {
                     (CowOp::ToMut, Value::Ref(place) | Value::Expr(place)) if fixed_place(&place) => place,
@@ -6236,7 +6230,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.cow_values(op, cow, arg_tys[0].peel_refs(), span, out)?
             }
             // `o.get_or_insert(x)` and the like: the `Option`'s place given its
-            // value where it has none, and a `&mut` to what it holds, THIR's.
+            // value where it has none, and a `&mut` to what it holds.
             Std::OptionPlace(op) => {
                 let place = match values.next().expect("the `Option`") {
                     Value::Ref(place) if fixed_place(&place) => place,
@@ -6253,9 +6247,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Std::StringEdit(edit) => {
                 let place = match values.next().expect("the string") {
                     Value::Ref(place) if fixed_place(&place) => place,
-                    // `s[a..b].make_ascii_uppercase()`: `s` given its new
-                    // text, that part changed, `s = $asciiCase(s, true, a, b)`,
-                    // THIR's (ADR 0334).
+                    // `s[a..b].make_ascii_uppercase()`: `s` given its new text,
+                    // that part changed, `s = $asciiCase(s, true, a,
+                    // b)` (ADR 0334).
                     Value::Ref(ref place)
                         if let StringEdit::AsciiCase { upper } = edit
                             && let Some((whole, mut bounds)) = str_part_of(place) =>
@@ -6322,7 +6316,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Expr::str("")
             }
             // std's `size_hint()`, of an iterator of the crate's that keeps it:
-            // `(0, None)`, as THIR's `size_hint` (ADR 0170).
+            // `(0, None)` (ADR 0170).
             Std::SizeHint(false) => {
                 let it = self.value_expr(values.next().expect("the iterator"), span)?;
                 if it.has_effects() {
@@ -6343,7 +6337,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (a, b) = (exprs.next().expect("a"), exprs.next().expect("b"));
                 Expr::bin(Op::Eq, a, b)
             }
-            // What was there, taken out, as THIR's.
+            // What was there, taken out.
             Std::DequeRemove => {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
                 self.helper(Helper::RemoveOpt, "$removeOpt", exprs)
@@ -6518,8 +6512,8 @@ fn movable(state: &State<'_, '_>, value: &Value<'_>) -> bool {
     }
 }
 
-/// Whether `std_values` lowers `known` of its arguments' values alone:
-/// not one THIR's `std_call` lowers from its places or its shape first.
+/// Whether `std_values` lowers `known` of its arguments' values alone: not one
+/// lowered from its places or its shape first.
 fn lowered_from_values(known: Std) -> bool {
     !matches!(
         known,
@@ -6637,7 +6631,7 @@ fn label(block: BasicBlock) -> String {
 /// Whether `block` does nothing but say it's never reached.
 /// Of a bounds check `msg`, the index whose element `target` reads or
 /// writes first, and whether it writes it: there, `$index(xs, i)` or
-/// `xs[$at(xs, i)]`, the check, as THIR makes it.
+/// `xs[$at(xs, i)]`, the check.
 fn deferred_check<'tcx>(
     body: &mir::Body<'tcx>,
     msg: &mir::AssertMessage<'tcx>,
@@ -6678,12 +6672,11 @@ fn deferred_check<'tcx>(
     }
 }
 
-/// A module's own `const X = { value: init }`, a thread-local's cell MIR
-/// reads by its `value`, that its module reads and sets only so, by name,
-/// and doesn't export: `let X = init`, `X` where it's read, `const` where
-/// nothing sets it, as THIR keeps such a thread-local (ADR 0270). One
-/// `quiet`, whose borrows ask nothing of borrows, gives the closure of
-/// each what it holds, an object's, which it shares (ADR 0328).
+/// A module's own `const X = { value: init }`, a thread-local's cell MIR reads
+/// by its `value`, that its module reads and sets only so, by name, and doesn't
+/// export: `let X = init`, `X` where it's read, `const` where nothing sets it
+/// (ADR 0270). One `quiet`, whose borrows ask nothing of borrows, gives the
+/// closure of each what it holds, an object's, which it shares (ADR 0328).
 pub(super) fn plain_statics(items: &mut [js::Item], quiet: &std::collections::HashSet<&str>) {
     js::each_item_expr_mut(items, &mut |e| {
         if let js::ExprKind::Call(callee, args) = &mut e.kind
@@ -6923,7 +6916,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// What's refused of a writer (ADR 0054), and where: a use of its
     /// `Formatter`, `param`, that isn't a write to it, `write!`, `{}` of a
     /// value, another writer given it, a question of it, a `Debug` builder's
-    /// chain, or the crate's generic `fmt::Write` code given it, as THIR's.
+    /// chain, or the crate's generic `fmt::Write` code given it.
     fn writer_refusal(&self, body: &mir::Body<'tcx>, param: usize) -> Option<(Span, String)> {
         let this = || "this `Formatter`".to_string();
         let aliases = formatter_aliases(body, Local::from_usize(param + 1));
@@ -7131,9 +7124,8 @@ fn expr_bytes(e: &Expr) -> Option<Vec<u8>> {
     }
 }
 
-/// A check of a `%` or `/`, which the division makes itself where it can
-/// fail, `$rem(a, b, min)`, and can't where it's inline, `i % 2`: none, as
-/// THIR writes none.
+/// A check of a `%` or `/`, which the division makes itself where it can fail,
+/// `$rem(a, b, min)`, and can't where it's inline, `i % 2`: none.
 fn checked_by_division(msg: &mir::AssertMessage<'_>) -> bool {
     matches!(
         msg,

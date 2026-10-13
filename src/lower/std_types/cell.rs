@@ -125,7 +125,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // check can't fail (ADR 0362).
             Std::Borrow { lock: false, .. } if args.first().is_some_and(|&a| self.plain_ref_cell_field(a)) => arg(),
             Std::Borrow { mutable, lock } => {
-                // Of a call from MIR, held: what's momentary is THIR's to say.
+                // Held: THIR's facts say what's momentary by the call's
+                // expression, which a call lowered from MIR doesn't have.
                 let hold = match fun {
                     Some(fun) => !self.drop_facts()?.momentary.contains(&fun),
                     None => true,

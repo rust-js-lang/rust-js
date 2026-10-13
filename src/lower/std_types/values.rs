@@ -1,5 +1,5 @@
-//! A std function's call, of its arguments' values: what THIR's lowering
-//! and MIR's share (ADR 0364), each handed to its type's module.
+//! A std function's call, of its arguments' values (ADR 0364), each
+//! handed to its type's module.
 
 use crate::js::{Expr, Stmt};
 use crate::lower::calls::Call;
@@ -178,9 +178,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             )
     }
 
-    /// A std function rust-js knows, of its arguments' values: what THIR
-    /// and MIR both lower its call to (ADR 0364). `boxed`: whether the
-    /// `Option` it gives boxes its `Some` (ADR 0051); `output`, what it gives.
+    /// The call of a std function rust-js knows, of its arguments' values
+    /// (ADR 0364). `boxed`: whether the `Option` it gives boxes its `Some`
+    /// (ADR 0051); `output`, what it gives.
     pub(in crate::lower) fn std_values(
         &mut self,
         known: Std,

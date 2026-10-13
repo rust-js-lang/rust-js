@@ -758,8 +758,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An element's attribute, `name`, given: the element made, its value,
-    /// what that needs done first, and whether it's simple, THIR's
-    /// `is_simple`.
+    /// what that needs done first, and whether it's simple.
     pub(super) fn jsx_prop_values(
         &mut self,
         name: String,

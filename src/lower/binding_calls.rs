@@ -1,6 +1,5 @@
-//! A call of a binding, of its arguments' values: JS's function, method,
-//! property or operator it names (ADRs 0019, 0020), what THIR's lowering
-//! and MIR's share (ADR 0364).
+//! A call of a binding, of its arguments' values (ADR 0364): JS's
+//! function, method, property or operator it names (ADRs 0019, 0020).
 
 use super::bindings::{JsForm, is_binding, is_method, is_variadic, js_form};
 use super::calls::given_to_js;

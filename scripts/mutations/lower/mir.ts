@@ -108,7 +108,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-map-call-refused",
-    breaks: "a map's method from MIR is refused, as if THIR alone lowered it",
+    breaks: "a map's method from MIR is refused",
     file: "src/lower/mir.rs",
     find: "                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?\n",
     replace: "                return Err(self.unsupported(span, \"a map's method\"));\n",
@@ -1526,14 +1526,14 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-temporaries-unnamed",
-    "breaks": "a temporary MIR holds is named `_4`, not `value` as THIR names it",
+    "breaks": "a temporary MIR holds is named `_4`, not `value`",
     "file": "src/lower/mir.rs",
     "find": "        tidy::readable_temporaries(&params, &mut out);\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
       "-t",
-      "held temporary is named as THIR"
+      "held temporary is named"
     ]
   },
   {
@@ -1594,7 +1594,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-async-closure-wild-param-kept",
-    "breaks": "an `async` closure's `|_|` from MIR is `async (_) => ..`, not `async () => ..` as THIR's",
+    "breaks": "an `async` closure's `|_|` from MIR is `async (_) => ..`, not `async () => ..`",
     "file": "src/lower/mir.rs",
     "find": "            && (name == \"_\" || name.starts_with(\"_$\"))\n",
     "replace": "            && name == \"never\"\n",
@@ -1676,7 +1676,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "mir-props-default-taken-whole",
-    "breaks": "a component's props with a default taken whole from MIR are read without it, `props.target` undefined, not refused as THIR refuses",
+    "breaks": "a component's props with a default taken whole from MIR are read without it, `props.target` undefined, not refused",
     "file": "src/lower/mir.rs",
     "find": "            self.check_props_taken_apart(param.ty, param.pat.as_deref(), param.ty_span.unwrap_or(span))?;\n",
     "replace": "",
@@ -2810,7 +2810,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                        span: self.js_span(arm.unwrap_or_else(|| self.if_span(span))),\n",
     replace: "                        span: self.js_span(arm.unwrap_or(span)),\n",
-    tests: ["test/emission.test.ts","-t","fib-mir"],
+    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
   },
   {
     name: "mir-match-test-span-of-match",
@@ -2818,7 +2818,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    let arm = written_at(state.body, target).and_then(|at| self.arm_span(span, at));\n",
     replace: "                    let arm: Option<Span> = None;\n",
-    tests: ["test/emission.test.ts","-t","fib-mir"],
+    tests: ["test/emission.test.ts","-t","source map points from fib.js"],
   },
   {
     name: "mir-array-constant-index-checked",
@@ -2886,7 +2886,7 @@ export const mutations: Mutation[] = [
   },
   {
     name: "mir-ptr-eq-value-unchecked",
-    breaks: "MIR's `ptr::eq` of a Rust value isn't refused as THIR refuses it",
+    breaks: "MIR's `ptr::eq` of a Rust value isn't refused",
     file: "src/lower/mir.rs",
     find: "                && self.recognition().classify(id, args) == Some(Std::PtrEq)\n",
     replace: "                && false\n",
@@ -2904,8 +2904,8 @@ export const mutations: Mutation[] = [
     name: "mir-ptr-eq-refused",
     breaks: "MIR's `ptr::eq` of JS objects is refused",
     file: "src/lower/mir.rs",
-    find: "                Expr::bin(Op::Eq, a, b)\n            }\n            // What was there, taken out, as THIR's.\n",
-    replace: "                return Err(self.unsupported(span, if a.reads_same() && b.reads_same() { \"ptr::eq\" } else { \"ptr::eq of these\" }));\n            }\n            // What was there, taken out, as THIR's.\n",
+    find: "                Expr::bin(Op::Eq, a, b)\n            }\n            // What was there, taken out.\n",
+    replace: "                return Err(self.unsupported(span, if a.reads_same() && b.reads_same() { \"ptr::eq\" } else { \"ptr::eq of these\" }));\n            }\n            // What was there, taken out.\n",
     tests: ["test/lowering.test.ts","-t","ptr::eq of JS objects"],
   },
   {
@@ -3013,8 +3013,8 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","fmt_error"],
   },
   {
-    name: "mir-writer-questions-thir",
-    breaks: "MIR leaves a writer asking its `Formatter` to THIR",
+    name: "mir-writer-questions-refused",
+    breaks: "a writer that asks its `Formatter`, as `f.alternate()` does, is refused",
     file: "src/lower/mir.rs",
     find: "                    if whole && at == 0 && super::recognition::formatter_query(self.tcx, def_id).is_some() {\n",
     replace: "                    if false {\n",

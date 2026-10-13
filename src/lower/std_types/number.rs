@@ -235,9 +235,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }))
     }
 
-    /// `wrapping_op`'s, of its `Wrapping`'s type, its value, or its place
-    /// where it's assigned, `assign`, read the same each time, and the
-    /// operand: THIR's and MIR's.
+    /// A `Wrapping`'s operator, of its type, its value, or its place where
+    /// it's assigned, `assign`, read the same each time, and the operand.
     #[allow(clippy::too_many_arguments)]
     pub(in crate::lower) fn wrapping_values(
         &mut self,

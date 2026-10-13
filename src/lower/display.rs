@@ -161,8 +161,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// A method of a `fmt::Result`, `result`, in a crate where one may be
     /// an `Err` (ADR 0187): of what `$fmtTry` caught, or a variable it's in,
-    /// tested against `undefined`; another's, its constant answer. THIR's
-    /// and MIR's.
+    /// tested against `undefined`; another's, its constant answer.
     pub(in crate::lower) fn fmt_result_values(
         &mut self,
         answer: FmtResultAnswer,

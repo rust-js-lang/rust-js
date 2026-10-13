@@ -373,8 +373,7 @@ impl<'a, 'tcx> DropQuery<'a, 'tcx> {
             ty::Adt(..) if self.recognition.is_guard(ty) => Drops::Runs,
             // An iterator that owns an array's items, `vec::IntoIter`: what it
             // hasn't given yet, each dropped in order, as a loop that leaves
-            // early drops them (ADR 0098). From MIR, which drops it as a
-            // value; THIR takes a chain's apart itself.
+            // early drops them (ADR 0098). MIR drops it as one value.
             ty::Adt(_, args)
                 if self.recognition.array_source(ty) == Some(true) || self.recognition.owns_one_item(ty) =>
             {

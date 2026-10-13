@@ -32,8 +32,8 @@ pub(in crate::lower) enum HeapOp {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// `heap_call`'s, of its arguments' values, the heap's type `heap_ty`
-    /// as it's given: THIR's and MIR's.
+    /// A `BinaryHeap`'s method, of its arguments' values, the heap's type
+    /// `heap_ty` as it's given.
     pub(in crate::lower) fn heap_values(
         &mut self,
         op: HeapOp,

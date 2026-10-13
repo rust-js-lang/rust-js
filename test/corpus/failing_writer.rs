@@ -1,4 +1,5 @@
-// What THIR refuses, MIR lowers as Rust runs it (ADR 0364).
+// A `fmt::Write` of the crate's that fails: its `write_str`, and `write!`
+// to it, give its `Err` where it fails and `Ok` where it doesn't.
 use std::fmt::{self, Write};
 pub struct Full(pub usize);
 impl Write for Full { fn write_str(&mut self, s: &str) -> fmt::Result { if s.len() > self.0 { return Err(fmt::Error); } self.0 -= s.len(); Ok(()) } }

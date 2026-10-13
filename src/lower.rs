@@ -1,22 +1,19 @@
-//! Lowering: rustc's THIR  ──►  our JS AST.
+//! Lowering: rustc's MIR  ──►  our JS AST.
 //!
-//! The one idea to hold on to: Rust is *expression*-oriented (`if`, `match`,
-//! `loop` and blocks all produce values), while JS separates statements from
-//! expressions. So every THIR expression is lowered in one of two modes:
-//!
-//! - `expr()` wants a JS *expression*. Simple things (`a + f(b)`, `c ? x : y`)
-//!   map directly; anything else is computed into a temporary first.
-//! - `stmt()` emits JS *statements* and hands the value to a `Dest`ination:
-//!   `return` it, assign it to a variable, or throw it away.
+//! Each body is lowered from its MIR (`mir`, ADR 0364): what runs, in the
+//! order it runs, made structured JS. Its THIR, copied before borrowck
+//! steals it, is read beside it for shape and facts: names, spans, JSX,
+//! iterator chains, drops (`body_queries`, `drops`).
 //!
 //! Semantics follow Rust with `overflow-checks = off` (the release profile):
 //! integer arithmetic wraps. Division by zero and `MIN / -1` still panic,
 //! because Rust panics on those in every profile.
 //!
-//! This module owns dispatch, destinations and evaluation sequencing. `bodies`
-//! owns function/nested-body lifecycle, `patterns` bindings and matches, `loops`
-//! iteration, `places` reads and prepared writes, and `numbers` arithmetic.
-//! `body_queries` has no emission context; its cached facts belong to `Body`.
+//! This module owns the state lowering shares: `Body`, `FnCx` and its
+//! `Locals`, and nested bodies. `bodies` owns function/nested-body
+//! lifecycle, `patterns` destructuring, and `places` reads and checked
+//! indexes. `body_queries` has no emission context; its cached facts belong
+//! to `Body`.
 
 use std::cell::{Cell, RefCell};
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -87,7 +84,8 @@ use body_queries::strip;
 
 type R<T> = Result<T, ErrorGuaranteed>;
 
-/// A function's THIR, copied out of rustc before borrowck steals it.
+/// A function's THIR, copied out of rustc before borrowck steals it: read
+/// for the shape and facts its MIR is lowered with.
 pub struct Body<'tcx> {
     def_id: LocalDefId,
     thir: Thir<'tcx>,
@@ -183,7 +181,7 @@ struct Locals {
     /// Of a body lowered from its MIR (ADR 0364): the names of its locals
     /// that read the same wherever they're read, assigned once and never
     /// borrowed, and of those of plain Rust data, whose fields don't change
-    /// either: what THIR's variables say (`reads_alike`, `plain_value`).
+    /// either, which `reads_alike` and `plain_value` ask of.
     /// And of the others' arrays, their items, `...items`.
     alike: HashSet<String>,
     plain: HashSet<String>,

@@ -1014,9 +1014,9 @@ pub mod other {
   }
 });
 
-// ADR 0364: what MIR makes of a branch reads as THIR writes it: `a && b`,
-// `a || b`, `matches!`'s `n === "x"`, `c ? a : b` of two values, and no
-// check of a constant divisor.
+// ADR 0364: what MIR makes of a branch reads as a person writes it:
+// `a && b`, `a || b`, `matches!`'s `n === "x"`, `c ? a : b` of two values,
+// and no check of a constant divisor.
 test("branches from MIR read as a person writes them", async () => {
   const dir = fixture("mir-branches");
   writeFileSync(join(dir, "lib.rs"), `pub fn both(a: u32, b: u32) -> bool {
@@ -1059,15 +1059,15 @@ pub fn guard(a: u32, s: &str) -> bool {
     expect(js).toContain('n < 0 ? "-" : "+"');
     expect(js).not.toContain("2 === 0");
     expect(js).toContain('  if (home || index) {\n    toc = false;\n  } else if (section === "blog") {\n');
-    // A branch of `false`, `&&`: as MIR has it, tighter than THIR's `if`.
+    // A branch of `false`, `&&`: as MIR has it, tighter than an `if`.
     if (out === "mir.js") expect(js).toContain('return a > 1 && s === "x";');
     const lib = await import(join(dir, out));
     expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
   }
 });
 
-// A `for` loop from MIR (ADR 0364) is the `for…of` or counted `for` THIR
-// writes, not the `while (true)` stepping an iterator MIR has.
+// A `for` loop from MIR (ADR 0364) is the `for…of` or counted `for` a
+// person writes, not the `while (true)` stepping an iterator MIR has.
 test("loops from MIR read as a person writes them", async () => {
   const dir = fixture("mir-loops");
   writeFileSync(join(dir, "lib.rs"), `pub fn counted(items: &[u32]) -> u32 {
@@ -1128,8 +1128,8 @@ pub fn stops(items: &[u32]) -> u32 {
 });
 
 // A pattern's bindings from MIR (ADR 0364), each a part read on its own
-// line, are the destructuring THIR writes: of a value made for them, or of a
-// variable.
+// line, are destructured, as a person writes them: of a value made for
+// them, or of a variable.
 test("a pattern's bindings from MIR are destructured", async () => {
   const dir = fixture("mir-destructured");
   writeFileSync(join(dir, "lib.rs"), `pub struct P { pub a: u32, pub b: u32 }
@@ -1178,9 +1178,9 @@ pub fn label(q: &Q) -> String {
 });
 
 // A temporary MIR (ADR 0364) makes of a variable nothing changes, or of a
-// constant, is what it holds where it's read, as THIR writes it: of
-// `assert_eq!`'s pair, each value compared. Its check, a branch that
-// panics, comes first, as a person writes it.
+// constant, is what it holds where it's read: of `assert_eq!`'s pair, each
+// value compared. Its check, a branch that panics, comes first, as a person
+// writes it.
 test("a temporary from MIR of what reads the same anywhere is what it holds", async () => {
   const dir = fixture("mir-aliases");
   writeFileSync(join(dir, "lib.rs"), `use std::any::type_name;
@@ -1213,7 +1213,7 @@ pub fn small(n: u32) -> u32 {
 });
 
 // An iterator chain of an array MIR (ADR 0364) makes as Rust runs it, item
-// by item, is THIR's array methods (ADR 0055) where the order its closures
+// by item, is the array's methods (ADR 0055) where the order its closures
 // run in can't be told apart, a closure's pattern taken apart where it's
 // given; where two of them do something, it stays a JS iterator's.
 test("iterator chains from MIR are array methods where order can't be told", async () => {
@@ -1254,7 +1254,7 @@ pub fn mid(v: &[u32]) -> Vec<u32> {
 pub fn up(c: char) -> String {
     c.to_uppercase().collect()
 }
-// A function given as a value, its parameter named by its type, as THIR's.
+// A function given as a value, its parameter named by its type.
 pub fn lens(groups: &[Vec<u32>]) -> Vec<usize> {
     groups.iter().map(Vec::len).collect()
 }
@@ -1372,11 +1372,11 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   }
 });
 
-// `if let`s chained with `&&`, and loops, from MIR (ADR 0364), as THIR
-// writes them: one condition's tests one `&&`, a variant's binding the
-// place it reads where that reads the same, a tuple's parts in place, a
-// loop's labeled block its `continue`; and `if`s the program nests, nested.
-test("if-let chains and loops from MIR read as THIR's", async () => {
+// `if let`s chained with `&&`, and loops, from MIR (ADR 0364), as written:
+// one condition's tests one `&&`, a variant's binding the place it reads
+// where that reads the same, a tuple's parts in place, a loop's labeled
+// block its `continue`; and `if`s the program nests, nested.
+test("if-let chains and loops from MIR read as written", async () => {
   const dir = fixture("mir-let-chains");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
 pub struct Route { pub title: Option<String>, pub path: Option<String>, pub routes: Option<Vec<Route>> }
@@ -1554,9 +1554,9 @@ pub fn chained(nodes: &[Node]) -> u32 {
 });
 
 // What a loop's recovery (ADR 0364) no longer shows: an iterator stepped by
-// hand, a std one THIR's lowering makes an array of and a generic one given
-// an array, each a JS iterator; a \`None\` of a \`Duration\` tested \`== null\`,
-// as \`ZERO\` is falsy; and a \`const\` another takes is that one, from MIR.
+// hand, a std one and a generic one given an array, each a JS iterator; a
+// \`None\` of a \`Duration\` tested \`== null\`, as \`ZERO\` is falsy; and a
+// \`const\` another takes is that one, from MIR.
 test("iterators stepped by hand, a Duration's None and a const another takes", async () => {
   const dir = fixture("mir-by-hand");
   writeFileSync(join(dir, "lib.rs"), `use std::time::Duration;
@@ -1665,10 +1665,10 @@ export function one(n, v) {
   }
 });
 
-// A string's parts from MIR (ADR 0364) are THIR's array: its adapters,
-// \`take\` and \`rev\` an array's; a guard returns first, the smaller branch;
-// an element THIR knows is there is read unchecked, in a closure too.
-test("a string's parts from MIR are an array, as THIR's are", async () => {
+// A string's parts from MIR (ADR 0364) are an array: its adapters, \`take\`
+// and \`rev\` an array's; a guard returns first, the smaller branch; an
+// element THIR's facts know is there is read unchecked, in a closure too.
+test("a string's parts from MIR are an array", async () => {
   const dir = fixture("mir-split");
   writeFileSync(join(dir, "lib.rs"), `pub fn groups(group: &str) -> Vec<&str> {
     group.split(',').map(|g| g.trim()).filter(|g| !g.is_empty()).collect()
@@ -1722,8 +1722,8 @@ pub fn pick(c: bool, n: u32) -> u32 {
 });
 
 // ADR 0212: a props field's default, \`#[rust_js::default]\`, is where JS
-// takes the props apart, \`{ class_name: className = "language-js" }\`, from
-// MIR (ADR 0364) as from THIR: a field left out reads its default.
+// takes the props apart, \`{ class_name: className = "language-js" }\`: a
+// field left out reads its default.
 test("a props field's default is read where the props are taken apart", async () => {
   const dir = fixture("mir-prop-defaults");
   writeFileSync(join(dir, "lib.rs"), `pub struct CodeProps<'a> {
@@ -1786,8 +1786,8 @@ pub fn first_over(items: &[u32], k: u32, out: &mut Vec<u32>) {
 });
 
 // A \`let … else\` from MIR (ADR 0364), its tests each leaving to one panic,
-// is a guard, \`if (a || b) { throw … }\`, then the rest, as THIR writes it;
-// what it binds keeps its name; \`nth(n)\` of a string's parts is \`[n]\`.
+// is a guard, \`if (a || b) { throw … }\`, then the rest; what it binds
+// keeps its name; \`nth(n)\` of a string's parts is \`[n]\`.
 test("a let-else from MIR is a guard, then the rest", async () => {
   const dir = fixture("mir-let-else");
   writeFileSync(join(dir, "lib.rs"), `pub struct Title {
@@ -1895,10 +1895,9 @@ pub fn decorate(lines: &[D], inline: &[D]) -> u32 {
   }
 });
 
-// From MIR (ADR 0364), as THIR writes them: a \`return\` the program wrote
-// first, as written; a range's loop over an array's indices, whose length
-// it only reads, a counted \`for\`; its index, checked by THIR's facts, read
-// unchecked.
+// From MIR (ADR 0364): a \`return\` the program wrote first, as written; a
+// range's loop over an array's indices, whose length it only reads, a
+// counted \`for\`; its index, checked by THIR's facts, read unchecked.
 test("early returns and index loops from MIR read as written", async () => {
   const dir = fixture("mir-early-returns");
   writeFileSync(join(dir, "lib.rs"), `pub fn get_type(message: &str) -> &'static str {
@@ -1930,8 +1929,8 @@ pub fn joined(args: &[String], mut formatted: String) -> String {
 });
 
 // ADR 0250: a struct update of a base nothing changes is that base spread,
-// `{ ...attrs, title }`, from MIR as from THIR (ADR 0364): what the base
-// doesn't hold stays out, where a field read of it each would be there.
+// `{ ...attrs, title }`: what the base doesn't hold stays out, where a
+// field read of it each would be there.
 test("a struct update of a base nothing changes is the base spread", async () => {
   const dir = fixture("struct-update-spread");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
@@ -1960,8 +1959,8 @@ pub fn reread<'a>(link: &Link<'a>, title: &'a str) -> Attrs<'a> {
   }
 });
 
-// ADR 0308: a function written in a body is declared there, from MIR as
-// from THIR (ADR 0364), where what uses it reads it.
+// ADR 0308: a function written in a body is declared there, where what
+// uses it reads it.
 test("a function written in a body is declared in it", async () => {
   const dir = fixture("local-functions");
   writeFileSync(join(dir, "lib.rs"), `pub fn doubled(n: u32) -> u32 {
@@ -1986,7 +1985,7 @@ test("a function written in a body is declared in it", async () => {
 });
 
 // ADR 0204: a struct with flattened fields made outside JSX is one object of
-// their fields, `{ ...template, ...files }`, from MIR as from THIR (ADR 0364).
+// their fields, `{ ...template, ...files }`.
 test("a struct of flattened fields made outside JSX is one object", async () => {
   const dir = fixture("flattened-made");
   writeFileSync(join(dir, "lib.rs"), `pub struct Inner {
@@ -2010,7 +2009,7 @@ pub fn made<'a>(template: &'a Inner, files: &'a js::Unknown) -> Files<'a> {
 });
 
 // ADR 0364: `for` over what `Object.keys` gives, a `Vec`, steps through
-// its array, from MIR as from THIR: `Object.keys(o)` is no JS iterator.
+// its array: `Object.keys(o)` is no JS iterator.
 test("a for over Object.keys steps through its array", async () => {
   const dir = fixture("object-keys-loop");
   writeFileSync(join(dir, "lib.rs"), `pub fn listed(o: &js::Unknown) -> u32 {
@@ -5303,8 +5302,8 @@ pub fn og() -> OpenGraph<'static> {
 });
 
 // A parameter of a \`&mut\` to a \`&mut [i32]\`, whose place JS can't share,
-// is refused from MIR as from THIR: given a copy, \`*s = other\` would
-// leave the caller's \`rest\` as it was.
+// is refused: given a copy, \`*s = other\` would leave the caller's \`rest\`
+// as it was.
 test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
   const dir = fixture("mut-slice-ref-param");
   writeFileSync(join(dir, "lib.rs"), `pub fn reset<'a>(s: &mut &'a mut [i32], other: &'a mut [i32]) {
@@ -5322,8 +5321,8 @@ test("a parameter of a `&mut` to a slice reference is refused from MIR", () => {
 });
 
 // A variable of a type JS can't hold, a struct of a \`&mut\` to a \`&mut [i32]\`,
-// is refused from MIR as THIR refuses its binding: \`*h.s = &mut ys\` would
-// change a copy, leaving \`rest\` on \`xs\`.
+// is refused: \`*h.s = &mut ys\` would change a copy, leaving \`rest\` on
+// \`xs\`.
 test("a variable of a type JS can't hold is refused from MIR", () => {
   const dir = fixture("mut-slice-ref-held");
   writeFileSync(join(dir, "lib.rs"), `struct Holder<'a, 'b> {
@@ -5398,8 +5397,8 @@ pub fn run() {
   }
 });
 
-// What THIR refuses because JS can't do it soundly, MIR refuses too: each
-// compiled to output that ran unlike Rust, found running them both.
+// What JS can't do soundly is refused: each compiled to output that ran
+// unlike Rust, found running them both.
 for (const [name, source, message] of [
   ["a destructor given where a generic fold takes none", "pub struct Counter(pub u32);\nimpl Iterator for Counter { type Item = u32; fn next(&mut self) -> Option<u32> { if self.0 < 3 { self.0 += 1; Some(self.0) } else { None } } }\nimpl Drop for Counter { fn drop(&mut self) {} }\nfn total<I: Iterator<Item = u32>>(items: I) -> u32 { items.fold(0, |a, b| a + b) }\npub fn f() -> u32 { total(Counter(0)) }", "giving `total`'s `I` a type with a destructor, where it takes none"],
   ["a map's key looked up through the crate's Borrow", "use std::borrow::Borrow;\n#[derive(PartialEq, Eq, Hash)]\npub struct Name(pub String);\nimpl Borrow<str> for Name { fn borrow(&self) -> &str { &self.0 } }\npub fn f(m: &std::collections::HashMap<Name, i32>) -> Option<&i32> { m.get(\"a\") }", "as what its own `Borrow` gives"],
@@ -5410,7 +5409,7 @@ for (const [name, source, message] of [
   ["a Fn closure holding a destructor given away", "pub struct R; impl Drop for R { fn drop(&mut self) {} } fn g<F: FnOnce()>(f: F) { f() } pub fn f() { let r = R; let c = move || { let _r = &r; }; c(); g(c); }", "given away without being called once"],
   ["{:#?} of a kept &dyn Debug", "pub fn f(x: &[u8]) -> String { let d: &dyn std::fmt::Debug = &x; format!(\"{:#?}\", d) }", "`{:#?}` of a `&dyn Debug` made elsewhere"],
 ] as [string, string, string][]) {
-  test(`MIR refuses ${name}, as THIR does`, () => {
+  test(`MIR refuses ${name}`, () => {
     const dir = fixture("mir-refused");
     writeFileSync(join(dir, "lib.rs"), source);
     const failed = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], {
@@ -5463,7 +5462,7 @@ test("MIR's next_back of a map runs its closure once", async () => {
 });
 
 // `s[a..b].make_ascii_uppercase()` gives `s` its text with that part
-// changed (ADR 0334), from MIR as from THIR, not a handle on a part.
+// changed (ADR 0334), not a handle on a part.
 test("a string's part changed in place gives the string its text", async () => {
   const dir = fixture("str-part-case");
   writeFileSync(join(dir, "lib.rs"), `pub fn shout(mut name: String) -> String {
@@ -5486,7 +5485,7 @@ test("a string's part changed in place gives the string its text", async () => {
 
 // A loop over an iterator of the crate's own that holds a value with a
 // destructor drops, from MIR, as Rust does: each item, then the iterator
-// where the loop ends or breaks. THIR refuses it.
+// where the loop ends or breaks.
 test("MIR's loop over an iterator holding a value with a destructor drops as Rust does", async () => {
   const dir = fixture("iterator-holding-drop");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::RefCell;
@@ -5539,7 +5538,7 @@ pub fn run() -> Vec<String> {
 });
 
 // `fold` given a function of the crate's is `reduce` given it as it is,
-// which takes no more than it's given (ADR 0279), as THIR's.
+// which takes no more than it's given (ADR 0279).
 test("a fold given a function of the crate's gives it as it is", async () => {
   const dir = fixture("fold-crate-fn");
   writeFileSync(join(dir, "lib.rs"), `fn add(total: i32, x: &i32) -> i32 {
@@ -5558,8 +5557,8 @@ pub fn sum(v: Vec<i32>) -> i32 {
   }
 });
 
-// A function's `if` of an `||` as its value: each branch returned, as THIR
-// writes it; an `&&` written as the value, one value returned.
+// A function's `if` of an `||` as its value: each branch returned; an `&&`
+// written as the value, one value returned.
 test("an if of a logical returns each branch", async () => {
   const dir = fixture("if-logical-returns");
   writeFileSync(join(dir, "lib.rs"), `pub fn prec(op: char) -> u8 {
@@ -5850,8 +5849,8 @@ pub fn twice(p: &mut P) -> P {
   expect([lib.moved(1, 2), d.x, e.x]).toEqual([{ x: 3 }, 111, 10]);
 });
 
-// A function's tail `if` of a call's test: each branch returned, as THIR
-// writes it (rust-js's form, accepted of react.dev), not one conditional.
+// A function's tail `if` of a call's test: each branch returned (rust-js's
+// form, accepted of react.dev), not one conditional.
 test("a tail if returns each branch", async () => {
   const dir = fixture("tail-if-returns");
   writeFileSync(join(dir, "lib.rs"), `pub struct Email(pub String);
@@ -5869,7 +5868,7 @@ pub fn email(s: String) -> Result<Email, String> {
 });
 
 // Each branch adding to a variable, `out += a`: the branches, as written,
-// from MIR as from THIR, not `out = c ? out + a : out + b`.
+// not `out = c ? out + a : out + b`.
 test("branches that each add to a variable stay branches", async () => {
   const dir = fixture("branch-updates");
   writeFileSync(join(dir, "lib.rs"), `pub fn report(results: Vec<Result<u32, String>>) -> String {
@@ -5894,8 +5893,8 @@ test("branches that each add to a variable stay branches", async () => {
 });
 
 // A `?` and a `return` in a loop, and a `while` in it: each `return` where
-// it's written, and the `while` tested at its head, as THIR writes them,
-// not MIR's one exit, a labeled block, nor a `while (true)`.
+// it's written, and the `while` tested at its head, not MIR's one exit, a
+// labeled block, nor a `while (true)`.
 test("returns in a loop are where they're written", async () => {
   const dir = fixture("loop-returns");
   writeFileSync(join(dir, "lib.rs"), `pub fn numbers(src: &str) -> Result<Vec<f64>, String> {
@@ -5992,7 +5991,7 @@ pub fn scan(v: &[u32]) -> u32 {
 });
 
 // `into()` an untagged enum, whose `from` is the variant of its argument,
-// is the value (ADR 0214), from MIR as from THIR.
+// is the value (ADR 0214).
 test("into an untagged enum is the value", async () => {
   const dir = fixture("into-untagged");
   writeFileSync(join(dir, "lib.rs"), `#[rust_js::untagged]
@@ -6023,8 +6022,7 @@ pub fn from(s: &str) -> Src<'_> {
   }
 });
 
-// A range's count the body doesn't read, `for _ in 0..n`: `i`, as THIR
-// names it.
+// A range's count the body doesn't read, `for _ in 0..n`: `i`.
 test("an unread count of a range is i", async () => {
   const dir = fixture("unread-count");
   writeFileSync(join(dir, "lib.rs"), `pub fn repeat(s: &str, times: u32) -> String {
@@ -6044,7 +6042,7 @@ test("an unread count of a range is i", async () => {
 });
 
 // A shared cell, `Rc<Cell<bool>>`, cloned in a closure that sets it: its
-// function's `let`, which the closures share, as THIR keeps it (ADR 0287).
+// function's `let`, which the closures share (ADR 0287).
 test("a cell cloned in a closure is its function's let", async () => {
   const dir = fixture("cell-cloned-in-closure");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -6079,7 +6077,7 @@ pub fn toggles() -> (bool, bool) {
 });
 
 // A function's tail `loop` that `break a` gives its value: `return a` where
-// it breaks, from MIR as from THIR.
+// it breaks.
 test("a tail loop's break with a value returns it", async () => {
   const dir = fixture("loop-break-value");
   writeFileSync(join(dir, "lib.rs"), `pub fn fib_loop(n: u32) -> u32 {
@@ -6106,7 +6104,7 @@ test("a tail loop's break with a value returns it", async () => {
 });
 
 // A division by a named constant that isn't zero, nor a signed -1, can't
-// panic: JS's `/`, from MIR as from THIR.
+// panic: JS's `/`.
 test("a division by a named constant is JS's", async () => {
   const dir = fixture("named-divisor");
   writeFileSync(join(dir, "lib.rs"), `const HALVES: u32 = 2;
@@ -6133,7 +6131,7 @@ pub fn negated(x: i32) -> i32 {
 
 // A generic iterator is stepped as JS's, `Iterator.from(items)`, as an
 // array may be given (ADR 0061); the crate's own given from behind an
-// `impl Iterator` is a JS iterator of it, from MIR as from THIR.
+// `impl Iterator` is a JS iterator of it.
 test("a generic iterator takes the crate's own from behind impl Iterator", async () => {
   const dir = fixture("generic-iterator-opaque");
   writeFileSync(join(dir, "lib.rs"), `pub struct Countdown {
@@ -6176,7 +6174,7 @@ pub fn mapped(n: u32) -> u32 {
 });
 
 // `rev()` of an array's items skipped and taken from, which no closure
-// runs over: the array sliced, reversed, from MIR as from THIR.
+// runs over: the array sliced, reversed.
 test("rev of skipped and taken items is the slice reversed", async () => {
   const dir = fixture("rev-counted");
   writeFileSync(join(dir, "lib.rs"), `pub fn middle(v: &[i32]) -> Vec<i32> {
@@ -6193,7 +6191,7 @@ test("rev of skipped and taken items is the slice reversed", async () => {
 
 // A long function, each call a block of its MIR: lowered block by block,
 // as deep as it's long, on a stack grown as rustc grows its own.
-test("a long function is lowered from MIR as from THIR", async () => {
+test("a long function is lowered block by block", async () => {
   const dir = fixture("long-function");
   const pushes = Array.from({ length: 3000 }, (_, i) => `    v.push(n + ${i});`).join("\n");
   writeFileSync(join(dir, "lib.rs"), `pub fn long(n: u32) -> Vec<u32> {\n    let mut v = Vec::new();\n${pushes}\n    v\n}\n`);
@@ -6205,8 +6203,8 @@ test("a long function is lowered from MIR as from THIR", async () => {
   }
 });
 
-// `VecDeque::remove` is `$removeOpt`, from MIR as from THIR; of items that
-// may look like `None`, refused, as its `Some` isn't boxed.
+// `VecDeque::remove` is `$removeOpt`; of items that may look like `None`,
+// refused, as its `Some` isn't boxed.
 test("a deque's remove gives what was there", async () => {
   const dir = fixture("deque-remove");
   writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
@@ -6578,7 +6576,7 @@ pub fn auto(m: Mode) -> bool {
   expect([failed.exitCode === 0, failed.stderr.toString()]).toEqual([false, expect.stringContaining("`Auto` and `Text` hold values of one kind")]);
 });
 
-test("a closure's last `_` parameters are left out, from MIR as from THIR", async () => {
+test("a closure's last `_` parameters are left out", async () => {
   const dir = fixture("mir-closure-wild-params");
   writeFileSync(join(dir, "lib.rs"), `pub fn ignored(n: u32) -> u32 {
     let f = |_: u32| n + 1;
@@ -6641,7 +6639,7 @@ test("a value returned after a loop, the function returning early before it, is 
   }
 });
 
-test("a function's value of two branches is returned from each, from MIR as from THIR", async () => {
+test("a function's value of two branches is returned from each", async () => {
   const dir = fixture("mir-returned-branches");
   writeFileSync(join(dir, "lib.rs"), `pub fn two(s: &str) -> u32 {
     match s {
@@ -6732,7 +6730,7 @@ pub fn colors(message: &str) -> &'static str {
     expect(js).toContain("export function early(g, x) {\n  if (!g) {\n    return false;\n  }\n  return x > 1;\n}");
     // An arm a macro begins is in its place too.
     expect(js).toContain("export function shown(o) {\n  if (o != null) {\n");
-    // A `bool` of what's not one, `!!o`, as THIR has it.
+    // A `bool` of what's not one, `!!o`.
     expect(js).toContain("  return !!o || r;\n");
     const lib = await import(join(dir, out));
     expect([lib.either({ n: 1 }, false), lib.either(undefined, false)]).toEqual([true, false]);
@@ -6773,7 +6771,7 @@ pub fn either(active: bool) -> u32 {
   }
 });
 
-test("a `match` of an `Option`'s strings from MIR is the `else if` chain THIR writes", async () => {
+test("a `match` of an `Option`'s strings from MIR is the `else if` chain a person writes", async () => {
   const dir = fixture("mir-option-string-match");
   writeFileSync(join(dir, "lib.rs"), `pub fn flagged(flag: Option<&str>, mut arg: String) -> String {
     match flag {
@@ -6844,7 +6842,7 @@ pub fn nested(flag: Option<&str>, v: &mut Vec<u32>) {
   }
 });
 
-test("a let-else of what `filter` keeps from MIR tests the value, as THIR does", async () => {
+test("a let-else of what `filter` keeps from MIR tests the value", async () => {
   const dir = fixture("mir-filtered-let-else");
   writeFileSync(join(dir, "lib.rs"), `pub fn filtered(href: Option<&str>) -> String {
     let Some(h) = href.filter(|h| !h.is_empty()) else {
@@ -6870,7 +6868,7 @@ test("a let-else of what `filter` keeps from MIR tests the value, as THIR does",
   }
 });
 
-test("tests and values from MIR read as THIR writes them: De Morgan's, and `filter` then `or`", async () => {
+test("tests and values from MIR read as a person writes them: De Morgan's, and `filter` then `or`", async () => {
   const dir = fixture("mir-tests-values");
   writeFileSync(join(dir, "lib.rs"), `pub fn search(section: &str, is_blog_index: bool, order: u32) -> Option<u32> {
     let mut search_order = None;
@@ -6919,7 +6917,7 @@ test("a closure from MIR names its `&x` parameter and knows the `bool`s it captu
   }
 });
 
-test("a `let` from MIR is declared where it's first named, as THIR declares it", async () => {
+test("a `let` from MIR is declared where it's first named", async () => {
   const dir = fixture("mir-sunk-lets");
   writeFileSync(join(dir, "lib.rs"), `pub fn label(path: Option<&str>, crumbs: &[&str], force: bool) -> String {
     let selected = path == Some("x");
@@ -6956,7 +6954,7 @@ test("a `let` from MIR is declared where it's first named, as THIR declares it",
   }
 });
 
-test("an index from MIR nothing proves in bounds is checked where it's read or written, as THIR's", async () => {
+test("an index from MIR nothing proves in bounds is checked where it's read or written", async () => {
   const dir = fixture("mir-checked-index");
   writeFileSync(join(dir, "lib.rs"), `pub struct Crumb { pub path: Option<&'static str> }
 pub fn last_is(crumbs: &[Crumb], path: Option<&str>) -> bool {
@@ -6982,7 +6980,7 @@ pub fn set(xs: &mut [u32], i: usize) {
   }
 });
 
-test("a `let` pattern of one field from MIR destructures, as THIR's", async () => {
+test("a `let` pattern of one field from MIR destructures", async () => {
   const dir = fixture("mir-one-field-pattern");
   writeFileSync(join(dir, "lib.rs"), `pub struct Collapse { pub get_props: u32, pub other: u32 }
 fn use_collapse(n: u32) -> Collapse { Collapse { get_props: n, other: 2 } }
@@ -7003,7 +7001,7 @@ pub fn field(n: u32) -> u32 {
   }
 });
 
-test("an `if … else if` given as a value from MIR is the conditional THIR writes, where it's read", async () => {
+test("an `if … else if` given as a value from MIR is a conditional where it's read", async () => {
   const dir = fixture("mir-else-if-value");
   writeFileSync(join(dir, "lib.rs"), `pub fn link(href: &str) -> String {
     format!(
@@ -7025,7 +7023,7 @@ test("an `if … else if` given as a value from MIR is the conditional THIR writ
   }
 });
 
-test("a let-else from MIR whose rest is long, and drops what it owns, is a guard first, as THIR's", async () => {
+test("a let-else from MIR whose rest is long, and drops what it owns, is a guard first", async () => {
   const dir = fixture("mir-let-else-dropping");
   writeFileSync(join(dir, "lib.rs"), `pub fn named(href: Option<&str>, items: Vec<String>) -> String {
     let Some(href) = href.filter(|h| !h.is_empty()) else {
@@ -7046,7 +7044,7 @@ test("a let-else from MIR whose rest is long, and drops what it owns, is a guard
   }
 });
 
-test("a function's value from MIR that branches assign is returned from each, its guards first, as THIR's", async () => {
+test("a function's value from MIR that branches assign is returned from each, its guards first", async () => {
   const dir = fixture("mir-assigned-returns");
   writeFileSync(join(dir, "lib.rs"), `pub fn footer(href: Option<&str>, children: Vec<String>) -> String {
     let classes = format!("c{}", children.len());
@@ -7075,7 +7073,7 @@ test("a function's value from MIR that branches assign is returned from each, it
   }
 });
 
-test("a range loop from MIR whose end is a call holds it first, and a slice of `i..i + 1` reads its bounds, as THIR's", async () => {
+test("a range loop from MIR whose end is a call holds it first, and a slice of `i..i + 1` reads its bounds", async () => {
   const dir = fixture("mir-range-loops");
   writeFileSync(join(dir, "lib.rs"), `pub fn plain(code: &str) -> u32 {
     let mut n = 0;
@@ -7106,7 +7104,7 @@ pub fn sliced(code: &str) -> u32 {
   }
 });
 
-test("a `format!`'s arguments read out of order, and a string's `chars()` iterated, from MIR read as THIR's", async () => {
+test("a `format!`'s arguments read out of order, and a string's `chars()` iterated, from MIR read as written", async () => {
   const dir = fixture("mir-format-chars");
   writeFileSync(join(dir, "lib.rs"), `pub fn lines(code: &str) -> Vec<String> {
     let mut line_output: Vec<String> = Vec::new();
@@ -7135,7 +7133,7 @@ test("a `format!`'s arguments read out of order, and a string's `chars()` iterat
   }
 });
 
-test("a cell from MIR only its function reads and sets is its variable, as THIR's", async () => {
+test("a cell from MIR only its function reads and sets is its variable", async () => {
   const dir = fixture("mir-plain-cells");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
 use std::rc::Rc;
@@ -7183,7 +7181,7 @@ pub fn lent() -> u32 {
   }
 });
 
-test("a `while` loop from MIR tests where it's written, as THIR's", async () => {
+test("a `while` loop from MIR tests where it's written", async () => {
   const dir = fixture("mir-while-tests");
   writeFileSync(join(dir, "lib.rs"), `pub fn trimmed(mut messages: Vec<u32>, max: usize) -> Vec<u32> {
     while messages.len() > max {
@@ -7250,7 +7248,7 @@ pub fn halved(mut n: u32, out: &mut Vec<u32>) {
   }
 });
 
-test("a chain collected from MIR is the spread THIR writes", async () => {
+test("a chain collected from MIR is a spread", async () => {
   const dir = fixture("mir-chain-collect");
   writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
 const MAX: usize = 2;
@@ -7310,7 +7308,7 @@ pub fn pages(routes: &[Route], out: &mut Vec<String>) {
 });
 
 // What \`?\` of an \`Option\` gives a \`let\`, from MIR, is held under the
-// name the program gives it, \`f\`, as THIR's: not \`value\`.
+// name the program gives it, \`f\`: not \`value\`.
 test("a let of an Option's ? from MIR is named as the program names it", async () => {
   const dir = fixture("mir-tried-named");
   writeFileSync(join(dir, "lib.rs"), `pub fn first_even(xs: &[i32]) -> Option<i32> {
@@ -7327,8 +7325,8 @@ test("a let of an Option's ? from MIR is named as the program names it", async (
   }
 });
 
-// An unstable sort and a selection from MIR as from THIR (ADR 0342).
-test("an unstable sort from MIR sorts as THIR's", async () => {
+// An unstable sort and a selection from MIR (ADR 0342).
+test("an unstable sort from MIR sorts as Rust's", async () => {
   const dir = fixture("mir-unstable-sort");
   writeFileSync(join(dir, "lib.rs"), `pub fn down(mut v: Vec<i32>) -> Vec<i32> {
     v.sort_unstable_by(|a, b| b.cmp(a));
@@ -7349,9 +7347,9 @@ pub fn third(mut v: Vec<u32>) -> u32 {
   }
 });
 
-// A slice's own methods from MIR as from THIR: split by a test, filled,
-// checked sorted, searched, cut in chunks.
-test("a slice's own methods from MIR are THIR's", async () => {
+// A slice's own methods from MIR: split by a test, filled, checked sorted,
+// searched, cut in chunks.
+test("a slice's own methods from MIR run as Rust's", async () => {
   const dir = fixture("mir-slice-methods");
   writeFileSync(join(dir, "lib.rs"), `pub fn parts(v: &[i32]) -> Vec<usize> {
     v.split(|&x| x < 0).map(|p| p.len()).collect()
@@ -7391,8 +7389,8 @@ pub fn differ(a: Vec<String>, b: Vec<String>) -> bool {
   expect([lib.same([1, 2], [1, 2]), lib.same([1, 2], [1]), lib.differ(["a"], ["a"]), lib.differ(["a"], ["b"])]).toEqual([true, false, false, true]);
 });
 
-// A B-tree's range of its keys from MIR as from THIR (ADR 0325).
-test("a B-tree's range from MIR is THIR's", async () => {
+// A B-tree's range of its keys from MIR (ADR 0325).
+test("a B-tree's range from MIR gives the entries in it", async () => {
   const dir = fixture("mir-tree-range");
   writeFileSync(join(dir, "lib.rs"), `use std::collections::BTreeMap;
 pub fn from_two(m: &BTreeMap<u32, &'static str>) -> Vec<u32> {
@@ -7460,7 +7458,7 @@ pub fn empty(s: &str) -> String {
 });
 
 // An enum made a number, \`ordering as i32\` or a fieldless one's, from
-// MIR as from THIR: its discriminant.
+// MIR: its discriminant.
 test("an enum cast to a number from MIR is its discriminant", async () => {
   const dir = fixture("mir-enum-cast");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
@@ -7498,8 +7496,8 @@ pub fn owned(xs: Vec<f64>) -> f64 {
 });
 
 // A nested pattern of an item a closure reads of what it captured, from
-// MIR, takes it apart once, as THIR's and as react.dev's Preview reads its
-// first lint error: \`const { line, column, message } = errors[0];\`.
+// MIR, takes it apart once, as react.dev's Preview reads its first lint
+// error: \`const { line, column, message } = errors[0];\`.
 test("a nested pattern of a captured item from MIR takes it apart once", async () => {
   const dir = fixture("mir-captured-pattern");
   writeFileSync(join(dir, "lib.rs"), `pub struct Message { pub line: u32, pub column: u32, pub message: String, pub rule: String }
@@ -7528,7 +7526,7 @@ pub fn first(errors: &'static Vec<Lint>) -> impl Fn() -> Option<String> {
   }
 });
 
-// Sets and maps from MIR made of arrays and read as arrays, as THIR's:
+// Sets and maps from MIR made of arrays and read as arrays:
 // \`new Set([1, 2, 3])\`, a set's algebra and a sorted map's entries mapped.
 test("sets and maps from MIR are made of arrays and read as them", async () => {
   const dir = fixture("mir-sets-maps");
@@ -7556,8 +7554,8 @@ pub fn keys(m: &BTreeMap<String, u32>) -> Vec<String> {
 });
 
 // A string's or-pattern from MIR is one test of each, \`s === "a" || …\`,
-// its arm first, as THIR's: not a test failing for each, one inside
-// another, the arm after them all.
+// its arm first: not a test failing for each, one inside another, the arm
+// after them all.
 test("a string's or-pattern from MIR is an or of its tests", async () => {
   const dir = fixture("mir-string-or");
   writeFileSync(join(dir, "lib.rs"), `pub fn kind(s: &str) -> &'static str {
@@ -7580,9 +7578,9 @@ test("a string's or-pattern from MIR is an or of its tests", async () => {
   }
 });
 
-// A range pattern's tests from MIR read as THIR's, the value first, \`k >=
-// 2\`, and a bound the type has anyway, \`0 <= k\` of a \`u8\`, none; a
-// comparison the program wrote stays as written.
+// A range pattern's tests from MIR read the value first, \`k >= 2\`, and a
+// bound the type has anyway, \`0 <= k\` of a \`u8\`, none; a comparison the
+// program wrote stays as written.
 test("a range pattern's tests from MIR read the value first", async () => {
   const dir = fixture("mir-range-tests");
   writeFileSync(join(dir, "lib.rs"), `pub fn big(k: u8) -> bool { matches!(k, 2..) }
@@ -7603,7 +7601,7 @@ pub fn written(k: u8) -> bool { 2 <= k }
 });
 
 // A loop the program leaves with \`break\`, its function's value after it,
-// from MIR, breaks, the value returned after it, as written and as THIR's:
+// from MIR, breaks, the value returned after it, as written:
 // not the function's \`return\` moved into the loop.
 test("a loop's break from MIR is a break, the return after it", async () => {
   const dir = fixture("mir-loop-break-return");
@@ -7659,9 +7657,8 @@ pub fn root(n: u32) -> u32 {
 });
 
 // An \`else if\` the program wrote at a loop's end, after an \`if\` it ended
-// with a \`continue\`, stays an \`else if\` from MIR, as THIR's: not a
-// \`continue\` of its own and an \`if\` after, as react.dev's llms.txt
-// sections its routes.
+// with a \`continue\`, stays an \`else if\` from MIR: not a \`continue\` of
+// its own and an \`if\` after, as react.dev's llms.txt sections its routes.
 test("an else-if at a loop's end from MIR stays one past a written continue", async () => {
   const dir = fixture("mir-else-if-after-continue");
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case, dead_code)]
@@ -7825,8 +7822,8 @@ pub fn view(s: Status) -> String {
 });
 
 // Each \`?\` from MIR is a guard where it's written, \`if (result.TAG ===
-// "Err") return result;\`, the rest after it, as THIR's: not the rest
-// nested in a test that it's \`Ok\`.
+// "Err") return result;\`, the rest after it: not the rest nested in a
+// test that it's \`Ok\`.
 test("a function's ?s from MIR are guards, the rest after them", async () => {
   const dir = fixture("mir-tried-guards");
   writeFileSync(join(dir, "lib.rs"), `pub fn parse2(a: &str, b: &str) -> Result<i32, std::num::ParseIntError> {
@@ -7861,8 +7858,8 @@ pub fn opt2(a: Option<i32>, b: Option<i32>) -> Option<i32> {
 });
 
 // A wide field updated through a \`&mut\`, from MIR, is written where it's
-// made, \`m.cents = BigInt.asIntN(64, m.cents + 1n)\`, as THIR's: wrapping
-// it does nothing a place could see.
+// made, \`m.cents = BigInt.asIntN(64, m.cents + 1n)\`: wrapping it does
+// nothing a place could see.
 test("a wide field updated from MIR is written where it's made", async () => {
   const dir = fixture("mir-wide-field");
   writeFileSync(join(dir, "lib.rs"), `pub struct Money { pub cents: i64 }
@@ -7881,8 +7878,8 @@ pub fn bump(m: &mut Money) {
   }
 });
 
-// What's left of a string's \`chars()\` once stepped, \`as_str()\`, from MIR
-// as from THIR: the rest of it, \`$restStr(c)\`.
+// What's left of a string's \`chars()\` once stepped, \`as_str()\`, from MIR:
+// the rest of it, \`$restStr(c)\`.
 test("the rest of a string's chars from MIR is a string", async () => {
   const dir = fixture("mir-chars-rest");
   writeFileSync(join(dir, "lib.rs"), `pub fn cap(w: &str) -> String {
@@ -7914,7 +7911,7 @@ pub fn whole(w: &str) -> String {
 });
 
 // A match of three arms or more giving a variable its value, from MIR, is
-// the chain of them, as THIR's: not its last two folded, \`c ? a : b\`.
+// the chain of them: not its last two folded, \`c ? a : b\`.
 test("a variable's value of three arms from MIR is their chain", async () => {
   const dir = fixture("mir-three-arms");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
@@ -7953,7 +7950,7 @@ pub fn pick(x: i32) -> String {
 });
 
 // A count kept in a map, `*m.entry(k).or_insert(0) += 1`, from MIR is the
-// value there or put in, then set, as THIR's: no handle on the key's value.
+// value there or put in, then set: no handle on the key's value.
 test("a count kept in a map from MIR is its value, then set", async () => {
   const dir = fixture("mir-map-count");
   writeFileSync(join(dir, "lib.rs"), `use std::collections::HashMap;
@@ -7983,8 +7980,8 @@ pub fn bumped(mut m: HashMap<&'static str, u32>) -> u32 {
 });
 
 // A slice's items with their indices, `iter().enumerate()`, from MIR are
-// the array's `entries()`, as THIR's, and a loop's label the program's
-// own; a `break 'outer` out of the loop inside keeps both loops.
+// the array's `entries()`, and a loop's label the program's own; a
+// `break 'outer` out of the loop inside keeps both loops.
 test("nested loops from MIR read as written: entries, labels, and a labeled break", async () => {
   const dir = fixture("mir-nested-loops");
   writeFileSync(join(dir, "lib.rs"), `pub fn place(grid: &[Vec<u32>]) -> Option<(usize, usize)> {
@@ -8044,8 +8041,8 @@ pub fn first(grid: &[Vec<u32>]) -> Option<u32> {
 });
 
 // MIR's checks of a `%` or `/`, `2 === -1` of a constant divisor, are
-// none: the division checks what can fail, `$rem(a, b, min)`, as THIR's.
-test("a division by a constant from MIR has no overflow check, as THIR's", async () => {
+// none: the division checks what can fail, `$rem(a, b, min)`.
+test("a division by a constant from MIR has no overflow check", async () => {
   const dir = fixture("mir-constant-divisor");
   writeFileSync(join(dir, "lib.rs"), `pub fn odds(n: i32) -> Vec<i32> {
     let mut out = Vec::new();
@@ -8079,7 +8076,7 @@ pub fn by(a: i32, b: i32) -> i32 {
   }
 });
 
-test("a test from MIR that `x` is set and true reads `x`, as THIR's", async () => {
+test("a test from MIR that `x` is set and true reads `x`", async () => {
   const dir = fixture("mir-set-and-true");
   writeFileSync(join(dir, "lib.rs"), `pub enum Message {
     Start { first_load: Option<bool> },
@@ -8135,7 +8132,7 @@ pub fn logs(message: &Message, out: &mut Vec<u32>) {
   }
 });
 
-test("a match guard's binding from MIR is what it binds, as THIR's", async () => {
+test("a match guard's binding from MIR is what it binds", async () => {
   const dir = fixture("mir-guard-binding");
   writeFileSync(join(dir, "lib.rs"), `pub fn titled(error_code: Option<&str>) -> String {
     match error_code {
@@ -8174,7 +8171,7 @@ pub fn doubled(k: Kind) -> u8 {
   }
 });
 
-test("a closure from MIR captures a variable itself where nothing changes it after, as THIR's", async () => {
+test("a closure from MIR captures a variable itself where nothing changes it after", async () => {
   const dir = fixture("mir-captured-after");
   writeFileSync(join(dir, "lib.rs"), `pub fn last(n: u32, hover: &dyn Fn(&dyn Fn() -> u32)) {
     let mut index = 0;
@@ -8204,7 +8201,7 @@ pub fn each(n: u32) -> Vec<u32> {
   }
 });
 
-test("a `let` a loop's body makes, from MIR, is declared in the body, as THIR's", async () => {
+test("a `let` a loop's body makes, from MIR, is declared in the body", async () => {
   const dir = fixture("mir-loop-lets");
   writeFileSync(join(dir, "lib.rs"), `pub fn starts(lines: &[&str], ends: &[usize]) -> Vec<usize> {
     let mut out = Vec::new();
@@ -8294,7 +8291,7 @@ pub fn count(node: &Node) -> usize {
   }
 });
 
-test("a let-else from MIR inside a branch, its `else` a `return`, is a guard there, as THIR's", async () => {
+test("a let-else from MIR inside a branch, its `else` a `return`, is a guard there", async () => {
   const dir = fixture("mir-inner-let-else");
   writeFileSync(join(dir, "lib.rs"), `pub struct Nav { pub offset: Option<u32> }
 pub fn scroll(pos: usize, navs: &[Nav], out: &mut Vec<u32>) {
@@ -8321,7 +8318,7 @@ pub fn scroll(pos: usize, navs: &[Nav], out: &mut Vec<u32>) {
   }
 });
 
-test("a call from MIR is read in place past an object of constants before it, as THIR's", async () => {
+test("a call from MIR is read in place past an object of constants before it", async () => {
   const dir = fixture("mir-past-constant-objects");
   writeFileSync(join(dir, "lib.rs"), `pub struct Colors { pub accent: &'static str, pub base: &'static str }
 pub struct Font { pub body: String, pub mono: String, pub size: &'static str }
@@ -8342,7 +8339,7 @@ pub fn theme() -> Theme {
   }
 });
 
-test("an `||` of `matches!` from MIR is the test THIR writes, at a function's end or not", async () => {
+test("an `||` of `matches!` from MIR is one test, at a function's end or not", async () => {
   const dir = fixture("mir-or-matches");
   writeFileSync(join(dir, "lib.rs"), `pub enum Message {
     Start { first_load: Option<bool> },
@@ -8596,8 +8593,8 @@ pub fn handle(ev: &Ev, open: bool, out: &mut Vec<u32>) {
 });
 
 // A `VecDeque`'s iterator from MIR, of the array it is, copied where it's
-// collected, `prev.slice()`, as THIR's, as react.dev's Console keeps its
-// latest messages.
+// collected, `prev.slice()`, as react.dev's Console keeps its latest
+// messages.
 test("a VecDeque's items collected from MIR are the array's copy", async () => {
   const dir = fixture("deque-collect");
   writeFileSync(join(dir, "lib.rs"), `use std::collections::VecDeque;
@@ -8626,8 +8623,8 @@ pub fn update(f: &dyn Fn(&dyn Fn(&VecDeque<u32>) -> VecDeque<u32>)) {
 });
 
 // A chain MIR makes lazily for one spread alone, of stages that do nothing
-// else, is the array THIR's makes, which spreads alike, as react.dev's
-// Console takes its new logs: `more.filter(..).map(..)`, not `$iter(more)`.
+// else, is an array, which spreads alike, as react.dev's Console takes its
+// new logs: `more.filter(..).map(..)`, not `$iter(more)`.
 test("a lazy chain from MIR spread once is an array", async () => {
   const dir = fixture("chain-spread-once");
   writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
@@ -8713,8 +8710,8 @@ pub fn files(code: String, other: String) -> &'static js::Dict<String> {
 });
 
 // ADR 0233: a `match` whose arms each give the field of their variant's
-// name of one table is the table read by what's matched, from MIR as from
-// THIR, as react.dev's ExpandableCallout picks its variant: `MAP[kind]`.
+// name of one table is the table read by what's matched, as react.dev's
+// ExpandableCallout picks its variant: `MAP[kind]`.
 const lib_tags = (lib: { tag: (k: string) => string }) => ["note", "pitfall", "wip"].map((k) => lib.tag(k));
 test("a match reading a table from MIR is the table read by its key", async () => {
   const dir = fixture("match-table");
@@ -8880,7 +8877,7 @@ pub fn or_none() -> bool {
 
 // A consumer of an array's own iterator, read in place only once MIR's
 // temporary of it is, after an early return, `any(f)`: the array's `some`,
-// as THIR's, as react.dev's DownloadButton checks its files.
+// as react.dev's DownloadButton checks its files.
 test("an array's iterator read in place late from MIR is the array's method", async () => {
   const dir = fixture("late-eager-chain");
   writeFileSync(join(dir, "lib.rs"), `pub const SUPPORTED: [&str; 2] = ["/App.js", "/styles.css"];
@@ -8907,11 +8904,11 @@ pub fn button(Props { provided_files }: Props, supported: bool) -> Option<u32> {
   }
 });
 
-// From MIR as from THIR, as react.dev's createFileMap reads a code block's
-// meta: `!matches!(t, "pre")` is `t !== "pre"`; a string method's `bool`,
+// As react.dev's createFileMap reads a code block's meta:
+// `!matches!(t, "pre")` is `t !== "pre"`; a string method's `bool`,
 // `includes`, is one already, no `!!`; and `any(|t| t == "hidden")` of
 // strings is `includes("hidden")`.
-test("negated matches, string methods and any of equals from MIR read as THIR's", async () => {
+test("negated matches, string methods and any of equals from MIR read as written", async () => {
   const dir = fixture("file-map-shapes");
   writeFileSync(join(dir, "lib.rs"), `pub fn not_pre(t: &str, u: &str, out: &mut Vec<u32>) {
     if !matches!(t, "pre") && !matches!(u, "pre") {
@@ -8939,9 +8936,8 @@ pub fn hidden(tokens: &[String]) -> bool {
   }
 });
 
-// `count()` of an array's items, a `split`'s, from MIR as from THIR: its
-// `length`, not a `reduce` counting each, as react.dev's CustomPreset counts
-// a file's lines.
+// `count()` of an array's items, a `split`'s: its `length`, not a `reduce`
+// counting each, as react.dev's CustomPreset counts a file's lines.
 test("a count of an array's items from MIR is its length", async () => {
   const dir = fixture("count-length");
   writeFileSync(join(dir, "lib.rs"), `pub fn lines(code: &str) -> usize {
@@ -8963,8 +8959,8 @@ pub fn long(words: &[String]) -> usize {
 });
 
 // A `let` pattern of a variable the program names takes it apart, one
-// field too, from MIR as from THIR: `const { message } = error;`, as
-// react.dev's ErrorMessage reads its error.
+// field too: `const { message } = error;`, as react.dev's ErrorMessage
+// reads its error.
 test("a let pattern of a named variable takes it apart, one field too", async () => {
   const dir = fixture("let-pattern-one");
   writeFileSync(join(dir, "lib.rs"), `pub struct E {
@@ -8992,8 +8988,8 @@ pub fn written(error: &E) -> String {
 });
 
 // A `Cell` field a `let` pattern binds by reference, only read, is its
-// value where it's bound, from MIR as from THIR (ADR 0287), as react.dev's
-// ErrorMessage reads its error's title: `const { message, title } = error`.
+// value where it's bound (ADR 0287), as react.dev's ErrorMessage reads its
+// error's title: `const { message, title } = error`.
 test("a cell field a let pattern binds, only read, is its value", async () => {
   const dir = fixture("pattern-cell-field");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -9022,8 +9018,8 @@ pub fn retitle(error: &E) -> String {
 });
 
 // `flatten()` of `Option` items, a JS iterator of what's there, collected:
-// the array's `filter`, from MIR as from THIR, not `Iterator.from(..)` of
-// `$iter`'s chain, as a class name's parts are joined.
+// the array's `filter`, not `Iterator.from(..)` of `$iter`'s chain, as a
+// class name's parts are joined.
 test("flattened options collected from MIR are the array's filter", async () => {
   const dir = fixture("flatten-collect");
   writeFileSync(join(dir, "lib.rs"), `pub fn cn(parts: &[Option<&str>]) -> String {
@@ -9075,8 +9071,8 @@ pub fn crumbs<'a>(path: &str, current: &'a Route, crumbs_so_far: Vec<&'a Route>)
   }
 });
 
-// A method's `self` is named after its type, `section` of a `Section`, from
-// MIR as from THIR, as react.dev's TopNav names `Section.asStr`'s.
+// A method's `self` is named after its type, `section` of a `Section`, as
+// react.dev's TopNav names `Section.asStr`'s.
 test("a method's self from MIR is named after its type", async () => {
   const dir = fixture("self-name");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
@@ -9108,8 +9104,8 @@ pub fn label(section: Section) -> String {
 });
 
 // ADR 0264: a function giving each variant its own name gives what it's
-// given, from MIR as from THIR: `section.as_str()` is `section`, as
-// react.dev's Page names its section's image.
+// given: `section.as_str()` is `section`, as react.dev's Page names its
+// section's image.
 test("a call giving each variant its own name from MIR is what it's given", async () => {
   const dir = fixture("own-name-call");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
@@ -9141,8 +9137,8 @@ pub fn image(section: Option<Section>) -> String {
 });
 
 // An `if` of an `||`, its branches as the program wrote them: `home ||
-// !meta.title ? a : b`, from MIR as from THIR, not `!home && meta.title ? b
-// : a`, as react.dev's Page picks its image.
+// !meta.title ? a : b`, not `!home && meta.title ? b : a`, as react.dev's
+// Page picks its image.
 test("an if of an or from MIR keeps its branches in the order written", async () => {
   const dir = fixture("or-branch-order");
   writeFileSync(join(dir, "lib.rs"), `pub struct Meta {
@@ -9197,10 +9193,10 @@ test("a chain is read in place past a closure's mutable borrow", async () => {
   }
 });
 
-// An element's place checked then set, `args[0] = v`, from MIR as THIR
-// writes it, `args[$at(args, 0)] = v`, its index read in place where nothing
-// changes it, as react.dev's ErrorDecoder sets its first argument. What's
-// set is made before the check, as Rust makes it.
+// An element's place checked then set, `args[0] = v`, from MIR is
+// `args[$at(args, 0)] = v`, its index read in place where nothing changes
+// it, as react.dev's ErrorDecoder sets its first argument. What's set is
+// made before the check, as Rust makes it.
 test("a checked element set is one statement from MIR", async () => {
   const dir = fixture("checked-set");
   writeFileSync(join(dir, "lib.rs"), `pub fn fill(args: &mut Vec<String>) {
@@ -9228,8 +9224,7 @@ pub fn put(args: &mut Vec<String>, i: usize, made: impl Fn() -> String) {
 
 // A clone of a nullable field's `Option`, `m.rule_id.clone()`, is its JS
 // value, null or the string, so given to another nullable field it's read
-// as it is, from MIR as from THIR, as react.dev's runESLint gives each
-// diagnostic its rule.
+// as it is, as react.dev's runESLint gives each diagnostic its rule.
 test("a nullable field's clone is given to a nullable field as it is", async () => {
   const dir = fixture("nullable-clone");
   writeFileSync(join(dir, "lib.rs"), `pub struct Msg {
@@ -9257,8 +9252,8 @@ pub fn diags(msgs: Vec<&Msg>) -> Vec<Diag> {
 
 // A trait's default method that's a binding, `get ruleId`, called through
 // a generic's bound, `error.rule_id()` of `E: RuleIdentified`: the
-// binding of the value, `error.ruleId`, from MIR as from THIR, as
-// react.dev's useSandpackLint keeps the errors of a rule.
+// binding of the value, `error.ruleId`, as react.dev's useSandpackLint
+// keeps the errors of a rule.
 test("a binding trait method called through a generic is the binding", async () => {
   const dir = fixture("generic-binding-method");
   writeFileSync(join(dir, "lib.rs"), `pub struct LintError {
@@ -9293,9 +9288,9 @@ pub fn kept(errors: Vec<&'static LintError>, diags: Vec<&'static Diagnostic>) ->
 });
 
 // ADR 0250: a struct update whose every field is given, `Hit { url, ..*item
-// }`, still spreads its base, from MIR as from THIR, which reads none of
-// its fields: what JS gave holds more than Rust names, react.dev's Search
-// gives DocSearch its hits' hierarchy back.
+// }`, still spreads its base, though it reads none of its fields: what JS
+// gave holds more than Rust names, react.dev's Search gives DocSearch its
+// hits' hierarchy back.
 test("a struct update giving every field spreads its base from MIR", async () => {
   const dir = fixture("update-all-given");
   writeFileSync(join(dir, "lib.rs"), `pub struct Hit {
@@ -9319,10 +9314,10 @@ pub fn moved(hit: Hit) -> Hit {
 });
 
 // ADR 0250: a struct update that reads one field of its base, `Props {
-// title, ..props }`, spreads it from MIR as from THIR, which says it's an
-// update, not `{ title, level: props.level }`, which drops what JS's object
-// held besides: react.dev's SandpackWithHTMLOutput gives on its props. One
-// that names each field, `level: a.level`, isn't.
+// title, ..props }`, spreads it, as its THIR says it's an update: not
+// `{ title, level: props.level }`, which drops what JS's object held
+// besides: react.dev's SandpackWithHTMLOutput gives on its props. One that
+// names each field, `level: a.level`, isn't.
 test("a struct update reading one field of its base spreads it from MIR", async () => {
   const dir = fixture("update-one-read");
   writeFileSync(join(dir, "lib.rs"), `pub struct Props {
@@ -9346,9 +9341,9 @@ pub fn copied(a: &Props) -> Props {
   }
 });
 
-// An `||` chain, from MIR as from THIR, `a || b || c`, not `!(!a && !b) ||
-// c`: a `bool` field, `element.editable`, is one, as react.dev's Search,
-// Preview and useTocHighlight test theirs.
+// An `||` chain, `a || b || c`, not `!(!a && !b) || c`: a `bool` field,
+// `element.editable`, is one, as react.dev's Search, Preview and
+// useTocHighlight test theirs.
 test("an or chain from MIR is written as one", async () => {
   const dir = fixture("or-chain");
   writeFileSync(join(dir, "lib.rs"), `pub struct El {
@@ -9385,9 +9380,8 @@ pub fn heading(names: Vec<String>) -> Vec<String> {
 });
 
 // A match of more than two arms as a value is a chain of its arms in the
-// order written, each tested as it is, `variant === "foundation"`, from MIR
-// as from THIR, not `!==` with the rest first, as react.dev's Tag picks
-// its name and classes.
+// order written, each tested as it is, `variant === "foundation"`, not
+// `!==` with the rest first, as react.dev's Tag picks its name and classes.
 test("a match's arms as values chain in written order", async () => {
   const dir = fixture("match-chain");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy)]
@@ -9426,8 +9420,8 @@ pub fn tag(variant: RouteTag, text: Option<&'static str>) -> String {
 });
 
 // `next()` of an array's iterator that nothing else steps, a split's,
-// `path.split(..).next()`, is its first item, `xs[0]`, from MIR as from
-// THIR, as react.dev's PageHeading and NavigationBar take theirs.
+// `path.split(..).next()`, is its first item, `xs[0]`, as react.dev's
+// PageHeading and NavigationBar take theirs.
 test("next of a fresh iterator of an array is its first item", async () => {
   const dir = fixture("next-first");
   writeFileSync(join(dir, "lib.rs"), `pub fn clean(path: &str) -> &str {
@@ -9448,8 +9442,7 @@ pub fn first(keys: Vec<String>) -> Option<String> {
 });
 
 // `matches!` of an or-pattern, `None | Some(Bottom)`, is its tests'
-// `||`, from MIR as from THIR, no labeled block, as react.dev's Diagram
-// places its caption.
+// `||`, no labeled block, as react.dev's Diagram places its caption.
 test("an or-pattern's matches is an or of its tests", async () => {
   const dir = fixture("or-pattern-matches");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Clone, Copy, PartialEq)]
@@ -9477,8 +9470,8 @@ pub fn shown(caption_position: Option<CaptionPosition>, text: &'static str) -> O
 });
 
 // An `if let .. else if let .. else { panic!() }` chain is its arms in
-// the order written, from MIR as from THIR, not the panic's first in a
-// labeled block, as react.dev's TerminalBlock reads its message.
+// the order written, not the panic's first in a labeled block, as
+// react.dev's TerminalBlock reads its message.
 test("an if-let chain ending in a panic keeps its arms in written order", async () => {
   const dir = fixture("if-let-chain-panic");
   writeFileSync(join(dir, "lib.rs"), `pub enum Kind {
@@ -9534,9 +9527,8 @@ test("a typeof test after a null check is the typeof test from MIR", async () =>
 });
 
 // An `||` chain whose part is an `Option`'s `is_some()`, of an object:
-// `!!error || ..`, a `bool` part by part, from MIR as from THIR, not
-// `!(!error && ..)`; and one only tested, `error || ..`, as react.dev's
-// Preview hides its content.
+// `!!error || ..`, a `bool` part by part, not `!(!error && ..)`; and one
+// only tested, `error || ..`, as react.dev's Preview hides its content.
 test("an or chain of a value's truth from MIR is a bool part by part", async () => {
   const dir = fixture("or-chain-truth");
   writeFileSync(join(dir, "lib.rs"), `pub struct Err {
@@ -9560,9 +9552,9 @@ pub fn kept(error: Option<&Err>, height: Option<f64>, ready: bool) -> String {
   }
 });
 
-// An `else if` chain's last arm before a panic is an `else if`, from MIR as
-// from THIR, not a check in the `else`, `if (x !== "language-css") throw`,
-// as react.dev's createFileMap picks a code block's file.
+// An `else if` chain's last arm before a panic is an `else if`, not a
+// check in the `else`, `if (x !== "language-css") throw`, as react.dev's
+// createFileMap picks a code block's file.
 test("an else-if chain's arm before a panic stays an else if", async () => {
   const dir = fixture("else-if-panic");
   writeFileSync(join(dir, "lib.rs"), `pub fn path(meta: Option<&str>, class_name: &str) -> String {
@@ -9590,9 +9582,8 @@ test("an else-if chain's arm before a panic stays an else if", async () => {
 });
 
 // A match's arms as statements chain in the order written, `if (TAG ===
-// "resize") { .. } else if (TAG === "start") ..`, from MIR as from THIR,
-// not `!== "resize"` with the first arm last, as react.dev's Preview
-// handles Sandpack's messages.
+// "resize") { .. } else if (TAG === "start") ..`, not `!== "resize"` with
+// the first arm last, as react.dev's Preview handles Sandpack's messages.
 test("a match's arms as statements chain in written order", async () => {
   const dir = fixture("match-statements");
   writeFileSync(join(dir, "lib.rs"), `pub enum Message {
@@ -9640,8 +9631,8 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
 
 // A pattern's binding of a variable, `if let Some(error) = raw`, a copy of
 // it MIR makes where the variable is borrowed, `const error = raw;`: the
-// variable itself where the block sets neither again, from MIR as from
-// THIR, as react.dev's Preview renames a runtime error.
+// variable itself where the block sets neither again, as react.dev's
+// Preview renames a runtime error.
 test("a copy binding of a variable is the variable from MIR", async () => {
   const dir = fixture("copy-binding");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -9676,8 +9667,8 @@ pub fn fixed(given: Option<&'static Error>, lint: Option<&'static Error>) -> Opt
 });
 
 // A match's arm that does nothing, `Refresh | Console { .. } | Other(_) =>
-// {}`, is no `else if (message !== "refresh") {}`, from MIR as from THIR,
-// as react.dev's Preview ignores Sandpack's other messages.
+// {}`, is no `else if (message !== "refresh") {}`, as react.dev's Preview
+// ignores Sandpack's other messages.
 test("a match arm that does nothing is no empty else if", async () => {
   const dir = fixture("empty-arm");
   writeFileSync(join(dir, "lib.rs"), `pub enum Message {
@@ -9716,9 +9707,9 @@ pub fn handle(message: &Message, log: &mut Vec<String>) {
 });
 
 // A temporary MIR holds of what a pattern takes apart, read more than once,
-// is `value`, as THIR names it, not `_4`, a name no other in the function
-// has, as react.dev's CodeBlock reads its regular expressions' matches.
-test("a held temporary is named as THIR names it", async () => {
+// is `value`, not `_4`, a name no other in the function has, as
+// react.dev's CodeBlock reads its regular expressions' matches.
+test("a held temporary is named `value`", async () => {
   const dir = fixture("temporary-name");
   writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
     #[link_name = "globalThis.find"]
@@ -9742,8 +9733,8 @@ pub fn lines(meta: &str) -> String {
 });
 
 // An `||` chain whose first test is a getter's `bool`, `element.isContentEditable`,
-// is one chain returned, from MIR as from THIR, as react.dev's Search tells
-// whether a key goes to what's being edited.
+// is one chain returned, as react.dev's Search tells whether a key goes to
+// what's being edited.
 test("an or chain of a getter's bool is returned as one", async () => {
   const dir = fixture("getter-or-chain");
   writeFileSync(join(dir, "lib.rs"), `use react::webapi::HTMLElement;
@@ -9762,8 +9753,8 @@ pub fn editing(element: &HTMLElement) -> bool {
 });
 
 // A call of a function that gives a `bool`, `isItem(item)`, is one, so
-// it's no `!!isItem(item)` in a test, from MIR as from THIR, as react.dev's
-// CodeDiagram keeps its images.
+// it's no `!!isItem(item)` in a test, as react.dev's CodeDiagram keeps its
+// images.
 test("a call giving a bool is one in a test", async () => {
   const dir = fixture("bool-call");
   writeFileSync(join(dir, "lib.rs"), `pub struct Item {
@@ -9788,8 +9779,8 @@ pub fn images(items: Vec<&Item>) -> Vec<&Item> {
 });
 
 // ADR 0279, of a function item given as the callback, `filter(is_rule)`, as
-// react.dev's useSandpackLint has it: the crate's function itself, from MIR as
-// from THIR; a JS function's still takes the item alone.
+// react.dev's useSandpackLint has it: the crate's function itself; a JS
+// function's still takes the item alone.
 test("a crate function given as a callback is passed as itself", async () => {
   const dir = fixture("fn-item-callback");
   writeFileSync(join(dir, "lib.rs"), `unsafe extern "Rust" {
@@ -9828,9 +9819,9 @@ pub fn parsed(v: Vec<&str>) -> Vec<f64> {
   }
 });
 
-// ADR 0308, from MIR as from THIR: a function written in a body, a closure's
-// too, is declared there, before what's written after it, as react.dev's
-// useSandpackLint has `isReactRuleError` in its linter's callback.
+// ADR 0308: a function written in a body, a closure's too, is declared
+// there, before what's written after it, as react.dev's useSandpackLint has
+// `isReactRuleError` in its linter's callback.
 test("a function written in a closure is declared where it's written", async () => {
   const dir = fixture("written-fn-place");
   writeFileSync(join(dir, "lib.rs"), `pub fn counted(xs: Vec<i32>, m: i32) -> usize {
@@ -9858,9 +9849,9 @@ test("a function written in a closure is declared where it's written", async () 
   }
 });
 
-// From MIR as from THIR: an `async` closure's `|_|`, which takes nothing it
-// reads, takes nothing in JS either, `async () => ..`, as react.dev's
-// PageHeading has its copy button's handler.
+// An `async` closure's `|_|`, which takes nothing it reads, takes nothing
+// in JS either, `async () => ..`, as react.dev's PageHeading has its copy
+// button's handler.
 test("an async closure's ignored argument is no parameter", async () => {
   const dir = fixture("async-wild");
   writeFileSync(join(dir, "lib.rs"), `pub async fn run(f: impl AsyncFn(u32) -> u32) -> u32 {
@@ -9879,10 +9870,9 @@ pub async fn made() -> u32 {
   }
 });
 
-// From MIR as from THIR: a `let` Rust declares in a loop's body is declared
-// there, `const contentBoxSize = ..` where a branch of each turn makes it,
-// not one `let` before the loop, as react.dev's NavigationBar measures its
-// tabs.
+// A `let` Rust declares in a loop's body is declared there,
+// `const contentBoxSize = ..` where a branch of each turn makes it, not one
+// `let` before the loop, as react.dev's NavigationBar measures its tabs.
 test("a let a loop's branch makes is declared in the loop", async () => {
   const dir = fixture("loop-branch-let");
   writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
@@ -9923,10 +9913,10 @@ pub fn widths(entries: &[&Unknown], log: impl Fn(f64)) {
   }
 });
 
-// From MIR as from THIR: arrays joined, `[first, vec![..]].concat()`, are
-// one array of the first's items and the made ones, `[...first, made("a"),
-// ..]`: a call can't change the items of an array only a `&mut` changes,
-// as react.dev's SandpackWithHTMLOutput adds its files to its children.
+// Arrays joined, `[first, vec![..]].concat()`, are one array of the first's
+// items and the made ones, `[...first, made("a"), ..]`: a call can't change
+// the items of an array only a `&mut` changes, as react.dev's
+// SandpackWithHTMLOutput adds its files to its children.
 test("arrays joined are one array of their items", async () => {
   const dir = fixture("concat-spread");
   writeFileSync(join(dir, "lib.rs"), `use js::Unknown;
@@ -9949,7 +9939,7 @@ pub fn all(first: Vec<&'static Unknown>) -> Vec<&'static Unknown> {
   }
 });
 
-// From MIR as from THIR: a loop's `if`s the program ends with `continue`,
+// A loop's `if`s the program ends with `continue`,
 // `if c == "{" { depth += 1; continue; }`, are written so, each then what
 // follows, not an `else if` chain, as react.dev's createFileMap splits a
 // meta string.
@@ -9995,10 +9985,10 @@ test("continues a loop's ifs end with are kept", async () => {
   }
 });
 
-// From MIR as from THIR: what a `let`-`else` binds of a variable, `let
-// Some(current) = &mut current else { continue; }`, is that variable, read
-// as it is, not a copy, `const current$1 = current`, as react.dev's
-// llmsTxt adds pages to its current section.
+// What a `let`-`else` binds of a variable, `let Some(current) = &mut
+// current else { continue; }`, is that variable, read as it is, not a
+// copy, `const current$1 = current`, as react.dev's llmsTxt adds pages to
+// its current section.
 test("a let-else's binding of a variable is the variable", async () => {
   const dir = fixture("let-else-copy");
   writeFileSync(join(dir, "lib.rs"), `pub struct Section {
@@ -10068,10 +10058,10 @@ pub fn named(challenges: &[(u32, Challenge)]) -> Vec<String> {
   }
 });
 
-// From MIR as from THIR: a value the program wrote with `&&`, `s != "en" &&
-// (if t { .. } else { .. })`, is one value returned, `s !== "en" && (t ? ..
-// : ..)`, not a `return` of each branch MIR makes of it, as react.dev's
-// MDXComponents filters its LanguageList; a tail `if` stays statements.
+// A value the program wrote with `&&`, `s != "en" && (if t { .. } else {
+// .. })`, is one value returned, `s !== "en" && (t ? .. : ..)`, not a
+// `return` of each branch MIR makes of it, as react.dev's MDXComponents
+// filters its LanguageList; a tail `if` stays statements.
 test("a value written with && is returned as one", async () => {
   const dir = fixture("logical-values");
   writeFileSync(join(dir, "lib.rs"), `pub fn a(t: bool, x: u32) -> u32 {
@@ -10122,9 +10112,9 @@ pub fn shown(infos: &[Info]) -> Vec<String> {
   }
 });
 
-// From MIR as from THIR: a float THIR knows whole and in range where it's
-// cast, `index as u32` of `indexOf`'s once it isn't -1, is the value as it
-// is (`whole_casts`), not `$f64ToInt(index, ..)`, as react.dev's CodeBlock
+// A float THIR's facts know whole and in range where it's cast, `index as
+// u32` of `indexOf`'s once it isn't -1, is the value as it is
+// (`whole_casts`), not `$f64ToInt(index, ..)`, as react.dev's CodeBlock
 // finds a highlight's column.
 test("a whole float's cast is the float from MIR too", async () => {
   const dir = fixture("whole-cast");
@@ -10146,10 +10136,10 @@ pub fn column(line: &str, substr: &str) -> u32 {
   }
 });
 
-// From MIR as from THIR: `mem::take(&mut current)` of a variable takes it
-// and gives it a new value, `const old = current; current = [];`, not
-// `$take(current, [])` of the object, a closure's `&mut` capture of one
-// too, which is the variable; `mem::swap` of two, each given the other's.
+// `mem::take(&mut current)` of a variable takes it and gives it a new
+// value, `const old = current; current = [];`, not `$take(current, [])` of
+// the object, a closure's `&mut` capture of one too, which is the
+// variable; `mem::swap` of two, each given the other's.
 test("taking a variable assigns the variable", async () => {
   const dir = fixture("take-variable");
   writeFileSync(join(dir, "lib.rs"), `pub fn direct(items: &[u32]) -> Vec<Vec<u32>> {
@@ -10210,10 +10200,10 @@ pub fn kept(items: &[u32]) -> (Vec<Vec<u32>>, Vec<u32>) {
   }
 });
 
-// From MIR as from THIR: a value made in each branch of a `try`, a match of
-// what a call gives, and given to a variable, `children = match .. {}`, is
-// given to the variable in each, not to a temporary assigned after, as
-// react.dev's Console shows what's logged.
+// A value made in each branch of a `try`, a match of what a call gives,
+// and given to a variable, `children = match .. {}`, is given to the
+// variable in each, not to a temporary assigned after, as react.dev's
+// Console shows what's logged.
 test("a value a try makes in each branch is the variable's there", async () => {
   const dir = fixture("try-assigned");
   writeFileSync(join(dir, "lib.rs"), `use js::{Unknown, json, object};
@@ -10290,10 +10280,10 @@ pub fn joined(prev: &[u32], log: &[u32]) -> Vec<u32> {
   }
 });
 
-// From MIR as from THIR: an update's derived `Default` base,
-// `..Default::default()`, is each default the update reads, where it reads
-// it, `{ size, name: "", tags: [] }`, made without the base's `default()`,
-// which a generic component's `children: C` would need a dictionary for.
+// An update's derived `Default` base, `..Default::default()`, is each
+// default the update reads, where it reads it, `{ size, name: "", tags: []
+// }`, made without the base's `default()`, which a generic component's
+// `children: C` would need a dictionary for.
 test("an update's default base is the defaults it reads", async () => {
   const dir = fixture("default-base");
   writeFileSync(join(dir, "lib.rs"), `#[derive(Default, Debug)]
@@ -10321,10 +10311,10 @@ pub fn named(name: String, size: u32) -> String {
   }
 });
 
-// From MIR as from THIR: a range's items each mapped, all collected,
-// `(0..n).map(f).collect()`, are `$range(0, n).map(f)`, an array made as
-// big as what's collected anyway; one filtered or taken from stays lazy,
-// as a big range's array would be made for little.
+// A range's items each mapped, all collected, `(0..n).map(f).collect()`,
+// are `$range(0, n).map(f)`, an array made as big as what's collected
+// anyway; one filtered or taken from stays lazy, as a big range's array
+// would be made for little.
 test("a range mapped and collected is its array mapped", async () => {
   const dir = fixture("range-mapped");
   writeFileSync(join(dir, "lib.rs"), `pub fn squares(n: u32) -> Vec<u32> {
@@ -10420,8 +10410,8 @@ pub fn a_names(names: Vec<String>) -> usize {
 });
 
 // A handle's value read or written in place, `Cell::set` of `&self.n`, is
-// its place's, `t.n = ..`, as THIR's: no object of a getter and a setter
-// made to be used once.
+// its place's, `t.n = ..`: no object of a getter and a setter made to be
+// used once.
 test("a handle used in place from MIR is its place", async () => {
   const dir = fixture("handle-in-place");
   writeFileSync(join(dir, "lib.rs"), `use std::cell::Cell;
@@ -10454,8 +10444,8 @@ pub fn pair() -> String {
 });
 
 // A variable a loop's turn declares, `let y = match x { 0 => continue, ..
-// }`, is declared in the loop's body from MIR, as THIR declares it: each
-// arm assigns it or leaves the turn before it's read.
+// }`, is declared in the loop's body from MIR: each arm assigns it or
+// leaves the turn before it's read.
 test("a let each turn assigns from MIR is the loop body's", async () => {
   const dir = fixture("turn-let");
   writeFileSync(join(dir, "lib.rs"), `pub fn named(v: &[u32]) -> Vec<String> {
@@ -10479,9 +10469,9 @@ test("a let each turn assigns from MIR is the loop body's", async () => {
 });
 
 // `Math`'s functions but `random` only compute their value: a range's end
-// of one, `..len.saturating_sub(1)`, is read where it's used, from MIR as
-// from THIR, not a `{ end }` object made first.
-test("a slice to a computed end from MIR is THIR's", async () => {
+// of one, `..len.saturating_sub(1)`, is read where it's used, not a
+// `{ end }` object made first.
+test("a slice to a computed end from MIR reads the end where it's used", async () => {
   const dir = fixture("slice-computed-end");
   writeFileSync(join(dir, "lib.rs"), `pub fn crumbs(segments: Vec<&str>) -> Vec<&str> {
     segments[..segments.len().saturating_sub(1)].to_vec()
@@ -10495,9 +10485,9 @@ test("a slice to a computed end from MIR is THIR's", async () => {
   }
 });
 
-// A slice's `iter_mut()` is an array's items, from MIR as from THIR: its
-// chain the array's own methods, `v.find(f)`, `$mutItems(v).filter(f)`,
-// not a JS iterator's of it, `$lent(Iterator.from(v)).find(f)`.
+// A slice's `iter_mut()` is an array's items: its chain the array's own
+// methods, `v.find(f)`, `$mutItems(v).filter(f)`, not a JS iterator's of
+// it, `$lent(Iterator.from(v)).find(f)`.
 test("iter_mut chains from MIR are array methods", async () => {
   const dir = fixture("iter-mut-chains");
   writeFileSync(join(dir, "lib.rs"), `pub fn count(v: &mut Vec<(u32, u32)>, w: u32) {
@@ -10845,7 +10835,7 @@ pub fn run() -> f64 {
   }
 });
 
-// `String::from_iter(items)` from MIR, as THIR's: an array's joined, `["h",
+// `String::from_iter(items)` from MIR: an array's joined, `["h",
 // "i"].join("")`, or what an iterator steps through, joined.
 test("a string from items from MIR is them joined", async () => {
   const dir = fixture("string-from-iter");
@@ -10874,8 +10864,8 @@ pub fn counted(n: u32) -> String {
 });
 
 // A range cloned and stepped is the copy stepped: the range itself, read
-// after, is as it was, `1..4`, from MIR as from THIR. Found in review: MIR
-// stepped the range itself, `$iterator(r, $rangeNext)`, which `4..4` after.
+// after, is as it was, `1..4`. Found in review: MIR stepped the range
+// itself, `$iterator(r, $rangeNext)`, which `4..4` after.
 test("a range cloned and stepped leaves the range as it was", async () => {
   const dir = fixture("range-clone-stepped");
   writeFileSync(join(dir, "lib.rs"), `pub fn counted(a: i32, z: i32) -> String {
@@ -10897,8 +10887,7 @@ pub fn summed(a: i32, z: i32) -> String {
 });
 
 // An iterator of the crate's `len()`: std's of its `size_hint()`, which
-// panics where that isn't exact, or its own where it has one, from MIR as
-// from THIR.
+// panics where that isn't exact, or its own where it has one.
 test("an iterator's len from MIR is its own or its size hint's", async () => {
   const dir = fixture("iterator-len");
   writeFileSync(join(dir, "lib.rs"), `pub struct Span { pub low: u32, pub high: u32 }
@@ -10934,8 +10923,8 @@ pub fn lens() -> (usize, usize) {
 });
 
 // A chunks' `remainder()` from MIR: of one made there, its array's,
-// `$chunksExact(v, 2).remainder`, as THIR's; of one stepped, which MIR
-// keeps as a `$iter`, its items' still.
+// `$chunksExact(v, 2).remainder`; of one stepped, which MIR keeps as a
+// `$iter`, its items' still.
 test("a chunks' remainder from MIR, made there or stepped", async () => {
   const dir = fixture("chunks-remainder");
   writeFileSync(join(dir, "lib.rs"), `pub fn rest(v: &[u32]) -> Vec<u32> {
@@ -10956,8 +10945,8 @@ pub fn stepped(v: &[u32]) -> (Vec<u32>, Vec<u32>) {
 });
 
 // A `Vec`'s range pushed again, `extend_from_within`, or replaced,
-// `splice`, from MIR as from THIR, all of it too: `..` reads the `Vec`
-// itself, no range helper's call, which THIR's lowering crashed on.
+// `splice`, all of it too: `..` reads the `Vec` itself, no range helper's
+// call.
 test("a vec's range pushed again or replaced, all of it too", async () => {
   const dir = fixture("vec-range-edits");
   writeFileSync(join(dir, "lib.rs"), `pub fn doubled(mut v: Vec<u32>) -> Vec<u32> {
@@ -11007,9 +10996,9 @@ pub fn run() -> (usize, Vec<u32>, Vec<u32>) {
   }
 });
 
-// The crate's iterator stepped through a `&mut` to it, `by_ref()`, from MIR
-// as from THIR: std's `next` of a `&mut I` is `I`'s own, and what's left is
-// still there after.
+// The crate's iterator stepped through a `&mut` to it, `by_ref()`, from
+// MIR: std's `next` of a `&mut I` is `I`'s own, and what's left is still
+// there after.
 test("the crate's iterator stepped through by_ref from MIR", async () => {
   const dir = fixture("user-iterator-by-ref");
   writeFileSync(join(dir, "lib.rs"), `pub struct Counter(pub u32);

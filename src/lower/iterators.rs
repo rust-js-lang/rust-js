@@ -443,7 +443,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `max()` or `min()` of `items`, an array of `item`s: of what JS's `<`
-    /// doesn't order, by its `cmp` (ADR 0057). What THIR and MIR share.
+    /// doesn't order, by its `cmp` (ADR 0057).
     pub(in crate::lower) fn extreme_of(
         &mut self,
         max: bool,
@@ -470,7 +470,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// `last()` of `items`, an array of `item`s: one that looks like `None`
-    /// boxed (ADR 0051). What THIR and MIR share.
+    /// boxed (ADR 0051).
     pub(in crate::lower) fn last_of(&mut self, items: Expr, item: Option<ty::Ty<'tcx>>, out: &mut Vec<Stmt>) -> Expr {
         match item {
             Some(item) if self.boxed_payload(item) => {
@@ -488,8 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `v.sort()`, or `v.sort_by_key(key)`: in place (ADR 0036), of the items'
     /// value. JS's `sort()` compares as strings: right for `bool`s, and
-    /// numbers need `a - b`, strings `$cmp`, by code point (ADR 0183). What
-    /// THIR and MIR both lower it to (ADR 0364).
+    /// numbers need `a - b`, strings `$cmp`, by code point (ADR 0183).
     pub(in crate::lower) fn sort_values(
         &mut self,
         key: Option<Expr>,
@@ -810,14 +809,14 @@ fn fresh(items: &Expr) -> bool {
 }
 
 /// Each chain in `stmts` that MIR made as Rust runs it (ADR 0364), item by
-/// item, `$iter(xs).map(f).toArray()`, written as THIR's of an array,
-/// `xs.map(f)` (ADR 0055), where the order its closures run in can't be
-/// told from Rust's by what takes it. One that's lent, `$lent(…).some(f)`,
-/// made for this call alone, no one else steps.
+/// item, `$iter(xs).map(f).toArray()`, written as an array's, `xs.map(f)`
+/// (ADR 0055), where the order its closures run in can't be told from
+/// Rust's by what takes it. One that's lent, `$lent(…).some(f)`, made for
+/// this call alone, no one else steps.
 pub(super) fn eager_chains(stmts: &mut [Stmt]) {
     js::each_expr_mut(stmts, &mut |e| {
         // `nth(n)`'s, `chain.drop(n).take(1).toArray()[0]`: of an array
-        // whose stages do nothing, `xs[n]`, as THIR writes it.
+        // whose stages do nothing, `xs[n]`.
         if let js::ExprKind::Index(first, zero) = &e.kind
             && zero.as_int() == Some(0)
             && let Some((chain, n)) = nth_of(first)
@@ -833,7 +832,7 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             return;
         };
         // `next()`'s, `$next(chain)`, of an iterator made here of an array
-        // whose stages do nothing: its first item, `xs[0]`, as THIR writes it.
+        // whose stages do nothing: its first item, `xs[0]`.
         // A split's too, `Iterator.from(path.split(c))`, an array.
         let split = |chain: &Expr| match &chain.kind {
             js::ExprKind::Call(_, of) if is_iterator_from(chain) => match &of[0].kind {
@@ -858,7 +857,7 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             return;
         }
         // What reads every item alone, `$max`'s: of the array itself, not a
-        // copy, `$max(xs)`, as THIR's; `$maxBy`'s compares as each comes.
+        // copy, `$max(xs)`; `$maxBy`'s compares as each comes.
         if matches!(&callee.kind, js::ExprKind::Var(v) if ["$max", "$min", "$maxBy", "$minBy"].contains(&v.as_str()))
             && let Some(first) = args.first()
             && let js::ExprKind::Call(to_array, none) = &first.kind
@@ -911,7 +910,7 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
             ("reduce", [f, init]) => eager_items(chain, true, Some(f))
                 .map(|(items, _)| Expr::call(Expr::member(items, "reduce"), vec![f.clone(), init.clone()])),
             // Whether any item is a literal, which `===` and `includes` agree
-            // of whatever the items are: `includes`, as THIR's.
+            // of whatever the items are: `includes`.
             ("some", [f])
                 if let Some(value) = sought(f).filter(|v| {
                     matches!(&v.kind, js::ExprKind::Str(_) | js::ExprKind::Bool(_)) || v.as_int().is_some()
@@ -935,8 +934,8 @@ pub(super) fn eager_chains(stmts: &mut [Stmt]) {
 
 /// A chain MIR makes lazily for the next statement's array alone to
 /// spread, `const newLogs = $iter(xs).filter(f).map(g); const all =
-/// [...a, ...newLogs];`, of stages that do nothing else: the array THIR's
-/// makes, `xs.filter(f).map(g)`, which spreads alike.
+/// [...a, ...newLogs];`, of stages that do nothing else: an array,
+/// `xs.filter(f).map(g)`, which spreads alike.
 pub(super) fn eager_spreads(stmts: &mut [Stmt]) {
     for i in 0..stmts.len().saturating_sub(1) {
         let (head, rest) = stmts.split_at_mut(i + 1);
@@ -964,7 +963,7 @@ pub(super) fn eager_spreads(stmts: &mut [Stmt]) {
 }
 
 /// A chain MIR makes as Rust runs it (ADR 0364), item by item, `$iter(xs)
-/// .map(f).filter(g)`: the array THIR's makes of `xs`, `xs.map(f).filter(g)`
+/// .map(f).filter(g)`: an array made of `xs`, `xs.map(f).filter(g)`
 /// (ADR 0055), and how many stages it has, where the order its closures run
 /// in can't be told from Rust's. `whole`: what takes it runs over every
 /// item, as `collect` does, and one closure may do something, `taker`, its
@@ -1055,9 +1054,8 @@ fn eager_items(chain: &Expr, whole: bool, taker: Option<&Expr>) -> Option<(Expr,
 }
 
 /// Of `Iterator.from($lazyChain(a, b))`, a `chain` MIR makes: what each part
-/// steps, `a` and `b`, which spread in turn as it steps them, `[...a, ...b]`,
-/// as THIR collects it; of a part `Iterator.from(xs)`, or `cloned()`'s
-/// `xs.map((x) => x)`, `xs`.
+/// steps, `a` and `b`, which spread in turn as it steps them, `[...a, ...b]`;
+/// of a part `Iterator.from(xs)`, or `cloned()`'s `xs.map((x) => x)`, `xs`.
 fn chained(e: &Expr) -> Option<Vec<Expr>> {
     fn part(e: &Expr) -> Vec<Expr> {
         match &e.kind {

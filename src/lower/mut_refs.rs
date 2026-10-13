@@ -73,8 +73,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 
-    /// `item_handles`, of its arguments' values and its receiver's type: what
-    /// THIR and MIR both lower it to (ADR 0364).
+    /// A handle on each item `known` gives a `&mut` to, of its arguments'
+    /// values and its receiver's type: `$mutAt(v, 0)` and the like (ADR
+    /// 0152); `None` of what's given no handle.
     pub(in crate::lower) fn item_handles_of(
         &mut self,
         known: Std,
@@ -174,8 +175,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         regions(input).iter().any(|region| returned.contains(region))
     }
 
-    /// `generic_result` of the call of `def_id`, given `generic_args`, that
-    /// gives `value`: THIR's and MIR's.
+    /// What the call of `def_id`, given `generic_args`, gives, `value`, as
+    /// its caller has it: a `&mut` generic code boxes, its `value` (ADR 0099).
     pub(in crate::lower) fn generic_result_values(
         &self,
         (def_id, generic_args): (DefId, ty::GenericArgsRef<'tcx>),

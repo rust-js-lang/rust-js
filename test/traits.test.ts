@@ -240,17 +240,16 @@ test("copied JSX defaults select the implementation module's JSX extension", () 
   expect(readFileSync(join(dir, "lib.js"), "utf8")).toContain('./implementations.jsx');
 });
 
-// Each from THIR and MIR: MIR's own diagnostic where it words it otherwise,
-// or `null` where MIR lowers it, as Rust runs it.
-for (const [name, source, diagnostic, mirDiagnostic] of [
+// Each with its diagnostic, or `null` where it's lowered as Rust runs it.
+for (const [name, source, diagnostic] of [
   // A loop that owns its items drops what it hasn't reached (ADR 0098): of a
-  // `Vec`, an array or an `Option`, not yet of an adapter, nor, from THIR,
-  // through an iterator of the crate's own that holds one.
-  ["loop over an adapter of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) { for r in v.into_iter().rev() { let _ = r; } }`, "a loop over an iterator that holds a value with a destructor", "a std type holding a value with a destructor"],
-  ["loop over an iterator holding one", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub struct It(R, u8); impl Iterator for It { type Item = R; fn next(&mut self) -> Option<R> { None } } pub fn f(it: It) { for r in it { let _ = r; } }`, "a loop over an iterator that holds a value with a destructor", null],
+  // `Vec`, an array, an `Option` or an iterator of the crate's own that holds
+  // one, not yet of an adapter.
+  ["loop over an adapter of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) { for r in v.into_iter().rev() { let _ = r; } }`, "a std type holding a value with a destructor"],
+  ["loop over an iterator holding one", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub struct It(R, u8); impl Iterator for It { type Item = R; fn next(&mut self) -> Option<R> { None } } pub fn f(it: It) { for r in it { let _ = r; } }`, null],
   // `collect()` drains a chain of owned items through `map`, `filter` and
   // `skip_while` (ADR 0098), not one that leaves some, as `take` does.
-  ["collect after take of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) -> Vec<R> { v.into_iter().take(1).collect() }`, "of a value with a destructor", "`take` of items with a destructor"],
+  ["collect after take of owned items", `pub struct R; impl Drop for R { fn drop(&mut self) {} } pub fn f(v: Vec<R>) -> Vec<R> { v.into_iter().take(1).collect() }`, "`take` of items with a destructor"],
   // A chain whose stages do what can be seen runs lazily (ADR 0139), and a JS
   // iterator can't run from its other end, as `rev` would have it.
   ["peekable after a closure with effects", `pub fn f(v: &[i32]) -> Option<i32> { let mut p = v.iter().map(|x| { println!("{}", x); *x }).peekable(); p.peek().copied() }`, "\`peekable\` of a lazy iterator"],
@@ -271,20 +270,18 @@ for (const [name, source, diagnostic, mirDiagnostic] of [
   ["generic From", `pub fn f<T: From<u32>>() -> T { T::from(1) }`, "calling \`std::convert::From::from\`"],
   ["colliding methods", `#[rust_js::camel_case] const _: () = (); pub trait T { fn first_name(&self); fn firstName(&self); }`, "dictionary names collide"],
   ["reserved method", `pub trait T { fn __proto__(&self); }`, "reserved"],
-] as [string, string, string, (string | null)?][]) {
+] as [string, string, string | null][]) {
   test(`${name} produces a diagnostic instead of incomplete JS`, () => {
     const dir = fixture("trait-rejection");
     writeFileSync(join(dir, "lib.rs"), source);
-    for (const [expected, env] of [[mirDiagnostic === undefined ? diagnostic : mirDiagnostic, {}]] as const) {
-      const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")], { env: { ...process.env, ...env } });
-      expect(result.stderr.toString()).not.toContain("panicked");
-      if (expected === null) {
-        expect(result.exitCode, result.stderr.toString()).toBe(0);
-        continue;
-      }
-      expect(result.exitCode).not.toBe(0);
-      expect(result.stderr.toString()).toContain(expected);
-      expect(result.stderr.toString()).toContain("lib.rs:");
+    const result = Bun.spawnSync([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+    expect(result.stderr.toString()).not.toContain("panicked");
+    if (diagnostic === null) {
+      expect(result.exitCode, result.stderr.toString()).toBe(0);
+      return;
     }
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain(diagnostic);
+    expect(result.stderr.toString()).toContain("lib.rs:");
   });
 }

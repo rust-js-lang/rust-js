@@ -181,8 +181,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Err(self.unsupported(span, &format!("`as_deref` of a `{ty}`")))
     }
 
-    /// `vec![item; n]`, of their values: `rebuilt`, whether making `item` again
-    /// makes a clone of it, as THIR finds (ADR 0364).
+    /// `vec![item; n]`, of their values (ADR 0364): `rebuilt`, whether making
+    /// `item` again makes a clone of it.
     pub(in crate::lower) fn copies_values(
         &mut self,
         (item, item_ty): (Expr, Ty<'tcx>),
@@ -282,7 +282,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An `Option`'s or a `Result`'s combinator, of its arguments' values,
-    /// `tys` their types: what THIR and MIR both lower it to (ADR 0364).
+    /// `tys` their types (ADR 0364).
     /// `made`: whether the subject was just made by a call, so no other
     /// variable shares it.
     pub(in crate::lower) fn comb_values(

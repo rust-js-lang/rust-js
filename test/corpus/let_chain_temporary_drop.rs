@@ -1,4 +1,5 @@
-// What THIR refuses, MIR lowers as Rust runs it (ADR 0364).
+// A let chain whose first test makes a temporary with a destructor,
+// dropped where Rust drops it, whichever branch runs.
 pub struct D(u32);
 impl Drop for D { fn drop(&mut self) { println!("drop {}", self.0); } }
 impl D { pub fn n(&self) -> u32 { println!("n {}", self.0); 1 } }
