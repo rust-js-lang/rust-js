@@ -343,11 +343,14 @@ impl<T: Value> Value for Option<T> {}
 
 /// What a [`style`](Element::style) can be: a [`CSSProperties`], or an `Option` of
 /// one, which leaves it out when `None`, as a component's optional `style`
-/// prop passed on.
+/// prop passed on; either by reference, one kept in state say, as a JS
+/// object is given, the same one: made in one expression, it never changes.
 pub trait StyleValue {}
 
 impl StyleValue for CSSProperties {}
 impl StyleValue for Option<CSSProperties> {}
+impl StyleValue for &CSSProperties {}
+impl StyleValue for Option<&CSSProperties> {}
 
 /// A `referrerPolicy` attribute's value, as @types/react names them: one,
 /// or, as JSX writes it, the text of one, `referrerPolicy="no-referrer"`.

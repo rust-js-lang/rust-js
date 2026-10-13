@@ -3657,6 +3657,30 @@ pub fn Panel(BoxProps { width, custom_styles }: BoxProps) -> JSX::Element {
     .toEqual(['<div style="width:7px;color:red"></div>', '<div style="width:6px"></div>']);
 });
 
+// A style kept, in state say, is given by reference as it is, as react.dev's
+// home page keeps `{ width, height, transform }`s for its hover overlays.
+test("JSX styles are given by reference", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::{JSX, CSSProperties, jsx};
+pub struct OverlaysProps<'a> { pub styles: &'a [CSSProperties], pub first: Option<&'a CSSProperties> }
+pub fn Overlays(OverlaysProps { styles, first }: OverlaysProps) -> JSX::Element {
+    jsx! {
+        <>
+            <i style={first} />
+            {styles.iter().map(|styles| jsx! { <b style={styles} /> }).collect::<Vec<_>>()}
+        </>
+    }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("<b style={styles} />");
+  expect(jsx).toContain("<i style={first} />");
+  const { Overlays } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(Overlays({ styles: [{ width: "1px" }, { width: "2px" }], first: { color: "red" } })))
+    .toBe('<i style="color:red"></i><b style="width:1px"></b><b style="width:2px"></b>');
+});
+
 // React calls a component with its props and a value of its own, never a
 // drop: a component's type parameters take no destructor, in a library too,
 // whose consumers' could (ADR 0199). One given a type with one is refused.
