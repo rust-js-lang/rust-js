@@ -5,6 +5,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { runSync } from "./child";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
 beforeAll(buildReact, 600_000);
@@ -770,6 +771,62 @@ pub async fn listed(dir: String) -> Vec<String> {
   const lib = await import(join(dir, "mir.js"));
   expect((await lib.listed(join(dir, "tree"))).sort()).toEqual(["a.md:false", "sub:true"]);
   await expect(lib.listed(join(dir, "none"))).rejects.toThrow("ENOENT");
+});
+
+// `promisify`'s forms, as rustc checks a crate that uses node's: of none to
+// five arguments, and of a borrowed first one, which any borrow is given,
+// one a loop makes each time round. Without a warning: its impls of a
+// borrowed first argument and of any first argument were told apart only
+// by rustc's leak check, which warned that they conflict, and will refuse
+// them (rust-lang/rust#56105).
+test("promisify's forms are told apart without rustc's leak check", () => {
+  const dir = fixture("node-promisify-forms");
+  mkdirSync(join(dir, "src"), { recursive: true });
+  writeFileSync(join(dir, "Cargo.toml"), `[package]
+name = "forms"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+node = { package = "rust-js-node", path = ${JSON.stringify(join(root, "node"))} }
+js = { package = "rust-js-builtins", path = ${JSON.stringify(join(root, "builtins"))} }
+
+[workspace]
+`);
+  writeFileSync(join(dir, "src", "lib.rs"), `use js::{JsError, Promise};
+use node::{fs, util};
+
+type Done<T> = Box<dyn FnOnce(Option<&'static JsError>, T)>;
+
+pub fn none(f: fn(Done<u32>)) -> Promise<u32> {
+    util::promisify(f)()
+}
+
+pub fn one(f: fn(u32, Done<String>)) -> Promise<String> {
+    util::promisify(f)(1)
+}
+
+pub fn unit(f: fn(u32, Box<dyn FnOnce(Option<&'static JsError>)>)) -> Promise<()> {
+    util::promisify(f)(1)
+}
+
+pub fn two(f: fn(u32, String, Done<bool>)) -> Promise<bool> {
+    util::promisify(f)(1, String::new())
+}
+
+pub fn borrowed(dirs: &[String]) -> Vec<Promise<Vec<String>>> {
+    let readdir = util::promisify(fs::readdir);
+    let mut listed = Vec::new();
+    for dir in dirs {
+        let path = format!("{dir}/");
+        listed.push(readdir(&path));
+    }
+    listed
+}
+`);
+  const check = runSync(["cargo", "check", "--offline", "--message-format=short", "--manifest-path", join(dir, "Cargo.toml"), "--target-dir", join(dir, "target")], dir, 300_000, { RUSTC_BOOTSTRAP: undefined });
+  expect(check.stderr.split("\n").filter(line => /\b(?:warning|error)\b/.test(line) && !/generated \d+ warnings?/.test(line))).toEqual([]);
+  expect(check.code).toBe(0);
 });
 
 // ADR 0272: `path`, each of @types/node's: its functions, its constants,

@@ -1,6 +1,8 @@
 # 0368. `util.promisify` of a callback function
 
-Status: Accepted. Extends [0272](0272-node.md).
+Status: Accepted. (Amended: `Promisify` is of the arguments before the
+callback, so its forms are told apart without rustc's leak check.)
+Extends [0272](0272-node.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -32,6 +34,14 @@ of, `fs::readdir`, is bound as a static of that pointer's type.**
   and `fn(A1.., Box<dyn FnOnce(Option<E>)>)`, of none to five arguments,
   as @types/node's overloads; and for `for<'a> fn(&'a P, ..)`, a borrowed
   first argument, a path, whose promised function takes any borrow of it.
+- **`Promisify<Args>` is of the arguments before the callback**, `(A1,
+  A2)`, or `Borrowed<P>` of a borrowed first one, which no value is.
+  (Amended: it was `Promisify` alone, and its impl of `fn(A1, ..)` and of
+  `for<'a> fn(&'a P, ..)` were told apart only by rustc's leak check,
+  which warned that they conflict and will refuse them,
+  rust-lang/rust#56105: a created app's `cargo check` warned of each.
+  Of other arguments, a tuple and `Borrowed`, the two are other traits,
+  which never overlap; `promisify` infers which from its function.)
 - `fs::readdir` and `fs::stat` are `safe static`s of
   `for<'a> fn(&'a str, Box<dyn FnOnce(..)>)`: called as functions are,
   `fs::stat(path, callback)`, and given to `promisify` as the pointer they
@@ -56,7 +66,8 @@ of, `fs::readdir`, is bound as a static of that pointer's type.**
 - A callback function bound as a function item can't be promisified until
   it's bound as a static too; `readdir` and `stat` are.
 - `test/bindings.test.ts` lists a directory through both, and holds the
-  rejection of one that's missing.
+  rejection of one that's missing; and checks each form, of none to two
+  arguments and of a borrowed one a loop gives, without a warning.
 
 ## Since
 
