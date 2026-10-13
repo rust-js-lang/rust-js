@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use crate::manifest::{self, Manifest, fingerprint};
 use crate::paths::{absolute, parent_dir, relative, relative_resolved, resolve, specifier_file};
 
-use crate::publish::{Artifact, ArtifactPlan};
+use crate::publish::Artifact;
 use crate::{js, program, to_oxc};
 
 pub struct OutputPlan {
@@ -575,6 +575,20 @@ impl OutputPlan {
         }
         artifacts.extend(extra);
         Ok(ArtifactPlan { artifacts, stale })
+    }
+}
+
+/// What a build writes and what it leaves stale, constructed by `plan` alone,
+/// after every name and content has been validated: its fields are its own.
+pub(crate) struct ArtifactPlan {
+    artifacts: Vec<Artifact>,
+    stale: Vec<PathBuf>,
+}
+
+impl ArtifactPlan {
+    /// Carry the plan out: the publisher writes what it says.
+    pub(crate) fn publish(self) -> Result<(), String> {
+        crate::publish::publish(&self.artifacts, &self.stale)
     }
 }
 

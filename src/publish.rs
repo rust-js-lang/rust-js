@@ -10,19 +10,9 @@ pub(crate) struct Artifact {
     pub(crate) bytes: Vec<u8>,
 }
 
-/// Constructed only after all names and contents have been validated.
-pub(crate) struct ArtifactPlan {
-    pub(crate) artifacts: Vec<Artifact>,
-    pub(crate) stale: Vec<PathBuf>,
-}
-
-impl ArtifactPlan {
-    pub(crate) fn publish(self) -> Result<(), String> {
-        publish(&self.artifacts, &self.stale)
-    }
-}
-
-fn publish(artifacts: &[Artifact], stale: &[PathBuf]) -> Result<(), String> {
+/// Write `artifacts` and remove `stale`, as an artifact plan has them: staged,
+/// the manifest last, and rolled back if any fails.
+pub(crate) fn publish(artifacts: &[Artifact], stale: &[PathBuf]) -> Result<(), String> {
     // WASI compiles into a fresh, disposable virtual filesystem. The browser
     // shim does not provide native rename semantics; callers expose files only
     // after success. Validation and generation above still finish before writes.

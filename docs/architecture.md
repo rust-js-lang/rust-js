@@ -439,7 +439,8 @@ and preview recovery are host responsibilities.
 One compiler crate, whose module visibility and owned phase outputs keep
 the boundaries; packages split only when independent reuse, dependency
 isolation, or release needs justify it. Only the linker can construct the
-`Linked` value artifact planning requires. Build hosts consume the manifest
+`Linked` value artifact planning requires, and only artifact planning the
+`ArtifactPlan` the publisher carries out. Build hosts consume the manifest
 instead of inferring compiler output.
 
 | Responsibility | Code |
