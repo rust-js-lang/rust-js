@@ -8,8 +8,9 @@ import { readFileSync } from "node:fs";
 import idl from "@webref/idl";
 import { open } from "@rust-js/typescript";
 
-/** A class's members, and of them its methods. */
-export type Members = { members: Set<string>; methods: Set<string>; statics: Set<string>; ctor: boolean; extends: string[] };
+/** A class's members, and of them its methods, and what each that gives a
+ * `NodeListOf<X>` lists, `querySelectorAll`'s `Element`. */
+export type Members = { members: Set<string>; methods: Set<string>; statics: Set<string>; ctor: boolean; extends: string[]; lists: Map<string, string> };
 
 export type Coverage = {
   /** Every member of TypeScript's classes, `Element.append`. */
@@ -27,13 +28,26 @@ const lib = new URL("./src/lib.rs", import.meta.url).pathname;
 /** TypeScript's classes and their members: their own, their mixins'
  * (`ParentNode`'s), not their parent class's, which they have by `Deref`;
  * their statics, `static:supports`, and a constructor. */
+/** What a member's `NodeListOf<X>` (or `| null`) lists, `X`, or its type
+ * parameter's constraint, `querySelectorAll<E extends Element>`'s
+ * `Element`: of the first overload that names one. */
+function listed(member: any): string | undefined {
+  const type = member.kind === "method" ? member.returns : member.type;
+  const list = (type?.kind === "union" ? type.types : [type]).find((t: any) => t?.kind === "reference" && t.name === "NodeListOf");
+  const item = list?.args[0];
+  if (item?.kind !== "reference") return undefined;
+  const param = (member.typeParameters ?? []).find((p: any) => p.name === item.name);
+  const named = param ? param.constraint : item;
+  return named?.kind === "reference" ? named.name : undefined;
+}
+
 export async function typescript(): Promise<Map<string, Members>> {
   const session = await open([dom]);
   const { declarations } = await session.read(dom);
   await session.close();
   const interfaces = new Map<string, Members>();
   const of = (name: string) => {
-    if (!interfaces.has(name)) interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [] });
+    if (!interfaces.has(name)) interfaces.set(name, { members: new Set(), methods: new Set(), statics: new Set(), ctor: false, extends: [], lists: new Map() });
     return interfaces.get(name)!;
   };
   const classes = new Set<string>();
@@ -43,6 +57,10 @@ export async function typescript(): Promise<Map<string, Members>> {
       for (const e of d.extends) if (e.kind === "reference") m.extends.push(e.name);
       for (const member of d.members) if (member.kind === "method" || member.kind === "property") m.members.add(member.name);
       for (const member of d.members) if (member.kind === "method") m.methods.add(member.name);
+      for (const member of d.members) {
+        const item = listed(member);
+        if (item && !m.lists.has(member.name)) m.lists.set(member.name, item);
+      }
     } else if (d.kind === "const" && d.type.kind === "object" && d.type.members.some((x: any) => x.name === "prototype")) {
       classes.add(d.name);
       const m = of(d.name);
@@ -65,16 +83,18 @@ export async function typescript(): Promise<Map<string, Members>> {
       m.extends.filter((e) => classes.has(e)).flatMap((e) => [...of(e).members, ...everything(e, new Set())]),
     );
     const members = new Set([...m.members, ...mixins(name, new Set())].filter((x) => !parents.has(x)));
-    // Its methods, its mixins' and its parents' too.
+    // Its methods and lists, its mixins' and its parents' too.
     const methods = new Set<string>();
+    const lists = new Map<string, string>();
     const add = (n: string, seen: Set<string>) => {
       if (seen.has(n)) return;
       seen.add(n);
       for (const x of of(n).methods) methods.add(x);
+      for (const [x, item] of of(n).lists) if (!lists.has(x)) lists.set(x, item);
       for (const e of of(n).extends) add(e, seen);
     };
     add(name, new Set());
-    out.set(name, { ...m, members, methods });
+    out.set(name, { ...m, members, methods, lists });
   }
   return out;
 }

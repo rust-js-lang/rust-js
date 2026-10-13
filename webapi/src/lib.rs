@@ -2570,7 +2570,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "querySelectorAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList {
+    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList<Element> {
         unreachable!()
     }
 
@@ -3364,7 +3364,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "getElementsByName")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_elements_by_name(&self, element_name: &str) -> &'static NodeList {
+    pub fn get_elements_by_name(&self, element_name: &str) -> &'static NodeList<HTMLElement> {
         unreachable!()
     }
 
@@ -3910,7 +3910,7 @@ impl Document {
     #[cfg_attr(rust_js, rust_js::link_name = "querySelectorAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList {
+    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList<Element> {
         unreachable!()
     }
 
@@ -5853,7 +5853,7 @@ impl DocumentFragment {
     #[cfg_attr(rust_js, rust_js::link_name = "querySelectorAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList {
+    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList<Element> {
         unreachable!()
     }
 
@@ -6005,25 +6005,27 @@ impl DOMTokenList {
 }
 
 /// [`NodeList`](https://developer.mozilla.org/docs/Web/API/NodeList)
-#[cfg_attr(rust_js, rust_js::types = "NodeList")]
-pub struct NodeList(PhantomData<JsObject>);
+#[cfg_attr(rust_js, rust_js::types = "NodeListOf<T>")]
+pub struct NodeList<T = Node>(PhantomData<JsObject>, PhantomData<T>);
 
 pub mod node_list {
     use super::*;
 
-    unsafe extern "Rust" {
-        /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/Symbol.iterator)
-        #[link_name = "Iterator.from"]
-        pub safe fn iter(items: &NodeList) -> Box<dyn Iterator<Item = &'static Node>>;
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/Symbol.iterator)
+    #[cfg_attr(rust_js, rust_js::link_name = "Iterator.from")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iter<T>(items: &NodeList<T>) -> Box<dyn Iterator<Item = &'static T>> {
+        unreachable!()
     }
 }
 
-impl NodeList {
+impl<T> NodeList<T> {
     /// [MDN](https://developer.mozilla.org/docs/Web/API/NodeList/item)
     #[cfg_attr(rust_js, rust_js::link_name = "item")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn item(&self, index: u32) -> Option<&'static Node> {
+    pub fn item(&self, index: u32) -> Option<&'static T> {
         unreachable!()
     }
 
@@ -6039,7 +6041,7 @@ impl NodeList {
     #[cfg_attr(rust_js, rust_js::link_name = "forEach")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn for_each(&self, callback: Box<dyn FnMut(&Node, u32, &NodeList)>) {
+    pub fn for_each(&self, callback: Box<dyn FnMut(&T, u32, &NodeList<T>)>) {
         unreachable!()
     }
 
@@ -6055,7 +6057,7 @@ impl NodeList {
     #[cfg_attr(rust_js, rust_js::link_name = "values")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn values(&self) -> Box<dyn Iterator<Item = &'static Node>> {
+    pub fn values(&self) -> Box<dyn Iterator<Item = &'static T>> {
         unreachable!()
     }
 
@@ -6063,7 +6065,7 @@ impl NodeList {
     #[cfg_attr(rust_js, rust_js::link_name = "entries")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static Node)>> {
+    pub fn entries(&self) -> Box<dyn Iterator<Item = (u32, &'static T)>> {
         unreachable!()
     }
 
@@ -9195,7 +9197,7 @@ impl HTMLButtonElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn labels(&self) -> &'static NodeList {
+    pub fn labels(&self) -> &'static NodeList<HTMLLabelElement> {
         unreachable!()
     }
 
@@ -10737,7 +10739,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn labels(&self) -> Option<&'static NodeList> {
+    pub fn labels(&self) -> Option<&'static NodeList<HTMLLabelElement>> {
         unreachable!()
     }
 
@@ -11403,7 +11405,7 @@ impl HTMLOutputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn labels(&self) -> &'static NodeList {
+    pub fn labels(&self) -> &'static NodeList<HTMLLabelElement> {
         unreachable!()
     }
 
@@ -11763,7 +11765,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn labels(&self) -> &'static NodeList {
+    pub fn labels(&self) -> &'static NodeList<HTMLLabelElement> {
         unreachable!()
     }
 
@@ -12116,7 +12118,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn labels(&self) -> &'static NodeList {
+    pub fn labels(&self) -> &'static NodeList<HTMLLabelElement> {
         unreachable!()
     }
 
@@ -17530,7 +17532,7 @@ impl HTMLProgressElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn labels(&self) -> &'static NodeList {
+    pub fn labels(&self) -> &'static NodeList<HTMLLabelElement> {
         unreachable!()
     }
 
@@ -17660,7 +17662,7 @@ impl HTMLMeterElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get labels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn labels(&self) -> &'static NodeList {
+    pub fn labels(&self) -> &'static NodeList<HTMLLabelElement> {
         unreachable!()
     }
 

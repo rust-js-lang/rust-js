@@ -135,6 +135,16 @@ export function listed(list, headers) {
   return [count, names];
 }
 
+export function selected(el, input) {
+  const widths = el
+    .querySelectorAll("p")
+    .values()
+    .map((p) => p.getBoundingClientRect().width)
+    .toArray();
+  const label = input.labels?.item(0)?.htmlFor;
+  return [widths, label];
+}
+
 export function unions_read(reader, data) {
   const result = reader.result;
   const text = typeof result === "string";

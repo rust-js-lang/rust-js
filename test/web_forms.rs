@@ -173,6 +173,15 @@ pub fn listed(list: &webapi::NodeList, headers: &webapi::Headers) -> (usize, Vec
     (count, names)
 }
 
+/// A list's items are of the type TypeScript's `NodeListOf` gives:
+/// `querySelectorAll`'s `Element`s, whose rect is read as they are, and
+/// an input's `labels`, `HTMLLabelElement`s.
+pub fn selected(el: &webapi::Element, input: &webapi::HTMLInputElement) -> (Vec<f64>, Option<String>) {
+    let widths = el.query_selector_all("p").values().map(|p| p.get_bounding_client_rect().width()).collect();
+    let label = input.labels().and_then(|labels| labels.item(0)).map(|label| label.html_for());
+    (widths, label)
+}
+
 /// A union a function gives is the enum a parameter of it takes, read as
 /// the member JS gives: `reader.result`, text or an `ArrayBuffer`, and a
 /// form's field, text or a `File`.

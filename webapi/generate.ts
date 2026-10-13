@@ -657,7 +657,7 @@ const skipped = new Map<string, number>();
 const skip = (why: string) => skipped.set(why, (skipped.get(why) ?? 0) + 1);
 
 /** A binding; `nullable`, its parameters whose `None` is `null` (ADR 0275). */
-type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[]; nullable?: string[] };
+type Fn = { name: string; jsName: string; params: string[]; result: string; doc: string[]; nullable?: string[]; typeParams?: string[] };
 
 // Operations whose typed form, by an event's or a tag's type (ADR 0223), has
 // their name: the form that takes any string is `_named`.
@@ -1144,7 +1144,7 @@ const unionParam = (p: string): Union | undefined => unions.get(p.slice(p.indexO
  * (ADR 0229).
  */
 function generic(f: Fn): string {
-  const names: string[] = [];
+  const names: string[] = [...(f.typeParams ?? [])];
   const params = f.params.map((p) => {
     const union = unionParam(p);
     if (union) return `${p.slice(0, p.indexOf(": "))}: impl Into${union.name}`;
@@ -1193,7 +1193,7 @@ function cssProperties(have: Fn[]): Fn[] {
 function module(name: string, all: Fn[], typed: string[] = [], constants: string[] = []) {
   if (all.length === 0 && constants.length === 0) return;
   count += all.length;
-  const fns = all.filter((f) => !f.params.some((p) => p.endsWith(`: ${ANY}`) || unionParam(p)));
+  const fns = all.filter((f) => !f.typeParams && !f.params.some((p) => p.endsWith(`: ${ANY}`) || unionParam(p)));
   typed = [...all.filter((f) => !fns.includes(f)).map(generic), ...typed];
   line();
   line(`pub mod ${name} {`);
@@ -1228,16 +1228,31 @@ function module(name: string, all: Fn[], typed: string[] = [], constants: string
   line(`}`);
 }
 
+/** A `NodeList` is TypeScript's `NodeListOf<T>`, of the type its items
+ * are: a member's is what TypeScript says it lists, `querySelectorAll`'s
+ * `Element`s, else `Node`s; and its own members give and take a `T`. */
+function listing(i: Interface, f: Fn): Fn {
+  if (i.name === "NodeList") {
+    const of = (t: string) => t.replace(/&('static )?Node\b/g, "&$1T").replace(/&NodeList\b/g, "&NodeList<T>");
+    const moduleFn = !f.params[0]?.startsWith("this:");
+    return { ...f, params: f.params.map(of), result: of(f.result), ...(moduleFn ? { typeParams: ["T"] } : {}) };
+  }
+  const item = typescriptDom.get(jsName(i))?.lists.get(f.jsName.replace(/^get /, ""));
+  if (!item || !known.has(item) || !/\bNodeList\b/.test(f.result)) return f;
+  return { ...f, result: f.result.replace(/\bNodeList\b/, `NodeList<${typeName(item)}>`) };
+}
+
 for (const name of INTERFACES) {
   const i = interfaces.get(name)!;
   const type = typeName(name);
+  const listOf = name === "NodeList";
   line();
   line(`/// [\`${jsName(i)}\`](${mdn(name)})`);
   // Its JS class, as `instanceof` names it, where its Rust name isn't (ADR 0214).
   if (jsName(i) !== type) line(`#[cfg_attr(rust_js, rust_js::name = ${JSON.stringify(jsName(i))})]`);
   // What it is to TypeScript: its DOM lib's interface of the same name.
-  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(jsName(i))})]`);
-  line(`pub struct ${type}(PhantomData<JsObject>);`);
+  line(`#[cfg_attr(rust_js, rust_js::types = ${JSON.stringify(listOf ? "NodeListOf<T>" : jsName(i))})]`);
+  line(listOf ? `pub struct ${type}<T = Node>(PhantomData<JsObject>, PhantomData<T>);` : `pub struct ${type}(PhantomData<JsObject>);`);
   if (i.parent && known.has(i.parent)) {
     const parent = typeName(i.parent);
     line();
@@ -1261,12 +1276,12 @@ for (const name of INTERFACES) {
   // (ADR 0282). Only constructors, statics, constants and casts, which no
   // value of it is given to, stay in its module.
   const methods = fns.filter((f) => f.params[0] === `this: &${type}` && f.jsName !== "this");
-  module(snake(qualified(name)), fns.filter((f) => !methods.includes(f)), [], [...(constantsOf.get(name)?.values() ?? [])]);
+  module(snake(qualified(name)), fns.filter((f) => !methods.includes(f)).map((f) => listing(i, f)), [], [...(constantsOf.get(name)?.values() ?? [])]);
   count += methods.length;
   if (methods.length > 0 || TYPED[name]) {
     line();
-    line(`impl ${type} {`);
-    for (const f of methods) {
+    line(listOf ? `impl<T> ${type}<T> {` : `impl ${type} {`);
+    for (const f of methods.map((f) => listing(i, f))) {
       line(generic({ ...f, params: ["&self", ...f.params.slice(1)] }));
       line();
     }

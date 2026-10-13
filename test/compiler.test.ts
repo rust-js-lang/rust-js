@@ -843,7 +843,7 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(js).toContain("document.adoptedStyleSheets = [sheet];\n  return document.adoptedStyleSheets.length;");
   // A function JS gives, an object.
   expect(js).toContain('return !!registry.get("x-card");');
-  const { round_trip, iterated, samples, texts, on_errors, listed, unions_read, defined } = await import(join(target, "web_forms.js"));
+  const { round_trip, iterated, samples, texts, on_errors, listed, selected, unions_read, defined } = await import(join(target, "web_forms.js"));
   expect([defined({ get: () => class {} }), defined({ get: () => undefined })]).toEqual([true, false]);
   // A union a function gives, read as the member JS gives.
   const form = new FormData();
@@ -851,6 +851,9 @@ test("the webapi crate's bindings become plain JS", async () => {
   expect(unions_read({ result: "text" }, form)).toEqual([true, "Ada"]);
   expect(unions_read({ result: new ArrayBuffer(1) }, new FormData())).toEqual([false, undefined]);
   expect(listed([1, 2, 3], new Headers({ a: "1", b: "2" }))).toEqual([3, ["a", "b"]]);
+  const p = (width: number) => ({ getBoundingClientRect: () => ({ width }) });
+  const labels = [{ htmlFor: "name" }];
+  expect(selected({ querySelectorAll: () => [p(1), p(2)] }, { labels: Object.assign(labels, { item: (n: number) => labels[n] }) })).toEqual([[1, 2], "name"]);
   (globalThis as any).window = {};
   const button: any = {};
   expect(on_errors(button)).toBe(true);

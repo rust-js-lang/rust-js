@@ -578,13 +578,14 @@ test("declarations give an impl Trait parameter of no TypeScript type unknown", 
 // person writes it, `on_click?: MouseEventHandler<HTMLButtonElement>`, an
 // argument left to its default left out, `MouseEventHandler`, where
 // Rust's expanded type was spelled out, `(event: MouseEvent<..>) => void`.
+// A `NodeList` is TypeScript's `NodeListOf` of its items' type.
 test("declarations name @types/react's aliases as the Rust names them", () => {
   buildReact();
   const dir = fixture("declarations-aliases");
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
 use react::event::{ChangeEventHandler, MouseEventHandler};
-use react::webapi::{HTMLButtonElement, HTMLElement, HTMLInputElement};
+use react::webapi::{HTMLButtonElement, HTMLElement, HTMLInputElement, NodeList};
 use react::{EffectCallback, JSX, Reducer, RefCallback, jsx};
 pub struct ButtonProps {
     pub on_click: Option<MouseEventHandler<HTMLButtonElement>>,
@@ -603,6 +604,9 @@ pub fn hooks(reducer: Reducer<i32, i32>, effect: EffectCallback) -> u32 {
     let _ = (reducer, effect);
     2
 }
+pub fn lists(elements: &NodeList<HTMLElement>, nodes: &NodeList) -> u32 {
+    elements.length() + nodes.length()
+}
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
   const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
@@ -611,6 +615,7 @@ pub fn hooks(reducer: Reducer<i32, i32>, effect: EffectCallback) -> u32 {
   expect(declarations).toContain("on_any: MouseEventHandler;");
   expect(declarations).toContain("export function attach(target: RefCallback<HTMLElement>): number;");
   expect(declarations).toContain("export function hooks(reducer: Reducer<number, number>, effect: EffectCallback): number;");
+  expect(declarations).toContain("export function lists(elements: NodeListOf<HTMLElement>, nodes: NodeListOf<Node>): number;");
   expect(declarations).toContain('import type { ChangeEventHandler, EffectCallback, JSX, MouseEventHandler, Reducer, RefCallback } from "react";');
 });
 
