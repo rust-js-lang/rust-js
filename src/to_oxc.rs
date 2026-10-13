@@ -206,59 +206,18 @@ pub fn emit(
     }
     code.push('\n');
 
-    // oxc puts an object of one property on one line, so a type with one
-    // method comes out `const Tally = { doubled(tally) {`: lay that out as an
-    // object of several, the method on its own lines. Record where each part
-    // of each generated line ends up, to fix the map.
-    let one_method: Vec<String> = module
-        .items
-        .iter()
-        .filter_map(|item| match item {
-            js::Item::Namespace(n) => Some(n),
-            _ => None,
-        })
-        .filter(|n| n.methods.len() == 1)
-        .map(|n| format!("{}const {} = {{ ", if n.export { "export " } else { "" }, n.name))
-        .collect();
-    let mut out_line = code.matches('\n').count() as u32;
+    // The generated code, each line after the header: where each ends up,
+    // to fix the map.
+    let header_lines = code.matches('\n').count() as u32;
     let mut places: Vec<Vec<Place>> = Vec::new();
-    let mut in_object = false;
-    for line in generated.code.lines() {
-        let mut put = |text: &str, from_col: u32, delta: i64, parts: &mut Vec<Place>| {
-            code.push_str(text);
-            code.push('\n');
-            parts.push(Place {
-                from_col,
-                line: out_line,
-                delta,
-            });
-            out_line += 1;
-        };
-        let mut parts = Vec::new();
-        let opening = one_method
-            .iter()
-            .find(|prefix| line.starts_with(prefix.as_str()) && line.ends_with('{'));
-        match opening {
-            Some(prefix) if !in_object => {
-                let at = prefix.len() as u32;
-                put(prefix.trim_end(), 0, 0, &mut parts);
-                put(
-                    &format!("  {}", &line[prefix.len()..]),
-                    at,
-                    2 - i64::from(at),
-                    &mut parts,
-                );
-                in_object = true;
-            }
-            _ if in_object && line == "} };" => {
-                put("  }", 0, 2, &mut parts);
-                put("};", 1, -2, &mut parts);
-                in_object = false;
-            }
-            _ if in_object => put(&format!("  {line}"), 0, 2, &mut parts),
-            _ => put(line, 0, 0, &mut parts),
-        }
-        places.push(parts);
+    for (out_line, line) in (header_lines..).zip(generated.code.lines()) {
+        code.push_str(line);
+        code.push('\n');
+        places.push(vec![Place {
+            from_col: 0,
+            line: out_line,
+            delta: 0,
+        }]);
     }
     // After everything it maps, so the map's lines stay where they are.
     if let Some(function) = &module.default_export {
