@@ -547,3 +547,59 @@ pub(in crate::lower) fn discarded_calls(items: &mut [js::Item]) {
         }
     }
 }
+
+/// `$orInsert(m, k, 0); const h = $mutGet(m, k); h.value = f(h.value);`,
+/// MIR's `*m.entry(k).or_insert(0) += 1`, the handle read nowhere else: the
+/// value there or put in, then set, `const current = $orInsert(m, k, 0);
+/// m.set(k, f(current));`: tidy's step of a map's (`mir::tidy`).
+pub(in crate::lower) fn counted_entries(stmts: &mut Vec<Stmt>) {
+    let call_of = |e: &Expr, helper: &str| match &e.kind {
+        js::ExprKind::Call(callee, args) if matches!(&callee.kind, js::ExprKind::Var(f) if f == helper) => {
+            Some(args.clone())
+        }
+        _ => None,
+    };
+    let mut i = 0;
+    while i + 2 < stmts.len() {
+        if let StmtKind::Expr(inserted) = &stmts[i].kind
+            && let Some(args) = call_of(inserted, "$orInsert")
+            && let [map, key, _] = &args[..]
+            && let StmtKind::Const(handle, got) = &stmts[i + 1].kind
+            && let Some(got) = call_of(got, "$mutGet")
+            && let [m, k] = &got[..]
+            && js::same_path(map, m)
+            && (js::same_path(key, k)
+                || matches!((&key.kind, &k.kind), (js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b))
+            && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
+            && matches!(&target.kind, js::ExprKind::Member(of, v)
+                if v == js::HELD && matches!(&of.kind, js::ExprKind::Var(h) if h == handle))
+            && js::mentions_in(&stmts[i + 3..], handle) == 0
+        {
+            let name = (std::iter::once("current".to_string()))
+                .chain((1..).map(|n| format!("current${n}")))
+                .find(|n| js::mentions_in(stmts, n) == 0)
+                .expect("a name");
+            let mut value = vec![StmtKind::Expr(value.clone()).at(js::Span::NONE)];
+            js::each_expr_mut(&mut value, &mut |e| {
+                if let js::ExprKind::Member(of, v) = &e.kind
+                    && v == js::HELD
+                    && matches!(&of.kind, js::ExprKind::Var(h) if h == handle)
+                {
+                    *e = Expr::var(&name);
+                }
+            });
+            if js::mentions_in(&value, handle) > 0 {
+                i += 1;
+                continue;
+            }
+            let StmtKind::Expr(value) = value.pop().expect("one").kind else {
+                unreachable!("made")
+            };
+            let set = Expr::call(Expr::member(map.clone(), "set"), vec![key.clone(), value]);
+            let span = stmts[i + 2].span;
+            stmts[i].kind = StmtKind::Const(name, inserted.clone());
+            stmts.splice(i + 1..i + 3, [StmtKind::Expr(set).at(span)]);
+        }
+        i += 1;
+    }
+}

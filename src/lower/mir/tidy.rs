@@ -86,7 +86,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // What branches make a value of: the function's, and where an `if` is written.
     let made = (result, conditions);
     // A guard of a handle made for it alone: the place it's a handle on.
-    unguarded(body);
+    crate::lower::std_types::cell::unguarded(body);
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {
@@ -175,7 +175,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // What an array made for its parts left, `const _5 = 6;`, too.
     alias_variables(body, &changing);
     named_temporaries(body);
-    js::each_expr_mut(body, &mut range_items);
+    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
     eager_chains(body);
     js::statement_lists(body, &mut |stmts| eager_spreads(stmts));
     // A block, or branches, a function's body or a loop's ends in, the function's value made
@@ -216,7 +216,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
     // $iter(xs);`: the array's; and a range made there, its
     // numbers made as they're stepped.
-    js::each_expr_mut(body, &mut range_items);
+    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);
     eager_chains(body);
     // Of each, a callback that passes what it's given on to Rust's function,
     // `(x, i) => f(x, i)`: `f` itself.
@@ -296,7 +296,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     });
     js::statement_lists(body, &mut |stmts| named_labels(stmts, written));
     loop_exits(body, returns, written, valued);
-    js::statement_lists(body, &mut map_counts);
+    js::statement_lists(body, &mut crate::lower::std_types::map::counted_entries);
     // `!` of what's read in place now, `!(t === "pre")` of `!_5`: as
     // `Expr::unary` makes it, `t !== "pre"`.
     js::each_expr_mut(body, &mut |e| {
@@ -969,7 +969,7 @@ fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         // The binding of what it tests is set, first, tested itself.
         let bound = match (&test.kind, then.peek().map(|s| &s.kind)) {
             (ExprKind::Binary(Op::LooseNe, x, null), Some(StmtKind::Const(b, value)))
-                if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && same(x, value) =>
+                if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) && js::same_path(x, value) =>
             {
                 Some(b.clone())
             }
@@ -1119,7 +1119,7 @@ fn assigned_arms(stmt: &Stmt, arms: &mut Vec<(Option<Expr>, Expr)>) -> Option<Ex
             arms.push((Some(test.clone()), value.clone()));
             let [rest] = otherwise.as_slice() else { return None };
             let rest = assigned_arms(rest, arms)?;
-            same(&rest, target).then_some(rest)
+            js::same_path(&rest, target).then_some(rest)
         }
         StmtKind::Assign(target, value) => {
             value_arms(value, arms);
@@ -1175,7 +1175,7 @@ fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Option<Expr> {
                     return None;
                 };
                 let ExprKind::Str(name) = &name.kind else { return None };
-                if !same(k, key) {
+                if !js::same_path(k, key) {
                     return None;
                 }
                 Some(name.as_str())
@@ -1184,7 +1184,7 @@ fn table_read(arms: &[(Option<Expr>, Expr)], names: &[String]) -> Option<Expr> {
         };
         match &value.kind {
             ExprKind::Member(of, field) if name.is_none_or(|n| n == field) && !fields.contains(&field.as_str()) => {
-                if table.is_some_and(|t| !same(t, of)) {
+                if table.is_some_and(|t| !js::same_path(t, of)) {
                     return None;
                 }
                 table = Some(of);
@@ -3320,14 +3320,14 @@ fn same_test(a: &Expr, b: &Expr) -> bool {
     match (&a.kind, &b.kind) {
         (ExprKind::Unary(UnaryOp::Not, x), ExprKind::Unary(UnaryOp::Not, y)) => same_test(x, y),
         (ExprKind::Binary(p, x, k), ExprKind::Binary(q, y, l)) if p == q => {
-            same(x, y)
+            js::same_path(x, y)
                 && match (&k.kind, &l.kind) {
                     (ExprKind::Null | ExprKind::Undefined, ExprKind::Null | ExprKind::Undefined) => true,
                     (ExprKind::Str(k), ExprKind::Str(l)) => k == l,
                     _ => k.as_int().is_some() && k.as_int() == l.as_int(),
                 }
         }
-        _ => same(a, b),
+        _ => js::same_path(a, b),
     }
 }
 
@@ -3862,12 +3862,14 @@ fn implies(by: &Expr, test: &Expr) -> bool {
         (ExprKind::Binary(Op::LooseNe, x, null), ExprKind::Binary(Op::Eq, y, literal))
             if matches!(null.kind, ExprKind::Null | ExprKind::Undefined) =>
         {
-            same(x, y) && literal.is_constant() && !matches!(literal.kind, ExprKind::Null | ExprKind::Undefined)
+            js::same_path(x, y)
+                && literal.is_constant()
+                && !matches!(literal.kind, ExprKind::Null | ExprKind::Undefined)
         }
         (ExprKind::Binary(Op::Eq, kind, name), ExprKind::Binary(Op::Eq, y, literal))
             if let ExprKind::Unary(UnaryOp::Typeof, x) = &kind.kind =>
         {
-            same(x, y)
+            js::same_path(x, y)
                 && match (&name.kind, &literal.kind) {
                     (ExprKind::Str(t), ExprKind::Str(_)) => t == "string",
                     (ExprKind::Str(t), ExprKind::Num(_)) => t == "number",
@@ -3896,7 +3898,7 @@ fn guarded_chain(stmt: &Stmt, guard: &Expr) -> bool {
 /// such.
 fn truthy_or_undefined(e: &Expr) -> bool {
     match &e.kind {
-        ExprKind::Cond(test, yes, no) => matches!(no.kind, ExprKind::Undefined) && same(&test.tested(), yes),
+        ExprKind::Cond(test, yes, no) => matches!(no.kind, ExprKind::Undefined) && js::same_path(&test.tested(), yes),
         ExprKind::Binary(Op::Or, _, b) => truthy_or_undefined(b),
         ExprKind::Binary(Op::Coalesce, a, b) => truthy_or_undefined(a) && truthy_or_undefined(b),
         _ => false,
@@ -3916,73 +3918,6 @@ fn truth_of(e: Expr) -> Expr {
             kind,
             span,
         },
-    }
-}
-
-/// `$orInsert(m, k, 0); const h = $mutGet(m, k); h.value = f(h.value);`,
-/// MIR's `*m.entry(k).or_insert(0) += 1`, the handle read nowhere else: the
-/// value there or put in, then set, `const current = $orInsert(m, k, 0);
-/// m.set(k, f(current));`.
-fn map_counts(stmts: &mut Vec<Stmt>) {
-    let call_of = |e: &Expr, helper: &str| match &e.kind {
-        ExprKind::Call(callee, args) if matches!(&callee.kind, ExprKind::Var(f) if f == helper) => Some(args.clone()),
-        _ => None,
-    };
-    let mut i = 0;
-    while i + 2 < stmts.len() {
-        if let StmtKind::Expr(inserted) = &stmts[i].kind
-            && let Some(args) = call_of(inserted, "$orInsert")
-            && let [map, key, _] = &args[..]
-            && let StmtKind::Const(handle, got) = &stmts[i + 1].kind
-            && let Some(got) = call_of(got, "$mutGet")
-            && let [m, k] = &got[..]
-            && same(map, m)
-            && (same(key, k) || matches!((&key.kind, &k.kind), (ExprKind::Str(a), ExprKind::Str(b)) if a == b))
-            && let StmtKind::Assign(target, value) = &stmts[i + 2].kind
-            && matches!(&target.kind, ExprKind::Member(of, v)
-                if v == js::HELD && matches!(&of.kind, ExprKind::Var(h) if h == handle))
-            && js::mentions_in(&stmts[i + 3..], handle) == 0
-        {
-            let name = (std::iter::once("current".to_string()))
-                .chain((1..).map(|n| format!("current${n}")))
-                .find(|n| js::mentions_in(stmts, n) == 0)
-                .expect("a name");
-            let mut value = vec![StmtKind::Expr(value.clone()).at(js::Span::NONE)];
-            js::each_expr_mut(&mut value, &mut |e| {
-                if let ExprKind::Member(of, v) = &e.kind
-                    && v == js::HELD
-                    && matches!(&of.kind, ExprKind::Var(h) if h == handle)
-                {
-                    *e = Expr::var(&name);
-                }
-            });
-            if js::mentions_in(&value, handle) > 0 {
-                i += 1;
-                continue;
-            }
-            let StmtKind::Expr(value) = value.pop().expect("one").kind else {
-                unreachable!("made")
-            };
-            let set = Expr::call(Expr::member(map.clone(), "set"), vec![key.clone(), value]);
-            let span = stmts[i + 2].span;
-            stmts[i].kind = StmtKind::Const(name, inserted.clone());
-            stmts.splice(i + 1..i + 3, [StmtKind::Expr(set).at(span)]);
-        }
-        i += 1;
-    }
-}
-
-/// Whether `a` and `b` are the same variable, or the same property or item
-/// of one.
-fn same(a: &Expr, b: &Expr) -> bool {
-    match (&a.kind, &b.kind) {
-        (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
-        (ExprKind::Member(x, p), ExprKind::Member(y, q))
-        | (ExprKind::OptionalMember(x, p), ExprKind::OptionalMember(y, q)) => p == q && same(x, y),
-        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {
-            same(x, y) && (same(i, j) || i.as_int().is_some() && i.as_int() == j.as_int())
-        }
-        _ => false,
     }
 }
 
@@ -4320,8 +4255,8 @@ fn checked_sets(stmts: &mut Vec<Stmt>) {
             && let [items, index] = &args[..]
             && let StmtKind::Assign(target, _) = &stmts[i + 1].kind
             && let ExprKind::Index(of, at) = &target.kind
-            && same(of, items)
-            && (same(at, index) || at.as_int().is_some() && at.as_int() == index.as_int())
+            && js::same_path(of, items)
+            && (js::same_path(at, index) || at.as_int().is_some() && at.as_int() == index.as_int())
         {
             let checked = Expr::index(
                 items.clone(),
@@ -4621,34 +4556,6 @@ fn returned(stmts: &mut Vec<Stmt>, result: &str) {
     }
 }
 
-/// A range made where it's stepped, `$iterator({ start: 0, end: n },
-/// $rangeNext)`, which nothing else steps, nor lends: its numbers, made as
-/// they're stepped, `$lazyRange(0, n)`, so `.find(f)` stops where Rust's
-/// does; of `a..=b`, `$lazyRange(a, b + 1)`. Of a number it starts at, as a
-/// `char`'s range starts at text.
-fn range_items(e: &mut Expr) {
-    if let Some(made) = lazy_range(iterators::unlent(e)) {
-        *e = made;
-    }
-}
-
-/// `$lazyRange(a, b)` of `$iterator({ start: a, end: b }, $rangeNext)`, `a` a
-/// number (`range_items`).
-fn lazy_range(e: &Expr) -> Option<Expr> {
-    let range = iterators::stepped_range(e)?;
-    if range.back || !matches!(range.start.kind, ExprKind::Num(_)) {
-        return None;
-    }
-    let end = match range.inclusive {
-        true => match range.end.as_int() {
-            Some(n) => Expr::int(n + 1),
-            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),
-        },
-        false => range.end.clone(),
-    };
-    Some(Expr::call_helper("$lazyRange", vec![range.start.clone(), end]))
-}
-
 /// A map of an array's items nothing reads, `next_back` having stepped its
 /// source instead: no statement, as making it does nothing.
 fn unread_maps(body: &mut Vec<Stmt>) {
@@ -4678,128 +4585,6 @@ fn handles_in_place(body: &mut [Stmt]) {
             *e = Expr {
                 span: e.span,
                 ..(**place).clone()
-            };
-        }
-    });
-}
-
-/// `const g = $borrow(h, true)` of a handle `h` made there, a plain
-/// `RefCell` field's (ADR 0362): what counts its borrows is that new
-/// object, which nothing else sees, so none can fail. `g.value` is the
-/// place `h` is a handle on, `$unborrow(g)` nothing, and a `try` left
-/// only rethrowing what it catches, its body.
-fn unguarded(body: &mut Vec<Stmt>) {
-    let mut places: HashMap<String, Expr> = HashMap::new();
-    let mut mixed: HashSet<String> = HashSet::new();
-    let guard_of = |stmt: &Stmt| -> Option<(String, Expr)> {
-        let (name, value) = match &stmt.kind {
-            StmtKind::Const(name, value) => (name, value),
-            StmtKind::Assign(target, value) if let ExprKind::Var(name) = &target.kind => (name, value),
-            _ => return None,
-        };
-        let ExprKind::Call(callee, args) = &value.kind else {
-            return None;
-        };
-        let ExprKind::Handle(place) = &args.first()?.kind else {
-            return None;
-        };
-        (matches!(callee.helper_name(), Some("$borrow" | "$borrowMut")) && place.reads_same())
-            .then(|| (name.clone(), (**place).clone()))
-    };
-    js::each_block_mut(&mut body.clone(), &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let Some((name, place)) = guard_of(stmt) {
-                match places.get(&name) {
-                    Some(seen) if !same(seen, &place) => {
-                        mixed.insert(name);
-                    }
-                    _ => {
-                        places.insert(name, place);
-                    }
-                }
-            }
-        }
-    });
-    places.retain(|name, _| !mixed.contains(name));
-    // Each read of it its `value`, or what `$unborrow` is given.
-    let mut reads: HashMap<String, usize> = HashMap::new();
-    js::visit_stmts(body, &mut |v| {
-        if places.contains_key(v) {
-            *reads.entry(v.to_string()).or_default() += 1;
-        }
-    });
-    let mut kept: HashMap<String, usize> = HashMap::new();
-    js::each_expr_mut(&mut body.clone(), &mut |e| match &e.kind {
-        ExprKind::Member(of, key)
-            if key == js::HELD
-                && let ExprKind::Var(g) = &of.kind
-                && places.contains_key(g) =>
-        {
-            *kept.entry(g.clone()).or_default() += 1;
-        }
-        ExprKind::Call(callee, args)
-            if callee.helper_name() == Some("$unborrow")
-                && let [a] = args.as_slice()
-                && let ExprKind::Var(g) = &a.kind
-                && places.contains_key(g) =>
-        {
-            *kept.entry(g.clone()).or_default() += 1;
-        }
-        _ => {}
-    });
-    // Its own assignments, `_27 = $borrowMut(..)`, name it too.
-    js::each_block_mut(&mut body.clone(), &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind
-                && let ExprKind::Var(g) = &target.kind
-                && places.contains_key(g)
-            {
-                *kept.entry(g.clone()).or_default() += 1;
-            }
-        }
-    });
-    places.retain(|name, _| reads.get(name) == kept.get(name));
-    js::each_block_mut(body, &mut |stmts| {
-        stmts.retain(|stmt| !guard_of(stmt).is_some_and(|(name, _)| places.contains_key(&name)));
-    });
-    if places.is_empty() {
-        return;
-    }
-    js::each_block_mut(body, &mut |stmts| {
-        stmts.retain(|stmt| {
-            !matches!(&stmt.kind, StmtKind::Expr(e)
-            if matches!(&e.kind, ExprKind::Call(callee, args)
-                if callee.helper_name() == Some("$unborrow")
-                    && matches!(args.as_slice(), [a] if matches!(&a.kind, ExprKind::Var(g) if places.contains_key(g)))))
-        });
-    });
-    js::each_block_mut(body, &mut |stmts| {
-        let mut i = 0;
-        while i < stmts.len() {
-            if let StmtKind::TryCatch(_, Some(error), handler) = &stmts[i].kind
-                && let [rethrow] = handler.as_slice()
-                && matches!(&rethrow.kind, StmtKind::Throw(e) if matches!(&e.kind, ExprKind::Var(v) if v == error))
-            {
-                let StmtKind::TryCatch(inner, ..) = stmts.remove(i).kind else {
-                    unreachable!("matched")
-                };
-                let n = inner.len();
-                stmts.splice(i..i, inner);
-                i += n;
-                continue;
-            }
-            i += 1;
-        }
-    });
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Member(of, key) = &e.kind
-            && key == js::HELD
-            && let ExprKind::Var(g) = &of.kind
-            && let Some(place) = places.get(g)
-        {
-            *e = Expr {
-                span: e.span,
-                ..place.clone()
             };
         }
     });
@@ -5550,7 +5335,7 @@ fn or_tests(stmts: &mut Vec<Stmt>) {
         let ExprKind::Binary(Op::Ne, of, constant) = &test.kind else {
             return None;
         };
-        if !constant.is_constant() || !subject.is_none_or(|s| same(s, of)) {
+        if !constant.is_constant() || !subject.is_none_or(|s| js::same_path(s, of)) {
             return None;
         }
         *subject = Some(of);

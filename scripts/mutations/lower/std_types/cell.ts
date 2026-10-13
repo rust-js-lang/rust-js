@@ -106,4 +106,12 @@ export const mutations: Mutation[] = [
     replace: "                ..Expr::call(f, vec![Expr::held(key)])\n",
     tests: ["test/modules.test.ts","-t","thread-local only read and set"],
   },
+  {
+    name: "mir-tidy-rethrow-kept",
+    breaks: "`try { s } catch (error) { throw error; }` stays, not `s`",
+    file: "src/lower/std_types/cell.rs",
+    find: "                && let [rethrow] = handler.as_slice()\n",
+    replace: "                && let [rethrow] = handler.as_slice().get(..0).unwrap_or_default()\n",
+    tests: ["test/lowering.test.ts", "-t", "field only ever borrowed for a moment"],
+  },
 ];

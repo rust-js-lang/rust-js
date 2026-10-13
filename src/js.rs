@@ -121,16 +121,26 @@ fn null_tested(test: &Expr) -> Option<&Expr> {
     }
 }
 
-/// Are `a` and `b` one path: a variable, or `a.b.c` or `a?.b` of the same names?
+/// Are `a` and `b` the same variable or path of one: `s`, `a.b`, `a?.b`, an
+/// item by a key that reads the same, `counts[name]`, `files["/a"]`,
+/// `v[0]`, or the runtime's checked item, `$index(v, i).hits`, which names
+/// the same place each time (ADR 0056)? The one answer, for each pass that
+/// asks whether two reads are of one place.
 pub(crate) fn same_path(a: &Expr, b: &Expr) -> bool {
+    let same_key = |i: &Expr, j: &Expr| {
+        same_path(i, j)
+            || matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j)
+            || matches!((&i.kind, &j.kind), (ExprKind::Num(i), ExprKind::Num(j)) if i == j)
+    };
     match (&a.kind, &b.kind) {
         (ExprKind::Var(x), ExprKind::Var(y)) => x == y,
         (ExprKind::Member(x, f), ExprKind::Member(y, g)) => f == g && same_path(x, y),
         (ExprKind::OptionalMember(x, f), ExprKind::OptionalMember(y, g)) => f == g && same_path(x, y),
-        // A key written out, `files["/styles.css"]`, or a variable's, `files[name]`.
-        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {
-            (matches!((&i.kind, &j.kind), (ExprKind::Str(i), ExprKind::Str(j)) if i == j) || same_path(i, j))
-                && same_path(x, y)
+        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => same_path(x, y) && same_key(i, j),
+        (ExprKind::Call(f, xs), ExprKind::Call(g, ys)) => {
+            matches!((f.helper_name(), g.helper_name()), (Some(f), Some(g)) if f == g && crate::runtime::names_a_place(f))
+                && xs.len() == ys.len()
+                && xs.iter().zip(ys).all(|(x, y)| same_key(x, y))
         }
         _ => false,
     }

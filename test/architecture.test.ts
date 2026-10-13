@@ -373,6 +373,11 @@ const idioms: [string, RegExp, string[]][] = [
   // `js::DICTIONARY`, wherever they're written or read.
   ["the held `value` field", /Expr::member\([^;]*?,\s*"value"\)|Field\("value"\.into\(\)|== "value"|HELD: &str = "value"/, ["src/js.rs"]],
   ["the dictionary's `impl` field", /"impl"/, ["src/js.rs"]],
+  // A std type's helpers, read and written where the type is lowered: a
+  // pass of tidy's over them is the type's module's (the second review).
+  ["a map's entry", /"\$orInsert"|"\$mutGet"/, ["src/lower/std_types/map.rs", "src/lower/mir.rs", "src/lower/mut_refs.rs"]],
+  ["a range made as stepped", /"\$lazyRange"/, ["src/lower/std_types/range.rs"]],
+  ["a cell's borrow", /"\$borrow(Mut)?"|"\$unborrow"/, ["src/lower/std_types/cell.rs", "src/lower/std_impls.rs", "src/lower/drops.rs"]],
 ];
 test("a JS form of a concept is written by the concept's owner", () => {
   const strays: string[] = [];

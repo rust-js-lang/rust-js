@@ -148,4 +148,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
     snapshots: true,
   },
+  {
+    name: "mir-map-count-literal-key",
+    breaks: "`*m.entry(\"a\").or_insert(0) += 5` from MIR stays a handle, `$mutGet(m, \"a\")`",
+    file: "src/lower/std_types/map.rs",
+    find: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b))",
+    replace: "js::ExprKind::Str(a), js::ExprKind::Str(b)) if a == b && false))",
+    tests: ["test/lowering.test.ts", "-t", "a count kept in a map from MIR"],
+  },
 ];

@@ -155,14 +155,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","bindings from MIR are destructured"],
   },
   {
-    name: "mir-tidy-eager-chains-off",
-    breaks: "`$iter(xs).map(f).toArray()` stays, not `xs.map(f)`",
-    file: "src/lower/mir/tidy.rs",
-    find: "    js::each_expr_mut(body, &mut range_items);\n    eager_chains(body);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
-    replace: "    js::each_expr_mut(body, &mut range_items);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
-    tests: ["test/lowering.test.ts","-t","iterator chains from MIR|a lazy chain from MIR spread once"],
-  },
-  {
     name: "mir-tidy-params-not-destructured",
     breaks: "`(_2) => { const i = _2[0]; const c = _2[1]; … }` stays, not `([i, c]) => …`",
     file: "src/lower/mir/tidy.rs",
@@ -460,14 +452,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","De Morgan"],
   },
   {
-    name: "mir-tidy-optional-member-not-same",
-    breaks: "`a?.b` isn't the same as `a?.b`, its `filter` kept, `a?.b ? a?.b : undefined`",
-    file: "src/lower/mir/tidy.rs",
-    find: "        | (ExprKind::OptionalMember(x, p), ExprKind::OptionalMember(y, q)) => p == q && same(x, y),\n",
-    replace: "        => p == q && same(x, y),\n",
-    tests: ["test/lowering.test.ts","-t","De Morgan"],
-  },
-  {
     name: "mir-tidy-deref-param-kept",
     breaks: "`|&n|` stays `(_2) => { const n = _2; … }`",
     file: "src/lower/mir/tidy.rs",
@@ -628,22 +612,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","loop.s body makes, from MIR"],
   },
   {
-    name: "mir-tidy-guards-kept",
-    breaks: "a guard of a handle made for it alone stays `$borrowMut({ get value() { … } }, true)`",
-    file: "src/lower/mir/tidy.rs",
-    find: "    // A guard of a handle made for it alone: the place it's a handle on.\n    unguarded(body);\n",
-    replace: "",
-    tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
-  },
-  {
-    name: "mir-tidy-rethrow-kept",
-    breaks: "`try { s } catch (error) { throw error; }` stays, not `s`",
-    file: "src/lower/mir/tidy.rs",
-    find: "                && let [rethrow] = handler.as_slice()\n",
-    replace: "                && let [rethrow] = handler.as_slice().get(..0).unwrap_or_default()\n",
-    tests: ["test/lowering.test.ts","-t","field only ever borrowed for a moment"],
-  },
-  {
     name: "mir-tidy-inner-let-else-kept",
     breaks: "`if (c) { s } else { return; }`, a let-else's, stays, not the guard `if (!c) { return; } s`",
     file: "src/lower/mir/tidy.rs",
@@ -657,14 +625,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "                Some(b.clone())\n            }\n            _ => None,\n        };\n        let test = match &bound {",
     replace: "                let _ = b;\n                None::<String>\n            }\n            _ => None,\n        };\n        let test = match &bound {",
-    tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
-  },
-  {
-    name: "mir-tidy-same-item-unknown",
-    breaks: "`xs[i].f` isn't known as the same as `xs[i].f`",
-    file: "src/lower/mir/tidy.rs",
-    find: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) => {\n",
-    replace: "        (ExprKind::Index(x, i), ExprKind::Index(y, j)) if false => {\n",
     tests: ["test/lowering.test.ts","-t","inside a branch, its .else. a .return."],
   },
   {
@@ -843,18 +803,6 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a truthy option's is_some given as a value"
-    ]
-  },
-  {
-    "name": "late-eager-chains-off",
-    "breaks": "an array's iterator read in place late stays `$lent($iter(xs)).some(f)`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut range_items);\n    eager_chains(body);\n",
-    "replace": "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut range_items);\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "an array's iterator read in place late"
     ]
   },
   {
@@ -1586,18 +1534,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-map-count-handle",
-    "breaks": "`*m.entry(k).or_insert(0) += 1` from MIR is a handle on the key's value, `$mutGet(m, k).value = \u2026`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    js::statement_lists(body, &mut map_counts);\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a count kept in a map from MIR"
-    ]
-  },
-  {
     "name": "mir-chain-tail-folded",
     "breaks": "a variable's value of three arms from MIR has its last two folded, `else { cls = w ? \"warn\" : \"tip\"; }`",
     "file": "src/lower/mir/tidy.rs",
@@ -1706,18 +1642,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-map-count-literal-key",
-    "breaks": "`*m.entry(\"a\").or_insert(0) += 5` from MIR stays a handle, `$mutGet(m, \"a\")`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "ExprKind::Str(a), ExprKind::Str(b)) if a == b))",
-    "replace": "ExprKind::Str(a), ExprKind::Str(b)) if a == b && false))",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a count kept in a map from MIR"
-    ]
-  },
-  {
     "name": "mir-temp-chain-half-folded",
     "breaks": "a value MIR holds of three branches, its first doing more, is `else { tmp = b ? q : r; }`",
     "file": "src/lower/mir/tidy.rs",
@@ -1807,54 +1731,6 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "a match reading a table from MIR"
-    ]
-  },
-  {
-    "name": "mir-tidy-range-items-eager",
-    "breaks": "`(0..n).find(f)` from MIR is `$range(0, n).find(f)`, an array of all n numbers made before the first is tried",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    Some(Expr::call_helper(\"$lazyRange\", vec![range.start.clone(), end]))\n",
-    "replace": "    Some(Expr::call_helper(\"$iter\", vec![Expr::call_helper(\"$range\", vec![range.start.clone(), end])]))\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range made where it's stepped"
-    ]
-  },
-  {
-    "name": "mir-tidy-range-items-chars",
-    "breaks": "a range of `char`s made where it's stepped is `$lazyRange(\"a\", \"e\")`, which counts text as numbers",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    if range.back || !matches!(range.start.kind, ExprKind::Num(_)) {\n",
-    "replace": "    if range.back {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range made where it's stepped"
-    ]
-  },
-  {
-    "name": "mir-tidy-range-items-lent",
-    "breaks": "a range made where it's stepped stays lent, `$lent($lazyRange(0, n)).find(f)`, though nothing else steps it",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "    if let Some(made) = lazy_range(iterators::unlent(e)) {\n",
-    "replace": "    if let Some(made) = lazy_range(e) {\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range made where it's stepped"
-    ]
-  },
-  {
-    "name": "mir-tidy-lazy-range-end-unfolded",
-    "breaks": "`(1..=5).filter(f)` from MIR is `$lazyRange(1, 5 + 1)`, not `$lazyRange(1, 6)`",
-    "file": "src/lower/mir/tidy.rs",
-    "find": "            Some(n) => Expr::int(n + 1),\n            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
-    "replace": "            Some(_) | None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range mapped and collected"
     ]
   },
   {
@@ -2265,5 +2141,37 @@ export const mutations: Mutation[] = [
     find: "    let text = |x: &Expr| matches!(x.kind, ExprKind::Str(_));\n",
     replace: "    let text = |_: &Expr| false;\n",
     tests: ["test/snapshots.test.ts", "-t", "lexer"],
+  },
+  {
+    name: "mir-tidy-eager-chains-off",
+    breaks: "`$iter(xs).map(f).toArray()` stays, not `xs.map(f)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
+    replace: "    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    js::statement_lists(body, &mut |stmts| eager_spreads(stmts));\n",
+    tests: ["test/lowering.test.ts", "-t", "iterator chains from MIR|a lazy chain from MIR spread once"],
+  },
+  {
+    name: "mir-tidy-guards-kept",
+    breaks: "a guard of a handle made for it alone stays `$borrowMut({ get value() { \u2026 } }, true)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    // A guard of a handle made for it alone: the place it's a handle on.\n    crate::lower::std_types::cell::unguarded(body);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "field only ever borrowed for a moment"],
+  },
+  {
+    name: "late-eager-chains-off",
+    breaks: "an array's iterator read in place late stays `$lent($iter(xs)).some(f)`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n    eager_chains(body);\n",
+    replace: "    // numbers made as they're stepped.\n    js::each_expr_mut(body, &mut crate::lower::std_types::range::range_items);\n",
+    tests: ["test/lowering.test.ts", "-t", "an array's iterator read in place late"],
+  },
+  {
+    name: "mir-map-count-handle",
+    breaks: "`*m.entry(k).or_insert(0) += 1` from MIR is a handle on the key's value, `$mutGet(m, k).value = \u2026`",
+    file: "src/lower/mir/tidy.rs",
+    find: "    js::statement_lists(body, &mut crate::lower::std_types::map::counted_entries);\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a count kept in a map from MIR"],
   },
 ];

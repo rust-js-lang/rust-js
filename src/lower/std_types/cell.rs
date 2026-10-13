@@ -1,5 +1,7 @@
 //! What changes a place: `Cell`s, atomics, thread-locals, and `mem::drop` and `forget` (ADRs 0025, 0074, 0098).
 
+use std::collections::{HashMap, HashSet};
+
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::{Std, StdItem};
@@ -342,4 +344,126 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             }
         }
     }
+}
+
+/// `const g = $borrow(h, true)` of a handle `h` made there, a plain
+/// `RefCell` field's (ADR 0362): what counts its borrows is that new
+/// object, which nothing else sees, so none can fail. `g.value` is the
+/// place `h` is a handle on, `$unborrow(g)` nothing, and a `try` left
+/// only rethrowing what it catches, its body.
+pub(in crate::lower) fn unguarded(body: &mut Vec<Stmt>) {
+    let mut places: HashMap<String, Expr> = HashMap::new();
+    let mut mixed: HashSet<String> = HashSet::new();
+    let guard_of = |stmt: &Stmt| -> Option<(String, Expr)> {
+        let (name, value) = match &stmt.kind {
+            StmtKind::Const(name, value) => (name, value),
+            StmtKind::Assign(target, value) if let js::ExprKind::Var(name) = &target.kind => (name, value),
+            _ => return None,
+        };
+        let js::ExprKind::Call(callee, args) = &value.kind else {
+            return None;
+        };
+        let js::ExprKind::Handle(place) = &args.first()?.kind else {
+            return None;
+        };
+        (matches!(callee.helper_name(), Some("$borrow" | "$borrowMut")) && place.reads_same())
+            .then(|| (name.clone(), (**place).clone()))
+    };
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let Some((name, place)) = guard_of(stmt) {
+                match places.get(&name) {
+                    Some(seen) if !js::same_path(seen, &place) => {
+                        mixed.insert(name);
+                    }
+                    _ => {
+                        places.insert(name, place);
+                    }
+                }
+            }
+        }
+    });
+    places.retain(|name, _| !mixed.contains(name));
+    // Each read of it its `value`, or what `$unborrow` is given.
+    let mut reads: HashMap<String, usize> = HashMap::new();
+    js::visit_stmts(body, &mut |v| {
+        if places.contains_key(v) {
+            *reads.entry(v.to_string()).or_default() += 1;
+        }
+    });
+    let mut kept: HashMap<String, usize> = HashMap::new();
+    js::each_expr_mut(&mut body.clone(), &mut |e| match &e.kind {
+        js::ExprKind::Member(of, key)
+            if key == js::HELD
+                && let js::ExprKind::Var(g) = &of.kind
+                && places.contains_key(g) =>
+        {
+            *kept.entry(g.clone()).or_default() += 1;
+        }
+        js::ExprKind::Call(callee, args)
+            if callee.helper_name() == Some("$unborrow")
+                && let [a] = args.as_slice()
+                && let js::ExprKind::Var(g) = &a.kind
+                && places.contains_key(g) =>
+        {
+            *kept.entry(g.clone()).or_default() += 1;
+        }
+        _ => {}
+    });
+    // Its own assignments, `_27 = $borrowMut(..)`, name it too.
+    js::each_block_mut(&mut body.clone(), &mut |stmts| {
+        for stmt in stmts.iter() {
+            if let StmtKind::Assign(target, _) = &stmt.kind
+                && let js::ExprKind::Var(g) = &target.kind
+                && places.contains_key(g)
+            {
+                *kept.entry(g.clone()).or_default() += 1;
+            }
+        }
+    });
+    places.retain(|name, _| reads.get(name) == kept.get(name));
+    js::each_block_mut(body, &mut |stmts| {
+        stmts.retain(|stmt| !guard_of(stmt).is_some_and(|(name, _)| places.contains_key(&name)));
+    });
+    if places.is_empty() {
+        return;
+    }
+    js::each_block_mut(body, &mut |stmts| {
+        stmts.retain(|stmt| {
+            !matches!(&stmt.kind, StmtKind::Expr(e)
+            if matches!(&e.kind, js::ExprKind::Call(callee, args)
+                if callee.helper_name() == Some("$unborrow")
+                    && matches!(args.as_slice(), [a] if matches!(&a.kind, js::ExprKind::Var(g) if places.contains_key(g)))))
+        });
+    });
+    js::each_block_mut(body, &mut |stmts| {
+        let mut i = 0;
+        while i < stmts.len() {
+            if let StmtKind::TryCatch(_, Some(error), handler) = &stmts[i].kind
+                && let [rethrow] = handler.as_slice()
+                && matches!(&rethrow.kind, StmtKind::Throw(e) if matches!(&e.kind, js::ExprKind::Var(v) if v == error))
+            {
+                let StmtKind::TryCatch(inner, ..) = stmts.remove(i).kind else {
+                    unreachable!("matched")
+                };
+                let n = inner.len();
+                stmts.splice(i..i, inner);
+                i += n;
+                continue;
+            }
+            i += 1;
+        }
+    });
+    js::each_expr_mut(body, &mut |e| {
+        if let js::ExprKind::Member(of, key) = &e.kind
+            && key == js::HELD
+            && let js::ExprKind::Var(g) = &of.kind
+            && let Some(place) = places.get(g)
+        {
+            *e = Expr {
+                span: e.span,
+                ..place.clone()
+            };
+        }
+    });
 }

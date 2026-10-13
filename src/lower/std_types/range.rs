@@ -279,3 +279,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         })
     }
 }
+
+/// A range made where it's stepped, `$iterator({ start: 0, end: n },
+/// $rangeNext)`, which nothing else steps, nor lends: its numbers, made as
+/// they're stepped, `$lazyRange(0, n)`, so `.find(f)` stops where Rust's
+/// does; of `a..=b`, `$lazyRange(a, b + 1)`. Of a number it starts at, as a
+/// `char`'s range starts at text.
+pub(in crate::lower) fn range_items(e: &mut Expr) {
+    if let Some(made) = lazy_range(crate::lower::iterators::unlent(e)) {
+        *e = made;
+    }
+}
+
+/// `$lazyRange(a, b)` of `$iterator({ start: a, end: b }, $rangeNext)`, `a` a
+/// number (`range_items`).
+fn lazy_range(e: &Expr) -> Option<Expr> {
+    let range = crate::lower::iterators::stepped_range(e)?;
+    if range.back || !matches!(range.start.kind, js::ExprKind::Num(_)) {
+        return None;
+    }
+    let end = match range.inclusive {
+        true => match range.end.as_int() {
+            Some(n) => Expr::int(n + 1),
+            None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),
+        },
+        false => range.end.clone(),
+    };
+    Some(Expr::call_helper("$lazyRange", vec![range.start.clone(), end]))
+}

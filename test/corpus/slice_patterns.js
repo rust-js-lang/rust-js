@@ -107,7 +107,7 @@ function main() {
   console.log(`[${grid.map((item) => String(item)).join(", ")}]`);
   const names = ["x", "y"];
   if (names.length >= 1) {
-    names[0] = names[0] + "!";
+    names[0] += "!";
   }
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
 }

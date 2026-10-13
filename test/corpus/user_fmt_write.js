@@ -36,14 +36,14 @@ export function shoutingWrite() {
 }
 
 function shoutingWrite_write_str(shouting, s) {
-  shouting[0] = shouting[0] + s.toUpperCase();
+  shouting[0] += s.toUpperCase();
   return;
 }
 
 function shoutingWrite_write_char(shouting, c) {
-  shouting[0] = shouting[0] + "<";
-  shouting[0] = shouting[0] + c;
-  shouting[0] = shouting[0] + ">";
+  shouting[0] += "<";
+  shouting[0] += c;
+  shouting[0] += ">";
   return;
 }
 

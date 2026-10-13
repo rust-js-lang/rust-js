@@ -24,7 +24,7 @@ function squareShape_area(square) {
 }
 
 function squareShape_scale(square, k) {
-  square[0] = square[0] * k;
+  square[0] *= k;
 }
 
 function squareNamed() {

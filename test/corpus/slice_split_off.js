@@ -114,7 +114,7 @@ function main() {
         throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
       }
       const all$1 = all;
-      all$1[0] = all$1[0] + "?";
+      all$1[0] += "?";
       console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
       let none = [];
       const split$4 = $sliceSplitOffEndMut(none, false, true);
