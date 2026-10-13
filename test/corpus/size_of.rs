@@ -24,9 +24,14 @@ enum Small {
     C,
 }
 
+fn layout_of<T>() -> (usize, usize) {
+    (size_of::<T>(), align_of::<T>())
+}
+
 fn main() {
     println!("{} {} {} {}", size_of::<u8>(), size_of::<u32>(), size_of::<i64>(), size_of::<Pair>());
     println!("{} {} {}", align_of::<u32>(), align_of::<Pair>(), align_of::<Wide>());
+    println!("{:?} {:?}", layout_of::<Pair>(), layout_of::<Wide>());
     println!("{} {} {}", size_of::<[u16; 5]>(), size_of::<Small>(), size_of::<(u8, u32)>());
     let w = Wide { a: 1, b: 2 };
     println!("{} {}", size_of_val(&w), size_of::<Option<u8>>());

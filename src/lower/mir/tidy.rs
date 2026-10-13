@@ -2690,18 +2690,17 @@ fn branch_values(
                 StmtKind::Assign(Expr::var(x), value)
             }
             // `l: { if (!a) { if (!b) { s; break l; } } t }`, `||`'s: `if (a ||
-            // b) { t } else { s }`, where nothing else breaks to `l`; and
-            // `if (a && b) { s } else { t }` of tests not all negated.
+            // b) { t } else { s }`, where nothing else breaks to `l`; of tests
+            // not all negated, `if (a && b) { s } else { t }` once later passes
+            // write its branches as the program did.
             StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {
-                let negated = tests.iter().all(|t| matches!(t.kind, ExprKind::Unary(UnaryOp::Not, _)));
                 let test = (tests.into_iter())
                     .rev()
                     .reduce(|b, a| Expr::bin(Op::And, a, b))
                     .expect("one");
-                match (then.is_empty(), negated) {
-                    (true, _) => StmtKind::If(test, otherwise, None),
-                    (false, true) => StmtKind::If(not(test), then, Some(otherwise)),
-                    (false, false) => StmtKind::If(test, otherwise, Some(then)),
+                match then.is_empty() {
+                    true => StmtKind::If(test, otherwise, None),
+                    false => StmtKind::If(not(test), then, Some(otherwise)),
                 }
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {

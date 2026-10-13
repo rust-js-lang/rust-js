@@ -2,6 +2,8 @@
 
 import { $rangeNext } from "@rust-js/runtime";
 
+var $sevenMake;
+
 export function entry() {
   main();
 }
@@ -55,6 +57,40 @@ function list(n) {
     at = { TAG: "Cons", _0: value, _1: at };
   }
   return at;
+}
+
+function sevenMake() {
+  if ($sevenMake === undefined) {
+    $sevenMake = {
+      size: sevenMake_size,
+      make: (self) => {
+        const dropList = (list) => {
+          if (list.TAG === "Cons") {
+            noisyDrop_drop(list._0);
+            dropList(list._1);
+          }
+        };
+        const made = {
+          TAG: "Cons",
+          _0: [sevenMake_size(self)],
+          _1: { TAG: "Cons", _0: [2], _1: "Nil" },
+        };
+        let result;
+        if (made.TAG === "Cons") {
+          result = made._1.TAG === "Cons" ? 1 : 0;
+        } else {
+          result = 0;
+        }
+        dropList(made);
+        return result;
+      },
+    };
+  }
+  return $sevenMake;
+}
+
+function sevenMake_size(seven) {
+  return 7;
 }
 
 function main() {
@@ -151,6 +187,18 @@ function main() {
   };
   dropTwo$1(_first);
   const _list = list(3);
+  try {
+    console.log(`made ${sevenMake().make(undefined)}`);
+  } catch (error) {
+    const dropList = (list) => {
+      if (list.TAG === "Cons") {
+        noisyDrop_drop(list._0);
+        dropList(list._1);
+      }
+    };
+    dropList(_list);
+    throw error;
+  }
   try {
     console.log("end");
   } catch (error) {

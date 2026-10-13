@@ -1,6 +1,7 @@
 // A type whose drop is long, or inside itself, as a list is, gets a drop
 // function of its own (ADR 0098), written before the drop that calls it:
-// a call to one may be in an `Option`'s branch that another isn't in.
+// a call to one may be in an `Option`'s branch that another isn't in. A
+// trait's default copied into an impl declares its own, at its top.
 struct Noisy(u32);
 
 impl Drop for Noisy {
@@ -51,6 +52,25 @@ fn list(n: u32) -> List {
     at
 }
 
+trait Make {
+    fn size(&self) -> u32;
+    fn make(&self) -> u32 {
+        let made = List::Cons(Noisy(self.size()), Box::new(List::Cons(Noisy(2), Box::new(List::Nil))));
+        match &made {
+            List::Cons(_, rest) => matches!(**rest, List::Cons(..)) as u32,
+            List::Nil => 0,
+        }
+    }
+}
+
+struct Seven;
+
+impl Make for Seven {
+    fn size(&self) -> u32 {
+        7
+    }
+}
+
 fn main() {
     {
         let _two = Two(None, Some(Box::new(many(10))));
@@ -60,5 +80,6 @@ fn main() {
         let _first = Two(Some(Box::new(many(20))), None);
     }
     let _list = list(3);
+    println!("made {}", Seven.make());
     println!("end");
 }

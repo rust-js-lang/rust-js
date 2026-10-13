@@ -96,6 +96,10 @@ fn main() {
     let is_some = Option::is_some;
     let dropped = vec![1, 2, 3].into_iter().map(drop).count();
     println!("{:?} {:?} {} {} {}", areas, make(), size(), is_some(&maybe), dropped);
+    let options = [Some(1), None];
+    let somes: Vec<bool> = options.iter().map(Option::is_some).collect();
+    let nones: Vec<bool> = options.iter().map(Option::is_none).collect();
+    println!("{:?} {:?}", somes, nones);
 
     let quiet = drop;
     quiet(Loud(1));

@@ -28,7 +28,7 @@ of a generic iterator, and an error elsewhere:**
 | an iterator of the crate's that keeps std's | `[0, undefined]`, std's `(0, None)` |
 | one with its own | its impl's, as before |
 | std's that's an `ExactSizeIterator` over an array, `v.iter()`, `into_iter()`, `map` of one | `[n, n]`, its `len()` (ADR 0164) |
-| a generic `I: Iterator`'s | `$sizeHint(it)`: exact where it's an array, or one stepping through one; `[0, undefined]` of a lazy one |
+| a generic `I: Iterator`'s | `$sizeHint(it)`: exact where it steps through an array, as `$iter` gives one; `[0, undefined]` of a lazy one. (Amended: an array itself too, which a generic iterator never is.) |
 
 - **A generic `I: Iterator`'s is a difference, listed:** rust-js doesn't
   keep its type (ADR 0061), so the hint is what its JS value tells. An

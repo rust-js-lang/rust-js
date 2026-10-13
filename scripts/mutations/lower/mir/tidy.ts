@@ -219,14 +219,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
   },
   {
-    name: "mir-tidy-and-chain-negated",
-    breaks: "`l: { if (a) { if (b) { s; break l; } } t }` is `if (!a || !b) { t } else { s }`, not `if (a && b) { s } else { t }`",
-    file: "src/lower/mir/tidy.rs",
-    find: "                    (false, false) => StmtKind::If(test, otherwise, Some(then)),\n",
-    replace: "                    (false, false) => StmtKind::If(not(test), then, Some(otherwise)),\n",
-    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
-  },
-  {
     name: "mir-tidy-continue-guard-kept",
     breaks: "a loop body ending `if (!c) { a; b }` stays, not `if (c) { continue; } a; b`",
     file: "src/lower/mir/tidy.rs",

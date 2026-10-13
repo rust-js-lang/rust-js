@@ -102,6 +102,12 @@ function main() {
   console.log(
     `[${areas.map((item) => $debugF64(item)).join(", ")}] ${shapeDebug_fmt(shapeArea_unit())} 2 ${maybe != null} ${dropped}`,
   );
+  const options = [1, undefined];
+  const somes = options.map((x) => x != null);
+  const nones = options.map((x) => x == null);
+  console.log(
+    `[${somes.map((item) => String(item)).join(", ")}] [${nones.map((item) => String(item)).join(", ")}]`,
+  );
   loudDrop_drop([1]);
   give(
     (value) => {
