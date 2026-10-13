@@ -1719,3 +1719,32 @@ impl Expr {
         }
     }
 }
+
+/// Each name `stmts` read or declare, their closures' and parameters' too.
+pub fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
+    visit_stmts(stmts, &mut |name| {
+        names.insert(name.to_string());
+    });
+    statement_lists(&mut stmts.to_vec(), &mut |list| {
+        for stmt in list.iter() {
+            match &stmt.kind {
+                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
+                    names.insert(name.clone());
+                }
+                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
+                    names.extend(pattern.names().into_iter().map(str::to_string));
+                }
+                StmtKind::TryCatch(_, Some(name), _) => {
+                    names.insert(name.clone());
+                }
+                _ => {}
+            }
+        }
+    });
+    each_expr_mut(&mut stmts.to_vec(), &mut |e| {
+        if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
+            names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+            names_in(body, names);
+        }
+    });
+}

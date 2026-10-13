@@ -496,12 +496,10 @@ architecture audit found the rest.
 - **Short dispatchers of calls from MIR:** `mir_call` (118 lines),
   `mir_call_values` (306) and `mir_std_call` (261) are held to their
   lengths, each lowered as what's left in it goes where its kind is.
-- **One home for each readability rule:** a closure's parameter given
-  its name back, `(value$1) =>` to `(value) =>`, is tidying's, and a
-  local's reclaiming's (ADR 0352); a variable that's another's alias
-  removed is tidying's, and one shadowed by its own value preparation's.
-  Tidying runs first and leans on its own; each pair is one rule to make
-  preparation's, as `let` to `const` is.
+- **One home for each readability rule:** a variable that's another's
+  alias removed is tidying's, and one shadowed by its own value
+  preparation's; one rule to make preparation's, as `let` to `const` and a
+  closure's parameter given its name back are, which lowering asks.
 - **The playground reads a manifest:** its host names the output,
   `{stem}.js`, takes every JS file the compiler wrote, and finds `main`
   by a regular expression over the JS; a manifest of it, which would say

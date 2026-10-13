@@ -9,6 +9,11 @@ use std::collections::HashSet;
 use crate::js::{self, Expr, ExprKind, JsxTag, Op, Prop, Stmt, StmtKind};
 
 mod reclaim;
+
+/// A closure's parameter given its name back, preparation's, which a body
+/// lowered from its MIR asks before it's linked, as an import's alias is
+/// chosen around it.
+pub(crate) use reclaim::unsuffixed_params;
 mod scopes;
 
 pub fn module(module: &mut js::Module) {

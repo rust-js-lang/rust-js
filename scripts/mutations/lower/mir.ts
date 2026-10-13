@@ -2109,14 +2109,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts","-t","methods across modules"],
   },
   {
-    name: "mir-params-suffixed",
-    breaks: "MIR's closure parameter keeps the suffix its function's names gave it",
-    file: "src/lower/mir.rs",
-    find: "        tidy::unsuffixed_params(&mut out, self.module_names);\n",
-    replace: "",
-    tests: ["test/link.test.ts","-t","module-load statements"],
-  },
-  {
     name: "mir-if-span-of-condition",
     breaks: "MIR's `if` maps to its condition, not `if c`",
     file: "src/lower/mir.rs",
@@ -2371,5 +2363,13 @@ export const mutations: Mutation[] = [
       "-t",
       "props updated from a reference are spread"
     ]
+  },
+  {
+    name: "mir-params-suffixed",
+    breaks: "MIR's closure parameter keeps the suffix its function's names gave it",
+    file: "src/lower/mir.rs",
+    find: "        crate::prepare::unsuffixed_params(&mut out, self.module_names);\n",
+    replace: "",
+    tests: ["test/link.test.ts","-t","module-load statements"],
   },
 ];

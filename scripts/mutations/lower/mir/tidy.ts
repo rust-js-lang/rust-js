@@ -1889,14 +1889,6 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts","-t","a defined value is an unknown"],
   },
   {
-    name: "mir-tidy-param-module-name-reused",
-    breaks: "MIR's closure parameter takes a name of the module's",
-    file: "src/lower/mir/tidy.rs",
-    find: "                if named.contains(base) || module.contains(base) {\n",
-    replace: "                if named.contains(base) {\n",
-    tests: ["test/link.test.ts","-t","module-load statements"],
-  },
-  {
     name: "mir-tidy-return-span-none",
     breaks: "MIR's `return` of a value put in it maps to no Rust",
     file: "src/lower/mir/tidy.rs",

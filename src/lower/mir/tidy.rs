@@ -3473,7 +3473,7 @@ fn unwrapped_values(stmts: &mut [Stmt]) {
 /// too.
 pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>) {
     let mut taken: HashSet<String> = params.iter().flat_map(|p| p.names()).map(str::to_string).collect();
-    names_in(body, &mut taken);
+    js::names_in(body, &mut taken);
     // What an element is given each as, `href={_5}` or a child, `{_6}`: the
     // prop's name, `href`, or `children`.
     let mut given: HashMap<String, String> = HashMap::new();
@@ -3544,73 +3544,6 @@ pub(super) fn readable_temporaries(params: &[js::Pattern], body: &mut Vec<Stmt>)
             }
         });
     }
-}
-
-/// An arrow's parameter its function's names made unique, `(value$1) =>
-/// f(value$1)`, is the name it was made of where the arrow names nothing
-/// else so, `(value) => f(value)`, as JS's arrows shadow: once nothing's
-/// left to name. Not a name of the module's, which a closure's parameters
-/// stay apart from.
-pub(super) fn unsuffixed_params(body: &mut [Stmt], module: &HashSet<String>) {
-    js::each_expr_mut(body, &mut |e| {
-        let (ExprKind::Arrow(params, inner) | ExprKind::AsyncArrow(params, inner)) = &mut e.kind else {
-            return;
-        };
-        for i in 0..params.len() {
-            for k in 0..params[i].names().len() {
-                let name = params[i].names()[k].to_string();
-                let Some((base, n)) = name.rsplit_once('$') else {
-                    continue;
-                };
-                if base.is_empty() || n.is_empty() || !n.bytes().all(|b| b.is_ascii_digit()) {
-                    continue;
-                }
-                let mut named = HashSet::new();
-                names_in(inner, &mut named);
-                named.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-                if named.contains(base) || module.contains(base) {
-                    continue;
-                }
-                js::each_expr_mut(inner, &mut |e| {
-                    if let ExprKind::Var(v) = &mut e.kind
-                        && *v == name
-                    {
-                        *v = base.to_string();
-                    }
-                });
-                *params[i].names_mut().swap_remove(k) = base.to_string();
-            }
-        }
-    });
-}
-
-/// Each name `stmts` read or declare, their closures' and parameters' too.
-fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
-    js::visit_stmts(stmts, &mut |name| {
-        names.insert(name.to_string());
-    });
-    js::statement_lists(&mut stmts.to_vec(), &mut |list| {
-        for stmt in list.iter() {
-            match &stmt.kind {
-                StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
-                    names.insert(name.clone());
-                }
-                StmtKind::Destructure { pattern, .. } | StmtKind::ForOf { pattern, .. } => {
-                    names.extend(pattern.names().into_iter().map(str::to_string));
-                }
-                StmtKind::TryCatch(_, Some(name), _) => {
-                    names.insert(name.clone());
-                }
-                _ => {}
-            }
-        }
-    });
-    js::each_expr_mut(&mut stmts.to_vec(), &mut |e| {
-        if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
-            names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-            names_in(body, names);
-        }
-    });
 }
 
 /// `const result = e; return result;`, the place MIR makes what a function

@@ -439,7 +439,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .copied()
             .collect();
         self.place_written(written, &mut out);
-        tidy::unsuffixed_params(&mut out, self.module_names);
+        crate::prepare::unsuffixed_params(&mut out, self.module_names);
         out.splice(0..0, self.directives(body.def_id));
         into.extend(out);
         Ok((params, is_async))
