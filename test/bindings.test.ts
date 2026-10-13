@@ -1917,6 +1917,14 @@ pub fn text_of(value: Option<&Unknown>) -> String {
     js::concat_text(value)
 }
 
+pub fn px(n: f64) -> String {
+    js::concat_text(n) + "px"
+}
+
+pub fn counted(count: f64, noun: &str) -> String {
+    js::concat_text(count) + " " + noun
+}
+
 pub fn int_of(value: Option<&Unknown>) -> String {
     number::to_string(js::parse_int_with(value, 10))
 }
@@ -1942,6 +1950,9 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   expect(js).toContain("text.replace(pattern, (matched, escaped, _ptn, flag) => {");
   expect(js).toContain('return text.replace(/%{2,2}/g, "%");');
   expect(js).toContain('return value + "";');
+  // Text joined to it already makes it text, as react.dev writes `right - left + 'px'`.
+  expect(js).toContain('return n + "px";');
+  expect(js).toContain('return count + " " + noun;');
   expect(js).toContain("return parseInt(value, 10).toString();");
   expect(js).toContain("return parseFloat(value).toString();");
   expect(js).toContain("JSON.stringify(value, null, 2)");
@@ -1950,6 +1961,7 @@ pub fn tag_of(value: Option<&Unknown>) -> Result<String, &'static JsError> {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.formatted("a %s b %%d"), lib.unescaped("100%% sure")]).toEqual(["a <s> b %%d", "100% sure"]);
   expect([lib.text_of(undefined), lib.text_of(12), lib.text_of({})]).toEqual(["undefined", "12", "[object Object]"]);
+  expect([lib.px(1.5), lib.px(-0), lib.counted(2, "videos")]).toEqual(["1.5px", "0px", "2 videos"]);
   expect([lib.int_of("42px"), lib.int_of(undefined), lib.float_of("1e21"), lib.float_of("x")]).toEqual(["42", "NaN", "1e+21", "NaN"]);
   const cyclic: any = {};
   cyclic.self = cyclic;

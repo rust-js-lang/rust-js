@@ -338,4 +338,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/serde.test.ts","-t","a Value's reads"],
   },
+  {
+    name: "text-joined-twice",
+    breaks: "a number made text and joined to text stays `n + \"\" + \"px\"`, not `n + \"px\"`",
+    file: "src/js.rs",
+    find: "            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))\n",
+    replace: "            && false\n",
+    tests: ["test/bindings.test.ts","-t","as react.dev's Console does"],
+  },
 ];

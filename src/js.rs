@@ -1041,6 +1041,15 @@ impl Expr {
         {
             return rhs;
         }
+        // `x + "" + "px"` is `x + "px"`: either makes text of `x` as `+`
+        // does, then joins.
+        if op == Op::Add
+            && matches!(rhs.kind, ExprKind::Str(_) | ExprKind::Template(..))
+            && let ExprKind::Binary(Op::Add, x, empty) = &lhs.kind
+            && matches!(&empty.kind, ExprKind::Str(s) if s.is_empty())
+        {
+            return Expr::bin(Op::Add, (**x).clone(), rhs);
+        }
         Expr::new(ExprKind::Binary(op, Box::new(lhs), Box::new(rhs)))
     }
 
