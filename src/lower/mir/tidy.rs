@@ -47,6 +47,8 @@ pub(super) struct Hints<'h> {
     pub(super) captured: &'h HashSet<String>,
     /// The variables of Rust's `bool`: JS's `true` and `false` alone.
     pub(super) booleans: &'h HashSet<String>,
+    /// The variables of Rust's integers: JS's numbers, which `++` steps.
+    pub(super) numbers: &'h HashSet<String>,
     /// The variables of plain values, which nothing changes, and `...items`
     /// of arrays whose items nothing changes (`Locals::plain`).
     pub(super) plain: &'h HashSet<String>,
@@ -76,6 +78,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         returns,
         captured,
         booleans,
+        numbers,
         plain,
         forwarding,
         concise,
@@ -119,7 +122,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
     // The innermost first: what a loop ends with may be another, recovered.
     let mut taken = mentions.clone();
-    bottom_up(body, &mut |stmts| loops(stmts, &mut taken));
+    bottom_up(body, &mut |stmts| loops(stmts, &mut taken, numbers));
     // A match's tree of tests, its arms reached through a block MIR made:
     // the chain of its arms, now that the loops are made.
     bottom_up(body, &mut decisions::decisions);
@@ -357,10 +360,10 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
 /// reads the iterator, and only its end leaves the loop. MIR's other shape,
 /// `if (t != null) { const x = t; body } exit`, is `for (const x of xs) {
 /// body; break; } exit`, its body going on to the exit where it ends.
-fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>) {
+fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>, numbers: &HashSet<String>) {
     let mut i = 0;
     while i + 1 < stmts.len() {
-        if let Some(made) = for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], mentions) {
+        if let Some(made) = for_of(&stmts[i], &stmts[i + 1], &stmts[i + 2..], mentions, numbers) {
             // What it names, its loop's `end` held say, taken: another
             // loop's is another name.
             for stmt in &made {
@@ -374,7 +377,13 @@ fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>) {
     }
 }
 
-fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String, usize>) -> Option<Vec<Stmt>> {
+fn for_of(
+    made: &Stmt,
+    looped: &Stmt,
+    after: &[Stmt],
+    mentions: &HashMap<String, usize>,
+    numbers: &HashSet<String>,
+) -> Option<Vec<Stmt>> {
     let (iter, source) = match &made.kind {
         StmtKind::Const(iter, source) => (iter, source),
         StmtKind::Assign(target, source)
@@ -499,7 +508,12 @@ fn for_of(made: &Stmt, looped: &Stmt, after: &[Stmt], mentions: &HashMap<String,
                 || matches!(&end.kind, ExprKind::Var(v) if !assigns(&body, v))
                 || matches!(&end.kind, ExprKind::Member(of, length)
                     if length == "length" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));
-            if start_key != "start" || end_key != "end" || mutable {
+            // JS's `++` steps a number: a `char`'s range, text, steps by
+            // its code point, past the surrogates, as `$rangeNext` does.
+            let counted = start.as_int().is_some()
+                || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))
+                || matches!(&start.kind, ExprKind::Unary(UnaryOp::Neg, n) if n.as_int().is_some());
+            if start_key != "start" || end_key != "end" || mutable || !counted {
                 return None;
             }
             // A count the body doesn't read, Rust's `_`: `i`.

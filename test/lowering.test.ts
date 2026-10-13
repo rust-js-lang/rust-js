@@ -11381,3 +11381,84 @@ pub fn last() -> u32 {
   const lib = await import(join(dir, "lib.js"));
   expect([lib.sizes(), lib.nones(), lib.last()]).toEqual([[1, 8, 8], [3, undefined], 7]);
 });
+
+// A `char` range stepped as Rust steps it, by its code point, past the
+// surrogates no `char` is: in a `for`, given to `extend`, and an iterator
+// turned around after it's been stepped from both ends.
+test("char ranges step by code point, and a stepped iterator turns around", async () => {
+  const dir = fixture("char-ranges");
+  writeFileSync(join(dir, "lib.rs"), `pub fn letters() -> String {
+    let mut s = String::new();
+    for c in 'a'..'e' {
+        s.push(c);
+    }
+    for c in 'x'..='z' {
+        s.push(c);
+    }
+    s
+}
+pub fn from(a: char, b: char) -> String {
+    let mut s = String::new();
+    for c in a..b {
+        s.push(c);
+    }
+    s
+}
+pub fn across() -> Vec<u32> {
+    let mut out = Vec::new();
+    for c in '\\u{d7fe}'..'\\u{e001}' {
+        out.push(c as u32);
+    }
+    out
+}
+pub fn extended() -> Vec<u32> {
+    let mut v: Vec<char> = vec!['a'];
+    v.extend('b'..'d');
+    v.extend('\\u{d7fe}'..'\\u{e001}');
+    v.into_iter().map(|c| c as u32).collect()
+}
+pub fn counted(n: u32) -> u32 {
+    let mut total = 0;
+    for i in 0..n {
+        total += i;
+    }
+    total
+}
+pub fn between(k: u32, n: u32) -> u32 {
+    let mut total = 0;
+    for i in k..n {
+        total += i;
+    }
+    total
+}
+pub fn reversed() -> Vec<u32> {
+    let mut it = [1u32, 2, 3, 4].iter();
+    it.next_back();
+    it.next();
+    it.rev().copied().collect()
+}
+pub fn kept_reversed(v: &[u32]) -> Vec<u32> {
+    let it = v.iter();
+    it.rev().copied().collect()
+}
+pub fn owned_reversed(v: Vec<u32>) -> Vec<u32> {
+    let mut it = v.into_iter();
+    it.next();
+    it.rev().collect()
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const lib = await import(join(dir, "lib.js"));
+  expect(lib.letters()).toBe("abcdxyz");
+  expect(lib.from("p", "t")).toBe("pqrs");
+  expect(lib.across()).toEqual([0xd7fe, 0xd7ff, 0xe000]);
+  expect(lib.extended()).toEqual([97, 98, 99, 0xd7fe, 0xd7ff, 0xe000]);
+  expect(lib.counted(5)).toBe(10);
+  expect(lib.reversed()).toEqual([3, 2]);
+  expect([lib.kept_reversed([1, 2, 3]), lib.owned_reversed([1, 2, 3])]).toEqual([[3, 2, 1], [3, 2]]);
+  // A number's range is still JS's counted `for`.
+  expect(lib.between(2, 5)).toBe(9);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("for (let i = 0; i < n; i++) {");
+  expect(js).toContain("for (let i = k; i < n; i++) {");
+});

@@ -102,7 +102,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-for-range-kept",
     breaks: "a range's `while (true)` with `$rangeNext` stays, not `for (let i = 0; i < k; i++)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            if start_key != \"start\" || end_key != \"end\" || mutable {\n",
+    find: "            if start_key != \"start\" || end_key != \"end\" || mutable || !counted {\n",
     replace: "            if true {\n",
     tests: ["test/lowering.test.ts","-t","loops from MIR read"],
   },
@@ -2119,5 +2119,29 @@ export const mutations: Mutation[] = [
     find: "    js::statement_lists(body, &mut |stmts| decisions::default_values(stmts));\n",
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "no arm sets it"],
+  },
+  {
+    name: "mir-tidy-char-range-counted",
+    breaks: "a `char` range's loop is JS's counted `for`, whose `++` of text stops after one",
+    file: "src/lower/mir/tidy.rs",
+    find: "            if start_key != \"start\" || end_key != \"end\" || mutable || !counted {\n",
+    replace: "            if start_key != \"start\" || end_key != \"end\" || mutable {\n",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "char ranges step by code point"
+    ]
+  },
+  {
+    name: "mir-tidy-number-variable-range-uncounted",
+    breaks: "a range from a number variable, `k..n`, stays a `$rangeNext` loop, not a counted `for`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))\n",
+    replace: "",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "char ranges step by code point"
+    ]
   },
 ];

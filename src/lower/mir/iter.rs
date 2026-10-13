@@ -227,6 +227,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 _ => {
                     let items = match self.array_source(iter_ty) {
+                        // One a variable or a field holds, its `$iter`, stepped or
+                        // not: what's left of it.
+                        Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {
+                            match name {
+                                "peekable" => return Ok(Some(receiver)),
+                                _ => self.helper(Helper::Rest, "$rest", vec![receiver]),
+                            }
+                        }
                         Some(_) => match self.std_iterator(receiver, iter_ty) {
                             it if name == "peekable" => return Ok(Some(it)),
                             // Of one just made, the array, which `toReversed`
@@ -520,7 +528,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `value`, an iterator of type `ty`, as a JS iterator: a range stepped
     /// by its `next`, the crate's by its impl's, a JS one as it is.
-    pub(super) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
+    pub(in crate::lower) fn as_js_iterator(&mut self, value: Expr, ty: Ty<'tcx>, span: Span) -> R<Expr> {
         // The crate's own behind an `impl Iterator` too.
         let ty = self.reveal(ty);
         match self.range_kind(ty) {

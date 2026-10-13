@@ -863,12 +863,19 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .map(|e| self.js_span(e.span.source_callsite()))
             .collect();
         let captured = std::mem::replace(&mut self.locals.captured, outer_captured);
-        // A name each of whose locals is a `bool`.
+        // A name each of whose locals is a `bool`, and one each of whose
+        // locals is an integer.
         let mut booleans = std::collections::HashSet::new();
         let mut others = std::collections::HashSet::new();
+        let mut numbers = std::collections::HashSet::new();
+        let mut not_numbers = std::collections::HashSet::new();
         for (local, name) in state.locals.names.iter_enumerated().filter(|(_, n)| !n.is_empty()) {
             // A shared reference to one too, `*show_hint`'s, which JS reads as it.
             let ty = mir_body.local_decls[local].ty;
+            match ty.is_integral() {
+                true => numbers.insert(name.clone()),
+                false => not_numbers.insert(name.clone()),
+            };
             let bool = match ty.kind() {
                 ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),
                 _ => ty.is_bool(),
@@ -894,6 +901,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
         }
         booleans.retain(|name| !others.contains(name));
+        numbers.retain(|name| !not_numbers.contains(name));
         // And each field path that's a `bool` each time it's read.
         booleans.extend(
             (self.locals.paths.iter())
@@ -930,6 +938,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 returns: &state.returns,
                 captured: &captured,
                 booleans: &booleans,
+                numbers: &numbers,
                 plain: &plain,
                 forwarding: &self.locals.forwarding.clone(),
                 concise: &self.locals.concise.clone(),

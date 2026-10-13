@@ -590,4 +590,16 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/diagnostics.test.ts","-t","len of a chain whose closure prints"],
   },
+  {
+    name: "mir-rev-of-kept-iterator-wrapped",
+    breaks: "`rev()` of an iterator a variable holds wraps its `$iter` again, `it.toReversed()`, which throws",
+    file: "src/lower/mir/iter.rs",
+    find: "                        Some(_) if matches!(receiver.kind, js::ExprKind::Var(_) | js::ExprKind::Member(..)) => {\n",
+    replace: "                        Some(_) if false => {\n",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "char ranges step by code point"
+    ]
+  },
 ];
