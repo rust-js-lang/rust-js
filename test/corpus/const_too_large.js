@@ -7,9 +7,6 @@ export function entry() {
 const DATA = new Array(200000).fill(42);
 
 function main() {
-  if (!(199999 < 200000)) {
-    throw new Error("index out of bounds: the len is 200000 but the index is 199999");
-  }
   console.log(`${DATA[199999]}`);
 }
 //# sourceMappingURL=case.js.map

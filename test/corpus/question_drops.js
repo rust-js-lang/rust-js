@@ -266,19 +266,18 @@ function main() {
   let _124$live = false;
   let _124$0$live = false;
   for (const start of [0, 2]) {
-    const value = climb([start]);
+    const d = climb([start]);
     _13$live = true;
     _13$0$live = true;
-    if (value) {
+    if (d) {
       _13$0$live = false;
-      const d = value;
       try {
         console.log(`climbed to ${d[0]}`);
       } catch (error) {
         dDrop_drop(d);
-        if (value) {
+        if (d) {
           if (_13$0$live) {
-            dDrop_drop(value);
+            dDrop_drop(d);
           }
         }
         throw error;
@@ -286,9 +285,9 @@ function main() {
       try {
         dDrop_drop(d);
       } catch (error) {
-        if (value) {
+        if (d) {
           if (_13$0$live) {
-            dDrop_drop(value);
+            dDrop_drop(d);
           }
         }
         throw error;
@@ -297,17 +296,17 @@ function main() {
       try {
         console.log("stopped");
       } catch (error) {
-        if (value) {
+        if (d) {
           if (_13$0$live) {
-            dDrop_drop(value);
+            dDrop_drop(d);
           }
         }
         throw error;
       }
     }
-    if (value) {
+    if (d) {
       if (_13$0$live) {
-        dDrop_drop(value);
+        dDrop_drop(d);
       }
     }
     _13$live = false;
@@ -344,19 +343,18 @@ function main() {
     _86$live = false;
   }
   for (const start of [1, 3]) {
-    const value = twice([start], dCheckedDouble(), dDrop_drop);
+    const d = twice([start], dCheckedDouble(), dDrop_drop);
     _124$live = true;
     _124$0$live = true;
-    if (value) {
+    if (d) {
       _124$0$live = false;
-      const d = value;
       try {
         console.log(`doubled to ${d[0]}`);
       } catch (error) {
         dDrop_drop(d);
-        if (value) {
+        if (d) {
           if (_124$0$live) {
-            dDrop_drop(value);
+            dDrop_drop(d);
           }
         }
         throw error;
@@ -364,9 +362,9 @@ function main() {
       try {
         dDrop_drop(d);
       } catch (error) {
-        if (value) {
+        if (d) {
           if (_124$0$live) {
-            dDrop_drop(value);
+            dDrop_drop(d);
           }
         }
         throw error;
@@ -375,17 +373,17 @@ function main() {
       try {
         console.log("too big");
       } catch (error) {
-        if (value) {
+        if (d) {
           if (_124$0$live) {
-            dDrop_drop(value);
+            dDrop_drop(d);
           }
         }
         throw error;
       }
     }
-    if (value) {
+    if (d) {
       if (_124$0$live) {
-        dDrop_drop(value);
+        dDrop_drop(d);
       }
     }
     _124$live = false;

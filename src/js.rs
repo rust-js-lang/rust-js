@@ -1152,6 +1152,31 @@ impl Expr {
     }
 
     /// The integer value, if this is an integer literal.
+    /// What this test is wherever it runs, where that's known: a `bool`, a
+    /// comparison of two numbers, `1 < 4` of a bounds check of an array's
+    /// constant index, or `!` of one.
+    pub fn truth(&self) -> Option<bool> {
+        match &self.kind {
+            ExprKind::Bool(b) => Some(*b),
+            ExprKind::Unary(UnaryOp::Not, a) => a.truth().map(|t| !t),
+            ExprKind::Binary(op, a, b) => {
+                let (ExprKind::Num(a), ExprKind::Num(b)) = (&a.kind, &b.kind) else {
+                    return None;
+                };
+                match op {
+                    Op::Lt => Some(a < b),
+                    Op::Le => Some(a <= b),
+                    Op::Gt => Some(a > b),
+                    Op::Ge => Some(a >= b),
+                    Op::Eq => Some(a == b),
+                    Op::Ne => Some(a != b),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
+
     pub fn as_int(&self) -> Option<i128> {
         match self.kind {
             ExprKind::Num(n) if n.fract() == 0.0 => Some(n as i128),

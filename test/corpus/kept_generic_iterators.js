@@ -21,13 +21,11 @@ function sum(it) {
 function pairs(it) {
   const out = [];
   while (true) {
-    const value = $next(it);
-    const value$1 = $next(it);
-    if (value == null || value$1 == null) {
+    const a = $next(it);
+    const b = $next(it);
+    if (a == null || b == null) {
       break;
     }
-    const a = value;
-    const b = value$1;
     out.push([a, b]);
   }
   return out;

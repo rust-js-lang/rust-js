@@ -145,9 +145,6 @@ function main() {
   flagsShlAssignU8_shl_assign(f, 2);
   console.log(`${flagsDebug_fmt(f)}`);
   const all = [[READ[0]], [WRITE[0]]];
-  if (!(1 < 2)) {
-    throw new Error("index out of bounds: the len is 2 but the index is 1");
-  }
   flagsBitOrAssign_bitor_assign(all[1], [RUN[0]]);
   const user = [[READ[0]], "ann"];
   flagsBitOrAssign_bitor_assign(user[0], [WRITE[0]]);

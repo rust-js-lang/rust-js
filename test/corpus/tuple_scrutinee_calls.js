@@ -7,10 +7,9 @@ export function entry() {
 }
 
 function popped(v, n) {
-  const value = v.pop();
-  if (value != null) {
+  const x = v.pop();
+  if (x != null) {
     if (n > 3) {
-      const x = value;
       return x;
     }
     return 1;
@@ -19,14 +18,11 @@ function popped(v, n) {
 }
 
 function counted(v) {
-  const length = v.length;
-  const value = v.pop();
-  if (value != null) {
-    const n = length;
-    const x = value;
+  const n = v.length;
+  const x = v.pop();
+  if (x != null) {
     return ((Math.imul(n, 10) >>> 0) + x) >>> 0;
   }
-  const n = length;
   return n;
 }
 
@@ -54,16 +50,13 @@ function peeked(map, names) {
 
 function guarded(v) {
   let x = 1;
-  const value = v.pop();
-  const value$1 = x;
+  const b = v.pop();
+  const a = x;
   x = (x + 10) >>> 0;
   if (!false) {
-    if (value != null) {
-      const b = value;
-      const a = value$1;
+    if (b != null) {
       return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
     }
-    const a = value$1;
     return (a + x) >>> 0;
   }
   return 0;
@@ -71,36 +64,30 @@ function guarded(v) {
 
 function bumped(v) {
   let x = 1;
-  const value = v.pop();
-  const value$1 = x;
+  const b = v.pop();
+  const a = x;
   if (
     !(() => {
       x = (x + 10) >>> 0;
       return false;
     })()
   ) {
-    if (value != null) {
-      const b = value;
-      const a = value$1;
+    if (b != null) {
       return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
     }
-    const a = value$1;
     return (a + x) >>> 0;
   }
   return 0;
 }
 
 function guarded_param(v, x) {
-  const value = v.pop();
-  const value$1 = x;
+  const b = v.pop();
+  const a = x;
   x = (x + 10) >>> 0;
   if (!false) {
-    if (value != null) {
-      const b = value;
-      const a = value$1;
+    if (b != null) {
       return ((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0;
     }
-    const a = value$1;
     return (a + x) >>> 0;
   }
   return 0;
@@ -114,9 +101,9 @@ function bump(n) {
 function bumped_by_ref(v, first) {
   let x = 1;
   let y = 2;
-  const value = v.pop();
-  const value$1 = x;
-  const value$2 = first
+  const b = v.pop();
+  const a = x;
+  const value = first
     ? {
         get value() {
           return x;
@@ -133,16 +120,13 @@ function bumped_by_ref(v, first) {
           y = value;
         },
       };
-  const n = { value: value$2.value };
-  const value$3 = bump(n);
-  value$2.value = n.value;
-  if (!value$3) {
-    if (value != null) {
-      const b = value;
-      const a = value$1;
+  const n = { value: value.value };
+  const value$1 = bump(n);
+  value.value = n.value;
+  if (!value$1) {
+    if (b != null) {
       return ((((((Math.imul(a, 100) >>> 0) + b) >>> 0) + x) >>> 0) + y) >>> 0;
     }
-    const a = value$1;
     return (((a + x) >>> 0) + y) >>> 0;
   }
   return 0;

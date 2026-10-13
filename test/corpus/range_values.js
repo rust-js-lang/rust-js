@@ -74,7 +74,7 @@ function main() {
   const r = { start: 2, end: 7 };
   const v = $range(r.start, r.end);
   console.log(
-    `${r.start}..${r.end} [${v.map((item) => String(item)).join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} ${!(5 < 5)} ${Math.max(2 - 5, 0)}`,
+    `${r.start}..${r.end} [${v.map((item) => String(item)).join(", ")}] ${Math.max(r.end - r.start, 0)} ${!(r.start < r.end)} ${5 >= 5} ${Math.max(2 - 5, 0)}`,
   );
   const steps = { start: 0, end: 4 };
   const first = $rangeNext(steps);
@@ -89,7 +89,7 @@ function main() {
   );
   const low = 3;
   const high = 9;
-  console.log(`${low} ${high} ${!(2 <= 1)}`);
+  console.log(`${low} ${high} ${2 > 1}`);
   const value$1 = total({ start: 1, end: 5 });
   console.log(
     `${value$1} ${$lazyRange(0, 5)

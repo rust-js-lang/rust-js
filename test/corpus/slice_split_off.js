@@ -110,7 +110,7 @@ function main() {
         name.value += "!";
       }
       const length = all.length;
-      if (!(0 < length)) {
+      if (0 >= length) {
         throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
       }
       const all$1 = all;

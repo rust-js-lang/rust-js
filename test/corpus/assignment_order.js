@@ -150,9 +150,6 @@ function main() {
   const a$4 = [1, 2].slice();
   const b$3 = [10, 20].slice();
   const cur$3 = b$3;
-  if (!(0 < 2)) {
-    throw new Error("index out of bounds: the len is 2 but the index is 0");
-  }
   cur$3[0] = (cur$3[0] + 1) | 0;
   console.log(
     `[${a$4.map((item) => String(item)).join(", ")}] [${b$3.map((item) => String(item)).join(", ")}]`,

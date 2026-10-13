@@ -1109,7 +1109,7 @@ test("the store's JS: let-else, ranges, and writes through a map's value", async
   const js = await Bun.file(join(target, "inventory.js")).text();
   expect(js).toContain("const have = $mutGet(store.stock, e.item);\n          if (have != null) {");
   expect(js).toContain("have.value = (have.value - e.qty) >>> 0;");
-  expect(js).toContain("    if (x >= 1) {\n      if (x < 10) {\n        return `few ${x}`;\n      }\n    }\n    if (!(x >= 10) || !(x <= 99)) {");
+  expect(js).toContain("    if (x >= 1) {\n      if (x < 10) {\n        return `few ${x}`;\n      }\n    }\n    if (x < 10 || x > 99) {");
   // A bound at the type's own end always holds, so it isn't tested.
   expect(js).toContain("if (n <= -1) {");
   expect(js).toContain("? `revenue ${$toFixed(store.revenue, 2)} under ${$toFixed(revenue[0], 2)}`\n    : undefined;");

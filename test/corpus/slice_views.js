@@ -197,7 +197,7 @@ function main() {
   const [head$2, tail$1] = $splitAtMut(points, 1);
   const x = $index(tail$1, 1).x;
   const length$1 = head$2.length;
-  if (!(0 < length$1)) {
+  if (0 >= length$1) {
     throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
   }
   head$2[0].x = x;

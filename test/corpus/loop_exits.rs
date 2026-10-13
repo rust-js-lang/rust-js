@@ -5,7 +5,8 @@
 // `return` reads what the loop declares, nor where something else leaves
 // the loop, which would reach that `return` too, nor where what's before
 // the exit doesn't leave, `once`'s, nor where it declares a name the body
-// has, `shadowed`'s.
+// has, `shadowed`'s. An exit's test of an integer is turned, `x >= 50` of
+// `!(x < 50)`, not a float's, which may be `NaN`.
 use std::collections::HashMap;
 
 enum Entry {
@@ -111,6 +112,18 @@ fn stopped(v: &mut Vec<u32>) -> u32 {
     n + 100
 }
 
+fn float_sum(v: &mut Vec<f64>) -> f64 {
+    let mut total = 0.0;
+    while let Some(x) = v.pop() {
+        if x < 50.0 {
+            total += x;
+            continue;
+        }
+        return -1.0;
+    }
+    total
+}
+
 fn main() {
     let mut inner = HashMap::new();
     inner.insert("b.txt".to_string(), Entry::File("hello".to_string()));
@@ -125,5 +138,6 @@ fn main() {
     println!("{} {} {}", shadowed(&mut vec![1, 0]), shadowed(&mut vec![3, 0]), shadowed(&mut vec![]));
     println!("{:?} {:?}", first_large(&mut vec![9, 1, 2]), first_large(&mut vec![1]));
     println!("{} {} {}", stopped(&mut vec![0, 1, 2]), stopped(&mut vec![9, 1]), stopped(&mut vec![]));
+    println!("{} {} {}", float_sum(&mut vec![1.5, 2.5]), float_sum(&mut vec![f64::NAN, 1.0]), float_sum(&mut vec![60.0]));
     println!("{} {} {}", small_sum(&mut vec![1, 2], true), small_sum(&mut vec![60, 1], true), small_sum(&mut vec![], false));
 }

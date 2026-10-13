@@ -241,8 +241,8 @@ export function bands(xs) {
         return `few ${x}`;
       }
     }
-    if (!(x >= 10) || !(x <= 99)) {
-      if (!(x >= 200)) {
+    if (x < 10 || x > 99) {
+      if (x < 200) {
         return "odd";
       }
     }

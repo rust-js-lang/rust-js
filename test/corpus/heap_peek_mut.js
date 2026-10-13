@@ -47,12 +47,11 @@ function loudPartialOrd_partial_cmp(loud, other) {
 
 function main() {
   const heap = $heapFrom([3, 8, 5, 1], $cmp);
-  const value = $peekMut(heap, $cmp);
+  const top = $peekMut(heap, $cmp);
   let _5$live = true;
   let _5$0$live = true;
-  if (value) {
+  if (top) {
     _5$0$live = false;
-    const top = value;
     try {
       $peekMutTop(top, true).value = 0;
     } catch (error) {
@@ -63,98 +62,97 @@ function main() {
     _5$live = false;
     _5$0$live = false;
   } else {
-    if (value) {
+    if (top) {
       if (_5$0$live) {
-        $peekMutDrop(value);
+        $peekMutDrop(top);
       }
     }
     _5$live = false;
     _5$0$live = false;
   }
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
-  const top = $unwrap($peekMut(heap, $cmp));
+  const top$1 = $unwrap($peekMut(heap, $cmp));
   let tmp;
   try {
-    tmp = $peekMutTop(top, true);
+    tmp = $peekMutTop(top$1, true);
   } catch (error) {
-    $peekMutDrop(top);
+    $peekMutDrop(top$1);
     throw error;
   }
   tmp.value = (tmp.value - 10) | 0;
   try {
-    console.log(`${top.heap[0]} PeekMut(${top.heap[0]})`);
+    console.log(`${top$1.heap[0]} PeekMut(${top$1.heap[0]})`);
   } catch (error) {
-    $peekMutDrop(top);
+    $peekMutDrop(top$1);
     throw error;
   }
-  $peekMutDrop(top);
+  $peekMutDrop(top$1);
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
-  const top$1 = $unwrap($peekMut(heap, $cmp));
-  console.log(`popped ${$peekMutPop(top$1)}`);
+  const top$2 = $unwrap($peekMut(heap, $cmp));
+  console.log(`popped ${$peekMutPop(top$2)}`);
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
   const loud = [];
   $heapPush(loud, [2], loudOrd_cmp);
   $heapPush(loud, [7], loudOrd_cmp);
   console.log("read");
-  const top$2 = $peekMut(loud, loudOrd_cmp);
+  const top$3 = $peekMut(loud, loudOrd_cmp);
   let _104$live = true;
   let _104$0$live = true;
-  if (top$2) {
+  if (top$3) {
     _104$0$live = false;
     try {
-      console.log(`top ${top$2.heap[0][0]}`);
+      console.log(`top ${top$3.heap[0][0]}`);
     } catch (error) {
-      $peekMutDrop(top$2);
+      $peekMutDrop(top$3);
       throw error;
     }
-    $peekMutDrop(top$2);
+    $peekMutDrop(top$3);
     _104$live = false;
     _104$0$live = false;
   } else {
-    if (top$2) {
+    if (top$3) {
       if (_104$0$live) {
-        $peekMutDrop(top$2);
+        $peekMutDrop(top$3);
       }
     }
     _104$live = false;
     _104$0$live = false;
   }
   console.log("write");
-  const value$1 = $peekMut(loud, loudOrd_cmp);
+  const top$4 = $peekMut(loud, loudOrd_cmp);
   let _126$live = true;
   let _126$0$live = true;
-  if (value$1) {
+  if (top$4) {
     _126$0$live = false;
-    const top = value$1;
     try {
-      $peekMutTop(top)[0] = 1;
+      $peekMutTop(top$4)[0] = 1;
     } catch (error) {
-      $peekMutDrop(top);
+      $peekMutDrop(top$4);
       throw error;
     }
-    $peekMutDrop(top);
+    $peekMutDrop(top$4);
     _126$live = false;
     _126$0$live = false;
   } else {
-    if (value$1) {
+    if (top$4) {
       if (_126$0$live) {
-        $peekMutDrop(value$1);
+        $peekMutDrop(top$4);
       }
     }
     _126$live = false;
     _126$0$live = false;
   }
-  const value$2 = $peekMut([], $cmp);
+  const value = $peekMut([], $cmp);
   try {
-    console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${!value$2}`);
+    console.log(`[${loud.map((item) => loudDebug_fmt(item)).join(", ")}] ${!value}`);
   } catch (error) {
-    if (value$2 != null) {
-      $peekMutDrop(value$2);
+    if (value != null) {
+      $peekMutDrop(value);
     }
     throw error;
   }
-  if (value$2 != null) {
-    $peekMutDrop(value$2);
+  if (value != null) {
+    $peekMutDrop(value);
   }
 }
 //# sourceMappingURL=case.js.map

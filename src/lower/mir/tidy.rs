@@ -209,6 +209,9 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut |stmts| table_reads(stmts, tables));
     declarations(body);
     js::statement_lists(body, &mut |stmts| inlined(stmts, &changed, &set, plain, captured));
+    // A tuple's part held, `const _3$0 = v.pop();`, which an arm's binding
+    // takes, by that name.
+    named_temporaries(body);
     js::each_expr_mut(body, &mut |e| implied_tests(e, &changed));
     // A chain read in place now, `$lent($iter(xs)).some(f)` of `const _7 =
     // $iter(xs);`: the array's; and a range made there, its
@@ -342,6 +345,8 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
         js::statement_lists(body, &mut unlabeled);
     }
+    // `!(b >= 48)` of what's never `NaN`: `b < 48`.
+    js::each_expr_mut(body, &mut |e| turned(e, numbers));
     // An `if` of `false`, a check that can't fail once what it reads is
     // in place: its `else`, if any.
     js::statement_lists(body, &mut never_taken);
@@ -2462,8 +2467,8 @@ fn nested_pattern(parts: &[(&[Step], &str, Option<&Expr>)]) -> Option<js::Patter
 
 /// `const _3 = e; … if (_3) { const current = _3; … }`: a temporary that a
 /// variable the program names takes, in a block inside where it's read,
-/// `if let Some(current) = r.current()`'s, where nothing else is named so:
-/// `const current = e;`, read by that name.
+/// `if let Some(current) = r.current()`'s, or several arms' of one name,
+/// where nothing else is named so: `const current = e;`, read by that name.
 fn named_temporaries(body: &mut Vec<Stmt>) {
     // How often each name is declared, and read, in the whole body.
     let mut declared: HashMap<String, usize> = HashMap::new();
@@ -2496,19 +2501,31 @@ fn named_temporaries(body: &mut Vec<Stmt>) {
             let a = a.clone();
             let mut found = Vec::new();
             taking(&stmts[i + 1..], &a, &mut found);
-            let [(b, after)] = found.as_slice() else { continue };
-            if declared.get(b) != Some(&1) || reads.get(b).copied().unwrap_or(0) != *after {
+            // One name, each arm's that binds it, `n` of `(n, Some(x))` and
+            // `(n, None)`, given apart until they're named in their scopes,
+            // `n` and `n$1` (ADR 0357): each declared nowhere else, and read
+            // only after it.
+            let Some((b, _)) = found.first() else { continue };
+            let base = |name: &str| name.split('$').next().unwrap_or(name).to_string();
+            if found.iter().any(|(other, after)| {
+                base(other) != base(b)
+                    || declared.get(other) != Some(&1)
+                    || reads.get(other).copied().unwrap_or(0) != *after
+            }) {
                 continue;
             }
             let b = b.clone();
-            dropping(stmts, &a, &b);
+            let taken: Vec<String> = found.iter().map(|(name, _)| name.clone()).collect();
+            for name in &taken {
+                dropping(stmts, &a, name);
+            }
             let StmtKind::Const(name, _) = &mut stmts[i].kind else {
                 unreachable!("matched")
             };
             *name = b.clone();
             js::each_expr_mut(&mut stmts[i + 1..], &mut |e| {
                 if let ExprKind::Var(v) = &mut e.kind
-                    && *v == a
+                    && (*v == a || taken.contains(v))
                 {
                     *v = b.clone();
                 }
@@ -4032,6 +4049,41 @@ fn handled(body: &[Stmt]) -> HashSet<String> {
         }
     });
     handled
+}
+
+/// `!(b >= 48)`, a comparison of what's never `NaN`: `b < 48`, as a person
+/// writes it. An integer is never `NaN`, nor what a bitwise operator or a
+/// `length` gives; a string compared, to a string literal as Rust's types
+/// say, is ordered too. A float may be `NaN`, neither less nor more (ADR
+/// 0371).
+fn turned(e: &mut Expr, numbers: &HashSet<String>) {
+    let ExprKind::Unary(UnaryOp::Not, inner) = &e.kind else {
+        return;
+    };
+    let ExprKind::Binary(op, a, b) = &inner.kind else {
+        return;
+    };
+    let op = match op {
+        Op::Lt => Op::Ge,
+        Op::Le => Op::Gt,
+        Op::Gt => Op::Le,
+        Op::Ge => Op::Lt,
+        _ => return,
+    };
+    let never_nan = |x: &Expr| match &x.kind {
+        ExprKind::Var(v) => numbers.contains(v),
+        ExprKind::Num(n) => n.fract() == 0.0,
+        ExprKind::Binary(Op::BitOr | Op::BitAnd | Op::BitXor | Op::Shl | Op::Shr | Op::UShr, ..) => true,
+        ExprKind::Member(_, m) => m == "length",
+        _ => false,
+    };
+    let text = |x: &Expr| matches!(x.kind, ExprKind::Str(_));
+    if text(a) || text(b) || (never_nan(a) && never_nan(b)) {
+        *e = Expr {
+            span: e.span,
+            ..Expr::bin(op, (**a).clone(), (**b).clone())
+        };
+    }
 }
 
 /// The variables something may change: each `let`'s, and each assigned.

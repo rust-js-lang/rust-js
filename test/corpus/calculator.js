@@ -143,8 +143,8 @@ const Parser = {
     return token;
   },
   expect(parser, token, what) {
-    const value = Parser.next(parser);
-    if (value != null && $eq(value, token)) {
+    const t = Parser.next(parser);
+    if (t != null && $eq(t, token)) {
       return { TAG: "Ok" };
     }
     return { TAG: "Err", _0: { TAG: "Expected", _0: what } };

@@ -24,7 +24,7 @@ function main() {
     return i;
   };
   const value$2 = at(1);
-  if (!(value$2 < 2)) {
+  if (value$2 >= 2) {
     throw new Error(`index out of bounds: the len is 2 but the index is ${value$2}`);
   }
   const value$3 = at(0);
@@ -32,7 +32,7 @@ function main() {
   grid[value$2][value$3] = value;
   const value$4 = at(3) | 0;
   const value$5 = at(0);
-  if (!(value$5 < 2)) {
+  if (value$5 >= 2) {
     throw new Error(`index out of bounds: the len is 2 but the index is ${value$5}`);
   }
   const value$6 = at(1);
@@ -42,7 +42,7 @@ function main() {
   value$7.x = (value$7.x + 5) | 0;
   const value$8 = at(2) | 0;
   const value$9 = at(0);
-  if (!(value$9 < 2)) {
+  if (value$9 >= 2) {
     throw new Error(`index out of bounds: the len is 2 but the index is ${value$9}`);
   }
   arr[value$9].x = (arr[value$9].x - value$8) | 0;

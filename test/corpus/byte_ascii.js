@@ -17,7 +17,7 @@ export function entry() {
 function digits(text) {
   let n = 0;
   for (const b of Array.from(new TextEncoder().encode(text))) {
-    if (!(b >= 48) || !(b <= 57)) {
+    if (b < 48 || b > 57) {
       break;
     }
     n = ((Math.imul(n, 10) >>> 0) + ((b - 48) & 255)) >>> 0;

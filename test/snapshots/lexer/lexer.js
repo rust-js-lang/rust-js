@@ -72,8 +72,8 @@ export const Lexer = {
             out.push({ TAG: "Num", _0: n });
           } else {
             bb20: {
-              if (!(c >= "a") || !(c <= "z")) {
-                if (!(c >= "A") || !(c <= "Z")) {
+              if (c < "a" || c > "z") {
+                if (c < "A" || c > "Z") {
                   if (c === "_") {
                     break bb20;
                   } else if (c === '"') {
@@ -115,11 +115,9 @@ export function pairs(v) {
   const it = $iter(v);
   const out = [];
   while (true) {
-    const value = $next(it);
-    const value$1 = $next(it);
-    if (value != null && value$1 != null) {
-      const a = value;
-      const b = value$1;
+    const a = $next(it);
+    const b = $next(it);
+    if (a != null && b != null) {
       out.push([a, b]);
       continue;
     }

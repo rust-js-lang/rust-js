@@ -18,9 +18,8 @@ export function entry() {
 
 function main() {
   const names = new Map($lazyRange(1, 5).map((i) => [i, String(i)]));
-  const value$1 = $endEntry(names, $cmp, false);
-  if (value$1) {
-    const first = value$1;
+  const first = $endEntry(names, $cmp, false);
+  if (first) {
     const value = $entryGet(first, true);
     value.value += "!";
     console.log(`${first[1]} ${$entryGet(first)}`);
@@ -41,17 +40,16 @@ function main() {
     ["a", 1],
     ["c", 3],
   ]);
-  const value = $endEntry(counts, $cmp, false);
-  if (value) {
-    const first = value;
-    const value$1 = $entryGet(first, true);
-    value$1.value = (value$1.value + 10) | 0;
-    const old = $entryInsert(first, 100);
-    const arg = $entryGet(first);
+  const first$1 = $endEntry(counts, $cmp, false);
+  if (first$1) {
+    const value = $entryGet(first$1, true);
+    value.value = (value.value + 10) | 0;
+    const old = $entryInsert(first$1, 100);
+    const arg = $entryGet(first$1);
     console.log(`${old} ${arg}`);
   }
-  const value$2 = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
-  value$2.value = Math.imul(value$2.value, 7);
+  const value = $entryGet($unwrap($endEntry(counts, $cmp, true)), true);
+  value.value = Math.imul(value.value, 7);
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
@@ -67,7 +65,7 @@ function main() {
       .join(", ")}}`,
   );
   const empty = new Map();
-  const value$3 = !$endEntry(empty, $cmp, false);
-  console.log(`${value$3} ${!$endEntry(empty, $cmp, true)}`);
+  const value$1 = !$endEntry(empty, $cmp, false);
+  console.log(`${value$1} ${!$endEntry(empty, $cmp, true)}`);
 }
 //# sourceMappingURL=case.js.map

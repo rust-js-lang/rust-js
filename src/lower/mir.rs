@@ -1936,8 +1936,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let js_span = self.js_span(span);
                 // The panic drops what's there as it unwinds, then is thrown;
-                // none where it can't fail, a constant's operation rustc evaluates.
-                if !matches!(failed.kind, js::ExprKind::Bool(false)) {
+                // none where it can't fail, a constant's operation rustc
+                // evaluates, or an array's constant index in its bounds.
+                if failed.truth() != Some(false) {
                     let mut panic = self.mir_unwind(state, *unwind)?;
                     panic.push(StmtKind::Throw(Expr::new_(Expr::var("Error"), vec![message])).at(js_span));
                     out.push(StmtKind::If(failed, panic, None).at(js_span));

@@ -21,11 +21,9 @@ export function ResultFrame({ program, onOutcome }) {
         (e) => {
           const frame$1 = frame.current;
           const fromFrame = frame$1 && Object.is(e.source, frame$1.contentWindow);
-          const value = readReport(e);
-          if (value && fromFrame) {
-            const report = value;
+          const report = readReport(e);
+          if (report && fromFrame) {
             if (report.run == run) {
-              const report = value;
               if (report.height != null && frame.current) {
                 const height = report.height;
                 const frame$1 = frame.current;

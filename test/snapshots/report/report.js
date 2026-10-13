@@ -107,18 +107,7 @@ export function table(input) {
     }
   }
   rows.sort((a, b) => $cmp(b.score, a.score) || $cmp(a.name, b.name));
-  if (!(0 < 4)) {
-    throw new Error("index out of bounds: the len is 4 but the index is 0");
-  }
-  const value = HEADERS[0];
-  if (!(2 < 4)) {
-    throw new Error("index out of bounds: the len is 4 but the index is 2");
-  }
-  const value$1 = HEADERS[2];
-  if (!(1 < 4)) {
-    throw new Error("index out of bounds: the len is 4 but the index is 1");
-  }
-  out += `${$pad(value, 8, "<")}|${$pad(value$1, 6, ">")}|${$pad("grade", 7, "^")}|${HEADERS[1]}\n`;
+  out += `${$pad(HEADERS[0], 8, "<")}|${$pad(HEADERS[2], 6, ">")}|${$pad("grade", 7, "^")}|${HEADERS[1]}\n`;
   for (const r of rows) {
     const value = capitalize(r.name);
     const value$1 = grade(r.score, r.age);

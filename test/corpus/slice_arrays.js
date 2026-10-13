@@ -50,7 +50,7 @@ function main() {
   }
   const [chunks$2, rest$2] = $asChunksMut(w, 3);
   const length = chunks$2.length;
-  if (!(0 < length)) {
+  if (0 >= length) {
     throw new Error(`index out of bounds: the len is ${length} but the index is 0`);
   }
   chunks$2[0][2] = 0;
@@ -58,7 +58,7 @@ function main() {
   $swap(chunks$2, 0, 1);
   const kept = $index(chunks$2, 0).slice();
   const length$1 = chunks$2.length;
-  if (!(0 < length$1)) {
+  if (0 >= length$1) {
     throw new Error(`index out of bounds: the len is ${length$1} but the index is 0`);
   }
   chunks$2[0][0] = 8;

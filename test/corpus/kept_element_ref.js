@@ -8,7 +8,7 @@ function main() {
   const a = [1, 2, 3];
   let i = 0;
   const value = i;
-  if (!(value < 3)) {
+  if (value >= 3) {
     throw new Error(`index out of bounds: the len is 3 but the index is ${value}`);
   }
   i = 2;

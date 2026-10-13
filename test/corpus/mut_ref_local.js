@@ -95,9 +95,6 @@ function main() {
   const xs$2 = [1, 2];
   const ys$2 = [10, 20];
   const refs = [xs$2];
-  if (!(0 < 1)) {
-    throw new Error("index out of bounds: the len is 1 but the index is 0");
-  }
   $index(refs[0], 0);
   const item$1 = refs[0];
   refs[0] = ys$2;

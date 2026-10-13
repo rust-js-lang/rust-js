@@ -195,19 +195,18 @@ function main() {
       if (value$4 != null) {
         noisyDrop_drop(value$4.a);
       }
-      const value$5 = early(false);
+      const pair = early(false);
       _104$live = true;
       _104$0$live = true;
-      if (value$5) {
+      if (pair) {
         _104$0$live = false;
-        const pair = value$5;
         try {
           console.log(`late ${pair.b}`);
         } catch (error) {
           noisyDrop_drop(pair.a);
-          if (value$5) {
+          if (pair) {
             if (_104$0$live) {
-              noisyDrop_drop(value$5.a);
+              noisyDrop_drop(pair.a);
             }
           }
           throw error;
@@ -215,9 +214,9 @@ function main() {
         try {
           noisyDrop_drop(pair.a);
         } catch (error) {
-          if (value$5) {
+          if (pair) {
             if (_104$0$live) {
-              noisyDrop_drop(value$5.a);
+              noisyDrop_drop(pair.a);
             }
           }
           throw error;
@@ -226,17 +225,17 @@ function main() {
         try {
           console.log("late none");
         } catch (error) {
-          if (value$5) {
+          if (pair) {
             if (_104$0$live) {
-              noisyDrop_drop(value$5.a);
+              noisyDrop_drop(pair.a);
             }
           }
           throw error;
         }
       }
-      if (value$5) {
+      if (pair) {
         if (_104$0$live) {
-          noisyDrop_drop(value$5.a);
+          noisyDrop_drop(pair.a);
         }
       }
       _104$live = false;
@@ -254,7 +253,7 @@ function main() {
         return result;
       };
       console.log(`check ${check(10)}`);
-      const pair = (stop) => {
+      const pair$1 = (stop) => {
         const value = make(11);
         if (stop) {
           const result = undefined;
@@ -263,9 +262,21 @@ function main() {
         }
         return { a: value, b: 2 };
       };
-      const value$6 = pair(true);
+      const value$5 = pair$1(true);
       try {
-        console.log(`pair ${!value$6}`);
+        console.log(`pair ${!value$5}`);
+      } catch (error) {
+        if (value$5 != null) {
+          noisyDrop_drop(value$5.a);
+        }
+        throw error;
+      }
+      if (value$5 != null) {
+        noisyDrop_drop(value$5.a);
+      }
+      const value$6 = kept_early(true);
+      try {
+        console.log(`kept ${!value$6}`);
       } catch (error) {
         if (value$6 != null) {
           noisyDrop_drop(value$6.a);
@@ -274,18 +285,6 @@ function main() {
       }
       if (value$6 != null) {
         noisyDrop_drop(value$6.a);
-      }
-      const value$7 = kept_early(true);
-      try {
-        console.log(`kept ${!value$7}`);
-      } catch (error) {
-        if (value$7 != null) {
-          noisyDrop_drop(value$7.a);
-        }
-        throw error;
-      }
-      if (value$7 != null) {
-        noisyDrop_drop(value$7.a);
       }
       console.log("end");
       return;

@@ -22,18 +22,12 @@ function main() {
   console.log(`${zeros.length} ${arg} [${flags.map((item) => String(item)).join(", ")}]`);
   const item = [0, 0, 0];
   const grid = Array.from({ length: 4 }, () => item.slice());
-  if (!(1 < 4)) {
-    throw new Error("index out of bounds: the len is 4 but the index is 1");
-  }
   grid[1][2] = 7;
   console.log(
     `[${grid.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
   const item$1 = { x: 1 };
   const points = Array.from({ length: 3 }, () => ({ ...item$1 }));
-  if (!(0 < 3)) {
-    throw new Error("index out of bounds: the len is 3 but the index is 0");
-  }
   points[0].x = 5;
   console.log(`[${points.map((item) => pDebug_fmt(item)).join(", ")}]`);
   const once = new Array(3).fill(made("once", 4));
@@ -46,9 +40,6 @@ function main() {
   row[1] = 5;
   const item$2 = [0, 0, 0];
   const pair = Array.from({ length: 2 }, () => item$2.slice());
-  if (!(0 < 2)) {
-    throw new Error("index out of bounds: the len is 2 but the index is 0");
-  }
   pair[0][1] = 5;
   console.log(
     `[${row.map((item) => String(item)).join(", ")}] [${pair.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
