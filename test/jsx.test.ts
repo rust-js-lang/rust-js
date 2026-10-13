@@ -852,6 +852,29 @@ pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
   expect(renderToStaticMarkup(createElement(List, null, "a", createElement("b", null, "x")))).toBe("<ul><li><button>a</button></li><li><button><b>x</b></button></li></ul>");
 });
 
+// Each child with its index, `Children.forEach(children, (child, i) => ..)`,
+// as ReScript's `forEachWithIndex`: react.dev's MDX keys its wrappers so.
+test("children given with their index by Children.forEach", async () => {
+  const { dir, args } = compile(`#![allow(non_snake_case)]
+use react::children;
+use react::{JSX, ReactNode, jsx};
+pub struct ListProps<C: ReactNode> {
+    pub children: C,
+}
+pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
+    let mut keys: Vec<String> = Vec::new();
+    children::for_each_with_index(&children, |_child, i| keys.push(format!("k{i}")));
+    jsx! { <p>{keys.join(",")}</p> }
+}
+`);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("Children.forEach(children, (_child, i) => {");
+  const { List } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  expect(renderToStaticMarkup(createElement(List, null, "a", null, "b"))).toBe("<p>k0,k1,k2</p>");
+});
+
 // A default import is named as the module's `use` renames it, `use
 // next::link::Link as NextLink` is `import NextLink from "next/link"`, as
 // react.dev's MDX `Link` has it, beside its own `Link`; a module that

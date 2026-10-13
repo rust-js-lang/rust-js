@@ -48,3 +48,12 @@ pub fn to_array<C: ReactNode + ?Sized>(children: &C) -> Vec<Child<'_>> {
 pub fn for_each<C: ReactNode>(children: &C, f: impl FnMut(Child<'static>)) {
     unreachable!()
 }
+
+/// [`Children.forEach(children, f)`](https://react.dev/reference/react/Children#children-foreach)
+/// of `f` given each child's index too, `(child, index)`, as ReScript's
+/// `forEachWithIndex`: react.dev's MDX keys a wrapper by it.
+#[cfg_attr(rust_js, rust_js::link_name = "react#Children.forEach")]
+#[allow(unused_variables)]
+pub fn for_each_with_index<C: ReactNode>(children: &C, f: impl FnMut(Child<'static>, u32)) {
+    unreachable!()
+}
