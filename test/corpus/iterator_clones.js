@@ -73,21 +73,15 @@ function main() {
   );
   const rows = $iter([[1], [2]]);
   const again = $iter(rows.items.slice(rows.at, rows.end).map((item) => item.slice()));
-  const iter = rows;
-  while (true) {
-    const value = $next(iter);
-    if (!value) {
-      console.log(
-        `[${again
-          .toArray()
-          .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
-          .join(", ")}]`,
-      );
-      return;
-    }
-    const row = value;
+  for (const row of rows) {
     row.push(0);
     $print(`[${row.map((item) => String(item)).join(", ")}] `);
   }
+  console.log(
+    `[${again
+      .toArray()
+      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .join(", ")}]`,
+  );
 }
 //# sourceMappingURL=case.js.map

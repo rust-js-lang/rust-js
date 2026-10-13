@@ -371,7 +371,26 @@ fn loops(stmts: &mut Vec<Stmt>, mentions: &mut HashMap<String, usize>, numbers: 
                     *mentions.entry(name.clone()).or_default() += 1;
                 }
             }
+            let bound = made.iter().find_map(|s| match &s.kind {
+                StmtKind::ForOf {
+                    pattern: js::Pattern::Name(name),
+                    ..
+                } => Some(name.clone()),
+                _ => None,
+            });
             stmts.splice(i..i + 2, made);
+            // A `mut` binding's `let`, declared before the loop for MIR's
+            // assignment each turn: the loop's own now.
+            if let Some(bound) = bound
+                && let Some(at) = stmts[..i]
+                    .iter()
+                    .position(|s| matches!(&s.kind, StmtKind::Let(name, None) if *name == bound))
+                && js::mentions_in(&stmts[..i], &bound) == 0
+                && js::mentions_in(&stmts[i + 1..], &bound) == 0
+            {
+                stmts.remove(at);
+                i -= 1;
+            }
         }
         i += 1;
     }
@@ -1347,6 +1366,14 @@ fn binding(body: &[Stmt], item: &str) -> Option<(js::Pattern, bool, usize)> {
         let (bound, value, mutable) = match &stmt.kind {
             StmtKind::Const(bound, value) => (bound, value, false),
             StmtKind::Let(bound, Some(value)) => (bound, value, true),
+            // A `mut` binding MIR declares before the loop, `row = item`: the
+            // loop's own, its outer `let` then read by nothing.
+            StmtKind::Assign(target, value)
+                if let ExprKind::Var(bound) = &target.kind
+                    && parts.is_empty() =>
+            {
+                (bound, value, assigns(&body[1..], bound))
+            }
             _ => break,
         };
         match reads(value) {

@@ -2144,4 +2144,28 @@ export const mutations: Mutation[] = [
       "char ranges step by code point"
     ]
   },
+  {
+    name: "mir-tidy-for-mut-binding-unread",
+    breaks: "a `for` of a `mut` binding, `row = value` each turn, stays a `while (true)` of `$next`",
+    file: "src/lower/mir/tidy.rs",
+    find: "                    && parts.is_empty() =>\n",
+    replace: "                    && false =>\n",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "a for loop of a mut binding"
+    ]
+  },
+  {
+    name: "mir-tidy-for-mut-binding-let-kept",
+    breaks: "a `mut` binding's `let`, declared before the loop, stays beside the `for` that binds it",
+    file: "src/lower/mir/tidy.rs",
+    find: "                stmts.remove(at);\n                i -= 1;\n",
+    replace: "",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "a for loop of a mut binding"
+    ]
+  },
 ];

@@ -11462,3 +11462,36 @@ pub fn owned_reversed(v: Vec<u32>) -> Vec<u32> {
   expect(js).toContain("for (let i = 0; i < n; i++) {");
   expect(js).toContain("for (let i = k; i < n; i++) {");
 });
+
+// A `for` whose binding is `mut`, which MIR declares before the loop and
+// assigns each turn: a `for…of` all the same, of an iterator stepped
+// first too.
+test("a for loop of a mut binding is a for...of", async () => {
+  const dir = fixture("for-mut-binding");
+  writeFileSync(join(dir, "lib.rs"), `pub fn plain_mut(v: Vec<Vec<u32>>) -> usize {
+    let mut n = 0;
+    for mut row in v {
+        row.push(0);
+        n += row.len();
+    }
+    n
+}
+pub fn rest_mut(v: Vec<Vec<u32>>) -> usize {
+    let mut it = v.into_iter();
+    it.next();
+    let mut n = 0;
+    for mut row in it {
+        row.push(0);
+        n += row.len();
+    }
+    n
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const js = readFileSync(join(dir, "lib.js"), "utf8");
+  expect(js).toContain("  for (const row of v) {\n    row.push(0);");
+  expect(js).toContain("  for (const row of it) {\n    row.push(0);");
+  expect(js).not.toContain("let row;");
+  const lib = await import(join(dir, "lib.js"));
+  expect([lib.plain_mut([[1], [2, 3]]), lib.rest_mut([[1], [2, 3], [4]])]).toEqual([5, 5]);
+});
