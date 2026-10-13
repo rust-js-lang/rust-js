@@ -286,13 +286,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let op = if kind == RangeKind::Inclusive { Op::Le } else { Op::Lt };
                 Expr::unary(UnaryOp::Not, Expr::bin(op, start.clone(), end.clone()))
             }
-            (RangeOp::Len, [start, end]) => {
-                let mut count = Expr::bin(Op::Sub, end.clone(), start.clone());
-                if kind == RangeKind::Inclusive {
-                    count = Expr::bin(Op::Add, count, Expr::int(1));
-                }
-                count
-            }
             _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
         })
     }

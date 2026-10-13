@@ -466,15 +466,6 @@ pub(super) fn strip(thir: &Thir<'_>, mut e: ExprId) -> ExprId {
     }
 }
 
-/// What `&mut it`, reborrowed or not, lends: `it`.
-pub(super) fn lent(thir: &Thir<'_>, e: ExprId) -> ExprId {
-    let e = strip(thir, e);
-    match thir[e].kind {
-        ExprKind::Borrow { arg, .. } | ExprKind::Deref { arg } => lent(thir, arg),
-        _ => e,
-    }
-}
-
 /// The locals a body calls `next()` on, directly or through `&mut`: the
 /// ones that must know where they are (ADR 0071).
 pub(super) fn stepped_locals<'tcx>(tcx: TyCtxt<'tcx>, thir: &Thir<'tcx>) -> HashSet<LocalVarId> {
