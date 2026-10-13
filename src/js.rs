@@ -1396,54 +1396,6 @@ impl Expr {
         }
     }
 
-    /// Is there JSX in this, like `items.map((t) => <li>..</li>)`?
-    pub fn contains_jsx(&self) -> bool {
-        match &self.kind {
-            ExprKind::Jsx(_) => true,
-            ExprKind::Array(items) => items.iter().any(Expr::contains_jsx),
-            ExprKind::Object(props) => props.iter().any(|p| match p {
-                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => {
-                    value.contains_jsx()
-                }
-            }),
-            ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => body.iter().any(|s| match &s.kind {
-                StmtKind::Return(Some(value)) | StmtKind::Expr(value) => value.contains_jsx(),
-                _ => false,
-            }),
-            ExprKind::Member(a, _)
-            | ExprKind::OptionalMember(a, _)
-            | ExprKind::Unary(_, a)
-            | ExprKind::Await(a)
-            | ExprKind::Spread(a)
-            | ExprKind::Stringed(a)
-            | ExprKind::DropArgument(_, _, a) => a.contains_jsx(),
-            ExprKind::Handle(_) | ExprKind::Pair(..) => false,
-            ExprKind::Index(a, b) | ExprKind::OptionalIndex(a, b) | ExprKind::Binary(_, a, b) => {
-                a.contains_jsx() || b.contains_jsx()
-            }
-            ExprKind::Cond(a, b, c) => a.contains_jsx() || b.contains_jsx() || c.contains_jsx(),
-            ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
-                f.contains_jsx() || args.iter().any(Expr::contains_jsx)
-            }
-            ExprKind::Template(_, values, _) => values.iter().any(Expr::contains_jsx),
-            ExprKind::Num(_)
-            | ExprKind::BigInt(_)
-            | ExprKind::BigUint(_)
-            | ExprKind::Bool(_)
-            | ExprKind::Str(_)
-            | ExprKind::Lines(_)
-            | ExprKind::Undefined
-            | ExprKind::GivenUndefined
-            | ExprKind::Null
-            | ExprKind::Var(_)
-            | ExprKind::Symbol(_)
-            | ExprKind::FunctionHole(_)
-            | ExprKind::Import(_)
-            | ExprKind::Function(_)
-            | ExprKind::Regex(_) => false,
-        }
-    }
-
     /// This with each variable that `with` names replaced by its expression:
     /// a closure's parameter by its argument, to put its body in place.
     /// `None` if there's a closure inside, whose own names could shadow them.

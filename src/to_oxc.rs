@@ -18,7 +18,6 @@
 //! each node from `program.source_text` and the node's span. We hand it the
 //! *Rust* file as `source_text`, and spans that are byte offsets into it.
 
-use std::cell::Cell;
 use std::path::PathBuf;
 
 use oxc_allocator::{Allocator, ArenaBox, ArenaVec};
@@ -75,8 +74,6 @@ pub fn emit(
     let cx = Cx {
         b: AstBuilder::new(&allocator),
         allocator: &allocator,
-        depth: Cell::new(0),
-        inline: Cell::new(false),
     };
     let b = &cx.b;
 
@@ -360,12 +357,6 @@ fn shift_lines(map: &SourceMap<'_>, places: &[Vec<Place>], js_file_name: &str) -
 struct Cx<'a> {
     b: AstBuilder<'a>,
     allocator: &'a Allocator,
-    /// How many levels oxc indents what's being converted: one per block,
-    /// and per array of 3 or more items or object of 2 or more fields, which
-    /// oxc puts on several lines. JSX laid out on several lines indents to match.
-    depth: Cell<u32>,
-    /// Inside JSX that's on one line, where everything stays on it.
-    inline: Cell<bool>,
 }
 
 impl<'a> Cx<'a> {
@@ -441,7 +432,7 @@ impl<'a> Cx<'a> {
     /// shorthand, as a hand-written object of functions has them.
     fn namespace(&self, n: &js::Namespace) -> Statement<'a> {
         let b = &self.b;
-        let methods = self.nested(true, || {
+        let methods = {
             ArenaVec::from_iter_in(
                 n.methods.iter().map(|f| {
                     let params = self.params(FormalParameterKind::FormalParameter, &f.params);
@@ -474,7 +465,7 @@ impl<'a> Cx<'a> {
                 }),
                 b,
             )
-        });
+        };
         let id = BindingPattern::new_binding_identifier(SPAN, self.name(&n.name), b);
         let object = Expression::new_object_expression(SPAN, methods, b);
         let declarator = VariableDeclarator::new(SPAN, id, None, Some(object), false, b);
@@ -518,11 +509,9 @@ impl<'a> Cx<'a> {
     }
 
     fn stmts(&self, stmts: &[js::Stmt]) -> ArenaVec<'a, Statement<'a>> {
-        self.nested(true, || {
-            let mut out = ArenaVec::new_in(&self.b);
-            self.push_stmts(stmts, &mut out);
-            out
-        })
+        let mut out = ArenaVec::new_in(&self.b);
+        self.push_stmts(stmts, &mut out);
+        out
     }
 
     /// `stmts`, each pushed to `out`.
@@ -530,15 +519,6 @@ impl<'a> Cx<'a> {
         for s in stmts {
             out.push(self.stmt(s));
         }
-    }
-
-    /// Run `f` one level deeper, if `deeper`.
-    fn nested<T>(&self, deeper: bool, f: impl FnOnce() -> T) -> T {
-        let depth = self.depth.get();
-        self.depth.set(depth + u32::from(deeper));
-        let result = f();
-        self.depth.set(depth);
-        result
     }
 
     fn block(&self, stmts: &[js::Stmt]) -> Statement<'a> {
@@ -900,7 +880,7 @@ impl<'a> Cx<'a> {
             }
             // `String(n)` where it isn't in a template (ADR 0066).
             ExprKind::Stringed(value) => self.expr(&js::Expr::call(js::Expr::var("String"), vec![(**value).clone()])),
-            ExprKind::Array(items) => self.nested(items.len() > 2, || {
+            ExprKind::Array(items) => {
                 let items = items.iter().map(|item| match &item.kind {
                     ExprKind::Spread(all) => {
                         ArrayExpressionElement::new_spread_element(span(item.span), self.expr(all), b)
@@ -908,11 +888,11 @@ impl<'a> Cx<'a> {
                     _ => ArrayExpressionElement::from(self.expr(item)),
                 });
                 Expression::new_array_expression(sp, ArenaVec::from_iter_in(items, b), b)
-            }),
-            ExprKind::Object(props) => self.nested(props.len() > 1, || {
+            }
+            ExprKind::Object(props) => {
                 let props = props.iter().map(|prop| self.property(prop));
                 Expression::new_object_expression(sp, ArenaVec::from_iter_in(props, b), b)
-            }),
+            }
             ExprKind::Jsx(jsx) => self.jsx(sp, jsx),
             // Printed as written, as `number` prints an integer.
             ExprKind::Regex(literal) => Expression::new_identifier(sp, self.name(literal), b),
@@ -1014,16 +994,10 @@ impl<'a> Cx<'a> {
         }
     }
 
-    /// A JSX element (ADR 0040), laid out as by hand: children that are all
-    /// elements or expressions go on their own lines, one level deeper. With
-    /// text among them they stay on one line, where JSX keeps every space.
+    /// A JSX element (ADR 0040), laid out by the formatter.
     fn jsx(&self, sp: Span, jsx: &js::Jsx) -> Expression<'a> {
         let b = &self.b;
-        let has_text = jsx.children.iter().any(|c| matches!(c.kind, ExprKind::Str(_)));
-        let lines = !has_text && !self.inline.get() && jsx.children.iter().any(js::Expr::contains_jsx);
-        let depth = self.depth.get();
         let mut children = ArenaVec::new_in(b);
-        let inline = self.inline.replace(self.inline.get() || has_text);
         // Which children are JSX text: text that JSX can write, but not
         // right before text, which JSX would read as one with it, and React
         // render as one text node, not two. So the earlier is in braces,
@@ -1051,17 +1025,8 @@ impl<'a> Cx<'a> {
                 text[i + 1] = false;
             }
         }
-        self.nested(lines, || {
-            for (child, &text) in jsx.children.iter().zip(&text) {
-                if lines {
-                    children.push(self.jsx_newline(depth + 1));
-                }
-                children.push(self.jsx_child(child, text));
-            }
-        });
-        self.inline.set(inline);
-        if lines {
-            children.push(self.jsx_newline(depth));
+        for (child, &text) in jsx.children.iter().zip(&text) {
+            children.push(self.jsx_child(child, text));
         }
         if let JsxTag::Fragment = jsx.tag {
             let (open, close) = (JSXOpeningFragment::new(sp, b), JSXClosingFragment::new(SPAN, b));
@@ -1150,12 +1115,6 @@ impl<'a> Cx<'a> {
             },
             _ => JSXChild::new_expression_container(sp, JSXExpression::from(self.expr(child)), b),
         }
-    }
-
-    /// A line break and indentation between children, which JSX ignores.
-    fn jsx_newline(&self, depth: u32) -> JSXChild<'a> {
-        let text = format!("\n{}", "  ".repeat(depth as usize));
-        JSXChild::new_text(SPAN, self.name(&text), None, &self.b)
     }
 
     /// `get name() { .. }` or `set name(value) { .. }`.
