@@ -51,14 +51,6 @@ export const mutations: Mutation[] = [
     tests: ["test/compiler.test.ts", "-t", "the report's JS: function values"],
   },
   {
-    name: "mir-box-not-copied-back",
-    breaks: "a box given for a `&mut` number isn't copied back, so the caller never sees what the call wrote",
-    file: "src/lower/mir.rs",
-    find: "                                    false => StmtKind::Assign(place, back).at(js_span),\n",
-    replace: "                                    false => StmtKind::Expr(Expr::undefined()).at(js_span),\n",
-    tests: ["test/corpus.test.ts","-t","mut_number_args"],
-  },
-  {
     name: "mir-branch-continue-is-break",
     breaks: "`?` goes on with an `Err` or a `None`, and returns early with what's inside",
     file: "src/lower/mir.rs",

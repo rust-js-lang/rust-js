@@ -270,7 +270,7 @@ outside its owner, and how much each module knows of the rest.
 | What dropping runs, and where | `drops.rs`, `drops/` | `drop_value`, `item_drop`, `drop_function`, `enter_body_drops` |
 | Whether a value is a JS iterator or an array, and its JS: `Iterator.from`, a range's `$iterator` (ADRs 0061, 0364) | `iterators.rs` | `is_js_iterator`, `js_iterator`, `from_iterator`, `stepped_by`, `stepped_range` |
 | An array's items stepped, `$iter`, and a generic iterator lent, `$lent` (ADR 0071) | `iterators.rs` | `stepped_items`, `is_stepped_items`, `iterated`, `lent_iterator`, `unlent` |
-| `&mut`s to values JS can't change in place, given to a call | `mut_refs.rs` | `mut_borrowed`, `nested_mut_object` |
+| `&mut`s to values JS can't change in place, given to a call: a box, `{ value: place }`, and what's copied back (ADR 0074) | `mut_refs.rs` | `boxed`, `copied_back`, `mut_borrowed`, `nested_mut_object` |
 | Writing to a `Formatter` | `display.rs` | `formatter_answer`, `written_of`, `writer_call` |
 | What a function or a binding is in JS | `items.rs` | `fn_ref`, `js_ref`, `resolve_instance` |
 | Dictionaries and evidence: where a given one is, by its bound (`EvidenceQuery`), and its JS | `traits.rs` | `dictionary`, `evidence_for`, `has_evidence`, `impl_call` |
@@ -473,13 +473,11 @@ architecture audit found the rest.
   edit-to-refresh latency on application-scale workloads (M5.1).
 - **Checks before a commit lands:** the check runs on each push to `main`,
   after it's pushed; nothing refuses a commit that fails it.
-- **One owner for each concept lowering from MIR meets:** `mir.rs` writes
-  places, the boxes of the `&mut`s it gives a call and their copies back,
-  writes to a `Formatter` and `Option`'s boxes itself,
-  where the modules above own them; and `mir_call_values` and
-  `mir_std_call` are held to their lengths until they're split.
-- **An iterator's method by `classify`:** `mir_iter_call` knows one by its
-  name, which recognition's own answers for it don't reach.
+- **Short dispatchers of calls from MIR:** `mir_call_values` and
+  `mir_std_call` are held to their lengths until they're split by domain.
+- **Std's names from recognition alone:** `mir_iter_call` knows an
+  iterator's method by its name, which recognition's own answers for it
+  don't reach, and `mir_call` a `Debug` builder's kind and steps.
 - **Runtime helpers as symbols:** lowering asks for a helper and writes its
   name, `$cmp`, apart; one written and not asked for is a JS error when it
   runs, not a compile error.

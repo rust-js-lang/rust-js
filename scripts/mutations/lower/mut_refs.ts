@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "            Std::Same if sequence => (Helper::MutItems, \"$mutItems\"),\n",
     tests: ["test/corpus.test.ts", "-t", "boxed_array_iter"],
   },
+  {
+    name: "mir-box-not-copied-back",
+    breaks: "a box given for a `&mut` number isn't copied back, so the caller never sees what the call wrote",
+    file: "src/lower/mut_refs.rs",
+    find: "            false => StmtKind::Assign(place, back).at(at),\n",
+    replace: "            false => StmtKind::Expr(Expr::undefined()).at(at),\n",
+    tests: ["test/corpus.test.ts","-t","mut_number_args"],
+  },
 ];

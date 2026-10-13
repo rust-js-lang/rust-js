@@ -1944,15 +1944,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         if !state.copy_backs.is_empty() {
                             self.flush(state, &mut called)?;
                             for (place, boxed, object) in std::mem::take(&mut state.copy_backs) {
-                                let back = Expr::member(Expr::var(&boxed), "value");
                                 let js_span = self.js_span(span);
-                                called.push(match object {
-                                    true => {
-                                        self.runtime.insert(Helper::Assign);
-                                        StmtKind::Expr(Expr::call(Expr::var("$assign"), vec![place, back])).at(js_span)
-                                    }
-                                    false => StmtKind::Assign(place, back).at(js_span),
-                                });
+                                called.push(self.copied_back(place, &boxed, object, js_span));
                             }
                         }
                         self.unwinding_to(state, unwind, called, &mut out)?;
@@ -2848,7 +2841,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .builtin_deref(true)
                 .is_some_and(|pointee| !pointee.is_sized(self.tcx, self.typing_env) && !pointee.is_str())
             {
-                exprs.push(Expr::object(vec![Prop::Field("value".into(), place)]));
+                exprs.push(super::mut_refs::boxed(place));
                 continue;
             }
             self.flush(state, out)?;
@@ -2865,7 +2858,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .flatten()
                 .map_or("value".to_string(), |i| i.name.to_string());
             let name = self.fresh(&super::camel_case(&base));
-            let boxed = Expr::object(vec![Prop::Field("value".into(), place.clone())]);
+            let boxed = super::mut_refs::boxed(place.clone());
             out.push(StmtKind::Const(name.clone(), boxed).at(self.js_span(span)));
             if fixed_place(&place) {
                 state.copy_backs.push((place, name.clone(), object));

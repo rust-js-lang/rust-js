@@ -5,7 +5,7 @@
 use super::std_types::cow::CowOp;
 use super::std_types::map::{MapOp, Part};
 use super::{FnCx, R, Std};
-use crate::js::{Expr, Stmt};
+use crate::js::{self, Expr, Prop, Stmt, StmtKind};
 use crate::runtime::Helper;
 use rustc_ast::Mutability;
 use rustc_middle::thir::{ExprId, ExprKind};
@@ -14,7 +14,27 @@ use rustc_span::Span;
 use rustc_span::def_id::DefId;
 use std::collections::HashSet;
 
+/// A box of `place`, `{ value: place }`: a `&mut` to a value JS can't change
+/// in place, given to a call, which reads and writes its `value` (ADR 0074).
+pub(super) fn boxed(place: Expr) -> Expr {
+    Expr::object(vec![Prop::Field("value".into(), place)])
+}
+
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// What a box, `boxed`, the call it was given to returned, writes back to
+    /// its `place`: an object's changed in place, `$assign(place, box.value)`,
+    /// another's assigned (ADR 0074).
+    pub(super) fn copied_back(&mut self, place: Expr, boxed: &str, object: bool, at: js::Span) -> Stmt {
+        let back = Expr::member(Expr::var(boxed), "value");
+        match object {
+            true => {
+                self.runtime.insert(Helper::Assign);
+                StmtKind::Expr(Expr::call(Expr::var("$assign"), vec![place, back])).at(at)
+            }
+            false => StmtKind::Assign(place, back).at(at),
+        }
+    }
+
     /// `p` of `&mut p`, a reborrow's `&mut *&mut v[0]` too: `v[0]`.
     pub(super) fn mut_borrowed(&self, arg: ExprId) -> Option<ExprId> {
         let ExprKind::Borrow {
