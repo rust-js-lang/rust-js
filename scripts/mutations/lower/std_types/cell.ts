@@ -99,30 +99,6 @@ export const mutations: Mutation[] = [
     tests: ["test/modules.test.ts","-t","MIR's thread-local number"],
   },
   {
-    "name": "local-add-discarded-helper",
-    "breaks": "a thread-local set's insert, its answer unused, stays `$add(LIKED, id)`, not `LIKED.add(id)`",
-    "file": "src/lower/std_types/cell.rs",
-    "find": "                            (\"$add\", 2) => Some(\"add\"),\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "its answer unused"
-    ]
-  },
-  {
-    "name": "local-insert-discarded-helper",
-    "breaks": "a thread-local map's insert, its answer unused, stays `$insert(CACHE, key, n)`, not `CACHE.set(key, n)`",
-    "file": "src/lower/std_types/cell.rs",
-    "find": "                            (\"$insert\", 3) => Some(\"set\"),\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "its answer unused"
-    ]
-  },
-  {
     name: "mir-quiet-local-borrow-not-inlined",
     breaks: "MIR's quiet thread-local's borrow stays a called arrow",
     file: "src/lower/std_types/cell.rs",

@@ -342,7 +342,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// extracted, an entry (ADR 0059).
     pub(super) fn mir_map_call(
         &mut self,
-        state: &mut State<'_, 'tcx>,
+        _state: &mut State<'_, 'tcx>,
         call: StdCall<'_, 'tcx>,
         values: &mut std::vec::IntoIter<Value<'tcx>>,
         out: &mut Vec<Stmt>,
@@ -386,7 +386,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 ) =>
             {
                 let exprs = values.map(|v| self.value_expr(v, span)).collect::<R<Vec<_>>>()?;
-                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?
+                self.map_values(op, (exprs, arg_tys), generic_args, span, out)?
             }
             _ => return Ok(None),
         })))

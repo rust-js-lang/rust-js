@@ -1,0 +1,61 @@
+// Mutations of src/lower/mir/calls.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-assign-op-handle-refused",
+    breaks: "MIR's `*m.entry(k).or_insert(10) += &v`, through a handle a call gave, is refused",
+    file: "src/lower/mir/calls.rs",
+    find: "            && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))\n",
+    replace: "            && matches!(place, Value::Ref(_))\n",
+    tests: ["test/corpus.test.ts", "-t", "prepared_places"],
+  },
+  {
+    name: "mir-user-iterator-arg-unwrapped",
+    breaks: "an iterator of the crate's given where a generic iterator goes is its struct, which JS can't step",
+    file: "src/lower/mir/calls.rs",
+    find: "            if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {\n",
+    replace: "            if false && matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {\n",
+    tests: ["test/corpus.test.ts","-t","generic_iterator_rest_lazy"],
+  },
+  {
+    name: "mir-binding-component-called",
+    breaks: "a component a JS module exports is its binding's value, not the tag JSX imports",
+    file: "src/lower/mir/calls.rs",
+    find: "                        ty::FnDef(id, _) => cx.binding_component_of(id),\n",
+    replace: "                        ty::FnDef(..) => None,\n",
+    tests: ["test/jsx.test.ts"],
+  },
+  {
+    name: "mir-generic-result-boxed",
+    breaks: "MIR's `pick(..).n += 5`, a generic `&mut T` of an object, reads the box's `n`",
+    file: "src/lower/mir/calls.rs",
+    find: "        let called = self.generic_result_values((def_id, generic_args), called, span)?;\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "generic_mut_ref_kept"],
+  },
+  {
+    name: "mir-closure-tuple-refused",
+    breaks: "MIR's `f(x)` of a generic `F: Fn`, its arguments a tuple made before, is refused",
+    file: "src/lower/mir/calls.rs",
+    find: "                if tuple.reads_same()\n",
+    replace: "                if false && tuple.reads_same()\n",
+    tests: ["test/corpus.test.ts", "-t", "generic_trait_methods"],
+  },
+  {
+    name: "mir-nullable-made-coalesced",
+    breaks: "MIR's `Some` of a function given a nullable parameter is `(e) => .. ?? null`",
+    file: "src/lower/mir/calls.rs",
+    find: "                        _ if value.is_constant() || value.is_made_here() => value,\n",
+    replace: "                        _ if value.is_constant() => value,\n",
+    tests: ["test/compiler.test.ts","-t","the webapi crate's bindings become plain JS"],
+  },
+  {
+    name: "mir-assign-shift-amount-bigint",
+    breaks: "`c <<= &3i64` of a `u32` shifts a number by a BigInt",
+    file: "src/lower/mir/calls.rs",
+    find: "            let rhs = crate::lower::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts","-t","generic_bitwise_operators"],
+  },
+];

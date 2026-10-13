@@ -660,6 +660,7 @@ pub fn lower_crate<'tcx>(
                 .map(|key| fns[&key.to_def_id()].name.as_str())
                 .collect();
             super::std_types::cell::plain_statics(&mut lowered.items, &quiet);
+            super::std_types::map::discarded_calls(&mut lowered.items);
             let mut imports: Vec<_> = targets.remove(&module).unwrap_or_default().into_iter().collect();
             imports.sort_by(|(a, an, ..), (b, bn, ..)| (&paths[a], an).cmp(&(&paths[b], bn)));
             let candidates: Vec<_> = imports

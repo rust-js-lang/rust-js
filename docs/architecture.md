@@ -237,6 +237,7 @@ and answer. Each is checked to stay that way.
 |---|---|
 | `mir.rs` | A body from its MIR: its statements and terminators, places, calls (`mir_call`), aggregates, and the `&mut`s given to a call; temporaries folded where they're read |
 | `mir/cfg.rs`, `mir/drops.rs`, `mir/awaits.rs`, `mir/iter.rs` | A MIR body's control flow, made labeled blocks and loops; what each `Drop` drops, by rustc's drop elaboration, and its flags; `.await`; iterators, lazy as Rust's adapters are |
+| `mir/calls.rs` | A call of what isn't std's: a closure's, a binding's, the crate's own function's, and an operator's that assigns through a `&mut` |
 | `mir/std_calls.rs` | A std call of its values and places, by its kind: `format_args!`'s parts, text, a map's, a `Vec`'s or a slice's, an iterator's, a place's, a value's, each saying `None` to the rest |
 | `mir/tidy.rs`, `mir/tidy/decisions.rs` | The JS of a body from its MIR, written as a person writes it: each rewrite changes nothing that runs; a match MIR tests as a tree, an `if` chain of its arms |
 | `lower.rs` | `FnCx` and its state, and what every module shares: diagnostics, names, constants |
@@ -278,6 +279,7 @@ outside its owner, and how much each module knows of the rest.
 | What a generic function was given: dictionaries, a copied default's arguments, type facts (ADRs 0049, 0145) | `traits.rs` | `in_impl_terms`, `given_evidence`, `given_type_fact`, `resolve_self_instance`, `enter_default` |
 | The box of a `Some` that looks like `None` (ADR 0051) | `std_types/option.rs` | `some`, `some_value`, `some_literal`, `is_some_box` |
 | When a value is copied | `copies.rs` | `copy_if_needed`, `contains_mutated` |
+| A map's or a set's JS: a `Map` or a `Set`, and a call whose answer nothing reads, JS's own method (ADR 0059) | `std_types/map.rs` | `map_values`, `discarded_calls` |
 | A cell, a thread-local's among them, and a module's own one made a plain `let` (ADRs 0025, 0270) | `std_types/cell.rs` | `cell_call`, `plain_statics` |
 | Which std function a call is | `recognition.rs` | `classify`, and its answers through `shortcuts.rs` |
 | Std's names and layout: which std item a type, trait or function is | `recognition.rs` | `StdItem`, `is_std_type`, `is_std_def`, `std_item`, `trait_method`, `cell_value_field`, `deref_target` |
@@ -295,8 +297,11 @@ what's called:
          ├─ an iterator's method                     mir/iter.rs: mir_iter_call
          ├─ a trait's method of the crate's, or a dictionary's
          │                                           traits.rs: trait_call
-         ├─ a binding                                binding_calls.rs: binding_values
-         ├─ the crate's own function                 items.rs: fn_ref
+         ├─ a closure, `a += b` through a `&mut`     mir/calls.rs
+         ├─ a binding                                mir/calls.rs: mir_binding_call,
+         │                                           binding_calls.rs: binding_values
+         ├─ the crate's own function                 mir/calls.rs: mir_crate_call,
+         │                                           items.rs: fn_ref
          └─ one of std's: classify(f) = Some(known)
                └─ mir_std_call(known): what every std call must keep (drops,
                   a `fmt::Error`, `Option` boxing)
@@ -477,8 +482,9 @@ architecture audit found the rest.
   edit-to-refresh latency on application-scale workloads (M5.1).
 - **Checks before a commit lands:** the check runs on each push to `main`,
   after it's pushed; nothing refuses a commit that fails it.
-- **Short dispatchers of calls from MIR:** `mir_call_values` is held to
-  its length until it's split as `mir_std_call` was.
+- **Short dispatchers of calls from MIR:** `mir_call` (204 lines),
+  `mir_call_values` (306) and `mir_std_call` (261) are held to their
+  lengths, each lowered as what's left in it goes where its kind is.
 - **Std's names from recognition alone:** `mir_iter_call` knows an
   iterator's method by its name, which recognition's own answers for it
   don't reach, and `mir_call` a `Debug` builder's kind and steps.

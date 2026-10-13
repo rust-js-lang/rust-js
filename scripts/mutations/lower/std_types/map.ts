@@ -115,4 +115,37 @@ export const mutations: Mutation[] = [
     replace: "        let handles = mutable;",
     tests: ["test/corpus.test.ts","-t","btree_range_mut"],
   },
+  {
+    "name": "local-add-discarded-helper",
+    "breaks": "a thread-local set's insert, its answer unused, stays `$add(LIKED, id)`, not `LIKED.add(id)`",
+    "file": "src/lower/std_types/map.rs",
+    "find": "                            (\"$add\", 2) => Some(\"add\"),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "its answer unused"
+    ]
+  },
+  {
+    "name": "local-insert-discarded-helper",
+    "breaks": "a thread-local map's insert, its answer unused, stays `$insert(CACHE, key, n)`, not `CACHE.set(key, n)`",
+    "file": "src/lower/std_types/map.rs",
+    "find": "                            (\"$insert\", 3) => Some(\"set\"),\n",
+    "replace": "",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "its answer unused"
+    ]
+  },
+  {
+    name: "discarded-remove-helper",
+    breaks: "a map's `remove` nothing reads is `$remove(m, k)`, not `m.delete(k)`",
+    file: "src/lower/std_types/map.rs",
+    find: "                            (\"$remove\", 2) => Some(\"delete\"),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
+    snapshots: true,
+  },
 ];

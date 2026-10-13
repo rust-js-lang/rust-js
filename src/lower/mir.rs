@@ -13,6 +13,7 @@
 //! The function's THIR is beside it, for its shape: names and spans.
 
 mod awaits;
+mod calls;
 mod cfg;
 mod drops;
 mod iter;
@@ -202,9 +203,6 @@ struct State<'m, 'tcx> {
     /// Each local a parameter's pattern binds, and the parameter it's moved
     /// out of, which the pattern takes apart already.
     parts: std::collections::HashMap<Local, Local>,
-    /// Whether what the call being lowered gives back is read by nothing,
-    /// `map.insert(k, v);`'s.
-    discarding: bool,
     /// Where each `return` the program wrote is, of the body THIR has.
     returns: Vec<js::Span>,
     /// Where each range pattern is, `2..=5`, whose tests MIR writes bound
@@ -449,7 +447,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             places: Default::default(),
             deferred: Default::default(),
             at: BasicBlock::from_usize(0),
-            discarding: false,
             ranges: self.range_patterns(),
             returns: (self.thir.exprs.iter())
                 .filter(|e| matches!(e.kind, thir::ExprKind::Return { .. }))
@@ -1917,17 +1914,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 state.unwind = None;
                 let mut called = Vec::new();
-                let local = destination.local;
-                state.discarding = destination.projection.is_empty()
-                    && (state.locals.names[local].is_empty()
-                        || (!state.locals.user[local]
-                            && state.locals.reads[local] == 0
-                            && !state.locals.borrowed[local]));
                 let value = match state.awaits.contains(&block) {
                     true => self.mir_await(state, args, *fn_span, &mut called),
                     false => self.mir_call(state, func, args, *destination, *fn_span, &mut called),
                 };
-                state.discarding = false;
                 let value = value?;
                 // What the call writes, a setter's `n.textContent = "x"` or a
                 // cell's `count = 5`, after what was made before it, which
@@ -4969,79 +4959,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             && (tcx.fn_trait_kind_from_def_id(fn_trait).is_some()
                 || tcx.async_fn_trait_kind_from_def_id(fn_trait).is_some())
         {
-            let mut values = values.into_iter();
-            let callee = match values.next().expect("the closure") {
-                Value::Ref(closure) => closure,
-                value => self.value_expr(value, span)?,
-            };
-            let list = match values.next() {
-                Some(Value::List(items)) => items,
-                Some(Value::Expr(e)) if matches!(e.kind, js::ExprKind::Undefined) => Vec::new(),
-                // The arguments' tuple, made before: each of its items.
-                Some(Value::Expr(tuple) | Value::Place(tuple))
-                    if tuple.reads_same()
-                        && let ty::Tuple(tys) = arg_tys[1].kind() =>
-                {
-                    (0..tys.len())
-                        .map(|i| Value::Expr(Expr::index(tuple.clone(), Expr::int(i as i128))))
-                        .collect()
-                }
-                _ => return Err(self.unsupported(span, "this closure call, from its MIR")),
-            };
-            let mut exprs = list
-                .into_iter()
-                .map(|v| self.value_expr(v, span))
-                .collect::<R<Vec<_>>>()?;
-            // Not a closure of the crate's: a `dyn Fn`, a generic one or a
-            // pointer, which may be JS's (ADR 0330).
-            if !matches!(
-                arg_tys[0].peel_refs().kind(),
-                ty::Closure(..) | ty::CoroutineClosure(..)
-            ) {
-                super::calls::given_to_js(&mut exprs);
-            }
-            return Ok(Value::Expr(Expr::call(callee, exprs)));
+            return self.mir_closure_call(values, &arg_tys, span);
         }
         // `a += b` of a number or a string, through its `&mut`: the place
         // assigned, as the operator's is.
-        if let Some(trait_id) = tcx.trait_of_assoc(def_id)
-            && let Some(op) = super::recognition::assign_operator(tcx, trait_id)
-            && let [place, rhs] = &values[..]
-            && (matches!(place, Value::Ref(_)) || self.is_cell(arg_tys[0]))
-        {
-            let ty = arg_tys[0].peel_refs();
-            // Through a handle a call gave, `or_insert(10)`'s: its `value`,
-            // the handle held where it's made, before what's added is.
-            let place = match place.clone() {
-                Value::Ref(place) => place,
-                cell => {
-                    let cell = self.value_expr(cell, span)?;
-                    let cell = match cell.reads_same() {
-                        true => cell,
-                        false => {
-                            self.flush(state, out)?;
-                            self.spill("cell", cell, out)
-                        }
-                    };
-                    Expr::member(cell, "value")
-                }
-            };
-            let place = &place;
-            let rhs = self.value_expr(rhs.clone(), span)?;
-            let rhs = super::std_types::number::shift_amount_of(op, rhs, ty, arg_tys[1]);
-            let value = if self.is_lang_adt(ty, LangItem::String) && op == BinOp::Add {
-                Expr::bin(Op::Add, place.clone(), rhs)
-            } else if super::representation::Num::of(ty).is_some() {
-                self.binary(op, place.clone(), rhs, None, ty, span)?
-            } else {
-                return Err(self.unsupported(
-                    span,
-                    &format!("`{}` of a `{ty}`, from its MIR", tcx.def_path_str(def_id)),
-                ));
-            };
-            self.flush(state, out)?;
-            out.push(StmtKind::Assign(place.clone(), value).at(self.js_span(span)));
-            return Ok(Value::Expr(Expr::undefined()));
+        if let Some(value) = self.mir_assign_call(state, def_id, (&values, &arg_tys), span, out)? {
+            return Ok(value);
         }
         // A std iterator's method: a JS iterator's, lazy as Rust's. A `&mut`
         // to one is it, an object its helpers step in place.
@@ -5144,99 +5067,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // A binding: the JS function, method, property or operator it names
         // (ADRs 0019, 0020), given its arguments.
         if bindings::is_binding(tcx, def_id) {
-            if rustc_hir::find_attr!(tcx, def_id, RustcEiiForeignItem) {
-                return Err(self.unsupported(span, "externally implementable items, `#[eii]`,"));
-            }
-            match bindings::js_form(tcx, def_id) {
-                bindings::JsForm::Jsx(tag) => {
-                    let given = self.jsx_args(def_id, values, &arg_tys, span, |cx, i, ty| match (tag.as_str(), i) {
-                        // A JS module's component is its import, as a tag must be.
-                        ("*", 0) => match *ty.peel_refs().kind() {
-                            ty::FnDef(id, _) => cx.binding_component_of(id),
-                            _ => None,
-                        },
-                        _ => None,
-                    })?;
-                    return Ok(Value::Expr(self.jsx_values(&tag, given, span, out)?));
-                }
-                bindings::JsForm::Prop(name) => {
-                    let mut given = self
-                        .jsx_args(def_id, values, &arg_tys, span, |_, _, _| None)?
-                        .into_iter();
-                    let element = given.next().expect("the element");
-                    let name = match name {
-                        Some(name) => name,
-                        None => match given.next().map(|name| name.value.kind) {
-                            Some(js::ExprKind::Str(name)) => name,
-                            _ => return Err(self.unsupported(span, "an attribute's name other than a string literal")),
-                        },
-                    };
-                    let value = given.next().expect("the value");
-                    let mut element = element.value;
-                    // `style.color("red")` on an object being built: one more field.
-                    if let js::ExprKind::Object(fields) = &mut element.kind {
-                        fields.push(match name.as_str() {
-                            "..." => Prop::Spread(value.value),
-                            _ => Prop::Field(name, value.value),
-                        });
-                        return Ok(Value::Expr(element));
-                    }
-                    if !matches!(element.kind, js::ExprKind::Jsx(_)) {
-                        return Err(self.one_expression(span));
-                    }
-                    self.jsx_spread_checked(&name, value.ty, value.span)?;
-                    let made = self.jsx_prop_values(name, element, value, (Vec::new(), true), out)?;
-                    return Ok(Value::Expr(made));
-                }
-                bindings::JsForm::Object(keys) => {
-                    if keys.len() != values.len() {
-                        return Err(self.unsupported(span, "an object binding whose fields don't match its arguments"));
-                    }
-                    let mut fields = Vec::new();
-                    for (key, value) in keys.into_iter().zip(values) {
-                        fields.push(Prop::Field(key, self.value_expr(value, span)?));
-                    }
-                    return Ok(Value::Expr(Expr::object(fields)));
-                }
-                bindings::JsForm::Import { .. } => {
-                    return Err(self.unsupported(span, "a dynamic import, from its MIR"));
-                }
-                _ => {}
-            }
-            let nullable = bindings::nullable_params(tcx, def_id);
-            let idents = tcx.fn_arg_idents(def_id);
-            let mut exprs = Vec::new();
-            for (i, (value, &ty)) in values.into_iter().zip(&arg_tys).enumerate() {
-                let value = self.value_expr(value, span)?;
-                exprs.push(match () {
-                    // `()` given to JS is what a tuple is, an array (ADR 0020).
-                    () if ty.is_unit() => Expr::array(Vec::new()),
-                    // A parameter it names `#[rust_js::nullable(..)]`: its
-                    // `None` is `null` (ADR 0275).
-                    () if idents
-                        .get(i)
-                        .copied()
-                        .flatten()
-                        .is_some_and(|ident| nullable.contains(&ident.name)) =>
-                    {
-                        match value.kind {
-                            js::ExprKind::Undefined => Expr::null(),
-                            _ if value.is_constant() || value.is_made_here() => value,
-                            _ => Expr::bin(Op::Coalesce, value, Expr::null()),
-                        }
-                    }
-                    // A `&dyn Any` given to JS is its value (ADR 0331).
-                    () => self.any_given_to_js(value, ty),
-                });
-            }
-            let js_span = self.js_span(span);
-            return Ok(Value::Expr(self.binding_values(
-                (def_id, generic_args),
-                exprs,
-                js_span,
-                span,
-                out,
-            )?));
+            return self.mir_binding_call((def_id, generic_args), values, &arg_tys, span, out);
         }
         // A function giving each variant its own name gives what it's given,
         // `section.as_str()` is `section` (ADR 0264).
@@ -5245,25 +5076,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         // The crate's own function, given its dictionaries (ADR 0049).
         if self.is_rust_fn(def_id) && tcx.trait_of_assoc(def_id).is_none() && !bindings::is_binding(tcx, def_id) {
-            let mut exprs = self.boxed_args(state, (def_id, generic_args), values, span, out)?;
-            // An iterator of the crate's, or a range, where a generic iterator
-            // goes: a JS iterator (ADR 0061).
-            let inputs = tcx.fn_sig(def_id).instantiate_identity().skip_binder().inputs();
-            for ((expr, &input), &given) in exprs.iter_mut().zip(inputs).zip(&arg_tys) {
-                let (input, given) = match *input.kind() {
-                    ty::Ref(_, inner, ty::Mutability::Mut) => (inner, given.peel_refs()),
-                    _ => (input, given),
-                };
-                if matches!(input.kind(), ty::Param(_)) && self.given_as_iterator(def_id, input, given) {
-                    let value = std::mem::replace(expr, Expr::undefined());
-                    *expr = self.as_js_iterator(value, given, span)?;
-                }
-            }
-            exprs.extend(self.evidence_args(def_id, generic_args, span)?);
-            let called = Expr::call(self.fn_ref(def_id), exprs);
-            // A generic `&mut T`'s box, of an object `T` here: what's in it.
-            let called = self.generic_result_values((def_id, generic_args), called, span)?;
-            return Ok(Value::Expr(self.fmt_result_value(def_id, generic_args, called)));
+            return self.mir_crate_call(state, (def_id, generic_args), values, &arg_tys, span, out);
         }
         if let Some(known) = known {
             let value = self.mir_std_call(

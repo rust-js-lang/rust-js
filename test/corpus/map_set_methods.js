@@ -260,5 +260,10 @@ function main() {
       .map((item) => String(item))
       .join(", ")}}`,
   );
+  const seen = new Map();
+  seen.set("a", 1);
+  seen.set("b", 2);
+  seen.delete("a");
+  console.log(`${seen.size}`);
 }
 //# sourceMappingURL=case.js.map

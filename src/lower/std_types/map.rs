@@ -163,14 +163,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A map's or a set's method, of its arguments' values, `tys` their
-    /// types (ADR 0364). `discarded`: whether what it gives
-    /// is unused.
+    /// types (ADR 0364). One whose answer nothing reads is JS's own, by
+    /// `discarded_calls`.
     pub(in crate::lower) fn map_values(
         &mut self,
         op: MapOp,
         (values, tys): (Vec<Expr>, &[Ty<'tcx>]),
         generic_args: ty::GenericArgsRef<'tcx>,
-        discarded: bool,
         span: Span,
         out: &mut Vec<Stmt>,
     ) -> R<Expr> {
@@ -272,17 +271,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let items = self.items_of(items, tys[0], span, out)?;
                 Expr::new_(self.made(set, generic_args), vec![items])
             }
-            MapOp::Insert if discarded => {
-                let (m, k, v) = (arg(), arg(), arg());
-                method(m, "set", vec![k, v])
-            }
             MapOp::Insert => {
                 let list = vec![arg(), arg(), arg()];
                 helper(self, Helper::Insert, "$insert", list)
-            }
-            MapOp::Add if discarded => {
-                let (s, x) = (arg(), arg());
-                method(s, "add", vec![x])
             }
             MapOp::Add => {
                 let list = vec![arg(), arg()];
@@ -305,10 +296,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             MapOp::Has => {
                 let (m, k) = (arg(), arg());
                 method(m, "has", vec![k])
-            }
-            MapOp::Remove if discarded => {
-                let (m, k) = (arg(), arg());
-                method(m, "delete", vec![k])
             }
             MapOp::Remove => {
                 let list = vec![arg(), arg()];
@@ -550,6 +537,37 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         .all(|field| self.compares_by_value(self.field_ty(field, args), seen))
             }
             _ => false,
+        }
+    }
+}
+
+/// A map's or a set's call whose answer nothing reads, `$insert(m, k, v);`,
+/// a statement: JS's own, `m.set(k, v)`, which gives nothing of what Rust's
+/// gives, the old value or whether it was new (ADR 0059). Of the module's
+/// JS once it's lowered, a closure inlined into it too.
+pub(in crate::lower) fn discarded_calls(items: &mut [js::Item]) {
+    for item in items.iter_mut() {
+        for function in item.functions_mut() {
+            js::each_block_mut(&mut function.body, &mut |stmts| {
+                for stmt in stmts.iter_mut() {
+                    if let StmtKind::Expr(e) = &mut stmt.kind
+                        && let js::ExprKind::Call(callee, args) = &mut e.kind
+                        && let js::ExprKind::Var(helper) = &callee.kind
+                        && let Some(method) = match (helper.as_str(), args.len()) {
+                            ("$add", 2) => Some("add"),
+                            ("$insert", 3) => Some("set"),
+                            ("$remove", 2) => Some("delete"),
+                            _ => None,
+                        }
+                    {
+                        let object = args.remove(0);
+                        *e = Expr {
+                            span: e.span,
+                            ..Expr::call(Expr::member(object, method), std::mem::take(args))
+                        };
+                    }
+                }
+            });
         }
     }
 }

@@ -263,31 +263,6 @@ pub(in crate::lower) fn plain_statics(items: &mut [js::Item], quiet: &std::colle
             };
         }
     });
-    // What a closure inlined so gave, its answer unused, `$add(set, x);`:
-    // JS's own, `set.add(x)`, as the insert's call is where it's discarded.
-    for item in items.iter_mut() {
-        for function in item.functions_mut() {
-            js::each_block_mut(&mut function.body, &mut |stmts| {
-                for stmt in stmts.iter_mut() {
-                    if let StmtKind::Expr(e) = &mut stmt.kind
-                        && let js::ExprKind::Call(callee, args) = &mut e.kind
-                        && let js::ExprKind::Var(helper) = &callee.kind
-                        && let Some(method) = match (helper.as_str(), args.len()) {
-                            ("$add", 2) => Some("add"),
-                            ("$insert", 3) => Some("set"),
-                            _ => None,
-                        }
-                    {
-                        let object = args.remove(0);
-                        *e = Expr {
-                            span: e.span,
-                            ..Expr::call(Expr::member(object, method), std::mem::take(args))
-                        };
-                    }
-                }
-            });
-        }
-    }
     let cells: Vec<String> = (items.iter())
         .filter_map(|item| match item {
             js::Item::Const(c)

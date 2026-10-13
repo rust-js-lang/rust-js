@@ -60,4 +60,11 @@ fn main() {
     println!("{:?} {:?}", set.union(&other).collect::<Vec<_>>(), set.symmetric_difference(&other).collect::<Vec<_>>());
     let upper = set.split_off(&5);
     println!("{set:?} {upper:?}");
+
+    // A remove whose old value nothing reads: JS's own `delete`.
+    let mut seen = HashMap::new();
+    seen.insert("a", 1);
+    seen.insert("b", 2);
+    seen.remove("a");
+    println!("{}", seen.len());
 }

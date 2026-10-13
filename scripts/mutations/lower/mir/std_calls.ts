@@ -14,7 +14,7 @@ export const mutations: Mutation[] = [
     name: "mir-map-call-refused",
     breaks: "a map's method from MIR is refused",
     file: "src/lower/mir/std_calls.rs",
-    find: "                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?\n",
+    find: "                self.map_values(op, (exprs, arg_tys), generic_args, span, out)?\n",
     replace: "                return Err(self.unsupported(span, \"a map's method\"));\n",
     tests: ["test/corpus.test.ts","-t","map_index_missing"],
   },
@@ -177,14 +177,6 @@ export const mutations: Mutation[] = [
     find: "            Std::TypeName { .. } => {\n",
     replace: "            Std::TypeName { .. } if false => {\n",
     tests: ["test/corpus.test.ts","-t","type_facts"],
-  },
-  {
-    name: "mir-map-call-not-discarded",
-    breaks: "a map's `insert` nothing reads is `$insert(m, k, v)`, not `m.set(k, v)`",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                self.map_values(op, (exprs, arg_tys), generic_args, state.discarding, span, out)?\n",
-    replace: "                self.map_values(op, (exprs, arg_tys), generic_args, false, span, out)?\n",
-    tests: ["test/lowering.test.ts","-t","loops one after another from MIR"],
   },
   {
     "name": "mir-format-lines-flattened",
