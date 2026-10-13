@@ -291,7 +291,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if kind == RangeKind::Inclusive {
                     count = Expr::bin(Op::Add, count, Expr::int(1));
                 }
-                Expr::call(Expr::member(Expr::var("Math"), "max"), vec![Expr::int(0), count])
+                count
             }
             _ => return Err(self.unsupported(span, &format!("this method of a `{range_ty}`"))),
         })

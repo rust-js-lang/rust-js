@@ -73,36 +73,12 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    name: "kept-text-default-coalesced",
-    breaks: "text kept where it isn't empty, or a default, is a conditional and `??`, not `title || \"\"`",
-    file: "src/lower/std_types/option.rs",
-    find: "} else if let Some(text) = text_or(&option) {",
-    replace: "} else if let Some(text) = text_or(&option).filter(|_| false) {",
-    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
-  },
-  {
-    name: "text-or-chain-unread",
-    breaks: "`a || ` kept text, or a default, is `(a || ..) ?? \"\"`, not one `||` chain",
-    file: "src/lower/std_types/option.rs",
-    find: "return Some(Expr::bin(Op::Or, (**first).clone(), text_or(rest)?));",
-    replace: "return None;",
-    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
-  },
-  {
     name: "own-name-map-called",
     breaks: "an option mapped by a function giving each variant its own name, `section.map(Section::as_str)`, is a conditional of a call, not `section`",
     file: "src/lower/std_types/option.rs",
     find: "                    && (self.gives_own_name(function)\n",
     replace: "                    && (false && self.gives_own_name(function)\n",
     tests: ["test/lowering.test.ts", "-t", "enum's own names"],
-  },
-  {
-    name: "text-or-of-truthy-unseen",
-    breaks: "`filter(nonempty).unwrap_or(d)` of text is `!!x ? x : d`, not `x || d`",
-    file: "src/lower/std_types/option.rs",
-    find: "    let tested = truthy_of(test)?;\n",
-    replace: "    let tested = truthy_of(test).filter(|_| false)?;\n",
-    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
   {
     name: "filtered-of-truthy-unseen",
@@ -175,14 +151,6 @@ export const mutations: Mutation[] = [
     find: "        _ if part_never_nullish => optional_part(yes, m, option)?,\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","only gives a value"],
-  },
-  {
-    name: "nullish-text-truthy",
-    breaks: "`!!code` of text, which is also whether it isn't empty, is taken as whether it's there: `code ?? null` keeps `\"\"`",
-    file: "src/lower/std_types/option.rs",
-    find: "        _ if never_falsy => truthy_of(test)?,\n",
-    replace: "        _ => truthy_of(test)?,\n",
-    tests: ["test/lowering.test.ts", "-t", "nullable field's None is null"],
   },
   {
     name: "get-or-insert-overwrites",

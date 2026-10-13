@@ -466,7 +466,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         steps: Vec<(String, Vec<(Expr, Ty<'tcx>)>, ty::GenericArgsRef<'tcx>)>,
         non_exhaustive: bool,
         span: Span,
-        out: &mut Vec<Stmt>,
     ) -> R<Expr> {
         let pretty = self.writer_pretty();
         #[derive(Clone)]
@@ -504,7 +503,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let items = values.next().expect("the entries").0;
                     let tys: Vec<Ty<'tcx>> = generic_args.types().collect();
                     let iterable = *tys.last().expect("the entries' type");
-                    let items = self.iter_source(items, iterable, span, out)?;
+                    let items = self.iter_source(items, iterable, span)?;
                     let shown = if kind == "DebugMap" {
                         let pair = Expr::var("entry");
                         let key =

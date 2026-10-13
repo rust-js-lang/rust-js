@@ -74,9 +74,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 false
             }
             ty::Adt(..) if self.has_user_impl(self.clone_trait(), ty) => true,
-            // A range is stepped in place, `$rangeNext(r)` moving its start
-            // (ADR 0364): a clone of one is its own.
-            ty::Adt(..) if self.range_kind(ty).is_some() => true,
             ty::Adt(adt, args)
                 if ty.is_box()
                     || self.recognition().pinned(ty).is_some()

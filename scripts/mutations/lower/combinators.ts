@@ -147,28 +147,12 @@ export const mutations: Mutation[] = [
     tests: ["test/compiler.test.ts", "-t", "concat of parts"],
   },
   {
-    name: "concat-literal-part-spread",
-    breaks: "a part written out as an array is spread, `[...[1, 2], ...[3]]`, where its items go in place",
-    file: "src/lower/combinators.rs",
-    find: "                    js::ExprKind::Array(items) => items.clone(),\n",
-    replace: "",
-    tests: ["test/compiler.test.ts", "-t", "concat of parts"],
-  },
-  {
     name: "flatten-of-option-refs-flat",
     breaks: "`parts.iter().flatten()` of `&[Option<&str>]` is `parts.flat()`, which keeps the `None`s: `\"a  b \"`",
     file: "src/lower/combinators.rs",
     find: "Some(item) if self.option_of(item.peel_refs()).is_some() =>",
     replace: "Some(item) if self.option_of(item).is_some() =>",
     tests: ["test/corpus.test.ts", "-t", "iter_flatten"],
-  },
-  {
-    name: "kept-text-or-coalesced",
-    breaks: "text kept where it isn't empty, or another option, is `const option = ..; option ?? ..`, not `title || other`",
-    file: "src/lower/combinators.rs",
-    find: "&& let Some(text) = super::std_types::option::text_or(&subject)",
-    replace: "&& let Some(text) = super::std_types::option::text_or(&subject).filter(|_| false)",
-    tests: ["test/lowering.test.ts", "-t", "text kept where it isn't empty"],
   },
   {
     name: "vec-repeat-rows-shared",
@@ -193,14 +177,6 @@ export const mutations: Mutation[] = [
     find: "                match option.filter(|_| !boxed).and_then(|(name, option, spilled)| {\n",
     replace: "                match option.filter(|_| false).and_then(|(name, option, spilled)| {\n",
     tests: ["test/lowering.test.ts","-t","only gives a value"],
-  },
-  {
-    name: "chain-concat",
-    breaks: "`a.chain(b).collect()` is `a.concat(b)`, not `[...a, ...b]`",
-    file: "src/lower/combinators.rs",
-    find: "                let mut all = parts(items);\n                all.extend(parts(next()));\n                Expr::array(all)\n",
-    replace: "                let _ = parts;\n                method(items, \"concat\", vec![next()])\n",
-    tests: ["test/lowering.test.ts","-t","Console's loops"],
   },
   {
     name: "items-never-cells",

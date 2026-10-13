@@ -28,28 +28,12 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "range-value-not-items",
-    breaks: "a range kept as a value is iterated as its object, which has no items",
-    file: "src/lower/iterators.rs",
-    find: "        if self.range_kind(ty).is_some() {\n            return self.range_items(value, ty, span, out);",
-    replace: "        if false && self.range_kind(ty).is_some() {\n            return self.range_items(value, ty, span, out);",
-    tests: ["test/corpus.test.ts","-t","range_values"],
-  },
-  {
     name: "range-any-param-items",
     breaks: "a range given where any `T: Clone` goes is its items, not the range",
     file: "src/lower/iterators.rs",
     find: "        if self.range_kind(ty.peel_refs()).is_none() {\n            return false;\n        }",
     replace: "        if self.range_kind(ty.peel_refs()).is_some() {\n            return true;\n        }",
     tests: ["test/corpus.test.ts","-t","range_values"],
-  },
-  {
-    name: "closure-stepped-iterators",
-    breaks: "a closure's body doesn't find its own stepped iterators, and `it.next()` in one is rejected",
-    file: "src/lower/iterators.rs",
-    find: "            false => {\n                self.stepping.stepped.extend(own);\n",
-    replace: "            false => {\n",
-    tests: ["test/corpus.test.ts", "-t", "stepped_nested"],
   },
   {
     name: "boxed-last-unboxed",
@@ -122,14 +106,6 @@ export const mutations: Mutation[] = [
     find: "            _ => Expr::call(Expr::member(items, \"at\"), vec![Expr::int(-1)]),",
     replace: "            _ => Expr::call(Expr::member(items, \"at\"), vec![Expr::int(0)]),",
     tests: ["test/compiler.test.ts", "-t", "string methods are JS's, and format! is a template literal"],
-  },
-  {
-    name: "generic-iter-not-from",
-    breaks: "a generic iterator is used as it's given, so `items.skip(1)` is `items.drop(1)`, which an array doesn't have",
-    file: "src/lower/iterators.rs",
-    find: "            return Ok(self.js_iterator(value));",
-    replace: "            return Ok(value);",
-    tests: ["test/compiler.test.ts", "-t", "generic iterators take arrays and JS iterators alike"],
   },
   {
     name: "clone-past-end",

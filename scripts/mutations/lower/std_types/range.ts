@@ -8,7 +8,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "                    _ if kind == RangeKind::Inclusive => Expr::bin(Op::Add, end.clone(), num.literal(1)),",
     replace: "                    _ if false && kind == RangeKind::Inclusive => Expr::bin(Op::Add, end.clone(), num.literal(1)),",
-    tests: ["test/corpus.test.ts","-t","range_values"],
+    tests: ["test/corpus.test.ts","-t","range_into_set"],
   },
   {
     name: "contains-inclusive-end-excluded",
@@ -24,14 +24,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/std_types/range.rs",
     find: "            RangeKind::Inclusive | RangeKind::ToInclusive => \"..=\",",
     replace: "            RangeKind::ToInclusive => \"..=\",",
-    tests: ["test/corpus.test.ts","-t","range_values"],
-  },
-  {
-    name: "range-len-unclamped",
-    breaks: "`(5..2).len()` is -3",
-    file: "src/lower/std_types/range.rs",
-    find: "                Expr::call(Expr::member(Expr::var(\"Math\"), \"max\"), vec![Expr::int(0), count])",
-    replace: "                count",
     tests: ["test/corpus.test.ts","-t","range_values"],
   },
   {

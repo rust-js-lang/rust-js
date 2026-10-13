@@ -74,9 +74,9 @@ pub(super) struct EnclosingStepping {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
-    /// Start lowering a body inside the one being lowered, whose own stepped
-    /// locals are `own`: a closure's, as well as the enclosing body's, which
-    /// it sees; a copied default's, an item of its own, instead of them.
+    /// Start lowering a body inside the one being lowered: a closure sees the
+    /// enclosing body's stepped locals; a copied default, an item of its own,
+    /// sees its own, `own`, instead of them.
     pub(super) fn enter_body_stepping(&mut self, own: &HashSet<LocalVarId>, item: bool) -> EnclosingStepping {
         let stepped = self.stepping.stepped.clone();
         let bound = match item {
@@ -84,10 +84,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.stepping.stepped = own.clone();
                 Some(std::mem::take(&mut self.stepping.bound))
             }
-            false => {
-                self.stepping.stepped.extend(own);
-                None
-            }
+            false => None,
         };
         EnclosingStepping { stepped, bound }
     }
@@ -191,23 +188,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// An iterator of the crate's own as a JS one, `$iterator(it,
-    /// countdownIterator_next)`, and a range as its items (ADR 0129).
-    /// Anything else is `value` itself.
-    pub(super) fn iter_source(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span, out: &mut Vec<Stmt>) -> R<Expr> {
+    /// countdownIterator_next)`. Anything else is `value` itself.
+    pub(super) fn iter_source(&mut self, value: Expr, ty: ty::Ty<'tcx>, span: Span) -> R<Expr> {
         let ty = self.reveal(ty);
-        if self.range_kind(ty).is_some() {
-            return self.range_items(value, ty, span, out);
-        }
-        // A `&mut` one is stepped through as it's taken from.
+        // A `&mut` range is stepped through as it's taken from.
         if let ty::Ref(_, inner, _) = ty.kind()
             && self.range_kind(*inner).is_some()
         {
             return Err(self.unsupported(span, &format!("iterating over a `{ty}`, which steps it")));
-        }
-        // A generic one is an array or a JS iterator: `Iterator.from` takes
-        // either (ADR 0061).
-        if self.is_generic_iter(ty) {
-            return Ok(self.js_iterator(value));
         }
         if !self.is_user_iterator(ty) {
             return Ok(value);

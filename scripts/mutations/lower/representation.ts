@@ -89,7 +89,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/representation.rs",
     find: "    if !v.is_finite() || shortest == f64::from(v) {",
     replace: "    if true {\n        return Expr::num(shortest);\n    }\n    if !v.is_finite() || shortest == f64::from(v) {",
-    tests: ["test/corpus.test.ts", "-t", "f32\\.rs"],
+    tests: ["test/serde.test.ts", "-t", "an f32 is written and read as serde_json does"],
   },
   {
     name: "concrete-nullish-unboxed",

@@ -14,6 +14,10 @@ function evens(n) {
   return $lazyRange(0, n).filter((x) => x % 2 === 0);
 }
 
+function first(it) {
+  return $next(it);
+}
+
 function main() {
   const v = [1, 2, 3];
   const value = $next(tens(v));
@@ -40,10 +44,15 @@ function main() {
   console.log(
     `${value$9 == null ? "None" : `Some(${value$9})`} ${((value) => (value == null ? "None" : `Some(${value})`))($next(kept))}`,
   );
-  const value$10 = $next(evens(7));
-  const value$11 = evens(7);
+  const lent = tens(v);
+  const value$10 = first(lent);
   console.log(
-    `${value$10 == null ? "None" : `Some(${value$10})`} ${((value) => (value == null ? "None" : `Some(${value})`))($lent(value$11).find((x) => x > 2))}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first(lent))}`,
+  );
+  const value$11 = $next(evens(7));
+  const value$12 = evens(7);
+  console.log(
+    `${value$11 == null ? "None" : `Some(${value$11})`} ${((value) => (value == null ? "None" : `Some(${value})`))($lent(value$12).find((x) => x > 2))}`,
   );
 }
 //# sourceMappingURL=case.js.map

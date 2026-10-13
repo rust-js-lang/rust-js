@@ -6,6 +6,8 @@ export function entry() {
   main();
 }
 
+const START = [250];
+
 function pow(base, one, exp, TMul, TCopy) {
   let acc = TCopy.copy(one);
   for (let i = 0; i < exp; i++) {
@@ -63,5 +65,6 @@ function main() {
   const right$1 = [-1];
   const value$2 = $cmp(left[0], right[0]) > 0 ? left : right;
   console.log(`${value$2[0]} ${$cmp(left$1[0], right$1[0]) < 0}`);
+  console.log(`${START[0]} ${[(START[0] + 10) & 255][0]}`);
 }
 //# sourceMappingURL=case.js.map

@@ -8,5 +8,6 @@ fn main() {
     let u: BTreeSet<char> = ('a'..='c').collect();
     let mut more: HashSet<i32> = HashSet::new();
     more.extend(2..5);
+    more.extend(4..=s.len() as i32);
     println!("{} {:?} {} {:?} {}", s.len(), t, m[&3], u, more.len());
 }

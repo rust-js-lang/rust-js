@@ -283,16 +283,4 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if false && let Some(owns) = self.array_source(ty) => {\n",
     tests: ["test/corpus.test.ts","-t","iterator_clones"],
   },
-  {
-    "name": "mir-range-clone-shared",
-    "breaks": "a range cloned and stepped from MIR is the range itself stepped, `$iterator(r, $rangeNext)`, which reads `4..4` after",
-    "file": "src/lower/std_impls.rs",
-    "find": "            ty::Adt(..) if self.range_kind(ty).is_some() => true,\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a range cloned and stepped"
-    ]
-  },
 ];

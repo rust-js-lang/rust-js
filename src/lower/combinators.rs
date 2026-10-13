@@ -150,8 +150,6 @@ pub(super) enum IterSource {
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum StepOp {
     Next,
-    /// `DoubleEndedIterator::next_back`: its last item.
-    NextBack,
     Peekable,
     Peek,
     NextIf,
@@ -319,35 +317,15 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         let subject = values.remove(0);
         // A slice's `concat` of parts written out, `[path, &[last]].concat()`:
-        // an array of them, spread, `[...path, last]`, as JS writes it, and a
-        // part written out as an array its items in place.
+        // an array of them, spread, `[...path, ...[last]]`.
         if comb == Comb::Concat
             && let js::ExprKind::Array(parts) = &subject.kind
             && !self
                 .slice_item(subject_ty)
                 .is_some_and(|item| self.is_string_like(item))
         {
-            let items = parts
-                .iter()
-                .flat_map(|part| match &part.kind {
-                    js::ExprKind::Array(items) => items.clone(),
-                    _ => vec![Expr::spread(part.clone())],
-                })
-                .collect();
+            let items = parts.iter().map(|part| Expr::spread(part.clone())).collect();
             return Ok(Expr::array(items));
-        }
-        // Text kept where it isn't empty, or another: `title || other` (ADR 0266).
-        if comb == Comb::Or
-            && self.option_of(subject_ty).is_some_and(|text| self.is_string_like(text))
-            && let Some(text) = super::std_types::option::text_or(&subject)
-        {
-            let other = values.remove(0);
-            let other = if other.has_effects() {
-                self.spill("fallback", other, out)
-            } else {
-                other
-            };
-            return Ok(Expr::bin(Op::Or, text, other));
         }
         // A `Some` not boxed is read once by `??`, and the default made only
         // where it's `None`, as Rust makes it: `get(n) ?? ""`.
@@ -462,15 +440,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let never_nullish = !self.can_be_nullish(generic_args.type_at(1));
                 match option.filter(|_| !boxed).and_then(|(name, option, spilled)| {
-                    let nullish = super::std_types::option::nullish_or(
-                        &name,
-                        &option,
-                        &some,
-                        &mapped,
-                        &fallback,
-                        false,
-                        never_nullish,
-                    )?;
+                    let nullish =
+                        super::std_types::option::nullish_or(&name, &option, &some, &mapped, &fallback, never_nullish)?;
                     Some((nullish, spilled))
                 }) {
                     Some((nullish, spilled)) => {
@@ -1121,18 +1092,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 self.runtime.insert(Helper::LazyChain);
                 Expr::call(Expr::var("$lazyChain"), vec![items, next()])
             }
-            // Two arrays, spread into one, `[...a, ...b]`, as a person writes
-            // it (ADR 0313); a third into the same.
-            IterComb::Chain => {
-                // An array written out is its items, `[header, ...lines]`.
-                let parts = |array: Expr| match array.kind {
-                    js::ExprKind::Array(parts) => parts,
-                    _ => vec![Expr::spread(array)],
-                };
-                let mut all = parts(items);
-                all.extend(parts(next()));
-                Expr::array(all)
-            }
+            IterComb::Chain => method(items, "concat", vec![next()]),
             IterComb::TakeWhile if lazy => {
                 self.runtime.insert(Helper::LazyTakeWhile);
                 Expr::call(Expr::var("$lazyTakeWhile"), vec![items, next()])

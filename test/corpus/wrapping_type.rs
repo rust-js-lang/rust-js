@@ -5,6 +5,8 @@
 use std::num::Wrapping;
 use std::ops::{Add, Mul};
 
+const START: Wrapping<u8> = Wrapping(250);
+
 fn pow<T: Mul<Output = T> + Copy>(base: T, one: T, exp: u32) -> T {
     let mut acc = one;
     for _ in 0..exp {
@@ -33,4 +35,5 @@ fn main() {
     println!("{} {}", pow(Wrapping(3u8), Wrapping(1), 7), pow(3u32, 1, 7));
     println!("{} {}", total(&[Wrapping(250u8), Wrapping(10)], Wrapping(0)), same(Wrapping(5u64), Wrapping(5)));
     println!("{:?} {}", Wrapping(7u8).max(Wrapping(9)), Wrapping(3i16) < Wrapping(-1));
+    println!("{} {}", START, START + Wrapping(10));
 }

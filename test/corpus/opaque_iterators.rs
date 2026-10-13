@@ -10,6 +10,10 @@ fn evens(n: u32) -> impl Iterator<Item = u32> {
     (0..n).filter(|x| x % 2 == 0)
 }
 
+fn first(it: &mut impl Iterator<Item = i32>) -> Option<i32> {
+    it.next()
+}
+
 fn main() {
     let v = vec![1, 2, 3];
     println!("{:?} {:?} {:?}", tens(&v).next(), tens(&v).nth(1), tens(&v).nth(5));
@@ -18,5 +22,7 @@ fn main() {
     println!("{:?} {} {:?}", tens(&v).max(), tens(&v).count(), tens(&v).last());
     let mut kept = tens(&v);
     println!("{:?} {:?}", kept.next(), kept.next());
+    let mut lent = tens(&v);
+    println!("{:?} {:?}", first(&mut lent), first(&mut lent));
     println!("{:?} {:?}", evens(7).next(), evens(7).find(|x| *x > 2));
 }

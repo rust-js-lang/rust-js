@@ -100,9 +100,6 @@ pub(super) enum Std {
     /// An iterator's `cloned()` and `copied()`: its items, each cloned if
     /// that could be told apart from sharing it (ADR 0052).
     Cloned,
-    /// An iterator's `fuse()`: the iterator, as an array and a JS iterator
-    /// chain end at their first `None` and stay ended (ADR 0055).
-    Fuse,
     /// `v[i]` of a `Vec`, `Index::index` or `IndexMut::index_mut`: `$index(v, i)`.
     Index,
     /// A channel's: `mpsc::channel()`, `send`, `recv` and `try_recv` (ADR 0142).
@@ -179,8 +176,6 @@ pub(super) enum Std {
     VecMacro,
     Push,
     Len,
-    /// `it.len()` of an `ExactSizeIterator`: how many items it has left.
-    IterLen,
     /// `len()` of an iterator of the crate's whose `ExactSizeIterator` keeps
     /// std's `len`: its `size_hint()`, checked (ADR 0164).
     ExactLen,
@@ -204,9 +199,6 @@ pub(super) enum Std {
     /// keeps it, or, `true`, `(n, Some(n))` of std's that knows its length
     /// (ADR 0170).
     SizeHint(bool),
-    /// `it.size_hint()` of a generic iterator: exact of an array, else
-    /// `(0, None)` (ADR 0170).
-    GenericSizeHint,
     /// An operator of `std::num::Wrapping`, its number's in its `[x]`
     /// (ADR 0175): `a * b`, `-a`, or, `true`, `a += b`.
     WrappingOp(Result<BinOp, UnOp>, bool),
@@ -389,9 +381,6 @@ pub(super) enum Std {
     Fold,
     Sum,
     CollectString,
-    /// `collect()` into a `Result` or an `Option` of a collection: the first
-    /// `Err` or `None`, or all the values.
-    CollectFallible,
     /// `collect::<Vec<_>>()`: a new array, unless it's one already.
     Collect,
     Position,
@@ -940,20 +929,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if self.is_user_iterator(ty) {
                 return Some(Std::SizeHint(false));
             }
-            // A generic one is an array or a JS iterator (ADR 0061).
-            if matches!(
-                ty.peel_refs().kind(),
-                ty::Param(_)
-                    | ty::Alias(
-                        _,
-                        ty::AliasTy {
-                            kind: ty::Projection { .. },
-                            ..
-                        }
-                    )
-            ) {
-                return Some(Std::GenericSizeHint);
-            }
             if self.range_kind(ty.peel_refs()).is_none() && self.is_array_iter(ty.peel_refs()) {
                 return Some(Std::SizeHint(true));
             }
@@ -965,20 +940,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     .is_some_and(|b| self.is_lang_adt(b, LangItem::String))
             };
             return Some(match tcx.item_name(def_id).as_str() {
-                // A `Range`'s and an `a..`'s move its `start` (ADR 0129).
-                "next"
-                    if matches!(
-                        self.range_kind(ty.peel_refs()),
-                        Some(RangeKind::Exclusive | RangeKind::From)
-                    ) =>
-                {
+                // A `Range`'s moves its `start` (ADR 0129).
+                "next" if matches!(self.range_kind(ty.peel_refs()), Some(RangeKind::Exclusive)) => {
                     Std::Range(RangeOp::Next)
                 }
                 // One of the crate's own is its impl's `next` (ADR 0055).
                 "next" if !self.is_user_iterator(ty) => Std::Step(StepOp::Next),
-                // The iterator itself, which knows where it is (ADR 0071), as
-                // one of the crate's does.
-                "by_ref" => Std::IterByRef,
+                // The iterator itself, which knows where it is (ADR 0071).
+                "by_ref" if !self.is_user_iterator(ty) => Std::IterByRef,
                 "peekable" => Std::Step(StepOp::Peekable),
                 "map" => Std::ArrayMethod("map"),
                 "filter" => Std::ArrayMethod("filter"),
@@ -999,19 +968,10 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 "count" => Std::Len,
                 name if let Some(comb) = methods::iterator(name) => Std::IterComb(comb),
                 "copied" | "cloned" => Std::Cloned,
-                "fuse" => Std::Fuse,
                 "collect" if collects_string() => Std::CollectString,
                 "collect" if args.types().nth(1).is_some_and(|b| self.is_map(b)) => {
                     let set = args.types().nth(1).is_some_and(|b| self.is_set(b));
                     Std::Map(MapOp::From { set })
-                }
-                "collect"
-                    if args
-                        .types()
-                        .nth(1)
-                        .is_some_and(|b| self.is_std_type(b, StdItem::Result) || self.option_of(b).is_some()) =>
-                {
-                    Std::CollectFallible
                 }
                 "collect" => Std::Collect,
                 _ => return None,
@@ -1024,24 +984,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return Some(Std::ExactLen);
         }
-        if std_path(tcx, trait_) == "std::iter::ExactSizeIterator"
-            && tcx.item_name(def_id).as_str() == "len"
-            && self.range_kind(ty.peel_refs()).is_none()
-            && self.is_array_iter(ty.peel_refs())
-        {
-            return Some(Std::IterLen);
-        }
         // Of a type parameter too: a generic one is an array or a JS iterator
-        // (ADR 0061), never a collection of the crate's (ADR 0160). And of an
-        // iterator of the crate's, std's for any iterator, the iterator itself
-        // (ADR 0189).
+        // (ADR 0061), never a collection of the crate's (ADR 0160).
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
             && tcx.item_name(def_id).as_str() == "into_iter"
             && (ty.peel_refs().is_array()
                 || ty.peel_refs().is_slice()
                 || self.is_vec_like(ty.peel_refs())
-                || matches!(ty.peel_refs().kind(), ty::Param(_))
-                || self.is_user_iterator(ty))
+                || matches!(ty.peel_refs().kind(), ty::Param(_)))
         {
             return Some(Std::Same);
         }
@@ -1071,13 +1021,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 }
                 _ => {}
             }
-        }
-        // Any other std one's last item, as `next()` its first (ADR 0071).
-        if is_std_def(tcx, trait_, StdItem::DoubleEndedIterator)
-            && tcx.item_name(def_id).as_str() == "next_back"
-            && !self.is_user_iterator(ty)
-        {
-            return Some(Std::Step(StepOp::NextBack));
         }
         // An `Option`'s, or a `&Option`'s: a `&mut` one's items are places.
         if tcx.is_diagnostic_item(sym::IntoIterator, trait_)
@@ -2902,9 +2845,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && (path.contains("::iter::")
                 || [
                     "std::slice::Iter",
-                    "std::slice::IterMut",
                     "std::vec::IntoIter",
-                    "std::str::Bytes",
                     "std::str::SplitN",
                     "std::str::RSplitN",
                     "std::str::RSplit",
@@ -2919,16 +2860,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::char::ToUppercase",
                     "std::char::ToLowercase",
                     "std::collections::vec_deque::Iter",
-                    "std::collections::vec_deque::IterMut",
                     "std::collections::vec_deque::IntoIter",
                     "std::collections::binary_heap::Iter",
                     "std::collections::binary_heap::IntoIter",
                     "std::option::Iter",
-                    "std::option::IterMut",
                     "std::option::IntoIter",
                     "std::result::IterMut",
                     // A slice's chunks and splits, copies or views (ADR 0335).
-                    "std::slice::ChunksMut",
                     "std::slice::ChunksExact",
                     "std::slice::ChunksExactMut",
                     "std::slice::RChunks",
@@ -2947,14 +2885,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     "std::slice::SplitInclusiveMut",
                     "std::slice::ChunkBy",
                     "std::slice::ChunkByMut",
-                    "std::slice::ArrayWindows",
-                    "std::str::Utf8Chunks",
                 ]
                 .contains(&path.as_str())
                 || self.is_str_split(ty))
             // A map's `iter()`, `keys()` and `values()` are arrays too (ADR 0059).
             || ((krate == sym::alloc || krate == sym::std)
-                && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_map::Range", "btree_map::RangeMut", "btree_set::Iter", "btree_set::IntoIter", "btree_set::Range"]
+                && ["btree_map::Iter", "btree_map::IterMut", "btree_map::Keys", "btree_map::Values", "btree_map::ValuesMut", "btree_map::IntoIter", "btree_set::Iter", "btree_set::IntoIter"]
                     .iter()
                     .any(|name| path == format!("std::collections::{name}")))
             || (krate == sym::std
@@ -3202,9 +3138,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// Whether calling `def_id`, of `args`, may run code of the crate's, or
     /// ask whether a `RefCell` or a lock is borrowed, which only a borrow
     /// that's held answers (ADR 0328): a function of the crate's, a
-    /// closure, a `dyn`'s method, a cell's or a lock's own but what makes
-    /// one or has a `&mut` to it, or std's whose bounds the crate's impls
-    /// meet, or a cell's.
+    /// closure, a `dyn`'s method, a guard's own, or a thread-local cell's.
     pub(super) fn may_ask_borrows(&self, def_id: DefId, args: ty::GenericArgsRef<'tcx>) -> bool {
         let Ok(Some(instance)) = ty::Instance::try_resolve(self.tcx, self.typing_env, def_id, args) else {
             return true;
@@ -3225,7 +3159,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         {
             return false;
         }
-        !self.is_std(id) || self.asks_borrows(id) || !self.bounds_quiet(id, instance.args, 0)
+        !self.is_std(id) || self.asks_borrows(id)
     }
 
     /// Whether running a body, a closure's, can't ask whether a cell is
@@ -3250,18 +3184,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         })
     }
 
-    /// A cell's or a lock's function that borrows it, a thread-local
-    /// `RefCell`'s, or a guard's own, `Ref::map` say (ADR 0328).
+    /// A thread-local `RefCell`'s function, or a guard's own, `Ref::map`
+    /// say (ADR 0328).
     fn asks_borrows(&self, id: DefId) -> bool {
         let Some(imp) = self.tcx.impl_of_assoc(id) else {
             return false;
         };
         let owner = self.tcx.type_of(imp).instantiate_identity().skip_normalization();
         match owner.kind() {
-            _ if self.is_borrowed_cell(owner) => !matches!(
-                self.tcx.item_name(id).as_str(),
-                "new" | "default" | "from" | "get_mut" | "into_inner" | "as_ptr" | "is_poisoned" | "clear_poison"
-            ),
             _ if self.is_guard(owner) => !self.tcx.impl_is_of_trait(imp),
             ty::Adt(_, args) if self.is_std_type(owner, StdItem::LocalKey) => {
                 args.types().next().is_some_and(|held| self.is_borrowed_cell(held))
@@ -3275,54 +3205,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         ["RefCell", "Mutex", "RwLock"]
             .into_iter()
             .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
-    }
-
-    /// Whether `id`'s bounds, of `args`, run nothing of the crate's and ask
-    /// no cell: each is a trait with no code, of types std's alone, or met by
-    /// an impl of std's whose own bounds are too.
-    fn bounds_quiet(&self, id: DefId, args: ty::GenericArgsRef<'tcx>, depth: usize) -> bool {
-        if depth > 8 {
-            return false;
-        }
-        let clauses = self.tcx.clauses_of(id).instantiate(self.tcx, args).clauses;
-        clauses
-            .into_iter()
-            .filter_map(|clause| clause.skip_normalization().as_trait_clause())
-            .all(|clause| {
-                let tr = self
-                    .tcx
-                    .erase_and_anonymize_regions(self.tcx.instantiate_bound_regions_with_erased(clause).trait_ref);
-                self.codeless(tr.def_id)
-                    || tr.args.types().all(|t| self.std_alone(t))
-                    || matches!(self.tcx.codegen_select_candidate(self.typing_env.as_query_input(tr)),
-                        Ok(ImplSource::UserDefined(imp)) if self.is_std(imp.impl_def_id)
-                            && !self.is_borrowed_cell(self.tcx.type_of(imp.impl_def_id).instantiate_identity().skip_normalization())
-                            && self.bounds_quiet(imp.impl_def_id, imp.args, depth + 1))
-            })
-    }
-
-    /// A trait whose impls have no code: an auto trait, `Sized`, `Copy`,
-    /// and one with no functions whose supertraits have none either.
-    fn codeless(&self, tr: DefId) -> bool {
-        let tcx = self.tcx;
-        tcx.trait_is_auto(tr)
-            || [
-                LangItem::Sized,
-                LangItem::MetaSized,
-                LangItem::PointeeSized,
-                LangItem::Copy,
-                LangItem::Tuple,
-                LangItem::Unsize,
-            ]
-            .into_iter()
-            .any(|item| tcx.is_lang_item(tr, item))
-            || (tcx.associated_items(tr).in_definition_order().all(|item| !item.is_fn())
-                && tcx
-                    .explicit_super_clauses_of(tr)
-                    .skip_binder()
-                    .iter()
-                    .filter_map(|(clause, _)| clause.as_trait_clause())
-                    .all(|sup| sup.def_id() == tr || self.codeless(sup.def_id())))
     }
 
     /// A type made of std's types alone, and no cell: no impl of the crate's

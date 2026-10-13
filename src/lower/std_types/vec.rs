@@ -125,7 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             // A range's, which is an object, is its items' (ADR 0129).
             Std::Len if self.range_kind(tys[0].peel_refs()).is_some() => {
-                let items = self.iter_source(arg(), tys[0].peel_refs(), span, out)?;
+                let items = self.iter_source(arg(), tys[0].peel_refs(), span)?;
                 Expr::member(items, "length")
             }
             Std::Len => Expr::member(arg(), "length"),

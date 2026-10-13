@@ -2,7 +2,11 @@
 // field, passed and returned, iterated where it's used, and asked whether
 // it contains a number.
 
-use std::ops::{Range, RangeInclusive};
+use std::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
+
+const FROM: RangeFrom<i32> = 5..;
+const TO: RangeTo<i32> = ..8;
+const THROUGH: RangeToInclusive<i32> = ..=7;
 
 struct Window {
     rows: Range<usize>,
@@ -91,6 +95,7 @@ fn main() {
     println!();
 
     println!("{:?} {:?} {:?} {:?} {:?}", 4.., ..4, ..=4, .., (-2i64)..=2);
+    println!("{:?} {:?} {:?} {} {}", FROM, TO, THROUGH, FROM.contains(&9), THROUGH.contains(&8));
     println!("{} {} {}", (1..4) == (1..4), (1..=4) != (1..=5), (2..) == (2..));
     let big: u64 = (1u64..4).sum();
     println!("{}", big);

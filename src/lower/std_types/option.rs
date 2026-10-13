@@ -4,7 +4,6 @@ use crate::js;
 use crate::js::{Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
-use crate::lower::patterns::same_place;
 
 use crate::lower::recognition::Std;
 use crate::lower::{FnCx, R};
@@ -159,8 +158,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.boxed_payload(generic_args.type_at(0)) {
                     let default = self.some(default);
                     self.some_value(Expr::bin(Op::Coalesce, option, default))
-                } else if let Some(text) = text_or(&option) {
-                    Expr::bin(Op::Or, text, default)
                 } else if let Some((kept, value)) = filtered(&option) {
                     Expr::cond(kept, value, default)
                 } else {
@@ -473,39 +470,20 @@ pub(in crate::lower) fn is_some_box(value: Expr) -> Expr {
     Expr::bin(Op::Ne, Expr::member(value, "$someNone"), Expr::undefined())
 }
 
-/// Text kept where it isn't empty, `filter(|s| !s.is_empty())`, `!!x ? x :
-/// undefined`, or `a || ` such text: `E` whose `E || d`
-/// is the option's `?? d`, as JS's text is falsy only where it's empty
-/// (ADR 0266). Its type says it's text: an empty array is truthy.
-pub(in crate::lower) fn text_or(option: &Expr) -> Option<Expr> {
-    if let js::ExprKind::Binary(Op::Or, first, rest) = &option.kind {
-        return Some(Expr::bin(Op::Or, (**first).clone(), text_or(rest)?));
-    }
-    let js::ExprKind::Cond(test, value, none) = &option.kind else {
-        return None;
-    };
-    let tested = truthy_of(test)?;
-    let shaped = matches!(none.kind, js::ExprKind::Undefined);
-    (shaped && value.reads_same() && same_place(tested, value)).then(|| (**value).clone())
-}
-
 /// `m ? m : d`, of an option `e` in a `const m` read only there, is
 /// `e ?? d`; `m ? m[1] : d`, of a part never `null` or `undefined`, is
 /// `e?.[1] ?? d`, which end where `e` is `None` and give `d` (ADR 0309).
-/// Its test is whether `m` is there, `m != null`, or `!!m` of a value
-/// never falsy: of text, `!!m` is also whether it isn't empty.
+/// Its test is whether `m` is there, `m != null`.
 pub(in crate::lower) fn nullish_or(
     m: &str,
     option: &Expr,
     test: &Expr,
     yes: &Expr,
     no: &Expr,
-    never_falsy: bool,
     part_never_nullish: bool,
 ) -> Option<Expr> {
     let tested = match &test.kind {
         js::ExprKind::Binary(Op::LooseNe, tested, null) if matches!(null.kind, js::ExprKind::Null) => tested,
-        _ if never_falsy => truthy_of(test)?,
         _ => return None,
     };
     if !matches!(&tested.kind, js::ExprKind::Var(v) if v == m) || no.mentions_var(m) {

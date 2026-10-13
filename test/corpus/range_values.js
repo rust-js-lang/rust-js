@@ -22,6 +22,10 @@ export function entry() {
   main();
 }
 
+const FROM = { start: 5 };
+const TO = { end: 8 };
+const THROUGH = { end: 7 };
+
 function labelledDebug_fmt(labelled) {
   return `Labelled { span: ${labelled.span.start}..${labelled.span.end}, name: ${$debugStr(labelled.name)} }`;
 }
@@ -135,6 +139,9 @@ function main() {
         if (n == null) {
           console.log("");
           console.log(`4.. ..4 ..=4 .. ${-2n}..=${2n}`);
+          console.log(
+            `${FROM.start}.. ..${TO.end} ..=${THROUGH.end} ${FROM.start <= 9} ${8 <= THROUGH.end}`,
+          );
           console.log(`${1 === 1 && 4 === 4} ${!(1 === 1 && 4 === 5)} ${2 === 2}`);
           const big = $iterator({ start: 1n, end: 4n }, $rangeNext).reduce(
             (a, b) => BigInt.asUintN(64, a + b),

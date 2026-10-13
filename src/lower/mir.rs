@@ -4321,7 +4321,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, "this `Debug` builder, from its MIR"));
             };
             if step == "finish" || step == "finish_non_exhaustive" {
-                let written = self.builder_written(&kind, type_name, steps, step != "finish", span, out)?;
+                let written = self.builder_written(&kind, type_name, steps, step != "finish", span)?;
                 self.flush(state, out)?;
                 super::display::append_written(&Expr::var(&name), written, false, self.js_span(span), out);
             } else {
@@ -6480,7 +6480,6 @@ fn lowered_from_values(known: Std) -> bool {
             | Std::MemTake
             | Std::Last
             | Std::Cloned
-            | Std::Fuse
             | Std::ArrayMethod(_)
             | Std::Enumerate
             | Std::Rev
@@ -6489,7 +6488,6 @@ fn lowered_from_values(known: Std) -> bool {
             | Std::Fold
             | Std::Sum
             | Std::CollectString
-            | Std::CollectFallible
             | Std::Collect
             | Std::Position
             | Std::Extreme(_)
@@ -6512,11 +6510,9 @@ fn lowered_from_values(known: Std) -> bool {
             | Std::Number(_)
             | Std::FromElem
             | Std::Heap(_)
-            | Std::IterLen
             | Std::ExactLen
             | Std::SizeHint(_)
             | Std::WrappingOp(..)
-            | Std::GenericSizeHint
             | Std::IterByRef
             | Std::NonZeroNew
             | Std::UserWrite
