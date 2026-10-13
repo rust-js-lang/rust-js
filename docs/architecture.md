@@ -491,5 +491,6 @@ architecture audit found the rest.
   `mir_call_values` (306) and `mir_std_call` (261) are held to their
   lengths, each lowered as what's left in it goes where its kind is.
 - **Runtime helpers as symbols:** lowering asks for a helper and writes its
-  name, `$cmp`, apart; one written and not asked for is a JS error when it
-  runs, not a compile error.
+  name, `$cmp`, apart. One written and not asked for is refused as its
+  module is planned, not a JS error where it runs; as a symbol the linker
+  resolves, it couldn't be written so.

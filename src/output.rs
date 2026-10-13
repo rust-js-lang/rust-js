@@ -106,6 +106,17 @@ impl OutputPlan {
             // prepared tree reads (ADR 0103).
             let helper_sources: Vec<&'static str> = module.runtime.iter().map(|helper| helper.source()).collect();
             js_module.helpers = crate::runtime::imported_helpers(&helper_sources, &js_module.read_vars());
+            // A helper the module reads and didn't ask for would be a JS
+            // error where it runs, its import left out: refused, as a
+            // compiler's mistake, not written.
+            if let Some(name) = (js_module.read_vars().into_iter())
+                .find(|name| crate::runtime::exports(name) && !js_module.helpers.contains(name))
+            {
+                return Err(format!(
+                    "rust-js wrote `{name}` in {} without asking for the helper that declares it: a bug of rust-js's",
+                    js_path.display()
+                ));
+            }
             let dir = resolve(parent_dir(&js_path));
             let own = resolve(&rust_path);
             let path_of = |i: usize| relative_resolved(&dir, &resolved[i]);
