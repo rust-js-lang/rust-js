@@ -183,15 +183,13 @@ impl Walk {
         self.stmts(stmts);
     }
 
-    /// What `stmts` declare in their block, an `else` after a branch that
-    /// leaves too, which the printer writes after its `if` (ADR 0237).
+    /// What `stmts` declare in their block.
     fn hoist(&mut self, stmts: &[Stmt]) {
         for stmt in stmts {
             match &stmt.kind {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) => self.declare(name),
                 StmtKind::Destructure { pattern, .. } => self.pattern_names(pattern),
                 StmtKind::Function(function) => self.declare(&function.name),
-                StmtKind::If(_, then, Some(els)) if js::leaves(then) => self.hoist(els),
                 _ => {}
             }
         }
@@ -199,14 +197,7 @@ impl Walk {
 
     fn stmts(&mut self, stmts: &[Stmt]) {
         for stmt in stmts {
-            match &stmt.kind {
-                StmtKind::If(test, then, Some(els)) if js::leaves(then) => {
-                    self.expr(test);
-                    self.block(then);
-                    self.stmts(els);
-                }
-                _ => self.stmt(stmt),
-            }
+            self.stmt(stmt);
         }
     }
 

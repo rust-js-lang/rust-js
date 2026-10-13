@@ -225,17 +225,6 @@ pub fn each_expr_mut(stmts: &mut [Stmt], f: &mut dyn FnMut(&mut Expr)) {
     }
 }
 
-/// Does running `stmts` always leave, by a `return` or a `throw` last, or an
-/// `if` both of whose branches do? An `else` after a branch that does is
-/// printed after its `if`, in the block around it (ADR 0237).
-pub fn leaves(stmts: &[Stmt]) -> bool {
-    match stmts.last().map(|s| &s.kind) {
-        Some(StmtKind::Return(_) | StmtKind::Throw(_)) => true,
-        Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),
-        _ => false,
-    }
-}
-
 /// How many times `stmts` name the variable `name`, read or written.
 pub fn mentions_in(stmts: &[Stmt], name: &str) -> usize {
     let mut count = 0;
@@ -1647,29 +1636,6 @@ impl Expr {
                 tag && props(&jsx.props) && jsx.children.iter().all(Expr::reads_only_vars)
             }
             _ => self.is_constant(),
-        }
-    }
-
-    /// What evaluating this does, as the expressions that do it, in their
-    /// order: an array's or an object's items', where making it does
-    /// nothing itself; this, where it does something; else nothing.
-    pub fn effects(self) -> Vec<Expr> {
-        if !self.has_effects() {
-            return Vec::new();
-        }
-        match self.kind {
-            // A spread iterates, and reads getters.
-            ExprKind::Array(items) if !items.iter().any(|i| matches!(i.kind, ExprKind::Spread(_))) => {
-                items.into_iter().flat_map(Expr::effects).collect()
-            }
-            ExprKind::Object(props) if props.iter().all(|p| matches!(p, Prop::Field(..))) => props
-                .into_iter()
-                .flat_map(|p| match p {
-                    Prop::Field(_, value) => value.effects(),
-                    Prop::Getter(..) | Prop::Spread(_) => unreachable!("only fields"),
-                })
-                .collect(),
-            kind => vec![Expr { kind, ..self }],
         }
     }
 

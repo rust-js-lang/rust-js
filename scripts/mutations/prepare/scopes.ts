@@ -31,15 +31,6 @@ export const mutations: Mutation[] = [
     snapshots: true,
   },
   {
-    name: "scopes-else-not-flattened",
-    breaks: "an `else` after a `return` is read as a block of its own, where the printer writes it in the function's, beside its other `n`",
-    file: "src/prepare/scopes.rs",
-    find: "                StmtKind::If(_, then, Some(els)) if js::leaves(then) => self.hoist(els),",
-    replace: "                StmtKind::If(_, then, Some(els)) if false && js::leaves(then) => self.hoist(els),",
-    tests: ["test/snapshots.test.ts", "-t", "^report: the generated JS"],
-    snapshots: true,
-  },
-  {
     name: "scopes-other-read-captured",
     breaks: "`const m = n;` in a block whose `n$1` is named `n`, which the read then is",
     file: "src/prepare/scopes.rs",

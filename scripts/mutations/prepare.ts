@@ -269,18 +269,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","Console's loops"],
   },
   {
-    "name": "dropped-array-kept-whole",
-    "breaks": "an array made only to be dropped stays, `[loud(1)];`, not `loud(1);`",
-    "file": "src/prepare.rs",
-    "find": "            StmtKind::Expr(e) if matches!(e.kind, ExprKind::Array(_) | ExprKind::Object(_)) => e",
-    "replace": "            StmtKind::Expr(e) if false => e",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "made only to be dropped"
-    ]
-  },
-  {
     "name": "ignored-try-kept",
     "breaks": "an ignored `$try(() => f())`, `let _ = f();`, stays the helper, not `try { f(); } catch {}`",
     "file": "src/prepare.rs",
@@ -363,5 +351,31 @@ export const mutations: Mutation[] = [
       "-t",
       "children declared any node"
     ]
+  },
+  {
+    "name": "else-after-return-kept",
+    "breaks": "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
+    "file": "src/prepare.rs",
+    "find": "            && leaves(then)\n        {\n            let els = els.take()",
+    "replace": "            && false && leaves(then)\n        {\n            let els = els.take()",
+    "tests": ["test/snapshots.test.ts"],
+    "snapshots": true
+  },
+  {
+    "name": "else-dropped-of-any-branch",
+    "breaks": "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
+    "file": "src/prepare.rs",
+    "find": "            && leaves(then)\n        {\n            let els = els.take()",
+    "replace": "            && (true || leaves(then))\n        {\n            let els = els.take()",
+    "tests": ["test/lowering.test.ts", "-t", "branches from MIR read as a person writes them"]
+  },
+  {
+    name: "inner-if-leaving-unseen",
+    breaks: "a branch that leaves by an inner `if` both of whose branches return keeps its `else`",
+    file: "src/prepare.rs",
+    find: "Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),",
+    replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
+    tests: ["test/corpus.test.ts", "-t", "^std_errors_boxed.rs$"],
+    snapshots: true,
   },
 ];

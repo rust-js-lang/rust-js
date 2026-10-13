@@ -238,27 +238,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","property read of what may be None"],
   },
   {
-    name: "inner-if-leaving-unseen",
-    breaks: "a branch that leaves by an inner `if` both of whose branches return keeps its `else`",
-    file: "src/js.rs",
-    find: "Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),",
-    replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
-    tests: ["test/corpus.test.ts", "-t", "^std_errors_boxed.rs$"],
-    snapshots: true,
-  },
-  {
-    "name": "effects-keep-inert-items",
-    "breaks": "what making an array does keeps its items that do nothing, `2;`",
-    "file": "src/js.rs",
-    "find": "        if !self.has_effects() {\n            return Vec::new();\n        }\n        match self.kind {",
-    "replace": "        match self.kind {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "made only to be dropped"
-    ]
-  },
-  {
     "name": "tested-null-check-kept",
     "breaks": "a test of `x != null && x` keeps its null check, which `x`'s truth says",
     "file": "src/js.rs",

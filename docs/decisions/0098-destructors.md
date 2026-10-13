@@ -463,4 +463,6 @@ the function or closure that drops one, and every drop there calls it.
 or an object made only to be dropped, as an expression statement, is its
 items that do something, in order: `loud(1);`, not `[loud(1)];`, as a
 person writes it. A spread's or a getter's isn't taken apart: it iterates,
-or reads.
+or reads. (Amended: preparation took apart an expression statement of
+one too, which MIR's lowering never writes: a `const` nothing reads is
+tidy's, `unread_made`'s, alone.)

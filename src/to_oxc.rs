@@ -572,25 +572,10 @@ impl<'a> Cx<'a> {
         self.expr(&e.tested())
     }
 
-    /// `stmts`, each pushed to `out`. An `if` whose branch leaves has no
-    /// `else`: what was in it follows, as JS writes it, `if (c) { return a; }
-    /// return b;` (ADR 0237). Its locals are the block's, as prepare's
-    /// names see them (ADR 0357).
+    /// `stmts`, each pushed to `out`.
     fn push_stmts(&self, stmts: &[js::Stmt], out: &mut ArenaVec<'a, Statement<'a>>) {
         for s in stmts {
-            match &s.kind {
-                StmtKind::If(cond, then, Some(els)) if js::leaves(then) => {
-                    out.push(Statement::new_if_statement(
-                        span(s.span),
-                        self.test(cond),
-                        self.block(then),
-                        None,
-                        &self.b,
-                    ));
-                    self.push_stmts(els, out);
-                }
-                _ => out.push(self.stmt(s)),
-            }
+            out.push(self.stmt(s));
         }
     }
 

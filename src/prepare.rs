@@ -27,9 +27,54 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
+    each_list(module, &mut unelsed);
     reclaim::module(module);
     compound(module);
     read_together(module);
+}
+
+/// Each list of statements in `module`, its closures' too.
+fn each_list(module: &mut js::Module, each: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    for item in &mut module.items {
+        match item {
+            js::Item::Statements(stmts) => js::each_block_mut(stmts, each),
+            js::Item::Const(constant) => constant.value.each_mut(&mut |e| {
+                if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &mut e.kind {
+                    js::each_block_mut(body, each);
+                }
+            }),
+            js::Item::Function(_) | js::Item::Namespace(_) => {}
+        }
+        for function in item.functions_mut() {
+            js::each_block_mut(&mut function.body, each);
+        }
+    }
+}
+
+/// An `if` whose branch always leaves has no `else`: what was in it follows,
+/// as JS writes it, `if (c) { return a; } return b;` (ADR 0237). Before its
+/// locals are named, which then see the block they're in.
+fn unelsed(stmts: &mut Vec<Stmt>) {
+    let mut i = 0;
+    while i < stmts.len() {
+        if let StmtKind::If(_, then, els @ Some(_)) = &mut stmts[i].kind
+            && leaves(then)
+        {
+            let els = els.take().expect("matched");
+            stmts.splice(i + 1..i + 1, els);
+        }
+        i += 1;
+    }
+}
+
+/// Does running `stmts` always leave, by a `return` or a `throw` last, or an
+/// `if` both of whose branches do?
+fn leaves(stmts: &[Stmt]) -> bool {
+    match stmts.last().map(|s| &s.kind) {
+        Some(StmtKind::Return(_) | StmtKind::Throw(_)) => true,
+        Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),
+        _ => false,
+    }
 }
 
 /// Constants side by side that each read a property of one variable,
@@ -106,20 +151,7 @@ fn compound(module: &mut js::Module) {
             }
         }
     };
-    for item in &mut module.items {
-        match item {
-            js::Item::Statements(stmts) => js::each_block_mut(stmts, &mut each),
-            js::Item::Const(constant) => constant.value.each_mut(&mut |e| {
-                if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &mut e.kind {
-                    js::each_block_mut(body, &mut each);
-                }
-            }),
-            js::Item::Function(_) | js::Item::Namespace(_) => {}
-        }
-        for function in item.functions_mut() {
-            js::each_block_mut(&mut function.body, &mut each);
-        }
-    }
+    each_list(module, &mut each);
 }
 
 /// Are `a` and `b` the same variable or property path: `s`, `a.b`?
@@ -213,19 +245,6 @@ fn imported(stmts: &mut [Stmt]) {
 
 fn block(body: &mut Vec<Stmt>) {
     try_catches(body);
-    // `[loud(1)];`, an array or an object made only to be dropped, is
-    // what making it does, `loud(1);`, as a person writes it.
-    *body = std::mem::take(body)
-        .into_iter()
-        .flat_map(|stmt| match stmt.kind {
-            StmtKind::Expr(e) if matches!(e.kind, ExprKind::Array(_) | ExprKind::Object(_)) => e
-                .effects()
-                .into_iter()
-                .map(|e| StmtKind::Expr(e).at(stmt.span))
-                .collect(),
-            kind => vec![Stmt { kind, ..stmt }],
-        })
-        .collect();
     for stmt in body.iter_mut() {
         if let Some(coalesced) = coalescing(stmt) {
             stmt.kind = coalesced;

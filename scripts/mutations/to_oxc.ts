@@ -107,22 +107,6 @@ export const mutations: Mutation[] = [
     tests: ["test/bindings.test.ts", "-t", "variadic binding"],
   },
   {
-    name: "else-after-return-kept",
-    breaks: "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
-    file: "src/to_oxc.rs",
-    find: "StmtKind::If(cond, then, Some(els)) if js::leaves(then) =>",
-    replace: "StmtKind::If(cond, then, Some(els)) if false && js::leaves(then) =>",
-    tests: ["test/lowering.test.ts", "-t", "branch returns has no else"],
-  },
-  {
-    name: "else-dropped-of-any-branch",
-    breaks: "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
-    file: "src/to_oxc.rs",
-    find: "StmtKind::If(cond, then, Some(els)) if js::leaves(then) =>",
-    replace: "StmtKind::If(cond, then, Some(els)) if true || js::leaves(then) =>",
-    tests: ["test/lowering.test.ts", "-t", "branches from MIR read as a person writes them"],
-  },
-  {
     name: "reexport-unprinted",
     breaks: "a module's `pub use` writes no `export { .. } from`, and what imports it finds nothing",
     file: "src/to_oxc.rs",

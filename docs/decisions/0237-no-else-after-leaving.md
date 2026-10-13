@@ -37,10 +37,12 @@ return child;
 - **An `else if` chain is each `if` after the last**, while each leaves.
 - **A branch that doesn't leave keeps its `else`**: `if (n > 0) { total
   += n; } else { total -= n; }`.
-- **Its locals stay apart**, now in the block the `if` is in: every local
-  of a function has a name of its own (ADR 0010).
-- **It's how the JS is written, not what rust-js lowers**: the statements
-  are the same, written as oxc's.
+- **Its locals stay apart**, now in the block the `if` is in: they're
+  named once it's there, as the block's (ADR 0357).
+- **It's how the JS is written, not what rust-js lowers**: preparation
+  makes it, before its locals are named, and the printer prints what it's
+  given. (Amended: the printer wrote it so, and preparation's scopes
+  modelled what the printer would do to name the locals beside it.)
 
 ## Why
 
