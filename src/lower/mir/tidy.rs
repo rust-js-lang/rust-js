@@ -4391,17 +4391,7 @@ fn declarations(body: &mut Vec<Stmt>) {
             assign.kind = StmtKind::Let(name, Some(value));
         }
     });
-    let assigned = assigned(body);
-    js::statement_lists(body, &mut |stmts| {
-        for stmt in stmts.iter_mut() {
-            if let StmtKind::Let(name, Some(value)) = &mut stmt.kind
-                && !assigned.contains(name)
-            {
-                let value = std::mem::replace(value, js::Expr::undefined());
-                stmt.kind = StmtKind::Const(std::mem::take(name), value);
-            }
-        }
-    });
+    crate::prepare::constants(body);
 }
 
 /// The variables `body` assigns, and each a handle is on, which its

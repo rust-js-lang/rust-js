@@ -520,7 +520,7 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
 /// `let list = [];` that nothing sets again, only changes in place, is
 /// `const list = [];`, as JS writes it (ADR 0278). A variable a `&mut`'s
 /// handle sets is set.
-fn constants(body: &mut Vec<Stmt>) {
+pub(crate) fn constants(body: &mut Vec<Stmt>) {
     let mut set = HashSet::new();
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
