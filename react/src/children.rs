@@ -51,9 +51,11 @@ pub fn for_each<C: ReactNode>(children: &C, f: impl FnMut(Child<'static>)) {
 
 /// [`Children.forEach(children, f)`](https://react.dev/reference/react/Children#children-foreach)
 /// of `f` given each child's index too, `(child, index)`, as ReScript's
-/// `forEachWithIndex`: react.dev's MDX keys a wrapper by it.
+/// `forEachWithIndex`: react.dev's MDX keys a wrapper by it. An empty
+/// child, `null`, `undefined` or a boolean, is `None`: `forEach` gives it
+/// where [`to_array`] leaves it out.
 #[cfg_attr(rust_js, rust_js::link_name = "react#Children.forEach")]
 #[allow(unused_variables)]
-pub fn for_each_with_index<C: ReactNode>(children: &C, f: impl FnMut(Child<'static>, u32)) {
+pub fn for_each_with_index<C: ReactNode>(children: &C, f: impl FnMut(Option<Child<'static>>, u32)) {
     unreachable!()
 }

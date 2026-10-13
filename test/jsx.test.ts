@@ -853,7 +853,9 @@ pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element 
 });
 
 // Each child with its index, `Children.forEach(children, (child, i) => ..)`,
-// as ReScript's `forEachWithIndex`: react.dev's MDX keys its wrappers so.
+// as ReScript's `forEachWithIndex`, `None` of an empty one, `null`, which
+// `forEach` gives where `toArray` leaves it out: react.dev's MDX keys its
+// wrappers so, and skips what's empty.
 test("children given with their index by Children.forEach", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::children;
@@ -863,16 +865,16 @@ pub struct ListProps<C: ReactNode> {
 }
 pub fn List<C: ReactNode>(ListProps { children }: ListProps<C>) -> JSX::Element {
     let mut keys: Vec<String> = Vec::new();
-    children::for_each_with_index(&children, |_child, i| keys.push(format!("k{i}")));
+    children::for_each_with_index(&children, |child, i| keys.push(format!("{}{i}", if child.is_some() { "k" } else { "n" })));
     jsx! { <p>{keys.join(",")}</p> }
 }
 `);
   run(args);
   const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
-  expect(jsx).toContain("Children.forEach(children, (_child, i) => {");
+  expect(jsx).toContain("Children.forEach(children, (child, i) => {");
   const { List } = await import(join(dir, "lib.jsx"));
   const { createElement } = await import("react");
-  expect(renderToStaticMarkup(createElement(List, null, "a", null, "b"))).toBe("<p>k0,k1,k2</p>");
+  expect(renderToStaticMarkup(createElement(List, null, "a", null, "b"))).toBe("<p>k0,n1,k2</p>");
 });
 
 // A default import is named as the module's `use` renames it, `use
