@@ -35,6 +35,8 @@ helpers! {
     Debug,
     Eq,
     AssertFailed,
+    ShouldPanic,
+    TestResult,
     Unwrap,
     Some,
     SomeValue,
@@ -466,6 +468,7 @@ impl Helper {
             Helper::MaxBy => &[Helper::Some],
             Helper::MinBy => &[Helper::Some],
             Helper::Debug => &[Helper::DebugStr],
+            Helper::TestResult => &[Helper::Debug],
             Helper::UnwrapOk => &[Helper::Debug],
             Helper::UnwrapErr => &[Helper::Debug],
             Helper::SomeValue => &[Helper::Some],
@@ -952,6 +955,9 @@ impl Helper {
             Helper::OrInsertWith => include_str!("runtime/or_insert_with.js"),
             Helper::Unwrap => include_str!("runtime/unwrap.js"),
             Helper::AssertFailed => include_str!("runtime/assert_failed.js"),
+            // The `#[test]` runner's (ADR 0026).
+            Helper::ShouldPanic => include_str!("runtime/should_panic.js"),
+            Helper::TestResult => include_str!("runtime/test_result.js"),
             Helper::Rem => include_str!("runtime/rem.js"),
         }
     }
@@ -1001,11 +1007,11 @@ mod tests {
         assert!(missing.is_empty(), "{missing:#?}");
     }
 
-    // The names the `#[test]` runner imports of the runtime, by its template
-    // (`output.rs`), are ones the runtime has.
+    // The names the `#[test]` runner imports of the runtime (`output.rs`)
+    // are ones the runtime has.
     #[test]
     fn test_runner_imports_are_the_runtimes() {
-        assert!(exports("$debug"));
+        assert!(exports("$shouldPanic") && exports("$testResult"));
     }
 
     // Each helper said to be pure is one the runtime has.

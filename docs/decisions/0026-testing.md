@@ -50,11 +50,17 @@ compiles the test functions like any others, exports them, and writes
 
 ```js
 import * as tests from "./tests.js";
+import { $shouldPanic } from "@rust-js/runtime";
 
 test("tests::adds", tests.adds);
-test("tests::divides_by_zero", () => shouldPanic(tests.divides_by_zero, "divide by zero"));
+test("tests::divides_by_zero", () => $shouldPanic(tests.divides_by_zero, "divide by zero"));
 test.skip("tests::slow", tests.slow);
 ```
+
+What a test's outcome is, `$shouldPanic`'s and `$testResult`'s, is the
+runtime's, as a panic's message is; the runner only calls them. (Amended:
+the runner wrote its own `shouldPanic` and `testResult`, JS the artifact
+planner held as text.)
 
 `test` is the runner's global. **`bun test` runs it**, with **happy-dom** as
 the page, installed as globals by a preload
@@ -118,7 +124,7 @@ file, so each test empties `document.body` and adds the elements it needs.
   (ADR 0060), and formatting options and `Display` are ADRs 0054, 0058,
   0137 and 0143's. (Amended: each was missing here.)
 - **A test returning a `Result`** passes on `Ok` and fails on `Err`, as
-  libtest's does: `test("tests::t", () => testResult(tests.t()))`, which
+  libtest's does: `test("tests::t", () => $testResult(tests.t()))`, which
   throws `Error: ..` with the error's `$debug`. `$debug` knows no types: a
   string's or a number's shows as Rust shows it, a struct's without its
   name. (Amended: an `Err` passed.)

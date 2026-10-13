@@ -27,12 +27,12 @@ export const mutations: Mutation[] = [
     tests: ["test/publication.test.ts", "-t", "declaration"],
   },
   {
-    name: "should-panic-takes-any-throw",
-    breaks: "a `#[should_panic]` test passes when the JS throws a `TypeError`, not only when it panics",
+    name: "test-result-uncalled",
+    breaks: "a `#[test]` returning an `Err` passes, its result never looked at",
     file: "src/output.rs",
-    find: "    if (!(e instanceof Error && e.constructor === Error)) {\n",
-    replace: "    if (false) {\n",
-    tests: ["test/browser.test.ts", "-t", "fails the way Rust's would"],
+    find: '                None if test.returns_result => format!("() => $testResult({f}())"),\n',
+    replace: "",
+    tests: ["test/browser.test.ts", "-t", "fails the way"],
   },
   {
     name: "library-metadata-unplanned",
@@ -41,14 +41,6 @@ export const mutations: Mutation[] = [
     find: "                planned.push(path.clone());\n",
     replace: "                drop(path.clone());\n",
     tests: ["test/crates.test.ts", "-t", "a source of the crate"],
-  },
-  {
-    name: "test-result-ignored",
-    breaks: "a `#[test]` returning an `Err` passes",
-    file: "src/output.rs",
-    find: '                None if test.returns_result => format!("() => testResult({f}())"),\n',
-    replace: "",
-    tests: ["test/browser.test.ts", "-t", "fails the way"],
   },
   {
     name: "runtime-import-missing",
