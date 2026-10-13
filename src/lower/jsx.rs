@@ -23,7 +23,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 for prop in &mut jsx.props {
                     match prop {
-                        Prop::Field(name, value) | Prop::Getter(name, value) => {
+                        Prop::Field(name, value) | Prop::Getter(name, value) | Prop::Setter(name, value) => {
                             self.capture_jsx_input(&js_ident(name), value, out)
                         }
                         Prop::Spread(value) => {
@@ -86,7 +86,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let js::ExprKind::Object(props) = &mut value.kind else {
             return false;
         };
-        if props.iter().any(|p| matches!(p, Prop::Getter(..))) {
+        if props.iter().any(|p| matches!(p, Prop::Getter(..) | Prop::Setter(..))) {
             return false;
         }
         for prop in props {
@@ -102,7 +102,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         *value = self.spill(&camel_case(&js_ident(name)), old, out);
                     }
                 }
-                Prop::Getter(..) => unreachable!("none"),
+                Prop::Getter(..) | Prop::Setter(..) => unreachable!("none"),
                 Prop::Spread(value) => {
                     // A spread reads its properties now.
                     let old = std::mem::replace(value, Expr::undefined());
@@ -291,7 +291,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut prop = declared[f.name.as_usize()].take()?;
                     // Where it's written, which MIR's value doesn't say: a
                     // `key` written before it goes before it.
-                    if let Prop::Field(_, value) | Prop::Getter(_, value) = &mut prop
+                    if let Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) = &mut prop
                         && value.span.is_none()
                     {
                         value.span = self.js_span(self.thir[f.expr].span);
@@ -313,7 +313,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             .position(|p| matches!(p, Prop::Field(name, _) if name == "children"))
             && let Prop::Field(_, children) = &fields[i]
             && fields[i + 1..].iter().any(|p| {
-                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = p;
+                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value)) = p;
                 value.has_effects() && !self.reads_unchanging(children, out)
             })
         {
@@ -368,7 +368,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     // there, `AnchorHTMLAttributes { .., ..props }`, is.
                     let first = (flattened.iter())
                         .filter_map(|prop| match prop {
-                            Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
+                            Prop::Field(key, _) | Prop::Getter(key, _) | Prop::Setter(key, _) => {
+                                written.get(key).copied()
+                            }
                             Prop::Spread(_) => None,
                         })
                         .min();
@@ -377,7 +379,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         // it's updated with.
                         let at = match &prop {
                             Prop::Spread(_) => written.get(&name).copied().or(first),
-                            Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
+                            Prop::Field(key, _) | Prop::Getter(key, _) | Prop::Setter(key, _) => {
+                                written.get(key).copied()
+                            }
                         };
                         attrs.push((at, prop));
                     }
@@ -411,7 +415,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 other => {
                     let at = match &other {
-                        Prop::Field(key, _) | Prop::Getter(key, _) => written.get(key).copied(),
+                        Prop::Field(key, _) | Prop::Getter(key, _) | Prop::Setter(key, _) => written.get(key).copied(),
                         // A base's, `{..*props}`, before what it's updated
                         // with, which JSX's order says wins (ADR 0250).
                         Prop::Spread(_) => Some(BytePos(0)),
@@ -430,7 +434,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let sorted = order(&attrs);
         if sorted.iter().enumerate().any(|(i, &j)| i != j) {
             let effects = |(_, prop): &(Option<BytePos>, Prop)| {
-                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = prop;
+                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value)) =
+                    prop;
                 value.has_effects()
             };
             if attrs.iter().filter(|attr| effects(attr)).count() > 1 {
@@ -466,7 +471,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// writes what a `const` holds where it's read.
     fn read_first(&mut self, prop: &mut Prop, out: &mut Vec<Stmt>) {
         let (name, value) = match prop {
-            Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
+            Prop::Field(name, value) | Prop::Getter(name, value) | Prop::Setter(name, value) => (name.as_str(), value),
             Prop::Spread(value) => ("props", value),
         };
         if !value.is_constant() {
@@ -763,7 +768,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             // One read already, a `const` of its own, is read as it is (ADR 0194).
             for prop in &mut jsx.props {
                 let (base, value) = match prop {
-                    Prop::Field(name, value) | Prop::Getter(name, value) => (name.as_str(), value),
+                    Prop::Field(name, value) | Prop::Getter(name, value) | Prop::Setter(name, value) => {
+                        (name.as_str(), value)
+                    }
                     Prop::Spread(value) => ("props", value),
                 };
                 if !value.is_constant() {
@@ -816,7 +823,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let written = self.js_span(value_span).lo;
                 jsx.props.iter().position(|prop| match prop {
                     Prop::Spread(v) if v.span.is_none() => true,
-                    Prop::Field(_, v) | Prop::Getter(_, v) | Prop::Spread(v) => {
+                    Prop::Field(_, v) | Prop::Getter(_, v) | Prop::Setter(_, v) | Prop::Spread(v) => {
                         !v.span.is_none() && v.span.lo > written
                     }
                 })

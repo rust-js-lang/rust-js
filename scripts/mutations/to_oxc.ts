@@ -83,14 +83,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "a string written across lines"],
   },
   {
-    name: "pair-without-impl",
-    breaks: "a number's `&mut dyn` pair is printed without its `impl`, and `d.impl.bump` throws",
-    file: "src/to_oxc.rs",
-    find: "dictionary.into_iter().chain([get, set])",
-    replace: "dictionary.into_iter().take(0).chain([get, set])",
-    tests: ["test/corpus.test.ts", "-t", "dyn_mut"],
-  },
-  {
     name: "optional-member-plain",
     breaks: "`options?.alternate` is printed `options.alternate`, which throws for a writer given no options",
     file: "src/to_oxc.rs",

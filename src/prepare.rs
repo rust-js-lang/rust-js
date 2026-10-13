@@ -770,6 +770,39 @@ fn entries_written_out(e: &Expr) -> Option<Expr> {
 }
 
 fn expr(e: &mut Expr) {
+    // A `&mut`'s handle on a place (ADR 0099), and a `dyn`'s of one with its
+    // dictionary, as JS writes it: `{ get value() { return n; }, set
+    // value(value) { n = value; } }`, its parameter a name the place
+    // doesn't read.
+    if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
+        let mut param = "value".to_string();
+        if place.mentions_var(&param) {
+            param = "newValue".to_string();
+        }
+        while place.mentions_var(&param) {
+            param.push('_');
+        }
+        let get = Expr::arrow(
+            Vec::new(),
+            vec![StmtKind::Return(Some((**place).clone())).at(place.span)],
+        );
+        let set = Expr::arrow(
+            vec![param.as_str().into()],
+            vec![StmtKind::Assign((**place).clone(), Expr::var(&param)).at(place.span)],
+        );
+        let dictionary = match &e.kind {
+            ExprKind::Pair(_, dictionary) => Some(Prop::Field("impl".into(), (**dictionary).clone())),
+            _ => None,
+        };
+        let props = dictionary
+            .into_iter()
+            .chain([Prop::Getter("value".into(), get), Prop::Setter("value".into(), set)])
+            .collect();
+        *e = Expr {
+            span: e.span,
+            ..Expr::object(props)
+        };
+    }
     // `(x) => !!x` is `Boolean`, as react.dev's `.filter(Boolean)` is:
     // `Boolean(x)` is `!!x`, and it reads no other argument.
     if let ExprKind::Arrow(params, body) = &e.kind
@@ -849,7 +882,7 @@ fn expr(e: &mut Expr) {
             // An attribute that's `undefined`, a `None` say, is none, as JSX
             // leaves it out.
             jsx.props.retain(|p| {
-                !matches!(p, Prop::Field(_, value) | Prop::Getter(_, value) if matches!(value.kind, ExprKind::Undefined))
+                !matches!(p, Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) if matches!(value.kind, ExprKind::Undefined))
             });
             for prop in &mut jsx.props {
                 match prop {
@@ -863,7 +896,7 @@ fn expr(e: &mut Expr) {
                         }
                         expr(value);
                     }
-                    Prop::Getter(_, value) | Prop::Spread(value) => expr(value),
+                    Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => expr(value),
                 }
             }
             for child in &mut jsx.children {
@@ -928,7 +961,8 @@ fn expr(e: &mut Expr) {
                 props.retain(|p| !matches!(p, Prop::Field(_, value) if matches!(value.kind, ExprKind::Undefined)));
             }
             for prop in props {
-                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value)) = prop;
+                let (Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value)) =
+                    prop;
                 expr(value);
             }
         }

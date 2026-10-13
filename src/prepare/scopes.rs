@@ -281,7 +281,9 @@ impl Walk {
     fn props(&mut self, props: &[Prop]) {
         for prop in props {
             match prop {
-                Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) => self.expr(value),
+                Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) | Prop::Setter(_, value) => {
+                    self.expr(value)
+                }
             }
         }
     }

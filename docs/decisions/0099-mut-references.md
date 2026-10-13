@@ -304,3 +304,11 @@ pointers, and a `&mut` in a `static`.
   4 pass; 4 are of std's `Write` and `Iterator`.
 - Each test that gets further may stop at something else, as rustc's tests
   do; the known failures say where.
+
+## Since
+
+- **Preparation writes a handle**, `{ get value() { .. }, set value(v) { ..
+  } }`, its setter a `Prop::Setter`, its parameter `value`, or `newValue`
+  where the place reads `value` (`handle_named_value`); the printer prints
+  the object. (Amended: the printer wrote it, choosing that name.)
+

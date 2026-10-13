@@ -782,6 +782,9 @@ pub enum Prop {
     /// `get name() { .. }`, of an arrow that takes nothing: its body runs
     /// on each read, as a Rust constant's value is a new one at each use.
     Getter(String, Expr),
+    /// `set name(v) { .. }`, of an arrow that takes one: a handle's on a
+    /// place, which preparation writes of `Handle` (ADR 0099).
+    Setter(String, Expr),
 }
 
 #[derive(Clone, Copy)]
@@ -1249,7 +1252,8 @@ impl Expr {
         f(self);
         let props = |props: &mut [Prop], f: &mut dyn FnMut(&mut Expr)| {
             for prop in props {
-                let (Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value)) = prop;
+                let (Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) | Prop::Setter(_, value)) =
+                    prop;
                 value.each_mut(f);
             }
         };
@@ -1312,7 +1316,9 @@ impl Expr {
         let props = |props: &'a [Prop], read: &mut dyn FnMut(&'a str)| {
             for prop in props {
                 match prop {
-                    Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) => value.visit_vars(read),
+                    Prop::Field(_, value) | Prop::Spread(value) | Prop::Getter(_, value) | Prop::Setter(_, value) => {
+                        value.visit_vars(read)
+                    }
                 }
             }
         };
@@ -1375,7 +1381,9 @@ impl Expr {
             ExprKind::Jsx(_) => true,
             ExprKind::Array(items) => items.iter().any(Expr::contains_jsx),
             ExprKind::Object(props) => props.iter().any(|p| match p {
-                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value) => value.contains_jsx(),
+                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => {
+                    value.contains_jsx()
+                }
             }),
             ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => body.iter().any(|s| match &s.kind {
                 StmtKind::Return(Some(value)) | StmtKind::Expr(value) => value.contains_jsx(),
@@ -1444,6 +1452,7 @@ impl Expr {
                 .map(|p| match p {
                     Prop::Field(name, value) => Some(Prop::Field(name.clone(), value.replace(with, callbacks)?)),
                     Prop::Getter(name, value) => Some(Prop::Getter(name.clone(), value.replace(with, callbacks)?)),
+                    Prop::Setter(name, value) => Some(Prop::Setter(name.clone(), value.replace(with, callbacks)?)),
                     Prop::Spread(value) => Some(Prop::Spread(value.replace(with, callbacks)?)),
                 })
                 .collect::<Option<Vec<_>>>()
@@ -1651,7 +1660,9 @@ impl Expr {
     pub fn reads_only_vars(&self) -> bool {
         let props = |props: &[Prop]| {
             props.iter().all(|p| match p {
-                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value) => value.reads_only_vars(),
+                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => {
+                    value.reads_only_vars()
+                }
             })
         };
         match &self.kind {
@@ -1708,7 +1719,9 @@ impl Expr {
             }
             ExprKind::Array(items) | ExprKind::Template(_, items, _) => items.iter().any(Expr::has_effects),
             ExprKind::Object(props) => props.iter().any(|p| match p {
-                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value) => value.has_effects(),
+                Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Setter(_, value) | Prop::Spread(value) => {
+                    value.has_effects()
+                }
             }),
             ExprKind::Unary(_, a) => a.has_effects(),
             ExprKind::Binary(_, a, b) => a.has_effects() || b.has_effects(),
@@ -1739,7 +1752,10 @@ impl Expr {
             ExprKind::Jsx(jsx) => {
                 matches!(&jsx.tag, JsxTag::Component(c) if c.has_effects())
                     || jsx.props.iter().any(|p| match p {
-                        Prop::Field(_, value) | Prop::Getter(_, value) | Prop::Spread(value) => value.has_effects(),
+                        Prop::Field(_, value)
+                        | Prop::Getter(_, value)
+                        | Prop::Setter(_, value)
+                        | Prop::Spread(value) => value.has_effects(),
                     })
                     || jsx.children.iter().any(Expr::has_effects)
             }

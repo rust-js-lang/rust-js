@@ -3194,7 +3194,7 @@ fn closures_set(body: &[Stmt]) -> HashSet<String> {
 fn inert_element(e: &Expr, changing: &HashSet<String>) -> bool {
     let props = |props: &[js::Prop]| {
         props.iter().all(|p| {
-            let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Spread(v)) = p;
+            let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;
             !matches!(p, js::Prop::Spread(_)) && inert_element(v, changing)
         })
     };
@@ -4258,7 +4258,7 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
         ExprKind::Array(items) | ExprKind::Template(_, items, _) => in_order(&mut items.iter()),
         ExprKind::Call(f, args) | ExprKind::New(f, args) => in_order(&mut std::iter::once(&**f).chain(args)),
         ExprKind::Object(props) => in_order(&mut props.iter().map(|p| {
-            let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Spread(v)) = p;
+            let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;
             v
         })),
         ExprKind::Jsx(jsx) => {
@@ -4267,7 +4267,7 @@ fn leads(e: &Expr, name: &str, guard: Option<&Expr>, passes: &dyn Fn(&Expr) -> b
                 _ => None,
             };
             let props = jsx.props.iter().map(|p| {
-                let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Spread(v)) = p;
+                let (js::Prop::Field(_, v) | js::Prop::Getter(_, v) | js::Prop::Setter(_, v) | js::Prop::Spread(v)) = p;
                 v
             });
             // JS's JSX runtime makes `key` after the children, and

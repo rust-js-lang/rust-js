@@ -410,4 +410,21 @@ export const mutations: Mutation[] = [
     "replace": "            jsx.props.retain(|p| true || {\n",
     "tests": ["test/jsx.test.ts"]
   },
+  {
+    "name": "pair-without-impl",
+    "breaks": "a number's `&mut dyn` pair is written without its `impl`, and `d.impl.bump` throws",
+    "file": "src/prepare.rs",
+    "find": "        let props = dictionary\n            .into_iter()\n",
+    "replace": "        let props = dictionary\n            .into_iter()\n            .take(0)\n",
+    "tests": ["test/corpus.test.ts", "-t", "dyn_mut"]
+  },
+  {
+    "name": "handle-setter-reads-its-param",
+    "breaks": "a handle on `value[0]` names its setter's parameter `value_`, not `newValue`, as a person names it",
+    "file": "src/prepare.rs",
+    "find": "        if place.mentions_var(&param) {\n            param = \"newValue\".to_string();\n        }\n",
+    "replace": "",
+    "tests": ["test/corpus.test.ts", "-t", "handle_named_value"],
+    "snapshots": true
+  },
 ];

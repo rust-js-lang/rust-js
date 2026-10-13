@@ -891,8 +891,7 @@ impl<'a> Cx<'a> {
             return Expression::new_chain_expression(sp, self.chain_element(e), b);
         }
         match &e.kind {
-            ExprKind::Handle(place) => self.handle(sp, place, None),
-            ExprKind::Pair(place, dictionary) => self.handle(sp, place, Some(dictionary)),
+            ExprKind::Handle(_) | ExprKind::Pair(..) => unreachable!("written by preparation"),
             ExprKind::Num(n) => self.number(sp, *n),
             // `5n`, and `-5n` as `-` of it, as a number is written.
             ExprKind::BigInt(n) => {
@@ -1158,7 +1157,7 @@ impl<'a> Cx<'a> {
         let b = &self.b;
         let (name, value) = match prop {
             Prop::Spread(value) => return Some(JSXAttributeItem::new_spread_attribute(SPAN, self.expr(value), b)),
-            Prop::Field(name, value) | Prop::Getter(name, value) => (name, value),
+            Prop::Field(name, value) | Prop::Getter(name, value) | Prop::Setter(name, value) => (name, value),
         };
         let sp = span(value.span);
         let value = match &value.kind {
@@ -1200,38 +1199,6 @@ impl<'a> Cx<'a> {
         JSXChild::new_text(SPAN, self.name(&text), None, &self.b)
     }
 
-    /// A handle (ADR 0099): `{ get value() { return x; }, set value(value) { x = value; } }`,
-    /// the setter's parameter named as the place doesn't name anything.
-    /// A handle on `place`, and a `dyn`'s pair with `dictionary` its `impl`.
-    fn handle(&self, sp: Span, place: &js::Expr, dictionary: Option<&js::Expr>) -> Expression<'a> {
-        let b = &self.b;
-        let mut param = "value".to_string();
-        if place.mentions_var(&param) {
-            param = "newValue".to_string();
-        }
-        while place.mentions_var(&param) {
-            param.push('_');
-        }
-        let get = self.accessor(
-            PropertyKind::Get,
-            "value",
-            &[],
-            &[js::StmtKind::Return(Some(place.clone())).at(place.span)],
-        );
-        let set = self.accessor(
-            PropertyKind::Set,
-            "value",
-            &[js::Pattern::Name(param.clone())],
-            &[js::StmtKind::Assign(place.clone(), js::Expr::var(&param)).at(place.span)],
-        );
-        let dictionary = dictionary.map(|d| self.property(&Prop::Field("impl".into(), d.clone())));
-        Expression::new_object_expression(
-            sp,
-            ArenaVec::from_iter_in(dictionary.into_iter().chain([get, set]), b),
-            b,
-        )
-    }
-
     /// `get name() { .. }` or `set name(value) { .. }`.
     fn accessor(
         &self,
@@ -1264,6 +1231,10 @@ impl<'a> Cx<'a> {
     fn property(&self, prop: &Prop) -> ObjectPropertyKind<'a> {
         let b = &self.b;
         match prop {
+            Prop::Setter(name, value) => match &value.kind {
+                ExprKind::Arrow(params, body) => self.accessor(PropertyKind::Set, name, params, body),
+                _ => unreachable!("a setter is an arrow of one parameter"),
+            },
             Prop::Getter(name, value) => match &value.kind {
                 ExprKind::Arrow(params, body) => self.accessor(PropertyKind::Get, name, params, body),
                 _ => self.accessor(
