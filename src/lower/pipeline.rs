@@ -215,6 +215,15 @@ pub fn lower_crate<'tcx>(
         named_expressions: &named_expressions,
         local_functions: &local_functions,
     };
+    // Each dictionary's cache, named apart in its module.
+    let mut cache_names: HashMap<LocalModId, HashSet<String>> = HashMap::new();
+    let cache_of: HashMap<DefId, String> = (dictionaries.iter())
+        .map(|&id| {
+            let info = &fns[&id];
+            let cache = crate::names::dictionary_cache(cache_names.entry(info.module).or_default(), &info.name);
+            (id, cache)
+        })
+        .collect();
     let mut work: Vec<(DefId, Option<&Body<'tcx>>)> = bodies
         .iter()
         // A trait's default is copied into each impl (ADR 0049); a library's
@@ -298,15 +307,14 @@ pub fn lower_crate<'tcx>(
                 jsx: cx.jsx,
                 dependencies: cx.dependencies.take(),
             }),
-            None => {
-                let cache = format!("${}", fns[&def_id].name);
-                cx.lower_dictionary(def_id, &cache).map(|function| super::LoweredFn {
+            None => cx
+                .lower_dictionary(def_id, &cache_of[&def_id])
+                .map(|function| super::LoweredFn {
                     function,
                     runtime: std::mem::take(&mut cx.runtime),
                     jsx: cx.jsx,
                     dependencies: cx.dependencies.take(),
-                })
-            }
+                }),
         };
         match result {
             Ok(lowered) => {
@@ -365,10 +373,7 @@ pub fn lower_crate<'tcx>(
         pass.references.extend(lowered.dependencies.references.drain());
         pass.package_uses.extend(lowered.dependencies.package_uses.drain());
         if dictionaries.contains(&def_id) {
-            pass.caches
-                .entry(module)
-                .or_default()
-                .push(format!("${}", fns[&def_id].name));
+            pass.caches.entry(module).or_default().push(cache_of[&def_id].clone());
         }
         match lowered {
             lowered

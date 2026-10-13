@@ -302,6 +302,17 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
     })
 }
 
+/// Whether `@rust-js/runtime` exports `name`: a name any module may import.
+pub(crate) fn exports(name: &str) -> bool {
+    static EXPORTS: std::sync::LazyLock<std::collections::HashSet<&'static str>> = std::sync::LazyLock::new(|| {
+        Helper::ALL
+            .iter()
+            .flat_map(|helper| declared(helper.source()))
+            .collect()
+    });
+    EXPORTS.contains(name)
+}
+
 /// `@rust-js/runtime`'s module: every helper, each `$` name it declares
 /// exported, in `Helper`'s order. Two helpers declaring one name is a bug.
 pub fn package_module() -> String {

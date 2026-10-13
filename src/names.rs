@@ -22,6 +22,20 @@ pub(crate) fn fresh_in(taken: &mut HashSet<String>, base: &str) -> String {
         .unwrap()
 }
 
+/// The cache of a trait's dictionary, `$circleShape` of `circleShape()`,
+/// apart from its module's other caches, `taken`: `$`, which no Rust name
+/// has, as the runtime's helpers are named. One a helper has, `$durationAdd`
+/// of a `Duration` of the crate's own, is given apart, `$durationAdd$1`: its
+/// module may import that helper too.
+pub(crate) fn dictionary_cache(taken: &mut HashSet<String>, dictionary: &str) -> String {
+    loop {
+        let cache = fresh_in(taken, &format!("${dictionary}"));
+        if !crate::runtime::exports(&cache) {
+            return cache;
+        }
+    }
+}
+
 /// Rust names that mean something else in JS get a `$` suffix.
 pub(crate) fn js_ident(name: &str) -> String {
     const RESERVED: &[&str] = &[
@@ -90,5 +104,21 @@ pub(crate) fn js_ident(name: &str) -> String {
         format!("{name}$")
     } else {
         name.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // A cache is apart from the runtime's helpers and from its module's
+    // other caches, one named apart already, `durationAdd$1`'s, too.
+    #[test]
+    fn dictionary_caches_are_apart() {
+        let mut taken = HashSet::new();
+        assert_eq!(dictionary_cache(&mut taken, "circleShape"), "$circleShape");
+        assert_eq!(dictionary_cache(&mut taken, "durationAdd"), "$durationAdd$1");
+        assert_eq!(dictionary_cache(&mut taken, "durationAdd$1"), "$durationAdd$2");
+        assert_eq!(dictionary_cache(&mut taken, "circleShape"), "$circleShape$1");
     }
 }

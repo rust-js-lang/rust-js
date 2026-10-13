@@ -10,4 +10,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a name given apart twice is reclaimed"],
   },
+  {
+    name: "dictionary-cache-is-a-helpers-name",
+    breaks: "a `Duration` of the crate's own adding is cached in `$durationAdd`, which its module imports too",
+    file: "src/names.rs",
+    find: "        if !crate::runtime::exports(&cache) {\n",
+    replace: "        if true {\n",
+    tests: ["test/corpus.test.ts", "-t", "dictionary_helper_names"],
+  },
 ];

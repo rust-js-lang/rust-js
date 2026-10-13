@@ -6,7 +6,8 @@ whose `PartialEq` a bound gives is that dictionary's, as num-traits'
 `is_one` asks; a number's `<`, `-` and the like in a copied default, `self <
 Self::zero()`, are JS's; what a copied default finds of a type is its own
 bounds', not a sibling's; a generic function's own `Holder<T>` is any
-`Holder<..>` changed in place.) Extends [0047](0047-methods.md),
+`Holder<..>` changed in place; a dictionary's cache is named apart from
+the runtime's helpers.) Extends [0047](0047-methods.md),
 [0023](0023-strings-references-shared-state.md), and
 [0039](0039-generic-bindings.md). Replaces 0047's rejection of trait methods
 for the supported subset below. Amended by
@@ -85,9 +86,17 @@ dictionary created by an early call through a cycle. This only solves
 initialization of trait dictionaries; it does not change the initialization
 semantics of existing inherent-method objects or arbitrary module values.
 
-Generated helper globals are reserved against user bindings. A trait's
-method keys and supertrait keys must be distinct after name conversion;
-`__proto__` is rejected as a dictionary key.
+Generated helper globals are reserved against user bindings. A cache is
+named apart from the runtime's helpers too, whose names are made the same
+way: a `Duration` of the crate's own that implements `Add` is cached in
+`$durationAdd$1`, not `$durationAdd`, which its module imports when it
+adds std's `Duration`s; written as the helper, the module declared one name
+twice and didn't load (`test/corpus/dictionary_helper_names.rs`, found by
+the architecture audit). A cache is its module's own, which nothing outside
+it reads: its name is the output's layout, case N. (Amended.)
+
+A trait's method keys and supertrait keys must be distinct after name
+conversion; `__proto__` is rejected as a dictionary key.
 
 ### Concrete and generic calls
 
