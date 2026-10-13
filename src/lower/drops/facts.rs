@@ -23,32 +23,36 @@ use rustc_middle::middle::region;
 use super::Path;
 use super::types::{DropQuery, Drops, describe};
 
-/// What a body does with its values that have destructors.
+/// What a body does with its values that have destructors: what's
+/// refused of it, and its momentary borrows, which destructors ask; the rest
+/// is the walk's own, which finds them.
 #[derive(Default)]
 pub(in crate::lower) struct Facts {
     /// The variables that own one, bound by value.
-    pub(super) owners: HashMap<LocalVarId, Span>,
+    owners: HashMap<LocalVarId, Span>,
     /// Those moved somewhere, which get a flag.
-    pub(super) moved: HashSet<LocalVarId>,
+    moved: HashSet<LocalVarId>,
     /// Each use that moves one.
-    pub(super) moves: HashSet<ExprId>,
+    moves: HashSet<ExprId>,
     /// Each value with a destructor that lives in a temporary: one used in
     /// place, borrowed or taken apart, and one made before an operand after
     /// it that can leave early, which a call then moves.
-    pub(super) temps: HashMap<ExprId, TempKind>,
+    temps: HashMap<ExprId, TempKind>,
     /// What a pattern moves out of each temporary it takes apart, and
     /// whether that's only on some paths, an arm's or an `if let`'s, which
     /// flags its parts as a variable's are.
-    pub(super) temp_parts: HashMap<ExprId, (Vec<Path>, bool)>,
+    temp_parts: HashMap<ExprId, (Vec<Path>, bool)>,
     /// The parts of each owner that are moved somewhere, which get flags of
     /// their own, and each field that moves one, with its owner and part.
-    pub(super) parts: HashMap<LocalVarId, Vec<Path>>,
-    pub(super) part_moves: HashMap<ExprId, (LocalVarId, Path)>,
+    parts: HashMap<LocalVarId, Vec<Path>>,
+    part_moves: HashMap<ExprId, (LocalVarId, Path)>,
     /// Each owner a struct update, `..base`, moves parts of, with its owner
     /// and those parts: its fields that have a destructor.
-    pub(super) updates: HashMap<ExprId, (LocalVarId, Vec<Path>)>,
-    /// What this body does that isn't supported yet.
-    pub(super) problems: Vec<(Span, String)>,
+    updates: HashMap<ExprId, (LocalVarId, Vec<Path>)>,
+    /// What this body does that isn't supported yet, each where and what,
+    /// and whether it's of a closure that holds a value with a destructor,
+    /// which a body lowered from its MIR is refused too.
+    pub(super) problems: Vec<(Span, String, bool)>,
     /// Each borrow, by its call's `fun`, whose guard is held only while
     /// nothing can ask whether its cell is borrowed: checked, and not
     /// counted, nor dropped (ADR 0328).
@@ -182,7 +186,12 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
     }
 
     fn problem(&mut self, span: Span, what: &str) {
-        self.facts.problems.push((span, what.to_string()));
+        self.facts.problems.push((span, what.to_string(), false));
+    }
+
+    /// A closure that holds a value with a destructor, refused where it is.
+    fn closure_problem(&mut self, span: Span, what: &str) {
+        self.facts.problems.push((span, what.to_string(), true));
     }
 
     /// A closure that holds a value with a destructor drops it through the
@@ -202,12 +211,12 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                         _ => false,
                     };
                     if !placed {
-                        self.problem(expr.span, "a closure that holds a value with a destructor, made here");
+                        self.closure_problem(expr.span, "a closure that holds a value with a destructor, made here");
                     }
                 }
             },
             ExprKind::Call { ref args, .. } if args.iter().any(|&a| self.borrowing_closure(self.thir[a].ty)) => {
-                self.problem(
+                self.closure_problem(
                     expr.span,
                     "a closure that holds a value with a destructor, given away without being called once",
                 );
@@ -218,7 +227,7 @@ impl<'c, 'q, 'a, 'tcx> Finder<'c, 'q, 'a, 'tcx> {
                         .is_some_and(|t| matches!(t.kind(), ty::Closure(..)) && self.cx.drops(t) != Drops::Nothing)
                 }) =>
             {
-                self.problem(expr.span, "assigning a closure that holds a value with a destructor");
+                self.closure_problem(expr.span, "assigning a closure that holds a value with a destructor");
             }
             _ => {}
         }

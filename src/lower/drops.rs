@@ -718,7 +718,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let facts = Rc::new(find_facts(&self.drop_query(), self.thir, self.body_owner));
         self.drop_state.facts.insert(key, facts.clone());
         let mut failed = None;
-        for (span, what) in &facts.problems {
+        for (span, what, _) in &facts.problems {
             failed = Some(self.unsupported(*span, what));
         }
         match failed {
@@ -733,12 +733,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn check_closure_drops(&self) -> R<()> {
         let facts = find_facts(&self.drop_query(), self.thir, self.body_owner);
         let mut failed = None;
-        for (span, what) in &facts.problems {
-            if what.starts_with("a closure that holds a value with a destructor")
-                || what.starts_with("assigning a closure that holds")
-            {
-                failed = Some(self.unsupported(*span, what));
-            }
+        for (span, what, _) in facts.problems.iter().filter(|(.., closure)| *closure) {
+            failed = Some(self.unsupported(*span, what));
         }
         match failed {
             Some(guar) => Err(guar),

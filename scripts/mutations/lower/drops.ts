@@ -246,4 +246,12 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(_, args) if false => {\n",
     tests: ["test/corpus.test.ts", "-t", "loop_drops"],
   },
+  {
+    name: "closure-problems-unfiltered",
+    breaks: "a body lowered from its MIR is refused what THIR's facts refuse of more than its closures, moving part of a value with a destructor that MIR's drops handle",
+    file: "src/lower/drops.rs",
+    find: "        for (span, what, _) in facts.problems.iter().filter(|(.., closure)| *closure) {\n",
+    replace: "        for (span, what, _) in facts.problems.iter() {\n",
+    tests: ["test/corpus.test.ts", "-t", "drop|partial|moved"],
+  },
 ];
