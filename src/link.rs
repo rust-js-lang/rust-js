@@ -31,7 +31,9 @@ pub(crate) fn link(unlinked: Unlinked) -> Linked {
                     written.extend(crate::runtime::helper_of(name));
                 }
             });
-            item.module.runtime = crate::runtime::resolve(written);
+            written.sort();
+            written.dedup();
+            item.module.runtime = written;
             item.module
         })
         .collect();

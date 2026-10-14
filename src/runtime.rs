@@ -382,17 +382,7 @@ pub fn package_module() -> String {
             assert!(seen.insert(name), "two helpers declare {name}");
         }
         for line in source.trim_start().lines() {
-            let exported = [
-                "async function $",
-                "function* $",
-                "function $",
-                "class $",
-                "const $",
-                "let $",
-            ]
-            .iter()
-            .any(|keyword| line.starts_with(keyword));
-            module.push_str(if exported { "export " } else { "" });
+            module.push_str(if declared(line).next().is_some() { "export " } else { "" });
             module.push_str(line);
             module.push('\n');
         }
@@ -411,130 +401,7 @@ pub fn imported_helpers(sources: &[&'static str], read: &std::collections::BTree
     declared.into_iter().filter(|name| read.contains(name)).collect()
 }
 
-/// Resolve helper dependencies once at the linking boundary, in stable order.
-pub fn resolve(requested: impl IntoIterator<Item = Helper>) -> Vec<Helper> {
-    let mut helpers = std::collections::BTreeSet::new();
-    let mut pending: Vec<_> = requested.into_iter().collect();
-    while let Some(helper) = pending.pop() {
-        if helpers.insert(helper) {
-            pending.extend(helper.dependencies());
-        }
-    }
-    helpers.into_iter().collect()
-}
-
 impl Helper {
-    fn dependencies(self) -> &'static [Helper] {
-        match self {
-            Helper::DebugF64 => &[Helper::DisplayF64],
-            Helper::RangeNext | Helper::RangeInclusiveNext => &[Helper::CharStep],
-            Helper::RangeNextBack | Helper::RangeInclusiveNextBack => &[Helper::CharStep],
-            Helper::FmtError => &[Helper::Print],
-            Helper::DisplayF32 => &[Helper::F32Digits],
-            Helper::LowerExp => &[Helper::F32Digits],
-            Helper::Take => &[Helper::Assign],
-            Helper::ParseErrorDyn => &[Helper::DebugParseError],
-            Helper::CharBoundary => &[Helper::ByteLen],
-            Helper::AsciiCase => &[Helper::ByteLen, Helper::StrSlice],
-            Helper::StrTruncate => &[Helper::ByteLen, Helper::CharBoundary],
-            Helper::StrEdits => &[Helper::ByteLen, Helper::CharBoundary, Helper::SliceIndexFail],
-            Helper::SliceRange | Helper::Drain | Helper::Splice => &[Helper::SliceIndexFail],
-            Helper::SortUnstable => &[Helper::View, Helper::MutAt],
-            Helper::ExtractIf => &[Helper::SliceIndexFail, Helper::MutAt, Helper::MutGet],
-            Helper::View => &[Helper::SliceIndexFail, Helper::MutAt, Helper::Chunks, Helper::SliceOps],
-            Helper::SliceOps => &[
-                Helper::SliceStartsWith,
-                Helper::MutAt,
-                Helper::InsertAt,
-                Helper::SliceIndexFail,
-            ],
-            Helper::CharEscape => &[Helper::DebugStr],
-            Helper::MapOps => &[
-                Helper::SortedEntries,
-                Helper::SortedKeys,
-                Helper::MutEntries,
-                Helper::MutGet,
-            ],
-            Helper::BigDivEuclid => &[Helper::BigDiv],
-            Helper::BigRemEuclid => &[Helper::BigRem],
-            Helper::StrSearch => &[
-                Helper::Rsplit,
-                Helper::MatchIndices,
-                Helper::ByteLen,
-                Helper::CharBoundary,
-            ],
-            Helper::InsertStr => &[Helper::ByteLen, Helper::CharBoundary],
-            Helper::StrRemove => &[Helper::ByteLen, Helper::StrSlice],
-            Helper::SplitN => &[Helper::EmptyPattern],
-            Helper::SplitTerminator => &[Helper::EmptyPattern],
-            Helper::SplitAt => &[Helper::StrSlice],
-            Helper::MatchIndices => &[Helper::ByteLen],
-            Helper::JsonErrorDyn => &[Helper::JsonError],
-            Helper::SaturatingPow => &[Helper::CheckedPow],
-            Helper::Exchange => &[Helper::Take, Helper::Assign],
-            Helper::DebugF32 => &[Helper::F32Digits, Helper::DisplayF32],
-            Helper::ParseF32 => &[Helper::ParseF64],
-            Helper::CmpIn => &[Helper::Cmp],
-            Helper::CmpItems => &[Helper::Cmp],
-            Helper::MaxBy => &[Helper::Some],
-            Helper::MinBy => &[Helper::Some],
-            Helper::Debug => &[Helper::DebugStr],
-            Helper::TestResult => &[Helper::Debug],
-            Helper::UnwrapOk => &[Helper::Debug],
-            Helper::UnwrapErr => &[Helper::Debug],
-            Helper::SomeValue => &[Helper::Some],
-            Helper::OnceSet => &[Helper::Some],
-            Helper::GetOrInit => &[Helper::SomeValue],
-            Helper::GetOrInitLock => &[Helper::SomeValue],
-            Helper::Rc => &[Helper::Some],
-            Helper::KeyMap => &[Helper::Key],
-            Helper::KeySet => &[Helper::Key],
-            Helper::SomeAt => &[Helper::Some],
-            Helper::DictGet => &[Helper::Some],
-            Helper::Pop => &[Helper::Some],
-            Helper::Iterator => &[Helper::SomeValue],
-            Helper::DebugFields => &[Helper::Pretty],
-            Helper::CollectOptions => &[Helper::SomeValue],
-            Helper::Formatted => &[Helper::Plus, Helper::ZeroPad, Helper::Pad],
-            Helper::FormatFloat => &[Helper::Formatted, Helper::ToFixed],
-            Helper::Successors | Helper::FromFn => &[Helper::SomeValue],
-            Helper::RemEuclid => &[Helper::Rem],
-            Helper::DivEuclid => &[Helper::Div],
-            Helper::NextSome | Helper::NextBackSome | Helper::PeekSome => &[Helper::Some],
-            Helper::JsonError => &[Helper::DebugStr],
-            Helper::StringError => &[Helper::DebugStr],
-            Helper::StrSlice => &[Helper::ByteLen, Helper::DebugStr],
-            Helper::Find | Helper::Rfind | Helper::CharIndices | Helper::FindBy => &[Helper::ByteLen],
-            Helper::StrGet => &[Helper::ByteLen, Helper::CharBoundary],
-            Helper::StripCircumfix => &[Helper::StripPrefix, Helper::StripSuffix],
-            Helper::StrPart => &[Helper::ByteLen, Helper::StrSlice, Helper::StrGet, Helper::CharBoundary],
-            Helper::FromJson => &[
-                Helper::JsonFail,
-                Helper::DebugStr,
-                Helper::SortedEntries,
-                Helper::Cmp,
-                Helper::Some,
-                Helper::BigToF32,
-            ],
-            Helper::JsonValue => &[
-                Helper::Pretty,
-                Helper::SortedEntries,
-                Helper::Cmp,
-                Helper::ToJson,
-                Helper::JsonFail,
-                Helper::DebugStr,
-                Helper::BigToF32,
-            ],
-            Helper::ToJson => &[Helper::JsonFail, Helper::F32Digits],
-            Helper::HeapPush => &[Helper::SiftUp],
-            Helper::HeapPop => &[Helper::SiftUp],
-            Helper::HeapSorted => &[Helper::SiftDown],
-            Helper::HeapFrom => &[Helper::SiftDown],
-            Helper::HeapOps => &[Helper::SiftDown, Helper::SiftUp, Helper::HeapPop],
-            _ => &[],
-        }
-    }
-
     pub fn source(self) -> &'static str {
         match self {
             Helper::Index => include_str!("runtime/checked_index.js"),
@@ -978,44 +845,47 @@ impl Helper {
 mod tests {
     use super::*;
 
-    // Each `$` name a helper's JS reads is declared by it or by a helper
-    // it depends on: its dependencies, a table kept by hand, are what it
-    // needs (the third architecture audit).
+    // Each `$` name a helper's JS reads is one the package declares, each
+    // helper's in the one module (third architecture audit; the second
+    // review: a module imports only what it reads, so what a helper reads
+    // needs no table of its own).
     #[test]
-    fn helpers_depend_on_what_they_read() {
+    fn helpers_read_what_the_package_declares() {
+        let known: std::collections::HashSet<&str> = Helper::ALL.iter().flat_map(|h| declared(h.source())).collect();
         let mut missing = Vec::new();
         for helper in Helper::ALL {
-            let closure = resolve([*helper]);
-            let known: std::collections::HashSet<&str> = closure.iter().flat_map(|h| declared(h.source())).collect();
-            for line in helper
-                .source()
-                .lines()
-                .filter(|line| !line.trim_start().starts_with("//"))
-            {
-                let bytes = line.as_bytes();
-                for (at, _) in line.match_indices('$') {
-                    let name: String = line[at + 1..]
-                        .chars()
-                        .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
-                        .collect();
-                    // A name, not a property's key: `x.$value`, `{ $value: v }`, `"$value"`.
-                    let word_before =
-                        at > 0 && (bytes[at - 1].is_ascii_alphanumeric() || b"_.\"'".contains(&bytes[at - 1]));
-                    let keyed = line[at + 1 + name.len()..].trim_start().starts_with(':');
-                    if keyed {
-                        continue;
-                    }
-                    let name = format!("${name}");
-                    if name.len() > 1 && !word_before && !known.contains(name.as_str()) {
-                        let own = declared(helper.source()).next().unwrap_or("a helper");
-                        missing.push(format!("{own}'s helper reads {name}"));
-                    }
+            for name in reads(helper.source()) {
+                if !known.contains(name.as_str()) {
+                    let own = declared(helper.source()).next().unwrap_or("a helper");
+                    missing.push(format!("{own}'s helper reads {name}"));
                 }
             }
         }
         missing.sort();
         missing.dedup();
         assert!(missing.is_empty(), "{missing:#?}");
+    }
+
+    /// The `$` names `source` reads: not a property's key, `x.$value`,
+    /// `{ $value: v }`, `"$value"`, nor in a comment.
+    fn reads(source: &str) -> Vec<String> {
+        let mut names = Vec::new();
+        for line in source.lines().filter(|line| !line.trim_start().starts_with("//")) {
+            let bytes = line.as_bytes();
+            for (at, _) in line.match_indices('$') {
+                let name: String = line[at + 1..]
+                    .chars()
+                    .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+                    .collect();
+                let word_before =
+                    at > 0 && (bytes[at - 1].is_ascii_alphanumeric() || b"_.\"'".contains(&bytes[at - 1]));
+                let keyed = line[at + 1 + name.len()..].trim_start().starts_with(':');
+                if !name.is_empty() && !word_before && !keyed {
+                    names.push(format!("${name}"));
+                }
+            }
+        }
+        names
     }
 
     // The names the `#[test]` runner imports of the runtime (`output.rs`)
