@@ -484,7 +484,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if let Some(inner) = self.option_of(ty) {
             // Of a type parameter, a `Some` may be boxed (ADR 0051).
             let payload = if self.boxed_payload(inner) {
-                Expr::call(Expr::helper("$someValue"), vec![value.clone()])
+                self.some_value(value.clone())
             } else {
                 value.clone()
             };
@@ -492,7 +492,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.write_json(payload, json, inner, span, &mut some)?;
             let mut none = Vec::new();
             self.emit(json, "null", Vec::new(), &mut none);
-            let test = Expr::bin(Op::LooseEq, value, Expr::null());
+            let test = self.absent(value, inner);
             out.push(StmtKind::If(test, none, Some(some)).at(js::Span::NONE));
             return Ok(());
         }

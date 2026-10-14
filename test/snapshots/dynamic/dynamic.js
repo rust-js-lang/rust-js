@@ -100,7 +100,7 @@ function userSerialize_serialize(user, json) {
   }
   json.endArray();
   json.key("extra");
-  if (user.extra == null) {
+  if (!user.extra) {
     json.null();
   } else {
     $jsonValueWrite(user.extra, json);

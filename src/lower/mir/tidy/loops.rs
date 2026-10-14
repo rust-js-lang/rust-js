@@ -133,11 +133,9 @@ pub(super) fn for_of(
     // An item that may itself be `None` was boxed by `$nextSome` for the
     // test, and `$someValue` takes it out: JS's `for` binds it as it is.
     if step == "$nextSome" {
-        let unboxed = |value: &Expr| match &value.kind {
-            ExprKind::Call(f, args) if f.helper_name() == Some("$someValue") => {
-                matches!(args.as_slice(), [Expr { kind: ExprKind::Var(v), .. }] if v == item)
-            }
-            _ => false,
+        let unboxed = |value: &Expr| {
+            crate::lower::std_types::option::some_value_of(value)
+                .is_some_and(|of| matches!(&of.kind, ExprKind::Var(v) if v == item))
         };
         let first = inner.first_mut()?;
         match &mut first.kind {

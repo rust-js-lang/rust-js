@@ -506,23 +506,18 @@ pub(super) fn continues(stmts: &mut [Stmt], block: &str, looped: Option<&str>, w
 /// Whether `test` says `item`, what `$next` gave, is none: `item == null`,
 /// or `!item` of an array's.
 pub(super) fn absent(test: &Expr, item: &str) -> bool {
+    let is_item = |e: &Expr| matches!(&e.kind, ExprKind::Var(v) if v == item);
     match &test.kind {
-        ExprKind::Binary(Op::LooseEq, a, b) => {
-            matches!(&a.kind, ExprKind::Var(v) if v == item) && matches!(b.kind, ExprKind::Null | ExprKind::Undefined)
-        }
-        ExprKind::Unary(UnaryOp::Not, a) => matches!(&a.kind, ExprKind::Var(v) if v == item),
-        _ => false,
+        ExprKind::Unary(UnaryOp::Not, a) => is_item(a),
+        _ => js::null_test(test, false).is_some_and(is_item),
     }
 }
 
 /// Whether `test` says `item` is there: `item != null`, or `item`.
 pub(super) fn present(test: &Expr, item: &str) -> bool {
     match &test.kind {
-        ExprKind::Binary(Op::LooseNe, a, b) => {
-            matches!(&a.kind, ExprKind::Var(v) if v == item) && matches!(b.kind, ExprKind::Null | ExprKind::Undefined)
-        }
         ExprKind::Var(v) => v == item,
-        _ => false,
+        _ => js::null_test(test, true).is_some_and(|e| matches!(&e.kind, ExprKind::Var(v) if v == item)),
     }
 }
 
