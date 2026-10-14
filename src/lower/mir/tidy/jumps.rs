@@ -1322,3 +1322,12 @@ pub(super) fn never_taken(stmts: &mut Vec<Stmt>) {
         i += 1;
     }
 }
+
+/// A body's jumps settled once a pass has moved them: a `break` or a
+/// `continue` that goes where the code goes on anyway, gone (`tail_jumps`),
+/// then a label nothing names any more, gone (`unlabeled`). Run after any
+/// pass that leaves a jump at a block's end.
+pub(super) fn settle_jumps(body: &mut Vec<Stmt>) {
+    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
+    js::statement_lists(body, &mut unlabeled);
+}

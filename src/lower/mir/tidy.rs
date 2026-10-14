@@ -139,8 +139,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     bottom_up(body, &mut decisions::decisions);
     js::statement_lists(body, &mut early_returns);
     js::statement_lists(body, &mut |stmts| early_breaks(stmts));
-    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-    js::statement_lists(body, &mut unlabeled);
+    settle_jumps(body);
     // A `let` declared first, its one write now beside it, what a loop
     // held: a `const` there.
     declarations(body);
@@ -248,8 +247,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     // A value a block MIR made gives where nothing else does: given first,
     // and the block's `break`s that go where it ends anyway, gone.
     js::statement_lists(body, &mut |stmts| decisions::default_values(stmts));
-    js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-    js::statement_lists(body, &mut unlabeled);
+    settle_jumps(body);
     declarations(body);
     // `x != null && typeof x === "string"`: the `typeof` test, which says it.
     js::each_expr_mut(body, &mut typeof_tests);
@@ -353,8 +351,7 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
     js::statement_lists(body, &mut tried_first);
     if headed {
         js::statement_lists(body, &mut |stmts| innermost_jumps(stmts));
-        js::statement_lists(body, &mut |stmts| tail_jumps(stmts));
-        js::statement_lists(body, &mut unlabeled);
+        settle_jumps(body);
     }
     // `!(b >= 48)` of what's never `NaN`: `b < 48`.
     js::each_expr_mut(body, &mut |e| turned(e, numbers));
@@ -574,8 +571,58 @@ fn changing(body: &mut Vec<Stmt>) -> HashSet<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::spread_spreads;
-    use crate::js::{self, Expr, ExprKind, Prop};
+    use std::collections::HashSet;
+
+    use super::{is_temporary, settle_jumps, spread_spreads, temporary, turned, user_name};
+    use crate::js::{self, Expr, ExprKind, Op, Prop, StmtKind, UnaryOp};
+
+    fn call(f: &str) -> js::Stmt {
+        StmtKind::Expr(Expr::call(Expr::var(f), Vec::new())).at(js::Span::NONE)
+    }
+
+    // A labeled block MIR made, `l: { a(); break l; }`, its `break` going
+    // where the block goes on anyway: `a();`.
+    #[test]
+    fn settled_jumps_leave_no_block_to_break() {
+        let mut body = vec![
+            StmtKind::Labeled(
+                "l".into(),
+                vec![call("a"), StmtKind::Break(Some("l".into())).at(js::Span::NONE)],
+            )
+            .at(js::Span::NONE),
+        ];
+        settle_jumps(&mut body);
+        assert!(matches!(
+            body.as_slice(),
+            [js::Stmt {
+                kind: StmtKind::Expr(_),
+                ..
+            }]
+        ));
+    }
+
+    // `!(n < 5)` of an integer is `n >= 5`; of a float, which may be `NaN`,
+    // it stays.
+    #[test]
+    fn a_test_of_an_integer_is_turned_not_a_floats() {
+        let not_less = |x: &str| Expr::unary(UnaryOp::Not, Expr::bin(Op::Lt, Expr::var(x), Expr::int(5)));
+        let numbers: HashSet<String> = ["n".to_string()].into();
+        let mut of_int = not_less("n");
+        turned(&mut of_int, &numbers);
+        assert!(matches!(of_int.kind, ExprKind::Binary(Op::Ge, ..)));
+        let mut of_float = not_less("x");
+        turned(&mut of_float, &numbers);
+        assert!(matches!(of_float.kind, ExprKind::Unary(UnaryOp::Not, _)));
+    }
+
+    // A temporary's name is one tidy knows; a program's of that shape isn't.
+    #[test]
+    fn a_temporary_is_known_by_its_name_and_a_users_never_is() {
+        assert!(is_temporary(&temporary(5)));
+        assert!(is_temporary(&crate::names::given_apart(&temporary(5), 1)));
+        assert!(!is_temporary(&user_name("_5")));
+        assert_eq!(user_name("total"), "total");
+    }
 
     /// An element captured twice spills its props twice, `{...{ ...{ ...post } }}`,
     /// as react.dev's home page gives each BlogCard a post: `{...post}`.
