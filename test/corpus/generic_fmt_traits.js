@@ -69,7 +69,6 @@ function main() {
   console.log(
     `${varPointer_fmt([[7]], undefined, handlePointer())} ${varLowerHex_fmt([[255]], undefined, handleLowerHex())} ${varLowerHex_fmt([[16]], { alternate: true }, handleLowerHex())}`,
   );
-  const value = hex([10], handleLowerHex());
-  console.log(`${value} ${hex([[11]], varLowerHex(handleLowerHex()))}`);
+  console.log(`${hex([10], handleLowerHex())} ${hex([[11]], varLowerHex(handleLowerHex()))}`);
 }
 //# sourceMappingURL=case.js.map

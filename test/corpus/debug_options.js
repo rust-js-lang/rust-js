@@ -20,8 +20,9 @@ function main() {
   console.log(
     `[Some(${"1".padStart(5)})] [[${[5, 6].map((item) => String(item).padEnd(4)).join(", ")}]] [Some(${$plus("6")})] [${((tuple) => `(${$toFixed(tuple[0], 1)}, ${$toFixed(tuple[1], 1)})`)([1.25, 2])}]`,
   );
+  const value = [true, undefined];
   console.log(
-    `[${((tuple) => `(${String(tuple[0]).padStart(3)}, ${$pad("()", 3, ">")})`)([true, undefined])}] [Some(${$debugStr("ab")})] [[${[-1, 2].map((item) => $zeroPad(String(item), 6)).join(", ")}]] [${String(true).padEnd(5)}]`,
+    `[(${String(value[0]).padStart(3)}, ${$pad("()", 3, ">")})] [Some(${$debugStr("ab")})] [[${[-1, 2].map((item) => $zeroPad(String(item), 6)).join(", ")}]] [${String(true).padEnd(5)}]`,
   );
   console.log(`[${$pretty("Some(", ["7".padStart(5)], ")")}]`);
   const m = new Map();

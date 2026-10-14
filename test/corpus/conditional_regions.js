@@ -70,22 +70,16 @@ function nested(take, inner) {
 }
 
 function main() {
-  const value = pick(false);
-  console.log(`${value} ${pick(true)}`);
-  const value$1 = both(false);
-  console.log(`${value$1} ${both(true)}`);
-  const value$2 = guard(undefined);
-  const value$3 = guard(1);
-  console.log(`${value$2} ${value$3} ${guard(2)}`);
-  const value$4 = nested(false, true);
-  const value$5 = nested(true, false);
-  console.log(`${value$4} ${value$5} ${nested(true, true)}`);
+  console.log(`${pick(false)} ${pick(true)}`);
+  console.log(`${both(false)} ${both(true)}`);
+  console.log(`${guard(undefined)} ${guard(1)} ${guard(2)}`);
+  console.log(`${nested(false, true)} ${nested(true, false)} ${nested(true, true)}`);
   let x = 0;
   const x$1 = { value: x };
-  const value$6 = bump(x$1);
+  const value = bump(x$1);
   x = x$1.value;
   let picked;
-  if (value$6 === 1) {
+  if (value === 1) {
     const x$1 = { value: x };
     picked = bump(x$1);
     x = x$1.value;

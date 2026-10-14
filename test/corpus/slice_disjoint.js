@@ -30,11 +30,13 @@ function main() {
     a.value = Math.imul(a.value, 10);
   }
   console.log(`[${v.map((item) => String(item)).join(", ")}]`);
+  const value$1 = $getDisjointMut(v, [1, 9], true);
   console.log(
-    `${((result) => (result.TAG === "Ok" ? `Ok([${result._0.map((item) => String(item.value)).join(", ")}])` : `Err(${result._0})`))($getDisjointMut(v, [1, 9], true))}`,
+    `${value$1.TAG === "Ok" ? `Ok([${value$1._0.map((item) => String(item.value)).join(", ")}])` : `Err(${value$1._0})`}`,
   );
+  const value$2 = $getDisjointMut(v, [2, 2], true);
   console.log(
-    `${((result) => (result.TAG === "Ok" ? `Ok([${result._0.map((item) => String(item.value)).join(", ")}])` : `Err(${result._0})`))($getDisjointMut(v, [2, 2], true))}`,
+    `${value$2.TAG === "Ok" ? `Ok([${value$2._0.map((item) => String(item.value)).join(", ")}])` : `Err(${value$2._0})`}`,
   );
   console.log(
     `${$unwrapErr(
@@ -49,13 +51,13 @@ function main() {
     (e) => `[${e.map((item) => String(item.value)).join(", ")}]`,
   );
   console.log(`${error === "OverlappingIndices"}`);
-  const value$1 = $getDisjointMut(v, [
+  const value$3 = $getDisjointMut(v, [
     { start: 0, end: 2 },
     { start: 3, end: 6 },
   ]);
-  if (value$1.TAG === "Ok") {
-    const left = value$1._0[0];
-    const right = value$1._0[1];
+  if (value$3.TAG === "Ok") {
+    const left = value$3._0[0];
+    const right = value$3._0[1];
     $copyFromSlice(left, $slice(right, 1));
     right.reverse();
   }
@@ -82,7 +84,7 @@ function main() {
     }`,
   );
   console.log(`${$getDisjointMut(v, [{ start: 2, end: 1 }], false, true).TAG === "Err"}`);
-  const value$2 = $getDisjointMut(
+  const value$4 = $getDisjointMut(
     v,
     [
       { start: 0, end: 1 },
@@ -91,9 +93,9 @@ function main() {
     false,
     true,
   );
-  if (value$2.TAG === "Ok") {
-    const a = value$2._0[0];
-    const b = value$2._0[1];
+  if (value$4.TAG === "Ok") {
+    const a = value$4._0[0];
+    const b = value$4._0[1];
     const value = $index(b, 0);
     a[$at(a, 1)] = value;
   }

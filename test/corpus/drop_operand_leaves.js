@@ -70,8 +70,10 @@ function divided(n, by) {
 }
 
 function main() {
-  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(halves(4))}`);
-  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(halves(3))}`);
+  const value = halves(4);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = halves(3);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(`${divided(8, 4)}`);
   console.log(`${divided(8, 0)}`);
 }

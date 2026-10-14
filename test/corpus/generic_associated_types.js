@@ -92,10 +92,8 @@ function second(c, CContainer) {
 }
 
 function show(c, CContainer) {
-  return ((value) =>
-    value == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(value))})`)(
-    CContainer.last(c),
-  );
+  const value = CContainer.last(c);
+  return value == null ? "None" : `Some(${CContainer.ItemDebug().fmt($someValue(value))})`;
 }
 
 function byteFilled() {
@@ -155,26 +153,28 @@ function main() {
   const shelf = { books: ["Dune", "Emma"] };
   const counts = [[3, 1, 4]];
   const value = shelfContainer().last(shelf);
+  const value$1 = countsContainer().last(counts);
   console.log(
-    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${((value) => (value == null ? "None" : `Some(${value})`))(countsContainer().last(counts))}`,
+    `${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$1 = count(shelf, shelfContainer());
-  const value$2 = count(counts, countsContainer());
-  console.log(`${value$1} ${value$2} ${count([3], countdownContainer())}`);
-  const value$3 = countdownContainer().last([2]);
-  const value$4 = show(shelf, shelfContainer());
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4} ${show([1], countdownContainer())}`,
+    `${count(shelf, shelfContainer())} ${count(counts, countsContainer())} ${count([3], countdownContainer())}`,
   );
-  const value$5 = first(shelf, shelfContainer());
-  const value$6 = first(counts, countsContainer());
+  const value$2 = countdownContainer().last([2]);
   console.log(
-    `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first([5], countdownContainer()))}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${show(shelf, shelfContainer())} ${show([1], countdownContainer())}`,
   );
-  const value$7 = second(shelf, shelfContainer());
-  const value$8 = second(counts, countsContainer());
+  const value$3 = first(shelf, shelfContainer());
+  const value$4 = first(counts, countsContainer());
+  const value$5 = first([5], countdownContainer());
   console.log(
-    `${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${((value) => (value == null ? "None" : `Some(${value})`))(second([5], countdownContainer()))}`,
+    `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+  );
+  const value$6 = second(shelf, shelfContainer());
+  const value$7 = second(counts, countsContainer());
+  const value$8 = second([5], countdownContainer());
+  console.log(
+    `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
   );
   console.log(
     `[${shelfContainer_items(shelf)
@@ -183,16 +183,15 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$9 = byteFilled_filled([7], 3);
   console.log(
-    `[${value$9.map((item) => String(item)).join(", ")}] [${byteFilled_filled([1], 0)
+    `[${byteFilled_filled([7], 3)
+      .map((item) => String(item))
+      .join(", ")}] [${byteFilled_filled([1], 0)
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$10 = summed([4], uptoSource());
-  const value$11 = summed(undefined, from3Source());
   console.log(
-    `${value$10} ${value$11} ${((range) => `${range.start}..${range.end}`)(uptoSource_numbers([2]))}`,
+    `${summed([4], uptoSource())} ${summed(undefined, from3Source())} ${((range) => `${range.start}..${range.end}`)(uptoSource_numbers([2]))}`,
   );
 }
 //# sourceMappingURL=case.js.map

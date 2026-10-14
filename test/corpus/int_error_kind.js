@@ -34,9 +34,8 @@ function read(text, max) {
 
 function main() {
   for (const text of ["7", "", "x1", "300", "-1", "90"]) {
-    console.log(
-      `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${boundedDebug_fmt(result._0)})`))(read(text, 50))}`,
-    );
+    const value = read(text, 50);
+    console.log(`${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${boundedDebug_fmt(value._0)})`}`);
   }
   const kind = $parseErrorKind($unwrapErr($parseInt("", -2147483648, 2147483647)));
   console.log(`${kind === "Empty"} ${kind} Zero`);

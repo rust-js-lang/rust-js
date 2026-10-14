@@ -24,8 +24,9 @@ function main() {
   $rangeNext(range);
   const total = $iterator(range, $rangeNext).reduce((a, b) => (a + b) >>> 0, 0);
   console.log(`${total}`);
+  const value = first_two($iter(Array.from("xyz")));
   console.log(
-    `${((tuple) => `(${tuple[0] == null ? "None" : `Some(${$debugStr(tuple[0], "'")})`}, ${tuple[1] == null ? "None" : `Some(${$debugStr(tuple[1], "'")})`}, ${tuple[2]})`)(first_two($iter(Array.from("xyz"))))}`,
+    `(${value[0] == null ? "None" : `Some(${$debugStr(value[0], "'")})`}, ${value[1] == null ? "None" : `Some(${$debugStr(value[1], "'")})`}, ${value[2]})`,
   );
 }
 //# sourceMappingURL=case.js.map

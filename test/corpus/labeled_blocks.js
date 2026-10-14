@@ -42,15 +42,14 @@ function first_even(rows) {
 }
 
 function main() {
-  const value = grade(-1);
-  const value$1 = grade(95);
-  console.log(`${value} ${value$1} ${grade(50)}`);
-  const value$2 = first_even([
+  console.log(`${grade(-1)} ${grade(95)} ${grade(50)}`);
+  const value = first_even([
     [1, 3],
     [5, 8, 10],
   ]);
+  const value$1 = first_even([[1]]);
   console.log(
-    `${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, ${value[1]}))`))(first_even([[1]]))}`,
+    `${value == null ? "None" : `Some((${value[0]}, ${value[1]}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${value$1[1]}))`}`,
   );
   const log = [];
   log.push("start");

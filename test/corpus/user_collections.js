@@ -67,9 +67,8 @@ function main() {
     console.log(`${name}: ${price.cents}`);
   }
   const total = moneySum_sum(cart.lines.values().map(([, m]) => m));
-  console.log(
-    `${moneyDebug_fmt(total)} ${refCartIntoIterator_into_iter(cart).reduce((n) => n + 1, 0)}`,
-  );
+  const value = refCartIntoIterator_into_iter(cart).reduce((n) => n + 1, 0);
+  console.log(`${moneyDebug_fmt(total)} ${value}`);
   const names = cartIntoIterator_into_iter(cart)
     .map(([name]) => name)
     .toArray();

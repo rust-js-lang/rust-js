@@ -598,22 +598,35 @@ export function debugged(x, TDebug) {
 export function debugs(n) {
   const p = { x: n, y: -2.5 };
   const r = n > 1 ? { TAG: "Ok", _0: n } : { TAG: "Err", _0: "small" };
+  const value = posDebug_fmt(p);
+  const value$1 = `${dimsDebug_fmt([n, 2])} ${nothingDebug_fmt(undefined)} ${glyphDebug_fmt("Dot")}`;
+  const value$2 = `${glyphDebug_fmt({ TAG: "Ring", _0: 1.5 })} ${glyphDebug_fmt({
+    TAG: "Box",
+    w: n,
+    h: 3,
+  })}`;
+  const value$3 = sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" });
+  const value$4 = `${boxedDebug_fmt({ item: p }, posDebug())} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`;
+  const value$5 = [n, "a", "'"];
+  const value$6 = `Some(${$debugF64(1)}) None (${value$5[0]}, ${$debugStr(value$5[1])}, ${$debugStr(value$5[2], "'")}) ${((tuple) => `(${tuple[0]},)`)([5])}`;
+  const value$7 = [p, p];
+  const value$8 = $cmp(n, 1);
+  const value$9 = `[${value$7.map((item) => posDebug_fmt(item)).join(", ")}] ${r.TAG === "Ok" ? `Ok(${r._0})` : `Err(${$debugStr(r._0)})`} ${
+    ["Less", "Equal", "Greater"][value$8 + 1]
+  }`;
+  const value$10 = debugged([[3, 4]], {
+    fmt: (value) =>
+      `[${value.map((item) => (item == null ? "None" : `Some(${dimsDebug_fmt(item)})`)).join(", ")}]`,
+  });
   return [
-    posDebug_fmt(p),
-    `${dimsDebug_fmt([n, 2])} ${nothingDebug_fmt(undefined)} ${glyphDebug_fmt("Dot")}`,
-    `${glyphDebug_fmt({ TAG: "Ring", _0: 1.5 })} ${glyphDebug_fmt({ TAG: "Box", w: n, h: 3 })}`,
-    sixDebug_fmt({ a: 1, b: 2, c: 3, d: 4, e: 5, f: "x" }),
-    `${boxedDebug_fmt({ item: p }, posDebug())} ${boxedDebug_fmt({ item: "s" }, { fmt: (value) => (value == null ? "None" : `Some(${$debugStr(value)})`) })}`,
-    `Some(${$debugF64(1)}) None ${((tuple) =>
-      `(${tuple[0]}, ${$debugStr(tuple[1])}, ${$debugStr(tuple[2], "'")})`)([
-      n,
-      "a",
-      "'",
-    ])} ${((tuple) => `(${tuple[0]},)`)([5])}`,
-    `[${[p, p].map((item) => posDebug_fmt(item)).join(", ")}] ${r.TAG === "Ok" ? `Ok(${r._0})` : `Err(${$debugStr(r._0)})`} ${
-      ["Less", "Equal", "Greater"][$cmp(n, 1) + 1]
-    }`,
-    `${hiddenDebug_fmt(undefined)} ${debugged([[3, 4]], { fmt: (value) => `[${value.map((item) => (item == null ? "None" : `Some(${dimsDebug_fmt(item)})`)).join(", ")}]` })}`,
+    value,
+    value$1,
+    value$2,
+    value$3,
+    value$4,
+    value$6,
+    value$9,
+    `${hiddenDebug_fmt(undefined)} ${value$10}`,
   ];
 }
 

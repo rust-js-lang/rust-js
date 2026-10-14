@@ -14,7 +14,8 @@ function main() {
   const s = "héllo";
   const l = { c: $iter(Array.from(s)) };
   for (let i = 0; i < 7; i++) {
-    $print(`${((value) => (value == null ? "None" : `Some(${$debugStr(value, "'")})`))(f(l))} `);
+    const value = f(l);
+    $print(`${value == null ? "None" : `Some(${$debugStr(value, "'")})`} `);
   }
   console.log("");
 }

@@ -20,8 +20,6 @@ function second() {
 const ALL = ["constant", "and more"];
 
 function main() {
-  const value = first();
-  const value$1 = second();
-  console.log(`${NAME} ${value} ${value$1} [${ALL.map((item) => $debugStr(item)).join(", ")}]`);
+  console.log(`${NAME} ${first()} ${second()} [${ALL.map((item) => $debugStr(item)).join(", ")}]`);
 }
 //# sourceMappingURL=case.js.map

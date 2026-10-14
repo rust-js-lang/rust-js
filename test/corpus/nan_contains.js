@@ -6,9 +6,9 @@ export function entry() {
 
 function main() {
   const values = [NaN, 1, -0];
-  const value = values.some((each) => each === NaN);
-  const value$1 = values.some((each) => each === 1);
-  console.log(`${value} ${value$1} ${values.some((each) => each === 0)}`);
+  console.log(
+    `${values.some((each) => each === NaN)} ${values.some((each) => each === 1)} ${values.some((each) => each === 0)}`,
+  );
   const held = [NaN];
   console.log(`${held.some((each) => each === NaN)}`);
 }

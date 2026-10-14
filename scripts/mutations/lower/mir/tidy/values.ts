@@ -140,4 +140,22 @@ export const mutations: Mutation[] = [
       "arrays of arrays flattened"
     ]
   },
+  {
+    name: "applied-template-nested",
+    breaks: "a function's body put in place of its call in a template is a template in a template, `${`(${a}, ${b})`}`",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            root.each_mut(&mut spliced_templates);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^const_generic_traits.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "applied-assignment-unseen",
+    breaks: "`out += `${((r) => ..)(f())}``, an assignment's value, keeps its function called in place",
+    file: "src/lower/mir/tidy/values.rs",
+    find: "            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) => {\n",
+    replace: "            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) if false => {\n",
+    tests: ["test/snapshots.test.ts", "-t", "calc"],
+    snapshots: true,
+  },
 ];

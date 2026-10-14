@@ -39,8 +39,7 @@ const SHOWN = { value: 42, impl: { fmt: String } };
 const ADD = (x) => (x + 10) | 0;
 
 function main() {
-  const value = F(2);
-  console.log(`${value} ${G(2)}`);
+  console.log(`${F(2)} ${G(2)}`);
   for (const [name, f] of TABLE) {
     const arg = f(5);
     console.log(`${name} ${arg}`);
@@ -48,8 +47,8 @@ function main() {
   if (MAYBE) {
     console.log(`${MAYBE(1)}`);
   }
-  const value$1 = GREETER.impl.hi(GREETER.value);
-  const value$2 = ADD(1);
-  console.log(`${value$1} ${SHOWN.impl.fmt(SHOWN.value)} ${value$2}`);
+  const value = GREETER.impl.hi(GREETER.value);
+  const value$1 = ADD(1);
+  console.log(`${value} ${SHOWN.impl.fmt(SHOWN.value)} ${value$1}`);
 }
 //# sourceMappingURL=case.js.map

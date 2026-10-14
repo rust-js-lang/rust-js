@@ -32,10 +32,7 @@ function main() {
   console.log(`total ${total}`);
   const a = make_counter();
   const b = make_counter();
-  const value$1 = a();
-  const value$2 = a();
-  const value$3 = b();
-  console.log(`${value$1} ${value$2} ${value$3} ${a()}`);
+  console.log(`${a()} ${a()} ${b()} ${a()}`);
   const names = ["x"];
   const add = (s) => {
     names.push(s);

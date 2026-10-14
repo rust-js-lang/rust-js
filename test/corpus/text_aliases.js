@@ -17,10 +17,10 @@ export function entry() {
 
 function main() {
   const text = "  héllo  ";
-  const value = $trimStart(text);
-  console.log(`[${value}] [${$trimEnd(text)}]`);
-  const value$1 = $trimMatches("xxaxx", "x", true, false);
-  console.log(`[${value$1}] [${$trimMatches("xxaxx", "x", false, true)}]`);
+  console.log(`[${$trimStart(text)}] [${$trimEnd(text)}]`);
+  console.log(
+    `[${$trimMatches("xxaxx", "x", true, false)}] [${$trimMatches("xxaxx", "x", false, true)}]`,
+  );
   console.log(
     `[${$lines("a\nb\r\nc")
       .map((item) => $debugStr(item))
@@ -28,11 +28,10 @@ function main() {
   );
   let owned = "";
   owned += "héllo";
-  const value$2 = Array.from(new TextEncoder().encode(owned));
   console.log(
-    `[${value$2.map((item) => String(item)).join(", ")}] [${Array.from(
-      new TextEncoder().encode(owned),
-    )
+    `[${Array.from(new TextEncoder().encode(owned))
+      .map((item) => String(item))
+      .join(", ")}] [${Array.from(new TextEncoder().encode(owned))
       .map((item) => String(item))
       .join(", ")}]`,
   );
@@ -53,10 +52,10 @@ function main() {
   const arg = ["a", "b"].join("-");
   console.log(`[${list.map((item) => String(item)).join(", ")}] ${arg}`);
   const nested = [[1, 2], [3]];
-  const value$3 = $joinWith(nested, 0, false);
-  const value$4 = $joinWith(nested, [7, 8], true);
+  const value = $joinWith(nested, 0, false);
+  const value$1 = $joinWith(nested, [7, 8], true);
   console.log(
-    `[${value$3.map((item) => String(item)).join(", ")}] [${value$4.map((item) => String(item)).join(", ")}] [${nested
+    `[${value.map((item) => String(item)).join(", ")}] [${value$1.map((item) => String(item)).join(", ")}] [${nested
       .flat()
       .map((item) => String(item))
       .join(", ")}]`,

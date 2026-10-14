@@ -38,22 +38,30 @@ function flagsBitOr_bitor(flags, other) {
 }
 
 function main() {
-  const value = either(5, 3, { bitor: (a, b) => a | b });
-  const value$1 = either(false, true, { bitor: (a, b) => !!(a | b) });
-  console.log(`${value} ${value$1} ${flagsDebug_fmt(either([1], [4], flagsBitOr()))}`);
-  const value$2 = masked(
+  console.log(
+    `${either(5, 3, { bitor: (a, b) => a | b })} ${either(false, true, { bitor: (a, b) => !!(a | b) })} ${flagsDebug_fmt(either([1], [4], flagsBitOr()))}`,
+  );
+  const value = masked(
     61680,
     65280,
     { bitand: (a, b) => (a & b) >>> 0 },
     { bitxor: (a, b) => (a ^ b) >>> 0 },
   );
-  console.log(
-    `(${value$2[0]}, ${value$2[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(masked(264913582817280n, 281470681743360n, { bitand: (a, b) => a & b }, { bitxor: (a, b) => a ^ b }))}`,
+  const value$1 = masked(
+    264913582817280n,
+    281470681743360n,
+    { bitand: (a, b) => a & b },
+    { bitxor: (a, b) => a ^ b },
   );
-  const value$3 = masked(-6, 3, { bitand: (a, b) => a & b }, { bitxor: (a, b) => a ^ b });
-  console.log(
-    `(${value$3[0]}, ${value$3[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(masked(true, false, { bitand: (a, b) => !!(a & b) }, { bitxor: (a, b) => a !== b }))}`,
+  console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);
+  const value$2 = masked(-6, 3, { bitand: (a, b) => a & b }, { bitxor: (a, b) => a ^ b });
+  const value$3 = masked(
+    true,
+    false,
+    { bitand: (a, b) => !!(a & b) },
+    { bitxor: (a, b) => a !== b },
   );
+  console.log(`(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]})`);
   const value$4 = shifted(
     193,
     2,
@@ -61,12 +69,17 @@ function main() {
     { shr: (a, b) => a >>> (b & 7) },
   );
   const value$5 = shifted(-64, 3, { shl: (a, b) => (a << b) | 0 }, { shr: (a, b) => a >> b });
-  console.log(
-    `(${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(shifted(BigInt.asUintN(64, 1n << 40n), 4, { shl: (a, b) => BigInt.asUintN(64, a << (BigInt(b) & 63n)) }, { shr: (a, b) => a >> (BigInt(b) & 63n) }))}`,
+  const value$6 = shifted(
+    BigInt.asUintN(64, 1n << 40n),
+    4,
+    { shl: (a, b) => BigInt.asUintN(64, a << (BigInt(b) & 63n)) },
+    { shr: (a, b) => a >> (BigInt(b) & 63n) },
   );
-  const value$6 = shifted_far(3, 4n, { shl: (a, b) => (a << Number(b & 63n)) >>> 0 });
   console.log(
-    `${value$6} ${shifted_far(1, 17n, { shl: (a, b) => (a << (Number(b & 63n) & 15)) & 65535 })}`,
+    `(${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]})`,
+  );
+  console.log(
+    `${shifted_far(3, 4n, { shl: (a, b) => (a << Number(b & 63n)) >>> 0 })} ${shifted_far(1, 17n, { shl: (a, b) => (a << (Number(b & 63n) & 15)) & 65535 })}`,
   );
   const a = 12;
   const b = 10;

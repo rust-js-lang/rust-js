@@ -54,8 +54,7 @@ function main() {
     throw error;
   }
   let tick$live = false;
-  const value = tick();
-  console.log(`${value}`);
+  console.log(`${tick()}`);
   console.log("after");
   const b = ["b"];
   const c = ["c"];
@@ -78,8 +77,7 @@ function main() {
     noisyDrop_drop(c);
     return 2;
   };
-  const value$1 = once();
-  console.log(`${value$1}`);
+  console.log(`${once()}`);
   const d = ["d"];
   const d2 = ["d2"];
   try {
@@ -129,7 +127,7 @@ function main() {
     throw error;
   }
   const e = ["e"];
-  const value$2 = () => {
+  const value = () => {
     const x = e;
     const result = $byteLen(x[0]);
     noisyDrop_drop(x);
@@ -137,7 +135,7 @@ function main() {
   };
   let tmp;
   try {
-    tmp = call_once(value$2, (value) => {
+    tmp = call_once(value, (value) => {
       noisyDrop_drop(e);
     });
   } catch (error) {
@@ -151,7 +149,7 @@ function main() {
     throw error;
   }
   const f = ["f"];
-  const value$3 = () => {
+  const value$1 = () => {
     try {
       noisyDrop_drop(f);
     } catch (error) {
@@ -160,7 +158,7 @@ function main() {
     return 4;
   };
   try {
-    keep(value$3, (value) => {
+    keep(value$1, (value) => {
       noisyDrop_drop(f);
     });
   } catch (error) {

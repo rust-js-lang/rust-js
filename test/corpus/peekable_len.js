@@ -23,8 +23,9 @@ function main() {
   const value = f([1, 2, 3]);
   const value$1 = f([]);
   const value$2 = g([1, 2, 3]);
+  const value$3 = g([]);
   console.log(
-    `${value} ${value$1} (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2]}) ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`}, ${tuple[2]})`)(g([]))}`,
+    `${value} ${value$1} (${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}, ${value$2[2]}) (${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}, ${value$3[2]})`,
   );
 }
 //# sourceMappingURL=case.js.map

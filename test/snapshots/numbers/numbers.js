@@ -94,7 +94,8 @@ export function vectors() {
   );
   vec2AddAssign_add_assign(c, { ...b });
   const value = Vec2.len(a);
-  return `${vec2Debug_fmt(c)} ${$displayF64(value)} ${$debugF64(Vec2.len(vec2Sub_sub({ ...a }, { ...b })))} ${$displayF64(0)}`;
+  const value$1 = Vec2.len(vec2Sub_sub({ ...a }, { ...b }));
+  return `${vec2Debug_fmt(c)} ${$displayF64(value)} ${$debugF64(value$1)} ${$displayF64(0)}`;
 }
 
 export function integers(a, b) {
@@ -106,16 +107,7 @@ export function integers(a, b) {
   const value$5 = $checked(a + 2147483647, -2147483648, 2147483647);
   const value$6 = $checked(a * a, -2147483648, 2147483647);
   const value$7 = $checkedDiv(a, ((b | 0) - 3) | 0, -2147483648);
-  const value$8 = Math.max(b - 100, 0);
-  const value$9 = Math.min(b + 4294967290, 4294967295);
-  const value$10 = Math.min(Math.max(a * ((1 << 20) | 0), -2147483648), 2147483647) | 0;
-  const value$11 = (b - 5) >>> 0;
-  const value$12 = Math.imul(a, (1 << 30) | 0);
-  const value$13 = Math.sign(a);
-  const value$14 = Math.clz32(b);
-  const value$15 = $trailingZeros(b, 32);
-  const value$16 = $countOnes(a);
-  return `${value} ${value$1} ${value$2} ${value$3} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8} ${value$9} ${value$10} ${value$11} ${value$12} ${value$13} ${value$14} ${value$15} ${value$16} ${Math.abs(b - 100)}`;
+  return `${value} ${value$1} ${value$2} ${value$3} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${Math.max(b - 100, 0)} ${Math.min(b + 4294967290, 4294967295)} ${Math.min(Math.max(a * ((1 << 20) | 0), -2147483648), 2147483647) | 0} ${(b - 5) >>> 0} ${Math.imul(a, (1 << 30) | 0)} ${Math.sign(a)} ${Math.clz32(b)} ${$trailingZeros(b, 32)} ${$countOnes(a)} ${Math.abs(b - 100)}`;
 }
 
 export function narrow(a, b) {
@@ -128,13 +120,11 @@ export function floats(x) {
   const value$2 = $round(x);
   const value$3 = Math.trunc(x);
   const value$4 = Math.abs(x);
-  const value$5 = $f64Max(x, 1.5);
-  const value$6 = x ** 0.5;
-  const value$7 = $powi(x, 3);
-  const value$8 = $powi(x, -2);
-  const value$9 = Number.isNaN(x);
-  const value$10 = Number.isFinite(x);
-  return `${$displayF64(value)} ${$displayF64(value$1)} ${$displayF64(value$2)} ${$displayF64(value$3)} ${$displayF64(value$4)} ${$displayF64(value$5)} ${$toFixed(value$6, 3)} ${$displayF64(value$7)} ${$displayF64(value$8)} ${value$9} ${value$10} ${$displayF64(Math.hypot(x, 4))}`;
+  const value$5 = $powi(x, 3);
+  const value$6 = $powi(x, -2);
+  const value$7 = Number.isNaN(x);
+  const value$8 = Number.isFinite(x);
+  return `${$displayF64(value)} ${$displayF64(value$1)} ${$displayF64(value$2)} ${$displayF64(value$3)} ${$displayF64(value$4)} ${$displayF64($f64Max(x, 1.5))} ${$toFixed(x ** 0.5, 3)} ${$displayF64(value$5)} ${$displayF64(value$6)} ${value$7} ${value$8} ${$displayF64(Math.hypot(x, 4))}`;
 }
 
 export function gcd(a, b) {
@@ -176,11 +166,10 @@ export function grids(n) {
 
 export function searches() {
   const v = [1, 3, 3, 3, 5, 7, 7];
-  const found = [0, 1, 3, 4, 7, 8].map((x) =>
-    ((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
-      $binarySearch(v, x),
-    ),
-  );
+  const found = [0, 1, 3, 4, 7, 8].map((x) => {
+    const value = $binarySearch(v, x);
+    return value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`;
+  });
   const empty = [];
   return `${found.join(" ")} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearch(empty, 1))}`;
 }

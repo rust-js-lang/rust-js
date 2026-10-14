@@ -19,57 +19,40 @@ const Delayed = {
 function main() {
   const x = 5;
   const one = { items: $iter([x]) };
-  const value = Delayed.total(
-    one,
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    { borrow: (value) => value },
-  );
   console.log(
-    `${value} ${Delayed.total(one, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(one, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(one, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
   );
   const v = [1, 2, 3];
   const many = { items: $iter(v) };
-  const value$1 = Delayed.total(
-    many,
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    { borrow: (value) => value },
-  );
   console.log(
-    `${value$1} ${Delayed.total(many, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(many, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(many, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
   );
   const owned = { items: $iter([4, 6]) };
-  const value$2 = Delayed.total(
-    owned,
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    { borrow: (value) => value },
-  );
   console.log(
-    `${value$2} ${Delayed.total(owned, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(owned, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(owned, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
   );
   const moved = { items: $iter([7, 8]) };
-  const value$3 = Delayed.total(
-    moved,
-    { clone: (value) => $iter(value.items.slice(value.at, value.end)) },
-    { borrow: (value) => value },
-  );
   console.log(
-    `${value$3} ${Delayed.total(moved, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
+    `${Delayed.total(moved, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })} ${Delayed.total(moved, { clone: (value) => $iter(value.items.slice(value.at, value.end)) }, { borrow: (value) => value })}`,
   );
   const it = $iter(v);
   $next(it);
   const copy = $iter(it.items.slice(it.at, it.end));
   $next(it);
-  const value$4 = $next(copy);
-  const value$5 = $next(it);
+  const value = $next(copy);
+  const value$1 = $next(it);
+  const value$2 = $next(copy);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${value})`))($next(copy))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const a = $iter([7, 8, 9]);
   $next(a);
   const b = $iter(a.items.slice(a.at, a.end));
-  const value$6 = b.toArray();
   console.log(
-    `[${value$6.map((item) => String(item)).join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
+    `[${b
+      .toArray()
+      .map((item) => String(item))
+      .join(", ")}] ${((value) => (value == null ? "None" : `Some(${value})`))($next(a))}`,
   );
   const rows = $iter([[1], [2]]);
   const again = $iter(rows.items.slice(rows.at, rows.end).map((item) => item.slice()));

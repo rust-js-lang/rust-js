@@ -8532,6 +8532,27 @@ pub fn theme() -> Theme {
   expect(js).toContain('    font: { body: unquoted(joined(["a", "b"])), mono: unquoted(joined(["c"])), size: "14px" },\n');
 });
 
+// `{:?}` of a value it reads more than once, a `Result`'s tag and what it
+// holds, given as it's made: held first, as a value read twice is
+// everywhere else, not a function called in place, `((result) => ..)(f())`.
+// Not past a call before it, whose order it would change.
+test("a value `{:?}` reads twice is held first, not given to a function called in place", async () => {
+  const dir = fixture("mir-applied-values");
+  writeFileSync(join(dir, "lib.rs"), `fn parse(s: &str) -> Result<u8, String> { s.parse::<u8>().map_err(|_| s.to_string()) }
+fn bump(n: &mut u8) -> Option<u8> { *n += 1; Some(*n) }
+pub fn main() {
+    let first = parse("1");
+    println!("{:?} {:?}", first, parse("x"));
+    let mut n = 1;
+    println!("{} {:?}", n.clone(), bump(&mut n));
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
+  const js = readFileSync(join(dir, "mir.js"), "utf8");
+  expect(js).toContain('const value = parse("x");');
+  expect(js).not.toContain("((result) =>");
+});
+
 test("an `||` of `matches!` from MIR is one test, at a function's end or not", async () => {
   const dir = fixture("mir-or-matches");
   writeFileSync(join(dir, "lib.rs"), `pub enum Message {

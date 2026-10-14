@@ -269,8 +269,11 @@ function main() {
   const count = { value: 1 };
   const value$7 = checkedDerefMut_deref_mut(count);
   value$7.value = (value$7.value + 1) | 0;
-  const value$8 = checkedDeref_deref(checked);
-  console.log(`[${value$8.map((item) => String(item)).join(", ")}] ${checkedDeref_deref(count)}`);
+  console.log(
+    `[${checkedDeref_deref(checked)
+      .map((item) => String(item))
+      .join(", ")}] ${checkedDeref_deref(count)}`,
+  );
   const k = { n: 1 };
   const r$1 = cSlot_slot(k);
   if (r$1 != null) {

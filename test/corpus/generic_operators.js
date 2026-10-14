@@ -116,45 +116,51 @@ function scaled(x, k, TMulF64) {
 }
 
 function main() {
-  const value = total([1, 2, 3], 0, { add: (a, b) => (a + b) >>> 0 }, { copy: (value) => value });
-  const value$1 = total([1.5, 2.25], 0, { add: (a, b) => a + b }, { copy: (value) => value });
   console.log(
-    `${value} ${$displayF64(value$1)} ${total([200, 50], 5, { add: (a, b) => (a + b) & 255 }, { copy: (value) => value })}`,
-  );
-  const value$2 = affine(
-    2,
-    -3,
-    7,
-    { mul: (a, b) => Math.imul(a, b) },
-    { add: (a, b) => (a + b) | 0 },
+    `${total(
+      [1, 2, 3],
+      0,
+      { add: (a, b) => (a + b) >>> 0 },
+      { copy: (value) => value },
+    )} ${$displayF64(total([1.5, 2.25], 0, { add: (a, b) => a + b }, { copy: (value) => value }))} ${total([200, 50], 5, { add: (a, b) => (a + b) & 255 }, { copy: (value) => value })}`,
   );
   console.log(
-    `${value$2} ${$displayF64(affine(0.5, 4, 1, { mul: (a, b) => a * b }, { add: (a, b) => a + b }))}`,
+    `${affine(2, -3, 7, { mul: (a, b) => Math.imul(a, b) }, { add: (a, b) => (a + b) | 0 })} ${$displayF64(affine(0.5, 4, 1, { mul: (a, b) => a * b }, { add: (a, b) => a + b }))}`,
   );
-  const value$3 = parts(
+  const value = parts(
     17n,
     5n,
     { div: (a, b) => $bigDiv(a, b, -9223372036854775808n) },
     { rem: (a, b) => $bigRem(a, b, -9223372036854775808n) },
     { sub: (a, b) => BigInt.asIntN(64, a - b) },
   );
-  console.log(
-    `(${value$3[0]}, ${value$3[1]}, ${value$3[2]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]})`)(parts(-7, 2, { div: (a, b) => $div(a, b, -2147483648) | 0 }, { rem: (a, b) => $rem(a, b, -2147483648) | 0 }, { sub: (a, b) => (a - b) | 0 }))}`,
+  const value$1 = parts(
+    -7,
+    2,
+    { div: (a, b) => $div(a, b, -2147483648) | 0 },
+    { rem: (a, b) => $rem(a, b, -2147483648) | 0 },
+    { sub: (a, b) => (a - b) | 0 },
   );
-  const value$4 = flip(5, { neg: (value) => -value | 0 });
-  const value$5 = flip(2.5, { neg: (value) => -value });
-  console.log(`${value$4} ${$displayF64(value$5)} ${invert(true, { not: (value) => !value })}`);
-  const value$6 = invert(0, { not: (value) => ~value & 255 });
-  console.log(`${value$6} ${invert(5, { not: (value) => ~value })}`);
+  console.log(
+    `(${value[0]}, ${value[1]}, ${value[2]}) (${value$1[0]}, ${value$1[1]}, ${value$1[2]})`,
+  );
+  console.log(
+    `${flip(5, { neg: (value) => -value | 0 })} ${$displayF64(flip(2.5, { neg: (value) => -value }))} ${invert(true, { not: (value) => !value })}`,
+  );
+  console.log(
+    `${invert(0, { not: (value) => ~value & 255 })} ${invert(5, { not: (value) => ~value })}`,
+  );
   const v = { x: 1, y: 2 };
   console.log(
     `${v2Debug_fmt(
       total([v, v, { x: 0.5, y: 0 }], { x: 0, y: 0 }, v2Add(), { copy: (value) => ({ ...value }) }),
     )}`,
   );
-  const value$7 = affine(v, v, v, v2Mul(), v2Add());
-  console.log(`${v2Debug_fmt(value$7)} ${v2Debug_fmt(flip(v, v2Neg()))}`);
-  const value$8 = scaled([2], 1.5, metersMulF64())[0];
-  console.log(`${$displayF64(value$8)} ${v2Debug_fmt(times(3, v, f64MulV2()))}`);
+  const value$2 = affine(v, v, v, v2Mul(), v2Add());
+  const value$3 = flip(v, v2Neg());
+  console.log(`${v2Debug_fmt(value$2)} ${v2Debug_fmt(value$3)}`);
+  console.log(
+    `${$displayF64(scaled([2], 1.5, metersMulF64())[0])} ${v2Debug_fmt(times(3, v, f64MulV2()))}`,
+  );
 }
 //# sourceMappingURL=case.js.map

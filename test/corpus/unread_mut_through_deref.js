@@ -25,8 +25,6 @@ function main() {
   countedDerefMut_deref_mut(p);
   const value = countedDerefMut_deref_mut(p).value;
   value.x = (value.x + 3) | 0;
-  const muts = p.muts;
-  const x = countedDeref_deref(p).x;
-  console.log(`${muts} ${x} ${countedDeref_deref(p).y}`);
+  console.log(`${p.muts} ${countedDeref_deref(p).x} ${countedDeref_deref(p).y}`);
 }
 //# sourceMappingURL=case.js.map

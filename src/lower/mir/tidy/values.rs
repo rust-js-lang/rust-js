@@ -571,3 +571,141 @@ pub(in crate::lower::mir) fn writer_body(out: &mut Vec<Stmt>, name: &str) {
     }
     out.extend(rest);
 }
+
+/// `((result) => body)(e)`, a function written to read a value more than
+/// once, `{:?}` of a `Result` (`display::applied`), given what isn't a
+/// variable: `e` held first, `const _$1 = e;`, and `body` in place of the
+/// call, reading it, as a value read twice is held everywhere else, which
+/// `readable_temporaries` then names. Of each statement, in the order it
+/// evaluates what it's made of, while what it evaluates first may be read
+/// after it, `read_past_calls`; not where a test decides whether it runs.
+pub(super) fn applied_values(
+    stmts: &mut Vec<Stmt>,
+    set: &HashSet<String>,
+    plain: &HashSet<String>,
+    taken: &mut HashSet<String>,
+) {
+    let mut i = 0;
+    while i < stmts.len() {
+        let name = (1..)
+            .map(|k| format!("_${k}"))
+            .find(|n| !taken.contains(n))
+            .expect("a free name");
+        // What's evaluated first: an assignment's target, which `out += ..`
+        // reads, then the value.
+        let (root, mut before) = match &mut stmts[i].kind {
+            StmtKind::Expr(e)
+            | StmtKind::Const(_, e)
+            | StmtKind::Let(_, Some(e))
+            | StmtKind::Return(Some(e))
+            | StmtKind::Throw(e) => (e, true),
+            StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) => {
+                let before = read_past_calls(target, set, plain);
+                (e, before)
+            }
+            _ => {
+                i += 1;
+                continue;
+            }
+        };
+        // Taken out, and the statement looked at again, for the next.
+        if let Some(value) = first_applied(root, &mut before, &name, set, plain) {
+            root.each_mut(&mut spliced_templates);
+            let span = stmts[i].span;
+            stmts.insert(i, StmtKind::Const(name.clone(), value).at(span));
+            taken.insert(name);
+        }
+        i += 1;
+    }
+}
+
+/// The first `((p) => body)(e)` in `e`, in the order it's evaluated, while
+/// all evaluated before it, `before`, may be read after it: `e`, taken out
+/// and held as `name`, and the call `body` of it.
+fn first_applied(
+    e: &mut Expr,
+    before: &mut bool,
+    name: &str,
+    set: &HashSet<String>,
+    plain: &HashSet<String>,
+) -> Option<Expr> {
+    if !*before {
+        return None;
+    }
+    if let ExprKind::Call(callee, args) = &e.kind
+        && let ExprKind::Arrow(params, body) = &callee.kind
+        && let [js::Pattern::Name(param)] = params.as_slice()
+        && let [
+            Stmt {
+                kind: StmtKind::Return(Some(result)),
+                ..
+            },
+        ] = body.as_slice()
+        && let [value] = args.as_slice()
+        && !value.reads_same()
+        && let Some(read) = result.substitute_in_callbacks(&|n: &str| (n == param).then(|| Expr::var(name)))
+    {
+        let value = value.clone();
+        *e = Expr { span: e.span, ..read };
+        return Some(value);
+    }
+    let found = match &mut e.kind {
+        ExprKind::Template(_, values, _) | ExprKind::Array(values) => values
+            .iter_mut()
+            .find_map(|value| first_applied(value, before, name, set, plain)),
+        ExprKind::Call(callee, args) | ExprKind::New(callee, args) => first_applied(callee, before, name, set, plain)
+            .or_else(|| {
+                args.iter_mut()
+                    .find_map(|arg| first_applied(arg, before, name, set, plain))
+            }),
+        // A test decides whether what's after it runs: only it.
+        ExprKind::Binary(Op::And | Op::Or | Op::Coalesce, a, _) | ExprKind::Cond(a, ..) => {
+            first_applied(a, before, name, set, plain)
+        }
+        ExprKind::Binary(_, a, b) => {
+            first_applied(a, before, name, set, plain).or_else(|| first_applied(b, before, name, set, plain))
+        }
+        ExprKind::Unary(_, a) | ExprKind::Stringed(a) => first_applied(a, before, name, set, plain),
+        _ => None,
+    };
+    // What it is, evaluated whole before what's after it.
+    if found.is_none() {
+        *before &= read_past_calls(e, set, plain);
+    }
+    found
+}
+
+/// A template's value that's a template itself, a function's body put in
+/// place of its call, `${`(${a}, ${b})`}`: its text and values in the
+/// outer's, `(${a}, ${b})`.
+fn spliced_templates(e: &mut Expr) {
+    let ExprKind::Template(texts, values, false) = &mut e.kind else {
+        return;
+    };
+    if !values.iter().any(|v| matches!(v.kind, ExprKind::Template(_, _, false))) {
+        return;
+    }
+    let (mut spliced_texts, mut spliced_values) = (vec![texts[0].clone()], Vec::new());
+    for (value, after) in std::mem::take(values).into_iter().zip(texts.iter().skip(1)) {
+        match value.kind {
+            ExprKind::Template(inner_texts, inner_values, false) => {
+                let mut inner = inner_texts.into_iter();
+                spliced_texts
+                    .last_mut()
+                    .expect("a text")
+                    .push_str(&inner.next().unwrap_or_default());
+                for (inner_value, inner_text) in inner_values.into_iter().zip(inner) {
+                    spliced_values.push(inner_value);
+                    spliced_texts.push(inner_text);
+                }
+            }
+            _ => {
+                spliced_values.push(value);
+                spliced_texts.push(String::new());
+            }
+        }
+        spliced_texts.last_mut().expect("a text").push_str(after);
+    }
+    *texts = spliced_texts;
+    *values = spliced_values;
+}

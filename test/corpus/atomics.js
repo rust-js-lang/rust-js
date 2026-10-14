@@ -24,14 +24,12 @@ function order(seen, name) {
 }
 
 function main() {
-  const value = next_id();
-  const value$1 = next_id();
-  console.log(`${value} ${value$1} ${NEXT_ID}`);
+  console.log(`${next_id()} ${next_id()} ${NEXT_ID}`);
   READY = true;
-  const value$2 = READY;
+  const value = READY;
   const previous = READY;
   READY = false;
-  console.log(`${value$2} ${previous}`);
+  console.log(`${value} ${previous}`);
   const previous$1 = READY;
   READY = !!(previous$1 | true);
   const previous$2 = READY;
@@ -62,21 +60,15 @@ function main() {
   if (exchanged) {
     NEXT_ID = 9;
   }
-  console.log(
-    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
-      exchanged ? { TAG: "Ok", _0: previous$10 } : { TAG: "Err", _0: previous$10 },
-    )}`,
-  );
+  const value$1 = exchanged ? { TAG: "Ok", _0: previous$10 } : { TAG: "Err", _0: previous$10 };
+  console.log(`${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}`);
   const previous$11 = NEXT_ID;
   const exchanged$1 = previous$11 === 3;
   if (exchanged$1) {
     NEXT_ID = 9;
   }
-  console.log(
-    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
-      exchanged$1 ? { TAG: "Ok", _0: previous$11 } : { TAG: "Err", _0: previous$11 },
-    )}`,
-  );
+  const value$2 = exchanged$1 ? { TAG: "Ok", _0: previous$11 } : { TAG: "Err", _0: previous$11 };
+  console.log(`${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`}`);
   const previous$12 = NEXT_ID;
   const exchanged$2 = previous$12 === 3;
   if (exchanged$2) {
@@ -84,9 +76,7 @@ function main() {
   }
   const value$3 = exchanged$2 ? { TAG: "Ok", _0: previous$12 } : { TAG: "Err", _0: previous$12 };
   console.log(`${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`} ${NEXT_ID}`);
-  const value$4 = hit();
-  const value$5 = hit();
-  console.log(`${value$4} ${value$5} ${HITS.value}`);
+  console.log(`${hit()} ${hit()} ${HITS.value}`);
   const seen = [];
   let local = 5;
   order(seen, "load");

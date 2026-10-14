@@ -18,8 +18,9 @@ function main() {
   const p = { v: $iter([1, 2]) };
   const value = f(p);
   const value$1 = f(p);
+  const value$2 = f(p);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))(f(p))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

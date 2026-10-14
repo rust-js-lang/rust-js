@@ -184,7 +184,6 @@ export function report() {
     $unborrow(value);
     throw error;
   }
-  const value$1 = `total=${value.value} again=${tmp.value}\n`;
   try {
     $unborrow(tmp);
   } catch (error) {
@@ -192,7 +191,7 @@ export function report() {
     throw error;
   }
   $unborrow(value);
-  out += value$1;
+  out += `total=${value.value} again=${tmp.value}\n`;
   const stack = [1, 2, 3];
   const popped = [];
   while (true) {

@@ -24,27 +24,24 @@ function greet(name) {
 function main() {
   const owned = "ann";
   const none = undefined;
-  const value$2 = greet(owned);
-  console.log(`${value$2} ${greet(none)}`);
+  console.log(`${greet(owned)} ${greet(none)}`);
   const value = owned != null ? $byteLen(owned) : undefined;
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const items = [3, 1, 2];
   const slice = items;
-  const value$3 = slice?.length;
+  const value$2 = slice?.length;
   const value$1 = slice != null ? slice[0] : undefined;
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const boxed = 7;
   console.log(`${boxed == null ? "None" : `Some(${boxed})`}`);
   const shared = "rc";
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(shared?.toUpperCase())}`,
-  );
+  const value$3 = shared?.toUpperCase();
+  console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`);
   const named = ["custom"];
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(named != null ? nameDeref_deref(named) : undefined)}`,
-  );
+  const value$4 = named != null ? nameDeref_deref(named) : undefined;
+  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`);
   const ok = { TAG: "Ok", _0: "fine" };
   const err = { TAG: "Err", _0: 4 };
   console.log(

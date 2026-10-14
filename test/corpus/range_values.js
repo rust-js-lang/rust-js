@@ -83,16 +83,19 @@ function main() {
     `${first == null ? "None" : `Some(${first})`} ${last == null ? "None" : `Some(${last})`} ${steps.start}..${steps.end} ${Math.max(steps.end - steps.start, 0)}`,
   );
   const inclusive = { start: 1, end: 6 };
-  const value = evens({ start: inclusive.start, end: inclusive.end });
   console.log(
-    `${inclusive.start}..=${inclusive.end} ${inclusive.start} ${inclusive.end} [${value.map((item) => String(item)).join(", ")}]`,
+    `${inclusive.start}..=${inclusive.end} ${inclusive.start} ${inclusive.end} [${evens({
+      start: inclusive.start,
+      end: inclusive.end,
+    })
+      .map((item) => String(item))
+      .join(", ")}]`,
   );
   const low = 3;
   const high = 9;
   console.log(`${low} ${high} ${2 > 1}`);
-  const value$1 = total({ start: 1, end: 5 });
   console.log(
-    `${value$1} ${$lazyRange(0, 5)
+    `${total({ start: 1, end: 5 })} ${$lazyRange(0, 5)
       .map((x) => Math.imul(x, 2))
       .reduce((a, b) => (a + b) | 0, 0)}`,
   );
@@ -106,8 +109,7 @@ function main() {
   for (const x of [3, 7, 10]) {
     console.log(`${1 <= x && x < 4} ${1 <= x && x <= 7} ${5 <= x} ${x < 8} ${x <= 7}`);
   }
-  const value$2 = clamp_to({ start: 0, end: 5 }, 9);
-  console.log(`${value$2} ${clamp_to({ start: 0, end: 5 }, 3)}`);
+  console.log(`${clamp_to({ start: 0, end: 5 }, 9)} ${clamp_to({ start: 0, end: 5 }, 3)}`);
   const unit = { start: 0, end: 1 };
   console.log(
     `${unit.start <= 0.5 && 0.5 < unit.end} ${unit.start <= NaN && NaN < unit.end} ${$debugF64(unit.start)}..${$debugF64(unit.end)}`,
@@ -168,21 +170,19 @@ function main() {
           ];
           const spans = tmp;
           const lens = spans.map((s) => Math.max(s.end - s.start, 0));
+          const value = $eq(labelled, copy);
           console.log(
-            `${labelledDebug_fmt(labelled)} ${$eq(labelled, copy)} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.map((item) => String(item)).join(", ")}]`,
-          );
-          const value = sum_all($lazyRange(1, 4));
-          const value$1 = sum_all($iterator(r_of(3), $rangeNext));
-          console.log(
-            `${value} ${value$1} ${sum_all($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
-          );
-          const value$2 = shown_twice(
-            { start: 1, end: 4 },
-            { clone: (value) => ({ start: value.start, end: value.end }) },
-            { fmt: (value) => `${value.start}..${value.end}` },
+            `${labelledDebug_fmt(labelled)} ${value} [${spans.map((item) => `${item.start}..${item.end}`).join(", ")}] [${lens.map((item) => String(item)).join(", ")}]`,
           );
           console.log(
-            `${value$2} ${shown_twice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
+            `${sum_all($lazyRange(1, 4))} ${sum_all($iterator(r_of(3), $rangeNext))} ${sum_all($iterator({ start: 1 }, $rangeFromNext).take(3))}`,
+          );
+          console.log(
+            `${shown_twice(
+              { start: 1, end: 4 },
+              { clone: (value) => ({ start: value.start, end: value.end }) },
+              { fmt: (value) => `${value.start}..${value.end}` },
+            )} ${shown_twice({ end: 2 }, { clone: (value) => ({ ...value }) }, { fmt: (value) => `..=${value.end}` })}`,
           );
           tmp$1 = undefined;
           tmp$1 = [1, 2, 3, 4, 5];

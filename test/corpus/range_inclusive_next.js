@@ -13,11 +13,11 @@ export function f(r) {
 function main() {
   const r = { start: 1, end: 3 };
   for (let i = 0; i < 5; i++) {
-    console.log(
-      `${((value) => (value == null ? "None" : `Some(${value})`))(f(r))} ${r.start}..=${r.end}`,
-    );
+    const value = f(r);
+    console.log(`${value == null ? "None" : `Some(${value})`} ${r.start}..=${r.end}`);
   }
   const e = { start: 5, end: 4 };
-  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(f(e))}`);
+  const value = f(e);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 }
 //# sourceMappingURL=case.js.map

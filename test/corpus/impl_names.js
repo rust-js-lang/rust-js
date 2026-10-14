@@ -142,15 +142,10 @@ function fail_ser(EError) {
 }
 
 function main() {
-  const value = vecI32Describe_describe([1, 2]);
-  console.log(`${value} | ${vecStringDescribe_describe(["a"])}`);
-  const value$1 = wrapperRefStrDescribe_describe(["x"]);
-  console.log(`${value$1} | ${wrapperU8Describe_describe([7])}`);
-  const value$2 = __ConvertU8_convert(undefined);
-  console.log(`${value$2} | ${__ConvertRefU8_convert(undefined)}`);
-  const value$3 = first();
-  console.log(`${value$3} | ${second()}`);
-  const value$4 = fail_de(errorDeError())[0];
-  console.log(`${value$4} | ${fail_ser(errorSerError())[0]}`);
+  console.log(`${vecI32Describe_describe([1, 2])} | ${vecStringDescribe_describe(["a"])}`);
+  console.log(`${wrapperRefStrDescribe_describe(["x"])} | ${wrapperU8Describe_describe([7])}`);
+  console.log(`${__ConvertU8_convert(undefined)} | ${__ConvertRefU8_convert(undefined)}`);
+  console.log(`${first()} | ${second()}`);
+  console.log(`${fail_de(errorDeError())[0]} | ${fail_ser(errorSerError())[0]}`);
 }
 //# sourceMappingURL=case.js.map

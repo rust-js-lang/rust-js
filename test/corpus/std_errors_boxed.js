@@ -156,9 +156,8 @@ function main() {
     Display: () => ({ fmt: (value) => value }),
     source: () => undefined,
   });
-  console.log(
-    `${receiver$1.impl.Display().fmt(receiver$1.value)} ${!receiver.impl.source(receiver.value)}`,
-  );
+  const value$1 = !receiver.impl.source(receiver.value);
+  console.log(`${receiver$1.impl.Display().fmt(receiver$1.value)} ${value$1}`);
   console.log(
     `${describe($unwrapErr($tryFromInt(300, 0, 255)), {
       Debug: () => ({ fmt: (value) => $debugParseError(value, "TryFromIntError") }),

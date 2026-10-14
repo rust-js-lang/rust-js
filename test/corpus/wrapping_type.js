@@ -42,29 +42,19 @@ function main() {
   console.log(
     `${(wrapping$1[0] << 35) >>> 0} ${wrapping$2[0] >> 2n} ${(wrapping$3[0] << (9 & 7)) & 255}`,
   );
-  const value = pow(
-    [3],
-    [1],
-    7,
-    { mul: (a, b) => [(a[0] * b[0]) & 255] },
-    { copy: (value) => [value[0]] },
+  console.log(
+    `${pow([3], [1], 7, { mul: (a, b) => [(a[0] * b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 }, { copy: (value) => value })}`,
   );
   console.log(
-    `${value[0]} ${pow(3, 1, 7, { mul: (a, b) => Math.imul(a, b) >>> 0 }, { copy: (value) => value })}`,
+    `${total([[250], [10]], [0], { add: (a, b) => [(a[0] + b[0]) & 255] }, { copy: (value) => [value[0]] })[0]} ${same([5n], [5n], { eq: $eq })}`,
   );
-  const value$1 = total(
-    [[250], [10]],
-    [0],
-    { add: (a, b) => [(a[0] + b[0]) & 255] },
-    { copy: (value) => [value[0]] },
-  );
-  console.log(`${value$1[0]} ${same([5n], [5n], { eq: $eq })}`);
   const left = [7];
   const right = [9];
   const left$1 = [3];
   const right$1 = [-1];
-  const value$2 = $cmp(left[0], right[0]) > 0 ? left : right;
-  console.log(`${value$2[0]} ${$cmp(left$1[0], right$1[0]) < 0}`);
+  console.log(
+    `${($cmp(left[0], right[0]) > 0 ? left : right)[0]} ${$cmp(left$1[0], right$1[0]) < 0}`,
+  );
   console.log(`${START[0]} ${[(START[0] + 10) & 255][0]}`);
 }
 //# sourceMappingURL=case.js.map

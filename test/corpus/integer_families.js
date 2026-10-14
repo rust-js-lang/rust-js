@@ -20,51 +20,63 @@ function main() {
   console.log(`${5 > 0} ${0 > 0} ${-3n < 0n} ${0 < 0}`);
   for (const x of [5, 0, -2147483648]) {
     const value = $checked(-x, -2147483648, 2147483647);
+    const value$1 = $checked(Math.abs(x), -2147483648, 2147483647);
     console.log(
-      `${value == null ? "None" : `Some(${value})`} ${-x | 0} (${-x | 0}, ${x === -2147483648}) ${((value) => (value == null ? "None" : `Some(${value})`))($checked(Math.abs(x), -2147483648, 2147483647))}`,
+      `${value == null ? "None" : `Some(${value})`} ${-x | 0} (${-x | 0}, ${x === -2147483648}) ${value$1 == null ? "None" : `Some(${value$1})`}`,
     );
   }
   for (const x of [0, 1, 200]) {
+    const value = $checked(-x, 0, 255);
+    const value$1 = [-x & 255, x !== 0];
     console.log(
-      `${((value) => (value == null ? "None" : `Some(${value})`))($checked(-x, 0, 255))} ${-x & 255} ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)([-x & 255, x !== 0])}`,
+      `${value == null ? "None" : `Some(${value})`} ${-x & 255} (${value$1[0]}, ${value$1[1]})`,
     );
   }
+  const value$2 = $bigChecked(
+    $bigAbs(-9223372036854775808n),
+    -9223372036854775808n,
+    9223372036854775807n,
+  );
   console.log(
-    `${-9223372036854775808n} ${18446744073709551609n} ${((value) => (value == null ? "None" : `Some(${value})`))($bigChecked($bigAbs(-9223372036854775808n), -9223372036854775808n, 9223372036854775807n))}`,
+    `${-9223372036854775808n} ${18446744073709551609n} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   console.log(
     `${Math.abs(-2147483648) | 0} ${(Math.abs(-7) << 24) >> 24} ${(Math.abs(-128) << 24) >> 24}`,
   );
-  const value$2 = $overflowing(4, 250 + 10, 0, 255);
-  const value$3 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
+  const value$3 = $overflowing(4, 250 + 10, 0, 255);
+  const value$4 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
+  const value$5 = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
   console.log(
-    `(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)($overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647))}`,
+    `(${value$3[0]}, ${value$3[1]}) (${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]})`,
   );
-  const value$4 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
-  const value$5 = $overflowing(127, -128 - 1, -128, 127);
+  const value$6 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
+  const value$7 = $overflowing(127, -128 - 1, -128, 127);
+  const value$8 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
   console.log(
-    `(${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)($overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647))}`,
+    `(${value$6[0]}, ${value$6[1]}) (${value$7[0]}, ${value$7[1]}) (${value$8[0]}, ${value$8[1]})`,
   );
   const exact = 18446744073709551615n + 1n;
   const exact$1 = -9223372036854775808n * -1n;
-  const value$6 = $overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n);
-  console.log(
-    `(${value$6[0]}, ${value$6[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)($overflowing(BigInt.asIntN(64, exact$1), exact$1, -9223372036854775808n, 9223372036854775807n))}`,
+  const value$9 = $overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n);
+  const value$10 = $overflowing(
+    BigInt.asIntN(64, exact$1),
+    exact$1,
+    -9223372036854775808n,
+    9223372036854775807n,
   );
-  const value$7 = $checkedRem(7, 2, -2147483648);
-  const value$8 = $checkedRem(7, 0, -2147483648);
-  const value$9 = $checkedRem(-2147483648, -1, -2147483648);
+  console.log(`(${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]})`);
+  const value$11 = $checkedRem(7, 2, -2147483648);
+  const value$12 = $checkedRem(7, 0, -2147483648);
+  const value$13 = $checkedRem(-2147483648, -1, -2147483648);
+  const value$14 = $checkedRem(-8, 2, -2147483648);
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-8, 2, -2147483648))}`,
+    `${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`}`,
   );
-  const value$10 = $wrappingDiv(-2147483648, -1, -2147483648);
-  const value$11 = $wrappingDiv(-7, 2, -2147483648);
-  const value$12 = $wrappingRem(-2147483648, -1, -2147483648);
-  console.log(`${value$10} ${value$11} ${value$12} ${$wrappingRem(-7, 2, -2147483648)}`);
-  const value$13 = $wrappingDiv(0, -5, -2147483648);
-  const value$14 = $wrappingRem(9n, 4n);
   console.log(
-    `${value$13} ${value$14} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-9223372036854775808n, -1n, -9223372036854775808n))}`,
+    `${$wrappingDiv(-2147483648, -1, -2147483648)} ${$wrappingDiv(-7, 2, -2147483648)} ${$wrappingRem(-2147483648, -1, -2147483648)} ${$wrappingRem(-7, 2, -2147483648)}`,
+  );
+  console.log(
+    `${$wrappingDiv(0, -5, -2147483648)} ${$wrappingRem(9n, 4n)} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-9223372036854775808n, -1n, -9223372036854775808n))}`,
   );
   const by = 33;
   const value = 4 < 32 ? (1 << 4) | 0 : undefined;
@@ -77,19 +89,14 @@ function main() {
   console.log(
     `${value$15 == null ? "None" : `Some(${value$15})`} ${value$16 == null ? "None" : `Some(${value$16})`} ${BigInt.asUintN(64, 1n << 1n)}`,
   );
-  const value$17 = $pow(3, 21);
-  const value$18 = $pow(2, 9) & 255;
-  const value$19 = $saturatingPow(-2, 31, -2147483648, 2147483647);
   console.log(
-    `${value$17} ${value$18} ${value$19} ${$saturatingPow(-2, 32, -2147483648, 2147483647)}`,
+    `${$pow(3, 21)} ${$pow(2, 9) & 255} ${$saturatingPow(-2, 31, -2147483648, 2147483647)} ${$saturatingPow(-2, 32, -2147483648, 2147483647)}`,
   );
-  const value$20 = $saturatingPow(10, 10, 0, 4294967295);
-  const value$21 = $saturatingPow(2n, 70, -9223372036854775808n, 9223372036854775807n);
-  console.log(`${value$20} ${value$21} ${$saturatingPow(7, 2, 0, 255)}`);
-  const value$22 = $saturatingPow(-3, 21, -2147483648, 2147483647);
-  const value$23 = $saturatingPow(-3, 22, -2147483648, 2147483647);
   console.log(
-    `${value$22} ${value$23} ${$saturatingPow(-2n, 65, -9223372036854775808n, 9223372036854775807n)}`,
+    `${$saturatingPow(10, 10, 0, 4294967295)} ${$saturatingPow(2n, 70, -9223372036854775808n, 9223372036854775807n)} ${$saturatingPow(7, 2, 0, 255)}`,
+  );
+  console.log(
+    `${$saturatingPow(-3, 21, -2147483648, 2147483647)} ${$saturatingPow(-3, 22, -2147483648, 2147483647)} ${$saturatingPow(-2n, 65, -9223372036854775808n, 9223372036854775807n)}`,
   );
 }
 //# sourceMappingURL=case.js.map

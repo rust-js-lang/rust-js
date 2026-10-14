@@ -147,8 +147,9 @@ function main() {
     throw error;
   }
   try {
+    const value = find([4], 5);
     console.log(
-      `${tmp$1} ${tmp$2 == null ? "None" : `Some(${tmp$2})`} ${((value) => (value == null ? "None" : `Some(${value})`))(find([4], 5))}`,
+      `${tmp$1} ${tmp$2 == null ? "None" : `Some(${tmp$2})`} ${value == null ? "None" : `Some(${value})`}`,
     );
   } catch (error) {
     if (maybe$live) {

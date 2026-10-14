@@ -91,8 +91,11 @@ function main() {
   console.log(
     `${missing} [${items.map((item) => String(item)).join(", ")}] (${pair[0]}, ${pair[1]}) [${sums.map((item) => String(item)).join(", ")}] ${first}`,
   );
-  const value = radius_plus_one({ TAG: "Circle", _0: 2 });
-  console.log(`${$displayF64(value)} ${$displayF64(radius_plus_one("Dot"))}`);
+  console.log(
+    `${$displayF64(
+      radius_plus_one({ TAG: "Circle", _0: 2 }),
+    )} ${$displayF64(radius_plus_one("Dot"))}`,
+  );
   const shapes = [
     { TAG: "Circle", _0: 1 },
     { TAG: "Square", side: 2 },
@@ -117,9 +120,8 @@ function main() {
   );
   give((value) => {}, [3]);
   console.log(`${Marker.is_marker(Marker.new())}`);
-  const value$1 = sizes(4, 4);
-  console.log(
-    `(${value$1[0]}, ${value$1[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(sizes(4, 2))}`,
-  );
+  const value = sizes(4, 4);
+  const value$1 = sizes(4, 2);
+  console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);
 }
 //# sourceMappingURL=case.js.map

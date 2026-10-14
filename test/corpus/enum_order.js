@@ -7,30 +7,32 @@ export function entry() {
 }
 
 function main() {
-  const value = $cmpIn(["Below", "Low", "High"], "High", "Low") > 0;
-  const value$1 = $cmpIn(["Below", "Low", "High"], "Low", "Below") > 0;
-  console.log(`${value} ${value$1} ${$cmpIn(["Below", "Low", "High"], "High", "Below") > 0}`);
-  const value$2 = $cmpIn(["One", "Two", "Max"], "Two", "Max") < 0;
-  console.log(`${value$2} ${$cmpIn(["One", "Two", "Max"], "One", "Two") < 0}`);
+  console.log(
+    `${$cmpIn(["Below", "Low", "High"], "High", "Low") > 0} ${
+      $cmpIn(["Below", "Low", "High"], "Low", "Below") > 0
+    } ${$cmpIn(["Below", "Low", "High"], "High", "Below") > 0}`,
+  );
+  console.log(
+    `${$cmpIn(["One", "Two", "Max"], "Two", "Max") < 0} ${
+      $cmpIn(["One", "Two", "Max"], "One", "Two") < 0
+    }`,
+  );
   const levels = ["High", "Below", "Low"];
   levels.sort((a, b) => $cmpIn(["Below", "Low", "High"], a, b));
-  const value$3 = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));
+  const value = $maxBy(levels, (a, b) => $cmpIn(["Below", "Low", "High"], a, b));
   const arg = $cmpIn(["Below", "Low", "High"], "Low", "High");
   console.log(
-    `[${levels.map((item) => item).join(", ")}] ${value$3 == null ? "None" : `Some(${value$3})`} ${
+    `[${levels.map((item) => item).join(", ")}] ${value == null ? "None" : `Some(${value})`} ${
       ["Less", "Equal", "Greater"][arg + 1]
     }`,
   );
-  const value$4 = $cmpIn(["Below", "Low", "High"], "High", "Below");
+  const value$1 = $cmpIn(["Below", "Low", "High"], "High", "Below");
   console.log(
-    `${value$4 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$4 + 1]})`} ${
+    `${value$1 == null ? "None" : `Some(${["Less", "Equal", "Greater"][value$1 + 1]})`} ${
       $cmpIn(["First", "Second", "Third"], "Third", "First") > 0
     }`,
   );
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))(
-      $minBy(["Second", "First"], (a, b) => $cmpIn(["First", "Second", "Third"], a, b)),
-    )}`,
-  );
+  const value$2 = $minBy(["Second", "First"], (a, b) => $cmpIn(["First", "Second", "Third"], a, b));
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
 }
 //# sourceMappingURL=case.js.map

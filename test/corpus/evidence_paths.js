@@ -170,16 +170,16 @@ function bagAdd_add(bag, other) {
 }
 
 function main() {
-  const value = check([3], 1, smallInt(), u8NonZero());
-  console.log(`${value} ${check([3], 0, smallInt(), u8NonZero())}`);
-  console.log(`${produced(21, i32Source())}`);
-  const value$1 = shout(12, { to_string: String });
-  const value$2 = shout("abc", { to_string: (value) => value });
-  console.log(`${value$1} ${value$2} ${shout([21.5], { to_string: celsiusDisplay_fmt })}`);
-  const value$3 = optionGetterT({ clone: (value) => value }).twice(4);
   console.log(
-    `(${value$3[0]}, ${value$3[1]}) ${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])})`)(optionGetterT({ clone: (value) => value }).twice("hi"))}`,
+    `${check([3], 1, smallInt(), u8NonZero())} ${check([3], 0, smallInt(), u8NonZero())}`,
   );
+  console.log(`${produced(21, i32Source())}`);
+  console.log(
+    `${shout(12, { to_string: String })} ${shout("abc", { to_string: (value) => value })} ${shout([21.5], { to_string: celsiusDisplay_fmt })}`,
+  );
+  const value = optionGetterT({ clone: (value) => value }).twice(4);
+  const value$1 = optionGetterT({ clone: (value) => value }).twice("hi");
+  console.log(`(${value[0]}, ${value[1]}) (${$debugStr(value$1[0])}, ${$debugStr(value$1[1])})`);
   console.log(`${iDigits().digit_sum($iter([1, 2, 3]))}`);
   const p = { x: 1 };
   const self = { value: p };
@@ -196,8 +196,7 @@ function main() {
     [[2, 3]],
   );
   $assign(bag, self$1.value);
-  console.log(
-    `${bagDebug_fmt(before$1)} ${bagDebug_fmt(pointPositionedS_x(bag, { clone: (value) => [value[0].slice()] }))}`,
-  );
+  const value$2 = pointPositionedS_x(bag, { clone: (value) => [value[0].slice()] });
+  console.log(`${bagDebug_fmt(before$1)} ${bagDebug_fmt(value$2)}`);
 }
 //# sourceMappingURL=case.js.map

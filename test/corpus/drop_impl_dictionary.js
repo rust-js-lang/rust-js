@@ -96,8 +96,7 @@ function main() {
     `${wrapConsume_consume([["called directly"]], { clone: (value) => value }, loudDrop_drop)}`,
   );
   console.log(`${eat([5], wrapConsume({ clone: (value) => value }))}`);
-  const value = taken([7], wrapTake());
-  console.log(`${value} ${taken([["taken"]], wrapTake(loudDrop_drop))}`);
+  console.log(`${taken([7], wrapTake())} ${taken([["taken"]], wrapTake(loudDrop_drop))}`);
   console.log(`${taken([8], wrapTake())}`);
   const wrapped = [["replaced"]];
   try {

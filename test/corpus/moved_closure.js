@@ -16,7 +16,6 @@ function main() {
   const k = 41;
   const h = () => (k + 1) | 0;
   const h2 = h;
-  const value = h();
-  console.log(`${value} ${h2()}`);
+  console.log(`${h()} ${h2()}`);
 }
 //# sourceMappingURL=case.js.map

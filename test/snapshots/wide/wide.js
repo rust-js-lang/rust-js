@@ -122,7 +122,8 @@ export function report() {
   const id = Id.new(1700000000123n, 5, 42);
   const value = Id.millis(id);
   const value$1 = Id.worker(id);
-  out += `${idDebug_fmt(id)} ${value} ${value$1} ${Id.sequence(id)}\n`;
+  const value$2 = Id.sequence(id);
+  out += `${idDebug_fmt(id)} ${value} ${value$1} ${value$2}\n`;
   const later = Id.new(1700000000124n, 1, 0);
   out += `${$cmp(id[0], later[0]) < 0} ${$bigMax(id[0], later[0]) === later[0]}\n`;
   for (const text of ["", "a", "rust-js"]) {
@@ -145,24 +146,25 @@ export function report() {
   out += `${max} ${BigInt.asUintN(64, max + 1n)} ${BigInt.asIntN(64, min - 1n)} ${9007199254740993n} ${27021597764222979n}\n`;
   out += `${18446744073709551615n} ${BigInt.asIntN(64, max)} ${Number(BigInt.asUintN(32, max))} ${Number(BigInt.asIntN(32, min))} ${$displayF64(Number(max))} ${$displayF64(1152921504606847000)}\n`;
   out += `${9223372036854775807n} ${0n} ${0n} ${10000000000000000000n}\n`;
-  const value$2 = $bigChecked(max + 1n, 0n, 18446744073709551615n);
-  const value$3 = $bigChecked(0n - min, -9223372036854775808n, 9223372036854775807n);
-  const value$4 = $bigCheckedDiv(5n, 0n, -9223372036854775808n);
-  out += `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedPow(10n, 19, 0n, 18446744073709551615n))}\n`;
+  const value$3 = $bigChecked(max + 1n, 0n, 18446744073709551615n);
+  const value$4 = $bigChecked(0n - min, -9223372036854775808n, 9223372036854775807n);
+  const value$5 = $bigCheckedDiv(5n, 0n, -9223372036854775808n);
+  const value$6 = $checkedPow(10n, 19, 0n, 18446744073709551615n);
+  out += `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}\n`;
   out += `${$bigClamp(max + 9n, 0n, 18446744073709551615n)} ${$bigClamp(min - 1n, -9223372036854775808n, 9223372036854775807n)} ${$bigLeadingZeros(max)} ${$bigTrailingZeros(BigInt.asUintN(64, 1n << 40n))} ${$bigCountOnes(max)}\n`;
-  const value$5 = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
-  const value$6 = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
-  const value$7 = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
-  out += `${value$5} ${value$6} ${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugParseError(value$7._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG === "Err"}\n`;
-  const value$8 = $tryFromInt(max, 0, 4294967295);
-  const value$9 =
+  const value$7 = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
+  const value$8 = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
+  const value$9 = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
+  out += `${value$7} ${value$8} ${value$9.TAG === "Ok" ? `Ok(${value$9._0})` : `Err(${$debugParseError(value$9._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG === "Err"}\n`;
+  const value$10 = $tryFromInt(max, 0, 4294967295);
+  const value$11 =
     $tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG ===
     "Err";
-  out += `${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${$debugParseError(value$8._0, "TryFromIntError")})`} ${value$9} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
+  out += `${value$10.TAG === "Ok" ? `Ok(${value$10._0})` : `Err(${$debugParseError(value$10._0, "TryFromIntError")})`} ${value$11} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
-  const value$10 = $unwrapErr($tryFromInt(300n, 0, 255));
-  const value$11 = low === $unwrapErr($tryFromInt(300n, 0, 255));
-  out += `${$debugParseError(low, "TryFromIntError")} ${low} ${value$10} ${value$11}\n`;
+  const value$12 = $unwrapErr($tryFromInt(300n, 0, 255));
+  const value$13 = low === $unwrapErr($tryFromInt(300n, 0, 255));
+  out += `${$debugParseError(low, "TryFromIntError")} ${low} ${value$12} ${value$13}\n`;
   const stamps = [1700000000000n, -5n, 0n, 9223372036854775807n, -9223372036854775808n];
   stamps.sort($cmp);
   const total = stamps

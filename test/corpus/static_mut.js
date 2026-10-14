@@ -46,7 +46,6 @@ function main() {
   const wrap = WRAP;
   console.log(`[${slots.map((item) => String(item)).join(", ")}] ${wrap}`);
   LINES.value = 10;
-  const value = line();
-  console.log(`${value} ${line()}`);
+  console.log(`${line()} ${line()}`);
 }
 //# sourceMappingURL=case.js.map

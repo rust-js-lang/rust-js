@@ -48,15 +48,12 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))(
-      $max(
-        evens(v)
-          .map((n) => Math.imul(n, 10) >>> 0)
-          .toArray(),
-      ),
-    )}`,
+  const value = $max(
+    evens(v)
+      .map((n) => Math.imul(n, 10) >>> 0)
+      .toArray(),
   );
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   console.log(
     `[${numbers(true)
       .toArray()
@@ -65,8 +62,9 @@ function main() {
   );
   console.log(`${numbers(false).reduce((a, b) => (a + b) >>> 0, 0)}`);
   const it = $iter(v);
+  const value$1 = first_two(it);
   console.log(
-    `${((tuple) => `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(first_two(it))}`,
+    `(${value$1[0] == null ? "None" : `Some(${value$1[0]})`}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`})`,
   );
   console.log(`${total(it)}`);
   const rest = $iter(v);
@@ -77,7 +75,8 @@ function main() {
       .join(", ")}]`,
   );
   const boxed = $iter(v);
-  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))($next(boxed))}`);
+  const value$2 = $next(boxed);
+  console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
   for (const n of boxed) {
     $print(`${n} `);
   }

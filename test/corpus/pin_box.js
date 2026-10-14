@@ -78,9 +78,8 @@ function main() {
   const a = [1, 2];
   const b = [1, 3];
   const copy = a.slice();
-  const value = $eq(a, copy);
   console.log(
-    `${value} ${$cmpItems(a, b, $cmp) < 0} [${copy.map((item) => String(item)).join(", ")}]`,
+    `${$eq(a, copy)} ${$cmpItems(a, b, $cmp) < 0} [${copy.map((item) => String(item)).join(", ")}]`,
   );
   const changed = a.slice();
   changed.push(9);
@@ -95,8 +94,7 @@ function main() {
     throw error;
   }
   noisyDrop_drop(_noisy);
-  const value$1 = anyPartialEq_eq(undefined);
-  console.log(`${value$1} ${anyPartialEq_eq(undefined)}`);
+  console.log(`${anyPartialEq_eq(undefined)} ${anyPartialEq_eq(undefined)}`);
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

@@ -26,8 +26,9 @@ function main() {
   console.log("2147483648 -2147483648 -4");
   const value = $checked(250 + 10, 0, 255);
   const value$1 = $checked(5 - 6, 0, 4294967295);
+  const value$2 = $checked(2147483647 * 2, -2147483648, 2147483647);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))($checked(2147483647 * 2, -2147483648, 2147483647))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   console.log(
     `${Math.min(250 + 10, 255)} ${Math.max(0 - 1, 0)} ${Math.min(Math.max(-2147483648 - 1, -2147483648), 2147483647)}`,
@@ -36,9 +37,8 @@ function main() {
 }
 
 function shifts(by, far, small) {
-  const value = 22 >> Number(by & 63n);
-  const value$1 = (1 << (Number(far & 63n) & 7)) & 255;
-  const value$2 = BigInt.asUintN(64, 5n << (BigInt(small) & 63n));
-  console.log(`${value} ${value$1} ${value$2} ${-64n >> (BigInt(far) & 63n)}`);
+  console.log(
+    `${22 >> Number(by & 63n)} ${(1 << (Number(far & 63n) & 7)) & 255} ${BigInt.asUintN(64, 5n << (BigInt(small) & 63n))} ${-64n >> (BigInt(far) & 63n)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

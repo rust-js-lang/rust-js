@@ -68,51 +68,50 @@ const STRINGS = [
 
 function main() {
   for (const a of STRINGS) {
-    const value = $byteLen(a);
     const length = Array.from(a).length;
-    const value$1 = Array.from(a)[1];
-    const value$2 = Array.from(a).toReversed().join("");
-    const value$3 = a.toUpperCase();
-    const value$4 = a.toLowerCase();
-    const value$5 = $asciiCase(a, true);
+    const value = Array.from(a)[1];
+    const value$1 = Array.from(a).toReversed().join("");
+    const value$2 = a.toUpperCase();
+    const value$3 = a.toLowerCase();
+    const value$4 = $asciiCase(a, true);
     const arg = $asciiCase(a);
     console.log(
-      `${$debugStr(a)}: len ${value} ${!a} ${length} chars ${value$1 == null ? "None" : `Some(${$debugStr(value$1, "'")})`} rev ${$debugStr(value$2)} case ${$debugStr(value$3)} ${$debugStr(value$4)} ${$debugStr(value$5)} ${$debugStr(arg)}`,
+      `${$debugStr(a)}: len ${$byteLen(a)} ${!a} ${length} chars ${value == null ? "None" : `Some(${$debugStr(value, "'")})`} rev ${$debugStr(value$1)} case ${$debugStr(value$2)} ${$debugStr(value$3)} ${$debugStr(value$4)} ${$debugStr(arg)}`,
     );
-    const value$6 = $trim(a);
-    const value$7 = $trimStart(a);
-    const value$8 = $trimEnd(a);
-    const value$9 = $trimMatches(a, " ");
-    const value$10 = $trimMatches(a, "a", true, false);
-    const value$11 = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
+    const value$5 = $trim(a);
+    const value$6 = $trimStart(a);
+    const value$7 = $trimEnd(a);
+    const value$8 = $trimMatches(a, " ");
+    const value$9 = $trimMatches(a, "a", true, false);
+    const value$10 = a.split(/\p{White_Space}+/u).filter((word) => word !== "");
     const arg$1 = $lines(a);
     console.log(
-      `${$debugStr(a)}: trim ${$debugStr(value$6)} ${$debugStr(value$7)} ${$debugStr(value$8)} ${$debugStr(value$9)} ${$debugStr(value$10)} words [${value$11.map((item) => $debugStr(item)).join(", ")}] lines [${arg$1.map((item) => $debugStr(item)).join(", ")}]`,
+      `${$debugStr(a)}: trim ${$debugStr(value$5)} ${$debugStr(value$6)} ${$debugStr(value$7)} ${$debugStr(value$8)} ${$debugStr(value$9)} words [${value$10.map((item) => $debugStr(item)).join(", ")}] lines [${arg$1.map((item) => $debugStr(item)).join(", ")}]`,
     );
-    const value$12 = a.split(",");
-    const value$13 = Iterator.from($splitN(a, 2, " ")).toArray();
-    const value$14 = Iterator.from($rsplit(a, " ")).toArray();
-    const value$15 = $splitOnce(a, ",");
-    const value$16 = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
-    const value$17 = Iterator.from($charIndices(a)).toArray();
-    const value$18 = $charBoundary(a, 1) !== undefined;
-    const value$19 = $strGet(a, 0, 1);
+    const value$11 = a.split(",");
+    const value$12 = Iterator.from($splitN(a, 2, " ")).toArray();
+    const value$13 = Iterator.from($rsplit(a, " ")).toArray();
+    const value$14 = $splitOnce(a, ",");
+    const value$15 = Array.from(new TextEncoder().encode(a)).reduce((a, b) => (a + b) >>> 0, 0);
+    const value$16 = Iterator.from($charIndices(a)).toArray();
+    const value$17 = $charBoundary(a, 1) !== undefined;
+    const value$18 = $strGet(a, 0, 1);
     const arg$2 = Array.from($charIndices(a)).toReversed()[0];
     console.log(
-      `${$debugStr(a)}: split [${value$12.map((item) => $debugStr(item)).join(", ")}] [${value$13.map((item) => $debugStr(item)).join(", ")}] [${value$14.map((item) => $debugStr(item)).join(", ")}] ${value$15 == null ? "None" : `Some((${$debugStr(value$15[0])}, ${$debugStr(value$15[1])}))`} bytes ${value$16} [${value$17.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${value$18} ${value$19 == null ? "None" : `Some(${$debugStr(value$19)})`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}`,
+      `${$debugStr(a)}: split [${value$11.map((item) => $debugStr(item)).join(", ")}] [${value$12.map((item) => $debugStr(item)).join(", ")}] [${value$13.map((item) => $debugStr(item)).join(", ")}] ${value$14 == null ? "None" : `Some((${$debugStr(value$14[0])}, ${$debugStr(value$14[1])}))`} bytes ${value$15} [${value$16.map((item) => `(${item[0]}, ${$debugStr(item[1], "'")})`).join(", ")}] ${value$17} ${value$18 == null ? "None" : `Some(${$debugStr(value$18)})`} ${arg$2 == null ? "None" : `Some((${arg$2[0]}, ${$debugStr(arg$2[1], "'")}))`}`,
     );
-    const value$20 = $find(a, "a");
-    const value$21 = $rfind(a, "a");
-    const value$22 = $find(a, "b");
-    const value$23 = Iterator.from($matches(a, "a")).reduce((n) => n + 1, 0);
-    const value$24 = a.replaceAll("a", "xy");
-    const value$25 = a.repeat(2);
-    const value$26 = $parseInt(a, -2147483648, 2147483647);
-    const value$27 = $parseF64(a);
-    const value$28 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
+    const value$19 = $find(a, "a");
+    const value$20 = $rfind(a, "a");
+    const value$21 = $find(a, "b");
+    const value$22 = Iterator.from($matches(a, "a")).reduce((n) => n + 1, 0);
+    const value$23 = a.replaceAll("a", "xy");
+    const value$24 = a.repeat(2);
+    const value$25 = $parseInt(a, -2147483648, 2147483647);
+    const value$26 = $parseF64(a);
+    const value$27 = $utf8Lossy(Array.from(new TextEncoder().encode(a)));
     const arg$3 = Array.from(a).every((c) => /^\p{White_Space}$/u.test(c));
     console.log(
-      `${$debugStr(a)}: find ${value$20 == null ? "None" : `Some(${value$20})`} ${value$21 == null ? "None" : `Some(${value$21})`} ${value$22 == null ? "None" : `Some(${value$22})`} ${value$23} replace ${$debugStr(value$24)} ${$debugStr(value$25)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${value$26.TAG === "Ok" ? `Ok(${value$26._0})` : `Err(${$debugParseError(value$26._0, "ParseIntError")})`} ${value$27.TAG === "Ok" ? `Ok(${$debugF64(value$27._0)})` : `Err(${$debugParseError(value$27._0, "ParseFloatError")})`} lossy ${$debugStr(value$28._0)} all ${arg$3}`,
+      `${$debugStr(a)}: find ${value$19 == null ? "None" : `Some(${value$19})`} ${value$20 == null ? "None" : `Some(${value$20})`} ${value$21 == null ? "None" : `Some(${value$21})`} ${value$22} replace ${$debugStr(value$23)} ${$debugStr(value$24)} fmt [${$pad(a, 8, ">")}] [${$pad(a, 8, "<")}] [${$pad(a, 8, "^")}] [${Array.from(a).slice(0, 2).join("")}] parse ${value$25.TAG === "Ok" ? `Ok(${value$25._0})` : `Err(${$debugParseError(value$25._0, "ParseIntError")})`} ${value$26.TAG === "Ok" ? `Ok(${$debugF64(value$26._0)})` : `Err(${$debugParseError(value$26._0, "ParseFloatError")})`} lossy ${$debugStr(value$27._0)} all ${arg$3}`,
     );
     for (const b of STRINGS) {
       const value = a.startsWith(b);

@@ -102,11 +102,15 @@ function pair(n) {
 export function mapped(n) {
   const h = half(n);
   const h$1 = half(n);
-  const value = h$1 != null ? (h$1 + 1) | 0 : undefined;
-  const value$1 = h != null ? double(h) : undefined;
+  const value = h != null ? double(h) : undefined;
   const h$2 = half(n);
   const x = h$2 != null ? (h$2 + 1) | 0 : undefined;
-  return [value, value$1, h != null ? h > 2 : undefined, x != null ? Math.imul(x, 3) : undefined];
+  return [
+    h$1 != null ? (h$1 + 1) | 0 : undefined,
+    value,
+    h != null ? h > 2 : undefined,
+    x != null ? Math.imul(x, 3) : undefined,
+  ];
 }
 
 export function mapped_more(n) {

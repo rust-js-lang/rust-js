@@ -63,12 +63,10 @@ function main() {
       .map((item) => `(${$debugStr(item[0])}, ${item[1]})`)
       .join(", ")}]`,
   );
-  console.log(
-    `${((value) => (value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`))($getKeyValue(scores, "a"))}`,
-  );
-  console.log(
-    `${((value) => (value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`))($removeEntry(scores, "c"))}`,
-  );
+  const value = $getKeyValue(scores, "a");
+  console.log(`${value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`}`);
+  const value$1 = $removeEntry(scores, "c");
+  console.log(`${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`}`);
   const drained = sorted(
     Iterator.from($drainAll(scores)),
     { cmp: (a, b) => $cmp(a[0], b[0]) || $cmp(a[1], b[1]) },
@@ -81,13 +79,10 @@ function main() {
     [1, "one"],
     [2, "two"],
   ]);
-  const value = sorted(
-    $iter(Array.from(new Map(names).keys())),
-    { cmp: $cmp },
-    { clone: (value) => value },
-  );
   console.log(
-    `[${value.map((item) => String(item)).join(", ")}] [${sorted(
+    `[${sorted($iter(Array.from(new Map(names).keys())), { cmp: $cmp }, { clone: (value) => value })
+      .map((item) => String(item))
+      .join(", ")}] [${sorted(
       $iter(Array.from(new Map(names).values())),
       { cmp: $cmp },
       { clone: (value) => value },
@@ -99,13 +94,10 @@ function main() {
   console.log(`${names.size}`);
   const a = new Set([1, 2, 3]);
   const b = new Set([2, 3, 4]);
-  const value$1 = sorted(
-    $iter($setAlgebra(a, b, "union")),
-    { cmp: $cmp },
-    { clone: (value) => value },
-  );
   console.log(
-    `[${value$1.map((item) => String(item)).join(", ")}] [${sorted(
+    `[${sorted($iter($setAlgebra(a, b, "union")), { cmp: $cmp }, { clone: (value) => value })
+      .map((item) => String(item))
+      .join(", ")}] [${sorted(
       $iter($setAlgebra(a, b, "intersection")),
       { cmp: $cmp },
       { clone: (value) => value },
@@ -113,13 +105,10 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$2 = sorted(
-    $iter($setAlgebra(a, b, "difference")),
-    { cmp: $cmp },
-    { clone: (value) => value },
-  );
   console.log(
-    `[${value$2.map((item) => String(item)).join(", ")}] [${sorted(
+    `[${sorted($iter($setAlgebra(a, b, "difference")), { cmp: $cmp }, { clone: (value) => value })
+      .map((item) => String(item))
+      .join(", ")}] [${sorted(
       $iter($setAlgebra(a, b, "symmetric")),
       { cmp: $cmp },
       { clone: (value) => value },
@@ -127,19 +116,21 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$3 = $isSubset(a, b, false);
-  const value$4 = $isSubset(new Set([2]), a, false);
-  console.log(`${value$3} ${value$4} ${$isDisjoint(a, b)}`);
-  const value$5 = $isSubset(b, new Set([4]), true);
-  const value$6 = a.has(2) ? 2 : undefined;
   console.log(
-    `${value$5} ${value$6 == null ? "None" : `Some(${value$6})`} ${((value) => (value == null ? "None" : `Some(${value})`))(a.has(9) ? 9 : undefined)}`,
+    `${$isSubset(a, b, false)} ${$isSubset(new Set([2]), a, false)} ${$isDisjoint(a, b)}`,
+  );
+  const value$2 = $isSubset(b, new Set([4]), true);
+  const value$3 = a.has(2) ? 2 : undefined;
+  const value$4 = a.has(9) ? 9 : undefined;
+  console.log(
+    `${value$2} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
   const taken = new Set(a);
-  const value$7 = taken.delete(1) ? 1 : undefined;
-  const value$8 = $setReplace(taken, 2);
+  const value$5 = taken.delete(1) ? 1 : undefined;
+  const value$6 = $setReplace(taken, 2);
+  const value$7 = $setReplace(taken, 7);
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${((value) => (value == null ? "None" : `Some(${value})`))($setReplace(taken, 7))}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
   $retainSet(taken, (x) => x % 2 === 1, taken);
   console.log(
@@ -153,9 +144,10 @@ function main() {
     [3, "c"],
     [9, "i"],
   ]);
-  const value$9 = $treeEnd(tree, $cmp, false, false, false);
+  const value$8 = $treeEnd(tree, $cmp, false, false, false);
+  const value$9 = $treeEnd(tree, $cmp, true, false, false);
   console.log(
-    `${value$9 == null ? "None" : `Some((${value$9[0]}, ${$debugStr(value$9[1])}))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1])}))`))($treeEnd(tree, $cmp, true, false, false))}`,
+    `${value$8 == null ? "None" : `Some((${value$8[0]}, ${$debugStr(value$8[1])}))`} ${value$9 == null ? "None" : `Some((${value$9[0]}, ${$debugStr(value$9[1])}))`}`,
   );
   console.log(
     `[${$treeRange(tree, $cmp, false, "BTreeMap", true, 2, true, 5, false)
@@ -163,36 +155,19 @@ function main() {
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const value$10 = $treeRange(
-    tree,
-    $cmp,
-    false,
-    "BTreeMap",
-    false,
-    undefined,
-    true,
-    3,
-    true,
-  ).slice();
   console.log(
-    `[${value$10.map((item) => `(${item[0]}, ${$debugStr(item[1])})`).join(", ")}] [${$treeRange(
-      tree,
-      $cmp,
-      false,
-      "BTreeMap",
-      true,
-      4,
-      false,
-      undefined,
-      false,
-    )
+    `[${$treeRange(tree, $cmp, false, "BTreeMap", false, undefined, true, 3, true)
+      .slice()
+      .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
+      .join(", ")}] [${$treeRange(tree, $cmp, false, "BTreeMap", true, 4, false, undefined, false)
       .slice()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const value$11 = $treeEnd(tree, $cmp, false, false, true);
+  const value$10 = $treeEnd(tree, $cmp, false, false, true);
+  const value$11 = $treeEnd(tree, $cmp, true, false, true);
   console.log(
-    `${value$11 == null ? "None" : `Some((${value$11[0]}, ${$debugStr(value$11[1])}))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1])}))`))($treeEnd(tree, $cmp, true, false, true))}`,
+    `${value$10 == null ? "None" : `Some((${value$10[0]}, ${$debugStr(value$10[1])}))`} ${value$11 == null ? "None" : `Some((${value$11[0]}, ${$debugStr(value$11[1])}))`}`,
   );
   const more = new Map([
     [4, "d"],
@@ -241,22 +216,19 @@ function main() {
       .join(", ")}]`,
   );
   const value$14 = $treeEnd(set, $cmp, false, true, true);
+  const value$15 = $treeEnd(set, $cmp, true, true, true);
   console.log(
-    `${value$14 == null ? "None" : `Some(${value$14})`} ${((value) => (value == null ? "None" : `Some(${value})`))($treeEnd(set, $cmp, true, true, true))} {${Array.from(
+    `${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} {${Array.from(
       $sortedKeys(set, $cmp),
     )
       .map((item) => String(item))
       .join(", ")}}`,
   );
   const other = new Set([1, 4, 9]);
-  const value$15 = $setAlgebra(set, other, "union", $cmp);
   console.log(
-    `[${value$15.map((item) => String(item)).join(", ")}] [${$setAlgebra(
-      set,
-      other,
-      "symmetric",
-      $cmp,
-    )
+    `[${$setAlgebra(set, other, "union", $cmp)
+      .map((item) => String(item))
+      .join(", ")}] [${$setAlgebra(set, other, "symmetric", $cmp)
       .map((item) => String(item))
       .join(", ")}]`,
   );

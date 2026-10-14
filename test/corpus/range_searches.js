@@ -10,12 +10,10 @@ function main() {
   const n = 5;
   console.log(`${$lazyRange(0, n).every((i) => i < 5)}`);
   console.log(`${$lazyRange(0, n).some((i) => i === 3)}`);
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))($lazyRange(1, n + 1).find((i) => i % 2 === 0))}`,
-  );
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))($position($lazyRange(0, n), (i) => Math.imul(i, i) > 5))}`,
-  );
+  const value = $lazyRange(1, n + 1).find((i) => i % 2 === 0);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = $position($lazyRange(0, n), (i) => Math.imul(i, i) > 5);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(`${$lent($iterator({ start: 0n, end: 3n }, $rangeNext)).every((i) => i < 3n)}`);
 }
 //# sourceMappingURL=case.js.map

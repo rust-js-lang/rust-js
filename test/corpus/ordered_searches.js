@@ -9,13 +9,13 @@ export function entry() {
 function main() {
   const refs = [1, 3, 5];
   const value = $binarySearch(refs, 3);
+  const value$1 = $binarySearch(refs, 4);
   console.log(
-    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearch(refs, 4))}`,
+    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}`,
   );
   const orders = [-1, 0, 1];
-  console.log(
-    `${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearch(orders, 1))}`,
-  );
+  const value$2 = $binarySearch(orders, 1);
+  console.log(`${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`}`);
   console.log(`${["Less", "Equal", "Greater"][$cmp(-1, 1) + 1]}`);
   let a = 5;
   let b = 3;

@@ -16,35 +16,34 @@ function bump() {
 }
 
 function main() {
-  const value = bump();
-  console.log(`${value} ${bump()} 5`);
+  console.log(`${bump()} ${bump()} 5`);
   const limit = {};
-  const value$1 = $borrowMut(limit, true);
-  value$1.value = 3;
-  $unborrow(value$1);
-  const value$2 = $borrow(limit, true);
+  const value = $borrowMut(limit, true);
+  value.value = 3;
+  $unborrow(value);
+  const value$1 = $borrow(limit, true);
   let tmp;
   try {
     tmp = $borrow({}, true);
   } catch (error) {
-    $unborrow(value$2);
+    $unborrow(value$1);
     throw error;
   }
   try {
     console.log(
-      `${value$2.value == null ? "None" : `Some(${value$2.value})`} ${tmp.value == null ? "None" : `Some(${tmp.value})`}`,
+      `${value$1.value == null ? "None" : `Some(${value$1.value})`} ${tmp.value == null ? "None" : `Some(${tmp.value})`}`,
     );
   } catch (error) {
     $unborrow(tmp);
-    $unborrow(value$2);
+    $unborrow(value$1);
     throw error;
   }
   try {
     $unborrow(tmp);
   } catch (error) {
-    $unborrow(value$2);
+    $unborrow(value$1);
     throw error;
   }
-  $unborrow(value$2);
+  $unborrow(value$1);
 }
 //# sourceMappingURL=case.js.map

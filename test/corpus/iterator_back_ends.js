@@ -50,8 +50,9 @@ function main() {
   );
   const range = { start: 0, end: 5 };
   const value$1 = $rangeNextBack(range);
+  const value$2 = $rangeNext(range);
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))($rangeNext(range))}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const p = $iter(v);
   const peeked = $peek(p);

@@ -25,13 +25,10 @@ function both(ASize, BSize) {
 }
 
 function main() {
-  const value = size(1);
-  const value$1 = size(8);
-  console.log(`${value} ${value$1} ${size(6)}`);
+  console.log(`${size(1)} ${size(8)} ${size(6)}`);
   console.log(`${describe(1n, 8, 8, "u64")}`);
   console.log(`${describe(3, 2, 1, "core::option::Option<u8>")}`);
   console.log(`${relay(7, { clone: (value) => value }, 2, 2, "u16")}`);
-  const value$2 = later(8)();
-  console.log(`${value$2} ${both(4, 4)}`);
+  console.log(`${later(8)()} ${both(4, 4)}`);
 }
 //# sourceMappingURL=case.js.map

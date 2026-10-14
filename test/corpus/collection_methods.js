@@ -57,8 +57,9 @@ function main() {
   const value = $binarySearchBy(sorted, (p) => $cmp(p, 30));
   const value$1 = $binarySearchBy(sorted, (p) => $cmp(p, 25));
   const value$2 = $binarySearchBy(sorted, (p) => $cmp(p, 5));
+  const value$3 = $binarySearchBy(sorted, (p) => $cmp(p, 99));
   console.log(
-    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearchBy(sorted, (p) => $cmp(p, 99)))}`,
+    `${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`} ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`} ${value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`} ${value$3.TAG === "Ok" ? `Ok(${value$3._0})` : `Err(${value$3._0})`}`,
   );
   const people = [
     ["ann", 31],
@@ -104,7 +105,7 @@ function main() {
   ]);
   const queue = [1, 2];
   const list = [7, 8];
-  const value$3 = $unwrap(index.get("y"), "no entry found for key");
+  const value$4 = $unwrap(index.get("y"), "no entry found for key");
   console.log(
     `{${Array.from($sortedKeys(tags, $cmp))
       .map((item) => $debugStr(item))
@@ -112,47 +113,47 @@ function main() {
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(
         ", ",
-      )}} ${value$3} [${queue.map((item) => String(item)).join(", ")}] [${list.map((item) => String(item)).join(", ")}]`,
+      )}} ${value$4} [${queue.map((item) => String(item)).join(", ")}] [${list.map((item) => String(item)).join(", ")}]`,
   );
   const count = { value: 5 };
   const old = $cellReplace(count, 6);
   const taken = $cellReplace(count, 0);
   console.log(`${old} ${taken} ${count.value}`);
   const label = { value: "x" };
-  const value$4 = $cellReplace(label);
+  const value$5 = $cellReplace(label);
   console.log(
-    `${value$4 == null ? "None" : `Some(${$debugStr(value$4, "'")})`} ${label.value == null ? "None" : `Some(${$debugStr(label.value, "'")})`}`,
+    `${value$5 == null ? "None" : `Some(${$debugStr(value$5, "'")})`} ${label.value == null ? "None" : `Some(${$debugStr(label.value, "'")})`}`,
   );
   const log = { value: [1] };
   const before = $cellReplace($borrowMut(log), [2, 3]);
-  const value$5 = $borrowMut(log, true);
+  const value$6 = $borrowMut(log, true);
   try {
-    value$5.value.push(4);
-  } catch (error) {
-    $unborrow(value$5);
-    throw error;
-  }
-  $unborrow(value$5);
-  const after = $cellReplace($borrowMut(log), []);
-  const value$6 = $borrow(log, true);
-  try {
-    console.log(
-      `[${before.map((item) => String(item)).join(", ")}] [${after.map((item) => String(item)).join(", ")}] [${value$6.value.map((item) => String(item)).join(", ")}]`,
-    );
+    value$6.value.push(4);
   } catch (error) {
     $unborrow(value$6);
     throw error;
   }
   $unborrow(value$6);
-  const name = { value: "old" };
-  const previous = $replaceWith(name, (s) => `${s.value}er`, true);
-  const value$7 = $borrow(name, true);
+  const after = $cellReplace($borrowMut(log), []);
+  const value$7 = $borrow(log, true);
   try {
-    console.log(`${previous} ${value$7.value}`);
+    console.log(
+      `[${before.map((item) => String(item)).join(", ")}] [${after.map((item) => String(item)).join(", ")}] [${value$7.value.map((item) => String(item)).join(", ")}]`,
+    );
   } catch (error) {
     $unborrow(value$7);
     throw error;
   }
   $unborrow(value$7);
+  const name = { value: "old" };
+  const previous = $replaceWith(name, (s) => `${s.value}er`, true);
+  const value$8 = $borrow(name, true);
+  try {
+    console.log(`${previous} ${value$8.value}`);
+  } catch (error) {
+    $unborrow(value$8);
+    throw error;
+  }
+  $unborrow(value$8);
 }
 //# sourceMappingURL=case.js.map

@@ -197,9 +197,8 @@ function main() {
     throw error;
   }
   try {
-    console.log(
-      `${((result) => (result.TAG === "Ok" ? `Ok(${$debugStr(result._0)})` : "Err(RecvError)"))($recv(rx$2))}`,
-    );
+    const value = $recv(rx$2);
+    console.log(`${value.TAG === "Ok" ? `Ok(${$debugStr(value._0)})` : "Err(RecvError)"}`);
   } catch (error) {
     $dropSender(tx$2);
     $dropReceiver(rx$2);

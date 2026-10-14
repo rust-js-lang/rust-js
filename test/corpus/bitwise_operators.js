@@ -122,16 +122,13 @@ const Flags = {
 function main() {
   const rw = flagsBitOr_bitor([READ[0]], [WRITE[0]]);
   const value = flagsBitAnd_bitand([rw[0]], [WRITE[0]]);
-  console.log(
-    `${flagsDebug_fmt(rw)} ${flagsDebug_fmt(value)} ${flagsDebug_fmt(flagsBitXor_bitxor([rw[0]], [RUN[0]]))}`,
-  );
-  const value$1 = Flags.has([rw[0]], [WRITE[0]]);
-  console.log(`${value$1} ${Flags.has([rw[0]], [RUN[0]])}`);
+  const value$1 = flagsBitXor_bitxor([rw[0]], [RUN[0]]);
+  console.log(`${flagsDebug_fmt(rw)} ${flagsDebug_fmt(value)} ${flagsDebug_fmt(value$1)}`);
+  console.log(`${Flags.has([rw[0]], [WRITE[0]])} ${Flags.has([rw[0]], [RUN[0]])}`);
   const value$2 = flagsNot_not([rw[0]]);
   const value$3 = flagsShlU8_shl([READ[0]], 2);
-  console.log(
-    `${flagsDebug_fmt(value$2)} ${flagsDebug_fmt(value$3)} ${flagsDebug_fmt(flagsShrU32_shr([RUN[0]], 1))}`,
-  );
+  const value$4 = flagsShrU32_shr([RUN[0]], 1);
+  console.log(`${flagsDebug_fmt(value$2)} ${flagsDebug_fmt(value$3)} ${flagsDebug_fmt(value$4)}`);
   console.log(`${flagsDebug_fmt(refFlagsBitOr_bitor(READ, RUN))}`);
   const f = [READ[0]];
   flagsBitOrAssign_bitor_assign(f, [RUN[0]]);

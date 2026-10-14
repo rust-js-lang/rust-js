@@ -137,9 +137,8 @@ function main() {
     noisyDrop_drop(n);
     return result;
   };
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))(value ? map$3(value) : undefined)}`,
-  );
+  const value$3 = value ? map$3(value) : undefined;
+  console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
   const result$5 = ok(11);
   let holds$4;
   if (result$5.TAG === "Ok") {
@@ -180,7 +179,7 @@ function main() {
     noisyDrop_drop(n);
     return result;
   };
-  const value$3 = value$1 ? map$4(value$1) : undefined;
+  const value$4 = value$1 ? map$4(value$1) : undefined;
   const result$8 = ok(14);
   let error;
   if (result$8.TAG === "Err") {
@@ -194,8 +193,9 @@ function main() {
     noisyDrop_drop(n);
     return result;
   };
+  const value$5 = error ? map$5(error) : undefined;
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))(error ? map$5(error) : undefined)}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   const result$9 = ok(15);
   const fallback$2 = [100];
@@ -210,14 +210,14 @@ function main() {
     noisyDrop_drop(result$9._0);
     mapped = fallback$2;
   }
-  const value$4 = mapped;
+  const value$6 = mapped;
   try {
-    console.log(`${value$4[0]}`);
+    console.log(`${value$6[0]}`);
   } catch (error) {
-    noisyDrop_drop(value$4);
+    noisyDrop_drop(value$6);
     throw error;
   }
-  noisyDrop_drop(value$4);
+  noisyDrop_drop(value$6);
   const result$10 = ok(16);
   const fallback$3 = [101];
   let mapped$1;
@@ -231,14 +231,14 @@ function main() {
     noisyDrop_drop(result$10._0);
     mapped$1 = fallback$3;
   }
-  const value$5 = mapped$1;
+  const value$7 = mapped$1;
   try {
-    console.log(`${value$5[0]}`);
+    console.log(`${value$7[0]}`);
   } catch (error) {
-    noisyDrop_drop(value$5);
+    noisyDrop_drop(value$7);
     throw error;
   }
-  noisyDrop_drop(value$5);
+  noisyDrop_drop(value$7);
   const result$11 = half(17);
   let holds$6;
   if (result$11.TAG === "Ok") {

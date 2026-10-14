@@ -31,10 +31,6 @@ function classify(n) {
 }
 
 function main() {
-  const value = classify(3);
-  const value$1 = classify(7);
-  const value$2 = classify(9);
-  const value$3 = add(4, 5);
-  console.log(`${value} ${value$1} ${value$2} ${value$3} ${P.get(P.new(2))}`);
+  console.log(`${classify(3)} ${classify(7)} ${classify(9)} ${add(4, 5)} ${P.get(P.new(2))}`);
 }
 //# sourceMappingURL=case.js.map

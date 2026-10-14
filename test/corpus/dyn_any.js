@@ -33,7 +33,8 @@ function describe(value) {
     return `string ${s}`;
   }
   if (value.impl.type_id() === "lib::Point") {
-    return `point ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(value.impl.type_id() === "lib::Point" ? value.value : undefined)}`;
+    const value$1 = value.impl.type_id() === "lib::Point" ? value.value : undefined;
+    return `point ${value$1 == null ? "None" : `Some(${pointDebug_fmt(value$1)})`}`;
   }
   return "other";
 }
@@ -62,31 +63,32 @@ function main() {
     n.value = (n.value + 1) & 255;
   }
   const value = number.impl.type_id() === "u8" ? number.value : undefined;
+  const value$1 = number.impl.type_id() === "i8" ? number.value : undefined;
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${((value) => (value == null ? "None" : `Some(${value})`))(number.impl.type_id() === "i8" ? number.value : undefined)}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$1 =
+  const value$2 =
     number.impl.type_id() === "u8" ? { TAG: "Ok", _0: number.value } : { TAG: "Err", _0: number };
-  if (value$1.TAG === "Ok") {
-    const n = value$1._0;
+  if (value$2.TAG === "Ok") {
+    const n = value$2._0;
     console.log(`u8 ${n}`);
   } else {
     console.log("not u8");
   }
   const text = boxed("t", { type_id: () => "alloc::string::String" });
-  const value$2 =
+  const value$3 =
     text.impl.type_id() === "i32" ? { TAG: "Ok", _0: text.value } : { TAG: "Err", _0: text };
-  if (value$2.TAG === "Ok") {
-    const n = value$2._0;
+  if (value$3.TAG === "Ok") {
+    const n = value$3._0;
     console.log(`i32 ${n}`);
   } else {
-    const back = value$2._0;
-    console.log(
-      `back ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(back.impl.type_id() === "alloc::string::String" ? back.value : undefined)}`,
-    );
+    const back = value$3._0;
+    const value = back.impl.type_id() === "alloc::string::String" ? back.value : undefined;
+    console.log(`back ${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   }
-  const value$3 = "i32" === key(3, { type_id: () => "i32" });
-  console.log(`${value$3} ${key(3, { type_id: () => "u8" }) === "i32"}`);
+  console.log(
+    `${"i32" === key(3, { type_id: () => "i32" })} ${key(3, { type_id: () => "u8" }) === "i32"}`,
+  );
   const seen = new Map();
   seen.set("lib::Point", "point");
   seen.set("i64", "i64");
@@ -97,9 +99,8 @@ function main() {
   );
   const component = { value: { x: 2 }, impl: pointComponent() };
   const any = { value: component.value, impl: component.impl.Any() };
-  const value$5 = component.impl.name(component.value);
   console.log(
-    `${value$5} ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(any.impl.type_id() === "lib::Point" ? any.value : undefined)} Any { .. }`,
+    `${component.impl.name(component.value)} ${((value) => (value == null ? "None" : `Some(${pointDebug_fmt(value)})`))(any.impl.type_id() === "lib::Point" ? any.value : undefined)} Any { .. }`,
   );
   console.log(`${component.impl.Any().type_id() === "lib::Point"}`);
 }

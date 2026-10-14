@@ -22,18 +22,17 @@ function main() {
   const value = $findBy(line, (c) => /^[0-9]$/.test(c), false);
   const value$1 = $findBy(line, (c) => /^\p{N}$/u.test(c), true);
   const value$2 = $findBy(line, (c) => [";", ","].includes(c), false);
+  const value$3 = $findBy(line, (c) => /^\p{White_Space}$/u.test(c), false);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${((value) => (value == null ? "None" : `Some(${value})`))($findBy(line, (c) => /^\p{White_Space}$/u.test(c), false))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  const value$3 = $findBy(line, (c) => c === "ë", false);
+  const value$4 = $findBy(line, (c) => c === "ë", false);
+  const value$5 = $findBy(line, (c) => c === "~", true);
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))($findBy(line, (c) => c === "~", true))}`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
-  const value$4 = $startsBy(line, (c) => /^\p{Alphabetic}$/u.test(c), false);
-  const value$5 = $startsBy(line, (c) => /^[0-9]$/.test(c), true);
-  const value$6 = $startsBy("", () => true, false);
   console.log(
-    `${value$4} ${value$5} ${value$6} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
+    `${$startsBy(line, (c) => /^\p{Alphabetic}$/u.test(c), false)} ${$startsBy(line, (c) => /^[0-9]$/.test(c), true)} ${$startsBy("", () => true, false)} ${$startsBy("😀x", (c) => $byteLen(c) === 4, false)}`,
   );
   console.log(`${$startsBy("x😀", (c) => $byteLen(c) === 4, true)}`);
   const fields = $splitBy(line, (c) => [";", ","].includes(c)).map((s) => $trim(s));
@@ -58,22 +57,23 @@ function main() {
       .join(", ")}]`,
   );
   const name = "Zoë!";
-  const value$7 = $strGet(name, 0, 2);
-  const value$8 = $strGet(name, 2, 3);
-  const value$9 = $strGet(name, 2, 4);
-  const value$10 = $strGet(name, 4);
+  const value$6 = $strGet(name, 0, 2);
+  const value$7 = $strGet(name, 2, 3);
+  const value$8 = $strGet(name, 2, 4);
+  const value$9 = $strGet(name, 4);
+  const value$10 = $strGet(name, 0, 2);
   console.log(
-    `${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8)})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`} ${value$10 == null ? "None" : `Some(${$debugStr(value$10)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($strGet(name, 0, 2))}`,
+    `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8)})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`} ${value$10 == null ? "None" : `Some(${$debugStr(value$10)})`}`,
   );
   const value$11 = $strGet(name, 3, 9);
+  const value$12 = $strGet(name, 9);
   console.log(
-    `${name == null ? "None" : `Some(${$debugStr(name)})`} ${value$11 == null ? "None" : `Some(${$debugStr(value$11)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($strGet(name, 9))}`,
+    `${name == null ? "None" : `Some(${$debugStr(name)})`} ${value$11 == null ? "None" : `Some(${$debugStr(value$11)})`} ${value$12 == null ? "None" : `Some(${$debugStr(value$12)})`}`,
   );
   const edges = $range(0, 7).map((i) => $charBoundary(name, i) !== undefined);
   console.log(`[${edges.map((item) => String(item)).join(", ")}]`);
   console.log(`${$byteLen("a")} ${$byteLen("ë")} ${$byteLen("😀")} ${"😀".length}`);
-  const value$12 = String.fromCharCode(65);
-  console.log(`${value$12} ${String.fromCharCode(233)}`);
+  console.log(`${String.fromCharCode(65)} ${String.fromCharCode(233)}`);
   const letters = ["h", "é", "!"].join("");
   const joined = ["ab", "cd"].join("");
   console.log(`${letters} ${joined}`);

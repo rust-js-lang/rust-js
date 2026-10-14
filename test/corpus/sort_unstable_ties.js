@@ -62,8 +62,7 @@ function main() {
       return $cmp(a[0], b[0]);
     };
     $sortUnstable(tags, (a, b) => compare(a, b) < 0, "general8");
-    const value = tags.map((t) => String(t[1])).join(",");
-    console.log(`${n}: ${value} after ${asked}`);
+    console.log(`${n}: ${tags.map((t) => String(t[1])).join(",")} after ${asked}`);
     const mids = base.map((p) => ({ key: p[0], rest: new Array(7).fill(p[1]) }));
     $sortUnstable(mids, (a, b) => $cmp(a.key, b.key) < 0, "general");
     const arg$4 = mids.map((m) => String(m.rest[0])).join(",");
@@ -81,9 +80,9 @@ function main() {
       .map((i) => [i, i]);
     const key$4 = (p) => p[0];
     $sortUnstable(down, (a, b) => key$4(a) < key$4(b), "network");
-    const value$1 = order(again);
+    const value = order(again);
     const arg$6 = order($slice(down, 0, 3));
-    console.log(`${n}: ${value$1} ${arg$6}`);
+    console.log(`${n}: ${value} ${arg$6}`);
     const picked = base.slice();
     const middle = (picked.length / 2) >>> 0;
     const key$5 = (p) => p[0];
@@ -95,8 +94,8 @@ function main() {
     const arg$8 = order(picked$1);
     console.log(`${n}: ${arg$8}`);
     const numbers = base.map((p) => (Math.imul(p[1], 31) >>> 0) % 17);
-    const value$2 = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", true);
-    value$2[1].value = (value$2[1].value + 100) >>> 0;
+    const value$1 = $selectNthUnstable(numbers, middle, (a, b) => a < b, "network", true);
+    value$1[1].value = (value$1[1].value + 100) >>> 0;
     const ends = numbers.slice();
     const last = (ends.length - 1) >>> 0;
     $selectNthUnstable(ends, last, (a, b) => a < b, "network", true);

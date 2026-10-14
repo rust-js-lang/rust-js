@@ -107,17 +107,17 @@ function main() {
   const value$7 = shown(s$3, wordsSource(), { fmt: (value) => $debugStr(value) });
   $assign(value$6, s$3.value);
   console.log(`${value$5} ${value$7}`);
-  const value$8 = tag({ n: 7 }, countLabeled());
-  console.log(`${value$8} ${tag({ list: ["p", "q"] }, wordsLabeled())}`);
+  console.log(`${tag({ n: 7 }, countLabeled())} ${tag({ list: ["p", "q"] }, wordsLabeled())}`);
   console.log(
     `[${all([1, 2].values().map((n) => Math.imul(n, 10) >>> 0))
       .map((item) => String(item))
       .join(", ")}]`,
   );
   const source = { value: { n: 2 }, impl: countSource() };
+  const value$8 = source.impl.next_item(source);
   const value$9 = source.impl.next_item(source);
   console.log(
-    `${value$9 == null ? "None" : `Some(${value$9})`} ${((value) => (value == null ? "None" : `Some(${value})`))(source.impl.next_item(source))}`,
+    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

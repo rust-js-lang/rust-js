@@ -56,9 +56,7 @@ function main() {
   console.log(
     `[${LEVELS.map((item) => levelDebug_fmt(item)).join(", ")}] ${MAYBE == null ? "None" : `Some(${$debugStr(MAYBE, "'")})`} (${PAIR[0]}, ${$debugF64(PAIR[1])})`,
   );
-  const value$3 = (BOXED.x + BOXED.y) | 0;
-  const value$4 = counted();
-  console.log(`${value$3} ${COMPUTED} ${value$4}`);
+  console.log(`${(BOXED.x + BOXED.y) | 0} ${COMPUTED} ${counted()}`);
   console.log(
     `${pointDebug_fmt(CORNER)} [${SIDES.map((item) => String(item)).join(", ")}] ${NAME}`,
   );

@@ -140,7 +140,8 @@ export function report() {
   let out = "";
   for (const src of ['let x_1 = 42 + y;\n// note\nprint("hi there") 7', 'a "open', "  "]) {
     const value = Lexer.new(src);
-    out += `${((result) => (result.TAG === "Ok" ? `Ok([${result._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(result._0)})`))(Lexer.tokens(value))}\n`;
+    const value$1 = Lexer.tokens(value);
+    out += `${value$1.TAG === "Ok" ? `Ok([${value$1._0.map((item) => tokDebug_fmt(item)).join(", ")}])` : `Err(${$debugStr(value$1._0)})`}\n`;
   }
   const value = pairs([1, 2, 3, 4, 5]);
   out += `([${value[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}]) ${((tuple) => `([${tuple[0].map((item) => `(${item[0]}, ${item[1]})`).join(", ")}], [${tuple[1].map((item) => String(item)).join(", ")}])`)(pairs([]))}\n`;

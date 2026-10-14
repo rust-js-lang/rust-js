@@ -45,33 +45,35 @@ function hint(it) {
 }
 
 function main() {
+  const value = [0, undefined];
   console.log(
-    `${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)([0, undefined])} ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(knownIterator_size_hint([4]))}`,
+    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(knownIterator_size_hint([4]))}`,
   );
   const indexed = { inner: [2], at: 0 };
-  const value = indexedIterator_size_hint(indexed);
+  const value$1 = indexedIterator_size_hint(indexed);
+  const value$2 = indexedIterator_next(indexed);
   console.log(
-    `(${value[0]}, ${value[1] == null ? "None" : `Some(${value[1]})`}) ${((value) => (value == null ? "None" : `Some((${value[0]}, ${value[1]}))`))(indexedIterator_next(indexed))}`,
+    `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${value$2 == null ? "None" : `Some((${value$2[0]}, ${value$2[1]}))`}`,
   );
   const v = [1, 2, 3];
   const it = $iter(v);
   $next(it);
+  const value$3 = $sizeHint(it);
+  console.log(`(${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`})`);
+  const value$4 = $sizeHint($iter(v));
+  console.log(`(${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`})`);
+  const value$5 = $sizeHint($iter([1, 2]));
+  const value$6 = $sizeHint($iter(v));
   console.log(
-    `${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint(it))}`,
-  );
-  console.log(
-    `${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint($iter(v)))}`,
-  );
-  const value$1 = $sizeHint($iter([1, 2]));
-  console.log(
-    `(${value$1[0]}, ${value$1[1] == null ? "None" : `Some(${value$1[1]})`}) ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)($sizeHint($iter(v)))}`,
+    `(${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) (${value$6[0]}, ${value$6[1] == null ? "None" : `Some(${value$6[1]})`})`,
   );
   const stepped = $iter(v);
   $next(stepped);
-  const value$2 = hint($iter(v));
-  const value$3 = hint(stepped);
+  const value$7 = hint($iter(v));
+  const value$8 = hint(stepped);
+  const value$9 = hint($iterator([2], countdownIterator_next));
   console.log(
-    `(${value$2[0]}, ${value$2[1] == null ? "None" : `Some(${value$2[1]})`}) (${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) ${((tuple) => `(${tuple[0]}, ${tuple[1] == null ? "None" : `Some(${tuple[1]})`})`)(hint($iterator([2], countdownIterator_next)))}`,
+    `(${value$7[0]}, ${value$7[1] == null ? "None" : `Some(${value$7[1]})`}) (${value$8[0]}, ${value$8[1] == null ? "None" : `Some(${value$8[1]})`}) (${value$9[0]}, ${value$9[1] == null ? "None" : `Some(${value$9[1]})`})`,
   );
 }
 //# sourceMappingURL=case.js.map

@@ -33,15 +33,15 @@ function main() {
   console.log(
     `[${none.map((item) => String(item)).join(", ")}] [${all.map((item) => String(item)).join(", ")}] [${whole.map((item) => String(item)).join(", ")}] [${empty.map((item) => String(item)).join(", ")}]`,
   );
-  console.log(`${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(halves([1, 0, 0, 2]))}`);
-  const value$1 = $sliceSplitAt(v, 2, true);
+  const value$1 = halves([1, 0, 0, 2]);
+  console.log(`(${value$1[0]}, ${value$1[1]})`);
+  const value$2 = $sliceSplitAt(v, 2, true);
   console.log(
-    `${value$1 == null ? "None" : `Some(([${value$1[0].map((item) => String(item)).join(", ")}], [${value$1[1].map((item) => String(item)).join(", ")}]))`} ${((value) => (value == null ? "None" : `Some(([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}]))`))($sliceSplitAt(v, 6, true))}`,
+    `${value$2 == null ? "None" : `Some(([${value$2[0].map((item) => String(item)).join(", ")}], [${value$2[1].map((item) => String(item)).join(", ")}]))`} ${((value) => (value == null ? "None" : `Some(([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}]))`))($sliceSplitAt(v, 6, true))}`,
   );
   const words = ["a", "b", "c"];
   const [first, rest] = $sliceSplitAt(words, 1);
-  const value$2 = first.join("+");
-  console.log(`${value$2} ${rest.join("+")}`);
+  console.log(`${first.join("+")} ${rest.join("+")}`);
   const value$3 = $sliceGet(v, 1, 3);
   const value$4 = $sliceGet(v, 3);
   console.log(

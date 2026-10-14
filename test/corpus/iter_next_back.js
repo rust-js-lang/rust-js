@@ -35,14 +35,15 @@ function main() {
   const it = $iter(v);
   const value = $next(it);
   const value$1 = $nextBack(it);
+  const value$2 = $nextBack(it);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))($nextBack(it))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  const value$2 = it.end - it.at;
-  const value$3 = $sizeHint(it);
-  const value$4 = hint(it);
+  const value$3 = it.end - it.at;
+  const value$4 = $sizeHint(it);
+  const value$5 = hint(it);
   console.log(
-    `${value$2} (${value$3[0]}, ${value$3[1] == null ? "None" : `Some(${value$3[1]})`}) (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) [${it.items
+    `${value$3} (${value$4[0]}, ${value$4[1] == null ? "None" : `Some(${value$4[1]})`}) (${value$5[0]}, ${value$5[1] == null ? "None" : `Some(${value$5[1]})`}) [${it.items
       .slice(it.at, it.end)
       .map((item) => String(item))
       .join(", ")}]`,
@@ -56,9 +57,10 @@ function main() {
   for (const x of $lent(it)) {
     $print(`${x} `);
   }
-  const value$5 = $next(it);
+  const value$6 = $next(it);
+  const value$7 = $nextBack(it);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${value})`))($nextBack(it))}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
   );
   const both = $iter($range(1, 5));
   let chars;
@@ -69,49 +71,48 @@ function main() {
       $print(`(${a}, ${b}) `);
       continue;
     }
-    console.log(`${((value) => (value == null ? "None" : `Some(${value})`))($next(both))}`);
+    const value$1 = $next(both);
+    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
     const tree = new Map([
       [1, "a"],
       [2, "b"],
       [3, "c"],
     ]);
-    const value$1 = $nextBack(
+    const value$2 = $nextBack(
       $iter($treeRange(tree, $cmp, false, "BTreeMap", false, undefined, true, 3, false)),
     );
-    const value$2 = $iter($sortedEntries(tree, $cmp));
+    const value$3 = $nextBack($iter($sortedEntries(tree, $cmp)));
     console.log(
-      `${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1])}))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1])}))`))($nextBack(value$2))}`,
+      `${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${$debugStr(value$3[1])}))`}`,
     );
     const last = $nextBack($iter(v));
     const value = last === undefined ? undefined : Math.imul(last, 10);
     console.log(`${value == null ? "None" : `Some(${value})`}`);
-    const value$3 = $nextBack($iter(Array.from("héllo")));
-    const value$4 = $iter("a,b,c".split(","));
+    const value$4 = $nextBack($iter(Array.from("héllo")));
+    const value$5 = $nextBack($iter("a,b,c".split(",")));
     console.log(
-      `${value$3 == null ? "None" : `Some(${$debugStr(value$3, "'")})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($nextBack(value$4))}`,
+      `${value$4 == null ? "None" : `Some(${$debugStr(value$4, "'")})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`,
     );
     const maybe = [1, undefined];
     const options = $iter(maybe);
-    const value$5 = $nextBackSome(options);
     const value$6 = $nextBackSome(options);
+    const value$7 = $nextBackSome(options);
+    const value$8 = $nextBackSome(options);
     console.log(
-      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$5)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$6)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($nextBackSome(options))}`,
+      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$6)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$7)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$8)}`,
     );
-    const value$7 = $nextBackSome($iter(maybe));
-    const value$8 = $iter($slice(maybe, 0, 1));
+    const value$9 = $nextBackSome($iter(maybe));
+    const value$10 = $nextBackSome($iter($slice(maybe, 0, 1)));
     console.log(
-      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$7)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($nextBackSome(value$8))}`,
+      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$9)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$10)}`,
     );
     const peeked = $iter(maybe);
     $nextBackSome(peeked);
     $nextBackSome(peeked);
-    const value$9 = $peekSome(peeked);
+    const value$11 = $peekSome(peeked);
+    const value$12 = $rangeInclusiveNextBack({ start: 0, end: 3 });
     console.log(
-      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$9)} ${((
-        value,
-      ) => (value == null ? "None" : `Some(${value})`))(
-        $rangeInclusiveNextBack({ start: 0, end: 3 }),
-      )}`,
+      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$11)} ${value$12 == null ? "None" : `Some(${value$12})`}`,
     );
     const peeking = $iter(v);
     const first = $peek(peeking);

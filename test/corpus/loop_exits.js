@@ -152,26 +152,18 @@ function main() {
     const arg = text_in(root, path);
     console.log(`${path}: ${arg == null ? "None" : `Some(${$debugStr(arg)})`}`);
   }
-  const value = first_big([9, 2, 3]);
-  console.log(`${value} ${first_big([1, 2])}`);
-  const value$1 = once([9, 9]);
-  const value$2 = once([1, 0]);
-  console.log(`${value$1} ${value$2} ${once([])}`);
-  const value$3 = shadowed([1, 0]);
-  const value$4 = shadowed([3, 0]);
-  console.log(`${value$3} ${value$4} ${shadowed([])}`);
-  const value$5 = first_large([9, 1, 2]);
+  console.log(`${first_big([9, 2, 3])} ${first_big([1, 2])}`);
+  console.log(`${once([9, 9])} ${once([1, 0])} ${once([])}`);
+  console.log(`${shadowed([1, 0])} ${shadowed([3, 0])} ${shadowed([])}`);
+  const value = first_large([9, 1, 2]);
+  const value$1 = first_large([1]);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first_large([1]))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$6 = stopped([0, 1, 2]);
-  const value$7 = stopped([9, 1]);
-  console.log(`${value$6} ${value$7} ${stopped([])}`);
-  const value$8 = float_sum([1.5, 2.5]);
-  const value$9 = float_sum([NaN, 1]);
-  console.log(`${$displayF64(value$8)} ${$displayF64(value$9)} ${$displayF64(float_sum([60]))}`);
-  const value$10 = small_sum([1, 2], true);
-  const value$11 = small_sum([60, 1], true);
-  console.log(`${value$10} ${value$11} ${small_sum([], false)}`);
+  console.log(`${stopped([0, 1, 2])} ${stopped([9, 1])} ${stopped([])}`);
+  console.log(
+    `${$displayF64(float_sum([1.5, 2.5]))} ${$displayF64(float_sum([NaN, 1]))} ${$displayF64(float_sum([60]))}`,
+  );
+  console.log(`${small_sum([1, 2], true)} ${small_sum([60, 1], true)} ${small_sum([], false)}`);
 }
 //# sourceMappingURL=case.js.map

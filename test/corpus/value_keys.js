@@ -27,25 +27,22 @@ function accountDebug_fmt(account) {
 
 function main() {
   const seen = new $KeySet();
-  const value = $add(seen, [1, 2]);
-  const value$1 = $add(seen, [1, 2]);
-  console.log(`${value} ${value$1} ${$add(seen, [2, 1])}`);
-  const size = seen.size;
-  const value$2 = seen.has([1, 2]);
-  console.log(`${size} ${value$2} ${seen.has([3, 3])}`);
+  console.log(`${$add(seen, [1, 2])} ${$add(seen, [1, 2])} ${$add(seen, [2, 1])}`);
+  console.log(`${seen.size} ${seen.has([1, 2])} ${seen.has([3, 3])}`);
   seen.delete([1, 2]);
   console.log(`${seen.size} ${seen.has([1, 2])}`);
   const walls = new $KeyMap();
   walls.set({ x: 1, y: 2 }, "stone");
   walls.set({ x: 1, y: 2 }, "brick");
-  const size$1 = walls.size;
-  const value$3 = walls.get({ x: 1, y: 2 });
+  const size = walls.size;
+  const value = walls.get({ x: 1, y: 2 });
+  const value$1 = walls.get({ x: 2, y: 1 });
   console.log(
-    `${size$1} ${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${((value) =>
-      value == null ? "None" : `Some(${$debugStr(value)})`)(walls.get({ x: 2, y: 1 }))}`,
+    `${size} ${value == null ? "None" : `Some(${$debugStr(value)})`} ${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`,
   );
-  const value$4 = $unwrap(walls.get({ x: 1, y: 2 }), "no entry found for key");
-  console.log(`${value$4} ${walls.has({ x: 1, y: 2 })}`);
+  console.log(
+    `${$unwrap(walls.get({ x: 1, y: 2 }), "no entry found for key")} ${walls.has({ x: 1, y: 2 })}`,
+  );
   console.log(
     `{${Array.from(walls)
       .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
@@ -62,45 +59,40 @@ function main() {
     const current = $orInsert(counts, shape, 0);
     counts.set(shape, (current + 1) >>> 0);
   }
-  const size$2 = counts.size;
-  const value$5 = counts.get({ TAG: "Circle", _0: 2 });
-  const value$6 = counts.get("Dot");
-  const value$7 = counts.get({ TAG: "Rect", w: 1, h: 3 });
+  const size$1 = counts.size;
+  const value$2 = counts.get({ TAG: "Circle", _0: 2 });
+  const value$3 = counts.get("Dot");
+  const value$4 = counts.get({ TAG: "Rect", w: 1, h: 3 });
+  const value$5 = counts.get({ TAG: "Rect", w: 3, h: 1 });
   console.log(
-    `${size$2} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${((
-      value,
-    ) => (value == null ? "None" : `Some(${value})`))(counts.get({ TAG: "Rect", w: 3, h: 1 }))}`,
+    `${size$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   const byParent = new Map();
   $orInsertWith(byParent, undefined, () => []).push("root");
   $orInsertWith(byParent, 1, () => []).push("leaf");
   $orInsertWith(byParent, undefined, () => []).push("other root");
-  const value$8 = byParent.get(undefined);
-  const value$9 = byParent.get(1);
+  const value$6 = byParent.get(undefined);
+  const value$7 = byParent.get(1);
   console.log(
-    `${value$8 == null ? "None" : `Some([${value$8.map((item) => $debugStr(item)).join(", ")}])`} ${value$9 == null ? "None" : `Some([${value$9.map((item) => $debugStr(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => $debugStr(item)).join(", ")}])`))(byParent.get(2))}`,
+    `${value$6 == null ? "None" : `Some([${value$6.map((item) => $debugStr(item)).join(", ")}])`} ${value$7 == null ? "None" : `Some([${value$7.map((item) => $debugStr(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => $debugStr(item)).join(", ")}])`))(byParent.get(2))}`,
   );
   const ann = { owner: "ann", id: BigInt.asUintN(64, 1n << 40n), at: { x: 0, y: 0 } };
   const balances = new $KeyMap([[{ ...ann, at: { ...ann.at } }, 10]]);
-  const value$10 = $unwrap($mutGet(balances, ann));
-  value$10.value = (value$10.value + 5) | 0;
-  const value$11 = { ...ann, at: { ...ann.at } };
-  const other = {
-    owner: value$11.owner,
-    id: BigInt.asUintN(64, 1n << 41n),
-    at: { ...value$11.at },
-  };
-  const value$12 = balances.get(ann);
+  const value$8 = $unwrap($mutGet(balances, ann));
+  value$8.value = (value$8.value + 5) | 0;
+  const value$9 = { ...ann, at: { ...ann.at } };
+  const other = { owner: value$9.owner, id: BigInt.asUintN(64, 1n << 41n), at: { ...value$9.at } };
+  const value$10 = balances.get(ann);
+  const value$11 = balances.get(other);
   console.log(
-    `${value$12 == null ? "None" : `Some(${value$12})`} ${((value) => (value == null ? "None" : `Some(${value})`))(balances.get(other))}`,
+    `${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
   );
   const p = { x: 5, y: 5 };
   const marks = new $KeySet();
   marks.add({ ...p });
   p.x = 6;
-  const value$13 = marks.has({ x: 5, y: 5 });
   console.log(
-    `${value$13} ${marks.has(p)} {${Array.from(marks)
+    `${marks.has({ x: 5, y: 5 })} ${marks.has(p)} {${Array.from(marks)
       .map((item) => pointDebug_fmt(item))
       .join(", ")}}`,
   );
@@ -109,12 +101,11 @@ function main() {
   while (true) {
     const value = $next(iter);
     if (!value) {
+      const value = copy.get({ x: 1, y: 2 });
       console.log(
         `{${Array.from(copy)
           .map(([key, value]) => `${pointDebug_fmt(key)}: ${$debugStr(value)}`)
-          .join(", ")}} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(
-          copy.get({ x: 1, y: 2 }),
-        )}`,
+          .join(", ")}} ${value == null ? "None" : `Some(${$debugStr(value)})`}`,
       );
       const kept = new $KeyMap(
         Array.from(balances).map(([key, value]) => [{ ...key, at: { ...key.at } }, value]),
@@ -135,10 +126,10 @@ function main() {
           [["a", true], 3],
         ]),
       );
-      const value = pairs.get(["a", true]);
+      const value$1 = pairs.get(["a", true]);
       const arg = pairs.get(["a", false]);
       console.log(
-        `${pairs.size} ${value == null ? "None" : `Some(${value})`} ${arg == null ? "None" : `Some(${arg})`}`,
+        `${pairs.size} ${value$1 == null ? "None" : `Some(${value$1})`} ${arg == null ? "None" : `Some(${arg})`}`,
       );
       return;
     }

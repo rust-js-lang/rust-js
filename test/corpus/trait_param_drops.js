@@ -140,8 +140,9 @@ function main() {
   console.log(`${via([undefined], [3], relayTakeA(sinkTakeA(noisyDrop_drop), noisyDrop_drop))}`);
   console.log(`${via(undefined, 4, sinkTakeA())}`);
   const w = [0];
-  const value = wrapTakeNoisy({ default: () => 0 }).take(w, [5]);
-  console.log(`${value} ${via(w, [6], wrapTakeNoisy({ default: () => 0 }))}`);
+  console.log(
+    `${wrapTakeNoisy({ default: () => 0 }).take(w, [5])} ${via(w, [6], wrapTakeNoisy({ default: () => 0 }))}`,
+  );
   build([7], relayTakeA(wrapTakeNoisy({ default: () => 0 }), noisyDrop_drop));
   console.log(`${sinkTakeA_take(undefined, [8], noisyDrop_drop)}`);
   const all = [

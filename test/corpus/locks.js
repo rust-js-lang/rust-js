@@ -141,14 +141,18 @@ function main() {
     throw error;
   }
   $unborrow(first);
-  const value$10 = slots.map((m) => {
-    const value = $lock(m, true);
-    $unborrow(value);
-    return value.value;
-  });
-  console.log(`[${value$10.map((item) => String(item)).join(", ")}]`);
+  console.log(
+    `[${slots
+      .map((m) => {
+        const value = $lock(m, true);
+        $unborrow(value);
+        return value.value;
+      })
+      .map((item) => String(item))
+      .join(", ")}]`,
+  );
   const r$1 = $lockRead(text, true);
-  const value$11 = $byteLen(r$1.value);
+  const value$10 = $byteLen(r$1.value);
   let tmp;
   try {
     tmp = $borrow(cell, true);
@@ -157,7 +161,7 @@ function main() {
     throw error;
   }
   try {
-    console.log(`${r$1.value} ${value$11} ${$displayF64(tmp.value)}`);
+    console.log(`${r$1.value} ${value$10} ${$displayF64(tmp.value)}`);
   } catch (error) {
     $unborrow(tmp);
     $unborrow(r$1);

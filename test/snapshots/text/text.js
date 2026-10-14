@@ -147,7 +147,8 @@ export function report() {
     "\n",
     "\r",
   ]) {
-    out += `${((tuple) => `([${tuple[0].map((item) => $debugStr(item)).join(", ")}], [${tuple[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(tuple[2])}, [${tuple[3].map((item) => $debugStr(item)).join(", ")}], ${tuple[4]})`)(words(text))}\n`;
+    const value = words(text);
+    out += `([${value[0].map((item) => $debugStr(item)).join(", ")}], [${value[1].map((item) => $debugStr(item)).join(", ")}], ${$debugStr(value[2])}, [${value[3].map((item) => $debugStr(item)).join(", ")}], ${value[4]})\n`;
   }
   const value = slices([1, 2, 3, 4]);
   out += `([${value[0].map((item) => String(item)).join(", ")}], [${value[1].map((item) => String(item)).join(", ")}], [${value[2].map((item) => String(item)).join(", ")}], [${value[3].map((item) => String(item)).join(", ")}], ${value[4]})\n${escapes()}\n`;

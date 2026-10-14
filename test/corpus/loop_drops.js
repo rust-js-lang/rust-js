@@ -404,8 +404,9 @@ function main() {
                                 }
                                 tmp$13 = undefined;
                                 tmp$13 = [["s"], ["long"], ["rest"]];
+                                const value = first_long(tmp$13);
                                 console.log(
-                                  `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(first_long(tmp$13))}`,
+                                  `${value == null ? "None" : `Some(${$debugStr(value)})`}`,
                                 );
                                 console.log("end");
                                 return;

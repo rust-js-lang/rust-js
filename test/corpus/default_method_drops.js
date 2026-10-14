@@ -97,7 +97,6 @@ function personGreet_id(person) {
 function main() {
   personGreet().greet(undefined);
   console.log(`${personGreet().parts(undefined)}`);
-  const value = personGreet().lists(undefined, true);
-  console.log(`${value} ${personGreet().lists(undefined, false)}`);
+  console.log(`${personGreet().lists(undefined, true)} ${personGreet().lists(undefined, false)}`);
 }
 //# sourceMappingURL=case.js.map

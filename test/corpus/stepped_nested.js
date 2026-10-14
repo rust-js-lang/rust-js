@@ -33,9 +33,10 @@ function main() {
     $next(it);
     return it.map((x) => Math.imul(x, 10) >>> 0).toArray();
   };
-  const value = skipOne([1, 2, 3]);
   console.log(
-    `[${value.map((item) => String(item)).join(", ")}] ${numbersSecond().second(undefined)}`,
+    `[${skipOne([1, 2, 3])
+      .map((item) => String(item))
+      .join(", ")}] ${numbersSecond().second(undefined)}`,
   );
 }
 //# sourceMappingURL=case.js.map

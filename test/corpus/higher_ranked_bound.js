@@ -35,9 +35,8 @@ function loud(value, TShout) {
 }
 
 function main() {
-  const value = loud("quiet", tShout(tNamed({ fmt: (value) => $debugStr(value) })));
   console.log(
-    `${value} ${loud(3, tShout(tNamed({ fmt: (value) => (value == null ? "None" : `Some(${value})`) })))}`,
+    `${loud("quiet", tShout(tNamed({ fmt: (value) => $debugStr(value) })))} ${loud(3, tShout(tNamed({ fmt: (value) => (value == null ? "None" : `Some(${value})`) })))}`,
   );
 }
 //# sourceMappingURL=case.js.map

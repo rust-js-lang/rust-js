@@ -53,11 +53,9 @@ function main() {
     );
     console.log(`[${value._0.bytes.map((item) => String(item)).join(", ")}]`);
   }
+  const value$1 = $fromUtf8([240, 159, 146, 150], true);
   console.log(
-    `${((result) =>
-      result.TAG === "Ok"
-        ? `Ok(${$debugStr(result._0)})`
-        : `Err(${$debugUtf8Error(result._0, true)})`)($fromUtf8([240, 159, 146, 150], true))}`,
+    `${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : `Err(${$debugUtf8Error(value$1._0, true)})`}`,
   );
   const lossy = [
     [102, 105, 110, 101],

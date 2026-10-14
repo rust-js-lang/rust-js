@@ -134,30 +134,23 @@ function bumped_by_ref(v, first) {
 
 function main() {
   const v = [4, 5];
-  const value = popped(v, 5);
-  const value$1 = popped(v, 1);
-  console.log(`${value} ${value$1} ${popped(v, 9)}`);
+  console.log(`${popped(v, 5)} ${popped(v, 1)} ${popped(v, 9)}`);
   const w = [7, 8];
-  const value$2 = counted(w);
-  const value$3 = counted(w);
-  console.log(`${value$2} ${value$3} ${counted(w)}`);
+  console.log(`${counted(w)} ${counted(w)} ${counted(w)}`);
   const k = [3];
-  const value$4 = guarded(k);
-  const value$5 = guarded(k);
-  console.log(`${value$4} ${value$5} ${bumped([4])}`);
-  const value$6 = guarded_param([4], 1);
-  console.log(`${value$6} ${guarded_param([], 2)}`);
-  const value$7 = bumped_by_ref([4], true);
-  console.log(`${value$7} ${bumped_by_ref([], false)}`);
+  console.log(`${guarded(k)} ${guarded(k)} ${bumped([4])}`);
+  console.log(`${guarded_param([4], 1)} ${guarded_param([], 2)}`);
+  console.log(`${bumped_by_ref([4], true)} ${bumped_by_ref([], false)}`);
   const map = new Map();
   map.set("a", { TAG: "Circle", _0: 3 });
   map.set("b", { TAG: "Square", _0: 4 });
   const names = $iter(["a", "b", "a"]);
-  const value$8 = peeked(map, names);
-  const value$9 = peeked(map, names);
-  const value$10 = peeked(map, names);
+  const value = peeked(map, names);
+  const value$1 = peeked(map, names);
+  const value$2 = peeked(map, names);
+  const value$3 = peeked(map, names);
   console.log(
-    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${((value) => (value == null ? "None" : `Some(${value})`))(peeked(map, names))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

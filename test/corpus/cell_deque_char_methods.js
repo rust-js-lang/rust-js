@@ -83,8 +83,9 @@ function main() {
     `[${deque.map((item) => String(item)).join(", ")}] [${arg.map((item) => String(item)).join(", ")}]`,
   );
   const value$4 = $dequeSwapRemove(deque, 1, false);
+  const value$5 = $dequeSwapRemove(deque, 3, true);
   console.log(
-    `${value$4 == null ? "None" : `Some(${value$4})`} ${((value) => (value == null ? "None" : `Some(${value})`))($dequeSwapRemove(deque, 3, true))} [${deque.map((item) => String(item)).join(", ")}]`,
+    `${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} [${deque.map((item) => String(item)).join(", ")}]`,
   );
   $retainMut(
     deque,
@@ -96,17 +97,15 @@ function main() {
   );
   const arg$1 = $partitionPoint(deque, (x) => x < 50);
   console.log(`[${deque.map((item) => String(item)).join(", ")}] ${arg$1}`);
-  const value$5 = $popFrontIf(deque, (x) => x.value > 100, true);
+  const value$6 = $popFrontIf(deque, (x) => x.value > 100, true);
+  const value$7 = $popIfCell(deque, (x) => x.value > 100);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${value})`))($popIfCell(deque, (x) => x.value > 100))} [${deque.map((item) => String(item)).join(", ")}]`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} [${deque.map((item) => String(item)).join(", ")}]`,
   );
   for (const c of ["a", "\n", "'", "é", "😀", ""]) {
-    const value = $escapeDefault(c);
-    const value$1 = $escapeDebug(c, false);
-    console.log(`${value} ${value$1} ${$escapeUnicode(c)}`);
+    console.log(`${$escapeDefault(c)} ${$escapeDebug(c, false)} ${$escapeUnicode(c)}`);
   }
-  const value$6 = $escapeDefault("a	b\"'é");
-  console.log(`${value$6} ${$escapeDebug("a	b\"'é́", true)}`);
+  console.log(`${$escapeDefault("a	b\"'é")} ${$escapeDebug("a	b\"'é́", true)}`);
   console.log(`${$escapeUnicode("hé")}`);
   const buffer = [0, 0, 0, 0];
   const text = $encodeUtf8("é", buffer);

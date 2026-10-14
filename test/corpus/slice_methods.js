@@ -66,13 +66,19 @@ function main() {
     `[${left.map((item) => String(item)).join(", ")}] [${right.map((item) => String(item)).join(", ")}] [${shifted.map((item) => String(item)).join(", ")}]`,
   );
   const sorted = [1, 2, 2, 5];
-  const value = $isSortedBy([1, NaN], (a, b) => a <= b);
-  console.log(`${value} ${$isSortedBy([0.5, 1.5], (a, b) => a <= b)}`);
-  const value$1 = $isSortedBy(sorted, (a, b) => a <= b);
-  const value$2 = $isSortedBy([3, 1], (a, b) => a <= b);
-  console.log(`${value$1} ${value$2} ${$isSortedBy(sorted, (a, b) => a <= b)}`);
-  const value$3 = $isSortedByKey(["a", "bb", "c"], (s) => $byteLen(s), $cmp);
-  console.log(`${value$3} ${$partitionPoint(sorted, (x) => x < 3)}`);
+  console.log(
+    `${$isSortedBy([1, NaN], (a, b) => a <= b)} ${$isSortedBy([0.5, 1.5], (a, b) => a <= b)}`,
+  );
+  console.log(
+    `${$isSortedBy(sorted, (a, b) => a <= b)} ${$isSortedBy([3, 1], (a, b) => a <= b)} ${$isSortedBy(sorted, (a, b) => a <= b)}`,
+  );
+  console.log(
+    `${$isSortedByKey(
+      ["a", "bb", "c"],
+      (s) => $byteLen(s),
+      $cmp,
+    )} ${$partitionPoint(sorted, (x) => x < 3)}`,
+  );
   const items = [1, 2, 3, 4, 5, 6, 7];
   console.log(
     `[${$chunksExact(items, 3)
@@ -84,25 +90,24 @@ function main() {
       .remainder.map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$4 = Iterator.from($rchunks(items, 3, false)).toArray();
   console.log(
-    `[${value$4.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}] [${Iterator.from(
-      $rchunks(items, 2, true),
-    )
+    `[${Iterator.from($rchunks(items, 3, false))
+      .toArray()
+      .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
+      .join(", ")}] [${Iterator.from($rchunks(items, 2, true))
       .toArray()
       .map((item) => `[${item.map((item) => String(item)).join(", ")}]`)
       .join(", ")}]`,
   );
-  const value$5 = items.length >= 2 ? items.slice(0, 2) : undefined;
-  const value$6 = items.length >= 3 ? items.slice(-3) : undefined;
+  const value = items.length >= 2 ? items.slice(0, 2) : undefined;
+  const value$1 = items.length >= 3 ? items.slice(-3) : undefined;
   console.log(
-    `${value$5 == null ? "None" : `Some([${value$5.map((item) => String(item)).join(", ")}])`} ${value$6 == null ? "None" : `Some([${value$6.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(items.length >= 9 ? items.slice(0, 9) : undefined)}`,
+    `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(items.length >= 9 ? items.slice(0, 9) : undefined)}`,
   );
-  const value$7 = $sliceStartsWith(items, [1, 2]);
-  console.log(`${value$7} ${$sliceStartsWith(items, [6], true)}`);
-  const value$8 = $sliceStrip(items, [1], false);
+  console.log(`${$sliceStartsWith(items, [1, 2])} ${$sliceStartsWith(items, [6], true)}`);
+  const value$2 = $sliceStrip(items, [1], false);
   console.log(
-    `${value$8 == null ? "None" : `Some([${value$8.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($sliceStrip(items, [9], true))}`,
+    `${value$2 == null ? "None" : `Some([${value$2.map((item) => String(item)).join(", ")}])`} ${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($sliceStrip(items, [9], true))}`,
   );
   console.log(
     `[${$repeatItems([1, 2], 3)
@@ -151,9 +156,8 @@ function main() {
   );
   console.log(`[${words.map((item) => $debugStr(item)).join(", ")}] ${calls}`);
   const bytes = [72, 101, 108, 108, 111, 33];
-  const value$9 = bytes.every((b) => b < 128);
   console.log(
-    `${value$9} [${$asciiBytes(bytes, true)
+    `${bytes.every((b) => b < 128)} [${$asciiBytes(bytes, true)
       .map((item) => String(item))
       .join(", ")}]`,
   );

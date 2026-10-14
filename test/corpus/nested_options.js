@@ -60,10 +60,9 @@ function main() {
   }
   const found = table.length > 1 ? $some(undefined) : undefined;
   console.log(`${found == null ? "None" : "Some(())"} ${found != null}`);
-  const value$6 = depth(undefined);
-  const value$7 = depth($some(undefined));
-  const value$8 = depth($some($some(undefined)));
-  console.log(`${value$6} ${value$7} ${value$8} ${depth(4)}`);
+  console.log(
+    `${depth(undefined)} ${depth($some(undefined))} ${depth($some($some(undefined)))} ${depth(4)}`,
+  );
   const units = [$some(undefined), undefined];
   const firsts = [$someAt(units, 0), $someAt(units, 1), $someAt(units, 5)];
   console.log(
@@ -74,26 +73,27 @@ function main() {
     inner != null
       ? $some($someValue(inner) != null ? Math.imul($someValue(inner), 2) : undefined)
       : undefined;
-  const value$9 = $someValue(lookup(table, 1) ?? 9);
+  const value$6 = $someValue(lookup(table, 1) ?? 9);
+  const value$7 = $eq(lookup(table, 1), { $someNone: 0 });
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(doubled)} ${value$9 == null ? "None" : `Some(${value$9})`} ${$eq(lookup(table, 1), { $someNone: 0 })}`,
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(doubled)} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7}`,
   );
-  const value$10 = lookup(table, 0);
-  if (value$10 != null && $someValue(value$10) != null) {
-    const n = $someValue(value$10);
+  const value$8 = lookup(table, 0);
+  if (value$8 != null && $someValue(value$8) != null) {
+    const n = $someValue(value$8);
     console.log(`got ${n}`);
   }
   const e = { name: "a", note: $some(undefined) };
   const f = { ...e };
   f.note = "n";
-  console.log(`${entryDebug_fmt(e)} ${entryDebug_fmt(f)} ${$eq(e, f)}`);
+  const value$9 = $eq(e, f);
+  console.log(`${entryDebug_fmt(e)} ${entryDebug_fmt(f)} ${value$9}`);
   const value = () => {};
   const option = 1;
   const map = () => {};
-  const value$11 = table.length > 1 ? $some(value()) : undefined;
   const value$1 = { $someNone: 0 };
   console.log(
-    `${value$11 == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))(option != null ? $some(map(option)) : undefined)} ${value$1 == null ? "None" : "Some(())"}`,
+    `${(table.length > 1 ? $some(value()) : undefined) == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))(option != null ? $some(map(option)) : undefined)} ${value$1 == null ? "None" : "Some(())"}`,
   );
   const grid = [1, 2];
   const kept = grid == null || grid.$someNone !== undefined ? grid : grid.slice();
@@ -104,44 +104,44 @@ function main() {
   console.log(
     `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($someValue(value))})`))(kept)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))($someValue(value))})`))(grid)}`,
   );
-  const value$12 = depth(DEEP);
+  const value$10 = depth(DEEP);
   const arg = $eq(NOTHING_FOUND, lookup(table, 1));
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(NOTHING_FOUND)} ${value$12} ${FOUND_UNIT == null ? "None" : `Some(${unitDebug_fmt($someValue(FOUND_UNIT))})`} ${arg}`,
+    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(NOTHING_FOUND)} ${value$10} ${FOUND_UNIT == null ? "None" : `Some(${unitDebug_fmt($someValue(FOUND_UNIT))})`} ${arg}`,
   );
-  const value$13 = describe(undefined);
-  const value$14 = describe($some(undefined));
-  console.log(`${value$13} ${value$14} ${describe(2)}`);
+  console.log(`${describe(undefined)} ${describe($some(undefined))} ${describe(2)}`);
   const o = $some(undefined);
-  const value$15 = o != null ? $someValue(o) : undefined;
-  const value$16 = o != null ? $someValue(o) : 1;
+  const value$11 = o != null ? $someValue(o) : undefined;
+  const value$12 = o != null ? $someValue(o) : 1;
   const value$2 = $someValue(o);
-  const value$17 = o != null ? value$2 : undefined;
+  const value$13 = o != null ? value$2 : undefined;
   const value$3 = $someValue(o);
   const value$4 = o != null && value$3 == null ? o : undefined;
   console.log(
-    `${value$15 == null ? "None" : `Some(${value$15})`} ${value$16 == null ? "None" : `Some(${value$16})`} ${value$17 == null ? "None" : `Some(${value$17})`} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$4)}`,
+    `${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$4)}`,
   );
-  const value$18 = o != null ? { TAG: "Ok", _0: $someValue(o) } : { TAG: "Err", _0: "e" };
+  const value$14 = o != null ? { TAG: "Ok", _0: $someValue(o) } : { TAG: "Err", _0: "e" };
   const value$5 = $someValue(o);
+  const value$15 = o != null ? $someValue(o) != null : undefined;
   console.log(
-    `${value$18.TAG === "Ok" ? `Ok(${value$18._0 == null ? "None" : `Some(${value$18._0})`})` : `Err(${$debugStr(value$18._0)})`} ${o != null && value$5 == null} ${((value) => (value == null ? "None" : `Some(${value})`))(o != null ? $someValue(o) != null : undefined)}`,
+    `${value$14.TAG === "Ok" ? `Ok(${value$14._0 == null ? "None" : `Some(${value$14._0})`})` : `Err(${$debugStr(value$14._0)})`} ${o != null && value$5 == null} ${value$15 == null ? "None" : `Some(${value$15})`}`,
   );
   const units$1 = [undefined, undefined];
   const items = units$1.map(() => {});
-  const value$19 = $someAt(items, items.length - 1);
+  const value$16 = $someAt(items, items.length - 1);
   const items$1 = [];
+  const value$17 = $someAt(items$1, items$1.length - 1);
   console.log(
-    `${value$19 == null ? "None" : "Some(())"} ${((value) => (value == null ? "None" : "Some(())"))($someAt(items$1, items$1.length - 1))}`,
+    `${value$16 == null ? "None" : "Some(())"} ${value$17 == null ? "None" : "Some(())"}`,
   );
   const stack = [$some(undefined), undefined];
   while (true) {
     const value = $pop(stack);
     if (value == null) {
       const value = $nextSome($lent($iter(table)).filter((x) => x == null));
-      const value$1 = $iter(table);
+      const value$1 = $nextSome($lent($iter(table)).filter((x) => x === 2));
       console.log(
-        `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($nextSome($lent(value$1).filter((x) => x === 2)))}`,
+        `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$1)}`,
       );
       const nested = [1, $some(undefined), undefined];
       console.log(
@@ -151,12 +151,14 @@ function main() {
           .join(", ")}]`,
       );
       const value$2 = $someValue($some($some(undefined)));
+      const value$3 = $someValue($some($some($some(undefined))));
       console.log(
-        `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$2)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value))})`))($someValue($some($some($some(undefined)))))}`,
+        `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$2)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : "Some(())"))($someValue(value))})`))(value$3)}`,
       );
-      const value$3 = flat($some($some(undefined)));
+      const value$4 = flat($some($some(undefined)));
+      const value$5 = flat($some(undefined));
       console.log(
-        `${value$3 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$3))})`} ${((value) => (value == null ? "None" : `Some(${unitDebug_fmt($someValue(value))})`))(flat($some(undefined)))}`,
+        `${value$4 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$4))})`} ${value$5 == null ? "None" : `Some(${unitDebug_fmt($someValue(value$5))})`}`,
       );
       return;
     }

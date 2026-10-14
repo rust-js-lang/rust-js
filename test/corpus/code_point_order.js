@@ -31,8 +31,7 @@ function main() {
       $cmp(crab, bang),
     )}`,
   );
-  const value$3 = $cmp(crab, bang) > 0 ? crab : bang;
-  console.log(`${value$3} ${$cmp(crab, bang) > 0 ? bang : crab}`);
+  console.log(`${$cmp(crab, bang) > 0 ? crab : bang} ${$cmp(crab, bang) > 0 ? bang : crab}`);
   const sorted = words.slice();
   sorted.sort($cmp);
   console.log(`[${sorted.map((item) => $debugStr(item)).join(", ")}]`);
@@ -40,13 +39,15 @@ function main() {
   const key = (w) => w;
   byKey.sort((a, b) => $cmp(key(a), key(b)));
   console.log(`[${byKey.map((item) => $debugStr(item)).join(", ")}]`);
-  const value$4 = $maxBy(words, $cmp);
+  const value$3 = $maxBy(words, $cmp);
+  const value$4 = $minBy(words, $cmp);
   console.log(
-    `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))($minBy(words, $cmp))}`,
+    `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`,
   );
   const value$5 = $binarySearchBy(sorted, (each) => $cmp(each, crab));
+  const value$6 = $binarySearchBy(sorted, (each) => $cmp(each, "�"));
   console.log(
-    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${value$5._0})`} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearchBy(sorted, (each) => $cmp(each, "�")))}`,
+    `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${value$5._0})`} ${value$6.TAG === "Ok" ? `Ok(${value$6._0})` : `Err(${value$6._0})`}`,
   );
   const set = new Set(words);
   console.log(
@@ -71,15 +72,14 @@ function main() {
   const right = [bang];
   console.log(`${$cmp(left[0], right[0]) > 0}`);
   const c = "🦀";
-  const value$6 = $cmp(c, "！") > 0;
-  const value$7 = $cmp(c, "�");
+  const value$7 = $cmp(c, "！") > 0;
+  const value$8 = $cmp(c, "�");
   console.log(
-    `${value$6} ${
-      ["Less", "Equal", "Greater"][value$7 + 1]
+    `${value$7} ${
+      ["Less", "Equal", "Greater"][value$8 + 1]
     } ${$cmp("", c) <= 0 && $cmp(c, "￿") <= 0}`,
   );
-  const value$8 = "a" <= c && $cmp(c, "￿") <= 0;
-  console.log(`${value$8} ${"a" <= "！" && $cmp("！", "�") < 0}`);
+  console.log(`${"a" <= c && $cmp(c, "￿") <= 0} ${"a" <= "！" && $cmp("！", "�") < 0}`);
   const private$ = $cmp(c, "") >= 0 && $cmp(c, "") <= 0;
   const ascii = c >= "a" && c <= "z";
   const wide = c >= "a" && $cmp(c, "￿") <= 0;
@@ -89,9 +89,7 @@ function main() {
   console.log(`[${chars.map((item) => $debugStr(item, "'")).join(", ")}]`);
   console.log(`${crab > "z"} ${"m" < crab} ${"apple" < "banana"}`);
   for (const s of ["hi", "﻿hi﻿", " 	 hi \n", "　hi\u2028"]) {
-    const value = $trim(s);
-    const value$1 = $trimStart(s);
-    console.log(`${$debugStr(value)} ${$debugStr(value$1)} ${$debugStr($trimEnd(s))}`);
+    console.log(`${$debugStr($trim(s))} ${$debugStr($trimStart(s))} ${$debugStr($trimEnd(s))}`);
   }
 }
 //# sourceMappingURL=case.js.map

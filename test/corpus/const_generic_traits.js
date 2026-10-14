@@ -94,16 +94,17 @@ function main() {
       .join(", ")}]`,
   );
   const m = [3];
-  const value$2 = metersScaled10_scaled(m);
-  const value$3 = metersScaled100_scaled(m);
-  const value$4 = metersScaled100().factor(m);
-  console.log(`${value$2} ${value$3} ${value$4} ${by_ten(m, metersScaled10())}`);
-  const value$5 = by(m, 100, metersScaled100());
-  const value$6 = by([2], 5, anyScaled(5));
   console.log(
-    `(${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(by([3], 7, anyScaled(7)))}`,
+    `${metersScaled10_scaled(m)} ${metersScaled100_scaled(m)} ${metersScaled100().factor(m)} ${by_ten(m, metersScaled10())}`,
   );
-  const value$7 = padded(undefined, dotsPad());
-  console.log(`${value$7} ${dotsPad_pad(undefined, "x", 1, { fmt: (value) => value })}`);
+  const value$2 = by(m, 100, metersScaled100());
+  const value$3 = by([2], 5, anyScaled(5));
+  const value$4 = by([3], 7, anyScaled(7));
+  console.log(
+    `(${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]}) (${value$4[0]}, ${value$4[1]})`,
+  );
+  console.log(
+    `${padded(undefined, dotsPad())} ${dotsPad_pad(undefined, "x", 1, { fmt: (value) => value })}`,
+  );
 }
 //# sourceMappingURL=case.js.map

@@ -1074,7 +1074,7 @@ test("numbers are Math's, operators call their impl, and vec![x; n] fills", asyn
   expect(js).toContain("vec2Add_add(");
   expect(js).toContain("  const value = Math.floor(x);\n  const value$1 = Math.ceil(x);\n  const value$2 = $round(x);");
   expect(js).toContain("$checked(b - 10, 0, 4294967295)");
-  expect(js).toContain("const value$8 = Math.max(b - 100, 0);");
+  expect(js).toContain("${Math.max(b - 100, 0)}");
   // Each row made again; a struct cloned, since one is changed later.
   expect(js).toContain("  const item = new Array(n).fill(0);\n  const m = Array.from({ length: n }, () => item.slice());");
   expect(js).toContain("Array.from({ length: 3 }, () => ({ ...cell }))");

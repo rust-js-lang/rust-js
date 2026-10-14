@@ -42,12 +42,12 @@ function main() {
   long = $strExtendWithin(long, 0, 2);
   long = $strExtendWithin(long, 1);
   console.log(`[${long}]`);
-  const value = /^[\0-\x7f]*$/.test("abc");
-  const value$1 = /^[\0-\x7f]*$/.test("héllo");
-  console.log(`${value} ${value$1} ${/^[\0-\x7f]*$/.test("")}`);
-  const value$2 = " 	 a b \n".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "");
-  const value$3 = "  x ".replace(/^[\t\n\f\r ]+/, "");
-  console.log(`[${value$2}] [${value$3}] [${"  x ".replace(/[\t\n\f\r ]+$/, "")}]`);
+  console.log(
+    `${/^[\0-\x7f]*$/.test("abc")} ${/^[\0-\x7f]*$/.test("héllo")} ${/^[\0-\x7f]*$/.test("")}`,
+  );
+  console.log(
+    `[${" 	 a b \n".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "")}] [${"  x ".replace(/^[\t\n\f\r ]+/, "")}] [${"  x ".replace(/[\t\n\f\r ]+$/, "")}]`,
+  );
   console.log(`${$debugStr("\vx\v ".replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, ""))}`);
   console.log(
     `[${Iterator.from($splitInclusive("a\nb\n\nc\n", "\n"))
@@ -61,11 +61,11 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$4 = Iterator.from($splitInclusive("ab", "")).toArray();
   console.log(
-    `[${value$4.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from(
-      $splitInclusive("", "x"),
-    )
+    `[${Iterator.from($splitInclusive("ab", ""))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}] [${Iterator.from($splitInclusive("", "x"))
       .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
@@ -76,11 +76,11 @@ function main() {
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$5 = Iterator.from($rmatches("abaXab", "ab")).toArray();
   console.log(
-    `[${value$5.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from(
-      $rmatchIndices("aaa", "aa"),
-    )
+    `[${Iterator.from($rmatches("abaXab", "ab"))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}] [${Iterator.from($rmatchIndices("aaa", "aa"))
       .toArray()
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
@@ -91,10 +91,11 @@ function main() {
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const value$6 = $splitAtChecked("héllo", 1);
-  const value$7 = $splitAtChecked("héllo", 2);
+  const value = $splitAtChecked("héllo", 1);
+  const value$1 = $splitAtChecked("héllo", 2);
+  const value$2 = $splitAtChecked("héllo", 9);
   console.log(
-    `${value$6 == null ? "None" : `Some((${$debugStr(value$6[0])}, ${$debugStr(value$6[1])}))`} ${value$7 == null ? "None" : `Some((${$debugStr(value$7[0])}, ${$debugStr(value$7[1])}))`} ${((value) => (value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`))($splitAtChecked("héllo", 9))}`,
+    `${value == null ? "None" : `Some((${$debugStr(value[0])}, ${$debugStr(value[1])}))`} ${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}))`} ${value$2 == null ? "None" : `Some((${$debugStr(value$2[0])}, ${$debugStr(value$2[1])}))`}`,
   );
   console.log(
     `[${Iterator.from($encodeUtf16("hé𝄞"))
@@ -102,15 +103,14 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$8 = $fromUtf16([104, 55348, 56606]);
+  const value$3 = $fromUtf16([104, 55348, 56606]);
+  const value$4 = $fromUtf16([55348, 104]);
   console.log(
-    `${value$8.TAG === "Ok" ? `Ok(${$debugStr(value$8._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${((result) => (result.TAG === "Ok" ? `Ok(${$debugStr(result._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"))($fromUtf16([55348, 104]))}`,
+    `${value$3.TAG === "Ok" ? `Ok(${$debugStr(value$3._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"} ${value$4.TAG === "Ok" ? `Ok(${$debugStr(value$4._0)})` : "Err(FromUtf16Error { kind: LoneSurrogate })"}`,
   );
   console.log("invalid utf-16: lone surrogate found");
   console.log(`${$fromUtf16Lossy([104, 55348, 105])}`);
-  const value$9 = $floorCharBoundary("héllo", 2);
-  console.log(`${value$9} ${$ceilCharBoundary("héllo", 2)}`);
-  const value$10 = $floorCharBoundary("héllo", 99);
-  console.log(`${value$10} ${$ceilCharBoundary("héllo", 99)}`);
+  console.log(`${$floorCharBoundary("héllo", 2)} ${$ceilCharBoundary("héllo", 2)}`);
+  console.log(`${$floorCharBoundary("héllo", 99)} ${$ceilCharBoundary("héllo", 99)}`);
 }
 //# sourceMappingURL=case.js.map

@@ -39,8 +39,7 @@ function main() {
   const get = [71, 69, 84];
   const value = method(get);
   console.log(`[${get.map((item) => String(item)).join(", ")}] ${get.length} ${value}`);
-  const value$1 = method([80, 79, 83, 84]);
-  console.log(`${value$1} ${method([])}`);
+  console.log(`${method([80, 79, 83, 84])} ${method([])}`);
   const raw = [97, 1, 255, 10, 92, 34];
   console.log(`[${raw.map((item) => String(item)).join(", ")}] ${checksum(raw)}`);
   const joined = [97, 98, 99, 100];
@@ -52,9 +51,11 @@ function main() {
   console.log(`${$cmpItems(left, right, $cmp) > 0}`);
   const word = "héllo €";
   const bytes = Array.from(new TextEncoder().encode(word));
-  const length = Array.from(word).length;
-  const value$2 = $slice(bytes, 0, 3);
-  console.log(`${length} ${bytes.length} [${value$2.map((item) => String(item)).join(", ")}]`);
+  console.log(
+    `${Array.from(word).length} ${bytes.length} [${$slice(bytes, 0, 3)
+      .map((item) => String(item))
+      .join(", ")}]`,
+  );
   console.log(`${checksum(Array.from(new TextEncoder().encode("abc")))}`);
   console.log(`${method(Array.from(new TextEncoder().encode("GET")))}`);
 }

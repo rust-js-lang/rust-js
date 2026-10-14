@@ -238,17 +238,17 @@ function main() {
           )
     }`,
   );
+  const value$1 = [1, "x", undefined];
   console.log(
-    `${((tuple) =>
-      $pretty(
-        "(",
-        [
-          String(tuple[0]),
-          $debugStr(tuple[1]),
-          tuple[2] == null ? "None" : $pretty("Some(", [String(tuple[2])], ")"),
-        ],
-        ")",
-      ))([1, "x", undefined])} ${((tuple) => $pretty("(", [String(tuple[0])], ")"))([7])}`,
+    `${$pretty(
+      "(",
+      [
+        String(value$1[0]),
+        $debugStr(value$1[1]),
+        value$1[2] == null ? "None" : $pretty("Some(", [String(value$1[2])], ")"),
+      ],
+      ")",
+    )} ${((tuple) => $pretty("(", [String(tuple[0])], ")"))([7])}`,
   );
   const map = new Map();
   map.set("k", [1]);
@@ -317,23 +317,12 @@ function main() {
     `${rawDebug_fmt([4], { alternate: true })} ${rawDebug_fmt([4])} ${asksDebug_fmt(undefined, { alternate: true })} ${asksDebug_fmt(undefined)} ${shownDisplay_fmt([7], { alternate: true })} ${shownDisplay_fmt([7])}`,
   );
   console.log(`${delegateDebug_fmt([[9]], { alternate: true })}`);
-  const value$1 = pretty([1, "a"], {
-    fmt: (value, options) =>
-      value == null
-        ? "None"
-        : options?.alternate
-          ? $pretty(
-              "Some(",
-              [
-                options?.alternate
-                  ? $pretty("(", [String(value[0]), $debugStr(value[1])], ")")
-                  : `(${value[0]}, ${$debugStr(value[1])})`,
-              ],
-              ")",
-            )
-          : `Some(${options?.alternate ? $pretty("(", [String(value[0]), $debugStr(value[1])], ")") : `(${value[0]}, ${$debugStr(value[1])})`})`,
-  });
-  console.log(`${value$1}\n${pretty({ inner: [1], list: [] }, wrapDebug(rawDebug()))}`);
+  console.log(
+    `${pretty([1, "a"], { fmt: (value, options) => (value == null ? "None" : options?.alternate ? $pretty("Some(", [options?.alternate ? $pretty("(", [String(value[0]), $debugStr(value[1])], ")") : `(${value[0]}, ${$debugStr(value[1])})`], ")") : `Some(${options?.alternate ? $pretty("(", [String(value[0]), $debugStr(value[1])], ")") : `(${value[0]}, ${$debugStr(value[1])})`})`) })}\n${pretty(
+      { inner: [1], list: [] },
+      wrapDebug(rawDebug()),
+    )}`,
+  );
   const kept = [1, undefined];
   console.error(`${pairDebug_fmt(kept, { alternate: true })}`);
   console.log(`${pairDebug_fmt(kept)}`);

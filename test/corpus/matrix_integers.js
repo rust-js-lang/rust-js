@@ -71,31 +71,27 @@ function main() {
     const value$5 = $reverseBits(a, 8, true);
     const value$6 = ($rotateBits(a & 255, 1, 8, true) << 24) >> 24;
     const value$7 = ($rotateBits(a & 255, 3, 8, false) << 24) >> 24;
-    const value$8 = (-a << 24) >> 24;
-    const value$9 = $checked(-a, -128, 127);
-    const value$10 = ($pow(a, 0) << 24) >> 24;
-    const value$11 = ($pow(a, 2) << 24) >> 24;
-    const value$12 = ($pow(a, (bits - 1) >>> 0) << 24) >> 24;
+    const value$8 = $checked(-a, -128, 127);
+    const value$9 = ($pow(a, 0) << 24) >> 24;
+    const value$10 = ($pow(a, 2) << 24) >> 24;
+    const value$11 = ($pow(a, (bits - 1) >>> 0) << 24) >> 24;
     const arg = $checkedPow(a, 3, -128, 127);
     console.log(
-      `i8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${(-a << 24) >> 24} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseInt(String(a), -128, 127);
+    const value$12 = $parseInt(String(a), -128, 127);
     const arg$1 = $parseInt((a & 255).toString(16), -128, 127, 16);
     console.log(
-      `i8 ${a}: fmt ${(a & 255).toString(16)} ${(a & 255).toString(2)} ${(a & 255).toString(8)} 0x${(a & 255).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i8 ${a}: fmt ${(a & 255).toString(16)} ${(a & 255).toString(2)} ${(a & 255).toString(8)} 0x${(a & 255).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
+    const value$13 = BigInt(a);
     const value$14 = BigInt(a);
-    const value$15 = BigInt(a);
-    const value$16 = a & 255;
-    const value$17 = a & 65535;
-    const value$18 = a >>> 0;
-    const value$19 = BigInt.asUintN(64, BigInt(a));
-    const value$20 = BigInt.asUintN(128, BigInt(a));
-    const value$21 = f32_bits(a);
+    const value$15 = BigInt.asUintN(64, BigInt(a));
+    const value$16 = BigInt.asUintN(128, BigInt(a));
+    const value$17 = f32_bits(a);
     const arg$2 = f64_bits(a);
     console.log(
-      `i8 ${a}: as ${a} ${a} ${a} ${value$14} ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} f32 ${value$21} f64 ${arg$2}`,
+      `i8 ${a}: as ${a} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits - 1) >>> 0, bits, (bits + 1) >>> 0]) {
       const value = s < 8 ? ((a << (s & 7)) << 24) >> 24 : undefined;
@@ -104,37 +100,34 @@ function main() {
         `i8 ${a} shift ${s}: ${((a << (s & 7)) << 24) >> 24} ${a >> (s & 7)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
-    const value$22 = Math.sign(a);
-    const value$23 = (Math.abs(a) << 24) >> 24;
-    const value$24 = $checked(Math.abs(a), -128, 127);
+    const value$18 = Math.sign(a);
+    const value$19 = (Math.abs(a) << 24) >> 24;
+    const value$20 = $checked(Math.abs(a), -128, 127);
     console.log(
-      `i8 ${a}: signed ${value$22} ${value$23} ${value$24 == null ? "None" : `Some(${value$24})`} ${Math.abs(a)}`,
+      `i8 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
     );
     for (const b of values) {
       quotient =
         $checkedDiv(a, b, -128) == null
           ? "-"
           : `${($div(a, b, -128) << 24) >> 24} ${($rem(a, b, -128) << 24) >> 24}`;
-      const value = ((a + b) << 24) >> 24;
-      const value$1 = ((a - b) << 24) >> 24;
-      const value$2 = ((a * b) << 24) >> 24;
-      const value$3 = $checked(a + b, -128, 127);
-      const value$4 = $checked(a - b, -128, 127);
-      const value$5 = $checked(a * b, -128, 127);
-      const value$6 = $checkedDiv(a, b, -128);
-      const value$7 = $checkedRem(a, b, -128);
-      const value$8 = Math.min(Math.max(a + b, -128), 127);
-      const value$9 = Math.min(Math.max(a - b, -128), 127);
-      const value$10 = Math.min(Math.max(a * b, -128), 127) | 0;
-      const value$11 = $overflowing(((a + b) << 24) >> 24, a + b, -128, 127);
-      const value$12 = $overflowing(((a - b) << 24) >> 24, a - b, -128, 127);
-      const value$13 = $overflowing(((a * b) << 24) >> 24, a * b, -128, 127);
-      const value$14 = $checkedEuclid(a, b, -128, false);
-      const value$15 = $checkedEuclid(a, b, -128, true);
-      const value$16 = $cmp(a, b);
+      const value = $checked(a + b, -128, 127);
+      const value$1 = $checked(a - b, -128, 127);
+      const value$2 = $checked(a * b, -128, 127);
+      const value$3 = $checkedDiv(a, b, -128);
+      const value$4 = $checkedRem(a, b, -128);
+      const value$5 = Math.min(Math.max(a + b, -128), 127);
+      const value$6 = Math.min(Math.max(a - b, -128), 127);
+      const value$7 = Math.min(Math.max(a * b, -128), 127) | 0;
+      const value$8 = $overflowing(((a + b) << 24) >> 24, a + b, -128, 127);
+      const value$9 = $overflowing(((a - b) << 24) >> 24, a - b, -128, 127);
+      const value$10 = $overflowing(((a * b) << 24) >> 24, a * b, -128, 127);
+      const value$11 = $checkedEuclid(a, b, -128, false);
+      const value$12 = $checkedEuclid(a, b, -128, true);
+      const value$13 = $cmp(a, b);
       console.log(
-        `i8 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$16 + 1]
+        `i8 ${a} ${b}: wrap ${((a + b) << 24) >> 24} ${((a - b) << 24) >> 24} ${((a * b) << 24) >> 24} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$13 + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -151,32 +144,27 @@ function main() {
     const value$5 = $reverseBits(a, 16, true);
     const value$6 = ($rotateBits(a & 65535, 1, 16, true) << 16) >> 16;
     const value$7 = ($rotateBits(a & 65535, 3, 16, false) << 16) >> 16;
-    const value$8 = (-a << 16) >> 16;
-    const value$9 = $checked(-a, -32768, 32767);
-    const value$10 = ($pow(a, 0) << 16) >> 16;
-    const value$11 = ($pow(a, 2) << 16) >> 16;
-    const value$12 = ($pow(a, (bits$1 - 1) >>> 0) << 16) >> 16;
+    const value$8 = $checked(-a, -32768, 32767);
+    const value$9 = ($pow(a, 0) << 16) >> 16;
+    const value$10 = ($pow(a, 2) << 16) >> 16;
+    const value$11 = ($pow(a, (bits$1 - 1) >>> 0) << 16) >> 16;
     const arg = $checkedPow(a, 3, -32768, 32767);
     console.log(
-      `i16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${(-a << 16) >> 16} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseInt(String(a), -32768, 32767);
+    const value$12 = $parseInt(String(a), -32768, 32767);
     const arg$1 = $parseInt((a & 65535).toString(16), -32768, 32767, 16);
     console.log(
-      `i16 ${a}: fmt ${(a & 65535).toString(16)} ${(a & 65535).toString(2)} ${(a & 65535).toString(8)} 0x${(a & 65535).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i16 ${a}: fmt ${(a & 65535).toString(16)} ${(a & 65535).toString(2)} ${(a & 65535).toString(8)} 0x${(a & 65535).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = (a << 24) >> 24;
-    const value$15 = BigInt(a);
-    const value$16 = BigInt(a);
-    const value$17 = a & 255;
-    const value$18 = a & 65535;
-    const value$19 = a >>> 0;
-    const value$20 = BigInt.asUintN(64, BigInt(a));
-    const value$21 = BigInt.asUintN(128, BigInt(a));
-    const value$22 = f32_bits(a);
+    const value$13 = BigInt(a);
+    const value$14 = BigInt(a);
+    const value$15 = BigInt.asUintN(64, BigInt(a));
+    const value$16 = BigInt.asUintN(128, BigInt(a));
+    const value$17 = f32_bits(a);
     const arg$2 = f64_bits(a);
     console.log(
-      `i16 ${a}: as ${value$14} ${a} ${a} ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} f32 ${value$22} f64 ${arg$2}`,
+      `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$1 - 1) >>> 0, bits$1, (bits$1 + 1) >>> 0]) {
       const value$2 = s < 16 ? ((a << (s & 15)) << 16) >> 16 : undefined;
@@ -185,37 +173,34 @@ function main() {
         `i16 ${a} shift ${s}: ${((a << (s & 15)) << 16) >> 16} ${a >> (s & 15)} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
       );
     }
-    const value$23 = Math.sign(a);
-    const value$24 = (Math.abs(a) << 16) >> 16;
-    const value$25 = $checked(Math.abs(a), -32768, 32767);
+    const value$18 = Math.sign(a);
+    const value$19 = (Math.abs(a) << 16) >> 16;
+    const value$20 = $checked(Math.abs(a), -32768, 32767);
     console.log(
-      `i16 ${a}: signed ${value$23} ${value$24} ${value$25 == null ? "None" : `Some(${value$25})`} ${Math.abs(a)}`,
+      `i16 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
     );
     for (const b of values$1) {
       quotient$1 =
         $checkedDiv(a, b, -32768) == null
           ? "-"
           : `${($div(a, b, -32768) << 16) >> 16} ${($rem(a, b, -32768) << 16) >> 16}`;
-      const value = ((a + b) << 16) >> 16;
-      const value$1 = ((a - b) << 16) >> 16;
-      const value$2 = ((a * b) << 16) >> 16;
-      const value$3 = $checked(a + b, -32768, 32767);
-      const value$4 = $checked(a - b, -32768, 32767);
-      const value$5 = $checked(a * b, -32768, 32767);
-      const value$6 = $checkedDiv(a, b, -32768);
-      const value$7 = $checkedRem(a, b, -32768);
-      const value$8 = Math.min(Math.max(a + b, -32768), 32767);
-      const value$9 = Math.min(Math.max(a - b, -32768), 32767);
-      const value$10 = Math.min(Math.max(a * b, -32768), 32767) | 0;
-      const value$11 = $overflowing(((a + b) << 16) >> 16, a + b, -32768, 32767);
-      const value$12 = $overflowing(((a - b) << 16) >> 16, a - b, -32768, 32767);
-      const value$13 = $overflowing(((a * b) << 16) >> 16, a * b, -32768, 32767);
-      const value$14 = $checkedEuclid(a, b, -32768, false);
-      const value$15 = $checkedEuclid(a, b, -32768, true);
-      const value$16 = $cmp(a, b);
+      const value = $checked(a + b, -32768, 32767);
+      const value$1 = $checked(a - b, -32768, 32767);
+      const value$2 = $checked(a * b, -32768, 32767);
+      const value$3 = $checkedDiv(a, b, -32768);
+      const value$4 = $checkedRem(a, b, -32768);
+      const value$5 = Math.min(Math.max(a + b, -32768), 32767);
+      const value$6 = Math.min(Math.max(a - b, -32768), 32767);
+      const value$7 = Math.min(Math.max(a * b, -32768), 32767) | 0;
+      const value$8 = $overflowing(((a + b) << 16) >> 16, a + b, -32768, 32767);
+      const value$9 = $overflowing(((a - b) << 16) >> 16, a - b, -32768, 32767);
+      const value$10 = $overflowing(((a * b) << 16) >> 16, a * b, -32768, 32767);
+      const value$11 = $checkedEuclid(a, b, -32768, false);
+      const value$12 = $checkedEuclid(a, b, -32768, true);
+      const value$13 = $cmp(a, b);
       console.log(
-        `i16 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$1} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$16 + 1]
+        `i16 ${a} ${b}: wrap ${((a + b) << 16) >> 16} ${((a - b) << 16) >> 16} ${((a * b) << 16) >> 16} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient$1} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$13 + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -232,33 +217,27 @@ function main() {
     const value$5 = $reverseBits(a, 32, true);
     const value$6 = $rotateBits(a >>> 0, 1, 32, true) | 0;
     const value$7 = $rotateBits(a >>> 0, 3, 32, false) | 0;
-    const value$8 = -a | 0;
-    const value$9 = $checked(-a, -2147483648, 2147483647);
-    const value$10 = $pow(a, 0);
-    const value$11 = $pow(a, 2);
-    const value$12 = $pow(a, (bits$2 - 1) >>> 0);
+    const value$8 = $checked(-a, -2147483648, 2147483647);
+    const value$9 = $pow(a, 0);
+    const value$10 = $pow(a, 2);
+    const value$11 = $pow(a, (bits$2 - 1) >>> 0);
     const arg = $checkedPow(a, 3, -2147483648, 2147483647);
     console.log(
-      `i32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `i32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a | 0} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseInt(String(a), -2147483648, 2147483647);
+    const value$12 = $parseInt(String(a), -2147483648, 2147483647);
     const arg$1 = $parseInt((a >>> 0).toString(16), -2147483648, 2147483647, 16);
     console.log(
-      `i32 ${a}: fmt ${(a >>> 0).toString(16)} ${(a >>> 0).toString(2)} ${(a >>> 0).toString(8)} 0x${(a >>> 0).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `i32 ${a}: fmt ${(a >>> 0).toString(16)} ${(a >>> 0).toString(2)} ${(a >>> 0).toString(8)} 0x${(a >>> 0).toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${$zeroPad(String(a), 6)}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = (a << 24) >> 24;
-    const value$15 = (a << 16) >> 16;
-    const value$16 = BigInt(a);
-    const value$17 = BigInt(a);
-    const value$18 = a & 255;
-    const value$19 = a & 65535;
-    const value$20 = a >>> 0;
-    const value$21 = BigInt.asUintN(64, BigInt(a));
-    const value$22 = BigInt.asUintN(128, BigInt(a));
-    const value$23 = f32_bits(Math.fround(a));
+    const value$13 = BigInt(a);
+    const value$14 = BigInt(a);
+    const value$15 = BigInt.asUintN(64, BigInt(a));
+    const value$16 = BigInt.asUintN(128, BigInt(a));
+    const value$17 = f32_bits(Math.fround(a));
     const arg$2 = f64_bits(a);
     console.log(
-      `i32 ${a}: as ${value$14} ${value$15} ${a} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} ${value$22} f32 ${value$23} f64 ${arg$2}`,
+      `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$2 - 1) >>> 0, bits$2, (bits$2 + 1) >>> 0]) {
       const value$4 = s < 32 ? (a << s) | 0 : undefined;
@@ -267,37 +246,35 @@ function main() {
         `i32 ${a} shift ${s}: ${(a << s) | 0} ${a >> s} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
       );
     }
-    const value$24 = Math.sign(a);
-    const value$25 = Math.abs(a) | 0;
-    const value$26 = $checked(Math.abs(a), -2147483648, 2147483647);
+    const value$18 = Math.sign(a);
+    const value$19 = Math.abs(a) | 0;
+    const value$20 = $checked(Math.abs(a), -2147483648, 2147483647);
     console.log(
-      `i32 ${a}: signed ${value$24} ${value$25} ${value$26 == null ? "None" : `Some(${value$26})`} ${Math.abs(a)}`,
+      `i32 ${a}: signed ${value$18} ${value$19} ${value$20 == null ? "None" : `Some(${value$20})`} ${Math.abs(a)}`,
     );
     for (const b of values$2) {
       quotient$2 =
         $checkedDiv(a, b, -2147483648) == null
           ? "-"
           : `${$div(a, b, -2147483648) | 0} ${$rem(a, b, -2147483648) | 0}`;
-      const value = (a + b) | 0;
-      const value$1 = (a - b) | 0;
-      const value$2 = Math.imul(a, b);
-      const value$3 = $checked(a + b, -2147483648, 2147483647);
-      const value$4 = $checked(a - b, -2147483648, 2147483647);
-      const value$5 = $checked(a * b, -2147483648, 2147483647);
-      const value$6 = $checkedDiv(a, b, -2147483648);
-      const value$7 = $checkedRem(a, b, -2147483648);
-      const value$8 = Math.min(Math.max(a + b, -2147483648), 2147483647);
-      const value$9 = Math.min(Math.max(a - b, -2147483648), 2147483647);
-      const value$10 = Math.min(Math.max(a * b, -2147483648), 2147483647) | 0;
-      const value$11 = $overflowing((a + b) | 0, a + b, -2147483648, 2147483647);
-      const value$12 = $overflowing((a - b) | 0, a - b, -2147483648, 2147483647);
-      const value$13 = $overflowing(Math.imul(a, b), a * b, -2147483648, 2147483647);
-      const value$14 = $checkedEuclid(a, b, -2147483648, false);
-      const value$15 = $checkedEuclid(a, b, -2147483648, true);
-      const value$16 = $cmp(a, b);
+      const value = Math.imul(a, b);
+      const value$1 = $checked(a + b, -2147483648, 2147483647);
+      const value$2 = $checked(a - b, -2147483648, 2147483647);
+      const value$3 = $checked(a * b, -2147483648, 2147483647);
+      const value$4 = $checkedDiv(a, b, -2147483648);
+      const value$5 = $checkedRem(a, b, -2147483648);
+      const value$6 = Math.min(Math.max(a + b, -2147483648), 2147483647);
+      const value$7 = Math.min(Math.max(a - b, -2147483648), 2147483647);
+      const value$8 = Math.min(Math.max(a * b, -2147483648), 2147483647) | 0;
+      const value$9 = $overflowing((a + b) | 0, a + b, -2147483648, 2147483647);
+      const value$10 = $overflowing((a - b) | 0, a - b, -2147483648, 2147483647);
+      const value$11 = $overflowing(Math.imul(a, b), a * b, -2147483648, 2147483647);
+      const value$12 = $checkedEuclid(a, b, -2147483648, false);
+      const value$13 = $checkedEuclid(a, b, -2147483648, true);
+      const value$14 = $cmp(a, b);
       console.log(
-        `i32 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$2} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$16 + 1]
+        `i32 ${a} ${b}: wrap ${(a + b) | 0} ${(a - b) | 0} ${value} chk ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} sat ${value$6} ${value$7} ${value$8} over (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) (${value$11[0]}, ${value$11[1]}) div ${quotient$2} euclid ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$14 + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -594,29 +571,27 @@ function main() {
     const value$5 = $reverseBits(a, 8, false);
     const value$6 = $rotateBits(a, 1, 8, true);
     const value$7 = $rotateBits(a, 3, 8, false);
-    const value$8 = -a & 255;
-    const value$9 = $checked(-a, 0, 255);
-    const value$10 = $pow(a, 0) & 255;
-    const value$11 = $pow(a, 2) & 255;
-    const value$12 = $pow(a, (bits$5 - 1) >>> 0) & 255;
+    const value$8 = $checked(-a, 0, 255);
+    const value$9 = $pow(a, 0) & 255;
+    const value$10 = $pow(a, 2) & 255;
+    const value$11 = $pow(a, (bits$5 - 1) >>> 0) & 255;
     const arg = $checkedPow(a, 3, 0, 255);
     console.log(
-      `u8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u8 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a & 255} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseInt(String(a), 0, 255);
+    const value$12 = $parseInt(String(a), 0, 255);
     const arg$1 = $parseInt(a.toString(16), 0, 255, 16);
     console.log(
-      `u8 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u8 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = (a << 24) >> 24;
+    const value$13 = BigInt(a);
+    const value$14 = BigInt(a);
     const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = BigInt(a);
-    const value$18 = BigInt(a);
-    const value$19 = f32_bits(a);
+    const value$17 = f32_bits(a);
     const arg$2 = f64_bits(a);
     console.log(
-      `u8 ${a}: as ${value$14} ${a} ${a} ${value$15} ${value$16} ${a} ${a} ${a} ${value$17} ${value$18} f32 ${value$19} f64 ${arg$2}`,
+      `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$5 - 1) >>> 0, bits$5, (bits$5 + 1) >>> 0]) {
       const value$6 = s < 8 ? (a << (s & 7)) & 255 : undefined;
@@ -628,26 +603,23 @@ function main() {
     console.log(`u8 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
     for (const b of values$5) {
       quotient$5 = $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 255} ${$rem(a, b) & 255}`;
-      const value = (a + b) & 255;
-      const value$1 = (a - b) & 255;
-      const value$2 = (a * b) & 255;
-      const value$3 = $checked(a + b, 0, 255);
-      const value$4 = $checked(a - b, 0, 255);
-      const value$5 = $checked(a * b, 0, 255);
-      const value$6 = $checkedDiv(a, b, 0);
-      const value$7 = $checkedRem(a, b, 0);
-      const value$8 = Math.min(a + b, 255);
-      const value$9 = Math.max(a - b, 0);
-      const value$10 = Math.min(a * b, 255);
-      const value$11 = $overflowing((a + b) & 255, a + b, 0, 255);
-      const value$12 = $overflowing((a - b) & 255, a - b, 0, 255);
-      const value$13 = $overflowing((a * b) & 255, a * b, 0, 255);
-      const value$14 = $checkedEuclid(a, b, undefined, false);
-      const value$15 = $checkedEuclid(a, b, undefined, true);
-      const value$16 = $cmp(a, b);
+      const value = $checked(a + b, 0, 255);
+      const value$1 = $checked(a - b, 0, 255);
+      const value$2 = $checked(a * b, 0, 255);
+      const value$3 = $checkedDiv(a, b, 0);
+      const value$4 = $checkedRem(a, b, 0);
+      const value$5 = Math.min(a + b, 255);
+      const value$6 = Math.max(a - b, 0);
+      const value$7 = Math.min(a * b, 255);
+      const value$8 = $overflowing((a + b) & 255, a + b, 0, 255);
+      const value$9 = $overflowing((a - b) & 255, a - b, 0, 255);
+      const value$10 = $overflowing((a * b) & 255, a * b, 0, 255);
+      const value$11 = $checkedEuclid(a, b, undefined, false);
+      const value$12 = $checkedEuclid(a, b, undefined, true);
+      const value$13 = $cmp(a, b);
       console.log(
-        `u8 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$5} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$16 + 1]
+        `u8 ${a} ${b}: wrap ${(a + b) & 255} ${(a - b) & 255} ${(a * b) & 255} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient$5} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$13 + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -664,31 +636,27 @@ function main() {
     const value$5 = $reverseBits(a, 16, false);
     const value$6 = $rotateBits(a, 1, 16, true);
     const value$7 = $rotateBits(a, 3, 16, false);
-    const value$8 = -a & 65535;
-    const value$9 = $checked(-a, 0, 65535);
-    const value$10 = $pow(a, 0) & 65535;
-    const value$11 = $pow(a, 2) & 65535;
-    const value$12 = $pow(a, (bits$6 - 1) >>> 0) & 65535;
+    const value$8 = $checked(-a, 0, 65535);
+    const value$9 = $pow(a, 0) & 65535;
+    const value$10 = $pow(a, 2) & 65535;
+    const value$11 = $pow(a, (bits$6 - 1) >>> 0) & 65535;
     const arg = $checkedPow(a, 3, 0, 65535);
     console.log(
-      `u16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u16 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a & 65535} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseInt(String(a), 0, 65535);
+    const value$12 = $parseInt(String(a), 0, 65535);
     const arg$1 = $parseInt(a.toString(16), 0, 65535, 16);
     console.log(
-      `u16 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u16 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = (a << 24) >> 24;
-    const value$15 = (a << 16) >> 16;
+    const value$13 = BigInt(a);
+    const value$14 = BigInt(a);
+    const value$15 = BigInt(a);
     const value$16 = BigInt(a);
-    const value$17 = BigInt(a);
-    const value$18 = a & 255;
-    const value$19 = BigInt(a);
-    const value$20 = BigInt(a);
-    const value$21 = f32_bits(a);
+    const value$17 = f32_bits(a);
     const arg$2 = f64_bits(a);
     console.log(
-      `u16 ${a}: as ${value$14} ${value$15} ${a} ${value$16} ${value$17} ${value$18} ${a} ${a} ${value$19} ${value$20} f32 ${value$21} f64 ${arg$2}`,
+      `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$6 - 1) >>> 0, bits$6, (bits$6 + 1) >>> 0]) {
       const value$8 = s < 16 ? (a << (s & 15)) & 65535 : undefined;
@@ -701,26 +669,23 @@ function main() {
     for (const b of values$6) {
       quotient$6 =
         $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) & 65535} ${$rem(a, b) & 65535}`;
-      const value = (a + b) & 65535;
-      const value$1 = (a - b) & 65535;
-      const value$2 = (a * b) & 65535;
-      const value$3 = $checked(a + b, 0, 65535);
-      const value$4 = $checked(a - b, 0, 65535);
-      const value$5 = $checked(a * b, 0, 65535);
-      const value$6 = $checkedDiv(a, b, 0);
-      const value$7 = $checkedRem(a, b, 0);
-      const value$8 = Math.min(a + b, 65535);
-      const value$9 = Math.max(a - b, 0);
-      const value$10 = Math.min(a * b, 65535);
-      const value$11 = $overflowing((a + b) & 65535, a + b, 0, 65535);
-      const value$12 = $overflowing((a - b) & 65535, a - b, 0, 65535);
-      const value$13 = $overflowing((a * b) & 65535, a * b, 0, 65535);
-      const value$14 = $checkedEuclid(a, b, undefined, false);
-      const value$15 = $checkedEuclid(a, b, undefined, true);
-      const value$16 = $cmp(a, b);
+      const value = $checked(a + b, 0, 65535);
+      const value$1 = $checked(a - b, 0, 65535);
+      const value$2 = $checked(a * b, 0, 65535);
+      const value$3 = $checkedDiv(a, b, 0);
+      const value$4 = $checkedRem(a, b, 0);
+      const value$5 = Math.min(a + b, 65535);
+      const value$6 = Math.max(a - b, 0);
+      const value$7 = Math.min(a * b, 65535);
+      const value$8 = $overflowing((a + b) & 65535, a + b, 0, 65535);
+      const value$9 = $overflowing((a - b) & 65535, a - b, 0, 65535);
+      const value$10 = $overflowing((a * b) & 65535, a * b, 0, 65535);
+      const value$11 = $checkedEuclid(a, b, undefined, false);
+      const value$12 = $checkedEuclid(a, b, undefined, true);
+      const value$13 = $cmp(a, b);
       console.log(
-        `u16 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$6} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$16 + 1]
+        `u16 ${a} ${b}: wrap ${(a + b) & 65535} ${(a - b) & 65535} ${(a * b) & 65535} chk ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} sat ${value$5} ${value$6} ${value$7} over (${value$8[0]}, ${value$8[1]}) (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) div ${quotient$6} euclid ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$13 + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }
@@ -737,33 +702,27 @@ function main() {
     const value$5 = $reverseBits(a, 32, false);
     const value$6 = $rotateBits(a, 1, 32, true);
     const value$7 = $rotateBits(a, 3, 32, false);
-    const value$8 = -a >>> 0;
-    const value$9 = $checked(-a, 0, 4294967295);
-    const value$10 = $pow(a, 0) >>> 0;
-    const value$11 = $pow(a, 2) >>> 0;
-    const value$12 = $pow(a, (bits$7 - 1) >>> 0) >>> 0;
+    const value$8 = $checked(-a, 0, 4294967295);
+    const value$9 = $pow(a, 0) >>> 0;
+    const value$10 = $pow(a, 2) >>> 0;
+    const value$11 = $pow(a, (bits$7 - 1) >>> 0) >>> 0;
     const arg = $checkedPow(a, 3, 0, 4294967295);
     console.log(
-      `u32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${value$8} ${value$9 == null ? "None" : `Some(${value$9})`} pow ${value$10} ${value$11} ${value$12} ${arg == null ? "None" : `Some(${arg})`}`,
+      `u32 ${a}: zeros ${value} ${value$1} ones ${value$2} ${value$3} swap ${value$4} rev ${value$5} rot ${value$6} ${value$7} neg ${-a >>> 0} ${value$8 == null ? "None" : `Some(${value$8})`} pow ${value$9} ${value$10} ${value$11} ${arg == null ? "None" : `Some(${arg})`}`,
     );
-    const value$13 = $parseInt(String(a), 0, 4294967295);
+    const value$12 = $parseInt(String(a), 0, 4294967295);
     const arg$1 = $parseInt(a.toString(16), 0, 4294967295, 16);
     console.log(
-      `u32 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$13.TAG === "Ok" ? `Ok(${value$13._0})` : `Err(${$debugParseError(value$13._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
+      `u32 ${a}: fmt ${a.toString(16)} ${a.toString(2)} ${a.toString(8)} 0x${a.toString(16).toUpperCase()} [${String(a).padStart(6)}] [${String(a).padEnd(6)}] [${$pad(String(a), 7, "^")}] [${$plus(String(a))}] [${String(a).padStart(6, "0")}] parse ${value$12.TAG === "Ok" ? `Ok(${value$12._0})` : `Err(${$debugParseError(value$12._0, "ParseIntError")})`} ${arg$1.TAG === "Ok" ? `Ok(${arg$1._0})` : `Err(${$debugParseError(arg$1._0, "ParseIntError")})`}`,
     );
-    const value$14 = (a << 24) >> 24;
-    const value$15 = (a << 16) >> 16;
-    const value$16 = a | 0;
-    const value$17 = BigInt(a);
-    const value$18 = BigInt(a);
-    const value$19 = a & 255;
-    const value$20 = a & 65535;
-    const value$21 = BigInt(a);
-    const value$22 = BigInt(a);
-    const value$23 = f32_bits(Math.fround(a));
+    const value$13 = BigInt(a);
+    const value$14 = BigInt(a);
+    const value$15 = BigInt(a);
+    const value$16 = BigInt(a);
+    const value$17 = f32_bits(Math.fround(a));
     const arg$2 = f64_bits(a);
     console.log(
-      `u32 ${a}: as ${value$14} ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${a} ${value$21} ${value$22} f32 ${value$23} f64 ${arg$2}`,
+      `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$7 - 1) >>> 0, bits$7, (bits$7 + 1) >>> 0]) {
       const value$10 = s < 32 ? (a << s) >>> 0 : undefined;
@@ -775,26 +734,24 @@ function main() {
     console.log(`u32 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
     for (const b of values$7) {
       quotient$7 = $checkedDiv(a, b, 0) == null ? "-" : `${$div(a, b) >>> 0} ${$rem(a, b) >>> 0}`;
-      const value = (a + b) >>> 0;
-      const value$1 = (a - b) >>> 0;
-      const value$2 = Math.imul(a, b) >>> 0;
-      const value$3 = $checked(a + b, 0, 4294967295);
-      const value$4 = $checked(a - b, 0, 4294967295);
-      const value$5 = $checked(a * b, 0, 4294967295);
-      const value$6 = $checkedDiv(a, b, 0);
-      const value$7 = $checkedRem(a, b, 0);
-      const value$8 = Math.min(a + b, 4294967295);
-      const value$9 = Math.max(a - b, 0);
-      const value$10 = Math.min(a * b, 4294967295);
-      const value$11 = $overflowing((a + b) >>> 0, a + b, 0, 4294967295);
-      const value$12 = $overflowing((a - b) >>> 0, a - b, 0, 4294967295);
-      const value$13 = $overflowing(Math.imul(a, b) >>> 0, a * b, 0, 4294967295);
-      const value$14 = $checkedEuclid(a, b, undefined, false);
-      const value$15 = $checkedEuclid(a, b, undefined, true);
-      const value$16 = $cmp(a, b);
+      const value = Math.imul(a, b) >>> 0;
+      const value$1 = $checked(a + b, 0, 4294967295);
+      const value$2 = $checked(a - b, 0, 4294967295);
+      const value$3 = $checked(a * b, 0, 4294967295);
+      const value$4 = $checkedDiv(a, b, 0);
+      const value$5 = $checkedRem(a, b, 0);
+      const value$6 = Math.min(a + b, 4294967295);
+      const value$7 = Math.max(a - b, 0);
+      const value$8 = Math.min(a * b, 4294967295);
+      const value$9 = $overflowing((a + b) >>> 0, a + b, 0, 4294967295);
+      const value$10 = $overflowing((a - b) >>> 0, a - b, 0, 4294967295);
+      const value$11 = $overflowing(Math.imul(a, b) >>> 0, a * b, 0, 4294967295);
+      const value$12 = $checkedEuclid(a, b, undefined, false);
+      const value$13 = $checkedEuclid(a, b, undefined, true);
+      const value$14 = $cmp(a, b);
       console.log(
-        `u32 ${a} ${b}: wrap ${value} ${value$1} ${value$2} chk ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} sat ${value$8} ${value$9} ${value$10} over (${value$11[0]}, ${value$11[1]}) (${value$12[0]}, ${value$12[1]}) (${value$13[0]}, ${value$13[1]}) div ${quotient$7} euclid ${value$14 == null ? "None" : `Some(${value$14})`} ${value$15 == null ? "None" : `Some(${value$15})`} cmp ${a < b} ${a === b} ${
-          ["Less", "Equal", "Greater"][value$16 + 1]
+        `u32 ${a} ${b}: wrap ${(a + b) >>> 0} ${(a - b) >>> 0} ${value} chk ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`} sat ${value$6} ${value$7} ${value$8} over (${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]}) (${value$11[0]}, ${value$11[1]}) div ${quotient$7} euclid ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} cmp ${a < b} ${a === b} ${
+          ["Less", "Equal", "Greater"][value$14 + 1]
         } ${Math.min(a, b)} ${Math.max(a, b)} ${Math.abs(a - b)}`,
       );
     }

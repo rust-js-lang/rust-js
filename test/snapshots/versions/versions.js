@@ -121,12 +121,17 @@ export function tour() {
   );
   const value$1 = $index(vs, 1);
   const right = $index(vs, 2);
-  out += `${value == null ? "None" : `Some(${versionDebug_fmt(value)})`} ${($cmp(value$1.major, right.major) || $cmp(value$1.minor, right.minor) || $cmp(value$1.patch, right.patch)) < 0}\n`;
+  const value$2 =
+    ($cmp(value$1.major, right.major) ||
+      $cmp(value$1.minor, right.minor) ||
+      $cmp(value$1.patch, right.patch)) < 0;
+  out += `${value == null ? "None" : `Some(${versionDebug_fmt(value)})`} ${value$2}\n`;
   const c = { name: "svc", retries: 3, verbose: false, ratio: 0 };
   out += `${configDebug_fmt(c)}\n`;
-  const value$2 = largest([3, 9, 2], { partial_cmp: $cmp });
-  const value$3 = largest([1.5, -2], { partial_cmp: $partialCmp });
-  out += `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${$debugF64(value$3)})`} ${((value) => (value == null ? "None" : `Some(${value})`))(largest([], { partial_cmp: $cmp }))}\n`;
+  const value$3 = largest([3, 9, 2], { partial_cmp: $cmp });
+  const value$4 = largest([1.5, -2], { partial_cmp: $partialCmp });
+  const value$5 = largest([], { partial_cmp: $cmp });
+  out += `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${$debugF64(value$4)})`} ${value$5 == null ? "None" : `Some(${value$5})`}\n`;
   const running = $scan([1, 2, 3, 4], 0, (acc, x) => {
     acc.value = (acc.value + x) >>> 0;
     return acc.value;

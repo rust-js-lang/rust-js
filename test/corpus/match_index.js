@@ -47,10 +47,8 @@ function mixed(kind) {
 function main() {
   for (const kind of ["note", "pitfall", "rsc"]) {
     const v = variant(kind);
-    const title = crossed(kind).title;
-    console.log(`${v.title} ${v.depth} ${title} ${mixed(kind).title}`);
+    console.log(`${v.title} ${v.depth} ${crossed(kind).title} ${mixed(kind).title}`);
   }
-  const title = picked(4).title;
-  console.log(`${title} ${titled("rsc")}`);
+  console.log(`${picked(4).title} ${titled("rsc")}`);
 }
 //# sourceMappingURL=case.js.map

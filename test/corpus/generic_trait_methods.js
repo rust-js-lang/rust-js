@@ -87,18 +87,13 @@ function everything(s, SShape) {
 function main() {
   const c = [1];
   const s = [2];
-  const value = circleShape().describe(c, "c", { fmt: (value) => value });
-  const value$1 = squareShape_describe(s, 3.5, { fmt: $displayF64 });
   console.log(
-    `${value} | ${value$1} | ${circleShape_tagged(c, "a", 1, { clone: (value) => value }, { fmt: (value) => $debugStr(value) }, { fmt: String })}`,
+    `${circleShape().describe(c, "c", { fmt: (value) => value })} | ${squareShape_describe(s, 3.5, { fmt: $displayF64 })} | ${circleShape_tagged(c, "a", 1, { clone: (value) => value }, { fmt: (value) => $debugStr(value) }, { fmt: String })}`,
   );
-  const value$2 = report(c, circleShape());
-  console.log(`${value$2} | ${report(s, squareShape())}`);
-  console.log(
-    `${((tuple) => `(${$debugStr(tuple[0])}, ${$debugF64(tuple[1])}, ${$debugStr(tuple[2])})`)(everything(c, circleShape()))}`,
-  );
-  console.log(
-    `${((tuple) => `(${$debugStr(tuple[0])}, ${$debugF64(tuple[1])}, ${$debugStr(tuple[2])})`)(everything(s, squareShape()))}`,
-  );
+  console.log(`${report(c, circleShape())} | ${report(s, squareShape())}`);
+  const value = everything(c, circleShape());
+  console.log(`(${$debugStr(value[0])}, ${$debugF64(value[1])}, ${$debugStr(value[2])})`);
+  const value$1 = everything(s, squareShape());
+  console.log(`(${$debugStr(value$1[0])}, ${$debugF64(value$1[1])}, ${$debugStr(value$1[2])})`);
 }
 //# sourceMappingURL=case.js.map

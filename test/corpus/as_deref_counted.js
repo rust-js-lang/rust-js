@@ -65,13 +65,9 @@ function main() {
   }
   const countedOk = { TAG: "Ok", _0: { value: [3], strong: 1, weak: 0 } };
   try {
+    const value = countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk;
     console.log(
-      `${((result) =>
-        result.TAG === "Ok"
-          ? `Ok([${result._0.map((item) => String(item)).join(", ")}])`
-          : `Err(${result._0})`)(
-        countedOk.TAG === "Ok" ? { TAG: "Ok", _0: countedOk._0.value } : countedOk,
-      )}`,
+      `${value.TAG === "Ok" ? `Ok([${value._0.map((item) => String(item)).join(", ")}])` : `Err(${value._0})`}`,
     );
   } catch (error) {
     if (countedOk.TAG === "Ok") {

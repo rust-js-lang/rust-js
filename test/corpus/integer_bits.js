@@ -31,20 +31,20 @@ function xorshift(x) {
 }
 
 function main() {
-  const value = $rotateBits(1, 31, 32, true);
-  const value$1 = $rotateBits(2147483649, 1, 32, false);
-  const value$2 = $rotateBits(1, 9, 8, true);
-  console.log(`${value} ${value$1} ${value$2} ${$rotateBits(129, 4, 8, false)}`);
-  const value$3 = $rotateBits(-2 >>> 0, 1, 32, true) | 0;
-  const value$4 = ($rotateBits(-128 & 255, 7, 8, false) << 24) >> 24;
-  console.log(`${value$3} ${value$4} ${($rotateBits(-1 & 65535, 3, 16, true) << 16) >> 16}`);
-  const value$5 = $rotateBits(BigInt.asUintN(64, 1n), 63, 64, true);
-  console.log(`${value$5} ${$rotateBits(BigInt.asUintN(64, 9223372036854775809n), 4, 64, false)}`);
-  console.log(`${BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, -2n), 1, 64, true))}`);
-  const value$6 = $toBytes(16909060, 4, false);
-  const value$7 = $toBytes(16909060, 4, true);
   console.log(
-    `[${value$6.map((item) => String(item)).join(", ")}] [${value$7.map((item) => String(item)).join(", ")}] [${$toBytes(
+    `${$rotateBits(1, 31, 32, true)} ${$rotateBits(2147483649, 1, 32, false)} ${$rotateBits(1, 9, 8, true)} ${$rotateBits(129, 4, 8, false)}`,
+  );
+  console.log(
+    `${$rotateBits(-2 >>> 0, 1, 32, true) | 0} ${($rotateBits(-128 & 255, 7, 8, false) << 24) >> 24} ${($rotateBits(-1 & 65535, 3, 16, true) << 16) >> 16}`,
+  );
+  console.log(
+    `${$rotateBits(BigInt.asUintN(64, 1n), 63, 64, true)} ${$rotateBits(BigInt.asUintN(64, 9223372036854775809n), 4, 64, false)}`,
+  );
+  console.log(`${BigInt.asIntN(64, $rotateBits(BigInt.asUintN(64, -2n), 1, 64, true))}`);
+  const value = $toBytes(16909060, 4, false);
+  const value$1 = $toBytes(16909060, 4, true);
+  console.log(
+    `[${value.map((item) => String(item)).join(", ")}] [${value$1.map((item) => String(item)).join(", ")}] [${$toBytes(
       258,
       2,
       true,
@@ -52,10 +52,10 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$8 = $toBytes(-2, 4, false);
-  const value$9 = $toBytes(-1, 1, true);
+  const value$2 = $toBytes(-2, 4, false);
+  const value$3 = $toBytes(-1, 1, true);
   console.log(
-    `[${value$8.map((item) => String(item)).join(", ")}] [${value$9.map((item) => String(item)).join(", ")}] [${$toBytes(
+    `[${value$2.map((item) => String(item)).join(", ")}] [${value$3.map((item) => String(item)).join(", ")}] [${$toBytes(
       258n,
       8,
       false,
@@ -68,23 +68,26 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value$10 = $fromBytes([1, 2, 3, 4], 4, false, false);
-  const value$11 = $fromBytes([254, 255], 2, true, true);
-  const value$12 = $fromBytes([0, 0, 0, 0, 0, 0, 1, 2], 8, false, false);
   console.log(
-    `${value$10} ${value$11} ${value$12} ${$fromBytes($toBytes(-7n, 8, true), 8, true, true)}`,
+    `${$fromBytes(
+      [1, 2, 3, 4],
+      4,
+      false,
+      false,
+    )} ${$fromBytes([254, 255], 2, true, true)} ${$fromBytes(
+      [0, 0, 0, 0, 0, 0, 1, 2],
+      8,
+      false,
+      false,
+    )} ${$fromBytes($toBytes(-7n, 8, true), 8, true, true)}`,
   );
-  const value$13 = $floatToBits(1.5, 8);
-  const value$14 = $floatToBits(-0, 8);
-  console.log(`${value$13} ${value$14} ${$floatToBits(Infinity, 8)}`);
-  const value$15 = $floatToBits(1.5, 4);
-  const value$16 = $floatFromBits(1078530011, 4);
+  console.log(`${$floatToBits(1.5, 8)} ${$floatToBits(-0, 8)} ${$floatToBits(Infinity, 8)}`);
   console.log(
-    `${value$15} ${$displayF32(value$16)} ${$displayF64($floatFromBits(4614256656552045848n, 8))}`,
+    `${$floatToBits(1.5, 4)} ${$displayF32($floatFromBits(1078530011, 4))} ${$displayF64($floatFromBits(4614256656552045848n, 8))}`,
   );
-  const value$17 = $floatFromBits($floatToBits(1.25, 8), 8);
-  console.log(`${$displayF64(value$17)} ${$floatToBits(Math.fround(1.1754944e-38), 4)}`);
-  const value$18 = fnv1a("hello");
-  console.log(`${value$18} ${xorshift(88172645463325252n)}`);
+  console.log(
+    `${$displayF64($floatFromBits($floatToBits(1.25, 8), 8))} ${$floatToBits(Math.fround(1.1754944e-38), 4)}`,
+  );
+  console.log(`${fnv1a("hello")} ${xorshift(88172645463325252n)}`);
 }
 //# sourceMappingURL=case.js.map

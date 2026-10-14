@@ -27,7 +27,6 @@ function outer(n) {
 }
 
 function main() {
-  const value = outer(2);
-  console.log(`${value} ${outer(4)}`);
+  console.log(`${outer(2)} ${outer(4)}`);
 }
 //# sourceMappingURL=case.js.map

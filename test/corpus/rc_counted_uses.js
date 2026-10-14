@@ -96,12 +96,12 @@ function main() {
     throw error;
   }
   try {
+    const value =
+      $cmp(copy.title.value, doc.title.value) || $cmpItems(copy.pages.value, doc.pages.value, $cmp);
     console.log(
-      `${tmp} ${tmp$1} ${((value) =>
-        value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`)(
-        $cmp(copy.title.value, doc.title.value) ||
-          $cmpItems(copy.pages.value, doc.pages.value, $cmp),
-      )}`,
+      `${tmp} ${tmp$1} ${
+        value == null ? "None" : `Some(${["Less", "Equal", "Greater"][value + 1]})`
+      }`,
     );
   } catch (error) {
     $rcDrop(copy.title);
@@ -188,8 +188,20 @@ function main() {
     throw error;
   }
   const value$1 = copy;
+  let tmp$4;
   try {
-    console.log(`${docDebug_fmt(doc)} ${docDebug_fmt(value$1)} ${count(doc.pages)}`);
+    tmp$4 = count(doc.pages);
+  } catch (error) {
+    $rcDrop(fresh.title);
+    $rcDrop(fresh.pages);
+    $rcDrop(copy.title);
+    $rcDrop(copy.pages);
+    $rcDrop(doc.title);
+    $rcDrop(doc.pages);
+    throw error;
+  }
+  try {
+    console.log(`${docDebug_fmt(doc)} ${docDebug_fmt(value$1)} ${tmp$4}`);
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -200,9 +212,9 @@ function main() {
     throw error;
   }
   const value$2 = [[1], [2, 3]];
-  let tmp$4;
+  let tmp$5;
   try {
-    tmp$4 = $iter(value$2);
+    tmp$5 = $iter(value$2);
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -212,9 +224,9 @@ function main() {
     $rcDrop(doc.pages);
     throw error;
   }
-  let tmp$5;
+  let tmp$6;
   try {
-    tmp$5 = tmp$4.map((x) => ({ value: x, strong: 1, weak: 0 }));
+    tmp$6 = tmp$5.map((x) => ({ value: x, strong: 1, weak: 0 }));
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -226,7 +238,7 @@ function main() {
   }
   let lists;
   try {
-    lists = tmp$5.toArray();
+    lists = tmp$6.toArray();
   } catch (error) {
     $rcDrop(fresh.title);
     $rcDrop(fresh.pages);
@@ -253,7 +265,7 @@ function main() {
     throw error;
   }
   let iter$1;
-  let tmp$6;
+  let tmp$7;
   let me;
   let w;
   bb71: while (true) {
@@ -359,7 +371,7 @@ function main() {
       throw error;
     }
     try {
-      tmp$6 = $borrowMut(other.value, true);
+      tmp$7 = $borrowMut(other.value, true);
     } catch (error) {
       $rcDrop(other);
       $rcDrop(shared);
@@ -378,9 +390,9 @@ function main() {
       throw error;
     }
     try {
-      tmp$6.value.push(2);
+      tmp$7.value.push(2);
     } catch (error) {
-      $unborrow(tmp$6);
+      $unborrow(tmp$7);
       $rcDrop(other);
       $rcDrop(shared);
       for (const item of lists) {
@@ -398,7 +410,7 @@ function main() {
       throw error;
     }
     try {
-      $unborrow(tmp$6);
+      $unborrow(tmp$7);
     } catch (error) {
       $rcDrop(other);
       $rcDrop(shared);
@@ -688,9 +700,9 @@ function main() {
       }
       throw error;
     }
-    let tmp$7;
+    let tmp$6;
     try {
-      tmp$7 = $unwrap(tmp$5);
+      tmp$6 = $unwrap(tmp$5);
     } catch (error) {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
@@ -711,9 +723,9 @@ function main() {
       throw error;
     }
     try {
-      console.log(`${strong$1} ${owner === tmp$7}`);
+      console.log(`${strong$1} ${owner === tmp$6}`);
     } catch (error) {
-      $rcDrop(tmp$7, (value) => {
+      $rcDrop(tmp$6, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(owner, (value) => {
@@ -735,7 +747,7 @@ function main() {
       throw error;
     }
     try {
-      $rcDrop(tmp$7, (value) => {
+      $rcDrop(tmp$6, (value) => {
         $weakDrop(value.me);
       });
     } catch (error) {

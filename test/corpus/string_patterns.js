@@ -20,41 +20,47 @@ export function entry() {
 
 function main() {
   const line = "a=b=c";
-  const value = Iterator.from($splitN(line, 2, "=")).toArray();
   console.log(
-    `[${value.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from($splitN(line, 1, "="))
+    `[${Iterator.from($splitN(line, 2, "="))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}] [${Iterator.from($splitN(line, 1, "="))
       .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$1 = Iterator.from($rsplit(line, "=", 2)).toArray();
   console.log(
-    `[${value$1.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from($rsplit(line, "="))
+    `[${Iterator.from($rsplit(line, "=", 2))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}] [${Iterator.from($rsplit(line, "="))
       .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$2 = Iterator.from($rsplit("aaa", "aa")).toArray();
   console.log(
-    `[${value$2.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from(
-      $rsplit("aaaa", "aa", 2),
-    )
+    `[${Iterator.from($rsplit("aaa", "aa"))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}] [${Iterator.from($rsplit("aaaa", "aa", 2))
       .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$3 = Iterator.from($rsplit("ab", "")).toArray();
   console.log(
-    `[${value$3.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from($splitN("ab", 2, ""))
+    `[${Iterator.from($rsplit("ab", ""))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}] [${Iterator.from($splitN("ab", 2, ""))
       .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$4 = Iterator.from($splitTerminator("a,b,", ",")).toArray();
   console.log(
-    `[${value$4.map((item) => $debugStr(item)).join(", ")}] [${Iterator.from(
-      $splitTerminator("", ","),
-    )
+    `[${Iterator.from($splitTerminator("a,b,", ","))
+      .toArray()
+      .map((item) => $debugStr(item))
+      .join(", ")}] [${Iterator.from($splitTerminator("", ","))
       .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
@@ -79,18 +85,19 @@ function main() {
       .map((item) => `(${item[0]}, ${$debugStr(item[1])})`)
       .join(", ")}]`,
   );
-  const value$5 = Iterator.from($matches("banana", "an")).reduce((n) => n + 1, 0);
   console.log(
-    `${value$5} [${Iterator.from($matches("a-b-c", "-"))
+    `${Iterator.from($matches("banana", "an")).reduce((n) => n + 1, 0)} [${Iterator.from(
+      $matches("a-b-c", "-"),
+    )
       .toArray()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
-  const value$6 = $trimMatches("xxhixx", "x");
-  console.log(`${$debugStr(value$6)} ${$debugStr($trimMatches("--a--", "-", true, false))}`);
-  const value$7 = $trimMatches("xxhixx", "xx", true, false);
   console.log(
-    `${$debugStr(value$7)} ${$debugStr($trimMatches("a1b22", (c) => /^\p{N}$/u.test(c), false, true))}`,
+    `${$debugStr($trimMatches("xxhixx", "x"))} ${$debugStr($trimMatches("--a--", "-", true, false))}`,
+  );
+  console.log(
+    `${$debugStr($trimMatches("xxhixx", "xx", true, false))} ${$debugStr($trimMatches("a1b22", (c) => /^\p{N}$/u.test(c), false, true))}`,
   );
   console.log(`${$debugStr($trimMatches(" a1 ", (c) => c === " " || /^[0-9]$/.test(c)))}`);
   let total = 0;

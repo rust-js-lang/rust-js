@@ -93,12 +93,12 @@ function shown(s, SShow) {
 }
 
 function main() {
-  const value = sum([1, 2, 3], 3);
-  console.log(`${value} ${sum([10, 10, 10, 10], 4)}`);
+  console.log(`${sum([1, 2, 3], 3)} ${sum([10, 10, 10, 10], 4)}`);
   console.log(`${describe(["a", "b"], 2, { fmt: (value) => $debugStr(value) })}`);
-  const value$1 = filled(7, 3);
   console.log(
-    `[${value$1.map((item) => String(item)).join(", ")}] [${filled(1, 0)
+    `[${filled(7, 3)
+      .map((item) => String(item))
+      .join(", ")}] [${filled(1, 0)
       .map((item) => String(item))
       .join(", ")}]`,
   );
@@ -110,17 +110,16 @@ function main() {
       console.log(
         `[${ring.items.map((item) => String(item)).join(", ")}] ${Ring.capacity(ring, 2)}`,
       );
-      const value = flag(true, "x");
-      console.log(`${value} ${flag(false, "y")}`);
+      console.log(`${flag(true, "x")} ${flag(false, "y")}`);
       console.log(
         `[${scaled([1, 2], 3)
           .map((item) => String(item))
           .join(", ")}]`,
       );
       const big = Ring.new(5);
-      const value$1 = shown(ring, ringShow(2));
-      const value$2 = shown(big, ringShow(5));
-      console.log(`${value$1} ${value$2} ${shown(ring, ringShow(2))} ${ringDisplay_fmt(ring, 2)}`);
+      console.log(
+        `${shown(ring, ringShow(2))} ${shown(big, ringShow(5))} ${shown(ring, ringShow(2))} ${ringDisplay_fmt(ring, 2)}`,
+      );
       const all = [
         { value: ring, impl: ringShow(2) },
         { value: big, impl: ringShow(5) },
@@ -131,9 +130,9 @@ function main() {
           .map((item) => $debugStr(item))
           .join(", ")}]`,
       );
-      const value$3 = shown(undefined, gridShow(2, 3));
-      const value$4 = shown(undefined, gridShow(2, 4));
-      console.log(`${value$3} ${value$4} ${shown(undefined, gridShow(2, 3))}`);
+      console.log(
+        `${shown(undefined, gridShow(2, 3))} ${shown(undefined, gridShow(2, 4))} ${shown(undefined, gridShow(2, 3))}`,
+      );
       console.log(`${count(4)}`);
       return;
     }

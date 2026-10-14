@@ -42,13 +42,12 @@ function main() {
     .toArray();
   console.log(`[${pairs.map((item) => pairDebug_fmt(item)).join(", ")}]`);
   console.log(`${shapeDebug_fmt({ TAG: "Rect", _0: 2, _1: 3 })}`);
-  console.log(`${metersDebug_fmt([4])} ${$eq([4], [4])}`);
+  const value = $eq([4], [4]);
+  console.log(`${metersDebug_fmt([4])} ${value}`);
   const asFn = (value) => [value];
   console.log(`${metersDebug_fmt(asFn(5))}`);
   const addOne = (x) => (x + 1) | 0;
-  const value = addOne(1);
-  const value$1 = apply(addOne, 10);
-  console.log(`${value} ${value$1} ${apply((x) => Math.imul(x, 3), 7)}`);
+  console.log(`${addOne(1)} ${apply(addOne, 10)} ${apply((x) => Math.imul(x, 3), 7)}`);
   console.log(`${twice(addOne, 0)}`);
   const sizes = [-3, 4, -5].map((n) => Math.abs(n) | 0);
   const roots = [4, 9].map((n) => Math.sqrt(n));
@@ -56,8 +55,8 @@ function main() {
     `[${sizes.map((item) => String(item)).join(", ")}] [${roots.map((item) => $debugF64(item)).join(", ")}]`,
   );
   const single = [2].map((n) => Math.fround(Math.sqrt(n)));
-  const value$2 = Math.fround($index(single, 0) * $index(single, 0));
-  const value$3 = $index(single, 0);
-  console.log(`${$displayF32(value$2)} ${Math.fround(value$3 * $index(single, 0)) === 2}`);
+  const value$1 = Math.fround($index(single, 0) * $index(single, 0));
+  const value$2 = $index(single, 0);
+  console.log(`${$displayF32(value$1)} ${Math.fround(value$2 * $index(single, 0)) === 2}`);
 }
 //# sourceMappingURL=case.js.map

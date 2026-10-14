@@ -107,41 +107,52 @@ function labelledOrd_cmp(labelled, other, KBorrowStr) {
 
 function main() {
   const words = ["tea", "milk"];
-  const value = contains(words, "milk", { borrow: (value) => value }, { eq: (a, b) => a === b });
   console.log(
-    `${value} ${contains(words, "coffee", { borrow: (value) => value }, { eq: (a, b) => a === b })}`,
+    `${contains(words, "milk", { borrow: (value) => value }, { eq: (a, b) => a === b })} ${contains(words, "coffee", { borrow: (value) => value }, { eq: (a, b) => a === b })}`,
   );
-  const value$1 = contains([1, 2, 3], 2, { borrow: (value) => value }, { eq: (a, b) => a === b });
   console.log(
-    `${value$1} ${contains(["a", "b"], "c", { borrow: (value) => value }, { eq: (a, b) => a === b })}`,
+    `${contains(
+      [1, 2, 3],
+      2,
+      { borrow: (value) => value },
+      { eq: (a, b) => a === b },
+    )} ${contains(["a", "b"], "c", { borrow: (value) => value }, { eq: (a, b) => a === b })}`,
   );
   const tags = [{ name: "red" }, { name: "blue" }];
-  const value$2 = contains(tags, "blue", tagBorrowStr(), { eq: (a, b) => a === b });
-  console.log(`${value$2} ${contains(tags, "green", tagBorrowStr(), { eq: (a, b) => a === b })}`);
+  console.log(
+    `${contains(tags, "blue", tagBorrowStr(), { eq: (a, b) => a === b })} ${contains(tags, "green", tagBorrowStr(), { eq: (a, b) => a === b })}`,
+  );
   const ids = [[[7]], [[9]]];
   console.log(`${contains(ids, [9], hyphenatedBorrowUuid(), { eq: $eq })}`);
-  const value$3 = total([1, 2, 3], { borrow: (value) => value });
-  const value$4 = total([4, 5], { borrow: (value) => value });
-  console.log(`${value$3} ${value$4} ${total([6, 7], { borrow: (value) => value })}`);
-  const value$5 = position(
+  console.log(
+    `${total([1, 2, 3], {
+      borrow: (value) => value,
+    })} ${total([4, 5], { borrow: (value) => value })} ${total([6, 7], { borrow: (value) => value })}`,
+  );
+  const value = position(
     words,
     "milk",
     qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value }),
   );
-  console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${value})`))(position(words, "rum", qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value })))}`,
+  const value$1 = position(
+    words,
+    "rum",
+    qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value }),
   );
-  const value$6 = position(
+  console.log(
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+  );
+  const value$2 = position(
     [5, 6],
     6,
     qEquivalentK({ eq: (a, b) => a === b }, { borrow: (value) => value }),
   );
+  const value$3 = position(tags, "red", qEquivalentK({ eq: (a, b) => a === b }, tagBorrowStr()));
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${((value) => (value == null ? "None" : `Some(${value})`))(position(tags, "red", qEquivalentK({ eq: (a, b) => a === b }, tagBorrowStr())))}`,
+    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
   );
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))(position(ids, [7], qEquivalentK({ eq: $eq }, hyphenatedBorrowUuid())))}`,
-  );
+  const value$4 = position(ids, [7], qEquivalentK({ eq: $eq }, hyphenatedBorrowUuid()));
+  console.log(`${value$4 == null ? "None" : `Some(${value$4})`}`);
   const id = hyphenatedBorrowUuid_borrow(ids[1]);
   const name = tagBorrowStr_borrow(tags[0]);
   const text = $index(words, 0);
@@ -153,7 +164,6 @@ function main() {
   );
   const labelled = [[{ name: "pear" }], [{ name: "fig" }]];
   labelled.sort((a, b) => labelledOrd_cmp(a, b, tagBorrowStr()));
-  const name$1 = $index(labelled, 0)[0].name;
-  console.log(`${name$1} ${$index(labelled, 1)[0].name}`);
+  console.log(`${$index(labelled, 0)[0].name} ${$index(labelled, 1)[0].name}`);
 }
 //# sourceMappingURL=case.js.map

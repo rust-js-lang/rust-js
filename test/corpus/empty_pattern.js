@@ -7,9 +7,8 @@ export function entry() {
 }
 
 function show(text, pattern) {
-  const value = $replace(text, pattern, "-");
   console.log(
-    `${$debugStr(value)} [${$split(text, pattern)
+    `${$debugStr($replace(text, pattern, "-"))} [${$split(text, pattern)
       .slice()
       .map((item) => $debugStr(item))
       .join(", ")}]`,

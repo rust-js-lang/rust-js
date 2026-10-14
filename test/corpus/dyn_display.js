@@ -89,12 +89,8 @@ function describe(d) {
 function main() {
   const byte = { value: 33, impl: { fmt: String } };
   const boxed = { value: { x: 1, y: 2 }, impl: pointDisplay() };
-  console.log(
-    `${byte.impl.fmt(byte.value)} ${boxed.impl.fmt(boxed.value)} ${describe({
-      value: "text",
-      impl: { fmt: (value) => value },
-    })}`,
-  );
+  const value = describe({ value: "text", impl: { fmt: (value) => value } });
+  console.log(`${byte.impl.fmt(byte.value)} ${boxed.impl.fmt(boxed.value)} ${value}`);
   console.log(`${boxed.impl.fmt(boxed.value)}`);
   const all = [
     { value: 1.5, impl: { fmt: $displayF64 } },
@@ -109,24 +105,24 @@ function main() {
   const shown = { value: counter, impl: counterDisplay() };
   counter[0].value = 2;
   console.log(`${shown.impl.fmt(shown.value)}`);
-  const value = lookup("one");
-  if (value.TAG === "Ok") {
-    const n = value._0;
-    console.log(`found ${n}`);
-  } else {
-    const e = value._0;
-    console.log(`error ${e.impl.Display().fmt(e.value)}`);
-  }
-  const value$1 = lookup("two");
+  const value$1 = lookup("one");
   if (value$1.TAG === "Ok") {
     const n = value$1._0;
     console.log(`found ${n}`);
   } else {
     const e = value$1._0;
+    console.log(`error ${e.impl.Display().fmt(e.value)}`);
+  }
+  const value$2 = lookup("two");
+  if (value$2.TAG === "Ok") {
+    const n = value$2._0;
+    console.log(`found ${n}`);
+  } else {
+    const e = value$2._0;
     const value = e.impl.Display().fmt(e.value);
-    const value$2 = !e.impl.source(e.value);
+    const value$1 = !e.impl.source(e.value);
     console.log(
-      `error ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value} / ${value$2}`,
+      `error ${e.impl.Display().fmt(e.value)} / ${e.impl.Debug().fmt(e.value)} / ${value} / ${value$1}`,
     );
   }
   const fromString = { value: "made", impl: $stringError() };

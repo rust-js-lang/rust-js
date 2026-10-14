@@ -79,9 +79,10 @@ function main() {
       .map((item) => String(item))
       .join(", ")}]`,
   );
-  const value = countdown(4);
   console.log(
-    `[${value.map((item) => String(item)).join(", ")}] [${countdown(0)
+    `[${countdown(4)
+      .map((item) => String(item))
+      .join(", ")}] [${countdown(0)
       .map((item) => String(item))
       .join(", ")}]`,
   );
@@ -99,9 +100,10 @@ function main() {
     .take(5)
     .toArray();
   console.log(`[${padded.map((item) => String(item)).join(", ")}]`);
-  const value$1 = maybe_items(4);
   console.log(
-    `[${value$1.map((item) => String(item)).join(", ")}] [${maybe_items(undefined)
+    `[${maybe_items(4)
+      .map((item) => String(item))
+      .join(", ")}] [${maybe_items(undefined)
       .map((item) => String(item))
       .join(", ")}]`,
   );

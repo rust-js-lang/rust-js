@@ -29,9 +29,8 @@ function main() {
   console.log(
     `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${$forceLock(TABLE).size}`,
   );
-  const length = $forceLock(NAMES).length;
   console.log(
-    `${length} [${$forceLock(NAMES)
+    `${$forceLock(NAMES).length} [${$forceLock(NAMES)
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );
@@ -44,10 +43,9 @@ function main() {
   };
   const value = lazy.init === undefined ? lazy.value : undefined;
   console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
-  const value$4 = $force(lazy);
-  console.log(`${value$4} ${$byteLen($force(lazy))}`);
-  const value$5 = lazy.init === undefined ? lazy.value : undefined;
-  console.log(`${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${$force(lazy)}`);
+  console.log(`${$force(lazy)} ${$byteLen($force(lazy))}`);
+  const value$4 = lazy.init === undefined ? lazy.value : undefined;
+  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${$force(lazy)}`);
   console.log(`${calls}`);
   const count = { init: () => 40 };
   const value$1 = count.init === undefined ? count : undefined;
@@ -89,12 +87,12 @@ function main() {
       console.log("unit");
     },
   };
-  console.log(
-    `${((value) => (value == null ? "None" : "Some(())"))(unit.init === undefined ? $some(unit.value) : undefined)}`,
-  );
+  const value$5 = unit.init === undefined ? $some(unit.value) : undefined;
+  console.log(`${value$5 == null ? "None" : "Some(())"}`);
   $force(unit);
+  const value$6 = unit.init === undefined ? $some(unit.value) : undefined;
   console.log(
-    `${((value) => (value == null ? "None" : "Some(())"))(unit.init === undefined ? $some(unit.value) : undefined)} LazyCell(${unit.init === undefined ? "()" : "<uninit>"})`,
+    `${value$6 == null ? "None" : "Some(())"} LazyCell(${unit.init === undefined ? "()" : "<uninit>"})`,
   );
 }
 //# sourceMappingURL=case.js.map

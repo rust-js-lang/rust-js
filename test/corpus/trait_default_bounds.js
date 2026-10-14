@@ -104,19 +104,14 @@ function wrappingOne_one(TOne, std__num__Wrapping_T_Mul) {
 }
 
 function main() {
-  const value = f64Signed().negative(-1.5);
-  const value$1 = f64Signed().negative(2);
-  const value$2 = f64Signed().negative(NaN);
-  console.log(`${value} ${value$1} ${value$2} ${i32Signed().at_most_zero(0)}`);
-  const value$3 = wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([1], {
-    eq: $eq,
-  });
-  const value$4 = wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([3], {
-    eq: $eq,
-  });
-  console.log(`${value$3} ${value$4} ${u8One().is_one(1, { eq: (a, b) => a === b })}`);
-  const value$5 = f64Signed().distance(2.5, -1);
-  const value$6 = i32Signed().distance(7, 3);
-  console.log(`${$displayF64(value$5)} ${value$6} ${i32Signed().distance(-5, 5)}`);
+  console.log(
+    `${f64Signed().negative(-1.5)} ${f64Signed().negative(2)} ${f64Signed().negative(NaN)} ${i32Signed().at_most_zero(0)}`,
+  );
+  console.log(
+    `${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([1], { eq: $eq })} ${wrappingOne(u8One(), { mul: (a, b) => [(a[0] * b[0]) & 255] }).is_one([3], { eq: $eq })} ${u8One().is_one(1, { eq: (a, b) => a === b })}`,
+  );
+  console.log(
+    `${$displayF64(f64Signed().distance(2.5, -1))} ${i32Signed().distance(7, 3)} ${i32Signed().distance(-5, 5)}`,
+  );
 }
 //# sourceMappingURL=case.js.map

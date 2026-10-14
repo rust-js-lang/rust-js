@@ -56,28 +56,27 @@ function countdownIterator_next(countdown) {
 
 function main() {
   const v = [1, 2, 3, 4, 5];
-  const value = sum($iter(v));
-  const value$1 = sum($iterator([4], countdownIterator_next));
   console.log(
-    `${value} ${value$1} ${sum(Iterator.from($successors(1, (n) => (n < 4 ? (n + 1) >>> 0 : undefined))))}`,
+    `${sum($iter(v))} ${sum($iterator([4], countdownIterator_next))} ${sum(Iterator.from($successors(1, (n) => (n < 4 ? (n + 1) >>> 0 : undefined))))}`,
   );
-  const value$2 = pairs($iter(v));
   console.log(
-    `[${value$2.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}] [${pairs(
-      $iterator([5], countdownIterator_next),
-    )
+    `[${pairs($iter(v))
+      .map((item) => `(${item[0]}, ${item[1]})`)
+      .join(", ")}] [${pairs($iterator([5], countdownIterator_next))
       .map((item) => `(${item[0]}, ${item[1]})`)
       .join(", ")}]`,
   );
-  const value$3 = after_first($iter(v));
+  const value = after_first($iter(v));
   console.log(
-    `(${value$3[0] == null ? "None" : `Some(${value$3[0]})`}, [${value$3[1].map((item) => String(item)).join(", ")}]) ${((tuple) => `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, [${tuple[1].map((item) => String(item)).join(", ")}])`)(after_first($iterator([3], countdownIterator_next)))}`,
+    `(${value[0] == null ? "None" : `Some(${value[0]})`}, [${value[1].map((item) => String(item)).join(", ")}]) ${((tuple) => `(${tuple[0] == null ? "None" : `Some(${tuple[0]})`}, [${tuple[1].map((item) => String(item)).join(", ")}])`)(after_first($iterator([3], countdownIterator_next)))}`,
   );
+  const value$1 = firsts($iter([undefined, 2]));
   console.log(
-    `${((tuple) => `(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(tuple[0])}, ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(tuple[1])})`)(firsts($iter([undefined, 2])))}`,
+    `(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$1[0])}, ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$1[1])})`,
   );
+  const value$2 = firsts($iter([]));
   console.log(
-    `${((tuple) => `(${tuple[0] == null ? "None" : "Some(())"}, ${tuple[1] == null ? "None" : "Some(())"})`)(firsts($iter([])))}`,
+    `(${value$2[0] == null ? "None" : "Some(())"}, ${value$2[1] == null ? "None" : "Some(())"})`,
   );
 }
 //# sourceMappingURL=case.js.map

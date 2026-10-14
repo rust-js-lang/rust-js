@@ -24,14 +24,13 @@ function main() {
   const c = { n: 0 };
   const value$1 = Counter.get(c);
   const value$2 = Counter.bump(c);
-  const value$3 = Counter.get(c);
   console.log(
-    `${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3} ${((value) => (value == null ? "None" : `Some(${value})`))(Counter.bump(c))}`,
+    `${value$1} ${value$2 == null ? "None" : `Some(${value$2})`} ${Counter.get(c)} ${((value) => (value == null ? "None" : `Some(${value})`))(Counter.bump(c))}`,
   );
   const words = ["a"];
-  const value$4 = words.join(",");
-  const value$5 = words.pop();
-  const line = `${value$4}|${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}|${words.length}`;
+  const value$3 = words.join(",");
+  const value$4 = words.pop();
+  const line = `${value$3}|${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}|${words.length}`;
   console.log(`${line}`);
 }
 //# sourceMappingURL=case.js.map

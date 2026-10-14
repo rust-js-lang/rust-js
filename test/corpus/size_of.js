@@ -12,9 +12,8 @@ function main() {
   console.log("1 4 8 8");
   console.log("4 4 8");
   const value = layout_of(8, 4);
-  console.log(
-    `(${value[0]}, ${value[1]}) ${((tuple) => `(${tuple[0]}, ${tuple[1]})`)(layout_of(16, 8))}`,
-  );
+  const value$1 = layout_of(16, 8);
+  console.log(`(${value[0]}, ${value[1]}) (${value$1[0]}, ${value$1[1]})`);
   console.log("10 1 8");
   console.log("16 2");
   console.log("12 2");

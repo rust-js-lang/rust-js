@@ -343,6 +343,11 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         js::each_expr_mut(body, &mut array_values);
     }
     handles_in_place(body);
+    // A value a function given it reads more than once, held where it's
+    // made: `const _$1 = f(); .. _$1.TAG ..`, not `((r) => ..)(f())`.
+    let mut taken = HashSet::new();
+    js::names_in(body, &mut taken);
+    js::statement_lists(body, &mut |stmts| applied_values(stmts, &set, plain, &mut taken));
     // A `let` declared first that nothing's left to assign or read.
     let mut mentions: HashMap<String, usize> = HashMap::new();
     js::visit_stmts(body, &mut |name| *mentions.entry(name.to_string()).or_default() += 1);
@@ -452,17 +457,20 @@ fn written_first(stmts: &mut [Stmt]) {
 fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> bool {
     let past = |e: &Expr| read_past_calls(e, set, plain);
     let mut root = e;
-    while let ExprKind::Member(of, _) = &root.kind {
+    while let ExprKind::Member(of, _) | ExprKind::Index(of, _) = &root.kind {
         root = of;
     }
+    let plain_root = matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v));
     match &e.kind {
         ExprKind::Var(v) => !set.contains(v),
+        // An item of a plain value, `pair[0]`, as a field of one is.
+        ExprKind::Index(_, index) => plain_root && past(index),
         ExprKind::Symbol(_) => true,
         ExprKind::Arrow(..) | ExprKind::AsyncArrow(..) => true,
         ExprKind::Member(of, _) => {
-            matches!(&root.kind, ExprKind::Var(v) if plain.contains(v) && !set.contains(v))
+            plain_root
                 || matches!(&of.kind, ExprKind::Var(v)
-                    if !set.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String"))
+                    if !set.contains(v) && matches!(v.as_str(), "Object" | "Math" | "JSON" | "Array" | "Number" | "String" | "console"))
         }
         ExprKind::Jsx(_) => inert_element(e, set),
         // The items of an array nothing changes, `...first`.
@@ -485,6 +493,14 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
             b,
         ) => past(a) && past(b),
         ExprKind::Cond(a, b, c) => past(a) && past(b) && past(c),
+        // Text or a number made of such, `${a}-${b}`, `a + 1`, `String(n)`,
+        // and a call of the runtime's that only reads, `$debugStr(s)`.
+        ExprKind::Template(_, values, _) => values.iter().all(past),
+        ExprKind::Stringed(a) | ExprKind::Unary(_, a) => past(a),
+        ExprKind::Binary(_, a, b) => past(a) && past(b),
+        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {
+            args.iter().all(past)
+        }
         _ => e.is_made_of_constants(),
     }
 }

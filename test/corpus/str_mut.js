@@ -123,37 +123,31 @@ function main() {
     head.value = $asciiCase(head.value, true);
   }
   console.log(`${word}`);
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${$debugStr(value.value)})`))(
-      $strGetMut(
-        {
-          get value() {
-            return word;
-          },
-          set value(value) {
-            word = value;
-          },
-        },
-        1,
-        9,
-      ),
-    )}`,
+  const value = $strGetMut(
+    {
+      get value() {
+        return word;
+      },
+      set value(value) {
+        word = value;
+      },
+    },
+    1,
+    9,
   );
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${$debugStr(value.value)})`))(
-      $strGetMut(
-        {
-          get value() {
-            return word;
-          },
-          set value(value) {
-            word = value;
-          },
-        },
-        9,
-      ),
-    )}`,
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value.value)})`}`);
+  const value$1 = $strGetMut(
+    {
+      get value() {
+        return word;
+      },
+      set value(value) {
+        word = value;
+      },
+    },
+    9,
   );
+  console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1.value)})`}`);
   let accented = "ébc";
   console.log(
     `${
@@ -201,7 +195,7 @@ function main() {
       true,
     )}`,
   );
-  const value = $strSplitAtMut(
+  const value$2 = $strSplitAtMut(
     {
       get value() {
         return pair;
@@ -213,8 +207,8 @@ function main() {
     4,
     true,
   );
-  if (value) {
-    const rest = value[1];
+  if (value$2) {
+    const rest = value$2[1];
     rest.value = $asciiCase(rest.value, false);
   }
   console.log(`${pair}`);
@@ -242,9 +236,9 @@ function main() {
   pair = $asciiCase(pair, true, 0, 2);
   console.log(`${pair}`);
   const bytes = [104, 101, 108, 108, 111];
-  const value$1 = $fromUtf8Mut(bytes);
-  if (value$1.TAG === "Ok") {
-    const text = value$1._0;
+  const value$3 = $fromUtf8Mut(bytes);
+  if (value$3.TAG === "Ok") {
+    const text = value$3._0;
     text.value = $asciiCase(text.value, true);
     console.log(`${text.value}`);
   }

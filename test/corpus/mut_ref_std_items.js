@@ -22,11 +22,9 @@ function process_or_insert_default(map, key) {
 function main() {
   const map = new Map();
   map.set(22, "Hello, world");
-  const value = process_or_insert_default(map, 22);
-  console.log(`${value} ${process_or_insert_default(map, 66)}`);
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(map.get(66))}`,
-  );
+  console.log(`${process_or_insert_default(map, 22)} ${process_or_insert_default(map, 66)}`);
+  const value = map.get(66);
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
   const m = new Map();
   m.set(1, 5);
   const v = $mutGet(m, 1);
@@ -37,7 +35,8 @@ function main() {
   if (v$1 != null) {
     v$1.value = (v$1.value + 1) | 0;
   }
-  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(m.get(1))}`);
+  const value$1 = m.get(1);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   let a = 1;
   let b = 2;
   const refs = [

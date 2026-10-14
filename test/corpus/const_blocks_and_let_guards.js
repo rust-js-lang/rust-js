@@ -58,8 +58,9 @@ function main() {
     console.log(`${classify(input)}`);
   }
   const value = first_even([3, undefined, 8, 10]);
+  const value$1 = first_even([1]);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first_even([1]))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
 }
 //# sourceMappingURL=case.js.map

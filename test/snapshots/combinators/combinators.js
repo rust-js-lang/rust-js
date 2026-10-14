@@ -65,13 +65,10 @@ export function more_options(n) {
 
 export function results(c) {
   const r = parse(c);
-  const value = ((result) =>
-    result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${$debugStr(result._0)})`)(
-    r.TAG === "Ok" ? { TAG: "Ok", _0: Math.imul(r._0, 10) >>> 0 } : r,
-  );
-  const value$1 = ((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))(
-    r.TAG === "Err" ? { TAG: "Err", _0: Array.from(r._0).length } : r,
-  );
+  const value = r.TAG === "Ok" ? { TAG: "Ok", _0: Math.imul(r._0, 10) >>> 0 } : r;
+  const value$1 = value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${$debugStr(value._0)})`;
+  const value$2 = r.TAG === "Err" ? { TAG: "Err", _0: Array.from(r._0).length } : r;
+  const value$3 = value$2.TAG === "Ok" ? `Ok(${value$2._0})` : `Err(${value$2._0})`;
   const then = (x) => {
     if (x > 1) {
       return { TAG: "Ok", _0: x };
@@ -80,8 +77,8 @@ export function results(c) {
   };
   const result = r.TAG === "Ok" ? then(r._0) : r;
   return [
-    value,
     value$1,
+    value$3,
     result.TAG === "Ok" ? result._0 : 0,
     r.TAG === "Ok" ? r._0 : Array.from(r._0).length,
     r.TAG === "Err" ? r._0 : undefined,
@@ -182,10 +179,12 @@ export function report() {
   let out = "";
   for (const n of [0, 4, 5, 8]) {
     const value = options(n);
-    out += `(${value[0]}, ${value[1]}, ${value[2]}, ${value[3] == null ? "None" : `Some(${value[3]})`}, ${value[4] == null ? "None" : `Some(${value[4]})`}, ${value[5]}) ${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])}, ${tuple[2] == null ? "None" : `Some(${tuple[2]})`}, ${tuple[3]}, ${tuple[4]})`)(more_options(n))}\n`;
+    const value$1 = more_options(n);
+    out += `(${value[0]}, ${value[1]}, ${value[2]}, ${value[3] == null ? "None" : `Some(${value[3]})`}, ${value[4] == null ? "None" : `Some(${value[4]})`}, ${value[5]}) (${$debugStr(value$1[0])}, ${$debugStr(value$1[1])}, ${value$1[2] == null ? "None" : `Some(${value$1[2]})`}, ${value$1[3]}, ${value$1[4]})\n`;
   }
   for (const c of ["1", "2", "x"]) {
-    out += `${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])}, ${tuple[2]}, ${tuple[3]}, ${tuple[4] == null ? "None" : `Some(${$debugStr(tuple[4])})`}, ${tuple[5]})`)(results(c))}\n`;
+    const value = results(c);
+    out += `(${$debugStr(value[0])}, ${$debugStr(value[1])}, ${value[2]}, ${value[3]}, ${value[4] == null ? "None" : `Some(${$debugStr(value[4])})`}, ${value[5]})\n`;
   }
   for (const n of [0, 5]) {
     const value = iters(n);
@@ -194,13 +193,17 @@ export function report() {
     out += `[${joined([1, n], (n + 1) >>> 0)
       .map((item) => String(item))
       .join(", ")}]\n`;
-    out += `${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(bumped(n > 0, [1, n]))}\n`;
-    out += `${((value) => (value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`))(shifted(n, [1, n]))}\n`;
+    const value$2 = bumped(n > 0, [1, n]);
+    out += `${value$2 == null ? "None" : `Some([${value$2.map((item) => String(item)).join(", ")}])`}\n`;
+    const value$3 = shifted(n, [1, n]);
+    out += `${value$3 == null ? "None" : `Some([${value$3.map((item) => String(item)).join(", ")}])`}\n`;
     const named = { name: n > 0 ? String(n) : undefined, label: `#${n}` };
-    const value$2 = name_of(named);
-    out += `${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(name_of(undefined))}\n`;
-    const value$3 = other_name(undefined, named);
-    out += `${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${((value) => (value == null ? "None" : `Some(${$debugStr(value)})`))(other_name(n, named))}\n`;
+    const value$4 = name_of(named);
+    const value$5 = name_of(undefined);
+    out += `${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}\n`;
+    const value$6 = other_name(undefined, named);
+    const value$7 = other_name(n, named);
+    out += `${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`} ${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`}\n`;
     out += `${$debugStr(label_of(named))} ${$debugStr(label_of(undefined))}\n`;
     out += `${$debugStr(label_or_else(named))} ${$debugStr(label_or_else(undefined))}\n`;
   }

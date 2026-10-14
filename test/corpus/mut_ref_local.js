@@ -117,8 +117,7 @@ function main() {
   const item$3 = $index(nodes, j);
   j = 0;
   item$3.count = Math.imul(item$3.count, 7);
-  const count = $index(nodes, 0).count;
-  console.log(`${count} ${$index(nodes, 1).count} ${j}`);
+  console.log(`${$index(nodes, 0).count} ${$index(nodes, 1).count} ${j}`);
   const grid = [
     [1, 2],
     [3, 4],

@@ -35,8 +35,7 @@ function main() {
     noisyDrop_drop(first);
     throw error;
   }
-  const value = pair(first, tmp);
-  console.log(`${value}`);
+  console.log(`${pair(first, tmp)}`);
   const again = ["again"];
   let tmp$1;
   try {
@@ -45,7 +44,6 @@ function main() {
     noisyDrop_drop(again);
     throw error;
   }
-  const value$1 = pair(again, tmp$1);
-  console.log(`${value$1}`);
+  console.log(`${pair(again, tmp$1)}`);
 }
 //# sourceMappingURL=case.js.map

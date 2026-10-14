@@ -78,62 +78,20 @@ function main() {
   let tmp$1;
   let tmp$2;
   for (const a of values) {
+    console.log(
+      `f64 ${f64_bits(a)}: round ${f64_bits(Math.floor(a))} ${f64_bits(Math.ceil(a))} ${f64_bits($round(a))} ${f64_bits(Math.trunc(a))} ${f64_bits(a - Math.trunc(a))} abs ${f64_bits(Math.abs(a))} ${f64_bits($signum(a))} ${f64_bits(a * (180 / Math.PI))} sqrt ${f64_bits(Math.sqrt(a))} powi ${f64_bits($powi(a, 3))} ${f64_bits($powi(a, -2))} recip ${f64_bits(1 / a)} neg ${f64_bits(-a)} clamp ${f64_bits($clampFloat(a, -1, 1, $debugF64))}`,
+    );
+    console.log(
+      `f64 ${f64_bits(a)}: is ${Number.isNaN(a)} ${Number.isFinite(a)} ${Math.abs(a) === Infinity} ${$signNegative(a)} ${$isNormal(a, 2.2250738585072014e-308)} ${$isNormal(a, 2.2250738585072014e-308, true)} ${$classify(a, 2.2250738585072014e-308)} bits ${f64_bits($floatFromBits($floatToBits(a, 8), 8))}`,
+    );
     const value = f64_bits(a);
-    const value$1 = f64_bits(Math.floor(a));
-    const value$2 = f64_bits(Math.ceil(a));
-    const value$3 = f64_bits($round(a));
-    const value$4 = f64_bits(Math.trunc(a));
-    const value$5 = f64_bits(a - Math.trunc(a));
-    const value$6 = f64_bits(Math.abs(a));
-    const value$7 = f64_bits($signum(a));
-    const value$8 = f64_bits(a * (180 / Math.PI));
-    const value$9 = f64_bits(Math.sqrt(a));
-    const value$10 = f64_bits($powi(a, 3));
-    const value$11 = f64_bits($powi(a, -2));
-    const value$12 = f64_bits(1 / a);
-    const value$13 = f64_bits(-a);
-    console.log(
-      `f64 ${value}: round ${value$1} ${value$2} ${value$3} ${value$4} ${value$5} abs ${value$6} ${value$7} ${value$8} sqrt ${value$9} powi ${value$10} ${value$11} recip ${value$12} neg ${value$13} clamp ${f64_bits($clampFloat(a, -1, 1, $debugF64))}`,
-    );
-    const value$14 = f64_bits(a);
-    const value$15 = Number.isNaN(a);
-    const value$16 = Number.isFinite(a);
-    const value$17 = Math.abs(a) === Infinity;
-    const value$18 = $signNegative(a);
-    const value$19 = $isNormal(a, 2.2250738585072014e-308);
-    const value$20 = $isNormal(a, 2.2250738585072014e-308, true);
-    const value$21 = $classify(a, 2.2250738585072014e-308);
-    console.log(
-      `f64 ${value$14}: is ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} bits ${f64_bits($floatFromBits($floatToBits(a, 8), 8))}`,
-    );
-    const value$22 = f64_bits(a);
     const result = $parseF64($displayF64(a));
+    const value$1 = result.TAG === "Ok" ? { TAG: "Ok", _0: f64_bits(result._0) } : result;
     console.log(
-      `f64 ${value$22}: fmt ${$displayF64(a)} ${$debugF64(a)} ${$lowerExp(a)} ${$lowerExp(a).replace("e", "E")} ${$toFixed(a, 0)} ${$toFixed(a, 1)} ${$toFixed(a, 3)} [${$toFixed(a, 2).padStart(12)}] ${$plus($displayF64(a))} [${$zeroPad($toFixed(a, 2), 8)}] parse ${((
-        result,
-      ) =>
-        result.TAG === "Ok"
-          ? `Ok(${$debugStr(result._0)})`
-          : `Err(${$debugParseError(result._0, "ParseFloatError")})`)(
-        result.TAG === "Ok" ? { TAG: "Ok", _0: f64_bits(result._0) } : result,
-      )}`,
+      `f64 ${value}: fmt ${$displayF64(a)} ${$debugF64(a)} ${$lowerExp(a)} ${$lowerExp(a).replace("e", "E")} ${$toFixed(a, 0)} ${$toFixed(a, 1)} ${$toFixed(a, 3)} [${$toFixed(a, 2).padStart(12)}] ${$plus($displayF64(a))} [${$zeroPad($toFixed(a, 2), 8)}] parse ${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : `Err(${$debugParseError(value$1._0, "ParseFloatError")})`}`,
     );
-    const value$23 = f64_bits(a);
-    const value$24 = $f64ToInt(a, -128, 127);
-    const value$25 = $f64ToInt(a, -2147483648, 2147483647);
-    const value$26 = $f64ToBig(a, -9223372036854775808n, 9223372036854775807n);
-    const value$27 = $f64ToBig(
-      a,
-      -170141183460469231731687303715884105728n,
-      170141183460469231731687303715884105727n,
-    );
-    const value$28 = $f64ToInt(a, 0, 255);
-    const value$29 = $f64ToInt(a, 0, 4294967295);
-    const value$30 = $f64ToBig(a, 0n, 18446744073709551615n);
-    const value$31 = $f64ToBig(a, 0n, 340282366920938463463374607431768211455n);
-    const value$32 = f32_bits(Math.fround(a));
     console.log(
-      `f64 ${value$23}: as ${value$24} ${value$25} ${value$26} ${value$27} ${value$28} ${value$29} ${value$30} ${value$31} f32 ${value$32} f64 ${f64_bits(a)}`,
+      `f64 ${f64_bits(a)}: as ${$f64ToInt(a, -128, 127)} ${$f64ToInt(a, -2147483648, 2147483647)} ${$f64ToBig(a, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(a, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$f64ToInt(a, 0, 255)} ${$f64ToInt(a, 0, 4294967295)} ${$f64ToBig(a, 0n, 18446744073709551615n)} ${$f64ToBig(a, 0n, 340282366920938463463374607431768211455n)} f32 ${f32_bits(Math.fround(a))} f64 ${f64_bits(a)}`,
     );
     for (const b of values) {
       const value = f64_bits(a);
@@ -181,62 +139,20 @@ function main() {
   let tmp$4;
   let tmp$5;
   for (const a of values$1) {
+    console.log(
+      `f32 ${f32_bits(a)}: round ${f32_bits(Math.floor(a))} ${f32_bits(Math.ceil(a))} ${f32_bits($round(a))} ${f32_bits(Math.trunc(a))} ${f32_bits(a - Math.trunc(a))} abs ${f32_bits(Math.abs(a))} ${f32_bits($signum(a))} ${f32_bits(Math.fround(a * 57.295780181884766))} sqrt ${f32_bits(Math.fround(Math.sqrt(a)))} powi ${f32_bits($powiF32(a, 3))} ${f32_bits($powiF32(a, -2))} recip ${f32_bits(Math.fround(1 / a))} neg ${f32_bits(-a)} clamp ${f32_bits($clampFloat(a, -1, 1, $debugF32))}`,
+    );
+    console.log(
+      `f32 ${f32_bits(a)}: is ${Number.isNaN(a)} ${Number.isFinite(a)} ${Math.abs(a) === Infinity} ${$signNegative(a)} ${$isNormal(a, 1.1754943508222875e-38)} ${$isNormal(a, 1.1754943508222875e-38, true)} ${$classify(a, 1.1754943508222875e-38)} bits ${f32_bits($floatFromBits($floatToBits(a, 4), 4))}`,
+    );
     const value = f32_bits(a);
-    const value$1 = f32_bits(Math.floor(a));
-    const value$2 = f32_bits(Math.ceil(a));
-    const value$3 = f32_bits($round(a));
-    const value$4 = f32_bits(Math.trunc(a));
-    const value$5 = f32_bits(a - Math.trunc(a));
-    const value$6 = f32_bits(Math.abs(a));
-    const value$7 = f32_bits($signum(a));
-    const value$8 = f32_bits(Math.fround(a * 57.295780181884766));
-    const value$9 = f32_bits(Math.fround(Math.sqrt(a)));
-    const value$10 = f32_bits($powiF32(a, 3));
-    const value$11 = f32_bits($powiF32(a, -2));
-    const value$12 = f32_bits(Math.fround(1 / a));
-    const value$13 = f32_bits(-a);
-    console.log(
-      `f32 ${value}: round ${value$1} ${value$2} ${value$3} ${value$4} ${value$5} abs ${value$6} ${value$7} ${value$8} sqrt ${value$9} powi ${value$10} ${value$11} recip ${value$12} neg ${value$13} clamp ${f32_bits($clampFloat(a, -1, 1, $debugF32))}`,
-    );
-    const value$14 = f32_bits(a);
-    const value$15 = Number.isNaN(a);
-    const value$16 = Number.isFinite(a);
-    const value$17 = Math.abs(a) === Infinity;
-    const value$18 = $signNegative(a);
-    const value$19 = $isNormal(a, 1.1754943508222875e-38);
-    const value$20 = $isNormal(a, 1.1754943508222875e-38, true);
-    const value$21 = $classify(a, 1.1754943508222875e-38);
-    console.log(
-      `f32 ${value$14}: is ${value$15} ${value$16} ${value$17} ${value$18} ${value$19} ${value$20} ${value$21} bits ${f32_bits($floatFromBits($floatToBits(a, 4), 4))}`,
-    );
-    const value$22 = f32_bits(a);
     const result = $parseF32($displayF32(a));
+    const value$1 = result.TAG === "Ok" ? { TAG: "Ok", _0: f32_bits(result._0) } : result;
     console.log(
-      `f32 ${value$22}: fmt ${$displayF32(a)} ${$debugF32(a)} ${$lowerExp(a, true)} ${$lowerExp(a, true).replace("e", "E")} ${$toFixed(a, 0)} ${$toFixed(a, 1)} ${$toFixed(a, 3)} [${$toFixed(a, 2).padStart(12)}] ${$plus($displayF32(a))} [${$zeroPad($toFixed(a, 2), 8)}] parse ${((
-        result,
-      ) =>
-        result.TAG === "Ok"
-          ? `Ok(${$debugStr(result._0)})`
-          : `Err(${$debugParseError(result._0, "ParseFloatError")})`)(
-        result.TAG === "Ok" ? { TAG: "Ok", _0: f32_bits(result._0) } : result,
-      )}`,
+      `f32 ${value}: fmt ${$displayF32(a)} ${$debugF32(a)} ${$lowerExp(a, true)} ${$lowerExp(a, true).replace("e", "E")} ${$toFixed(a, 0)} ${$toFixed(a, 1)} ${$toFixed(a, 3)} [${$toFixed(a, 2).padStart(12)}] ${$plus($displayF32(a))} [${$zeroPad($toFixed(a, 2), 8)}] parse ${value$1.TAG === "Ok" ? `Ok(${$debugStr(value$1._0)})` : `Err(${$debugParseError(value$1._0, "ParseFloatError")})`}`,
     );
-    const value$23 = f32_bits(a);
-    const value$24 = $f64ToInt(a, -128, 127);
-    const value$25 = $f64ToInt(a, -2147483648, 2147483647);
-    const value$26 = $f64ToBig(a, -9223372036854775808n, 9223372036854775807n);
-    const value$27 = $f64ToBig(
-      a,
-      -170141183460469231731687303715884105728n,
-      170141183460469231731687303715884105727n,
-    );
-    const value$28 = $f64ToInt(a, 0, 255);
-    const value$29 = $f64ToInt(a, 0, 4294967295);
-    const value$30 = $f64ToBig(a, 0n, 18446744073709551615n);
-    const value$31 = $f64ToBig(a, 0n, 340282366920938463463374607431768211455n);
-    const value$32 = f32_bits(a);
     console.log(
-      `f32 ${value$23}: as ${value$24} ${value$25} ${value$26} ${value$27} ${value$28} ${value$29} ${value$30} ${value$31} f32 ${value$32} f64 ${f64_bits(a)}`,
+      `f32 ${f32_bits(a)}: as ${$f64ToInt(a, -128, 127)} ${$f64ToInt(a, -2147483648, 2147483647)} ${$f64ToBig(a, -9223372036854775808n, 9223372036854775807n)} ${$f64ToBig(a, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${$f64ToInt(a, 0, 255)} ${$f64ToInt(a, 0, 4294967295)} ${$f64ToBig(a, 0n, 18446744073709551615n)} ${$f64ToBig(a, 0n, 340282366920938463463374607431768211455n)} f32 ${f32_bits(a)} f64 ${f64_bits(a)}`,
     );
     for (const b of values$1) {
       const value = f32_bits(a);

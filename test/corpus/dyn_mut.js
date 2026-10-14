@@ -88,9 +88,8 @@ function use_it(c) {
 function main() {
   const c = { n: 1 };
   let n = 5;
-  const value = use_it({ value: c, impl: cCounter() });
   console.log(
-    `${value} ${use_it({
+    `${use_it({ value: c, impl: cCounter() })} ${use_it({
       impl: i32Counter(),
       get value() {
         return n;
@@ -134,10 +133,10 @@ function main() {
   for (const b of $mutItems(list)) {
     b.value.impl.twice(b.value);
   }
-  const value$1 = boxed.impl.get(boxed.value);
+  const value = boxed.impl.get(boxed.value);
   const receiver$1 = $index(list, 0);
-  const value$2 = receiver$1.impl.get(receiver$1.value);
+  const value$1 = receiver$1.impl.get(receiver$1.value);
   const receiver$2 = $index(list, 1);
-  console.log(`${value$1} ${value$2} ${receiver$2.impl.get(receiver$2.value)}`);
+  console.log(`${value} ${value$1} ${receiver$2.impl.get(receiver$2.value)}`);
 }
 //# sourceMappingURL=case.js.map

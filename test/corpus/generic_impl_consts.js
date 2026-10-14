@@ -67,11 +67,12 @@ function bits(TWidth) {
 }
 
 function main() {
-  const value = zero(wrappingConstZero(u8ConstZero()))[0];
-  console.log(`${value} ${zero(wrappingConstZero(wrappingConstZero(i64ConstZero())))[0][0]}`);
-  const value$1 = bits(pairWidth(u8Width(), u32Width()));
-  const value$2 = bits(pairWidth(pairWidth(u8Width(), u8Width()), u32Width()));
-  console.log(`${value$1} ${value$2} ${bits(u8Width())}`);
+  console.log(
+    `${zero(wrappingConstZero(u8ConstZero()))[0]} ${zero(wrappingConstZero(wrappingConstZero(i64ConstZero())))[0][0]}`,
+  );
+  console.log(
+    `${bits(pairWidth(u8Width(), u32Width()))} ${bits(pairWidth(pairWidth(u8Width(), u8Width()), u32Width()))} ${bits(u8Width())}`,
+  );
   console.log("64");
 }
 //# sourceMappingURL=case.js.map

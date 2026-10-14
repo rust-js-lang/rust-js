@@ -91,15 +91,14 @@ function main() {
   set(x$3, { n: 20 });
   $assign(c, x$3.value);
   console.log(`${n} ${cDebug_fmt(c)}`);
-  const value = bumped(1, i32Bump());
-  console.log(`${value} ${bumped({ n: 3 }, cBump()).n}`);
+  console.log(`${bumped(1, i32Bump())} ${bumped({ n: 3 }, cBump()).n}`);
   const self = { value: n };
-  const value$1 = i32Bump().bumped_twice(self);
+  const value = i32Bump().bumped_twice(self);
   n = self.value;
   const self$1 = { value: c };
-  const value$2 = cBump().bumped_twice(self$1);
+  const value$1 = cBump().bumped_twice(self$1);
   $assign(c, self$1.value);
-  console.log(`${value$1} ${value$2}`);
+  console.log(`${value} ${value$1}`);
   console.log(`${n} ${c.n}`);
 }
 //# sourceMappingURL=case.js.map

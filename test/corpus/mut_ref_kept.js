@@ -57,12 +57,12 @@ function main() {
   gridIndexMutUsize_index_mut(g, 1).value = 20;
   const value = gridIndexMutUsize_index_mut(g, 2);
   value.value = (value.value + 5) >>> 0;
-  const value$1 = gridIndexUsize_index(g, 0);
-  const value$2 = gridIndexUsize_index(g, 1);
-  console.log(`${value$1} ${value$2} ${gridIndexUsize_index(g, 2)}`);
+  console.log(
+    `${gridIndexUsize_index(g, 0)} ${gridIndexUsize_index(g, 1)} ${gridIndexUsize_index(g, 2)}`,
+  );
   const c = { n: 1 };
-  const value$3 = Counter.get_mut(c);
-  value$3.value = (value$3.value + 41) | 0;
+  const value$1 = Counter.get_mut(c);
+  value$1.value = (value$1.value + 41) | 0;
   const n = Counter.get_mut(c);
   n.value = Math.imul(n.value, 2);
   console.log(`${c.n}`);

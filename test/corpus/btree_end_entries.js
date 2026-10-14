@@ -26,9 +26,8 @@ function main() {
   }
   const last = $endEntry(names, $cmp, true);
   if (last) {
-    console.log(
-      `${((tuple) => `(${tuple[0]}, ${$debugStr(tuple[1])})`)($entryRemove(last, true))}`,
-    );
+    const value = $entryRemove(last, true);
+    console.log(`(${value[0]}, ${$debugStr(value[1])})`);
   }
   console.log(
     `{${Array.from($sortedEntries(names, $cmp))
@@ -56,16 +55,14 @@ function main() {
       .join(", ")}}`,
   );
   const e = $endEntry(counts, $cmp, false);
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))(e ? $entryRemove(e) : undefined)}`,
-  );
+  const value$1 = e ? $entryRemove(e) : undefined;
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
   console.log(
     `{${Array.from($sortedEntries(counts, $cmp))
       .map(([key, value]) => `${$debugStr(key)}: ${value}`)
       .join(", ")}}`,
   );
   const empty = new Map();
-  const value$1 = !$endEntry(empty, $cmp, false);
-  console.log(`${value$1} ${!$endEntry(empty, $cmp, true)}`);
+  console.log(`${!$endEntry(empty, $cmp, false)} ${!$endEntry(empty, $cmp, true)}`);
 }
 //# sourceMappingURL=case.js.map

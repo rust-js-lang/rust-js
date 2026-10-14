@@ -69,12 +69,10 @@ function main() {
     const key = n % 2 === 0;
     $orInsertWith(groups, key, () => []).push(n);
   }
-  const value = $unwrap(groups.get(true), "no entry found for key");
   console.log(
-    `[${value.map((item) => String(item)).join(", ")}] [${$unwrap(
-      groups.get(false),
-      "no entry found for key",
-    )
+    `[${$unwrap(groups.get(true), "no entry found for key")
+      .map((item) => String(item))
+      .join(", ")}] [${$unwrap(groups.get(false), "no entry found for key")
       .map((item) => String(item))
       .join(", ")}]`,
   );

@@ -210,12 +210,13 @@ export function report() {
     .join(", ")}]\n`;
   out += `${caesar("Hello, World!", 3)} ${caesar(caesar("abcxyz", 13), 13)}\n`;
   const value = first_dup("abcdbe");
-  out += `${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`} ${((value) => (value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`))(first_dup("xyz"))}\n`;
+  const value$1 = first_dup("xyz");
+  out += `${value == null ? "None" : `Some((${value[0]}, ${$debugStr(value[1], "'")}))`} ${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1], "'")}))`}\n`;
   const s = "hello world";
   const length = s.split("o").length;
-  const value$1 = $splitBy(s, (c) => c === "l");
-  const value$2 = Array.from(s).toReversed().join("");
-  out += `${length} [${value$1.map((item) => $debugStr(item)).join(", ")}] ${value$2} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
+  const value$2 = $splitBy(s, (c) => c === "l");
+  const value$3 = Array.from(s).toReversed().join("");
+  out += `${length} [${value$2.map((item) => $debugStr(item)).join(", ")}] ${value$3} ${Array.from(s).filter((c) => "aeiou".includes(c)).length}\n`;
   return out;
 }
 //# sourceMappingURL=calc.js.map

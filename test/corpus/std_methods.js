@@ -142,8 +142,9 @@ function main() {
   Stack.push(stack, 2);
   const value = Stack.pop(stack);
   const value$1 = Stack.pop(stack);
+  const value$2 = Stack.pop(stack);
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))(Stack.pop(stack))}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   let items = [1, 2];
   let text = "hi";
@@ -156,21 +157,22 @@ function main() {
   console.log(
     `[${itemsTaken.map((item) => String(item)).join(", ")}] [${items.map((item) => String(item)).join(", ")}] ${$debugStr(textTaken)} ${$debugStr(text)}`,
   );
-  const value$2 = Math.min(3, 7);
-  const value$3 = $bigMax(-2n, 5n);
+  const value$3 = Math.min(3, 7);
+  const value$4 = $bigMax(-2n, 5n);
   const left = [1, "x"];
   const right = [1, "w"];
-  const value$4 = $cmp("a", "b") > 0 ? "a" : "b";
+  const value$5 = $cmp("a", "b") > 0 ? "a" : "b";
   const left$1 = [2, "a"];
   const right$1 = [2, "a"];
-  const value$5 = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
+  const value$6 = ($cmp(left[0], right[0]) || $cmp(left[1], right[1])) > 0 ? right : left;
+  const value$7 =
+    ($cmp(left$1[0], right$1[0]) || $cmp(left$1[1], right$1[1])) > 0 ? left$1 : right$1;
   console.log(
-    `${value$2} ${value$3} ${value$4} ${versionDebug_fmt(value$5)} ${versionDebug_fmt(($cmp(left$1[0], right$1[0]) || $cmp(left$1[1], right$1[1])) > 0 ? left$1 : right$1)}`,
+    `${value$3} ${value$4} ${value$5} ${versionDebug_fmt(value$6)} ${versionDebug_fmt(value$7)}`,
   );
-  const value$6 = $asciiCase("HeLLo Ünï");
-  const value$7 = $asciiCase("abc é", true);
-  const value$8 = $asciiCase("Hello") === $asciiCase("hELLO");
-  console.log(`${value$6} ${value$7} ${value$8} ${$asciiCase("é") === $asciiCase("É")}`);
+  console.log(
+    `${$asciiCase("HeLLo Ünï")} ${$asciiCase("abc é", true)} ${$asciiCase("Hello") === $asciiCase("hELLO")} ${$asciiCase("é") === $asciiCase("É")}`,
+  );
   const inspect = (x) => {
     $print(`saw ${x} `);
   };
@@ -182,10 +184,9 @@ function main() {
     .map((x) => Math.imul(x, 2));
   console.log(`[${doubled.map((item) => String(item)).join(", ")}]`);
   const r = { TAG: "Ok", _0: "abc" };
+  const value$8 = r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r;
   console.log(
-    `${((result) => (result.TAG === "Ok" ? `Ok(${$debugStr(result._0)})` : `Err(${result._0})`))(
-      r.TAG === "Ok" ? { TAG: "Ok", _0: r._0.toUpperCase() } : r,
-    )} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
+    `${value$8.TAG === "Ok" ? `Ok(${$debugStr(value$8._0)})` : `Err(${value$8._0})`} ${r.TAG === "Ok" ? `Ok(${$debugStr(r._0)})` : `Err(${r._0})`}`,
   );
   const cell = { value: [1] };
   const value$9 = $borrowMut(cell, true);
@@ -215,8 +216,10 @@ function main() {
   );
   const table = new Map();
   table.set("k", 7);
+  const value$10 = ["a", "b"];
+  const value$11 = [new Map()];
   console.log(
-    `${lettersDebug_fmt([["a", "b"]])} ${tableDebug_fmt([table])} ${tableDebug_fmt([new Map()])}`,
+    `${lettersDebug_fmt([value$10])} ${tableDebug_fmt([table])} ${tableDebug_fmt(value$11)}`,
   );
 }
 //# sourceMappingURL=case.js.map

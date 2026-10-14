@@ -16,11 +16,8 @@ function shared(value) {
 }
 
 function main() {
-  const value = hit();
-  const value$1 = hit();
-  console.log(`${value} ${value$1} ${COUNTER.hits}`);
+  console.log(`${hit()} ${hit()} ${COUNTER.hits}`);
   const handle = { id: 7 };
-  const id = shared(handle).id;
-  console.log(`${id} ${shared(3)}`);
+  console.log(`${shared(handle).id} ${shared(3)}`);
 }
 //# sourceMappingURL=case.js.map

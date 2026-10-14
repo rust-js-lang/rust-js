@@ -43,7 +43,6 @@ function i32Ch_set(self, a) {
 }
 
 function main() {
-  const a = xCh().change({ a: 1 }).a;
-  console.log(`${a} ${i32Ch().change(1)}`);
+  console.log(`${xCh().change({ a: 1 }).a} ${i32Ch().change(1)}`);
 }
 //# sourceMappingURL=case.js.map

@@ -55,14 +55,13 @@ function main() {
     noisyDrop_drop(value);
     throw error;
   }
-  const value$1 = three(value, tmp, tmp$1);
-  console.log(`${value$1}`);
-  const value$2 = make("c");
+  console.log(`${three(value, tmp, tmp$1)}`);
+  const value$1 = make("c");
   let tmp$2;
   try {
     tmp$2 = make("d");
   } catch (error) {
-    noisyDrop_drop(value$2);
+    noisyDrop_drop(value$1);
     throw error;
   }
   let tmp$3;
@@ -70,10 +69,9 @@ function main() {
     tmp$3 = third(true);
   } catch (error) {
     noisyDrop_drop(tmp$2);
-    noisyDrop_drop(value$2);
+    noisyDrop_drop(value$1);
     throw error;
   }
-  const value$3 = three(value$2, tmp$2, tmp$3);
-  console.log(`${value$3}`);
+  console.log(`${three(value$1, tmp$2, tmp$3)}`);
 }
 //# sourceMappingURL=case.js.map

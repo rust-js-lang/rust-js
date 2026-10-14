@@ -243,7 +243,8 @@ export function report() {
   const p = { steps: [(x) => (x + 1) | 0, (x) => Math.imul(x, 10), (x) => (x - 3) | 0] };
   const value$2 = Pipeline.run(p, 4);
   const value$3 = first_even_square([3, 5, 6, 8]);
-  out += `${value$2} ${value$3 == null ? "None" : `Some(${value$3})`} ${((value) => (value == null ? "None" : `Some(${value})`))(first_even_square([1]))}\n`;
+  const value$4 = first_even_square([1]);
+  out += `${value$2} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}\n`;
   out += `[${dijkstra(
     [
       [0, 1, 4],
@@ -274,9 +275,9 @@ export function report() {
   const arg = $unwrap(words.get(5), "no entry found for key");
   out += `[${lens.map((item) => String(item)).join(", ")}] [${arg.map((item) => $debugStr(item)).join(", ")}]\n`;
   out += heaps();
-  const value$4 = deques();
-  const value$5 = reverses(1, 2);
-  out += `${value$4}\n(${value$5[0]}, ${value$5[1]}, ${value$5[2]}, ${$debugStr(value$5[3])}, [${value$5[4].map((item) => String(item)).join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].map((item) => String(item)).join(", ")}])`)(reverses(5, 3))}\n`;
+  const value$5 = deques();
+  const value$6 = reverses(1, 2);
+  out += `${value$5}\n(${value$6[0]}, ${value$6[1]}, ${value$6[2]}, ${$debugStr(value$6[3])}, [${value$6[4].map((item) => String(item)).join(", ")}]) ${((tuple) => `(${tuple[0]}, ${tuple[1]}, ${tuple[2]}, ${$debugStr(tuple[3])}, [${tuple[4].map((item) => String(item)).join(", ")}])`)(reverses(5, 3))}\n`;
   return out;
 }
 //# sourceMappingURL=queues.js.map

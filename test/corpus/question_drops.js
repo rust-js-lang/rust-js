@@ -242,16 +242,19 @@ function main() {
     }
     d$0$live = false;
   }
-  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(first([1]))}`);
-  console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(first([5]))}`);
-  const value = [0];
+  const value = first([1]);
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const value$1 = first([5]);
+  console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+  const value$2 = [0];
   try {
-    console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(discarded(value))}`);
+    const value = discarded(value$2);
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
   } catch (error) {
-    dDrop_drop(value);
+    dDrop_drop(value$2);
     throw error;
   }
-  dDrop_drop(value);
+  dDrop_drop(value$2);
   for (const start of [2, 3]) {
     const value = go([start]);
     if (value.TAG === "Ok") {

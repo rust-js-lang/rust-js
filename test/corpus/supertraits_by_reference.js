@@ -50,14 +50,8 @@ function metersAddMeters_add(meters, other) {
 }
 
 function main() {
-  const value = twice_and_once(
-    1,
-    2,
-    tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }),
-    { copy: (value) => value },
-  );
   console.log(
-    `${value} ${$displayF64(twice_and_once(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b }), { copy: (value) => value }))}`,
+    `${twice_and_once(1, 2, tRefAddBase({ add: (a, b) => (a + b) | 0 }, { add: (a, b) => (a + b) | 0 }), { copy: (value) => value })} ${$displayF64(twice_and_once(0.5, 0.25, tRefAddBase({ add: (a, b) => a + b }, { add: (a, b) => a + b }), { copy: (value) => value }))}`,
   );
   console.log(
     `${metersDebug_fmt(twice_and_once([1], [2], tRefAddBase(metersAdd(), metersAddMeters()), { copy: (value) => [value[0]] }))}`,

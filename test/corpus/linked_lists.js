@@ -23,11 +23,11 @@ function main() {
     `[${list.map((item) => String(item)).join(", ")}] [${tail.map((item) => String(item)).join(", ")}]`,
   );
   const value$1 = list.shift();
+  const value$2 = list.pop();
   console.log(
-    `${value$1 == null ? "None" : `Some(${value$1})`} ${((value) => (value == null ? "None" : `Some(${value})`))(list.pop())}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  const value$2 = list.includes(2);
-  console.log(`${value$2} ${Iterator.from(list).reduce((a, b) => (a + b) >>> 0, 0)}`);
+  console.log(`${list.includes(2)} ${Iterator.from(list).reduce((a, b) => (a + b) >>> 0, 0)}`);
   const doubled = Array.from(tail).map((x) => Math.imul(x, 2) >>> 0);
   for (const x of doubled) {
     $print(`${x} `);

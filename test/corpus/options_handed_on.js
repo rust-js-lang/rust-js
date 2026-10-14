@@ -79,10 +79,9 @@ function main() {
       align: "Left",
     })}]`,
   );
-  const value$1 = show(42, { fmt: (value, options) => $formatted(String(value), options, true) });
-  const value$2 = show("ab", { fmt: $formatted });
-  const value$3 = show([3], metersDisplay());
-  console.log(`${value$1} ${value$2} ${value$3} ${show(["xyz"], nameDisplay())}`);
+  console.log(
+    `${show(42, { fmt: (value, options) => $formatted(String(value), options, true) })} ${show("ab", { fmt: $formatted })} ${show([3], metersDisplay())} ${show(["xyz"], nameDisplay())}`,
+  );
   const d = {
     value: 7,
     impl: { fmt: (value, options) => $formatted(String(value), options, true) },
@@ -102,11 +101,10 @@ function main() {
   );
   console.log(`${pointDebug_fmt({ x: 4, y: 5.5 }, { alternate: true, width: 5 })}`);
   console.log(`${metersDisplay_fmt([0.5])}`);
-  const value$4 = [7, "a"];
-  const value$5 = debug(1, { fmt: (value, options) => $formatted(String(value), options, true) });
-  console.log(
-    `[${pairDebug_fmt(value$4, { width: 4 })}] ${value$5} ${debug([2, "b"], pairDebug())}`,
-  );
+  const value$1 = [7, "a"];
+  const value$2 = debug(1, { fmt: (value, options) => $formatted(String(value), options, true) });
+  const value$3 = debug([2, "b"], pairDebug());
+  console.log(`[${pairDebug_fmt(value$1, { width: 4 })}] ${value$2} ${value$3}`);
   const b = { value: [-2.5], impl: metersDisplay() };
   console.log(
     `[${b.impl.fmt(b.value, {

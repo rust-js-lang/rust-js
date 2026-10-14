@@ -73,39 +73,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let bytes =
                     expr_bytes(&template).ok_or_else(|| self.unsupported(span, "this format string, from its MIR"))?;
-                let Value::List(items) = items else {
+                let Value::List(mut items) = items else {
                     return Err(self.unsupported(span, "these format arguments, from its MIR"));
                 };
-                let mut parts = Vec::new();
-                for piece in crate::lower::format_args::decode_template(&bytes)
-                    .ok_or_else(|| self.unsupported(span, "this format string"))?
-                {
-                    parts.push(match piece {
-                        crate::lower::format_args::Piece::Text(text) => Expr::str(text),
-                        crate::lower::format_args::Piece::Argument(i, spec) => {
-                            let bad = || self.unsupported(span, "this format argument, from its MIR");
-                            let item = |i: usize| match items.get(i) {
-                                Some(Value::Fmt(kind, ty, value)) => Some((*kind, *ty, value.clone())),
-                                _ => None,
-                            };
-                            let (kind, ty, value) = item(i).ok_or_else(bad)?;
-                            // `{:#?}` of a `&dyn Debug` made elsewhere, the string it
-                            // showed there, not pretty (ADR 0137).
-                            if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {
-                                return Err(self.unsupported(span, "`{:#?}` of a `&dyn Debug` made elsewhere"));
-                            }
-                            // `{:1$}`'s width, or `{:.*}`'s precision, another argument.
-                            let width = match spec.width_from {
-                                Some(from) => Some(item(from).ok_or_else(bad)?.2),
-                                None => spec.width.map(|w| Expr::int(w.into())),
-                            };
-                            let precision = match spec.precision_from {
-                                Some(from) => Some(item(from).ok_or_else(bad)?.2),
-                                None => spec.precision.map(|p| Expr::int(p.into())),
-                            };
-                            self.format_value(value, (kind, ty), spec, (width, precision), span)?
+                let mut parts = self.formatted_parts(&items, &bytes, span)?;
+                // Rust evaluates each argument before it formats any, where
+                // the template formats each where it's written: where that
+                // would run one after formatting that runs code, each
+                // argument that does something is held first (ADR 0377).
+                if self.formats_out_of_order(&items, &bytes, span)? {
+                    self.flush(state, out)?;
+                    for item in items.iter_mut() {
+                        if let Value::Fmt(_, _, value) = item
+                            && value.has_effects()
+                        {
+                            *value = self.spill("_$", std::mem::replace(value, Expr::undefined()), out);
                         }
-                    });
+                    }
+                    parts = self.formatted_parts(&items, &bytes, span)?;
                 }
                 // Of what may fail, its `Arguments` say so to `format!`'s or
                 // `print!`'s: `fmt_may_fail` of each, by its trait (ADR 0187).
@@ -151,6 +136,75 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             _ => return Ok(None),
         })))
+    }
+
+    /// Whether the template `bytes` formats `items` would evaluate one that
+    /// does something after formatting that may run the program's code, a
+    /// `Debug` of the crate's, where Rust evaluates it first. Of its parts
+    /// formatted with a stand-in for each argument, what each formatting
+    /// runs alone. MIR's folding keeps the arguments in the order given, and
+    /// one read twice held.
+    fn formats_out_of_order(&mut self, items: &[Value<'tcx>], bytes: &[u8], span: Span) -> R<bool> {
+        let effectful: Vec<bool> = (items.iter())
+            .map(|item| matches!(item, Value::Fmt(_, _, value) if value.has_effects()))
+            .collect();
+        if !effectful.contains(&true) {
+            return Ok(false);
+        }
+        let stand_in = |i: usize| format!("_$argument{i}");
+        let stood: Vec<Value<'tcx>> = (items.iter().enumerate())
+            .map(|(i, item)| match item {
+                Value::Fmt(kind, ty, _) => Value::Fmt(*kind, *ty, Expr::var(&stand_in(i))),
+                other => other.clone(),
+            })
+            .collect();
+        let mut formatted = false;
+        for part in self.formatted_parts(&stood, bytes, span)? {
+            let mut reads = false;
+            part.visit_vars(&mut |var| reads |= (0..items.len()).any(|i| effectful[i] && var == stand_in(i)));
+            if reads && formatted {
+                return Ok(true);
+            }
+            formatted |= runs_program_code(&part);
+        }
+        Ok(false)
+    }
+
+    /// Each part of a format string, `bytes`, its text and each argument of
+    /// `items` formatted as its spec says.
+    fn formatted_parts(&mut self, items: &[Value<'tcx>], bytes: &[u8], span: Span) -> R<Vec<Expr>> {
+        let mut parts = Vec::new();
+        for piece in crate::lower::format_args::decode_template(bytes)
+            .ok_or_else(|| self.unsupported(span, "this format string"))?
+        {
+            parts.push(match piece {
+                crate::lower::format_args::Piece::Text(text) => Expr::str(text),
+                crate::lower::format_args::Piece::Argument(i, spec) => {
+                    let bad = || self.unsupported(span, "this format argument, from its MIR");
+                    let item = |i: usize| match items.get(i) {
+                        Some(Value::Fmt(kind, ty, value)) => Some((*kind, *ty, value.clone())),
+                        _ => None,
+                    };
+                    let (kind, ty, value) = item(i).ok_or_else(bad)?;
+                    // `{:#?}` of a `&dyn Debug` made elsewhere, the string it
+                    // showed there, not pretty (ADR 0137).
+                    if spec.alternate && kind == Std::FmtDebug && self.is_dyn_debug(ty) {
+                        return Err(self.unsupported(span, "`{:#?}` of a `&dyn Debug` made elsewhere"));
+                    }
+                    // `{:1$}`'s width, or `{:.*}`'s precision, another argument.
+                    let width = match spec.width_from {
+                        Some(from) => Some(item(from).ok_or_else(bad)?.2),
+                        None => spec.width.map(|w| Expr::int(w.into())),
+                    };
+                    let precision = match spec.precision_from {
+                        Some(from) => Some(item(from).ok_or_else(bad)?.2),
+                        None => spec.precision.map(|p| Expr::int(p.into())),
+                    };
+                    self.format_value(value, (kind, ty), spec, (width, precision), span)?
+                }
+            });
+        }
+        Ok(parts)
     }
 
     /// A string's or a `str`'s call: pushed to, sliced, edited in place
@@ -889,4 +943,47 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         })))
     }
+}
+
+/// Whether formatting `e` may run the program's own code, which may do what
+/// can be seen: a function of the crate's, a `Debug` of its own, or a
+/// method of what JS doesn't know, a dictionary's. Not a runtime helper's,
+/// a JS global's, nor a JS method of text or an array, `.map(f)`, though
+/// what each is given is looked at too: its callback's calls.
+fn runs_program_code(e: &Expr) -> bool {
+    const JS_METHODS: &[&str] = &[
+        "map",
+        "join",
+        "filter",
+        "slice",
+        "concat",
+        "toString",
+        "toFixed",
+        "padStart",
+        "padEnd",
+        "toUpperCase",
+        "toLowerCase",
+        "entries",
+        "keys",
+        "values",
+        "toArray",
+        "repeat",
+        "trim",
+        "at",
+    ];
+    const JS_GLOBALS: &[&str] = &["String", "Number", "Array", "Object", "Math", "JSON", "BigInt"];
+    let mut runs = false;
+    e.clone().each_mut(&mut |part| {
+        if let js::ExprKind::Call(callee, _) | js::ExprKind::New(callee, _) = &part.kind {
+            runs |= match &callee.kind {
+                js::ExprKind::Var(name) => callee.helper_name().is_none() && !JS_GLOBALS.contains(&name.as_str()),
+                js::ExprKind::Member(of, method) => {
+                    !JS_METHODS.contains(&method.as_str())
+                        && !matches!(&of.kind, js::ExprKind::Var(global) if JS_GLOBALS.contains(&global.as_str()))
+                }
+                _ => true,
+            };
+        }
+    });
+    runs
 }

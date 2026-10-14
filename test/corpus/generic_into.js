@@ -32,13 +32,17 @@ function fahrenheit(t, TIntoFahrenheit) {
 }
 
 function main() {
-  const value = greet("ada", { into: (s) => s });
-  const value$1 = greet("grace", { into: (s) => s });
-  console.log(`${value} | ${value$1} | ${greet("x", { into: (c) => c })}`);
-  const value$2 = named("lin", { into: nameFromStr_from });
-  console.log(`${value$2} ${named(["kept"], { into: (value) => value })}`);
-  const value$3 = widened([1, 2, 3], { into: (n) => BigInt(n) });
-  console.log(`${value$3} ${widened([-5, 7], { into: (n) => BigInt(n) })}`);
+  console.log(
+    `${greet("ada", { into: (s) => s })} | ${greet("grace", { into: (s) => s })} | ${greet("x", { into: (c) => c })}`,
+  );
+  console.log(
+    `${named("lin", { into: nameFromStr_from })} ${named(["kept"], { into: (value) => value })}`,
+  );
+  console.log(
+    `${widened([1, 2, 3], {
+      into: (n) => BigInt(n),
+    })} ${widened([-5, 7], { into: (n) => BigInt(n) })}`,
+  );
   console.log(`${$displayF64(fahrenheit([100], { into: fahrenheitFromCelsius_from }))}`);
 }
 //# sourceMappingURL=case.js.map

@@ -20,34 +20,31 @@ function main() {
   }
   const s = "héllo wörld";
   console.log(`${$byteLen(s)}`);
-  const value$3 = $strSlice(s, 0, 1);
-  const value$4 = $strSlice(s, 1, 3);
-  const value$5 = $strSlice(s, 7);
-  console.log(`[${value$3}] [${value$4}] [${value$5}] [${$strSlice(s, 0, 6)}] [${s}]`);
+  console.log(
+    `[${$strSlice(s, 0, 1)}] [${$strSlice(s, 1, 3)}] [${$strSlice(s, 7)}] [${$strSlice(s, 0, 6)}] [${s}]`,
+  );
   console.log(`${first_word(s)}`);
-  const value$6 = $find(s, "ö");
-  const value$7 = $find(s, "wör");
+  const value$3 = $find(s, "ö");
+  const value$4 = $find(s, "wör");
   const value = $find(s, "z");
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value == null ? "None" : `Some(${value})`}`,
   );
-  const value$8 = $rfind(s, "l");
+  const value$5 = $rfind(s, "l");
   const value$1 = $rfind("a🦀b🦀", "🦀");
   console.log(
-    `${value$8 == null ? "None" : `Some(${value$8})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
-  const value$9 = $find("abc", "");
+  const value$6 = $find("abc", "");
   const value$2 = $rfind("abc", "");
   console.log(
-    `${value$9 == null ? "None" : `Some(${value$9})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   for (const [i, c] of $charIndices("a日🦀b")) {
     console.log(`${i} ${c}`);
   }
   const crab = "🦀🦀";
-  const value$10 = $strSlice(crab, 4);
-  const value$11 = $strSlice(crab, 0, 4);
-  console.log(`${value$10} ${value$11} ${$strSlice(crab, 8)}`);
+  console.log(`${$strSlice(crab, 4)} ${$strSlice(crab, 0, 4)} ${$strSlice(crab, 8)}`);
   let text = "";
   while ($byteLen(text) < 9) {
     text += "é";

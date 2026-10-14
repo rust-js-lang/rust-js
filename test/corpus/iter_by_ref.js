@@ -63,12 +63,14 @@ function equalNamesIterator_next(equalNames) {
 
 function main() {
   const value = split_number("12e34");
+  const value$1 = split_number("7");
   console.log(
-    `(${$debugStr(value[0])}, ${$debugStr(value[1])}) ${((tuple) => `(${$debugStr(tuple[0])}, ${$debugStr(tuple[1])})`)(split_number("7"))}`,
+    `(${$debugStr(value[0])}, ${$debugStr(value[1])}) (${$debugStr(value$1[0])}, ${$debugStr(value$1[1])})`,
   );
-  const value$1 = split_mut("key:value");
+  const value$2 = split_mut("key:value");
+  const value$3 = split_mut("none");
   console.log(
-    `(${$debugStr(value$1[0])}, ${value$1[1]}) ${((tuple) => `(${$debugStr(tuple[0])}, ${tuple[1]})`)(split_mut("none"))}`,
+    `(${$debugStr(value$2[0])}, ${value$2[1]}) (${$debugStr(value$3[0])}, ${value$3[1]})`,
   );
   const names = $iterator({ inner: { at: 0 }, bits: 3 }, equalNamesIterator_next).toArray();
   console.log(`[${names.map((item) => $debugStr(item)).join(", ")}]`);
@@ -82,8 +84,9 @@ function main() {
         continue;
       }
     }
+    const value$1 = namesIterator_next(all);
     console.log(
-      `${((value) => (value == null ? "None" : `Some((${$debugStr(value[0])}, ${value[1]}))`))(namesIterator_next(all))} ${all.at}`,
+      `${value$1 == null ? "None" : `Some((${$debugStr(value$1[0])}, ${value$1[1]}))`} ${all.at}`,
     );
     return;
   }
