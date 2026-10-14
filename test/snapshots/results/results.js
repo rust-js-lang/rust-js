@@ -55,7 +55,7 @@ export function methods(c) {
   const r = parse_digit(c);
   return [
     r.TAG === "Ok",
-    r.TAG !== "Ok",
+    r.TAG === "Err",
     r.TAG === "Ok" ? r._0 : 99,
     r.TAG === "Ok" ? r._0 : undefined,
   ];

@@ -250,7 +250,7 @@ function main() {
   }
   console.log(`[${bytes.map((item) => String(item)).join(", ")}]`);
   const bad = [255, 97];
-  console.log(`${$fromUtf8Mut(bad).TAG !== "Ok"}`);
+  console.log(`${$fromUtf8Mut(bad).TAG === "Err"}`);
   const raw = [97, 195, 169, 98];
   const part$1 = $fromUtf8Mut(raw, true);
   part$1.value = $asciiCase(part$1.value, true);

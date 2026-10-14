@@ -5,6 +5,7 @@ use std::collections::{HashMap, HashSet};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::{Call, apply};
 use crate::lower::recognition::{Std, StdItem};
+use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self};
 
@@ -95,7 +96,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (true, true) => "$lock",
                 };
                 let guard = Expr::call(Expr::helper(name), vec![arg(), Expr::bool(true)]);
-                if lock { Self::ok(guard) } else { guard }
+                if lock { result::ok(guard) } else { guard }
             }
             Std::TryBorrow { mutable, lock } => {
                 let mut given = vec![arg()];
@@ -113,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => Expr::held(arg()),
                 }
             }
-            Std::Lock => Self::ok(Expr::held(arg())),
+            Std::Lock => result::ok(Expr::held(arg())),
             // `mem::drop(x)` is `x`'s destructor, run now (ADR 0098).
             Std::Drop => {
                 let ty = tys[0];
@@ -199,13 +200,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                             )
                             .at(js_span),
                         );
-                        let result = |tag: &str| {
-                            Expr::object(vec![
-                                Prop::Field("TAG".into(), Expr::str(tag)),
-                                Prop::Field("_0".into(), previous.clone()),
-                            ])
-                        };
-                        return Ok(Some(Expr::cond(done, result("Ok"), result("Err"))));
+                        let result = |ok: bool| result::made(ok, previous.clone());
+                        return Ok(Some(Expr::cond(done, result(true), result(false))));
                     }
                 };
                 out.push(StmtKind::Assign(slot, next).at(js_span));

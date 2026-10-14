@@ -166,7 +166,7 @@ function main() {
     $dropReceiver(rx);
     throw error;
   }
-  const value$1 = tmp$5.TAG !== "Ok";
+  const value$1 = tmp$5.TAG === "Err";
   try {
     console.log(`${value$1}`);
   } catch (error) {
@@ -244,7 +244,7 @@ function main() {
     $dropReceiver(rx);
     throw error;
   }
-  const value$3 = tmp$8.TAG !== "Ok";
+  const value$3 = tmp$8.TAG === "Err";
   try {
     console.log(`${value$3}`);
   } catch (error) {

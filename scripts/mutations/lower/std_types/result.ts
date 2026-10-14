@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) => Expr::bin(Op::LooseEq, subject, Expr::null()),\n",
     tests: ["test/lowering.test.ts", "-t", "of an Option never falsy tests its truth"],
   },
+  {
+    name: "result-test-negation-unseen",
+    breaks: "`r.TAG !== \"Err\"` is read as `===`, so tidy doesn't put a `?`'s `return` first",
+    file: "src/lower/std_types/result.rs",
+    find: "    (key == \"TAG\").then_some((&**result, ok, *op == Op::Eq))\n",
+    replace: "    (key == \"TAG\").then_some((&**result, ok, true))\n",
+    tests: ["test/snapshots.test.ts"],
+  },
 ];

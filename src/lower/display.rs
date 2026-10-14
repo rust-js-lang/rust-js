@@ -11,6 +11,7 @@ use super::recognition::{StdItem, WriteCall, opt_std_item, std_item};
 use super::representation::{self, Num};
 use super::{FnCx, R};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::std_types::result;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::Span;
@@ -1195,7 +1196,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     vec!["result".into()],
                     vec![
                         StmtKind::Return(Some(Expr::cond(
-                            Expr::bin(Op::Eq, Expr::member(Expr::var("result"), "TAG"), Expr::str("Ok")),
+                            result::is(Expr::var("result"), true),
                             self.pretty_or(
                                 pretty,
                                 join(vec![Expr::str("Ok("), ok.clone(), Expr::str(")")]),

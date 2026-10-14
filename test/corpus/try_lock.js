@@ -96,7 +96,7 @@ function main() {
     $unborrow(g);
     throw error;
   }
-  const value = tmp$1.TAG !== "Ok";
+  const value = tmp$1.TAG === "Err";
   try {
     console.log(`${value}`);
   } catch (error) {
@@ -210,7 +210,7 @@ function main() {
   }
   const value$2 = r1.value;
   const value$3 = r2.value;
-  const value$4 = tmp$3.TAG !== "Ok";
+  const value$4 = tmp$3.TAG === "Err";
   try {
     console.log(`${value$2} ${value$3} ${value$4}`);
   } catch (error) {

@@ -959,7 +959,7 @@ function main() {
     }
     throw error;
   }
-  const value$4 = err.TAG !== "Ok";
+  const value$4 = err.TAG === "Err";
   try {
     console.log(`err ${value$4}`);
   } catch (error) {

@@ -31,6 +31,7 @@ use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};
 use super::{FnCx, R, lower_first};
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
+use crate::lower::std_types::result;
 use rustc_ast::visit::{self, Visitor};
 use rustc_hir::def::CtorKind;
 use rustc_hir::{self as hir, intravisit};
@@ -510,19 +511,13 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     let mut body = Vec::new();
                     self.emit(json, "beginObject", Vec::new(), &mut body);
                     self.emit(json, "key", vec![Expr::str(name)], &mut body);
-                    self.write_json(
-                        Expr::member(value.clone(), "_0"),
-                        json,
-                        args.type_at(i),
-                        span,
-                        &mut body,
-                    )?;
+                    self.write_json(result::held(value.clone()), json, args.type_at(i), span, &mut body)?;
                     self.emit(json, "endObject", Vec::new(), &mut body);
                     branches.push(body);
                 }
                 let err = branches.pop().expect("an `Err` branch");
                 let ok = branches.pop().expect("an `Ok` branch");
-                let test = Expr::bin(Op::Eq, Expr::member(value, "TAG"), Expr::str("Ok"));
+                let test = result::is(value, true);
                 out.push(StmtKind::If(test, ok, Some(err)).at(js::Span::NONE));
                 Ok(())
             }

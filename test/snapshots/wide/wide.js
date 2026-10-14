@@ -153,11 +153,11 @@ export function report() {
   const value$5 = $bigRemEuclid(-7n, 3n, -9223372036854775808n);
   const value$6 = $bigDivEuclid(-7n, 3n, -9223372036854775808n);
   const value$7 = $parseBig("18446744073709551615", 0n, 18446744073709551615n);
-  out += `${value$5} ${value$6} ${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugParseError(value$7._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG !== "Ok"}\n`;
+  out += `${value$5} ${value$6} ${value$7.TAG === "Ok" ? `Ok(${value$7._0})` : `Err(${$debugParseError(value$7._0, "ParseIntError")})`} ${$parseBig("18446744073709551616", 0n, 18446744073709551615n).TAG === "Err"}\n`;
   const value$8 = $tryFromInt(max, 0, 4294967295);
   const value$9 =
-    $tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG !==
-    "Ok";
+    $tryFromInt(BigInt.asUintN(64, 1n << 63n), -9223372036854775808n, 9223372036854775807n).TAG ===
+    "Err";
   out += `${value$8.TAG === "Ok" ? `Ok(${value$8._0})` : `Err(${$debugParseError(value$8._0, "TryFromIntError")})`} ${value$9} ${$tryFromInt(BigInt.asIntN(64, min + min), 0, 65535).TAG === "Ok"}\n`;
   const low = $unwrapErr($tryFromInt(-1n, 0, 255));
   const value$10 = $unwrapErr($tryFromInt(300n, 0, 255));

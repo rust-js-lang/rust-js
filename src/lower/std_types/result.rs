@@ -1,10 +1,83 @@
-//! `?` of an `Option` or a `Result`, and the `From` that converts its error
-//! (ADRs 0052, 0141).
+//! A `Result`'s JS, `{ TAG: "Ok", _0: value }`, as an enum with fields is
+//! (ADR 0019), made, tested and read here alone; `?` of an `Option` or a
+//! `Result`, and the `From` that converts its error (ADRs 0052, 0141).
 
 use crate::js::{self, Expr, Op, Prop, StmtKind};
 use crate::lower::recognition::{StdItem, std_item};
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
+
+/// `Ok`'s name as a `Result`'s `TAG` holds it, or `Err`'s where `ok` isn't.
+fn name(ok: bool) -> &'static str {
+    if ok { "Ok" } else { "Err" }
+}
+
+/// A `Result` whose `TAG` is `tag`, a variant's name or another's tag, of
+/// `value`.
+pub(in crate::lower) fn tagged(tag: Expr, value: Expr) -> Expr {
+    Expr::object(vec![Prop::Field("TAG".into(), tag), Prop::Field("_0".into(), value)])
+}
+
+/// `Ok(value)`, or `Err(value)` where `ok` isn't.
+pub(in crate::lower) fn made(ok: bool, value: Expr) -> Expr {
+    tagged(Expr::str(name(ok)), value)
+}
+
+pub(in crate::lower) fn ok(value: Expr) -> Expr {
+    made(true, value)
+}
+
+pub(in crate::lower) fn err(value: Expr) -> Expr {
+    made(false, value)
+}
+
+/// Whether `result` is an `Ok`, or an `Err` where `ok` isn't:
+/// `result.TAG === "Ok"`.
+pub(in crate::lower) fn is(result: Expr, ok: bool) -> Expr {
+    Expr::bin(Op::Eq, tag(result), Expr::str(name(ok)))
+}
+
+/// Its `TAG`, which variant it is.
+pub(in crate::lower) fn tag(result: Expr) -> Expr {
+    Expr::member(result, "TAG")
+}
+
+/// What it holds, of either variant: `result._0`.
+pub(in crate::lower) fn held(result: Expr) -> Expr {
+    Expr::member(result, "_0")
+}
+
+/// What an `Ok` just made holds, `{ TAG: "Ok", _0: value }`'s `value`.
+pub(in crate::lower) fn made_ok(e: &Expr) -> Option<&Expr> {
+    let js::ExprKind::Object(props) = &e.kind else {
+        return None;
+    };
+    let [Prop::Field(tag, name), Prop::Field(field, value)] = props.as_slice() else {
+        return None;
+    };
+    ((tag.as_str(), field.as_str()) == ("TAG", "_0") && matches!(&name.kind, js::ExprKind::Str(s) if s == "Ok"))
+        .then_some(value)
+}
+
+/// Of a test `is` makes, or its negation, `r.TAG !== "Err"`: what it tests,
+/// whether it's of `Ok`, and whether it's `===`.
+pub(in crate::lower) fn tested(test: &Expr) -> Option<(&Expr, bool, bool)> {
+    let js::ExprKind::Binary(op @ (Op::Eq | Op::Ne), tag, name) = &test.kind else {
+        return None;
+    };
+    let js::ExprKind::Member(result, key) = &tag.kind else {
+        return None;
+    };
+    let js::ExprKind::Str(name) = &name.kind else {
+        return None;
+    };
+    let ok = match name.as_str() {
+        "Ok" => true,
+        "Err" => false,
+        _ => return None,
+    };
+    (key == "TAG").then_some((&**result, ok, *op == Op::Eq))
+}
 
 /// How `?` makes an error the function's: a `From` of the crate's own,
 /// called on it, or for a `Box<dyn Error>`, its dictionary (ADR 0141).
@@ -32,7 +105,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(in crate::lower) fn tried_failed(&self, subject: Expr, ty: Ty<'tcx>) -> Expr {
         match self.option_of(ty) {
             Some(inner) => self.absent(subject, inner),
-            None => Expr::bin(Op::Eq, Expr::member(subject, "TAG"), Expr::str("Err")),
+            None => is(subject, false),
         }
     }
 
@@ -41,7 +114,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match self.option_of(ty) {
             Some(inner) if self.boxed_payload(inner) => self.some_value(subject),
             Some(_) => subject,
-            None => Expr::member(subject, "_0"),
+            None => held(subject),
         }
     }
 
@@ -52,10 +125,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Expr::undefined();
         }
         match converted {
-            Some(converted) => Expr::object(vec![
-                Prop::Field("TAG".into(), Expr::str("Err")),
-                Prop::Field("_0".into(), converted),
-            ]),
+            Some(converted) => err(converted),
             None => subject,
         }
     }

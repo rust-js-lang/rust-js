@@ -9,6 +9,7 @@ use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, trait_method};
 use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
+use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::ty::{self, Ty};
@@ -539,11 +540,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             return Ok(Expr::call(Expr::helper("$parseChar"), vec![text]));
         }
         if self.is_lang_adt(target, LangItem::String) {
-            let ok = Expr::object(vec![
-                Prop::Field("TAG".into(), Expr::str("Ok")),
-                Prop::Field("_0".into(), text),
-            ]);
-            return Ok(ok);
+            return Ok(result::ok(text));
         }
         // A type's own `FromStr`: its `from_str`, called (ADR 0159), or a
         // `T`'s, its dictionary's (ADR 0161). Not std's of another type,

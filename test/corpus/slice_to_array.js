@@ -23,7 +23,7 @@ function main() {
   const slice$2 = $slice(bytes, 0, 3);
   const wrong = slice$2.length === 4 ? { TAG: "Ok", _0: slice$2 } : { TAG: "Err" };
   console.log(
-    `[${fixed.map((item) => String(item)).join(", ")}] [${owned.map((item) => String(item)).join(", ")}] ${wrong.TAG === "Ok" ? `Ok([${wrong._0.map((item) => String(item)).join(", ")}])` : "Err(TryFromSliceError(()))"} ${wrong.TAG !== "Ok"}`,
+    `[${fixed.map((item) => String(item)).join(", ")}] [${owned.map((item) => String(item)).join(", ")}] ${wrong.TAG === "Ok" ? `Ok([${wrong._0.map((item) => String(item)).join(", ")}])` : "Err(TryFromSliceError(()))"} ${wrong.TAG === "Err"}`,
   );
   const value = bytes.length === 2 ? { TAG: "Ok", _0: bytes.slice() } : { TAG: "Err" };
   if (value.TAG === "Ok") {

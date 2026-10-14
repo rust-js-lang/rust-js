@@ -24,7 +24,7 @@ const SHARED = { value: [1] };
 function asks_shared() {
   return ((s) => {
     const value = $tryBorrow(s, true);
-    const result = value.TAG !== "Ok";
+    const result = value.TAG === "Err";
     if (value.TAG === "Ok") {
       $unborrow(value._0);
     }
@@ -34,7 +34,7 @@ function asks_shared() {
 
 function probeDrop_drop(probe) {
   const value = $tryBorrow(probe[0], true);
-  const value$1 = value.TAG !== "Ok";
+  const value$1 = value.TAG === "Err";
   try {
     console.log(`drop sees it borrowed: ${value$1}`);
   } catch (error) {
@@ -57,7 +57,7 @@ export function peekClone() {
 
 function peekClone_clone(peek) {
   const value = $tryBorrow(peek[0], true);
-  const value$1 = value.TAG !== "Ok";
+  const value$1 = value.TAG === "Err";
   try {
     console.log(`clone sees it borrowed: ${value$1}`);
   } catch (error) {
@@ -88,7 +88,7 @@ const Node = {
         });
         throw error;
       }
-      result = tmp.TAG !== "Ok";
+      result = tmp.TAG === "Err";
       try {
         if (tmp.TAG === "Ok") {
           $unborrow(tmp._0);
@@ -177,7 +177,7 @@ function main() {
     throw error;
   }
   const length = value.value.length;
-  const value$1 = tmp.TAG !== "Ok";
+  const value$1 = tmp.TAG === "Err";
   try {
     console.log(`${length} ${value$1}`);
   } catch (error) {
@@ -236,7 +236,7 @@ function main() {
   try {
     asked = value$6.value.map(() => {
       const value = $tryBorrow(cell, true);
-      const result = value.TAG !== "Ok";
+      const result = value.TAG === "Err";
       if (value.TAG === "Ok") {
         $unborrow(value._0);
       }

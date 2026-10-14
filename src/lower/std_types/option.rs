@@ -6,6 +6,7 @@ use crate::lower::calls::{Call, apply};
 use crate::lower::drops::Drops;
 
 use crate::lower::recognition::Std;
+use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def_id::DefId;
@@ -48,18 +49,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 Expr::bin(Op::Or, first, then)
             }
-            Std::IsOk(ok) => Expr::bin(
-                if ok { Op::Eq } else { Op::Ne },
-                Expr::member(arg(), "TAG"),
-                Expr::str("Ok"),
-            ),
+            Std::IsOk(ok) => result::is(arg(), ok),
             Std::UnwrapOk => {
                 let mut list: Vec<Expr> = (0..tys.len()).map(|_| arg()).collect();
                 // An `Ok(x)` just made, as a `to_value` that can't fail is: `x`.
-                if let js::ExprKind::Object(props) = &list[0].kind
-                    && let [Prop::Field(tag, name), Prop::Field(field, value)] = props.as_slice()
-                    && (tag.as_str(), field.as_str()) == ("TAG", "_0")
-                    && matches!(&name.kind, js::ExprKind::Str(s) if s == "Ok")
+                if let Some(value) = result::made_ok(&list[0])
                     && list[1..].iter().all(|e| !e.has_effects())
                 {
                     return Ok(Some(value.clone()));
@@ -90,8 +84,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     self.spill("result", result, out)
                 };
-                let ok = Expr::bin(Op::Eq, Expr::member(result.clone(), "TAG"), Expr::str("Ok"));
-                let value = Expr::member(result.clone(), "_0");
+                let ok = result::is(result.clone(), true);
+                let value = result::held(result.clone());
                 let value = if boxed { self.some(value) } else { value };
                 let name = self.fresh("value");
                 let then = vec![StmtKind::Assign(Expr::var(&name), value).at(js::Span::NONE)];
@@ -114,8 +108,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     _ => Expr::undefined(),
                 };
-                let ok = Expr::bin(Op::Eq, Expr::member(result.clone(), "TAG"), Expr::str("Ok"));
-                let value = Expr::member(result, "_0");
+                let ok = result::is(result.clone(), true);
+                let value = result::held(result);
                 let value = if boxed { self.some(value) } else { value };
                 Expr::cond(ok, value, otherwise)
             }

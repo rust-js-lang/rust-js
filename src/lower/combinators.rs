@@ -6,6 +6,7 @@
 use super::calls::apply;
 use super::drops::Drops;
 use super::recognition::trait_method;
+use super::std_types::result;
 use super::{FnCx, R, representation::Num};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -232,20 +233,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    pub(super) fn ok(value: Expr) -> Expr {
-        Expr::object(vec![
-            Prop::Field("TAG".into(), Expr::str("Ok")),
-            Prop::Field("_0".into(), value),
-        ])
-    }
-
-    pub(super) fn err(value: Expr) -> Expr {
-        Expr::object(vec![
-            Prop::Field("TAG".into(), Expr::str("Err")),
-            Prop::Field("_0".into(), value),
-        ])
-    }
-
     /// `name`, set by `then` where `test` holds, and otherwise to `otherwise`
     /// once `given_up`, the other variant's value std drops, is dropped
     /// (ADR 0179): `let holds; if (r.TAG === "Ok") { holds = f(r._0); } else
@@ -354,8 +341,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         let mut next = || rest.next().expect("rustc checked the arguments");
         let some = Expr::bin(Op::LooseNe, subject.clone(), Expr::null());
         let none = || Expr::bin(Op::LooseEq, subject.clone(), Expr::null());
-        let tag = |t: &str| Expr::bin(Op::Eq, Expr::member(subject.clone(), "TAG"), Expr::str(t));
-        let inside = || Expr::member(subject.clone(), "_0");
+        let tag = |ok: bool| result::is(subject.clone(), ok);
+        let inside = || result::held(subject.clone());
         // What a `Some` holds: the value, or what's in its box.
         let value = if boxed {
             self.some_value(subject.clone())
@@ -477,20 +464,20 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => vec![StmtKind::Try(body, unused).at(self.js_span(span))],
                 };
                 let error = (inside(), generic_args.type_at(1));
-                self.or_dropped(tag("Ok"), name, then, error, fallback, span, out)?
+                self.or_dropped(tag(true), name, then, error, fallback, span, out)?
             }
             Comb::ResultMapOr => {
                 let fallback = next();
                 let fallback = eager(self, fallback, out);
                 let f = next();
                 let mapped = self.call_with(f, vec![inside()], "map", out);
-                Expr::cond(tag("Ok"), mapped, fallback)
+                Expr::cond(tag(true), mapped, fallback)
             }
             Comb::ResultMapOrElse => {
                 let (g, f) = (next(), next());
                 let mapped = self.call_with(f, vec![inside()], "map", out);
                 let fallback = self.call_with(g, vec![inside()], "fallback", out);
-                Expr::cond(tag("Ok"), mapped, fallback)
+                Expr::cond(tag(true), mapped, fallback)
             }
             Comb::AndThen => {
                 let f = next();
@@ -530,12 +517,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::OkOr => {
                 let e = next();
                 let e = eager(self, e, out);
-                Expr::cond(some, Self::ok(value), Self::err(e))
+                Expr::cond(some, result::ok(value), result::err(e))
             }
             Comb::OkOrElse => {
                 let f = next();
                 let e = self.call_with(f, Vec::new(), "error", out);
-                Expr::cond(some, Self::ok(value), Self::err(e))
+                Expr::cond(some, result::ok(value), result::err(e))
             }
             Comb::Or => {
                 let other = next();
@@ -560,36 +547,36 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::ResultMap => {
                 let f = next();
                 let mapped = self.call_with(f, vec![inside()], "map", out);
-                Expr::cond(tag("Ok"), Self::ok(mapped), subject)
+                Expr::cond(tag(true), result::ok(mapped), subject)
             }
             Comb::MapErr => {
                 let f = next();
                 let mapped = self.call_with(f, vec![inside()], "map", out);
-                Expr::cond(tag("Err"), Self::err(mapped), subject)
+                Expr::cond(tag(false), result::err(mapped), subject)
             }
             Comb::ResultAndThen => {
                 let f = next();
                 let then = self.call_with(f, vec![inside()], "then", out);
-                Expr::cond(tag("Ok"), then, subject)
+                Expr::cond(tag(true), then, subject)
             }
             Comb::ResultUnwrapOrElse => {
                 let f = next();
                 let fallback = self.call_with(f, vec![inside()], "fallback", out);
-                Expr::cond(tag("Ok"), inside(), fallback)
+                Expr::cond(tag(true), inside(), fallback)
             }
             Comb::ResultUnwrapOrDefault => {
                 let ok_ty = generic_args.type_at(0);
                 let fallback = self.default_value(ok_ty, span)?;
-                Expr::cond(tag("Ok"), inside(), fallback)
+                Expr::cond(tag(true), inside(), fallback)
             }
             // An `Ok` with a destructor is dropped (ADR 0179).
             Comb::Err if self.drops(generic_args.type_at(0)) != Drops::Nothing => {
                 let name = self.fresh("error");
                 let then = vec![StmtKind::Assign(Expr::var(&name), inside()).at(js::Span::NONE)];
                 let value = (inside(), generic_args.type_at(0));
-                self.or_dropped(tag("Err"), name, then, value, Expr::undefined(), span, out)?
+                self.or_dropped(tag(false), name, then, value, Expr::undefined(), span, out)?
             }
-            Comb::Err => Expr::cond(tag("Err"), inside(), Expr::undefined()),
+            Comb::Err => Expr::cond(tag(false), inside(), Expr::undefined()),
             // Rust works out `b` either way: in a `const` first if it has effects.
             Comb::And => {
                 let other = next();
@@ -644,21 +631,21 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     ty::Adt(_, result) => result.type_at(0),
                     _ => return Err(self.unsupported(span, "`transpose` of this")),
                 };
-                let ok_value = Expr::member(value.clone(), "_0");
+                let ok_value = result::held(value.clone());
                 let ok_value = match self.boxed_payload(ok_ty) {
                     true => self.some(ok_value),
                     false => ok_value,
                 };
-                let is_ok = Expr::bin(Op::Eq, Expr::member(value, "TAG"), Expr::str("Ok"));
+                let is_ok = result::is(value, true);
                 let absent = none();
-                let inner = Expr::cond(is_ok, Self::ok(ok_value), subject);
-                Expr::cond(absent, Self::ok(Expr::undefined()), inner)
+                let inner = Expr::cond(is_ok, result::ok(ok_value), subject);
+                Expr::cond(absent, result::ok(Expr::undefined()), inner)
             }
             Comb::Inspect | Comb::ResultInspect { .. } => {
                 let f = next();
                 let (test, given) = match comb {
                     Comb::Inspect => (some, value),
-                    Comb::ResultInspect { err } => (tag(if err { "Err" } else { "Ok" }), inside()),
+                    Comb::ResultInspect { err } => (tag(!err), inside()),
                     _ => unreachable!("an inspection"),
                 };
                 let mut call = Vec::new();
@@ -672,7 +659,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let f = next();
                 let (test, given, mapped_ty) = match comb {
                     Comb::MapOrDefault => (some, value, generic_args.types().nth(1)),
-                    _ => (tag("Ok"), inside(), generic_args.types().nth(2)),
+                    _ => (tag(true), inside(), generic_args.types().nth(2)),
                 };
                 let fallback = self.default_value(mapped_ty.expect("its result's type"), span)?;
                 let mapped = self.call_with(f, vec![given], "map", out);
@@ -694,24 +681,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let pointee = self.deref_value(given, inner, span, out)?;
                 match option {
                     Some(_) => Expr::cond(some, pointee, Expr::undefined()),
-                    None => Expr::cond(tag("Ok"), Self::ok(pointee), subject),
+                    None => Expr::cond(tag(true), result::ok(pointee), subject),
                 }
             }
             Comb::ResultAnd | Comb::ResultOr => {
                 let other = next();
                 let other = eager(self, other, out);
                 match comb {
-                    Comb::ResultAnd => Expr::cond(tag("Ok"), other, subject),
-                    _ => Expr::cond(tag("Ok"), subject, other),
+                    Comb::ResultAnd => Expr::cond(tag(true), other, subject),
+                    _ => Expr::cond(tag(true), subject, other),
                 }
             }
             Comb::ResultOrElse => {
                 let f = next();
                 let other = self.call_with(f, vec![inside()], "fallback", out);
-                Expr::cond(tag("Ok"), subject, other)
+                Expr::cond(tag(true), subject, other)
             }
-            Comb::ResultFlatten => Expr::cond(tag("Ok"), inside(), subject),
-            Comb::ResultIter => Expr::cond(tag("Ok"), Expr::array(vec![inside()]), Expr::array(Vec::new())),
+            Comb::ResultFlatten => Expr::cond(tag(true), inside(), subject),
+            Comb::ResultIter => Expr::cond(tag(true), Expr::array(vec![inside()]), Expr::array(Vec::new())),
             Comb::ResultIterMut | Comb::ResultAsMut => {
                 let ty::Adt(_, sides) = subject_ty.peel_refs().kind() else {
                     return Err(self.unsupported(span, "this `Result`"));
@@ -723,19 +710,16 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let ok = part(self, ok_ty);
                 match comb {
-                    Comb::ResultIterMut => Expr::cond(tag("Ok"), Expr::array(vec![ok]), Expr::array(Vec::new())),
+                    Comb::ResultIterMut => Expr::cond(tag(true), Expr::array(vec![ok]), Expr::array(Vec::new())),
                     // Of objects, the `Result` itself, as `as_ref()`'s is.
                     _ if !self.is_boxable(ok_ty) && !self.is_boxable(err_ty) => subject,
                     _ => {
-                        let side = |name: Expr, value: Expr| {
-                            Expr::object(vec![Prop::Field("TAG".into(), name), Prop::Field("_0".into(), value)])
-                        };
                         // Of both, a handle on `r._0` whichever it is.
                         if self.is_boxable(ok_ty) && self.is_boxable(err_ty) {
-                            side(Expr::member(subject.clone(), "TAG"), ok)
+                            result::tagged(result::tag(subject.clone()), ok)
                         } else {
                             let err = part(self, err_ty);
-                            Expr::cond(tag("Ok"), side(Expr::str("Ok"), ok), side(Expr::str("Err"), err))
+                            Expr::cond(tag(true), result::ok(ok), result::err(err))
                         }
                     }
                 }
@@ -751,7 +735,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     false => inside(),
                 };
                 let present = Expr::bin(Op::LooseEq, inside(), Expr::null());
-                Expr::cond(tag("Ok"), Expr::cond(present, Expr::undefined(), Self::ok(x)), subject)
+                Expr::cond(
+                    tag(true),
+                    Expr::cond(present, Expr::undefined(), result::ok(x)),
+                    subject,
+                )
             }
             // A clone of an `Ok`'s value where a clone is more than the value.
             Comb::ResultCloned => {
@@ -759,7 +747,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 match self.needs_clone(item) {
                     true => {
                         let clone = self.clone_value(inside(), item, span, out)?;
-                        Expr::cond(tag("Ok"), Self::ok(clone), subject)
+                        Expr::cond(tag(true), result::ok(clone), subject)
                     }
                     false => subject,
                 }
@@ -769,7 +757,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if self.drops(generic_args.type_at(usize::from(comb == Comb::IsOkAnd))) != Drops::Nothing =>
             {
                 let p = next();
-                let which = if comb == Comb::IsOkAnd { "Ok" } else { "Err" };
+                let which = comb == Comb::IsOkAnd;
                 let name = self.fresh("holds");
                 let mut then = Vec::new();
                 let holds = self.call_with(p, vec![inside()], "holds", &mut then);
@@ -780,7 +768,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Comb::IsOkAnd | Comb::IsErrAnd => {
                 let p = next();
                 let holds = self.call_with(p, vec![inside()], "holds", out);
-                let which = if comb == Comb::IsOkAnd { "Ok" } else { "Err" };
+                let which = comb == Comb::IsOkAnd;
                 Expr::bin(Op::And, tag(which), holds)
             }
             // `v.contains(&x)`: JS's `includes` for what `===` compares, and

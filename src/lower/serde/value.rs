@@ -10,6 +10,7 @@ use crate::lower::recognition::{Json, JsonCall, JsonConversion, JsonMethod};
 use crate::lower::representation::Num;
 use crate::lower::{FnCx, R};
 
+use crate::lower::std_types::result;
 use rustc_middle::ty::Ty;
 use rustc_span::Span;
 
@@ -38,10 +39,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     } else {
                         self.json_value_from(value, ty, span)?
                     };
-                    return Ok(Expr::object(vec![
-                        Prop::Field("TAG".into(), Expr::str("Ok")),
-                        Prop::Field("_0".into(), value),
-                    ]));
+                    return Ok(result::ok(value));
                 }
                 let writer = self.json_writer(ty, span)?;
                 Ok(Expr::call(Expr::helper("$toJsonValue"), vec![value, writer]))

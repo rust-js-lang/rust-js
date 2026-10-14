@@ -65,7 +65,7 @@ function main() {
       $getDisjointMut(v, [
         { start: 0, end: 3 },
         { start: 2, end: 4 },
-      ]).TAG !== "Ok"
+      ]).TAG === "Err"
     }`,
   );
   console.log(
@@ -78,10 +78,10 @@ function main() {
         ],
         false,
         true,
-      ).TAG !== "Ok"
+      ).TAG === "Err"
     }`,
   );
-  console.log(`${$getDisjointMut(v, [{ start: 2, end: 1 }], false, true).TAG !== "Ok"}`);
+  console.log(`${$getDisjointMut(v, [{ start: 2, end: 1 }], false, true).TAG === "Err"}`);
   const value$2 = $getDisjointMut(
     v,
     [

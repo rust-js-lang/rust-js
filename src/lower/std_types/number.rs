@@ -11,6 +11,7 @@ use crate::lower::discriminants;
 use crate::lower::recognition::{Std, TypeFact, any_trait};
 use crate::lower::representation::{Num, is_fieldless_enum};
 use crate::lower::std_types::any::AnyOp;
+use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_middle::mir::{BinOp, UnOp};
@@ -1265,7 +1266,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     true => slice.clone(),
                     false => Expr::call(Expr::member(slice.clone(), "slice"), vec![]),
                 };
-                Expr::cond(fits, Self::ok(value), Self::err(Expr::undefined()))
+                Expr::cond(fits, result::ok(value), result::err(Expr::undefined()))
             }
             Std::ToBig => Expr::call(Expr::var("BigInt"), vec![arg()]),
             Std::Cast { into } => {

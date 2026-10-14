@@ -2,6 +2,7 @@
 //! writes a loop's or a block's exits.
 
 use super::*;
+use crate::lower::std_types::result;
 
 /// Whether a `continue` in `stmts` goes on with the loop they're in, labeled
 /// `label`: one of no label not inside a loop of their own, or of its label.
@@ -600,9 +601,8 @@ pub(super) fn tried_first(stmts: &mut Vec<Stmt>) {
                 },
             ] = otherwise.as_slice()
             && let ExprKind::Var(r) = &returned.kind
-            && let ExprKind::Binary(Op::Ne, tag, err) = &test.kind
-            && matches!(&tag.kind, ExprKind::Member(of, key) if key == "TAG" && matches!(&of.kind, ExprKind::Var(v) if v == r))
-            && matches!(&err.kind, ExprKind::Str(s) if s == "Err")
+            && let Some((of, false, false)) = result::tested(test)
+            && matches!(&of.kind, ExprKind::Var(v) if v == r)
         {
             let span = stmts[i].span;
             let StmtKind::If(test, then, Some(otherwise)) =

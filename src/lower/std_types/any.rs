@@ -5,6 +5,7 @@
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind};
 use crate::lower::calls::Call;
 use crate::lower::recognition::{Std, TypeFact, any_trait, linked_twice};
+use crate::lower::std_types::result;
 use crate::lower::{FnCx, R};
 use rustc_middle::ty::{self, Ty};
 use rustc_span::Span;
@@ -80,7 +81,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let found = if self.is_boxable(of) { pair } else { inside };
                 Expr::cond(is, found, Expr::undefined())
             }
-            AnyOp::Downcast => Expr::cond(is, Self::ok(inside), Self::err(pair)),
+            AnyOp::Downcast => Expr::cond(is, result::ok(inside), result::err(pair)),
             AnyOp::TypeIdOf | AnyOp::TypeIdOfValue => unreachable!("handled above"),
         }))
     }

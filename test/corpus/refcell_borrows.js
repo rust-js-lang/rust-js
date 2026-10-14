@@ -60,7 +60,7 @@ function main() {
   }
   const length = a.value.length;
   const value = tmp;
-  const value$1 = tmp$1.TAG !== "Ok";
+  const value$1 = tmp$1.TAG === "Err";
   try {
     console.log(`${length} ${value} ${value$1}`);
   } catch (error) {
@@ -103,7 +103,7 @@ function main() {
     $unborrow(writing);
     throw error;
   }
-  const value$3 = tmp$2.TAG !== "Ok";
+  const value$3 = tmp$2.TAG === "Err";
   try {
     console.log(`${value$3} ${writing.value.length}`);
   } catch (error) {
@@ -404,7 +404,7 @@ function main() {
     throw error;
   }
   const value$17 = reading;
-  const value$18 = tmp$12.TAG !== "Ok";
+  const value$18 = tmp$12.TAG === "Err";
   try {
     console.log(
       `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(value$17.value)} ${value$18}`,

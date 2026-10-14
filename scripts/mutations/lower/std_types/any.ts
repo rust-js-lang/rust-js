@@ -22,8 +22,8 @@ export const mutations: Mutation[] = [
     name: "downcast-err-value",
     breaks: "a failed `downcast` gives the value, not the `Box<dyn Any>`",
     file: "src/lower/std_types/any.rs",
-    find: "            AnyOp::Downcast => Expr::cond(is, Self::ok(inside), Self::err(pair)),",
-    replace: "            AnyOp::Downcast => Expr::cond(is, Self::ok(inside.clone()), Self::err(inside)),",
+    find: "            AnyOp::Downcast => Expr::cond(is, result::ok(inside), result::err(pair)),",
+    replace: "            AnyOp::Downcast => Expr::cond(is, result::ok(inside.clone()), result::err(inside)),",
     tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
   },
   {
