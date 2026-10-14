@@ -1,0 +1,173 @@
+// Mutations of src/lower/mir/tidy/loops.rs (ADR 0093).
+import type { Mutation } from "../../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-tidy-loops-kept",
+    breaks: "`const iter = $iter(xs); while (true) { const t = $next(iter); … }` stays, not `for (const x of xs)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            stmts.splice(i..i + 2, made);\n",
+    replace: "            let _ = made;\n",
+    tests: ["test/lowering.test.ts","-t","loops from MIR read"],
+  },
+  {
+    name: "mir-tidy-for-range-kept",
+    breaks: "a range's `while (true)` with `$rangeNext` stays, not `for (let i = 0; i < k; i++)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            if start_key != \"start\" || end_key != \"end\" || mutable || !counted {\n",
+    replace: "            if true {\n",
+    tests: ["test/lowering.test.ts","-t","loops from MIR read"],
+  },
+  {
+    name: "mir-tidy-for-of-assigned-kept",
+    breaks: "a loop inside another, whose iterator is a `let` assigned each time, stays `while (true)` stepping it",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                && mentions.get(iter) == Some(&2) =>\n",
+    replace: "                && mentions.get(iter) == Some(&99) =>\n",
+    tests: ["test/lowering.test.ts","-t","if-let chains and loops from MIR"],
+  },
+  {
+    name: "mir-tidy-range-end-length-kept",
+    breaks: "a range's loop to `v.length` of a `v` the body only reads stays `while (true)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                    if length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
+    replace: "                    if false && length == \"length\" && matches!(&of.kind, ExprKind::Var(v) if only_read(&body, v)));\n",
+    tests: ["test/lowering.test.ts","-t","early returns and index loops from MIR"],
+  },
+  {
+    name: "mir-tidy-range-end-unheld",
+    breaks: "a range loop whose end is a call stays `while (true)` stepping `$rangeNext`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            let held = (!same).then(|| {\n",
+    replace: "            if !same {\n                return None;\n            }\n            let held = (!same).then(|| {\n",
+    tests: ["test/lowering.test.ts","-t","whose end is a call holds it first"],
+  },
+  {
+    name: "mir-tidy-chars-arrayed",
+    breaks: "a string's `chars()` iterated is `Array.from(code)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            iterable: unarrayed(iterated(source.clone())),\n",
+    replace: "            iterable: iterated(source.clone()),\n",
+    tests: ["test/lowering.test.ts","-t","arguments read out of order"],
+  },
+  {
+    name: "mir-tidy-loop-unrotated",
+    breaks: "`while (true) { if (c) { a; continue; } return x; }` stays, not `while (c) { a } return x;`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            && !goes_on(exit, label.as_deref())\n",
+    replace: "            && !goes_on(exit, label.as_deref())\n            && false\n",
+    tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
+  },
+  {
+    name: "mir-tidy-loop-rotated-unclosed",
+    breaks: "a path out of a rotated loop's `if` goes on to its next turn, not out",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                looped.push(StmtKind::Break(None).at(span));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
+  },
+  {
+    name: "mir-tidy-loop-as-while",
+    breaks: "a `loop` the program wrote, its first test leaving, is `while (!t)`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "        if !written_while(stmts[i].span) {\n",
+    replace: "        if false && !written_while(stmts[i].span) {\n",
+    tests: ["test/lowering.test.ts","-t","while. loop from MIR tests"],
+  },
+  {
+    "name": "mir-for-of-span-lost",
+    "breaks": "a `for\u2026of` made of MIR's loop has no span, so its label isn't the program's",
+    "file": "src/lower/mir/tidy/loops.rs",
+    "find": "    let mut out = vec![looped.at(span)];\n",
+    "replace": "    let mut out = vec![looped.at(js::Span::NONE)];\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
+    ]
+  },
+  {
+    "name": "mir-labeled-break-loop-kept",
+    "breaks": "a `break 'outer` out of an inner loop from MIR leaves the outer a `while (true)` of `$next`",
+    "file": "src/lower/mir/tidy/loops.rs",
+    "find": "        StmtKind::Labeled(l, within) if let [only] = within.as_slice() => (only, Some(l.clone())),\n",
+    "replace": "        StmtKind::Labeled(_, within) if let [_] = within.as_slice() => (second, None::<String>),\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
+    ]
+  },
+  {
+    "name": "mir-for-of-break-after-leaving",
+    "breaks": "a `for\u2026of` body from MIR that ends leaving, `continue`, gets a `break` after it",
+    "file": "src/lower/mir/tidy/loops.rs",
+    "find": "    if falls_out && !inner.last().is_some_and(ends) {\n",
+    "replace": "    if falls_out {\n",
+    "tests": [
+      "test/lowering.test.ts",
+      "-t",
+      "nested loops from MIR read as written"
+    ]
+  },
+  {
+    name: "mir-tidy-next-some-loop-kept",
+    breaks: "MIR's loop over items that may be `None` stays a `$nextSome` loop, a `null` item read as `undefined`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "    if !matches!(step, \"$next\" | \"$nextSome\" | \"$rangeNext\")\n",
+    replace: "    if !matches!(step, \"$next\" | \"$rangeNext\")\n",
+    tests: ["test/bindings.test.ts","-t","a defined value is an unknown"],
+  },
+  {
+    name: "mir-tidy-unread-count-underscore",
+    breaks: "MIR's range count the body doesn't read is `_`, `_++`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                \"_\" => std::iter::once(\"i\".to_string())\n",
+    replace: "                \"$never\" => std::iter::once(\"i\".to_string())\n",
+    tests: ["test/lowering.test.ts","-t","an unread count of a range"],
+  },
+  {
+    name: "mir-tidy-loop-names-retaken",
+    breaks: "MIR's two loops each holding a range's end both name it `end`, two `const end`s of one block",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                    *mentions.entry(name.clone()).or_default() += 1;\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "two loops each hold their range's end"],
+  },
+  {
+    name: "mir-tidy-char-range-counted",
+    breaks: "a `char` range's loop is JS's counted `for`, whose `++` of text stops after one",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "            if start_key != \"start\" || end_key != \"end\" || mutable || !counted {\n",
+    replace: "            if start_key != \"start\" || end_key != \"end\" || mutable {\n",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "char ranges step by code point"
+    ]
+  },
+  {
+    name: "mir-tidy-number-variable-range-uncounted",
+    breaks: "a range from a number variable, `k..n`, stays a `$rangeNext` loop, not a counted `for`",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                || matches!(&start.kind, ExprKind::Var(v) if numbers.contains(v))\n",
+    replace: "",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "char ranges step by code point"
+    ]
+  },
+  {
+    name: "mir-tidy-for-mut-binding-let-kept",
+    breaks: "a `mut` binding's `let`, declared before the loop, stays beside the `for` that binds it",
+    file: "src/lower/mir/tidy/loops.rs",
+    find: "                stmts.remove(at);\n                i -= 1;\n",
+    replace: "",
+    tests: [
+      "test/lowering.test.ts",
+      "-t",
+      "a for loop of a mut binding"
+    ]
+  },
+];
