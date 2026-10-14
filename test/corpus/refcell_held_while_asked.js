@@ -75,10 +75,10 @@ function peekClone_clone(peek) {
 const Node = {
   asks(node) {
     const me = $upgrade(node.me);
-    let _2$0$live = true;
+    let value$0$live = true;
     let result;
     if (me) {
-      _2$0$live = false;
+      value$0$live = false;
       let tmp;
       try {
         tmp = $tryBorrow(me.value, true);
@@ -106,7 +106,7 @@ const Node = {
       result = false;
     }
     if (me) {
-      if (_2$0$live) {
+      if (value$0$live) {
         $rcDrop(me, (value) => {
           $weakDrop(value.value.me);
         });

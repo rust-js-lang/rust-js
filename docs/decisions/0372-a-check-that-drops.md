@@ -49,6 +49,15 @@ one left the other counting reads of a check no longer made.
 - `drop_operand_leaves` and `drop_index_panic` run a panic's drops against
   native Rust; `slice_uninit`'s read is checked where its vector's items
   are dropped.
-- Not yet: the flag of a temporary is named for its MIR local,
-  `_14$live`, and a call it's moved into keeps a `try` whose flag is
-  already `false`.
+- **A flag known where it's tested is no test** (`mir/tidy/flags.rs`):
+  MIR's cleanup is shared by every call that may panic, so its drop tests
+  the flag even just after it's set `false`, as the value was moved into
+  the call. Tidy follows each flag through straight-line code: a test of a
+  known one is the branch it takes, a `try` whose `catch` then only throws
+  on is none, a panic's own `try` is its drops then its `throw`, and a
+  flag nothing reads goes. Where a panic may come before the flag is set,
+  in a `try`, or a loop's earlier time round set it, it isn't known. A
+  temporary's flag is named for the variable its drop is of, and a part's
+  by its field, `pair$a$live`. Thirty-two corpus programs lost about 3,300
+  lines; `drop_update_panics` and `drop_flag_loops` hold the two places a
+  flag isn't known.

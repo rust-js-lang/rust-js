@@ -3628,7 +3628,9 @@ test("a value moved before anything can leave needs no drop of its scope", async
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
   const js = readFileSync(join(dir, "lib.js"), "utf8");
   expect(js).toContain("export function hold(l) {\n  return { l };\n}");
-  expect(js).toContain("l$live = false;");
+  // Dropped where the assertion fails, then the panic: no flag, as it's
+  // known there, and no \`try\` of a \`throw\` (ADR 0372).
+  expect(js).toContain('  if (n <= 0) {\n    loudDrop_drop(l);\n    throw new Error("assertion failed: n > 0");\n  }\n  return { l };');
   const lib = await import(join(dir, "lib.js"));
   expect([lib.hold([1]).l[0], lib.checked([2], 1).l[0]]).toEqual([1, 2]);
 });

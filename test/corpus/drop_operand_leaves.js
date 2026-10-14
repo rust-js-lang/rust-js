@@ -29,30 +29,16 @@ function half(n) {
 }
 
 function halves(n) {
-  let _3$live = true;
   const value$1 = ["halved"];
   let value;
   try {
     value = half(n);
   } catch (error) {
-    if (_3$live) {
-      noisyDrop_drop(value$1);
-    }
+    noisyDrop_drop(value$1);
     throw error;
   }
   if (value != null) {
-    _3$live = false;
-    let tmp;
-    try {
-      tmp = pair(value$1, value);
-      _3$live = false;
-    } catch (error) {
-      if (_3$live) {
-        noisyDrop_drop(value$1);
-      }
-      throw error;
-    }
-    return tmp;
+    return pair(value$1, value);
   }
   const result = undefined;
   noisyDrop_drop(value$1);
@@ -65,62 +51,22 @@ function checked(n) {
 }
 
 function divided(n, by) {
-  let _4$live = true;
   const value = ["checked"];
   let tmp;
   try {
     tmp = checked(n);
   } catch (error) {
-    if (_4$live) {
-      noisyDrop_drop(value);
-    }
+    noisyDrop_drop(value);
     throw error;
   }
-  _4$live = false;
-  let checked$1;
-  try {
-    checked$1 = pair(value, tmp);
-  } catch (error) {
-    if (_4$live) {
-      noisyDrop_drop(value);
-    }
-    throw error;
-  }
-  _4$live = false;
-  const value$1 = ["by two"];
-  const value$2 = (n / 2) >>> 0;
-  let _8$live = false;
-  let halved;
-  try {
-    halved = pair(value$1, value$2);
-  } catch (error) {
-    if (_8$live) {
-      noisyDrop_drop(value$1);
-    }
-    throw error;
-  }
-  _8$live = false;
-  let _14$live = true;
-  const value$3 = ["by a variable"];
+  const checked$1 = pair(value, tmp);
+  const halved = pair(["by two"], (n / 2) >>> 0);
+  const value$1 = ["by a variable"];
   if (by === 0) {
-    if (_14$live) {
-      noisyDrop_drop(value$3);
-    }
+    noisyDrop_drop(value$1);
     throw new Error("attempt to divide by zero");
   }
-  const value$4 = $div(n, by) >>> 0;
-  _14$live = false;
-  let tmp$1;
-  try {
-    tmp$1 = pair(value$3, value$4);
-    _14$live = false;
-  } catch (error) {
-    if (_14$live) {
-      noisyDrop_drop(value$3);
-    }
-    throw error;
-  }
-  return (((tmp$1 + halved) >>> 0) + checked$1) >>> 0;
+  return (((pair(value$1, $div(n, by) >>> 0) + halved) >>> 0) + checked$1) >>> 0;
 }
 
 function main() {

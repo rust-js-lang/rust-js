@@ -79,10 +79,6 @@ function parse(name, BNamed) {
 }
 
 function parse_flag(flag, BNamed) {
-  let _7$live = false;
-  let _7$live$1 = false;
-  let _18$live = false;
-  let _18$live$1 = false;
   const flag$1 = $stripPrefix(flag, "0x");
   let parsed;
   if (flag$1 != null) {
@@ -91,88 +87,55 @@ function parse_flag(flag, BNamed) {
       option != null
         ? { TAG: "Ok", _0: $someValue(option) }
         : { TAG: "Err", _0: `bad hex ${flag$1}` };
-    _7$live$1 = true;
-    _7$live = true;
     if (result.TAG === "Err") {
       return result;
     }
     parsed = result._0;
-    _7$live$1 = false;
-    _7$live = false;
   } else {
     const option = BNamed.from_name(flag);
     const result =
       option != null
         ? { TAG: "Ok", _0: $someValue(option) }
         : { TAG: "Err", _0: `unknown ${flag}` };
-    _18$live$1 = true;
-    _18$live = true;
     if (result.TAG === "Err") {
       return result;
     }
     parsed = result._0;
-    _18$live$1 = false;
-    _18$live = false;
   }
   return { TAG: "Ok", _0: parsed };
 }
 
 function parse_pair(a, b, both, BNamed, dropB) {
-  let _6$live = false;
-  let _7$live = false;
-  let _7$live$1 = false;
-  let _20$live = false;
-  let _20$live$1 = false;
-  let _32$live = false;
-  let _32$live$1 = false;
   let pair;
   bb38: {
     if (both) {
       const option = BNamed.from_name(a);
       const result$1 =
         option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
-      _7$live$1 = true;
-      _7$live = true;
       let result;
       if (result$1.TAG !== "Err") {
         const _0 = result$1._0;
-        _6$live = true;
         let tmp;
         let tmp$1;
         try {
           tmp = BNamed.from_name(b);
           tmp$1 = () => `unknown ${b}`;
         } catch (error) {
-          if (_6$live) {
-            dropB?.(_0);
-          }
+          dropB?.(_0);
           throw error;
         }
         let tmp$2;
         try {
           tmp$2 = tmp != null ? { TAG: "Ok", _0: $someValue(tmp) } : { TAG: "Err", _0: tmp$1() };
         } catch (error) {
-          if (_6$live) {
-            dropB?.(_0);
-          }
+          dropB?.(_0);
           throw error;
         }
-        _20$live$1 = true;
-        _20$live = true;
         if (tmp$2.TAG !== "Err") {
-          const value = $some(tmp$2._0);
-          _6$live = false;
-          pair = [_0, value];
-          _20$live$1 = false;
-          _20$live = false;
-          _7$live$1 = false;
-          _7$live = false;
-          _6$live = false;
+          pair = [_0, $some(tmp$2._0)];
           break bb38;
         } else {
           result = tmp$2;
-          _20$live$1 = false;
-          _20$live = false;
           dropB?.(_0);
         }
       } else {
@@ -183,27 +146,18 @@ function parse_pair(a, b, both, BNamed, dropB) {
     const option = BNamed.from_name(a);
     const result =
       option != null ? { TAG: "Ok", _0: $someValue(option) } : { TAG: "Err", _0: `unknown ${a}` };
-    _32$live$1 = true;
-    _32$live = true;
     if (result.TAG === "Err") {
       return result;
     }
     pair = [result._0, undefined];
-    _32$live$1 = false;
-    _32$live = false;
   }
   return { TAG: "Ok", _0: pair };
 }
 
 function main() {
-  let _298$live = false;
-  let _298$live$1 = false;
-  let _298$0$live = false;
-  let _349$live = false;
-  let _349$live$1 = false;
-  let _349$0$live = false;
-  let _349$0$0$live = false;
-  let _349$0$1$live = false;
+  let tmp$0$live = false;
+  let tmp$0$0$live = false;
+  let tmp$0$1$live = false;
   const option = make(2);
   let kept$1;
   try {
@@ -1062,17 +1016,14 @@ function main() {
     }
     throw error;
   }
-  let _223$0$live = true;
+  let tmp$0$live$1 = true;
   if (tmp$24.TAG === "Ok") {
-    _223$0$live = false;
+    tmp$0$live$1 = false;
     try {
       console.log(`parsed ${tmp$24._0[0]}`);
     } catch (error) {
       dDrop_drop(tmp$24._0);
       if (tmp$24.TAG === "Ok") {
-        if (_223$0$live) {
-          dDrop_drop(tmp$24._0);
-        }
       }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1102,9 +1053,6 @@ function main() {
       dDrop_drop(tmp$24._0);
     } catch (error) {
       if (tmp$24.TAG === "Ok") {
-        if (_223$0$live) {
-          dDrop_drop(tmp$24._0);
-        }
       }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1135,9 +1083,7 @@ function main() {
       console.log(`${tmp$24._0}`);
     } catch (error) {
       if (tmp$24.TAG === "Ok") {
-        if (_223$0$live) {
-          dDrop_drop(tmp$24._0);
-        }
+        dDrop_drop(tmp$24._0);
       }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1166,7 +1112,7 @@ function main() {
   }
   try {
     if (tmp$24.TAG === "Ok") {
-      if (_223$0$live) {
+      if (tmp$0$live$1) {
         dDrop_drop(tmp$24._0);
       }
     }
@@ -1195,7 +1141,7 @@ function main() {
     }
     throw error;
   }
-  _223$0$live = false;
+  tmp$0$live$1 = false;
   let tmp$25;
   try {
     tmp$25 = parse("x", dNamed());
@@ -1224,17 +1170,14 @@ function main() {
     }
     throw error;
   }
-  let _252$0$live = true;
+  let tmp$0$live$2 = true;
   if (tmp$25.TAG === "Ok") {
-    _252$0$live = false;
+    tmp$0$live$2 = false;
     try {
       console.log(`parsed ${tmp$25._0[0]}`);
     } catch (error) {
       dDrop_drop(tmp$25._0);
       if (tmp$25.TAG === "Ok") {
-        if (_252$0$live) {
-          dDrop_drop(tmp$25._0);
-        }
       }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1264,9 +1207,6 @@ function main() {
       dDrop_drop(tmp$25._0);
     } catch (error) {
       if (tmp$25.TAG === "Ok") {
-        if (_252$0$live) {
-          dDrop_drop(tmp$25._0);
-        }
       }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1297,9 +1237,7 @@ function main() {
       console.log(`${tmp$25._0}`);
     } catch (error) {
       if (tmp$25.TAG === "Ok") {
-        if (_252$0$live) {
-          dDrop_drop(tmp$25._0);
-        }
+        dDrop_drop(tmp$25._0);
       }
       if (err.TAG === "Ok") {
         dDrop_drop(err._0);
@@ -1328,7 +1266,7 @@ function main() {
   }
   try {
     if (tmp$25.TAG === "Ok") {
-      if (_252$0$live) {
+      if (tmp$0$live$2) {
         dDrop_drop(tmp$25._0);
       }
     }
@@ -1357,7 +1295,7 @@ function main() {
     }
     throw error;
   }
-  _252$0$live = false;
+  tmp$0$live$2 = false;
   let iter;
   try {
     iter = $iter(["0x17", "18", "0xy", "z"]);
@@ -1669,15 +1607,12 @@ function main() {
           }
           throw error;
         }
-        _349$live$1 = true;
-        _349$0$live = true;
-        _349$0$1$live = true;
-        _349$0$0$live = true;
-        _349$live = true;
+        tmp$0$1$live = true;
+        tmp$0$0$live = true;
         if (tmp$27.TAG === "Ok") {
-          _349$0$0$live = false;
+          tmp$0$0$live = false;
           const d = tmp$27._0[0];
-          _349$0$1$live = false;
+          tmp$0$1$live = false;
           const e = tmp$27._0[1];
           const value = (e) => {
             const result = e[0];
@@ -1690,14 +1625,6 @@ function main() {
           } catch (error) {
             dDrop_drop(d);
             if (tmp$27.TAG === "Ok") {
-              if (_349$0$0$live) {
-                dDrop_drop(tmp$27._0[0]);
-              }
-              if (_349$0$1$live) {
-                if (tmp$27._0[1] != null) {
-                  dDrop_drop(tmp$27._0[1]);
-                }
-              }
             }
             if (err.TAG === "Ok") {
               dDrop_drop(err._0);
@@ -1728,14 +1655,6 @@ function main() {
           } catch (error) {
             dDrop_drop(d);
             if (tmp$27.TAG === "Ok") {
-              if (_349$0$0$live) {
-                dDrop_drop(tmp$27._0[0]);
-              }
-              if (_349$0$1$live) {
-                if (tmp$27._0[1] != null) {
-                  dDrop_drop(tmp$27._0[1]);
-                }
-              }
             }
             if (err.TAG === "Ok") {
               dDrop_drop(err._0);
@@ -1765,14 +1684,6 @@ function main() {
             dDrop_drop(d);
           } catch (error) {
             if (tmp$27.TAG === "Ok") {
-              if (_349$0$0$live) {
-                dDrop_drop(tmp$27._0[0]);
-              }
-              if (_349$0$1$live) {
-                if (tmp$27._0[1] != null) {
-                  dDrop_drop(tmp$27._0[1]);
-                }
-              }
             }
             if (err.TAG === "Ok") {
               dDrop_drop(err._0);
@@ -1803,13 +1714,9 @@ function main() {
             console.log(`${tmp$27._0}`);
           } catch (error) {
             if (tmp$27.TAG === "Ok") {
-              if (_349$0$0$live) {
-                dDrop_drop(tmp$27._0[0]);
-              }
-              if (_349$0$1$live) {
-                if (tmp$27._0[1] != null) {
-                  dDrop_drop(tmp$27._0[1]);
-                }
+              dDrop_drop(tmp$27._0[0]);
+              if (tmp$27._0[1] != null) {
+                dDrop_drop(tmp$27._0[1]);
               }
             }
             if (err.TAG === "Ok") {
@@ -1839,15 +1746,14 @@ function main() {
         }
         try {
           if (tmp$27.TAG === "Ok") {
-            if (_349$0$0$live) {
+            if (tmp$0$0$live) {
               dDrop_drop(tmp$27._0[0]);
             }
-            if (_349$0$1$live) {
+            if (tmp$0$1$live) {
               if (tmp$27._0[1] != null) {
                 dDrop_drop(tmp$27._0[1]);
               }
             }
-            _349$0$live = false;
           }
         } catch (error) {
           if (err.TAG === "Ok") {
@@ -1874,11 +1780,8 @@ function main() {
           }
           throw error;
         }
-        _349$live$1 = false;
-        _349$0$live = false;
-        _349$0$1$live = false;
-        _349$0$0$live = false;
-        _349$live = false;
+        tmp$0$1$live = false;
+        tmp$0$0$live = false;
       }
     } else {
       const flag = tmp;
@@ -1909,19 +1812,14 @@ function main() {
         }
         throw error;
       }
-      _298$live$1 = true;
-      _298$0$live = true;
-      _298$live = true;
+      tmp$0$live = true;
       if (tmp$26.TAG === "Ok") {
-        _298$0$live = false;
+        tmp$0$live = false;
         try {
           console.log(`flag ${tmp$26._0[0]}`);
         } catch (error) {
           dDrop_drop(tmp$26._0);
           if (tmp$26.TAG === "Ok") {
-            if (_298$0$live) {
-              dDrop_drop(tmp$26._0);
-            }
           }
           if (err.TAG === "Ok") {
             dDrop_drop(err._0);
@@ -1951,9 +1849,6 @@ function main() {
           dDrop_drop(tmp$26._0);
         } catch (error) {
           if (tmp$26.TAG === "Ok") {
-            if (_298$0$live) {
-              dDrop_drop(tmp$26._0);
-            }
           }
           if (err.TAG === "Ok") {
             dDrop_drop(err._0);
@@ -1984,9 +1879,7 @@ function main() {
           console.log(`${tmp$26._0}`);
         } catch (error) {
           if (tmp$26.TAG === "Ok") {
-            if (_298$0$live) {
-              dDrop_drop(tmp$26._0);
-            }
+            dDrop_drop(tmp$26._0);
           }
           if (err.TAG === "Ok") {
             dDrop_drop(err._0);
@@ -2015,7 +1908,7 @@ function main() {
       }
       try {
         if (tmp$26.TAG === "Ok") {
-          if (_298$0$live) {
+          if (tmp$0$live) {
             dDrop_drop(tmp$26._0);
           }
         }
@@ -2044,9 +1937,7 @@ function main() {
         }
         throw error;
       }
-      _298$live$1 = false;
-      _298$0$live = false;
-      _298$live = false;
+      tmp$0$live = false;
     }
   }
 }

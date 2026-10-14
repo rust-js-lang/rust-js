@@ -20,65 +20,44 @@ function step(d) {
 }
 
 function climb(d) {
-  let d$live = true;
-  let _13$live = false;
   let tmp;
   try {
     tmp = step(d);
   } catch (error) {
-    if (d$live) {
-      dDrop_drop(d);
-    }
+    dDrop_drop(d);
     throw error;
   }
-  let _3$live = true;
   let result;
   if (tmp) {
     try {
       dDrop_drop(d);
     } catch (error) {
-      d$live = true;
       d = tmp;
-      if (d$live) {
-        dDrop_drop(d);
-      }
+      dDrop_drop(d);
       throw error;
     }
-    d$live = true;
     d = tmp;
-    _3$live = false;
     let tmp$1;
     try {
       tmp$1 = step(d);
     } catch (error) {
-      if (d$live) {
-        dDrop_drop(d);
-      }
+      dDrop_drop(d);
       throw error;
     }
-    _13$live = true;
     if (tmp$1) {
       try {
         dDrop_drop(d);
       } catch (error) {
-        d$live = true;
         d = tmp$1;
-        if (d$live) {
-          dDrop_drop(d);
-        }
+        dDrop_drop(d);
         throw error;
       }
-      d$live = true;
       d = tmp$1;
-      _13$live = false;
-      d$live = false;
       return d;
     }
     result = undefined;
-    _13$live = false;
   } else {
     result = undefined;
-    _3$live = false;
   }
   dDrop_drop(d);
   return result;
@@ -92,11 +71,9 @@ function first(d) {
     dDrop_drop(d);
     throw error;
   }
-  let _3$live = true;
   let result;
   if (tmp) {
     const e = tmp;
-    _3$live = false;
     result = (e[0] + d[0]) >>> 0;
     try {
       dDrop_drop(e);
@@ -108,7 +85,6 @@ function first(d) {
     return result;
   }
   result = undefined;
-  _3$live = false;
   dDrop_drop(d);
   return result;
 }
@@ -137,18 +113,13 @@ function go(d) {
     dDrop_drop(d);
     throw error;
   }
-  let _3$live$1 = true;
-  let _3$0$live = true;
-  let _3$live = true;
   let result;
   if (tmp.TAG !== "Err") {
     const e = tmp._0;
     try {
       if (tmp.TAG === "Err") {
-        if (_3$0$live) {
-          if (tmp.TAG === "Err") {
-            dDrop_drop(tmp._0);
-          }
+        if (tmp.TAG === "Err") {
+          dDrop_drop(tmp._0);
         }
       }
     } catch (error) {
@@ -156,9 +127,6 @@ function go(d) {
       dDrop_drop(d);
       throw error;
     }
-    _3$live$1 = false;
-    _3$0$live = false;
-    _3$live = false;
     result = { TAG: "Ok", _0: e[0] };
     try {
       dDrop_drop(e);
@@ -169,11 +137,7 @@ function go(d) {
     dDrop_drop(d);
     return result;
   }
-  _3$0$live = false;
   result = tmp;
-  _3$live$1 = false;
-  _3$0$live = false;
-  _3$live = false;
   dDrop_drop(d);
   return result;
 }
@@ -193,92 +157,64 @@ function dCheckedDouble_checked_double(d) {
 }
 
 function twice(base, TCheckedDouble, dropT) {
-  let base$live = true;
-  let _12$live = false;
   let tmp;
   try {
     tmp = TCheckedDouble.checked_double(base);
   } catch (error) {
-    if (base$live) {
-      dropT?.(base);
-    }
+    dropT?.(base);
     throw error;
   }
-  let _3$live = true;
   let result;
   if (tmp != null) {
     const value = $someValue(tmp);
     try {
       dropT?.(base);
     } catch (error) {
-      base$live = true;
       base = value;
-      if (base$live) {
-        dropT?.(base);
-      }
+      dropT?.(base);
       throw error;
     }
-    base$live = true;
     base = value;
-    _3$live = false;
     let tmp$1;
     try {
       tmp$1 = TCheckedDouble.checked_double(base);
     } catch (error) {
-      if (base$live) {
-        dropT?.(base);
-      }
+      dropT?.(base);
       throw error;
     }
-    _12$live = true;
     if (tmp$1 != null) {
       const value = $someValue(tmp$1);
       try {
         dropT?.(base);
       } catch (error) {
-        base$live = true;
         base = value;
-        if (base$live) {
-          dropT?.(base);
-        }
+        dropT?.(base);
         throw error;
       }
-      base$live = true;
       base = value;
-      _12$live = false;
-      base$live = false;
       return $some(base);
     }
     result = undefined;
-    _12$live = false;
   } else {
     result = undefined;
-    _3$live = false;
   }
   dropT?.(base);
   return result;
 }
 
 function main() {
-  let _13$live = false;
-  let _13$0$live = false;
-  let _86$live = false;
-  let _124$live = false;
-  let _124$0$live = false;
+  let d$0$live = false;
+  let d$0$live$1 = false;
   for (const start of [0, 2]) {
     const d = climb([start]);
-    _13$live = true;
-    _13$0$live = true;
+    d$0$live = true;
     if (d) {
-      _13$0$live = false;
+      d$0$live = false;
       try {
         console.log(`climbed to ${d[0]}`);
       } catch (error) {
         dDrop_drop(d);
         if (d) {
-          if (_13$0$live) {
-            dDrop_drop(d);
-          }
         }
         throw error;
       }
@@ -286,9 +222,6 @@ function main() {
         dDrop_drop(d);
       } catch (error) {
         if (d) {
-          if (_13$0$live) {
-            dDrop_drop(d);
-          }
         }
         throw error;
       }
@@ -297,20 +230,17 @@ function main() {
         console.log("stopped");
       } catch (error) {
         if (d) {
-          if (_13$0$live) {
-            dDrop_drop(d);
-          }
+          dDrop_drop(d);
         }
         throw error;
       }
     }
     if (d) {
-      if (_13$0$live) {
+      if (d$0$live) {
         dDrop_drop(d);
       }
     }
-    _13$live = false;
-    _13$0$live = false;
+    d$0$live = false;
   }
   console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(first([1]))}`);
   console.log(`${((value) => (value == null ? "None" : `Some(${value})`))(first([5]))}`);
@@ -324,13 +254,8 @@ function main() {
   dDrop_drop(value);
   for (const start of [2, 3]) {
     const value = go([start]);
-    _86$live = true;
     if (value.TAG === "Ok") {
-      try {
-        console.log(`ok ${value._0}`);
-      } catch (error) {
-        throw error;
-      }
+      console.log(`ok ${value._0}`);
     } else {
       try {
         console.log(`err ${value._0[0]}`);
@@ -340,22 +265,17 @@ function main() {
       }
       dDrop_drop(value._0);
     }
-    _86$live = false;
   }
   for (const start of [1, 3]) {
     const d = twice([start], dCheckedDouble(), dDrop_drop);
-    _124$live = true;
-    _124$0$live = true;
+    d$0$live$1 = true;
     if (d) {
-      _124$0$live = false;
+      d$0$live$1 = false;
       try {
         console.log(`doubled to ${d[0]}`);
       } catch (error) {
         dDrop_drop(d);
         if (d) {
-          if (_124$0$live) {
-            dDrop_drop(d);
-          }
         }
         throw error;
       }
@@ -363,9 +283,6 @@ function main() {
         dDrop_drop(d);
       } catch (error) {
         if (d) {
-          if (_124$0$live) {
-            dDrop_drop(d);
-          }
         }
         throw error;
       }
@@ -374,20 +291,17 @@ function main() {
         console.log("too big");
       } catch (error) {
         if (d) {
-          if (_124$0$live) {
-            dDrop_drop(d);
-          }
+          dDrop_drop(d);
         }
         throw error;
       }
     }
     if (d) {
-      if (_124$0$live) {
+      if (d$0$live$1) {
         dDrop_drop(d);
       }
     }
-    _124$live = false;
-    _124$0$live = false;
+    d$0$live$1 = false;
   }
 }
 //# sourceMappingURL=case.js.map

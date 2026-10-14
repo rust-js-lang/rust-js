@@ -106,27 +106,14 @@ function main() {
   }
   noisyDrop_drop(kept);
   const value$3 = make("f");
-  let _68$live = true;
   let tmp$2;
   try {
     tmp$2 = make("g");
   } catch (error) {
-    if (_68$live) {
-      noisyDrop_drop(value$3);
-    }
+    noisyDrop_drop(value$3);
     throw error;
   }
-  _68$live = false;
-  let last;
-  try {
-    last = two(value$3, tmp$2);
-  } catch (error) {
-    if (_68$live) {
-      noisyDrop_drop(value$3);
-    }
-    throw error;
-  }
-  _68$live = false;
+  const last = two(value$3, tmp$2);
   const value$4 = make("h");
   let tmp$3;
   try {

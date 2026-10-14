@@ -94,32 +94,27 @@ function sevenMake_size(seven) {
 }
 
 function main() {
-  let _3$live = true;
   let tmp;
   try {
     tmp = many(10);
   } catch (error) {
-    if (_3$live) {
-      const dropMany = (many) => {
-        noisyDrop_drop(many.a);
-        noisyDrop_drop(many.b);
-        noisyDrop_drop(many.c);
-        noisyDrop_drop(many.d);
-        noisyDrop_drop(many.e);
-        noisyDrop_drop(many.f);
-        noisyDrop_drop(many.g);
-        noisyDrop_drop(many.h);
-        noisyDrop_drop(many.i);
-      };
-      if (undefined != null) {
-        dropMany(undefined);
-      }
+    const dropMany = (many) => {
+      noisyDrop_drop(many.a);
+      noisyDrop_drop(many.b);
+      noisyDrop_drop(many.c);
+      noisyDrop_drop(many.d);
+      noisyDrop_drop(many.e);
+      noisyDrop_drop(many.f);
+      noisyDrop_drop(many.g);
+      noisyDrop_drop(many.h);
+      noisyDrop_drop(many.i);
+    };
+    if (undefined != null) {
+      dropMany(undefined);
     }
     throw error;
   }
-  _3$live = false;
   const _two = [undefined, tmp];
-  _3$live = false;
   try {
     console.log("two made");
   } catch (error) {

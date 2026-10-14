@@ -731,16 +731,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 let place = drops.move_data.move_paths[path].place;
                 flagged[place.local.as_usize()] = true;
-                let mut name = match state.locals.names[place.local].as_str() {
-                    "" => tidy::temporary(place.local.as_usize()),
-                    name => name.to_string(),
-                };
-                for elem in place.projection {
-                    if let PlaceElem::Field(field, _) = elem {
-                        name = format!("{name}${}", field.as_usize());
-                    }
-                }
-                let flag = self.fresh(&format!("{name}$live"));
+                let flag = self.flag_name(&state, place);
                 out.push(StmtKind::Let(flag.clone(), Some(Expr::bool(drops.initial[path]))).at(js::Span::NONE));
                 state.flags[path] = Some(flag);
             }
@@ -827,6 +818,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 .into_iter()
                 .flat_map(|imports| imports.values().cloned()),
         );
+        // Each drop flag, by its name (`mir/drops.rs`).
+        let flags: HashSet<String> = state.flags.iter().flatten().cloned().collect();
         tidy::tidy(
             &mut out,
             &tidy::Hints {
@@ -852,10 +845,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 plain: &plain,
                 forwarding: &self.locals.mir.forwarding.clone(),
                 concise: &self.locals.mir.concise.clone(),
+                flags: &flags,
             },
         );
         tidy::destructured_params(&mut params, &mut out);
         tidy::readable_temporaries(&params, &mut out);
+        tidy::named_flags(&mut out, &flags);
         if let Some((_, name)) = &state.writer {
             self.writer_epilogue(name, &mut out);
         }

@@ -24,36 +24,26 @@ export function entry() {
 
 function main() {
   const a = { value: 5, strong: 1, weak: 0 };
-  let a$live = true;
   const strong = a.strong;
   try {
     console.log(`${strong} ${a.weak}`);
   } catch (error) {
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a);
     throw error;
   }
   let b;
   try {
     b = $rcClone(a);
   } catch (error) {
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a);
     throw error;
   }
-  let b$live = true;
   let c;
   try {
     c = $rcClone(a);
   } catch (error) {
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(b);
+    $rcDrop(a);
     throw error;
   }
   const strong$1 = a.strong;
@@ -62,75 +52,42 @@ function main() {
     console.log(`${strong$1} ${(value$1 + b.value) | 0}`);
   } catch (error) {
     $rcDrop(c);
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(b);
+    $rcDrop(a);
     throw error;
   }
   try {
     $rcDrop(c);
   } catch (error) {
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(b);
+    $rcDrop(a);
     throw error;
   }
   try {
     console.log(`${a.strong} ${a === b}`);
   } catch (error) {
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(b);
+    $rcDrop(a);
     throw error;
   }
-  b$live = false;
   try {
     $rcDrop(b);
   } catch (error) {
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a);
     throw error;
   }
   try {
     console.log(`${a.strong}`);
   } catch (error) {
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a);
     throw error;
   }
-  a$live = false;
-  let a$1$live = true;
   let a$1 = a;
   let tmp;
   try {
     tmp = $unwrap(a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined);
   } catch (error) {
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   tmp.value = (tmp.value + 1) | 0;
@@ -138,15 +95,7 @@ function main() {
   try {
     weak = $downgrade(a$1);
   } catch (error) {
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   let tmp$1;
@@ -162,15 +111,7 @@ function main() {
     };
   } catch (error) {
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   let tmp$4;
@@ -178,30 +119,14 @@ function main() {
     tmp$4 = [undefined, tmp$2 ? tmp$3(tmp$2) : undefined];
   } catch (error) {
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   try {
     console.log(`${tmp$1} ${tmp$4[1] == null ? "None" : `Some(${tmp$4[1]})`}`);
   } catch (error) {
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   let shared;
@@ -209,72 +134,33 @@ function main() {
     shared = $rcClone(a$1);
   } catch (error) {
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
-  let shared$live = true;
   const value = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
   try {
     console.log(`${value == null ? "None" : `Some(${value.value})`}`);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
+    $rcDrop(shared);
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   try {
     a$1 = $makeMut(a$1);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
+    $rcDrop(shared);
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   const value$2 = (a$1.value + 1) | 0;
   try {
     console.log(`${value$2}`);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
+    $rcDrop(shared);
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   let tmp$5;
@@ -282,58 +168,26 @@ function main() {
     a$1 = $makeMut(a$1);
     tmp$5 = a$1;
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
+    $rcDrop(shared);
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   tmp$5.value = (tmp$5.value + 10) | 0;
   try {
     console.log(`${a$1.value} ${shared.value} ${a$1 === shared}`);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
+    $rcDrop(shared);
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
-  shared$live = false;
   let tmp$6;
   try {
     tmp$6 = $tryUnwrap(shared);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   try {
@@ -342,19 +196,8 @@ function main() {
     if (tmp$6.TAG === "Err") {
       $rcDrop(tmp$6._0);
     }
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   try {
@@ -362,41 +205,18 @@ function main() {
       $rcDrop(tmp$6._0);
     }
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
   let tmp$7;
   try {
     tmp$7 = $upgrade(weak);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
+    $rcDrop(a$1);
     throw error;
   }
-  a$1$live = false;
   let tmp$8;
   try {
     tmp$8 = [undefined, $intoInner(a$1)];
@@ -404,19 +224,7 @@ function main() {
     if (tmp$7 != null) {
       $rcDrop(tmp$7);
     }
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -427,19 +235,7 @@ function main() {
     if (tmp$7 != null) {
       $rcDrop(tmp$7);
     }
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -447,38 +243,14 @@ function main() {
       $rcDrop(tmp$7);
     }
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$9;
   try {
     tmp$9 = $upgrade(weak);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   const strong$2 = weak.strong;
@@ -490,19 +262,7 @@ function main() {
     if (tmp$9 != null) {
       $rcDrop(tmp$9);
     }
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -510,19 +270,7 @@ function main() {
       $rcDrop(tmp$9);
     }
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   const leaf = {
@@ -541,19 +289,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$11;
@@ -580,19 +316,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$13;
@@ -607,19 +331,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -633,19 +345,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -658,19 +358,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   const value$3 = { value: { strong: 0, weak: 0 } };
@@ -686,19 +374,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   const branch = {
@@ -724,22 +400,9 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
-  let _287$live = true;
   let tmp$16;
   try {
     tmp$16 = $borrowMut(leaf.value.parent, true);
@@ -759,29 +422,13 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
     $weakDrop(tmp$16.value);
   } catch (error) {
-    _287$live = false;
     tmp$16.value = tmp$15;
-    if (_287$live) {
-      $weakDrop(tmp$15);
-    }
     $unborrow(tmp$16);
     const dropNode = (node) => {
       $weakDrop(node.parent.value);
@@ -797,24 +444,10 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
-  _287$live = false;
   tmp$16.value = tmp$15;
-  _287$live = false;
   try {
     $unborrow(tmp$16);
   } catch (error) {
@@ -832,19 +465,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$17;
@@ -865,19 +486,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$18;
@@ -911,19 +520,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$20;
@@ -945,19 +542,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   const strong$3 = branch.strong;
@@ -981,19 +566,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   const value$4 = tmp$21.value;
@@ -1018,19 +591,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -1051,19 +612,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -1083,19 +632,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -1115,19 +652,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode$1);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let dropNode;
@@ -1147,19 +672,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$22;
@@ -1173,19 +686,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$23;
@@ -1212,19 +713,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   let tmp$25;
@@ -1239,19 +728,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -1265,19 +742,7 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
@@ -1290,30 +755,15 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   const text = { value: "hi", strong: 1, weak: 0 };
-  let text$live = true;
   let other;
   try {
     other = $rcClone(text);
   } catch (error) {
-    if (text$live) {
-      $rcDrop(text);
-    }
+    $rcDrop(text);
     const dropNode = (node) => {
       $weakDrop(node.parent.value);
       for (const item of node.children.value) {
@@ -1321,30 +771,14 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
-  text$live = false;
   let tmp$26;
   try {
     tmp$26 = $unwrapOrClone(text);
   } catch (error) {
     $rcDrop(other);
-    if (text$live) {
-      $rcDrop(text);
-    }
     const dropNode = (node) => {
       $weakDrop(node.parent.value);
       for (const item of node.children.value) {
@@ -1352,28 +786,13 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
     console.log(`${tmp$26} ${other.strong}`);
   } catch (error) {
     $rcDrop(other);
-    if (text$live) {
-      $rcDrop(text);
-    }
     const dropNode = (node) => {
       $weakDrop(node.parent.value);
       for (const item of node.children.value) {
@@ -1381,27 +800,12 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
   try {
     $rcDrop(other);
   } catch (error) {
-    if (text$live) {
-      $rcDrop(text);
-    }
     const dropNode = (node) => {
       $weakDrop(node.parent.value);
       for (const item of node.children.value) {
@@ -1409,22 +813,9 @@ function main() {
       }
     };
     $rcDrop(leaf, dropNode);
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
-  text$live = false;
   let dropNode$1;
   try {
     dropNode$1 = (node) => {
@@ -1435,37 +826,9 @@ function main() {
     };
     $rcDrop(leaf, dropNode$1);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared);
-    }
     $weakDrop(weak);
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
     throw error;
   }
-  shared$live = false;
-  try {
-    $weakDrop(weak);
-  } catch (error) {
-    if (a$1$live) {
-      $rcDrop(a$1);
-    }
-    if (b$live) {
-      $rcDrop(b);
-    }
-    if (a$live) {
-      $rcDrop(a);
-    }
-    throw error;
-  }
-  a$1$live = false;
-  b$live = false;
+  $weakDrop(weak);
 }
 //# sourceMappingURL=case.js.map

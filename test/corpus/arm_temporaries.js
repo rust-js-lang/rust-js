@@ -20,34 +20,29 @@ function make(name, give) {
 
 const Mapped = {
   and_then(mapped, f, dropU) {
-    let _5$live = false;
-    let _5$0$live = false;
-    let _14$0$live = false;
-    let _14$0$0$live = false;
-    let _14$1$live = false;
-    let _14$1$0$live = false;
+    let value$0$live = false;
+    let value$0$0$live = false;
+    let tmp$1$0$live = false;
     let result;
     if (mapped === "None") {
       result = "None";
     } else if (mapped.TAG === "Single") {
       const v = mapped._0;
       const value = f(v);
-      _5$live = true;
-      _5$0$live = true;
+      value$0$live = true;
       if (value != null) {
-        _5$0$live = false;
+        value$0$live = false;
         const new$ = $someValue(value);
         result = { TAG: "Single", _0: new$ };
       } else {
         result = "None";
       }
       if (value != null) {
-        if (_5$0$live) {
+        if (value$0$live) {
           dropU?.($someValue(value));
         }
       }
-      _5$live = false;
-      _5$0$live = false;
+      value$0$live = false;
     } else {
       const { _0: min, _1: max } = mapped;
       const value = f(min);
@@ -60,33 +55,29 @@ const Mapped = {
         }
         throw error;
       }
-      _14$1$live = true;
-      _14$1$0$live = true;
-      _14$0$live = true;
-      _14$0$0$live = true;
+      tmp$1$0$live = true;
+      value$0$0$live = true;
       if (value != null && tmp != null) {
-        _14$0$0$live = false;
+        value$0$0$live = false;
         const min = $someValue(value);
-        _14$1$0$live = false;
+        tmp$1$0$live = false;
         const max = $someValue(tmp);
         result = { TAG: "Ambiguous", _0: min, _1: max };
       } else {
         result = "None";
       }
       if (value != null) {
-        if (_14$0$0$live) {
+        if (value$0$0$live) {
           dropU?.($someValue(value));
         }
       }
       if (tmp != null) {
-        if (_14$1$0$live) {
+        if (tmp$1$0$live) {
           dropU?.($someValue(tmp));
         }
       }
-      _14$1$live = false;
-      _14$1$0$live = false;
-      _14$0$live = false;
-      _14$0$0$live = false;
+      tmp$1$0$live = false;
+      value$0$0$live = false;
     }
     return result;
   },
@@ -102,8 +93,7 @@ const Mapped = {
 };
 
 function first(k) {
-  let _5$live = false;
-  let _5$0$live = false;
+  let tmp$0$live = false;
   let result;
   if (k != null) {
     const held = ["held"];
@@ -114,10 +104,9 @@ function first(k) {
       loudDrop_drop(held);
       throw error;
     }
-    _5$live = true;
-    _5$0$live = true;
+    tmp$0$live = true;
     if (tmp) {
-      _5$0$live = false;
+      tmp$0$live = false;
       const l = tmp;
       try {
         console.log(`got ${l[0]} with ${held[0]}`);
@@ -138,7 +127,7 @@ function first(k) {
     }
     try {
       if (tmp) {
-        if (_5$0$live) {
+        if (tmp$0$live) {
           loudDrop_drop(tmp);
         }
       }
@@ -146,8 +135,7 @@ function first(k) {
       loudDrop_drop(held);
       throw error;
     }
-    _5$live = false;
-    _5$0$live = false;
+    tmp$0$live = false;
     loudDrop_drop(held);
     return result;
   }

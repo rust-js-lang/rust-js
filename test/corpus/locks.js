@@ -132,95 +132,43 @@ function main() {
   const slots = [{ value: 1 }, { value: 2 }];
   let i = 0;
   const first = $lock($index(slots, i), true);
-  let first$live = true;
   i = (i + 1) >>> 0;
   first.value = (first.value + 10) | 0;
   try {
     console.log(`${first.value} ${i}`);
   } catch (error) {
-    if (first$live) {
-      $unborrow(first);
-    }
-    throw error;
-  }
-  first$live = false;
-  try {
     $unborrow(first);
-  } catch (error) {
-    if (first$live) {
-      $unborrow(first);
-    }
     throw error;
   }
+  $unborrow(first);
+  const value$10 = slots.map((m) => {
+    const value = $lock(m, true);
+    $unborrow(value);
+    return value.value;
+  });
+  console.log(`[${value$10.map((item) => String(item)).join(", ")}]`);
+  const r$1 = $lockRead(text, true);
+  const value$11 = $byteLen(r$1.value);
   let tmp;
   try {
-    tmp = slots.map((m) => {
-      const value = $lock(m, true);
-      $unborrow(value);
-      return value.value;
-    });
-  } catch (error) {
-    if (first$live) {
-      $unborrow(first);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp.map((item) => String(item)).join(", ")}]`);
-  } catch (error) {
-    if (first$live) {
-      $unborrow(first);
-    }
-    throw error;
-  }
-  let tmp$1;
-  try {
-    tmp$1 = $lockRead(text, true);
-  } catch (error) {
-    if (first$live) {
-      $unborrow(first);
-    }
-    throw error;
-  }
-  const r$1 = tmp$1;
-  const value$10 = $byteLen(r$1.value);
-  let tmp$2;
-  try {
-    tmp$2 = $borrow(cell, true);
+    tmp = $borrow(cell, true);
   } catch (error) {
     $unborrow(r$1);
-    if (first$live) {
-      $unborrow(first);
-    }
     throw error;
   }
   try {
-    console.log(`${r$1.value} ${value$10} ${$displayF64(tmp$2.value)}`);
+    console.log(`${r$1.value} ${value$11} ${$displayF64(tmp.value)}`);
   } catch (error) {
-    $unborrow(tmp$2);
+    $unborrow(tmp);
     $unborrow(r$1);
-    if (first$live) {
-      $unborrow(first);
-    }
     throw error;
   }
   try {
-    $unborrow(tmp$2);
+    $unborrow(tmp);
   } catch (error) {
     $unborrow(r$1);
-    if (first$live) {
-      $unborrow(first);
-    }
     throw error;
   }
-  try {
-    $unborrow(r$1);
-  } catch (error) {
-    if (first$live) {
-      $unborrow(first);
-    }
-    throw error;
-  }
-  first$live = false;
+  $unborrow(r$1);
 }
 //# sourceMappingURL=case.js.map

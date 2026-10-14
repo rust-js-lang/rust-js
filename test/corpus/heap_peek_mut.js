@@ -48,10 +48,7 @@ function loudPartialOrd_partial_cmp(loud, other) {
 function main() {
   const heap = $heapFrom([3, 8, 5, 1], $cmp);
   const top = $peekMut(heap, $cmp);
-  let _5$live = true;
-  let _5$0$live = true;
   if (top) {
-    _5$0$live = false;
     try {
       $peekMutTop(top, true).value = 0;
     } catch (error) {
@@ -59,16 +56,8 @@ function main() {
       throw error;
     }
     $peekMutDrop(top);
-    _5$live = false;
-    _5$0$live = false;
-  } else {
-    if (top) {
-      if (_5$0$live) {
-        $peekMutDrop(top);
-      }
-    }
-    _5$live = false;
-    _5$0$live = false;
+  } else if (top) {
+    $peekMutDrop(top);
   }
   console.log(`[${heap.map((item) => String(item)).join(", ")}]`);
   const top$1 = $unwrap($peekMut(heap, $cmp));
@@ -96,10 +85,7 @@ function main() {
   $heapPush(loud, [7], loudOrd_cmp);
   console.log("read");
   const top$3 = $peekMut(loud, loudOrd_cmp);
-  let _104$live = true;
-  let _104$0$live = true;
   if (top$3) {
-    _104$0$live = false;
     try {
       console.log(`top ${top$3.heap[0][0]}`);
     } catch (error) {
@@ -107,23 +93,12 @@ function main() {
       throw error;
     }
     $peekMutDrop(top$3);
-    _104$live = false;
-    _104$0$live = false;
-  } else {
-    if (top$3) {
-      if (_104$0$live) {
-        $peekMutDrop(top$3);
-      }
-    }
-    _104$live = false;
-    _104$0$live = false;
+  } else if (top$3) {
+    $peekMutDrop(top$3);
   }
   console.log("write");
   const top$4 = $peekMut(loud, loudOrd_cmp);
-  let _126$live = true;
-  let _126$0$live = true;
   if (top$4) {
-    _126$0$live = false;
     try {
       $peekMutTop(top$4)[0] = 1;
     } catch (error) {
@@ -131,16 +106,8 @@ function main() {
       throw error;
     }
     $peekMutDrop(top$4);
-    _126$live = false;
-    _126$0$live = false;
-  } else {
-    if (top$4) {
-      if (_126$0$live) {
-        $peekMutDrop(top$4);
-      }
-    }
-    _126$live = false;
-    _126$0$live = false;
+  } else if (top$4) {
+    $peekMutDrop(top$4);
   }
   const value = $peekMut([], $cmp);
   try {

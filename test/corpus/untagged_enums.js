@@ -217,23 +217,17 @@ function main() {
   }
   const first$1 = ["f"];
   const second = ["s"];
-  let both$live = true;
   let both$0$live = true;
-  let both$0$0$live = true;
+  let both$0$first$live = true;
   const both = { first: first$1, second };
   if (typeof both === "object" && !Array.isArray(both)) {
-    both$0$0$live = false;
+    both$0$first$live = false;
     try {
       console.log(`took ${both.first[0]}`);
     } catch (error) {
       noisyDrop_drop(both.first);
       if (typeof both === "object" && !Array.isArray(both)) {
-        if (both$0$0$live) {
-          noisyDrop_drop(both.first);
-        }
-        if (both$0$live) {
-          noisyDrop_drop(both.second);
-        }
+        noisyDrop_drop(both.second);
       } else {
         if (Array.isArray(both)) {
           noisyDrop_drop(both);
@@ -264,12 +258,7 @@ function main() {
       noisyDrop_drop(both.first);
     } catch (error) {
       if (typeof both === "object" && !Array.isArray(both)) {
-        if (both$0$0$live) {
-          noisyDrop_drop(both.first);
-        }
-        if (both$0$live) {
-          noisyDrop_drop(both.second);
-        }
+        noisyDrop_drop(both.second);
       } else {
         if (Array.isArray(both)) {
           noisyDrop_drop(both);
@@ -312,12 +301,10 @@ function main() {
       }
     }
     if (typeof both === "object" && !Array.isArray(both)) {
-      if (both$0$0$live) {
+      if (both$0$first$live) {
         noisyDrop_drop(both.first);
       }
-      if (both$0$live) {
-        noisyDrop_drop(both.second);
-      }
+      noisyDrop_drop(both.second);
     } else {
       if (Array.isArray(both)) {
         noisyDrop_drop(both);
@@ -360,7 +347,7 @@ function main() {
         }
       }
       if (typeof both === "object" && !Array.isArray(both)) {
-        if (both$0$0$live) {
+        if (both$0$first$live) {
           noisyDrop_drop(both.first);
         }
         if (both$0$live) {
@@ -407,7 +394,7 @@ function main() {
           }
         }
         if (typeof both === "object" && !Array.isArray(both)) {
-          if (both$0$0$live) {
+          if (both$0$first$live) {
             noisyDrop_drop(both.first);
           }
           if (both$0$live) {
@@ -454,7 +441,7 @@ function main() {
             }
           }
           if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$0$live) {
+            if (both$0$first$live) {
               noisyDrop_drop(both.first);
             }
             if (both$0$live) {
@@ -499,7 +486,7 @@ function main() {
             }
           } catch (error) {
             if (typeof both === "object" && !Array.isArray(both)) {
-              if (both$0$0$live) {
+              if (both$0$first$live) {
                 noisyDrop_drop(both.first);
               }
               if (both$0$live) {
@@ -533,7 +520,7 @@ function main() {
           }
           try {
             if (typeof both === "object" && !Array.isArray(both)) {
-              if (both$0$0$live) {
+              if (both$0$first$live) {
                 noisyDrop_drop(both.first);
               }
               if (both$0$live) {
@@ -567,9 +554,8 @@ function main() {
             }
             throw error;
           }
-          both$live = false;
           both$0$live = false;
-          both$0$0$live = false;
+          both$0$first$live = false;
           try {
             noisyDrop_drop(other$1);
           } catch (error) {
@@ -632,7 +618,7 @@ function main() {
               }
             }
             if (typeof both === "object" && !Array.isArray(both)) {
-              if (both$0$0$live) {
+              if (both$0$first$live) {
                 noisyDrop_drop(both.first);
               }
               if (both$0$live) {
@@ -679,7 +665,7 @@ function main() {
             }
           }
           if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$0$live) {
+            if (both$0$first$live) {
               noisyDrop_drop(both.first);
             }
             if (both$0$live) {
@@ -728,7 +714,7 @@ function main() {
             }
           }
           if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$0$live) {
+            if (both$0$first$live) {
               noisyDrop_drop(both.first);
             }
             if (both$0$live) {
@@ -774,7 +760,7 @@ function main() {
             }
           }
           if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$0$live) {
+            if (both$0$first$live) {
               noisyDrop_drop(both.first);
             }
             if (both$0$live) {
@@ -820,7 +806,7 @@ function main() {
             }
           }
           if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$0$live) {
+            if (both$0$first$live) {
               noisyDrop_drop(both.first);
             }
             if (both$0$live) {

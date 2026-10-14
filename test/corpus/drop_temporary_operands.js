@@ -40,86 +40,40 @@ function three(a, b, n) {
 
 function main() {
   const value = make("a");
-  let _7$live = true;
   let tmp;
   try {
     tmp = make("b");
   } catch (error) {
-    if (_7$live) {
-      noisyDrop_drop(value);
-    }
+    noisyDrop_drop(value);
     throw error;
   }
-  let _8$live = true;
   let tmp$1;
   try {
     tmp$1 = third(false);
   } catch (error) {
-    if (_8$live) {
-      noisyDrop_drop(tmp);
-    }
-    if (_7$live) {
-      noisyDrop_drop(value);
-    }
+    noisyDrop_drop(tmp);
+    noisyDrop_drop(value);
     throw error;
   }
-  _7$live = false;
-  _8$live = false;
+  const value$1 = three(value, tmp, tmp$1);
+  console.log(`${value$1}`);
+  const value$2 = make("c");
   let tmp$2;
   try {
-    tmp$2 = three(value, tmp, tmp$1);
-    _8$live = false;
+    tmp$2 = make("d");
   } catch (error) {
-    if (_8$live) {
-      noisyDrop_drop(tmp);
-    }
-    if (_7$live) {
-      noisyDrop_drop(value);
-    }
+    noisyDrop_drop(value$2);
     throw error;
   }
-  _7$live = false;
-  console.log(`${tmp$2}`);
-  const value$1 = make("c");
-  let _23$live = true;
   let tmp$3;
   try {
-    tmp$3 = make("d");
+    tmp$3 = third(true);
   } catch (error) {
-    if (_23$live) {
-      noisyDrop_drop(value$1);
-    }
+    noisyDrop_drop(tmp$2);
+    noisyDrop_drop(value$2);
     throw error;
   }
-  let _24$live = true;
-  let tmp$4;
-  try {
-    tmp$4 = third(true);
-  } catch (error) {
-    if (_24$live) {
-      noisyDrop_drop(tmp$3);
-    }
-    if (_23$live) {
-      noisyDrop_drop(value$1);
-    }
-    throw error;
-  }
-  _23$live = false;
-  _24$live = false;
-  let tmp$5;
-  try {
-    tmp$5 = three(value$1, tmp$3, tmp$4);
-    _24$live = false;
-  } catch (error) {
-    if (_24$live) {
-      noisyDrop_drop(tmp$3);
-    }
-    if (_23$live) {
-      noisyDrop_drop(value$1);
-    }
-    throw error;
-  }
-  _23$live = false;
-  console.log(`${tmp$5}`);
+  const value$3 = three(value$2, tmp$2, tmp$3);
+  console.log(`${value$3}`);
 }
 //# sourceMappingURL=case.js.map

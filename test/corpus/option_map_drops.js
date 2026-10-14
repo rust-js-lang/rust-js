@@ -80,15 +80,12 @@ function main() {
   console.log(`read ${read == null ? "None" : `Some(${read})`}`);
   const value = make(2);
   const kept = value ? [value] : undefined;
-  let kept$live = true;
   const value$1 = (l) => l[0][0];
   try {
     console.log(`kept ${kept != null ? value$1(kept) : 0}`);
   } catch (error) {
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
+    if (kept != null) {
+      dDrop_drop(kept[0]);
     }
     throw error;
   }
@@ -96,10 +93,8 @@ function main() {
   try {
     tmp = make(0);
   } catch (error) {
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
+    if (kept != null) {
+      dDrop_drop(kept[0]);
     }
     throw error;
   }
@@ -110,10 +105,8 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
+    if (kept != null) {
+      dDrop_drop(kept[0]);
     }
     throw error;
   }
@@ -124,10 +117,8 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
+    if (kept != null) {
+      dDrop_drop(kept[0]);
     }
     throw error;
   }
@@ -138,10 +129,8 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
+    if (kept != null) {
+      dDrop_drop(kept[0]);
     }
     throw error;
   }
@@ -155,14 +144,11 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
+    if (kept != null) {
+      dDrop_drop(kept[0]);
     }
     throw error;
   }
-  kept$live = false;
   try {
     if (kept != null) {
       dDrop_drop(kept[0]);
@@ -173,11 +159,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -191,11 +172,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   let tmp$3;
@@ -207,11 +183,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -227,11 +198,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -245,11 +211,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   let tmp$4;
@@ -261,11 +222,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -283,11 +239,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -304,11 +255,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -324,11 +270,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   let tmp$6;
@@ -340,11 +281,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -362,11 +298,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -383,11 +314,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -403,11 +329,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   let tmp$8;
@@ -419,11 +340,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -441,11 +357,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -461,11 +372,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -483,11 +389,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -510,11 +411,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   let tmp$10;
@@ -535,25 +431,17 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   const value$4 = tmp$10.TAG === "Ok" ? { TAG: "Ok", _0: [tmp$10._0] } : tmp$10;
-  let _156$0$live = true;
+  let value$0$live = true;
   if (value$4.TAG === "Ok") {
-    _156$0$live = false;
+    value$0$live = false;
     try {
       console.log(`ok ${value$4._0[0][0]}`);
     } catch (error) {
       dDrop_drop(value$4._0[0]);
       if (value$4.TAG === "Ok") {
-        if (_156$0$live) {
-          dDrop_drop(value$4._0[0]);
-        }
       }
       if (ok.TAG === "Ok") {
         dDrop_drop(ok._0[0]);
@@ -568,11 +456,6 @@ function main() {
       }
       if (none != null) {
         dDrop_drop(none[0]);
-      }
-      if (kept$live) {
-        if (kept != null) {
-          dDrop_drop(kept[0]);
-        }
       }
       throw error;
     }
@@ -580,9 +463,6 @@ function main() {
       dDrop_drop(value$4._0[0]);
     } catch (error) {
       if (value$4.TAG === "Ok") {
-        if (_156$0$live) {
-          dDrop_drop(value$4._0[0]);
-        }
       }
       if (ok.TAG === "Ok") {
         dDrop_drop(ok._0[0]);
@@ -597,11 +477,6 @@ function main() {
       }
       if (none != null) {
         dDrop_drop(none[0]);
-      }
-      if (kept$live) {
-        if (kept != null) {
-          dDrop_drop(kept[0]);
-        }
       }
       throw error;
     }
@@ -610,9 +485,7 @@ function main() {
       console.log(`err ${value$4._0}`);
     } catch (error) {
       if (value$4.TAG === "Ok") {
-        if (_156$0$live) {
-          dDrop_drop(value$4._0[0]);
-        }
+        dDrop_drop(value$4._0[0]);
       }
       if (ok.TAG === "Ok") {
         dDrop_drop(ok._0[0]);
@@ -628,17 +501,12 @@ function main() {
       if (none != null) {
         dDrop_drop(none[0]);
       }
-      if (kept$live) {
-        if (kept != null) {
-          dDrop_drop(kept[0]);
-        }
-      }
       throw error;
     }
   }
   try {
     if (value$4.TAG === "Ok") {
-      if (_156$0$live) {
+      if (value$0$live) {
         dDrop_drop(value$4._0[0]);
       }
     }
@@ -657,14 +525,9 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
-  _156$0$live = false;
+  value$0$live = false;
   let tmp$11;
   try {
     tmp$11 = checked(2);
@@ -682,11 +545,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -707,11 +565,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -736,11 +589,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   let tmp$12;
@@ -763,11 +611,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -792,11 +635,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   let tmp$14;
@@ -819,11 +657,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -848,11 +681,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -874,11 +702,6 @@ function main() {
     }
     if (none != null) {
       dDrop_drop(none[0]);
-    }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
     }
     throw error;
   }
@@ -902,11 +725,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -928,11 +746,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -951,11 +764,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -971,11 +779,6 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
   try {
@@ -986,24 +789,10 @@ function main() {
     if (none != null) {
       dDrop_drop(none[0]);
     }
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
     throw error;
   }
-  try {
-    if (none != null) {
-      dDrop_drop(none[0]);
-    }
-  } catch (error) {
-    if (kept$live) {
-      if (kept != null) {
-        dDrop_drop(kept[0]);
-      }
-    }
-    throw error;
+  if (none != null) {
+    dDrop_drop(none[0]);
   }
 }
 //# sourceMappingURL=case.js.map

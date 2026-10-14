@@ -40,7 +40,6 @@ function loudDrop_drop(loud) {
 }
 
 function main() {
-  let w$live = true;
   const w = [undefined];
   try {
     console.log(
@@ -52,19 +51,9 @@ function main() {
       )}`,
     );
   } catch (error) {
-    if (w$live) {
-      loudDrop_drop({ value: w[0] });
-    }
+    loudDrop_drop({ value: w[0] });
     throw error;
   }
-  w$live = false;
-  try {
-    console.log(`${peeked(["text"], wrapPeek({ clone: (value) => value }))}`);
-  } catch (error) {
-    if (w$live) {
-      loudDrop_drop({ value: w[0] });
-    }
-    throw error;
-  }
+  console.log(`${peeked(["text"], wrapPeek({ clone: (value) => value }))}`);
 }
 //# sourceMappingURL=case.js.map

@@ -52,26 +52,13 @@ function relayTakeA(STakeA, dropA, dropS) {
 }
 
 function relayTakeA_take(relay, a, STakeA, dropA, dropS) {
-  let a$live = true;
   try {
     console.log("relay");
   } catch (error) {
-    if (a$live) {
-      dropA?.(a);
-    }
+    dropA?.(a);
     throw error;
   }
-  a$live = false;
-  let result;
-  try {
-    result = (STakeA.take(relay[0], a) + 1) & 255;
-  } catch (error) {
-    if (a$live) {
-      dropA?.(a);
-    }
-    throw error;
-  }
-  return result;
+  return (STakeA.take(relay[0], a) + 1) & 255;
 }
 
 function relayTakeA_make(a, STakeA, dropA, dropS) {
@@ -84,24 +71,13 @@ function wrapTakeNoisy(TDefault, dropT) {
   }
   return $traitImpl($wrapTakeNoisy, [TDefault, dropT], () => ({
     take: (self, a) => {
-      let a$live = true;
       try {
         console.log("default");
       } catch (error) {
-        if (a$live) {
-          noisyDrop_drop?.(a);
-        }
-        throw error;
-      }
-      a$live = false;
-      try {
         noisyDrop_drop?.(a);
-      } catch (error) {
-        if (a$live) {
-          noisyDrop_drop?.(a);
-        }
         throw error;
       }
+      noisyDrop_drop?.(a);
       return 0;
     },
     make: (arg0) => wrapTakeNoisy_make(arg0, TDefault, dropT),

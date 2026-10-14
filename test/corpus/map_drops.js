@@ -21,15 +21,12 @@ function noisyDrop_drop(noisy) {
 
 function main() {
   const sorted = new Map();
-  let sorted$live = true;
   let tmp;
   try {
     tmp = $insert(sorted, 3, ["c"]);
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -38,10 +35,8 @@ function main() {
       noisyDrop_drop(tmp);
     }
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -49,10 +44,8 @@ function main() {
   try {
     tmp$1 = $insert(sorted, 1, ["a"]);
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -61,10 +54,8 @@ function main() {
       noisyDrop_drop(tmp$1);
     }
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -72,10 +63,8 @@ function main() {
   try {
     tmp$2 = $insert(sorted, 2, ["b"]);
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -84,10 +73,8 @@ function main() {
       noisyDrop_drop(tmp$2);
     }
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -95,10 +82,8 @@ function main() {
   try {
     old = $insert(sorted, 2, ["b2"]);
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -111,20 +96,16 @@ function main() {
   try {
     tmp$3 = old ? value(old) : undefined;
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
   try {
     console.log(`replaced ${tmp$3 ?? "none"}`);
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -132,45 +113,30 @@ function main() {
   try {
     taken = $remove(sorted, 1);
   } catch (error) {
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
-  let taken$live = true;
   const value$1 = !!taken;
   try {
     console.log(`took ${value$1} ${sorted.size}`);
   } catch (error) {
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
+    if (taken != null) {
+      noisyDrop_drop(taken);
     }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
-  taken$live = false;
   try {
     if (taken != null) {
       noisyDrop_drop(taken);
     }
   } catch (error) {
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -178,15 +144,8 @@ function main() {
   try {
     tmp$4 = sorted.get(3);
   } catch (error) {
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
+    for (const [, value] of $sortedEntries(sorted, $cmp)) {
+      noisyDrop_drop(value);
     }
     throw error;
   }
@@ -195,84 +154,23 @@ function main() {
     try {
       console.log(`has ${n[0]}`);
     } catch (error) {
-      if (taken$live) {
-        if (taken != null) {
-          noisyDrop_drop(taken);
-        }
-      }
-      if (sorted$live) {
-        for (const [, value] of $sortedEntries(sorted, $cmp)) {
-          noisyDrop_drop(value);
-        }
+      for (const [, value] of $sortedEntries(sorted, $cmp)) {
+        noisyDrop_drop(value);
       }
       throw error;
     }
   }
-  sorted$live = false;
-  try {
-    for (const [, value] of $sortedEntries(sorted, $cmp)) {
-      noisyDrop_drop(value);
-    }
-  } catch (error) {
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
-    throw error;
+  for (const [, value] of $sortedEntries(sorted, $cmp)) {
+    noisyDrop_drop(value);
   }
-  try {
-    console.log("sorted dropped");
-  } catch (error) {
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
-    throw error;
-  }
-  let byName;
-  try {
-    byName = new Map();
-  } catch (error) {
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
-    throw error;
-  }
+  console.log("sorted dropped");
+  const byName = new Map();
   let tmp$5;
   try {
     tmp$5 = $insert(byName, "x", ["x"]);
   } catch (error) {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -283,16 +181,6 @@ function main() {
   } catch (error) {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -305,16 +193,6 @@ function main() {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
     throw error;
   }
   let entry;
@@ -325,35 +203,14 @@ function main() {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
     throw error;
   }
   const size = byName.size;
-  const value$2 = byName;
   try {
-    console.log(`${size} ${value$2.has("y")}`);
+    console.log(`${size} ${byName.has("y")}`);
   } catch (error) {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -363,16 +220,6 @@ function main() {
   } catch (error) {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -384,16 +231,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -409,29 +246,16 @@ function main() {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
     throw error;
   }
-  let handles$live = true;
   let tmp$8;
   let tmp$9;
   try {
     tmp$8 = handles;
     tmp$9 = $rcClone(shared);
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -439,16 +263,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -456,10 +270,8 @@ function main() {
   try {
     tmp$10 = $insert(tmp$8, "a", tmp$9);
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -467,16 +279,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -485,10 +287,8 @@ function main() {
       $rcDrop(tmp$10);
     }
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -496,16 +296,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -515,10 +305,8 @@ function main() {
     tmp$11 = handles;
     tmp$12 = $rcClone(shared);
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -526,16 +314,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -543,10 +321,8 @@ function main() {
   try {
     tmp$13 = $insert(tmp$11, "b", tmp$12);
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -554,16 +330,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -572,10 +338,8 @@ function main() {
       $rcDrop(tmp$13);
     }
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -583,26 +347,14 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
   try {
     console.log(`${shared.strong}`);
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -610,16 +362,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -627,10 +369,8 @@ function main() {
   try {
     tmp$14 = $remove(handles, "a");
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -638,16 +378,6 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
@@ -656,10 +386,8 @@ function main() {
       $rcDrop(tmp$14);
     }
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -667,26 +395,14 @@ function main() {
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
   try {
     console.log(`${shared.strong}`);
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
+    for (const item of handles.values()) {
+      $rcDrop(item);
     }
     $rcDrop(shared);
     if (x != null) {
@@ -695,56 +411,25 @@ function main() {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
     throw error;
   }
-  handles$live = false;
   try {
     for (const item of handles.values()) {
       $rcDrop(item);
     }
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
-    }
     $rcDrop(shared);
     if (x != null) {
       noisyDrop_drop(x);
     }
     for (const item of byName.values()) {
       noisyDrop_drop(item);
-    }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
     }
     throw error;
   }
   try {
     console.log(`${shared.strong}`);
   } catch (error) {
-    if (handles$live) {
-      for (const item of handles.values()) {
-        $rcDrop(item);
-      }
-    }
     $rcDrop(shared);
     if (x != null) {
       noisyDrop_drop(x);
@@ -752,19 +437,8 @@ function main() {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
     throw error;
   }
-  handles$live = false;
   try {
     $rcDrop(shared);
   } catch (error) {
@@ -774,16 +448,6 @@ function main() {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
     throw error;
   }
   try {
@@ -794,35 +458,10 @@ function main() {
     for (const item of byName.values()) {
       noisyDrop_drop(item);
     }
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
     throw error;
   }
-  try {
-    for (const item of byName.values()) {
-      noisyDrop_drop(item);
-    }
-  } catch (error) {
-    if (taken$live) {
-      if (taken != null) {
-        noisyDrop_drop(taken);
-      }
-    }
-    if (sorted$live) {
-      for (const [, value] of $sortedEntries(sorted, $cmp)) {
-        noisyDrop_drop(value);
-      }
-    }
-    throw error;
+  for (const item of byName.values()) {
+    noisyDrop_drop(item);
   }
-  taken$live = false;
 }
 //# sourceMappingURL=case.js.map

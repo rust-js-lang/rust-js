@@ -390,7 +390,7 @@ test("each group of a function's state is read and written by its owner", () => 
 // the fields it may (the second review). One unlisted is one whose reader
 // must hold all of mir.rs to know what it changes.
 const mirState: Record<string, string[]> = {
-  "src/lower/mir/drops.rs": ["body", "drops", "flags", "branches", "pending"],
+  "src/lower/mir/drops.rs": ["body", "drops", "flags", "branches", "pending", "locals"],
   "src/lower/mir/writer.rs": ["body", "writer", "builders", "built"],
   "src/lower/mir/hints.rs": ["locals", "captures"],
   "src/lower/mir/std_calls.rs": ["body", "locals"],
@@ -551,7 +551,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir.rs", "    fn mir_call(", 118],
   ["src/lower/mir.rs", "    fn mir_call_values(", 301],
   ["src/lower/mir.rs", "    fn mir_std_call(", 254],
-  ["src/lower/mir.rs", "    fn mir_function(", 414],
+  ["src/lower/mir.rs", "    fn mir_function(", 409],
   ["src/lower/recognition.rs", "    fn classify_inherent(", 840],
   ["src/lower/recognition.rs", "    fn classify_trait_method(", 422],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 691],

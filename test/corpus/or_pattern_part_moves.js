@@ -90,14 +90,10 @@ function middle(shape) {
       } catch (error) {
         if (shape.TAG === "Pair") {
           loudDrop_drop(shape._0);
-          if (shape$1$live$1) {
-            loudDrop_drop(shape._1);
-          }
+          loudDrop_drop(shape._1);
         } else if (shape.TAG === "Triple") {
           loudDrop_drop(shape._0);
-          if (shape$1$live) {
-            loudDrop_drop(shape._1);
-          }
+          loudDrop_drop(shape._1);
           loudDrop_drop(shape._2);
         }
         throw error;
@@ -105,14 +101,10 @@ function middle(shape) {
       result = undefined;
       if (shape.TAG === "Pair") {
         loudDrop_drop(shape._0);
-        if (shape$1$live$1) {
-          loudDrop_drop(shape._1);
-        }
+        loudDrop_drop(shape._1);
       } else if (shape.TAG === "Triple") {
         loudDrop_drop(shape._0);
-        if (shape$1$live) {
-          loudDrop_drop(shape._1);
-        }
+        loudDrop_drop(shape._1);
         loudDrop_drop(shape._2);
       }
       return result;
@@ -143,7 +135,6 @@ function middle(shape) {
   }
   m$live = false;
   result = m;
-  m$live = false;
   if (shape.TAG === "Pair") {
     loudDrop_drop(shape._0);
     if (shape$1$live$1) {
@@ -157,7 +148,6 @@ function middle(shape) {
 }
 
 function name(shape) {
-  let shape$2$live = true;
   let shape$0$live = true;
   let result;
   let first;
@@ -168,20 +158,15 @@ function name(shape) {
     if (shape.TAG !== "Triple") {
       result = "empty";
       if (shape.TAG === "Pair") {
-        if (shape$0$live) {
-          loudDrop_drop(shape._0);
-        }
+        loudDrop_drop(shape._0);
         loudDrop_drop(shape._1);
       } else if (shape.TAG === "Triple") {
         loudDrop_drop(shape._0);
         loudDrop_drop(shape._1);
-        if (shape$2$live) {
-          loudDrop_drop(shape._2);
-        }
+        loudDrop_drop(shape._2);
       }
       return result;
     }
-    shape$2$live = false;
     first = shape._2;
   }
   try {

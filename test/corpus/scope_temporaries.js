@@ -90,8 +90,7 @@ function kept_early(stop) {
 }
 
 function main() {
-  let _104$live = false;
-  let _104$0$live = false;
+  let pair$0$live = false;
   const value = make(1);
   let tmp;
   try {
@@ -196,18 +195,14 @@ function main() {
         noisyDrop_drop(value$4.a);
       }
       const pair = early(false);
-      _104$live = true;
-      _104$0$live = true;
+      pair$0$live = true;
       if (pair) {
-        _104$0$live = false;
+        pair$0$live = false;
         try {
           console.log(`late ${pair.b}`);
         } catch (error) {
           noisyDrop_drop(pair.a);
           if (pair) {
-            if (_104$0$live) {
-              noisyDrop_drop(pair.a);
-            }
           }
           throw error;
         }
@@ -215,9 +210,6 @@ function main() {
           noisyDrop_drop(pair.a);
         } catch (error) {
           if (pair) {
-            if (_104$0$live) {
-              noisyDrop_drop(pair.a);
-            }
           }
           throw error;
         }
@@ -226,20 +218,17 @@ function main() {
           console.log("late none");
         } catch (error) {
           if (pair) {
-            if (_104$0$live) {
-              noisyDrop_drop(pair.a);
-            }
+            noisyDrop_drop(pair.a);
           }
           throw error;
         }
       }
       if (pair) {
-        if (_104$0$live) {
+        if (pair$0$live) {
           noisyDrop_drop(pair.a);
         }
       }
-      _104$live = false;
-      _104$0$live = false;
+      pair$0$live = false;
       const check = (n) => {
         const value = make(n);
         let result;

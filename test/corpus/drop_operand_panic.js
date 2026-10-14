@@ -28,50 +28,24 @@ function second(fail) {
 
 function main() {
   const first = ["first"];
-  let _8$live = true;
   let tmp;
   try {
     tmp = second(false);
   } catch (error) {
-    if (_8$live) {
-      noisyDrop_drop(first);
-    }
+    noisyDrop_drop(first);
     throw error;
   }
-  _8$live = false;
+  const value = pair(first, tmp);
+  console.log(`${value}`);
+  const again = ["again"];
   let tmp$1;
   try {
-    tmp$1 = pair(first, tmp);
-    _8$live = false;
+    tmp$1 = second(true);
   } catch (error) {
-    if (_8$live) {
-      noisyDrop_drop(first);
-    }
+    noisyDrop_drop(again);
     throw error;
   }
-  console.log(`${tmp$1}`);
-  const again = ["again"];
-  let _24$live = true;
-  let tmp$2;
-  try {
-    tmp$2 = second(true);
-  } catch (error) {
-    if (_24$live) {
-      noisyDrop_drop(again);
-    }
-    throw error;
-  }
-  _24$live = false;
-  let tmp$3;
-  try {
-    tmp$3 = pair(again, tmp$2);
-    _24$live = false;
-  } catch (error) {
-    if (_24$live) {
-      noisyDrop_drop(again);
-    }
-    throw error;
-  }
-  console.log(`${tmp$3}`);
+  const value$1 = pair(again, tmp$1);
+  console.log(`${value$1}`);
 }
 //# sourceMappingURL=case.js.map

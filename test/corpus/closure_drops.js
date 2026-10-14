@@ -11,26 +11,13 @@ function noisyDrop_drop(noisy) {
 }
 
 function call_once(f, dropF) {
-  let f$live = true;
   try {
     console.log("calling");
   } catch (error) {
-    if (f$live) {
-      dropF?.(f);
-    }
+    dropF?.(f);
     throw error;
   }
-  f$live = false;
-  let result;
-  try {
-    result = f();
-  } catch (error) {
-    if (f$live) {
-      dropF?.(f);
-    }
-    throw error;
-  }
-  return result;
+  return f();
 }
 
 function keep(_f, dropF) {
@@ -50,62 +37,26 @@ function run(f) {
 function main() {
   let maybe$live = false;
   const a = ["a"];
-  let tick$live = true;
   const tick = () => {
-    let _1$0$live = true;
     try {
       console.log(`tick ${a[0]}`);
     } catch (error) {
-      if (_1$0$live) {
-        noisyDrop_drop(a);
-      }
-      throw error;
-    }
-    _1$0$live = false;
-    try {
       noisyDrop_drop(a);
-    } catch (error) {
-      if (_1$0$live) {
-        noisyDrop_drop(a);
-      }
       throw error;
     }
+    noisyDrop_drop(a);
     return 1;
   };
   try {
     console.log("before");
   } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
+    noisyDrop_drop(a);
     throw error;
   }
-  tick$live = false;
-  let tmp;
-  try {
-    tmp = tick();
-  } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${tmp}`);
-  } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
-  try {
-    console.log("after");
-  } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
+  let tick$live = false;
+  const value = tick();
+  console.log(`${value}`);
+  console.log("after");
   const b = ["b"];
   const c = ["c"];
   const once = () => {
@@ -127,23 +78,8 @@ function main() {
     noisyDrop_drop(c);
     return 2;
   };
-  let tmp$1;
-  try {
-    tmp$1 = once();
-  } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${tmp$1}`);
-  } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
+  const value$1 = once();
+  console.log(`${value$1}`);
   const d = ["d"];
   const d2 = ["d2"];
   try {
@@ -151,23 +87,13 @@ function main() {
   } catch (error) {
     noisyDrop_drop(d);
     noisyDrop_drop(d2);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
-  try {
-    noisyDrop_drop(d);
-    noisyDrop_drop(d2);
-  } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
+  noisyDrop_drop(d);
+  noisyDrop_drop(d2);
   const p = ["p"];
   const q = ["q"];
-  const value = () => {
+  run(() => {
     const x = p;
     const y = q;
     try {
@@ -179,15 +105,7 @@ function main() {
     }
     noisyDrop_drop(p);
     noisyDrop_drop(q);
-  };
-  try {
-    run(value);
-  } catch (error) {
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
-    throw error;
-  }
+  });
   let r = ["r1"];
   const captured = r;
   const take = () => {
@@ -202,50 +120,38 @@ function main() {
     take();
   } catch (error) {
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   try {
     console.log(`${r[0]}`);
   } catch (error) {
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   const e = ["e"];
-  const value$1 = () => {
+  const value$2 = () => {
     const x = e;
     const result = $byteLen(x[0]);
     noisyDrop_drop(x);
     return result;
   };
-  let tmp$2;
+  let tmp;
   try {
-    tmp$2 = call_once(value$1, (value) => {
+    tmp = call_once(value$2, (value) => {
       noisyDrop_drop(e);
     });
   } catch (error) {
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   try {
-    console.log(`${tmp$2}`);
+    console.log(`${tmp}`);
   } catch (error) {
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   const f = ["f"];
-  const value$2 = () => {
+  const value$3 = () => {
     try {
       noisyDrop_drop(f);
     } catch (error) {
@@ -254,14 +160,11 @@ function main() {
     return 4;
   };
   try {
-    keep(value$2, (value) => {
+    keep(value$3, (value) => {
       noisyDrop_drop(f);
     });
   } catch (error) {
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   const g = ["g"];
@@ -269,34 +172,25 @@ function main() {
     const held = g;
     return $byteLen(held[0]);
   };
-  let tmp$3;
+  let tmp$1;
   try {
-    tmp$3 = read();
+    tmp$1 = read();
   } catch (error) {
     noisyDrop_drop(g);
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   try {
-    console.log(`${tmp$3} ${read()}`);
+    console.log(`${tmp$1} ${read()}`);
   } catch (error) {
     noisyDrop_drop(g);
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   try {
     noisyDrop_drop(g);
   } catch (error) {
     noisyDrop_drop(r);
-    if (tick$live) {
-      noisyDrop_drop(a);
-    }
     throw error;
   }
   const iter = { start: 0, end: 2 };
@@ -347,9 +241,6 @@ function main() {
       try {
         maybe();
       } catch (error) {
-        if (maybe$live) {
-          noisyDrop_drop(h);
-        }
         noisyDrop_drop(r);
         if (tick$live) {
           noisyDrop_drop(a);

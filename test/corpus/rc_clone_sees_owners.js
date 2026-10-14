@@ -200,7 +200,6 @@ function main() {
     throw error;
   }
   const shared = { value: [5], strong: 1, weak: 0 };
-  let shared$live = true;
   const value$1 = (kept) => {
     const value = $rcClone(shared);
     try {
@@ -216,9 +215,7 @@ function main() {
   try {
     $withBorrowMut(KEPT, value$1, true);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared, loneDrop_drop);
-    }
+    $rcDrop(shared, loneDrop_drop);
     $rcDrop(lone, loneDrop_drop);
     $weakDrop(_owned.me);
     $rcDrop(second, (value) => {
@@ -229,14 +226,10 @@ function main() {
     });
     throw error;
   }
-  shared$live = false;
   let owned;
   try {
     owned = $unwrapOrClone(shared, (value) => loneClone_clone(value), loneDrop_drop);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared, loneDrop_drop);
-    }
     $rcDrop(lone, loneDrop_drop);
     $weakDrop(_owned.me);
     $rcDrop(second, (value) => {
@@ -251,9 +244,6 @@ function main() {
     console.log(`owned ${owned[0]}`);
   } catch (error) {
     loneDrop_drop(owned);
-    if (shared$live) {
-      $rcDrop(shared, loneDrop_drop);
-    }
     $rcDrop(lone, loneDrop_drop);
     $weakDrop(_owned.me);
     $rcDrop(second, (value) => {
@@ -267,9 +257,6 @@ function main() {
   try {
     loneDrop_drop(owned);
   } catch (error) {
-    if (shared$live) {
-      $rcDrop(shared, loneDrop_drop);
-    }
     $rcDrop(lone, loneDrop_drop);
     $weakDrop(_owned.me);
     $rcDrop(second, (value) => {
@@ -280,7 +267,6 @@ function main() {
     });
     throw error;
   }
-  shared$live = false;
   try {
     $rcDrop(lone, loneDrop_drop);
   } catch (error) {

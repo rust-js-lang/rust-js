@@ -78,7 +78,6 @@ function consume(shape) {
 }
 
 function main() {
-  let boxed$live = false;
   const one = { value: ["one"], impl: noisyShape() };
   let tmp;
   try {
@@ -106,10 +105,8 @@ function main() {
   try {
     iter = $iter(all);
   } catch (error) {
-    if (all$live) {
-      for (const item of all) {
-        item.impl.$drop?.(item.value);
-      }
+    for (const item of all) {
+      item.impl.$drop?.(item.value);
     }
     throw error;
   }
@@ -127,28 +124,10 @@ function main() {
     }
     if (tmp == null) {
       all$live = false;
-      try {
-        for (const item of all) {
-          item.impl.$drop?.(item.value);
-        }
-      } catch (error) {
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
-        throw error;
+      for (const item of all) {
+        item.impl.$drop?.(item.value);
       }
-      try {
-        console.log("after all");
-      } catch (error) {
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
-        throw error;
-      }
+      console.log("after all");
       const lent = ["lent"];
       const borrowed = { value: lent, impl: noisyShape() };
       let tmp;
@@ -156,22 +135,12 @@ function main() {
         tmp = borrowed.impl.name(borrowed.value);
       } catch (error) {
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
         console.log(`${tmp}`);
       } catch (error) {
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       const loud = [3];
@@ -181,11 +150,6 @@ function main() {
       } catch (error) {
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       const holder = { shape: { value: ["held"], impl: noisyShape() } };
@@ -196,11 +160,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -209,27 +168,17 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
-      const value$2 = ["given"];
+      const value = ["given"];
       const impl = noisyShape();
       let tmp$2;
       try {
-        tmp$2 = consume({ value: value$2, impl });
+        tmp$2 = consume({ value, impl });
       } catch (error) {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -238,11 +187,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       const kept = ["kept"];
@@ -254,11 +198,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -268,11 +207,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -281,16 +215,9 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
-      const value = ["boxed"];
-      boxed$live = true;
-      let boxed = value;
+      let boxed = ["boxed"];
       let tmp$4;
       try {
         tmp$4 = noisyShape_name(boxed);
@@ -298,11 +225,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -311,14 +233,8 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
-      boxed$live = false;
       const unboxed = boxed;
       try {
         console.log(`moved ${unboxed[0]}`);
@@ -327,16 +243,9 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
-      const value$1 = ["refilled"];
-      boxed$live = true;
-      boxed = value$1;
+      boxed = ["refilled"];
       let tmp$5;
       try {
         tmp$5 = noisyShape_name(boxed);
@@ -345,11 +254,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -359,11 +263,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -373,11 +272,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -386,11 +280,6 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
@@ -399,47 +288,22 @@ function main() {
         holder.shape.impl.$drop?.(holder.shape.value);
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
-      boxed$live = false;
       try {
         holder.shape.impl.$drop?.(holder.shape.value);
       } catch (error) {
         loudDrop_drop(loud);
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
       try {
         loudDrop_drop(loud);
       } catch (error) {
         noisyDrop_drop(lent);
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
         throw error;
       }
-      try {
-        noisyDrop_drop(lent);
-      } catch (error) {
-        if (all$live) {
-          for (const item of all) {
-            item.impl.$drop?.(item.value);
-          }
-        }
-        throw error;
-      }
+      noisyDrop_drop(lent);
       return;
     }
     const shape = tmp;

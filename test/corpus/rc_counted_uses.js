@@ -40,68 +40,29 @@ function count(rc) {
 }
 
 function main() {
-  let shared$live = false;
-  let me$live = false;
-  let w$live = false;
-  let two$live = false;
   const noisy = { value: ["a"], strong: 1, weak: 0 };
-  let noisy$live = true;
   let again;
   try {
     again = $rcClone(noisy);
   } catch (error) {
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
+    $rcDrop(noisy, noisyDrop_drop);
     throw error;
   }
-  let again$live = true;
-  noisy$live = false;
   try {
     $rcDrop(noisy, noisyDrop_drop);
   } catch (error) {
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
+    $rcDrop(again, noisyDrop_drop);
     throw error;
   }
   try {
     console.log(`one left: ${again.strong}`);
   } catch (error) {
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
-    throw error;
-  }
-  again$live = false;
-  try {
     $rcDrop(again, noisyDrop_drop);
-  } catch (error) {
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
-  try {
-    console.log("none left");
-  } catch (error) {
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
-    throw error;
-  }
+  let again$live = false;
+  $rcDrop(again, noisyDrop_drop);
+  console.log("none left");
   const doc = {
     title: { value: "rust", strong: 1, weak: 0 },
     pages: { value: [1, 2], strong: 1, weak: 0 },
@@ -112,12 +73,6 @@ function main() {
   } catch (error) {
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   let tmp;
@@ -128,12 +83,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   let tmp$1;
@@ -144,12 +93,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   try {
@@ -165,12 +108,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   const fresh = {
@@ -189,12 +126,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   const value = { value: 1, strong: 1, weak: 0 };
@@ -209,12 +140,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   try {
@@ -227,12 +152,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   try {
@@ -244,12 +163,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   try {
@@ -261,12 +174,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   try {
@@ -278,12 +185,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   const value$1 = copy;
@@ -296,12 +197,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   const value$2 = [[1], [2, 3]];
@@ -315,12 +210,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   let tmp$5;
@@ -333,12 +222,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   let lists;
@@ -351,12 +234,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   let total = 0;
@@ -373,12 +250,6 @@ function main() {
     $rcDrop(copy.pages);
     $rcDrop(doc.title);
     $rcDrop(doc.pages);
-    if (again$live) {
-      $rcDrop(again, noisyDrop_drop);
-    }
-    if (noisy$live) {
-      $rcDrop(noisy, noisyDrop_drop);
-    }
     throw error;
   }
   let iter$1;
@@ -402,9 +273,6 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
     if (tmp) {
@@ -424,9 +292,6 @@ function main() {
         if (again$live) {
           $rcDrop(again, noisyDrop_drop);
         }
-        if (noisy$live) {
-          $rcDrop(noisy, noisyDrop_drop);
-        }
         throw error;
       }
       while (true) {
@@ -445,9 +310,6 @@ function main() {
           $rcDrop(doc.pages);
           if (again$live) {
             $rcDrop(again, noisyDrop_drop);
-          }
-          if (noisy$live) {
-            $rcDrop(noisy, noisyDrop_drop);
           }
           throw error;
         }
@@ -475,20 +337,14 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
     const shared = { value: { value: [1] }, strong: 1, weak: 0 };
-    shared$live = true;
     let other;
     try {
       other = $rcClone(shared);
     } catch (error) {
-      if (shared$live) {
-        $rcDrop(shared);
-      }
+      $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -500,9 +356,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -510,9 +363,7 @@ function main() {
       tmp$6 = $borrowMut(other.value, true);
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
+      $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -524,9 +375,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -535,9 +383,7 @@ function main() {
     } catch (error) {
       $unborrow(tmp$6);
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
+      $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -549,9 +395,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -559,9 +402,7 @@ function main() {
       $unborrow(tmp$6);
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
+      $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -573,9 +414,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -584,9 +422,7 @@ function main() {
       tmp$1 = $borrow(shared.value, true);
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
+      $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -598,9 +434,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -609,9 +442,7 @@ function main() {
     } catch (error) {
       $unborrow(tmp$1);
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
+      $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -623,9 +454,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -633,9 +461,7 @@ function main() {
       $unborrow(tmp$1);
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
+      $rcDrop(shared);
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -648,20 +474,13 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    shared$live = false;
     let tmp$2;
     try {
       tmp$2 = $unwrapOrClone(shared, (value) => ({ value: $borrow(value).value.slice() }));
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -673,9 +492,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -685,9 +501,6 @@ function main() {
       tmp$3 = $borrow(other.value, true);
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -699,9 +512,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -713,9 +523,6 @@ function main() {
     } catch (error) {
       $unborrow(tmp$3);
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -727,9 +534,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -737,9 +541,6 @@ function main() {
       $unborrow(tmp$3);
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -751,9 +552,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -763,9 +561,6 @@ function main() {
       owner = $newCyclic(value);
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -777,9 +572,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -791,9 +583,6 @@ function main() {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -805,9 +594,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -818,9 +604,6 @@ function main() {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -833,28 +616,19 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    me$live = true;
     const strong = owner.strong;
     try {
       console.log(`${me.value.name} ${strong} ${owner.weak}`);
     } catch (error) {
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
+      $rcDrop(me, (value) => {
+        $weakDrop(value.me);
+      });
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -867,29 +641,17 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    me$live = false;
     try {
       $rcDrop(me, (value) => {
         $weakDrop(value.me);
       });
     } catch (error) {
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -901,9 +663,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -912,18 +671,10 @@ function main() {
     try {
       tmp$5 = $upgrade(owner.value.me);
     } catch (error) {
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -935,9 +686,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -945,18 +693,10 @@ function main() {
     try {
       tmp$7 = $unwrap(tmp$5);
     } catch (error) {
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -968,9 +708,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -980,18 +717,10 @@ function main() {
       $rcDrop(tmp$7, (value) => {
         $weakDrop(value.me);
       });
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1003,9 +732,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1014,18 +740,10 @@ function main() {
         $weakDrop(value.me);
       });
     } catch (error) {
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1037,9 +755,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1051,18 +766,10 @@ function main() {
     } catch (error) {
       $rcDrop(value$1);
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1074,9 +781,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1084,18 +788,10 @@ function main() {
       $rcDrop(value$1);
     } catch (error) {
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1107,9 +803,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1117,18 +810,10 @@ function main() {
       w = $downgrade(defaulted);
     } catch (error) {
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1141,31 +826,17 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    w$live = true;
     try {
       console.log(`${defaulted.weak}`);
     } catch (error) {
-      if (w$live) {
-        $weakDrop(w);
-      }
+      $weakDrop(w);
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1178,31 +849,16 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    w$live = false;
     try {
       $weakDrop(w);
     } catch (error) {
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1214,31 +870,17 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
     try {
       console.log(`${defaulted.weak}`);
     } catch (error) {
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1250,37 +892,20 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
     const two = { value: 2, strong: 1, weak: 0 };
-    two$live = true;
     let also;
     try {
       also = $rcClone(two);
     } catch (error) {
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
+      $rcDrop(two);
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1293,36 +918,18 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    two$live = false;
     let tmp$8;
     try {
       tmp$8 = $tryUnwrap(two);
     } catch (error) {
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1334,9 +941,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1347,25 +951,11 @@ function main() {
         $rcDrop(tmp$8._0);
       }
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1377,9 +967,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1389,25 +976,11 @@ function main() {
       }
     } catch (error) {
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1419,9 +992,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1429,25 +999,11 @@ function main() {
       console.log(`${also.strong}`);
     } catch (error) {
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1459,9 +1015,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1471,25 +1024,11 @@ function main() {
     } catch (error) {
       $rcDrop(counter);
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1501,9 +1040,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1515,25 +1051,11 @@ function main() {
       $rcDrop(cell);
       $rcDrop(counter);
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1545,9 +1067,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1559,25 +1078,11 @@ function main() {
       $rcDrop(cell);
       $rcDrop(counter);
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1589,9 +1094,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1601,25 +1103,11 @@ function main() {
       $rcDrop(cell);
       $rcDrop(counter);
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1631,9 +1119,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1642,25 +1127,11 @@ function main() {
     } catch (error) {
       $rcDrop(counter);
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1672,9 +1143,6 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
@@ -1682,25 +1150,11 @@ function main() {
       $rcDrop(counter);
     } catch (error) {
       $rcDrop(also);
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1712,34 +1166,17 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
     try {
       $rcDrop(also);
     } catch (error) {
-      if (two$live) {
-        $rcDrop(two);
-      }
-      if (w$live) {
-        $weakDrop(w);
-      }
       $rcDrop(defaulted);
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1752,28 +1189,15 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    two$live = false;
-    w$live = false;
     try {
       $rcDrop(defaulted);
     } catch (error) {
-      if (me$live) {
-        $rcDrop(me, (value) => {
-          $weakDrop(value.me);
-        });
-      }
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1786,21 +1210,14 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    me$live = false;
     try {
       $rcDrop(owner, (value) => {
         $weakDrop(value.me);
       });
     } catch (error) {
       $rcDrop(other);
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1812,18 +1229,12 @@ function main() {
       $rcDrop(doc.pages);
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }
     try {
       $rcDrop(other);
     } catch (error) {
-      if (shared$live) {
-        $rcDrop(shared);
-      }
       for (const item of lists) {
         $rcDrop(item);
       }
@@ -1836,12 +1247,8 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
-    shared$live = false;
     try {
       for (const item of lists) {
         $rcDrop(item);
@@ -1856,9 +1263,6 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
     try {
@@ -1872,9 +1276,6 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
     try {
@@ -1886,9 +1287,6 @@ function main() {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
       }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
-      }
       throw error;
     }
     try {
@@ -1897,9 +1295,6 @@ function main() {
     } catch (error) {
       if (again$live) {
         $rcDrop(again, noisyDrop_drop);
-      }
-      if (noisy$live) {
-        $rcDrop(noisy, noisyDrop_drop);
       }
       throw error;
     }

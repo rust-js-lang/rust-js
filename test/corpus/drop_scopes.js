@@ -121,21 +121,12 @@ function main() {
   try {
     tmp = early(true) === 1;
   } catch (error) {
-    if (maybe$live) {
-      noisyDrop_drop(maybe);
-    }
+    noisyDrop_drop(maybe);
     throw error;
   }
   if (tmp) {
     maybe$live = false;
-    try {
-      consume(maybe);
-    } catch (error) {
-      if (maybe$live) {
-        noisyDrop_drop(maybe);
-      }
-      throw error;
-    }
+    consume(maybe);
   }
   let tmp$1;
   try {
@@ -174,7 +165,6 @@ function main() {
     }
     throw error;
   }
-  let kept$live = true;
   let slot = ["old"];
   const value = ["new"];
   try {
@@ -182,9 +172,7 @@ function main() {
   } catch (error) {
     slot = value;
     noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
+    noisyDrop_drop(kept);
     if (maybe$live) {
       noisyDrop_drop(maybe);
     }
@@ -195,22 +183,17 @@ function main() {
     console.log(`slot is ${slot[0]}`);
   } catch (error) {
     noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
+    noisyDrop_drop(kept);
     if (maybe$live) {
       noisyDrop_drop(maybe);
     }
     throw error;
   }
-  kept$live = false;
+  let kept$live = false;
   try {
     noisyDrop_drop(kept);
   } catch (error) {
     noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
     if (maybe$live) {
       noisyDrop_drop(maybe);
     }
@@ -221,9 +204,6 @@ function main() {
     noisyDrop_drop(value$1);
   } catch (error) {
     noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
     if (maybe$live) {
       noisyDrop_drop(maybe);
     }
@@ -234,9 +214,6 @@ function main() {
     noisyDrop_drop(value$2);
   } catch (error) {
     noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
     if (maybe$live) {
       noisyDrop_drop(maybe);
     }
@@ -247,9 +224,6 @@ function main() {
     unitDrop_drop({ value: unit });
   } catch (error) {
     noisyDrop_drop(slot);
-    if (kept$live) {
-      noisyDrop_drop(kept);
-    }
     if (maybe$live) {
       noisyDrop_drop(maybe);
     }

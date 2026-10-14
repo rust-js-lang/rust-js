@@ -14,12 +14,14 @@ mod bindings;
 mod branches;
 mod decisions;
 mod destructuring;
+mod flags;
 mod jumps;
 mod loops;
 mod values;
 
 pub(super) use self::bindings::{HELD_ARG, readable_temporaries, temporary, unsuffixed_params, user_name};
 pub(super) use self::destructuring::{copied_params, destructured_params};
+pub(super) use self::flags::named_flags;
 pub(super) use self::values::{call_path, field_path, writer_body};
 use self::{bindings::*, branches::*, destructuring::*, jumps::*, loops::*, values::*};
 
@@ -69,6 +71,8 @@ pub(super) struct Hints<'h> {
     /// Where each closure of one call whose JS gives `undefined` is written:
     /// a component's handler of one, `() => f()` (ADR 0040).
     pub(super) concise: &'h [js::Span],
+    /// Each drop flag, `noisy$live`: whether a value is there to drop.
+    pub(super) flags: &'h HashSet<String>,
 }
 
 /// `body`, tidied, by what `hints` say of it.
@@ -93,11 +97,14 @@ pub(super) fn tidy(body: &mut Vec<Stmt>, hints: &Hints) {
         plain,
         forwarding,
         concise,
+        flags,
     } = *hints;
     // What branches make a value of: the function's, and where an `if` is written.
     let made = (result, conditions);
     // A guard of a handle made for it alone: the place it's a handle on.
     crate::lower::std_types::cell::unguarded(body);
+    // Where a drop's flag is known, no test of it, nor a `try` for it.
+    flags::settled_flags(body, flags);
     // Twice: what a block's statements, in its place, are followed by, and
     // a loop's label nothing names then.
     for _ in 0..2 {

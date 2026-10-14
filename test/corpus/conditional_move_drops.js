@@ -26,14 +26,7 @@ function main() {
     const n = [give ? "given" : "kept"];
     if (give) {
       n$live = false;
-      try {
-        take(n);
-      } catch (error) {
-        if (n$live) {
-          noisyDrop_drop(n);
-        }
-        throw error;
-      }
+      take(n);
     }
     try {
       console.log(`end of ${give}`);

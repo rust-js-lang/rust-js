@@ -29,13 +29,13 @@ function partialDefault_default() {
 }
 
 function swap_y(p) {
-  let p$0$live = true;
+  let p$x$live = true;
   let tmp;
   try {
     tmp = keep(p.y);
-    p$0$live = false;
+    p$x$live = false;
   } catch (error) {
-    if (p$0$live) {
+    if (p$x$live) {
       noisyDrop_drop(p.x);
     }
     throw error;
@@ -204,9 +204,9 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
-  let _107$0$live = true;
+  let tmp$0$live = true;
   if (tmp$2) {
-    _107$0$live = false;
+    tmp$0$live = false;
     const built = tmp$2;
     try {
       console.log(`built ${built.x[0]} ${built.y[0]}`);
@@ -214,10 +214,6 @@ function main() {
       noisyDrop_drop(built.x);
       noisyDrop_drop(built.y);
       if (tmp$2) {
-        if (_107$0$live) {
-          noisyDrop_drop(tmp$2.x);
-          noisyDrop_drop(tmp$2.y);
-        }
       }
       noisyDrop_drop(defaults.x);
       noisyDrop_drop(defaults.y);
@@ -232,10 +228,6 @@ function main() {
       noisyDrop_drop(built.y);
     } catch (error) {
       if (tmp$2) {
-        if (_107$0$live) {
-          noisyDrop_drop(tmp$2.x);
-          noisyDrop_drop(tmp$2.y);
-        }
       }
       noisyDrop_drop(defaults.x);
       noisyDrop_drop(defaults.y);
@@ -250,10 +242,8 @@ function main() {
       console.log("none");
     } catch (error) {
       if (tmp$2) {
-        if (_107$0$live) {
-          noisyDrop_drop(tmp$2.x);
-          noisyDrop_drop(tmp$2.y);
-        }
+        noisyDrop_drop(tmp$2.x);
+        noisyDrop_drop(tmp$2.y);
       }
       noisyDrop_drop(defaults.x);
       noisyDrop_drop(defaults.y);
@@ -266,7 +256,7 @@ function main() {
   }
   try {
     if (tmp$2) {
-      if (_107$0$live) {
+      if (tmp$0$live) {
         noisyDrop_drop(tmp$2.x);
         noisyDrop_drop(tmp$2.y);
       }
@@ -280,7 +270,7 @@ function main() {
     noisyDrop_drop(swapped.y);
     throw error;
   }
-  _107$0$live = false;
+  tmp$0$live = false;
   try {
     console.log("end");
   } catch (error) {

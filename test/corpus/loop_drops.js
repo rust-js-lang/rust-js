@@ -20,7 +20,6 @@ function countdownIterator_next(countdown) {
 }
 
 function first_long(items) {
-  let _8$live = false;
   const iter = $iter(items);
   let tmp;
   while (true) {
@@ -32,9 +31,7 @@ function first_long(items) {
       }
       throw error;
     }
-    _8$live = true;
     if (!tmp) {
-      _8$live = false;
       for (const item of iter) {
         noisyDrop_drop(item);
       }
@@ -51,7 +48,6 @@ function first_long(items) {
         }
         throw error;
       }
-      _8$live = false;
       for (const item of iter) {
         noisyDrop_drop(item);
       }
@@ -74,22 +70,10 @@ function first_long(items) {
       }
       throw error;
     }
-    _8$live = false;
   }
 }
 
 function main() {
-  let n$5$live = false;
-  let _14$live = false;
-  let _54$live = false;
-  let _79$live = false;
-  let _103$live = false;
-  let _146$live = false;
-  let _146$0$live = false;
-  let _178$live = false;
-  let _217$live = false;
-  let _231$live = false;
-  let _267$live = false;
   const v = [["a"], ["b"], ["c"], ["d"]];
   const iter = $iter(v);
   let tmp;
@@ -124,7 +108,6 @@ function main() {
       }
       throw error;
     }
-    _14$live = true;
     if (tmp) {
       const n = tmp;
       if (n[0] === "b") {
@@ -136,7 +119,6 @@ function main() {
           }
           throw error;
         }
-        _14$live = false;
         continue;
       } else if (n[0] === "c") {
         try {
@@ -165,11 +147,9 @@ function main() {
           }
           throw error;
         }
-        _14$live = false;
         continue;
       }
     }
-    _14$live = false;
     for (const item of iter) {
       noisyDrop_drop(item);
     }
@@ -184,9 +164,7 @@ function main() {
         }
         throw error;
       }
-      _54$live = true;
       if (!tmp$1) {
-        _54$live = false;
         for (const item of iter$1) {
           noisyDrop_drop(item);
         }
@@ -201,9 +179,7 @@ function main() {
             }
             throw error;
           }
-          _79$live = true;
           if (!tmp$2) {
-            _79$live = false;
             for (const item of iter$2) {
               noisyDrop_drop(item);
             }
@@ -218,9 +194,7 @@ function main() {
                 }
                 throw error;
               }
-              _103$live = true;
               if (!tmp$3) {
-                _103$live = false;
                 for (const item of iter$3) {
                   noisyDrop_drop(item);
                 }
@@ -264,11 +238,7 @@ function main() {
                         }
                         throw error;
                       }
-                      _146$live = true;
-                      _146$0$live = true;
                       if (!tmp$5) {
-                        _146$live = false;
-                        _146$0$live = false;
                         for (const item of iter$5) {
                           noisyDrop_drop(item[1]);
                         }
@@ -284,9 +254,7 @@ function main() {
                             }
                             throw error;
                           }
-                          _178$live = true;
                           if (!tmp$7) {
-                            _178$live = false;
                             for (const item of iter$6) {
                               noisyDrop_drop(item);
                             }
@@ -302,7 +270,6 @@ function main() {
                                 }
                                 throw error;
                               }
-                              _217$live = true;
                               if (tmp$9) {
                                 const row = tmp$9;
                                 tmp$10 = undefined;
@@ -329,9 +296,7 @@ function main() {
                                     }
                                     throw error;
                                   }
-                                  _231$live = true;
                                   if (!tmp$11) {
-                                    _231$live = false;
                                     try {
                                       for (const item of iter$8) {
                                         noisyDrop_drop(item);
@@ -351,7 +316,6 @@ function main() {
                                       }
                                       throw error;
                                     }
-                                    _217$live = false;
                                     continue outer;
                                   } else {
                                     const cell = tmp$11;
@@ -368,7 +332,6 @@ function main() {
                                         }
                                         throw error;
                                       }
-                                      _231$live = false;
                                       try {
                                         for (const item of iter$8) {
                                           noisyDrop_drop(item);
@@ -415,18 +378,15 @@ function main() {
                                       }
                                       throw error;
                                     }
-                                    _231$live = false;
                                   }
                                 }
                               }
-                              _217$live = false;
                               for (const item of iter$7) {
                                 noisyDrop_drop(item);
                               }
                               iter$9 = [3];
                               while (true) {
                                 tmp$12 = countdownIterator_next(iter$9);
-                                _267$live = true;
                                 if (tmp$12) {
                                   const n = tmp$12;
                                   if (n[0] === "c1") {
@@ -439,11 +399,9 @@ function main() {
                                       throw error;
                                     }
                                     noisyDrop_drop(n);
-                                    _267$live = false;
                                     continue;
                                   }
                                 }
-                                _267$live = false;
                                 tmp$13 = undefined;
                                 tmp$13 = [["s"], ["long"], ["rest"]];
                                 console.log(
@@ -454,31 +412,24 @@ function main() {
                               }
                             }
                           } else {
-                            n$5$live = true;
                             n = tmp$7;
                             if (n[0] === "m1") {
                               const value = ["m1b"];
                               try {
                                 noisyDrop_drop(n);
                               } catch (error) {
-                                n$5$live = true;
                                 n = value;
-                                if (n$5$live) {
-                                  noisyDrop_drop(n);
-                                }
+                                noisyDrop_drop(n);
                                 for (const item of iter$6) {
                                   noisyDrop_drop(item);
                                 }
                                 throw error;
                               }
-                              n$5$live = true;
                               n = value;
                               try {
                                 console.log(`kept ${n[0]}`);
                               } catch (error) {
-                                if (n$5$live) {
-                                  noisyDrop_drop(n);
-                                }
+                                noisyDrop_drop(n);
                                 for (const item of iter$6) {
                                   noisyDrop_drop(item);
                                 }
@@ -492,16 +443,10 @@ function main() {
                                 }
                                 throw error;
                               }
-                              n$5$live = false;
-                              _178$live = false;
                             } else {
-                              n$5$live = false;
                               try {
                                 noisyDrop_drop(n);
                               } catch (error) {
-                                if (n$5$live) {
-                                  noisyDrop_drop(n);
-                                }
                                 for (const item of iter$6) {
                                   noisyDrop_drop(item);
                                 }
@@ -510,16 +455,11 @@ function main() {
                               try {
                                 console.log("moved");
                               } catch (error) {
-                                if (n$5$live) {
-                                  noisyDrop_drop(n);
-                                }
                                 for (const item of iter$6) {
                                   noisyDrop_drop(item);
                                 }
                                 throw error;
                               }
-                              n$5$live = false;
-                              _178$live = false;
                             }
                           }
                         }
@@ -545,7 +485,6 @@ function main() {
                         }
                         try {
                           if (tmp$5) {
-                            _146$0$live = false;
                           }
                         } catch (error) {
                           for (const item of iter$5) {
@@ -553,8 +492,6 @@ function main() {
                           }
                           throw error;
                         }
-                        _146$live = false;
-                        _146$0$live = false;
                       }
                     }
                   } else {
@@ -600,7 +537,6 @@ function main() {
                   }
                   throw error;
                 }
-                _103$live = false;
               }
             }
           } else {
@@ -622,7 +558,6 @@ function main() {
               }
               throw error;
             }
-            _79$live = false;
           }
         }
       } else {
@@ -644,7 +579,6 @@ function main() {
           }
           throw error;
         }
-        _54$live = false;
       }
     }
   }

@@ -61,236 +61,129 @@ function drain(rx) {
 }
 
 function main() {
-  const value = $channel();
-  let tx$live = true;
-  const tx = value[0];
-  const rx = value[1];
+  const [tx, rx] = $channel();
   let tx2;
   try {
     tx2 = $cloneSender(tx);
   } catch (error) {
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
+    $dropSender(tx);
     throw error;
   }
-  let tx2$live = true;
-  tx$live = false;
   try {
     produce(tx);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
+    $dropSender(tx2);
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp;
   try {
     tmp = $send(tx2, { id: 9, name: "late" });
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
+    $dropSender(tx2);
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   try {
     $unwrapOk(tmp, undefined, (e) => "SendError { .. }");
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
+    $dropSender(tx2);
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$1;
   try {
     tmp$1 = $tryRecv(rx);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
+    $dropSender(tx2);
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   if (tmp$1.TAG === "Ok") {
     try {
       console.log(`first ${tmp$1._0.id}`);
     } catch (error) {
-      if (tx2$live) {
-        $dropSender(tx2);
-      }
+      $dropSender(tx2);
       $dropReceiver(rx);
-      if (tx$live) {
-        $dropSender(tx);
-      }
       throw error;
     }
   }
-  tx2$live = false;
   try {
     $dropSender(tx2);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$2;
   try {
     tmp$2 = drain(rx);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   try {
     console.log(`[${tmp$2.map((item) => $debugStr(item)).join(", ")}]`);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$3;
   try {
     tmp$3 = $tryRecv(rx);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
-  const value$1 = tmp$3.TAG === "Err" && tmp$3._0 === "Disconnected";
+  const value = tmp$3.TAG === "Err" && tmp$3._0 === "Disconnected";
   try {
-    console.log(`${value$1}`);
+    console.log(`${value}`);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$4;
   try {
     tmp$4 = $channel();
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   const tx$1 = tmp$4[0];
   const rx$1 = tmp$4[1];
-  let rx$1$live = false;
   try {
     $dropReceiver(rx$1);
   } catch (error) {
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$5;
   try {
     tmp$5 = $send(tx$1, 5);
   } catch (error) {
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
-  const value$2 = tmp$5.TAG !== "Ok";
+  const value$1 = tmp$5.TAG !== "Ok";
   try {
-    console.log(`${value$2}`);
+    console.log(`${value$1}`);
   } catch (error) {
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$6;
   try {
     tmp$6 = $channel();
   } catch (error) {
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   const tx$2 = tmp$6[0];
   const rx$2 = tmp$6[1];
-  let tx$2$live = false;
   const notify = () => {
     $unwrapOk($send(tx$2, "done"), undefined, (e) => "SendError { .. }");
   };
@@ -299,20 +192,8 @@ function main() {
   } catch (error) {
     $dropSender(tx$2);
     $dropReceiver(rx$2);
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   try {
@@ -322,20 +203,8 @@ function main() {
   } catch (error) {
     $dropSender(tx$2);
     $dropReceiver(rx$2);
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$7;
@@ -344,62 +213,26 @@ function main() {
   } catch (error) {
     $dropSender(tx$2);
     $dropReceiver(rx$2);
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
-  const value$3 = tmp$7.TAG === "Err" && tmp$7._0 === "Empty";
+  const value$2 = tmp$7.TAG === "Err" && tmp$7._0 === "Empty";
   try {
-    console.log(`${value$3}`);
+    console.log(`${value$2}`);
   } catch (error) {
     $dropSender(tx$2);
     $dropReceiver(rx$2);
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   try {
     $dropSender(tx$2);
   } catch (error) {
     $dropReceiver(rx$2);
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   let tmp$8;
@@ -407,84 +240,32 @@ function main() {
     tmp$8 = $recv(rx$2);
   } catch (error) {
     $dropReceiver(rx$2);
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
-  const value$4 = tmp$8.TAG !== "Ok";
+  const value$3 = tmp$8.TAG !== "Ok";
   try {
-    console.log(`${value$4}`);
+    console.log(`${value$3}`);
   } catch (error) {
     $dropReceiver(rx$2);
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
   try {
     $dropReceiver(rx$2);
   } catch (error) {
-    if (tx$2$live) {
-      $dropSender(tx$2);
-    }
-    if (rx$1$live) {
-      $dropReceiver(rx$1);
-    }
     $dropSender(tx$1);
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
-  tx$2$live = false;
-  rx$1$live = false;
   try {
     $dropSender(tx$1);
   } catch (error) {
-    if (tx2$live) {
-      $dropSender(tx2);
-    }
     $dropReceiver(rx);
-    if (tx$live) {
-      $dropSender(tx);
-    }
     throw error;
   }
-  tx2$live = false;
-  try {
-    $dropReceiver(rx);
-  } catch (error) {
-    if (tx$live) {
-      $dropSender(tx);
-    }
-    throw error;
-  }
+  $dropReceiver(rx);
 }
 //# sourceMappingURL=case.js.map

@@ -220,6 +220,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// The flag that says whether `place` is there to drop: its variable's
+    /// name, a part's by its field's, `pair$a$live`. A temporary's is MIR's
+    /// local's until tidy names it for what its drop is of (`tidy/flags.rs`).
+    pub(super) fn flag_name(&mut self, state: &State<'_, 'tcx>, place: Place<'tcx>) -> String {
+        let mut name = match state.locals.names[place.local].as_str() {
+            "" => super::tidy::temporary(place.local.as_usize()),
+            name => name.to_string(),
+        };
+        let mut ty = mir::PlaceTy::from_ty(state.body.local_decls[place.local].ty);
+        for elem in place.projection {
+            if let ProjectionElem::Field(field, _) = elem {
+                let key = match (ty.ty.kind(), ty.variant_index) {
+                    (ty::Adt(adt, _), variant) => crate::lower::bindings::field_key(
+                        self.tcx,
+                        &adt.variant(variant.unwrap_or(rustc_abi::FIRST_VARIANT)).fields[field],
+                    ),
+                    _ => field.as_usize().to_string(),
+                };
+                name = format!("{name}${key}");
+            }
+            ty = ty.projection_ty(self.tcx, elem);
+        }
+        self.fresh(&format!("{name}$live"))
+    }
+
     /// The flags set before `at`, as rustc sets them, after what's made
     /// before: a call's cleanup reads them as they were where it was made.
     pub(super) fn flag_sets(&mut self, state: &mut State<'_, 'tcx>, at: Location, out: &mut Vec<Stmt>) -> R<()> {

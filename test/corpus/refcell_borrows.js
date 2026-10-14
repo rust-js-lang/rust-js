@@ -40,7 +40,6 @@ const Counter = {
 };
 
 function main() {
-  let held$live = false;
   const cell = { value: [1, 2] };
   const a = $borrow(cell, true);
   let b;
@@ -98,14 +97,11 @@ function main() {
   }
   $unborrow(value$2);
   const writing = $borrowMut(cell, true);
-  let writing$live = true;
   let tmp$2;
   try {
     tmp$2 = $tryBorrow(cell);
   } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
+    $unborrow(writing);
     throw error;
   }
   const value$3 = tmp$2.TAG !== "Ok";
@@ -115,9 +111,7 @@ function main() {
     if (tmp$2.TAG === "Ok") {
       $unborrow(tmp$2._0);
     }
-    if (writing$live) {
-      $unborrow(writing);
-    }
+    $unborrow(writing);
     throw error;
   }
   try {
@@ -125,327 +119,127 @@ function main() {
       $unborrow(tmp$2._0);
     }
   } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  writing$live = false;
-  try {
     $unborrow(writing);
+    throw error;
+  }
+  let writing$live = false;
+  $unborrow(writing);
+  const value$4 = $tryBorrow(cell);
+  const value$5 =
+    value$4.TAG === "Ok"
+      ? {
+          TAG: "Ok",
+          _0: ((v) => {
+            $unborrow(v);
+            return v.value.length;
+          })(value$4._0),
+        }
+      : value$4;
+  const value$6 = $tryBorrow(cell, true);
+  try {
+    console.log(
+      `${value$5.TAG === "Ok" ? `Ok(${value$5._0})` : `Err(${$debugParseError(value$5._0, "BorrowError")})`} ${value$6.TAG === "Ok"}`,
+    );
   } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
+    if (value$6.TAG === "Ok") {
+      $unborrow(value$6._0);
     }
     throw error;
   }
+  if (value$6.TAG === "Ok") {
+    $unborrow(value$6._0);
+  }
+  const value$7 = [7];
+  const value$8 = $borrowMut(cell, true);
+  $assign(value$8.value, value$7);
+  $unborrow(value$8);
+  const number = { value: 1 };
+  const value$9 = $borrowMut(number, true);
+  value$9.value = 5;
+  $unborrow(value$9);
+  const text = { value: "" };
+  const value$10 = $borrowMut(text, true);
+  value$10.value = "t";
+  $unborrow(value$10);
+  const value$11 = $borrow(cell, true);
   let tmp$3;
+  try {
+    tmp$3 = $borrow(number, true);
+  } catch (error) {
+    $unborrow(value$11);
+    throw error;
+  }
   let tmp$4;
   try {
-    tmp$3 = $tryBorrow(cell);
-    tmp$4 = (v) => {
-      $unborrow(v);
-      return v.value.length;
-    };
+    tmp$4 = $borrow(text, true);
   } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
+    $unborrow(tmp$3);
+    $unborrow(value$11);
     throw error;
   }
+  try {
+    console.log(
+      `[${value$11.value.map((item) => String(item)).join(", ")}] ${tmp$3.value} ${tmp$4.value}`,
+    );
+  } catch (error) {
+    $unborrow(tmp$4);
+    $unborrow(tmp$3);
+    $unborrow(value$11);
+    throw error;
+  }
+  try {
+    $unborrow(tmp$4);
+  } catch (error) {
+    $unborrow(tmp$3);
+    $unborrow(value$11);
+    throw error;
+  }
+  try {
+    $unborrow(tmp$3);
+  } catch (error) {
+    $unborrow(value$11);
+    throw error;
+  }
+  $unborrow(value$11);
+  const grid = { value: [1, 2, 3] };
+  const value$12 = $borrowMut(grid, true);
+  value$12.value[0] = 3;
+  $unborrow(value$12);
+  const value$13 = $borrowMut(grid, true);
+  value$13.value[1] = (value$13.value[1] + 3) | 0;
+  $unborrow(value$13);
+  const value$14 = $borrow(grid, true);
   let tmp$5;
   try {
-    tmp$5 = tmp$3.TAG === "Ok" ? { TAG: "Ok", _0: tmp$4(tmp$3._0) } : tmp$3;
+    tmp$5 = $borrow(grid, true);
   } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  let tmp$6;
-  try {
-    tmp$6 = $tryBorrow(cell, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  const value$4 = tmp$6.TAG === "Ok";
-  try {
-    console.log(
-      `${tmp$5.TAG === "Ok" ? `Ok(${tmp$5._0})` : `Err(${$debugParseError(tmp$5._0, "BorrowError")})`} ${value$4}`,
-    );
-  } catch (error) {
-    if (tmp$6.TAG === "Ok") {
-      $unborrow(tmp$6._0);
-    }
-    if (writing$live) {
-      $unborrow(writing);
-    }
+    $unborrow(value$14);
     throw error;
   }
   try {
-    if (tmp$6.TAG === "Ok") {
-      $unborrow(tmp$6._0);
-    }
+    console.log(`[${value$14.value.map((item) => String(item)).join(", ")}] ${tmp$5.value[2]}`);
   } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  const value$5 = [7];
-  let tmp$7;
-  let tmp$8;
-  try {
-    tmp$7 = value$5;
-    tmp$8 = $borrowMut(cell, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  $assign(tmp$8.value, tmp$7);
-  try {
-    $unborrow(tmp$8);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  const number = { value: 1 };
-  let tmp$9;
-  try {
-    tmp$9 = $borrowMut(number, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  tmp$9.value = 5;
-  try {
-    $unborrow(tmp$9);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  const text = { value: "" };
-  let tmp$10;
-  try {
-    tmp$10 = $borrowMut(text, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  tmp$10.value = "t";
-  try {
-    $unborrow(tmp$10);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  let tmp$11;
-  try {
-    tmp$11 = $borrow(cell, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  let tmp$12;
-  try {
-    tmp$12 = $borrow(number, true);
-  } catch (error) {
-    $unborrow(tmp$11);
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  let tmp$13;
-  try {
-    tmp$13 = $borrow(text, true);
-  } catch (error) {
-    $unborrow(tmp$12);
-    $unborrow(tmp$11);
-    if (writing$live) {
-      $unborrow(writing);
-    }
+    $unborrow(tmp$5);
+    $unborrow(value$14);
     throw error;
   }
   try {
-    console.log(
-      `[${tmp$11.value.map((item) => String(item)).join(", ")}] ${tmp$12.value} ${tmp$13.value}`,
-    );
+    $unborrow(tmp$5);
   } catch (error) {
-    $unborrow(tmp$13);
-    $unborrow(tmp$12);
-    $unborrow(tmp$11);
-    if (writing$live) {
-      $unborrow(writing);
-    }
+    $unborrow(value$14);
     throw error;
   }
-  try {
-    $unborrow(tmp$13);
-  } catch (error) {
-    $unborrow(tmp$12);
-    $unborrow(tmp$11);
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$12);
-  } catch (error) {
-    $unborrow(tmp$11);
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$11);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  const grid = { value: [1, 2, 3] };
-  let tmp$14;
-  try {
-    tmp$14 = $borrowMut(grid, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  tmp$14.value[0] = 3;
-  try {
-    $unborrow(tmp$14);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  let tmp$15;
-  try {
-    tmp$15 = $borrowMut(grid, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  tmp$15.value[1] = (tmp$15.value[1] + 3) | 0;
-  try {
-    $unborrow(tmp$15);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  let tmp$16;
-  try {
-    tmp$16 = $borrow(grid, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  let tmp$17;
-  try {
-    tmp$17 = $borrow(grid, true);
-  } catch (error) {
-    $unborrow(tmp$16);
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  try {
-    console.log(`[${tmp$16.value.map((item) => String(item)).join(", ")}] ${tmp$17.value[2]}`);
-  } catch (error) {
-    $unborrow(tmp$17);
-    $unborrow(tmp$16);
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$17);
-  } catch (error) {
-    $unborrow(tmp$16);
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  try {
-    $unborrow(tmp$16);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
+  $unborrow(value$14);
   const counter = { hits: 0 };
-  try {
-    Counter.hit(counter);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  try {
-    console.log(`${Counter.hit(counter)}`);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
+  Counter.hit(counter);
+  console.log(`${Counter.hit(counter)}`);
   const shared = { value: "a" };
   const other = shared;
-  let tmp$18;
-  try {
-    tmp$18 = $borrowMut(other, true);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
-  tmp$18.value += "b";
-  try {
-    $unborrow(tmp$18);
-  } catch (error) {
-    if (writing$live) {
-      $unborrow(writing);
-    }
-    throw error;
-  }
+  const value$15 = $borrowMut(other, true);
+  value$15.value += "b";
+  $unborrow(value$15);
   const iter = { start: 0, end: 2 };
-  let tmp$19;
+  let tmp$6;
   let held;
   while (true) {
     let tmp;
@@ -513,27 +307,20 @@ function main() {
         }
         throw error;
       }
-      held$live = true;
       try {
         console.log(
           `RefCell { value: ${$showBorrowed(shared, (value) => $debugStr(value))} } ${$debugStr(held.value)}`,
         );
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
+        $unborrow(held);
         if (writing$live) {
           $unborrow(writing);
         }
         throw error;
       }
-      held$live = false;
       try {
         $unborrow(held);
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -543,9 +330,6 @@ function main() {
       try {
         copy = { value: $borrow(shared).value };
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -554,9 +338,6 @@ function main() {
       try {
         console.log(`${$eq(copy, shared)}`);
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -566,9 +347,6 @@ function main() {
       try {
         tmp$2 = $cellReplace($borrowMut(shared), "z");
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -578,9 +356,6 @@ function main() {
       try {
         tmp$3 = $eq(copy, shared);
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -590,9 +365,6 @@ function main() {
       try {
         tmp$4 = [undefined, tmp$3, $cellReplace($borrowMut(shared), "")];
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -601,9 +373,6 @@ function main() {
       try {
         console.log(`${$debugStr(tmp$2)} ${tmp$4[1]} ${tmp$4[2]}`);
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -613,9 +382,6 @@ function main() {
       try {
         reading = $borrow(copy, true);
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -626,9 +392,6 @@ function main() {
         tmp$5 = $tryBorrow(copy, true);
       } catch (error) {
         $unborrow(reading);
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -645,9 +408,6 @@ function main() {
           $unborrow(tmp$5._0);
         }
         $unborrow(reading);
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -659,9 +419,6 @@ function main() {
         }
       } catch (error) {
         $unborrow(reading);
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
@@ -670,29 +427,25 @@ function main() {
       try {
         $unborrow(reading);
       } catch (error) {
-        if (held$live) {
-          $unborrow(held);
-        }
         if (writing$live) {
           $unborrow(writing);
         }
         throw error;
       }
-      held$live = false;
       writing$live = false;
       return;
     }
     try {
-      tmp$19 = $borrowMut(shared, true);
+      tmp$6 = $borrowMut(shared, true);
     } catch (error) {
       if (writing$live) {
         $unborrow(writing);
       }
       throw error;
     }
-    tmp$19.value += "c";
+    tmp$6.value += "c";
     try {
-      $unborrow(tmp$19);
+      $unborrow(tmp$6);
     } catch (error) {
       if (writing$live) {
         $unborrow(writing);

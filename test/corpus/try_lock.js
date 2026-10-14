@@ -126,10 +126,7 @@ function main() {
   }
   $unborrow(g);
   const value$1 = $tryLock(m, true);
-  let _36$live = true;
-  let _36$0$live = true;
   if (value$1.TAG === "Ok") {
-    _36$0$live = false;
     try {
       console.log(`${value$1._0.value}`);
     } catch (error) {
@@ -171,25 +168,17 @@ function main() {
         }
       }
     }
-    _36$live = false;
-    _36$0$live = false;
+  } else if (value$1.TAG === "Ok") {
+    $unborrow(value$1._0);
   } else {
     if (value$1.TAG === "Ok") {
-      if (_36$0$live) {
-        $unborrow(value$1._0);
-      }
-    } else {
-      if (value$1.TAG === "Ok") {
-        $unborrow(value$1._0);
-      }
-      if (value$1.TAG === "Err") {
-        if (value$1._0.TAG === "Poisoned") {
-          $unborrow(value$1._0._0.data);
-        }
+      $unborrow(value$1._0);
+    }
+    if (value$1.TAG === "Err") {
+      if (value$1._0.TAG === "Poisoned") {
+        $unborrow(value$1._0._0.data);
       }
     }
-    _36$live = false;
-    _36$0$live = false;
   }
   const l = { value: "a" };
   const r1 = $unwrapOk($tryLock(l), undefined, (e) =>

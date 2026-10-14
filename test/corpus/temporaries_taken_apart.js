@@ -32,8 +32,7 @@ function pick(n) {
   }
   const a = tmp[0];
   const b = tmp[1];
-  const result = { TAG: "Both", _0: a, _1: b };
-  return result;
+  return { TAG: "Both", _0: a, _1: b };
 }
 
 function some_borrowed(_1) {
@@ -87,10 +86,7 @@ function all_moved([a, b]) {
 }
 
 function main() {
-  let _46$live = false;
-  let _46$0$live = false;
-  let _98$0$live = false;
-  let _98$0$0$live = false;
+  let tmp$0$live = false;
   const value = make(3);
   let tmp;
   try {
@@ -211,8 +207,6 @@ function main() {
       let tmp$3;
       try {
         tmp$3 = make(8);
-        _98$0$live = true;
-        _98$0$0$live = true;
         tmp$4 = [tmp$2, tmp$3];
       } catch (error) {
         if (tmp$2 != null) {
@@ -224,7 +218,6 @@ function main() {
         throw error;
       }
       if (tmp$4[0]) {
-        _98$0$0$live = false;
         const z = tmp$4[0];
         try {
           console.log(`if ${z[0]}`);
@@ -253,14 +246,10 @@ function main() {
           loudDrop_drop(x);
           throw error;
         }
-        _98$0$live = false;
-        _98$0$0$live = false;
       } else {
         try {
           if (tmp$4[0]) {
-            if (_98$0$0$live) {
-              loudDrop_drop(tmp$4[0]);
-            }
+            loudDrop_drop(tmp$4[0]);
           }
           loudDrop_drop(tmp$4[1]);
         } catch (error) {
@@ -269,8 +258,6 @@ function main() {
           loudDrop_drop(x);
           throw error;
         }
-        _98$0$live = false;
-        _98$0$0$live = false;
       }
       let before;
       try {
@@ -558,18 +545,14 @@ function main() {
       loudDrop_drop(x);
       throw error;
     }
-    _46$live = true;
-    _46$0$live = true;
+    tmp$0$live = true;
     if (tmp$3.TAG === "Both") {
-      _46$0$live = false;
+      tmp$0$live = false;
       try {
         console.log(`both ${tmp$3._0[0]}`);
       } catch (error) {
         loudDrop_drop(tmp$3._0);
         if (tmp$3.TAG === "Both") {
-          if (_46$0$live) {
-            loudDrop_drop(tmp$3._0);
-          }
           loudDrop_drop(tmp$3._1);
         } else {
           if (tmp$3.TAG === "Both") {
@@ -588,9 +571,6 @@ function main() {
         loudDrop_drop(tmp$3._0);
       } catch (error) {
         if (tmp$3.TAG === "Both") {
-          if (_46$0$live) {
-            loudDrop_drop(tmp$3._0);
-          }
           loudDrop_drop(tmp$3._1);
         } else {
           if (tmp$3.TAG === "Both") {
@@ -610,9 +590,7 @@ function main() {
         console.log("one");
       } catch (error) {
         if (tmp$3.TAG === "Both") {
-          if (_46$0$live) {
-            loudDrop_drop(tmp$3._0);
-          }
+          loudDrop_drop(tmp$3._0);
           loudDrop_drop(tmp$3._1);
         } else {
           if (tmp$3.TAG === "Both") {
@@ -632,9 +610,7 @@ function main() {
         console.log("zero");
       } catch (error) {
         if (tmp$3.TAG === "Both") {
-          if (_46$0$live) {
-            loudDrop_drop(tmp$3._0);
-          }
+          loudDrop_drop(tmp$3._0);
           loudDrop_drop(tmp$3._1);
         } else {
           if (tmp$3.TAG === "Both") {
@@ -652,7 +628,7 @@ function main() {
     }
     try {
       if (tmp$3.TAG === "Both") {
-        if (_46$0$live) {
+        if (tmp$0$live) {
           loudDrop_drop(tmp$3._0);
         }
         loudDrop_drop(tmp$3._1);
@@ -670,8 +646,7 @@ function main() {
       loudDrop_drop(x);
       throw error;
     }
-    _46$live = false;
-    _46$0$live = false;
+    tmp$0$live = false;
     try {
       console.log(`after match ${n}`);
     } catch (error) {

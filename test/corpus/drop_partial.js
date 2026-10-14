@@ -38,16 +38,13 @@ function main() {
   }
   noisyDrop_drop(whole.b);
   const maybe = pair("ma", "mb", 2);
-  let maybe$1$live = true;
+  let maybe$b$live = true;
   if (maybe.n === 2) {
-    maybe$1$live = false;
+    maybe$b$live = false;
     try {
       consume(maybe.b);
     } catch (error) {
       noisyDrop_drop(maybe.a);
-      if (maybe$1$live) {
-        noisyDrop_drop(maybe.b);
-      }
       throw error;
     }
   }
@@ -55,16 +52,16 @@ function main() {
     console.log(`maybe ${maybe.n}`);
   } catch (error) {
     noisyDrop_drop(maybe.a);
-    if (maybe$1$live) {
+    if (maybe$b$live) {
       noisyDrop_drop(maybe.b);
     }
     throw error;
   }
   noisyDrop_drop(maybe.a);
-  if (maybe$1$live) {
+  if (maybe$b$live) {
     noisyDrop_drop(maybe.b);
   }
-  maybe$1$live = false;
+  maybe$b$live = false;
   const nest = { left: pair("la", "lb", 3), right: ["r"] };
   const leftB = nest.left.b;
   try {
@@ -108,9 +105,6 @@ function main() {
       consume(opt);
     } catch (error) {
       if (opt) {
-        if (opt$0$live) {
-          noisyDrop_drop(opt);
-        }
       }
       throw error;
     }
@@ -133,18 +127,15 @@ function main() {
   opt$0$live = false;
   const value = ["sa"];
   const value$1 = ["sb"];
-  let shape$0$live = true;
+  let shape$a$live = true;
   const shape = { TAG: "Two", a: value, b: value$1 };
   if (shape.TAG === "Two") {
-    shape$0$live = false;
+    shape$a$live = false;
     try {
       console.log(`two ${shape.a[0]}`);
     } catch (error) {
       noisyDrop_drop(shape.a);
       if (shape.TAG === "Two") {
-        if (shape$0$live) {
-          noisyDrop_drop(shape.a);
-        }
         noisyDrop_drop(shape.b);
       } else {
         if (shape.TAG === "One") {
@@ -161,9 +152,6 @@ function main() {
       noisyDrop_drop(shape.a);
     } catch (error) {
       if (shape.TAG === "Two") {
-        if (shape$0$live) {
-          noisyDrop_drop(shape.a);
-        }
         noisyDrop_drop(shape.b);
       } else {
         if (shape.TAG === "One") {
@@ -181,7 +169,7 @@ function main() {
     console.log("shape");
   } catch (error) {
     if (shape.TAG === "Two") {
-      if (shape$0$live) {
+      if (shape$a$live) {
         noisyDrop_drop(shape.a);
       }
       noisyDrop_drop(shape.b);
@@ -197,7 +185,7 @@ function main() {
     throw error;
   }
   if (shape.TAG === "Two") {
-    if (shape$0$live) {
+    if (shape$a$live) {
       noisyDrop_drop(shape.a);
     }
     noisyDrop_drop(shape.b);
@@ -210,34 +198,25 @@ function main() {
       noisyDrop_drop(shape.b);
     }
   }
-  shape$0$live = false;
+  shape$a$live = false;
   const again = pair("ra", "rb", 4);
-  let again$0$live = false;
   const a = again.a;
   try {
     consume(a);
   } catch (error) {
-    if (again$0$live) {
-      noisyDrop_drop(again.a);
-    }
     noisyDrop_drop(again.b);
     throw error;
   }
-  const value$2 = ["ra2"];
-  again$0$live = true;
-  again.a = value$2;
+  again.a = ["ra2"];
   try {
     console.log(`again ${again.a[0]}`);
   } catch (error) {
-    if (again$0$live) {
-      noisyDrop_drop(again.a);
-    }
+    noisyDrop_drop(again.a);
     noisyDrop_drop(again.b);
     throw error;
   }
   noisyDrop_drop(again.a);
   noisyDrop_drop(again.b);
-  again$0$live = false;
   console.log("end");
 }
 //# sourceMappingURL=case.js.map

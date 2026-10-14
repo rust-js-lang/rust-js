@@ -41,97 +41,36 @@ export function f(p) {
 
 function main() {
   const r = f([[1], [2]]);
-  let r$live = true;
   const value = (d) => d[0];
   try {
     console.log(
       `got ${((value) => (value == null ? "None" : `Some(${value})`))(r ? value(r) : undefined)}`,
     );
   } catch (error) {
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
-    throw error;
-  }
-  r$live = false;
-  try {
     if (r != null) {
       dDrop_drop(r);
     }
-  } catch (error) {
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
     throw error;
   }
-  let r$1;
-  try {
-    r$1 = f([undefined, [3]]);
-  } catch (error) {
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
-    throw error;
+  if (r != null) {
+    dDrop_drop(r);
   }
-  let r$1$live = true;
+  const r$1 = f([undefined, [3]]);
   const value$1 = (d) => d[0];
   try {
     console.log(
       `got ${((value) => (value == null ? "None" : `Some(${value})`))(r$1 ? value$1(r$1) : undefined)}`,
     );
   } catch (error) {
-    if (r$1$live) {
-      if (r$1 != null) {
-        dDrop_drop(r$1);
-      }
-    }
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
-    throw error;
-  }
-  r$1$live = false;
-  try {
     if (r$1 != null) {
       dDrop_drop(r$1);
     }
-  } catch (error) {
-    if (r$1$live) {
-      if (r$1 != null) {
-        dDrop_drop(r$1);
-      }
-    }
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
     throw error;
   }
-  let r$2;
-  try {
-    r$2 = f([undefined, undefined]);
-  } catch (error) {
-    if (r$1$live) {
-      if (r$1 != null) {
-        dDrop_drop(r$1);
-      }
-    }
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
-    throw error;
+  if (r$1 != null) {
+    dDrop_drop(r$1);
   }
+  const r$2 = f([undefined, undefined]);
   const value$2 = (d) => d[0];
   try {
     console.log(
@@ -141,35 +80,10 @@ function main() {
     if (r$2 != null) {
       dDrop_drop(r$2);
     }
-    if (r$1$live) {
-      if (r$1 != null) {
-        dDrop_drop(r$1);
-      }
-    }
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
     throw error;
   }
-  try {
-    if (r$2 != null) {
-      dDrop_drop(r$2);
-    }
-  } catch (error) {
-    if (r$1$live) {
-      if (r$1 != null) {
-        dDrop_drop(r$1);
-      }
-    }
-    if (r$live) {
-      if (r != null) {
-        dDrop_drop(r);
-      }
-    }
-    throw error;
+  if (r$2 != null) {
+    dDrop_drop(r$2);
   }
-  r$1$live = false;
 }
 //# sourceMappingURL=case.js.map
