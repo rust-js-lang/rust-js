@@ -2174,4 +2174,13 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "a count kept in a map from MIR"],
   },
+  {
+    name: "user-name-taken-for-temporary",
+    breaks: "a local the program names `_5` is taken for a temporary, and named `value`",
+    file: "src/lower/mir/tidy.rs",
+    find: "        true => format!(\"{name}_\"),\n",
+    replace: "        true => name.to_string(),\n",
+    tests: ["test/corpus.test.ts", "-t", "temporary_shaped_names"],
+    snapshots: true,
+  },
 ];

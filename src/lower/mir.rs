@@ -731,7 +731,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let place = drops.move_data.move_paths[path].place;
                 flagged[place.local.as_usize()] = true;
                 let mut name = match state.locals.names[place.local].as_str() {
-                    "" => format!("_{}", place.local.as_usize()),
+                    "" => tidy::temporary(place.local.as_usize()),
                     name => name.to_string(),
                 };
                 for elem in place.projection {
@@ -1570,9 +1570,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 continue;
             }
             let base = match (&user[local], body.local_kind(local)) {
-                (Some(name), _) => name.clone(),
+                (Some(name), _) => tidy::user_name(name),
                 (None, LocalKind::ReturnPointer) => "result".to_string(),
-                (None, _) => format!("_{}", local.as_usize()),
+                (None, _) => tidy::temporary(local.as_usize()),
             };
             locals.names[local] = self.fresh(&base);
         }
@@ -3378,7 +3378,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 };
                 let item = std::mem::replace(&mut items[k], Value::Expr(Expr::undefined()));
                 let item = self.value_expr(item, span)?;
-                let held = self.spill("_arg", item, out);
+                let held = self.spill(tidy::HELD_ARG, item, out);
                 let Value::List(items) = &mut state.pending[0].1 else {
                     unreachable!("a list")
                 };

@@ -1764,13 +1764,32 @@ fn assigns(stmts: &[Stmt], name: &str) -> bool {
     assigned
 }
 
-/// Whether `name` is a temporary MIR made, `_5`, not one the program names.
-/// Whether `name` is MIR's lowering's of an argument it holds, `_arg`,
-/// named once tidied.
-fn is_held_arg(name: &str) -> bool {
-    name.split('$').next() == Some("_arg")
+/// A temporary MIR made, by its local's index, `_5`: the one spelling of
+/// one, which `is_temporary` knows, and no name the program gives has
+/// (`user_name`).
+pub(super) fn temporary(local: usize) -> String {
+    format!("_{local}")
 }
 
+/// What MIR's lowering holds an argument in, `_arg`, named once tidied.
+pub(super) const HELD_ARG: &str = "_arg";
+
+/// A name the program gives a local, as JS's: one shaped as a temporary's,
+/// `let _5`, is `_5_`, so tidy never takes it for one and names it apart.
+pub(super) fn user_name(name: &str) -> String {
+    match is_temporary(name) {
+        true => format!("{name}_"),
+        false => name.to_string(),
+    }
+}
+
+/// Whether `name` is MIR's lowering's of an argument it holds, `_arg`.
+fn is_held_arg(name: &str) -> bool {
+    name.split('$').next() == Some(HELD_ARG)
+}
+
+/// Whether `name` is a temporary MIR made, `_5`, or one given apart from
+/// one, `_5$1`, not one the program names.
 fn is_temporary(name: &str) -> bool {
     name.strip_prefix('_')
         .is_some_and(|n| !n.is_empty() && n.chars().all(|c| c.is_ascii_digit() || c == '$'))
