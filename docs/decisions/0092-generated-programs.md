@@ -57,6 +57,14 @@ time, valid and deterministic by construction:
   `{ let mut g = || { x = a; b }; x += g(); }`, as `x += g()` reads `x`
   after the call. It captures only `x`, so nothing else it reads is
   borrowed while it lives.
+- Drops, and when: `D(u32)`, whose `Drop` prints its tag. One held, `let
+  mut d3 = D(3);`, is dropped where its block ends, a loop's body each
+  time round, in the reverse of the order they were made; one not, `let _
+  = D(3);`, at once; one replaced, `d3 = D(4);`, after the new one is made;
+  one moved, `drop(d3)`, `take(d3)` or `let d5 = d3;`, where it goes; and
+  a temporary read, `D(7).0`, as its statement ends, a `println!` after it
+  prints. Only what a block made does it move, so nothing is moved twice
+  or read after (2026-10-14).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.

@@ -34,7 +34,7 @@ const inside = (ty: Ty, outer: "Vec" | "Option"): IntTy | undefined => {
 };
 // What's `Copy` can be read as it is; a `Vec`, a `String` or a map is read
 // through `clone()`, so it's never moved from the variable that holds it.
-const isCopy = (ty: Ty) => inside(ty, "Vec") === undefined && ty !== "String" && ty !== "Map";
+const isCopy = (ty: Ty) => inside(ty, "Vec") === undefined && ty !== "String" && ty !== "Map" && ty !== "D";
 
 // The struct every program has, whose fields are of three widths.
 export const struct = { name: "S", fields: [["a", "i32"], ["b", "u8"], ["c", "i64"]] as [string, IntTy][] };
@@ -84,7 +84,11 @@ export type Expr =
   // `s.a` and gives it: effects inside an expression, which JS may run in
   // another order than Rust does.
   | { kind: "note"; ty: Ty; tag: number; a: Expr }
-  | { kind: "bump"; ty: Ty; name: string };
+  | { kind: "bump"; ty: Ty; name: string }
+  // `D(7).0`, a temporary dropped at the end of its statement, and `d3.0`,
+  // a `D` held: what's dropped, and when, is printed (ADR 0092).
+  | { kind: "dtemp"; ty: Ty; tag: number }
+  | { kind: "dread"; ty: Ty; name: string };
 
 export type Stmt =
   | { kind: "let"; name: string; ty: Ty; value: Expr }
@@ -106,7 +110,15 @@ export type Stmt =
   | { kind: "text-op"; name: string; op: "push_str" | "push"; value: Expr }
   | { kind: "map-op"; name: string; op: "insert" | "remove" | "entry"; key: Expr; value?: Expr }
   | { kind: "for-map"; key: string; item: string; map: string; body: Stmt[] }
-  | { kind: "if-let-b"; name: string; value: Expr; then: Stmt[]; else: Stmt[] };
+  | { kind: "if-let-b"; name: string; value: Expr; then: Stmt[]; else: Stmt[] }
+  // A `D`, which prints its tag as it's dropped: held, `let mut d3 =
+  // D(3);`, dropped at its block's end, or not, `let _ = D(3);`, dropped at
+  // once; replaced, `d3 = D(4);`, the old one dropped after the new one is
+  // made; and moved, `drop(d3)`, `take(d3)` or `let d5 = d3;`, only where
+  // it was made, so it's never moved twice nor read after.
+  | { kind: "dlet"; name: string; tag: number; bound: boolean }
+  | { kind: "dset"; name: string; tag: number }
+  | { kind: "dmove"; name: string; how: "drop" | "take" | "let"; into?: string };
 
 export type Program = Stmt[];
 
@@ -156,6 +168,10 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
     return { kind: "write", ty, name: w.name, value: sub(w.ty), result: sub(ty) };
   }
   if (r.chance(0.05)) return { kind: "note", ty, tag: r.int(100), a: sub(ty) };
+  if (ty === "u32" && r.chance(0.1)) {
+    const held = scope.filter((v) => v.ty === "D");
+    return held.length > 0 && r.chance(0.5) ? { kind: "dread", ty, name: r.pick(held).name } : { kind: "dtemp", ty, tag: 1000 + r.int(1000) };
+  }
   const structs = written.filter((v) => v.ty === "S");
   if (ty === "i32" && structs.length > 0 && r.chance(0.3)) return { kind: "bump", ty, name: r.pick(structs).name };
   if (ty === "bool") {
@@ -354,12 +370,15 @@ function valueType(r: Random): Ty {
 function block(r: Random, scope: Scope, depth: number, counter: { n: number }, size: number): Stmt[] {
   const stmts: Stmt[] = [];
   const inner = [...scope];
+  // The `D`s made in this block, which only it may move.
+  const owned: string[] = [];
   for (let i = 0; i < size; i++) {
-    const writable = inner.filter((v) => v.mutable);
+    const writable = inner.filter((v) => v.mutable && v.ty !== "D");
+    const held = inner.filter((v) => v.ty === "D");
     const vecs = writable.filter((v) => inside(v.ty, "Vec"));
     const texts = writable.filter((v) => v.ty === "String");
     const maps = writable.filter((v) => v.ty === "Map");
-    const choice = r.int(19);
+    const choice = r.int(22);
     if (choice < 3 || writable.length === 0) {
       const ty = valueType(r);
       const name = `v${counter.n++}`;
@@ -470,6 +489,29 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
         op: r.pick(["=", "+=", "-=", "^="]),
         twice: r.chance(0.3),
       });
+    } else if (choice === 19) {
+      const name = `d${counter.n++}`;
+      const bound = r.chance(0.85);
+      stmts.push({ kind: "dlet", name, tag: counter.n++, bound });
+      if (bound) {
+        inner.push({ name, ty: "D", mutable: true });
+        owned.push(name);
+      }
+    } else if (choice === 20 && held.length > 0) {
+      stmts.push({ kind: "dset", name: r.pick(held).name, tag: counter.n++ });
+    } else if (choice === 21 && owned.length > 0) {
+      const name = r.pick(owned);
+      const how = r.pick(["drop", "take", "let"] as const);
+      inner.splice(inner.findIndex((v) => v.name === name), 1);
+      owned.splice(owned.indexOf(name), 1);
+      if (how === "let") {
+        const into = `d${counter.n++}`;
+        stmts.push({ kind: "dmove", name, how, into });
+        inner.push({ name: into, ty: "D", mutable: true });
+        owned.push(into);
+      } else {
+        stmts.push({ kind: "dmove", name, how });
+      }
     } else if (depth > 0) {
       const name = `k${counter.n++}`;
       const lists = inner.filter((v) => inside(v.ty, "Vec"));
@@ -525,6 +567,10 @@ function show(e: Expr): string {
       return `note(${e.tag}, ${show(e.a)})`;
     case "bump":
       return `bump(&mut ${e.name})`;
+    case "dtemp":
+      return `D(id(${e.tag}u32)).0`;
+    case "dread":
+      return `${e.name}.0`;
     case "bin":
     case "cmp":
     case "logic":
@@ -694,6 +740,14 @@ function lines(stmts: Stmt[], indent: string): string[] {
         return [`${indent}for (${s.key}, ${s.item}) in ${s.map}.clone() {`, ...nested(s.body), `${indent}}`];
       case "if-let-b":
         return [`${indent}if let E::B(${s.name}) = ${show(s.value)} {`, ...nested(s.then), `${indent}} else {`, ...nested(s.else), `${indent}}`];
+      case "dlet":
+        return [s.bound ? `${indent}let mut ${s.name} = D(id(${s.tag}u32));` : `${indent}let _ = D(id(${s.tag}u32));`];
+      case "dset":
+        return [`${indent}${s.name} = D(id(${s.tag}u32));`];
+      case "dmove":
+        if (s.how === "drop") return [`${indent}drop(${s.name});`];
+        if (s.how === "take") return [`${indent}println!("took {}", take(${s.name}));`];
+        return [`${indent}let mut ${s.into} = ${s.name};`];
     }
   });
 }
@@ -715,6 +769,18 @@ export function print(program: Program, seed?: number): string {
     "fn bump(s: &mut S) -> i32 {",
     "    s.a = s.a.wrapping_add(1);",
     "    s.a",
+    "}",
+    "",
+    "struct D(u32);",
+    "",
+    "impl Drop for D {",
+    "    fn drop(&mut self) {",
+    '        println!("drop {}", self.0);',
+    "    }",
+    "}",
+    "",
+    "fn take(d: D) -> u32 {",
+    "    d.0",
     "}",
     "",
     "use std::collections::BTreeMap;",
