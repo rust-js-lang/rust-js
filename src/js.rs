@@ -104,7 +104,7 @@ impl Module {
 /// `Option` of a value never falsy (ADR 0298).
 pub(crate) fn presence_of(test: &Expr) -> Option<&Expr> {
     match &test.kind {
-        ExprKind::Binary(Op::LooseNe, x, null) if matches!(null.kind, ExprKind::Null) => Some(x),
+        _ if let Some(x) = null_test(test, true) => Some(x),
         ExprKind::Unary(UnaryOp::Not, not) => match &not.kind {
             ExprKind::Unary(UnaryOp::Not, x) => Some(x),
             _ => None,
@@ -113,10 +113,15 @@ pub(crate) fn presence_of(test: &Expr) -> Option<&Expr> {
     }
 }
 
-/// `x` of `x != null`.
-fn null_tested(test: &Expr) -> Option<&Expr> {
+/// `x` of `x != null`, whether `x` is set, or of `x == null` where `set`
+/// isn't: `undefined` as `null`, which `==` holds alike. The one answer to
+/// what a test of being set is.
+pub(crate) fn null_test(test: &Expr, set: bool) -> Option<&Expr> {
+    let op = if set { Op::LooseNe } else { Op::LooseEq };
     match &test.kind {
-        ExprKind::Binary(Op::LooseNe, x, null) if matches!(null.kind, ExprKind::Null) => Some(x),
+        ExprKind::Binary(o, x, null) if *o == op && matches!(null.kind, ExprKind::Null | ExprKind::Undefined) => {
+            Some(x)
+        }
         _ => None,
     }
 }
@@ -1130,8 +1135,7 @@ impl Expr {
     pub fn bin(op: Op, lhs: Expr, rhs: Expr) -> Expr {
         // `a != null && !!a` is `!!a`: neither is truthy.
         if op == Op::And
-            && let ExprKind::Binary(Op::LooseNe, tested, null) = &lhs.kind
-            && matches!(null.kind, ExprKind::Null)
+            && let Some(tested) = null_test(&lhs, true)
             && let ExprKind::Unary(UnaryOp::Not, inner) = &rhs.kind
             && let ExprKind::Unary(UnaryOp::Not, of) = &inner.kind
             && same_path(tested, of)
@@ -1141,8 +1145,7 @@ impl Expr {
         // `a != null && a === "index"` is `a === "index"`: no literal is
         // `null` or `undefined`.
         if op == Op::And
-            && let ExprKind::Binary(Op::LooseNe, tested, null) = &lhs.kind
-            && matches!(null.kind, ExprKind::Null)
+            && let Some(tested) = null_test(&lhs, true)
             && let ExprKind::Binary(Op::Eq, a, b) = &rhs.kind
             && [(a, b), (b, a)].iter().any(|(x, literal)| {
                 same_path(tested, x) && matches!(literal.kind, ExprKind::Str(_) | ExprKind::Bool(_) | ExprKind::Num(_))
@@ -1183,7 +1186,7 @@ impl Expr {
         // property only: `a?.b.c` would end the chain at `.c` too. Not of
         // `!!a`, which an empty string fails, `!s.is_empty()`'s: an
         // `Option` never falsy's is lowered as one of `a != null` (ADR 0298).
-        if let Some(tested) = null_tested(&test)
+        if let Some(tested) = null_test(&test, true)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Member(object, property) = &then.kind
             && same_path(tested, object)
@@ -1196,7 +1199,7 @@ impl Expr {
         }
         // `a != null ? a.m(x) : undefined` is `a?.m(x)`: `?.` skips the call,
         // its arguments too, where `a` is, as the test does.
-        if let Some(tested) = null_tested(&test)
+        if let Some(tested) = null_test(&test, true)
             && matches!(els.kind, ExprKind::Undefined)
             && let ExprKind::Call(callee, args) = &then.kind
             && let ExprKind::Member(object, property) = &callee.kind
@@ -1636,9 +1639,7 @@ impl Expr {
                 let mut all = Vec::new();
                 parts(self, &mut all, changed);
                 let set_and_true = |i: usize| {
-                    matches!(&all[i].kind, ExprKind::Binary(Op::LooseNe, x, null)
-                        if matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
-                            && all.get(i + 1).is_some_and(|next| same_path(next, x)))
+                    null_test(&all[i], true).is_some_and(|x| all.get(i + 1).is_some_and(|next| same_path(next, x)))
                 };
                 let kept: Vec<Expr> = (0..all.len())
                     .filter(|&i| !set_and_true(i))
@@ -1882,6 +1883,22 @@ mod tests {
         let object = Expr::object(vec![Prop::Field("a".into(), Expr::var("t"))]);
         assert!(object.mentions_var("t"));
         assert!(!object.mentions_var("u"));
+    }
+
+    // A test of being set is one however `null` is spelled, and its `==`
+    // is one of not being set.
+    #[test]
+    fn null_test_is_one_answer() {
+        for null in [Expr::null(), Expr::new(ExprKind::Undefined)] {
+            let set = Expr::new(ExprKind::Binary(
+                Op::LooseNe,
+                Box::new(Expr::var("x")),
+                Box::new(null.clone()),
+            ));
+            assert!(null_test(&set, true).is_some() && null_test(&set, false).is_none());
+            let unset = Expr::new(ExprKind::Binary(Op::LooseEq, Box::new(Expr::var("x")), Box::new(null)));
+            assert!(null_test(&unset, false).is_some() && null_test(&unset, true).is_none());
+        }
     }
 
     // A new name is none a function declared in a block has, or takes.

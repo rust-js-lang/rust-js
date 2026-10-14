@@ -86,8 +86,8 @@ export const mutations: Mutation[] = [
     name: "coalescing-another",
     breaks: "`if (SEEN == null) { other = n; }` is `other ??= n`, set where `SEEN` isn't none",
     file: "src/prepare.rs",
-    find: "    if !matches!(null.kind, ExprKind::Null) || !js::same_path(tested, target) {\n",
-    replace: "    if !matches!(null.kind, ExprKind::Null) {\n",
+    find: "    if !js::same_path(tested, target) {\n",
+    replace: "    if false {\n",
     tests: ["test/modules.test.ts", "-t", "only read and set is the module's let"],
   },
   {

@@ -446,11 +446,7 @@ pub(super) fn copied_bindings(stmts: &mut Vec<Stmt>) {
         }
         let present = match &first.kind {
             ExprKind::Var(v) => v == a,
-            ExprKind::Binary(Op::LooseNe, v, null) => {
-                matches!(&v.kind, ExprKind::Var(v) if v == a)
-                    && matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
-            }
-            _ => false,
+            _ => js::null_test(first, true).is_some_and(|v| matches!(&v.kind, ExprKind::Var(v) if v == a)),
         };
         let (a, b) = (a.clone(), b.clone());
         if !present || is_temporary(&a) || is_temporary(&b) || a == b {

@@ -245,8 +245,8 @@ export const mutations: Mutation[] = [
     "name": "text-truth-chained",
     "breaks": "`s ? s.toUpperCase() : undefined` of text's truth is `s?.toUpperCase()`, `\"\"` where Rust gives `None`",
     "file": "src/js.rs",
-    "find": "fn null_tested(test: &Expr) -> Option<&Expr> {\n    match &test.kind {\n",
-    "replace": "fn null_tested(test: &Expr) -> Option<&Expr> {\n    match &test.kind {\n        ExprKind::Unary(UnaryOp::Not, not) if let ExprKind::Unary(UnaryOp::Not, x) = &not.kind => Some(x),\n",
+    "find": "        if let Some(tested) = null_test(&test, true)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
+    "replace": "        if let Some(tested) = presence_of(&test)\n            && matches!(els.kind, ExprKind::Undefined)\n            && let ExprKind::Call(callee, args) = &then.kind\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",

@@ -493,9 +493,7 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
     let StmtKind::If(test, then, None) = &stmt.kind else {
         return None;
     };
-    let ExprKind::Binary(js::Op::LooseEq, tested, null) = &test.kind else {
-        return None;
-    };
+    let tested = js::null_test(test, false)?;
     let [
         Stmt {
             kind: StmtKind::Assign(target, value),
@@ -505,7 +503,7 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
     else {
         return None;
     };
-    if !matches!(null.kind, ExprKind::Null) || !js::same_path(tested, target) {
+    if !js::same_path(tested, target) {
         return None;
     }
     Some(StmtKind::Assign(
@@ -746,8 +744,7 @@ fn expr(e: &mut Expr) {
     }
     // `x == null || !x` is `!x`: `null` and `undefined` are falsy (ADR 0313).
     if let ExprKind::Binary(js::Op::Or, null_test, not) = &e.kind
-        && let ExprKind::Binary(js::Op::LooseEq, x, null) = &null_test.kind
-        && matches!(null.kind, ExprKind::Null)
+        && let Some(x) = js::null_test(null_test, false)
         && let ExprKind::Unary(js::UnaryOp::Not, y) = &not.kind
         && js::same_path(x, y)
     {

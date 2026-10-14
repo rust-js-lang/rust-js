@@ -873,10 +873,8 @@ fn passed_handler(value: &Expr, calls_rust: bool) -> Option<Expr> {
     else {
         return None;
     };
-    let js::ExprKind::Binary(js::Op::LooseNe, tested, null) = &test.kind else {
-        return None;
-    };
-    let (js::ExprKind::Var(handler), js::ExprKind::Null) = (&tested.kind, &null.kind) else {
+    let tested = js::null_test(test, true)?;
+    let js::ExprKind::Var(handler) = &tested.kind else {
         return None;
     };
     let [
@@ -893,5 +891,5 @@ fn passed_handler(value: &Expr, calls_rust: bool) -> Option<Expr> {
     };
     let given = matches!(args.as_slice(), [arg] if matches!(&arg.kind, js::ExprKind::Var(a) if a == param));
     let called = matches!(&callee.kind, js::ExprKind::Var(c) if c == handler);
-    (given && called && handler != param).then(|| (**tested).clone())
+    (given && called && handler != param).then(|| tested.clone())
 }
