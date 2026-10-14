@@ -235,7 +235,7 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
      * `sources()` is each of those, to watch; and `committed()` is the JS of
      * the package's root module committed beside its Rust (ADR 0041), what
      * a host uses without a compiler, if there's one.
-     * @param {Parameters<typeof checkCargo>[0] & { offline?: boolean }} options
+     * @param {Omit<Parameters<typeof checkCargo>[0], "toolchain" | "compiler" | "react">} options
      */
     cargoSession(options) {
       let workspace, targetDir, manifests = [];
