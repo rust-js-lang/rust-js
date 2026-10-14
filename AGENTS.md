@@ -16,15 +16,42 @@ size of a change is never a reason to settle for less; only the vision and
 the promises are. Make it as safe as it is bold: a failing test first, the
 corpus and mutations as the net, an ADR that says why.
 
+## Exactly one way to do each job
+
+**This rule comes before every other.** For any job there is exactly one
+way to do it. Two ways to do the same job is a red flag: stop, and resolve
+it before going on with anything else.
+
+rust-js is a tool AI coding agents write against. An agent needs one answer
+it can't get wrong, not a choice; every second way is a chance to pick the
+wrong one, and a second thing to keep correct. The rule holds everywhere:
+
+- **What a program writes:** one attribute, one macro, one API, one way to
+  declare a binding, one option, one flag, one config key for each thing.
+- **What rust-js writes:** one form of output for each construct.
+- **Inside rust-js:** one module, pass, helper, constant or code path for
+  each concept; one place that decides each question; one way a host
+  builds; one list of each set of things.
+
+When you meet two ways, whatever you were doing:
+
+1. **Stop.** Don't build on either, and don't add a third.
+2. **Choose one** by the north star: the one that covers every case,
+   reads best, and keeps Rust's checks.
+3. **Remove the other**: migrate what uses it, and make what's left of it
+   a compile error, or a test failure, that names the one way.
+4. **Hold it**: a test, often [the architecture test](test/architecture.test.ts),
+   so the second way can't come back, and an ADR that says which one and why.
+5. **Then go on** with the task you stopped.
+
+Never add a synonym, an alias, an option, a fallback or an "also accepts"
+for taste or convenience: people need preferences; an agent needs one
+answer. Before adding a form, find the one that does the job and extend
+it. If removing the second way seems out of proportion, stop and ask the
+user; never leave both standing.
+
 ## Principles
 
-- **One spell for one job.** rust-js is a tool AI coding agents write
-  against, and an agent needs one way to do a job, not a choice: one
-  attribute, one macro, one API, one form of output for each thing. Never
-  add a synonym, an alias, an option or a second spelling for taste; people
-  need preferences, an agent needs one answer it can't get wrong. Before
-  adding a form, find the one that does the job and extend it; where two do
-  one job, remove one.
 - **Each piece understood on its own.** A module owns one responsibility
   and the concepts that job needs, no more, behind a boundary nothing
   leaks across, so you can read, change and test it without holding
