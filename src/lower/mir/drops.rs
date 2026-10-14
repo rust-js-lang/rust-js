@@ -581,8 +581,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 /// values and assign them.
 fn may_throw(stmt: &Stmt) -> bool {
     match &stmt.kind {
-        StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => value.has_effects(),
-        StmtKind::Assign(target, value) => target.has_effects() || value.has_effects(),
+        StmtKind::Const(_, value) | StmtKind::Let(_, Some(value)) | StmtKind::Expr(value) => value.may_throw(),
+        StmtKind::Assign(target, value) => target.may_throw() || value.may_throw(),
         StmtKind::Let(_, None) => false,
         _ => true,
     }

@@ -1722,6 +1722,18 @@ impl Expr {
     }
 
     /// Could evaluating this do something observable (call a function, throw)?
+    /// Whether evaluating it may throw: whatever does something may, but a
+    /// call of a runtime helper that never throws, `$rangeNext(range)`,
+    /// throws only where its arguments do.
+    pub fn may_throw(&self) -> bool {
+        match &self.kind {
+            ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::never_throws) => {
+                args.iter().any(Expr::may_throw)
+            }
+            _ => self.has_effects(),
+        }
+    }
+
     pub fn has_effects(&self) -> bool {
         match &self.kind {
             ExprKind::Num(_)

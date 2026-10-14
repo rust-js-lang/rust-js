@@ -324,6 +324,17 @@ const PURE: &[&str] = &[
     "$displayF64",
 ];
 
+/// The helpers that change what they're given but never throw: a range's
+/// step, `$rangeNext(range)`, of a range a `Range` is.
+const NEVER_THROW: &[&str] = &["$rangeNext", "$rangeNextBack"];
+
+/// Whether `name` is a helper whose call throws only where its arguments
+/// do: the pure ones, and those that change what they're given but never
+/// throw.
+pub(crate) fn never_throws(name: &str) -> bool {
+    is_pure(name) || NEVER_THROW.contains(&name)
+}
+
 /// The helper that declares `name`, an export of the runtime's.
 pub(crate) fn helper_of(name: &str) -> Option<Helper> {
     static OWNERS: std::sync::LazyLock<std::collections::HashMap<&'static str, Helper>> =

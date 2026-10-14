@@ -10,7 +10,6 @@ import {
   $debugStr,
   $eq,
   $index,
-  $rangeNext,
   $showBorrowed,
   $tryBorrow,
   $unborrow,
@@ -238,203 +237,8 @@ function main() {
   const value$15 = $borrowMut(other, true);
   value$15.value += "b";
   $unborrow(value$15);
-  const iter = { start: 0, end: 2 };
   let tmp$6;
-  let held;
-  while (true) {
-    let tmp;
-    try {
-      tmp = $rangeNext(iter);
-    } catch (error) {
-      if (writing$live) {
-        $unborrow(writing);
-      }
-      throw error;
-    }
-    if (tmp == null) {
-      let tmp;
-      try {
-        tmp = $borrow(shared, true);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      let tmp$1;
-      try {
-        tmp$1 = $borrow(other, true);
-      } catch (error) {
-        $unborrow(tmp);
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      const value = $byteLen(tmp$1.value);
-      try {
-        console.log(`${tmp.value} ${value}`);
-      } catch (error) {
-        $unborrow(tmp$1);
-        $unborrow(tmp);
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        $unborrow(tmp$1);
-      } catch (error) {
-        $unborrow(tmp);
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        $unborrow(tmp);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        held = $borrowMut(shared, true);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        console.log(
-          `RefCell { value: ${$showBorrowed(shared, (value) => $debugStr(value))} } ${$debugStr(held.value)}`,
-        );
-      } catch (error) {
-        $unborrow(held);
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        $unborrow(held);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      let copy;
-      try {
-        copy = { value: $borrow(shared).value };
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        console.log(`${$eq(copy, shared)}`);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      let tmp$2;
-      try {
-        tmp$2 = $cellReplace($borrowMut(shared), "z");
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      let tmp$3;
-      try {
-        tmp$3 = $eq(copy, shared);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      let tmp$4;
-      try {
-        tmp$4 = [undefined, tmp$3, $cellReplace($borrowMut(shared), "")];
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        console.log(`${$debugStr(tmp$2)} ${tmp$4[1]} ${tmp$4[2]}`);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      let reading;
-      try {
-        reading = $borrow(copy, true);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      let tmp$5;
-      try {
-        tmp$5 = $tryBorrow(copy, true);
-      } catch (error) {
-        $unborrow(reading);
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      const value$1 = reading;
-      const value$2 = tmp$5.TAG !== "Ok";
-      try {
-        console.log(
-          `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(value$1.value)} ${value$2}`,
-        );
-      } catch (error) {
-        if (tmp$5.TAG === "Ok") {
-          $unborrow(tmp$5._0);
-        }
-        $unborrow(reading);
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        if (tmp$5.TAG === "Ok") {
-          $unborrow(tmp$5._0);
-        }
-      } catch (error) {
-        $unborrow(reading);
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      try {
-        $unborrow(reading);
-      } catch (error) {
-        if (writing$live) {
-          $unborrow(writing);
-        }
-        throw error;
-      }
-      writing$live = false;
-      return;
-    }
+  for (let i = 0; i < 2; i++) {
     try {
       tmp$6 = $borrowMut(shared, true);
     } catch (error) {
@@ -453,5 +257,187 @@ function main() {
       throw error;
     }
   }
+  let tmp$7;
+  try {
+    tmp$7 = $borrow(shared, true);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let tmp$8;
+  try {
+    tmp$8 = $borrow(other, true);
+  } catch (error) {
+    $unborrow(tmp$7);
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  const value$16 = $byteLen(tmp$8.value);
+  try {
+    console.log(`${tmp$7.value} ${value$16}`);
+  } catch (error) {
+    $unborrow(tmp$8);
+    $unborrow(tmp$7);
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(tmp$8);
+  } catch (error) {
+    $unborrow(tmp$7);
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(tmp$7);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let held;
+  try {
+    held = $borrowMut(shared, true);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    console.log(
+      `RefCell { value: ${$showBorrowed(shared, (value) => $debugStr(value))} } ${$debugStr(held.value)}`,
+    );
+  } catch (error) {
+    $unborrow(held);
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(held);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let copy;
+  try {
+    copy = { value: $borrow(shared).value };
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${$eq(copy, shared)}`);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let tmp$9;
+  try {
+    tmp$9 = $cellReplace($borrowMut(shared), "z");
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let tmp$10;
+  try {
+    tmp$10 = $eq(copy, shared);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let tmp$11;
+  try {
+    tmp$11 = [undefined, tmp$10, $cellReplace($borrowMut(shared), "")];
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    console.log(`${$debugStr(tmp$9)} ${tmp$11[1]} ${tmp$11[2]}`);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let reading;
+  try {
+    reading = $borrow(copy, true);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  let tmp$12;
+  try {
+    tmp$12 = $tryBorrow(copy, true);
+  } catch (error) {
+    $unborrow(reading);
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  const value$17 = reading;
+  const value$18 = tmp$12.TAG !== "Ok";
+  try {
+    console.log(
+      `RefCell { value: ${$showBorrowed(copy, (value) => $debugStr(value))} } ${$debugStr(value$17.value)} ${value$18}`,
+    );
+  } catch (error) {
+    if (tmp$12.TAG === "Ok") {
+      $unborrow(tmp$12._0);
+    }
+    $unborrow(reading);
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    if (tmp$12.TAG === "Ok") {
+      $unborrow(tmp$12._0);
+    }
+  } catch (error) {
+    $unborrow(reading);
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  try {
+    $unborrow(reading);
+  } catch (error) {
+    if (writing$live) {
+      $unborrow(writing);
+    }
+    throw error;
+  }
+  writing$live = false;
 }
 //# sourceMappingURL=case.js.map
