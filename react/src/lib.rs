@@ -1814,7 +1814,7 @@ unsafe extern "Rust" {
     pub safe static VERSION: &'static str;
 }
 
-/// What [`use_`] reads: a [`Promise`]'s value, a [`Context`]'s, or, for
+/// What [`r#use`] reads: a [`Promise`]'s value, a [`Context`]'s, or, for
 /// [`dom::browser`], nothing.
 #[cfg(react = "19.0")]
 pub trait Usable {
@@ -1836,7 +1836,7 @@ impl<T: 'static> Usable for &'static LocalKey<Context<T>> {
 /// called in a condition or a loop. `use` is a Rust keyword, hence the name.
 #[cfg(react = "19.0")]
 #[cfg_attr(rust_js, rust_js::link_name = "react#use")]
-pub fn use_<U: Usable>(value: U) -> U::Output {
+pub fn r#use<U: Usable>(value: U) -> U::Output {
     unreachable!()
 }
 

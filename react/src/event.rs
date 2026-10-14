@@ -85,7 +85,7 @@ fields!(SyntheticEvent<T, E> {
     /// The DOM's event that this wraps: a click's a `webapi::MouseEvent`.
     native_event: &'static E = "nativeEvent";
     /// Its name, like `"click"`.
-    type_: String = "type";
+    r#type: String = "type";
 });
 
 /// What any element's event is to one of an element (ADR 0224): a handler of

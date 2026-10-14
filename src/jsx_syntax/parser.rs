@@ -586,7 +586,7 @@ impl Jsx<'_> {
     }
 }
 
-/// A JS name as the bindings generator names it in Rust, `react/names.ts`'s
+/// A JS name as the bindings generators name it in Rust, `scripts/rust-names.ts`'s
 /// `snake`: `aria-label` is `aria_label`; HTML stays one word, while
 /// innerHTML and HTMLInput become inner_html and html_input.
 fn snake(name: &str) -> String {

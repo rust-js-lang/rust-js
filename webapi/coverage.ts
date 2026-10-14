@@ -124,7 +124,7 @@ function webapi(): { bound: Set<string>; types: Set<string>; parents: Map<string
     if (l === "pub trait EventTargetExt: IsA<EventTarget> {") type = "EventTarget";
     if (l === "}") type = "";
     link = l.match(/link_name = "([^"]+)"/)?.[1] ?? link;
-    const fn = l.match(/^\s+(?:pub (?:safe )?)?fn (\w+)/)?.[1];
+    const fn = l.match(/^\s+(?:pub (?:safe )?)?fn (?:r#)?(\w+)/)?.[1];
     const constant = l.match(/^\s+pub const (\w+):/)?.[1];
     if (type && constant) for (const m of [constant, `static:${constant}`]) bound.add(`${type}.${m}`);
     if (type && fn) {

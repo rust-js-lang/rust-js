@@ -20,7 +20,8 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { open } from "@rust-js/typescript";
-import { EVENT_TYPES, snake } from "./names";
+import { snake } from "../scripts/rust-names";
+import { EVENT_TYPES } from "./names";
 
 const root = join(import.meta.dir, "..");
 const cache = join(root, "target", "react-versions");

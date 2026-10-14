@@ -341,7 +341,7 @@ impl Usable for BrowserUsable {
     type Output = ();
 }
 
-/// [`browser`](https://react.dev/reference/react-dom/browser): `use_(browser(reason))`
+/// [`browser`](https://react.dev/reference/react-dom/browser): `r#use(browser(reason))`
 /// renders a component only in the browser. On the server, the nearest
 /// [`suspense`]'s fallback shows instead, and `reason` says why.
 #[cfg(react = "19.3")]

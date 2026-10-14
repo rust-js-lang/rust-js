@@ -766,7 +766,7 @@ impl<T> Element<T> {
 
     /// `default`
     #[cfg_attr(rust_js, rust_js::link_name = "prop default")]
-    pub fn r#default(self, value: bool) -> Element<T>
+    pub fn default(self, value: bool) -> Element<T>
     where
         T: has::Default,
     {

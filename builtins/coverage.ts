@@ -152,7 +152,8 @@ function bindings(): Set<string> {
       }
       link = l.match(/link_name = "([^"]+)"/)?.[1] ?? link;
       // A function, or an extern static, `Symbol.iterator`, of no receiver.
-      const fn = l.match(/^\s*pub (?:safe )?fn (\w+)(?:<[^(]*>)?\((.*)/) ?? l.match(/^\s*pub safe static (\w+)()/);
+      // A keyword's, `r#for`, by its name, `for` (ADR 0376).
+      const fn = l.match(/^\s*pub (?:safe )?fn (?:r#)?(\w+)(?:<[^(]*>)?\((.*)/) ?? l.match(/^\s*pub safe static (?:r#)?(\w+)()/);
       if (fn) {
         const js = link ?? fn[1];
         const receiver = /^\s*&?(?:mut )?self\b/.test(fn[2]) || /^self\b/.test(fn[2])

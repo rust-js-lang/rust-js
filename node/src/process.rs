@@ -476,15 +476,15 @@ pub fn emit_warning(warning: impl IntoStrOrError) {
     unreachable!()
 }
 
-/// `process.emitWarning(warning, type)`: a warning of `type_`'s name.
+/// `process.emitWarning(warning, type)`: a warning of `type`'s name.
 #[cfg_attr(rust_js, rust_js::link_name = "process.emitWarning")]
-pub fn emit_warning_with_type(warning: impl IntoStrOrError, type_: &str) {
+pub fn emit_warning_with_type(warning: impl IntoStrOrError, r#type: &str) {
     unreachable!()
 }
 
 /// `process.emitWarning(warning, type, code)`.
 #[cfg_attr(rust_js, rust_js::link_name = "process.emitWarning")]
-pub fn emit_warning_with_type_and_code(warning: impl IntoStrOrError, type_: &str, code: &str) {
+pub fn emit_warning_with_type_and_code(warning: impl IntoStrOrError, r#type: &str, code: &str) {
     unreachable!()
 }
 
@@ -534,7 +534,7 @@ pub fn load_env_file_with_path(path: impl IntoPathLike) -> Result<(), &'static J
 /// [`process.ref(maybeRefable)`](https://nodejs.org/api/process.html#processrefmayberefable):
 /// keep the event loop running for `maybe_refable`, a timer say.
 #[cfg_attr(rust_js, rust_js::link_name = "process.ref")]
-pub fn ref_<T>(maybe_refable: &T) {
+pub fn r#ref<T>(maybe_refable: &T) {
     unreachable!()
 }
 
@@ -720,8 +720,7 @@ pub struct ProcessConfigVariables {
 #[derive(Default)]
 pub struct EmitWarningOptions<'a> {
     /// Its name, `"Warning"` where `None`.
-    #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     /// Its code, `"DEP0001"`.
     pub code: Option<&'a str>,
     /// More of what it says.
@@ -732,21 +731,21 @@ pub struct EmitWarningOptions<'a> {
 pub struct ProcessFinalization(PhantomData<JsObject>);
 
 impl ProcessFinalization {
-    /// Call `callback` with `ref_` as the process exits, if `ref_` lives.
+    /// Call `callback` with `r#ref` as the process exits, if `r#ref` lives.
     #[cfg_attr(rust_js, rust_js::link_name = "register")]
-    pub fn register<T: 'static>(&self, ref_: &T, callback: impl Fn(&T, &str) + 'static) {
+    pub fn register<T: 'static>(&self, r#ref: &T, callback: impl Fn(&T, &str) + 'static) {
         unreachable!()
     }
 
-    /// Call `callback` with `ref_` before the process exits, if `ref_` lives.
+    /// Call `callback` with `r#ref` before the process exits, if `r#ref` lives.
     #[cfg_attr(rust_js, rust_js::link_name = "registerBeforeExit")]
-    pub fn register_before_exit<T: 'static>(&self, ref_: &T, callback: impl Fn(&T, &str) + 'static) {
+    pub fn register_before_exit<T: 'static>(&self, r#ref: &T, callback: impl Fn(&T, &str) + 'static) {
         unreachable!()
     }
 
-    /// Call no callback of `ref_`.
+    /// Call no callback of `r#ref`.
     #[cfg_attr(rust_js, rust_js::link_name = "unregister")]
-    pub fn unregister<T>(&self, ref_: &T) {
+    pub fn unregister<T>(&self, r#ref: &T) {
         unreachable!()
     }
 }

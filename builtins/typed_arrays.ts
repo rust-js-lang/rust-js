@@ -12,7 +12,7 @@ const ELEMENTS: [string, string][] = [
 ];
 const BYTES: Record<string, number> = { i8: 1, u8: 1, i16: 2, u16: 2, i32: 4, u32: 4, f32: 4, f64: 8, i64: 8, u64: 8 };
 
-const snake = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+import { snake } from "../scripts/rust-names";
 const page = (path: string) => `https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/${path}`;
 
 const out: string[] = [];

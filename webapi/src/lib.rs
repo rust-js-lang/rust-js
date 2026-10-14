@@ -81,7 +81,7 @@ pub mod event {
     #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static Event {
+    pub fn new(r#type: &str) -> &'static Event {
         unreachable!()
     }
 
@@ -89,7 +89,7 @@ pub mod event {
     #[cfg_attr(rust_js, rust_js::link_name = "new Event")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: EventInit) -> &'static Event {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: EventInit) -> &'static Event {
         unreachable!()
     }
 }
@@ -99,7 +99,7 @@ impl Event {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -251,7 +251,7 @@ impl Event {
     #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_event(&self, type_: &str) {
+    pub fn init_event(&self, r#type: &str) {
         unreachable!()
     }
 
@@ -259,7 +259,7 @@ impl Event {
     #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+    pub fn init_event_with_bubbles(&self, r#type: &str, bubbles: bool) {
         unreachable!()
     }
 
@@ -267,7 +267,7 @@ impl Event {
     #[cfg_attr(rust_js, rust_js::link_name = "initEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+    pub fn init_event_with_bubbles_and_cancelable(&self, r#type: &str, bubbles: bool, cancelable: bool) {
         unreachable!()
     }
 
@@ -1364,7 +1364,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "insertAdjacentElement")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_adjacent_element(&self, where_: &str, element: &Element) -> Option<&'static Element> {
+    pub fn insert_adjacent_element(&self, r#where: &str, element: &Element) -> Option<&'static Element> {
         unreachable!()
     }
 
@@ -1372,7 +1372,7 @@ impl Element {
     #[cfg_attr(rust_js, rust_js::link_name = "insertAdjacentText")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn insert_adjacent_text(&self, where_: &str, data: &str) {
+    pub fn insert_adjacent_text(&self, r#where: &str, data: &str) {
         unreachable!()
     }
 
@@ -8961,7 +8961,7 @@ impl HTMLAnchorElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -9197,7 +9197,7 @@ impl HTMLButtonElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -10657,7 +10657,7 @@ impl HTMLInputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -11113,7 +11113,7 @@ impl HTMLLIElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -11189,7 +11189,7 @@ impl HTMLOListElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -11421,7 +11421,7 @@ impl HTMLOutputElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -11701,7 +11701,7 @@ impl HTMLSelectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -12138,7 +12138,7 @@ impl HTMLTextAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -12382,7 +12382,7 @@ impl HTMLUListElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -13630,7 +13630,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_data_url_with_type(&self, type_: &str) -> String {
+    pub fn to_data_url_with_type(&self, r#type: &str) -> String {
         unreachable!()
     }
 
@@ -13638,7 +13638,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "toDataURL")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_data_url_with_type_and_quality<Q>(&self, type_: &str, quality: Q) -> String {
+    pub fn to_data_url_with_type_and_quality<Q>(&self, r#type: &str, quality: Q) -> String {
         unreachable!()
     }
 
@@ -13654,7 +13654,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_blob_with_type(&self, callback: Box<dyn FnMut(Option<&Blob>)>, type_: &str) {
+    pub fn to_blob_with_type(&self, callback: Box<dyn FnMut(Option<&Blob>)>, r#type: &str) {
         unreachable!()
     }
 
@@ -13662,7 +13662,7 @@ impl HTMLCanvasElement {
     #[cfg_attr(rust_js, rust_js::link_name = "toBlob")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn to_blob_with_type_and_quality<Q>(&self, callback: Box<dyn FnMut(Option<&Blob>)>, type_: &str, quality: Q) {
+    pub fn to_blob_with_type_and_quality<Q>(&self, callback: Box<dyn FnMut(Option<&Blob>)>, r#type: &str, quality: Q) {
         unreachable!()
     }
 
@@ -14003,7 +14003,7 @@ impl HTMLLinkElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get as")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn as_(&self) -> String {
+    pub fn r#as(&self) -> String {
         unreachable!()
     }
 
@@ -14075,7 +14075,7 @@ impl HTMLLinkElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -14419,7 +14419,7 @@ impl HTMLStyleElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -15452,7 +15452,7 @@ impl HTMLSourceElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -15592,7 +15592,7 @@ impl HTMLEmbedElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -15724,7 +15724,7 @@ impl HTMLObjectElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -16644,7 +16644,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "canPlayType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn can_play_type(&self, type_: &str) -> String {
+    pub fn can_play_type(&self, r#type: &str) -> String {
         unreachable!()
     }
 
@@ -16804,7 +16804,7 @@ impl HTMLMediaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get loop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn loop_(&self) -> bool {
+    pub fn r#loop(&self) -> bool {
         unreachable!()
     }
 
@@ -17340,7 +17340,7 @@ impl HTMLAreaElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -17936,7 +17936,7 @@ impl HTMLFieldSetElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -18219,7 +18219,7 @@ pub mod html_script_element {
     #[cfg_attr(rust_js, rust_js::link_name = "HTMLScriptElement.supports")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn supports(type_: &str) -> bool {
+    pub fn supports(r#type: &str) -> bool {
         unreachable!()
     }
 
@@ -18237,7 +18237,7 @@ impl HTMLScriptElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -18285,7 +18285,7 @@ impl HTMLScriptElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get async")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn async_(&self) -> bool {
+    pub fn r#async(&self) -> bool {
         unreachable!()
     }
 
@@ -22288,7 +22288,7 @@ pub mod drag_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new DragEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static DragEvent {
+    pub fn new(r#type: &str) -> &'static DragEvent {
         unreachable!()
     }
 
@@ -22296,7 +22296,7 @@ pub mod drag_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new DragEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: DragEventInit<'_>) -> &'static DragEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: DragEventInit<'_>) -> &'static DragEvent {
         unreachable!()
     }
 
@@ -22340,7 +22340,7 @@ pub mod toggle_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ToggleEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static ToggleEvent {
+    pub fn new(r#type: &str) -> &'static ToggleEvent {
         unreachable!()
     }
 
@@ -22348,7 +22348,7 @@ pub mod toggle_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ToggleEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ToggleEventInit<'_>) -> &'static ToggleEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: ToggleEventInit<'_>) -> &'static ToggleEvent {
         unreachable!()
     }
 
@@ -22408,7 +22408,7 @@ pub mod message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static MessageEvent {
+    pub fn new(r#type: &str) -> &'static MessageEvent {
         unreachable!()
     }
 
@@ -22416,7 +22416,7 @@ pub mod message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MessageEventInit<'_>) -> &'static MessageEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: MessageEventInit<'_>) -> &'static MessageEvent {
         unreachable!()
     }
 
@@ -22466,7 +22466,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event(&self, type_: &str) {
+    pub fn init_message_event(&self, r#type: &str) {
         unreachable!()
     }
 
@@ -22474,7 +22474,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+    pub fn init_message_event_with_bubbles(&self, r#type: &str, bubbles: bool) {
         unreachable!()
     }
 
@@ -22482,7 +22482,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+    pub fn init_message_event_with_bubbles_and_cancelable(&self, r#type: &str, bubbles: bool, cancelable: bool) {
         unreachable!()
     }
 
@@ -22490,7 +22490,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D) {
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data<D>(&self, r#type: &str, bubbles: bool, cancelable: bool, data: D) {
         unreachable!()
     }
 
@@ -22498,7 +22498,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str) {
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin<D>(&self, r#type: &str, bubbles: bool, cancelable: bool, data: D, origin: &str) {
         unreachable!()
     }
 
@@ -22506,7 +22506,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str) {
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id<D>(&self, r#type: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str) {
         unreachable!()
     }
 
@@ -22514,7 +22514,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource) {
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source<D>(&self, r#type: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource) {
         unreachable!()
     }
 
@@ -22522,7 +22522,7 @@ impl MessageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source_and_ports<D>(&self, type_: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource, ports: &[&MessagePort]) {
+    pub fn init_message_event_with_bubbles_and_cancelable_and_data_and_origin_and_last_event_id_and_source_and_ports<D>(&self, r#type: &str, bubbles: bool, cancelable: bool, data: D, origin: &str, last_event_id: &str, source: impl IntoMessageEventSource, ports: &[&MessagePort]) {
         unreachable!()
     }
 
@@ -22557,7 +22557,7 @@ pub mod submit_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SubmitEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static SubmitEvent {
+    pub fn new(r#type: &str) -> &'static SubmitEvent {
         unreachable!()
     }
 
@@ -22565,7 +22565,7 @@ pub mod submit_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SubmitEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: SubmitEventInit<'_>) -> &'static SubmitEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: SubmitEventInit<'_>) -> &'static SubmitEvent {
         unreachable!()
     }
 
@@ -22683,7 +22683,7 @@ impl Performance {
     #[cfg_attr(rust_js, rust_js::link_name = "getEntriesByType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_entries_by_type(&self, type_: &str) -> Vec<&'static PerformanceEntry> {
+    pub fn get_entries_by_type(&self, r#type: &str) -> Vec<&'static PerformanceEntry> {
         unreachable!()
     }
 
@@ -22699,7 +22699,7 @@ impl Performance {
     #[cfg_attr(rust_js, rust_js::link_name = "getEntriesByName")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_entries_by_name_with_type(&self, name: &str, type_: &str) -> Vec<&'static PerformanceEntry> {
+    pub fn get_entries_by_name_with_type(&self, name: &str, r#type: &str) -> Vec<&'static PerformanceEntry> {
         unreachable!()
     }
 
@@ -22830,7 +22830,7 @@ pub mod ui_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new UIEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static UIEvent {
+    pub fn new(r#type: &str) -> &'static UIEvent {
         unreachable!()
     }
 
@@ -22838,7 +22838,7 @@ pub mod ui_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new UIEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: UIEventInit<'_>) -> &'static UIEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: UIEventInit<'_>) -> &'static UIEvent {
         unreachable!()
     }
 
@@ -22938,7 +22938,7 @@ pub mod focus_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new FocusEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static FocusEvent {
+    pub fn new(r#type: &str) -> &'static FocusEvent {
         unreachable!()
     }
 
@@ -22946,7 +22946,7 @@ pub mod focus_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new FocusEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: FocusEventInit<'_>) -> &'static FocusEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: FocusEventInit<'_>) -> &'static FocusEvent {
         unreachable!()
     }
 
@@ -22990,7 +22990,7 @@ pub mod mouse_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MouseEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static MouseEvent {
+    pub fn new(r#type: &str) -> &'static MouseEvent {
         unreachable!()
     }
 
@@ -22998,7 +22998,7 @@ pub mod mouse_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MouseEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MouseEventInit<'_>) -> &'static MouseEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: MouseEventInit<'_>) -> &'static MouseEvent {
         unreachable!()
     }
 
@@ -23342,7 +23342,7 @@ pub mod keyboard_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static KeyboardEvent {
+    pub fn new(r#type: &str) -> &'static KeyboardEvent {
         unreachable!()
     }
 
@@ -23350,7 +23350,7 @@ pub mod keyboard_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: KeyboardEventInit<'_>) -> &'static KeyboardEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: KeyboardEventInit<'_>) -> &'static KeyboardEvent {
         unreachable!()
     }
 
@@ -23562,7 +23562,7 @@ pub mod input_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new InputEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static InputEvent {
+    pub fn new(r#type: &str) -> &'static InputEvent {
         unreachable!()
     }
 
@@ -23570,7 +23570,7 @@ pub mod input_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new InputEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: InputEventInit<'_>) -> &'static InputEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: InputEventInit<'_>) -> &'static InputEvent {
         unreachable!()
     }
 
@@ -23655,7 +23655,7 @@ pub mod wheel_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static WheelEvent {
+    pub fn new(r#type: &str) -> &'static WheelEvent {
         unreachable!()
     }
 
@@ -23663,7 +23663,7 @@ pub mod wheel_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new WheelEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: WheelEventInit<'_>) -> &'static WheelEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: WheelEventInit<'_>) -> &'static WheelEvent {
         unreachable!()
     }
 
@@ -23739,7 +23739,7 @@ pub mod composition_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CompositionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static CompositionEvent {
+    pub fn new(r#type: &str) -> &'static CompositionEvent {
         unreachable!()
     }
 
@@ -23747,7 +23747,7 @@ pub mod composition_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CompositionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CompositionEventInit<'_>) -> &'static CompositionEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: CompositionEventInit<'_>) -> &'static CompositionEvent {
         unreachable!()
     }
 
@@ -23831,7 +23831,7 @@ pub mod touch_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new TouchEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static TouchEvent {
+    pub fn new(r#type: &str) -> &'static TouchEvent {
         unreachable!()
     }
 
@@ -23839,7 +23839,7 @@ pub mod touch_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new TouchEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: TouchEventInit<'_>) -> &'static TouchEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: TouchEventInit<'_>) -> &'static TouchEvent {
         unreachable!()
     }
 
@@ -23939,7 +23939,7 @@ pub mod animation_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static AnimationEvent {
+    pub fn new(r#type: &str) -> &'static AnimationEvent {
         unreachable!()
     }
 
@@ -23947,7 +23947,7 @@ pub mod animation_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_animation_event_init_dict(type_: &str, animation_event_init_dict: AnimationEventInit<'_>) -> &'static AnimationEvent {
+    pub fn new_with_animation_event_init_dict(r#type: &str, animation_event_init_dict: AnimationEventInit<'_>) -> &'static AnimationEvent {
         unreachable!()
     }
 
@@ -24007,7 +24007,7 @@ pub mod transition_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new TransitionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static TransitionEvent {
+    pub fn new(r#type: &str) -> &'static TransitionEvent {
         unreachable!()
     }
 
@@ -24015,7 +24015,7 @@ pub mod transition_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new TransitionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_transition_event_init_dict(type_: &str, transition_event_init_dict: TransitionEventInit<'_>) -> &'static TransitionEvent {
+    pub fn new_with_transition_event_init_dict(r#type: &str, transition_event_init_dict: TransitionEventInit<'_>) -> &'static TransitionEvent {
         unreachable!()
     }
 
@@ -24075,7 +24075,7 @@ pub mod clipboard_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static ClipboardEvent {
+    pub fn new(r#type: &str) -> &'static ClipboardEvent {
         unreachable!()
     }
 
@@ -24083,7 +24083,7 @@ pub mod clipboard_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ClipboardEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ClipboardEventInit<'_>) -> &'static ClipboardEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: ClipboardEventInit<'_>) -> &'static ClipboardEvent {
         unreachable!()
     }
 
@@ -24127,7 +24127,7 @@ pub mod pointer_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PointerEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static PointerEvent {
+    pub fn new(r#type: &str) -> &'static PointerEvent {
         unreachable!()
     }
 
@@ -24135,7 +24135,7 @@ pub mod pointer_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PointerEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PointerEventInit<'_>) -> &'static PointerEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: PointerEventInit<'_>) -> &'static PointerEvent {
         unreachable!()
     }
 
@@ -33358,7 +33358,7 @@ pub mod media_query_list_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaQueryListEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static MediaQueryListEvent {
+    pub fn new(r#type: &str) -> &'static MediaQueryListEvent {
         unreachable!()
     }
 
@@ -33366,7 +33366,7 @@ pub mod media_query_list_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaQueryListEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MediaQueryListEventInit<'_>) -> &'static MediaQueryListEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: MediaQueryListEventInit<'_>) -> &'static MediaQueryListEvent {
         unreachable!()
     }
 
@@ -34015,7 +34015,7 @@ impl Response {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -34909,7 +34909,7 @@ impl Blob {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -35831,7 +35831,7 @@ pub mod clipboard_item {
     #[cfg_attr(rust_js, rust_js::link_name = "ClipboardItem.supports")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn supports(type_: &str) -> bool {
+    pub fn supports(r#type: &str) -> bool {
         unreachable!()
     }
 }
@@ -35857,7 +35857,7 @@ impl ClipboardItem {
     #[cfg_attr(rust_js, rust_js::link_name = "getType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_type(&self, type_: &str) -> Promise<&'static Blob> {
+    pub fn get_type(&self, r#type: &str) -> Promise<&'static Blob> {
         unreachable!()
     }
 
@@ -38820,7 +38820,7 @@ impl SVGStyleElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -38920,7 +38920,7 @@ impl SVGScriptElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -40618,7 +40618,7 @@ impl SVGAElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -41243,7 +41243,7 @@ impl SVGFEColorMatrixElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> &'static SVGAnimatedEnumeration {
+    pub fn r#type(&self) -> &'static SVGAnimatedEnumeration {
         unreachable!()
     }
 
@@ -41421,7 +41421,7 @@ impl SVGComponentTransferFunctionElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> &'static SVGAnimatedEnumeration {
+    pub fn r#type(&self) -> &'static SVGAnimatedEnumeration {
         unreachable!()
     }
 
@@ -43108,7 +43108,7 @@ impl SVGFETurbulenceElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> &'static SVGAnimatedEnumeration {
+    pub fn r#type(&self) -> &'static SVGAnimatedEnumeration {
         unreachable!()
     }
 
@@ -44027,7 +44027,7 @@ pub mod animation_playback_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationPlaybackEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static AnimationPlaybackEvent {
+    pub fn new(r#type: &str) -> &'static AnimationPlaybackEvent {
         unreachable!()
     }
 
@@ -44035,7 +44035,7 @@ pub mod animation_playback_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new AnimationPlaybackEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: AnimationPlaybackEventInit<'_>) -> &'static AnimationPlaybackEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: AnimationPlaybackEventInit<'_>) -> &'static AnimationPlaybackEvent {
         unreachable!()
     }
 
@@ -44351,7 +44351,7 @@ impl AudioBufferSourceNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get loop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn loop_(&self) -> bool {
+    pub fn r#loop(&self) -> bool {
         unreachable!()
     }
 
@@ -45375,7 +45375,7 @@ pub mod audio_processing_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new AudioProcessingEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: AudioProcessingEventInit<'_>) -> &'static AudioProcessingEvent {
+    pub fn new(r#type: &str, event_init_dict: AudioProcessingEventInit<'_>) -> &'static AudioProcessingEvent {
         unreachable!()
     }
 
@@ -46151,7 +46151,7 @@ impl BiquadFilterNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -46225,7 +46225,7 @@ pub mod blob_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new BlobEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: BlobEventInit<'_>) -> &'static BlobEvent {
+    pub fn new(r#type: &str, event_init_dict: BlobEventInit<'_>) -> &'static BlobEvent {
         unreachable!()
     }
 
@@ -48144,7 +48144,7 @@ impl CSSNumericValue {
     #[cfg_attr(rust_js, rust_js::link_name = "type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> CSSNumericType {
+    pub fn r#type(&self) -> CSSNumericType {
         unreachable!()
     }
 
@@ -49357,7 +49357,7 @@ impl CSSRule {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> u16 {
+    pub fn r#type(&self) -> u16 {
         unreachable!()
     }
 
@@ -50522,7 +50522,7 @@ impl Cache {
     #[cfg_attr(rust_js, rust_js::link_name = "match")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn match_(&self, request: impl IntoRequestInfo) -> Promise<Option<&'static Response>> {
+    pub fn r#match(&self, request: impl IntoRequestInfo) -> Promise<Option<&'static Response>> {
         unreachable!()
     }
 
@@ -50633,7 +50633,7 @@ impl CacheStorage {
     #[cfg_attr(rust_js, rust_js::link_name = "match")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn match_(&self, request: impl IntoRequestInfo) -> Promise<Option<&'static Response>> {
+    pub fn r#match(&self, request: impl IntoRequestInfo) -> Promise<Option<&'static Response>> {
         unreachable!()
     }
 
@@ -51893,7 +51893,7 @@ pub mod close_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CloseEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static CloseEvent {
+    pub fn new(r#type: &str) -> &'static CloseEvent {
         unreachable!()
     }
 
@@ -51901,7 +51901,7 @@ pub mod close_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CloseEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CloseEventInit<'_>) -> &'static CloseEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: CloseEventInit<'_>) -> &'static CloseEvent {
         unreachable!()
     }
 
@@ -52063,7 +52063,7 @@ pub mod command_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CommandEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static CommandEvent {
+    pub fn new(r#type: &str) -> &'static CommandEvent {
         unreachable!()
     }
 
@@ -52071,7 +52071,7 @@ pub mod command_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CommandEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CommandEventInit<'_>) -> &'static CommandEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: CommandEventInit<'_>) -> &'static CommandEvent {
         unreachable!()
     }
 
@@ -52210,7 +52210,7 @@ pub mod content_visibility_auto_state_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ContentVisibilityAutoStateChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static ContentVisibilityAutoStateChangeEvent {
+    pub fn new(r#type: &str) -> &'static ContentVisibilityAutoStateChangeEvent {
         unreachable!()
     }
 
@@ -52218,7 +52218,7 @@ pub mod content_visibility_auto_state_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ContentVisibilityAutoStateChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ContentVisibilityAutoStateChangeEventInit) -> &'static ContentVisibilityAutoStateChangeEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: ContentVisibilityAutoStateChangeEventInit) -> &'static ContentVisibilityAutoStateChangeEvent {
         unreachable!()
     }
 
@@ -52338,7 +52338,7 @@ pub mod cookie_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CookieChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static CookieChangeEvent {
+    pub fn new(r#type: &str) -> &'static CookieChangeEvent {
         unreachable!()
     }
 
@@ -52346,7 +52346,7 @@ pub mod cookie_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CookieChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CookieChangeEventInit<'_>) -> &'static CookieChangeEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: CookieChangeEventInit<'_>) -> &'static CookieChangeEvent {
         unreachable!()
     }
 
@@ -52582,7 +52582,7 @@ impl Credential {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -52675,7 +52675,7 @@ impl CryptoKey {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -52800,7 +52800,7 @@ pub mod custom_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static CustomEvent {
+    pub fn new(r#type: &str) -> &'static CustomEvent {
         unreachable!()
     }
 
@@ -52808,7 +52808,7 @@ pub mod custom_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new CustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: CustomEventInit) -> &'static CustomEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: CustomEventInit) -> &'static CustomEvent {
         unreachable!()
     }
 
@@ -52834,7 +52834,7 @@ impl CustomEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_custom_event(&self, type_: &str) {
+    pub fn init_custom_event(&self, r#type: &str) {
         unreachable!()
     }
 
@@ -52842,7 +52842,7 @@ impl CustomEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_custom_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+    pub fn init_custom_event_with_bubbles(&self, r#type: &str, bubbles: bool) {
         unreachable!()
     }
 
@@ -52850,7 +52850,7 @@ impl CustomEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_custom_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+    pub fn init_custom_event_with_bubbles_and_cancelable(&self, r#type: &str, bubbles: bool, cancelable: bool) {
         unreachable!()
     }
 
@@ -52858,7 +52858,7 @@ impl CustomEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initCustomEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_custom_event_with_bubbles_and_cancelable_and_detail<D>(&self, type_: &str, bubbles: bool, cancelable: bool, detail: D) {
+    pub fn init_custom_event_with_bubbles_and_cancelable_and_detail<D>(&self, r#type: &str, bubbles: bool, cancelable: bool, detail: D) {
         unreachable!()
     }
 
@@ -54504,7 +54504,7 @@ impl DOMParser {
     #[cfg_attr(rust_js, rust_js::link_name = "parseFromString")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn parse_from_string(&self, string: &str, type_: &str) -> &'static Document {
+    pub fn parse_from_string(&self, string: &str, r#type: &str) -> &'static Document {
         unreachable!()
     }
 
@@ -55019,7 +55019,7 @@ impl DataTransferItem {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -55070,7 +55070,7 @@ impl DataTransferItemList {
     #[cfg_attr(rust_js, rust_js::link_name = "add")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add(&self, data: &str, type_: &str) -> Option<&'static DataTransferItem> {
+    pub fn add(&self, data: &str, r#type: &str) -> Option<&'static DataTransferItem> {
         unreachable!()
     }
 
@@ -55207,7 +55207,7 @@ pub mod device_motion_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceMotionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static DeviceMotionEvent {
+    pub fn new(r#type: &str) -> &'static DeviceMotionEvent {
         unreachable!()
     }
 
@@ -55215,7 +55215,7 @@ pub mod device_motion_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceMotionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceMotionEventInit) -> &'static DeviceMotionEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: DeviceMotionEventInit) -> &'static DeviceMotionEvent {
         unreachable!()
     }
 
@@ -55259,7 +55259,7 @@ pub mod device_orientation_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceOrientationEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static DeviceOrientationEvent {
+    pub fn new(r#type: &str) -> &'static DeviceOrientationEvent {
         unreachable!()
     }
 
@@ -55267,7 +55267,7 @@ pub mod device_orientation_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new DeviceOrientationEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: DeviceOrientationEventInit) -> &'static DeviceOrientationEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: DeviceOrientationEventInit) -> &'static DeviceOrientationEvent {
         unreachable!()
     }
 
@@ -55456,7 +55456,7 @@ pub mod document_picture_in_picture_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new DocumentPictureInPictureEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: DocumentPictureInPictureEventInit<'_>) -> &'static DocumentPictureInPictureEvent {
+    pub fn new(r#type: &str, event_init_dict: DocumentPictureInPictureEventInit<'_>) -> &'static DocumentPictureInPictureEvent {
         unreachable!()
     }
 
@@ -56677,7 +56677,7 @@ impl EncodedAudioChunk {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -56736,7 +56736,7 @@ impl EncodedVideoChunk {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -56794,7 +56794,7 @@ pub mod error_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ErrorEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static ErrorEvent {
+    pub fn new(r#type: &str) -> &'static ErrorEvent {
         unreachable!()
     }
 
@@ -56802,7 +56802,7 @@ pub mod error_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ErrorEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ErrorEventInit<'_>) -> &'static ErrorEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: ErrorEventInit<'_>) -> &'static ErrorEvent {
         unreachable!()
     }
 
@@ -58276,7 +58276,7 @@ pub mod font_face_set_load_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFaceSetLoadEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static FontFaceSetLoadEvent {
+    pub fn new(r#type: &str) -> &'static FontFaceSetLoadEvent {
         unreachable!()
     }
 
@@ -58284,7 +58284,7 @@ pub mod font_face_set_load_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new FontFaceSetLoadEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: FontFaceSetLoadEventInit<'_>) -> &'static FontFaceSetLoadEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: FontFaceSetLoadEventInit<'_>) -> &'static FontFaceSetLoadEvent {
         unreachable!()
     }
 
@@ -58328,7 +58328,7 @@ pub mod form_data_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new FormDataEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: FormDataEventInit<'_>) -> &'static FormDataEvent {
+    pub fn new(r#type: &str, event_init_dict: FormDataEventInit<'_>) -> &'static FormDataEvent {
         unreachable!()
     }
 
@@ -58939,7 +58939,7 @@ impl GPUCompilationMessage {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -59607,7 +59607,7 @@ impl GPUQuerySet {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -60830,7 +60830,7 @@ pub mod gpu_uncaptured_error_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new GPUUncapturedErrorEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, gpu_uncaptured_error_event_init_dict: GPUUncapturedErrorEventInit<'_>) -> &'static GPUUncapturedErrorEvent {
+    pub fn new(r#type: &str, gpu_uncaptured_error_event_init_dict: GPUUncapturedErrorEventInit<'_>) -> &'static GPUUncapturedErrorEvent {
         unreachable!()
     }
 
@@ -61061,7 +61061,7 @@ pub mod gamepad_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new GamepadEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static GamepadEvent {
+    pub fn new(r#type: &str) -> &'static GamepadEvent {
         unreachable!()
     }
 
@@ -61069,7 +61069,7 @@ pub mod gamepad_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new GamepadEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: GamepadEventInit<'_>) -> &'static GamepadEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: GamepadEventInit<'_>) -> &'static GamepadEvent {
         unreachable!()
     }
 
@@ -61102,7 +61102,7 @@ impl GamepadHapticActuator {
     #[cfg_attr(rust_js, rust_js::link_name = "playEffect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn play_effect(&self, type_: &str) -> Promise<String> {
+    pub fn play_effect(&self, r#type: &str) -> Promise<String> {
         unreachable!()
     }
 
@@ -61110,7 +61110,7 @@ impl GamepadHapticActuator {
     #[cfg_attr(rust_js, rust_js::link_name = "playEffect")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn play_effect_with_params(&self, type_: &str, params: GamepadEffectParameters) -> Promise<String> {
+    pub fn play_effect_with_params(&self, r#type: &str, params: GamepadEffectParameters) -> Promise<String> {
         unreachable!()
     }
 
@@ -62221,7 +62221,7 @@ impl HTMLMarqueeElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get loop")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn loop_(&self) -> i32 {
+    pub fn r#loop(&self) -> i32 {
         unreachable!()
     }
 
@@ -62485,7 +62485,7 @@ impl HTMLParamElement {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -62560,7 +62560,7 @@ pub mod hash_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new HashChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static HashChangeEvent {
+    pub fn new(r#type: &str) -> &'static HashChangeEvent {
         unreachable!()
     }
 
@@ -62568,7 +62568,7 @@ pub mod hash_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new HashChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: HashChangeEventInit<'_>) -> &'static HashChangeEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: HashChangeEventInit<'_>) -> &'static HashChangeEvent {
         unreachable!()
     }
 
@@ -62709,7 +62709,7 @@ impl Highlight {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -62883,7 +62883,7 @@ impl IDBCursor {
     #[cfg_attr(rust_js, rust_js::link_name = "continue")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn continue_(&self) {
+    pub fn r#continue(&self) {
         unreachable!()
     }
 
@@ -64068,7 +64068,7 @@ pub mod idb_version_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new IDBVersionChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static IDBVersionChangeEvent {
+    pub fn new(r#type: &str) -> &'static IDBVersionChangeEvent {
         unreachable!()
     }
 
@@ -64076,7 +64076,7 @@ pub mod idb_version_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new IDBVersionChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: IDBVersionChangeEventInit) -> &'static IDBVersionChangeEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: IDBVersionChangeEventInit) -> &'static IDBVersionChangeEvent {
         unreachable!()
     }
 
@@ -64390,7 +64390,7 @@ pub mod image_decoder {
     #[cfg_attr(rust_js, rust_js::link_name = "ImageDecoder.isTypeSupported")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_type_supported(type_: &str) -> Promise<bool> {
+    pub fn is_type_supported(r#type: &str) -> Promise<bool> {
         unreachable!()
     }
 }
@@ -64400,7 +64400,7 @@ impl ImageDecoder {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -64943,7 +64943,7 @@ pub mod midi_connection_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIConnectionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static MIDIConnectionEvent {
+    pub fn new(r#type: &str) -> &'static MIDIConnectionEvent {
         unreachable!()
     }
 
@@ -64951,7 +64951,7 @@ pub mod midi_connection_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIConnectionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIConnectionEventInit<'_>) -> &'static MIDIConnectionEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: MIDIConnectionEventInit<'_>) -> &'static MIDIConnectionEvent {
         unreachable!()
     }
 
@@ -65103,7 +65103,7 @@ pub mod midi_message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static MIDIMessageEvent {
+    pub fn new(r#type: &str) -> &'static MIDIMessageEvent {
         unreachable!()
     }
 
@@ -65111,7 +65111,7 @@ pub mod midi_message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MIDIMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MIDIMessageEventInit<'_>) -> &'static MIDIMessageEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: MIDIMessageEventInit<'_>) -> &'static MIDIMessageEvent {
         unreachable!()
     }
 
@@ -65296,7 +65296,7 @@ impl MIDIPort {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -67427,7 +67427,7 @@ pub mod media_encrypted_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaEncryptedEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static MediaEncryptedEvent {
+    pub fn new(r#type: &str) -> &'static MediaEncryptedEvent {
         unreachable!()
     }
 
@@ -67435,7 +67435,7 @@ pub mod media_encrypted_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaEncryptedEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: MediaEncryptedEventInit<'_>) -> &'static MediaEncryptedEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: MediaEncryptedEventInit<'_>) -> &'static MediaEncryptedEvent {
         unreachable!()
     }
 
@@ -67525,7 +67525,7 @@ pub mod media_key_message_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaKeyMessageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: MediaKeyMessageEventInit<'_>) -> &'static MediaKeyMessageEvent {
+    pub fn new(r#type: &str, event_init_dict: MediaKeyMessageEventInit<'_>) -> &'static MediaKeyMessageEvent {
         unreachable!()
     }
 
@@ -68010,7 +68010,7 @@ pub mod media_recorder {
     #[cfg_attr(rust_js, rust_js::link_name = "MediaRecorder.isTypeSupported")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_type_supported(type_: &str) -> bool {
+    pub fn is_type_supported(r#type: &str) -> bool {
         unreachable!()
     }
 
@@ -68331,7 +68331,7 @@ pub mod media_source {
     #[cfg_attr(rust_js, rust_js::link_name = "MediaSource.isTypeSupported")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn is_type_supported(type_: &str) -> bool {
+    pub fn is_type_supported(r#type: &str) -> bool {
         unreachable!()
     }
 
@@ -68440,7 +68440,7 @@ impl MediaSource {
     #[cfg_attr(rust_js, rust_js::link_name = "addSourceBuffer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn add_source_buffer(&self, type_: &str) -> &'static SourceBuffer {
+    pub fn add_source_buffer(&self, r#type: &str) -> &'static SourceBuffer {
         unreachable!()
     }
 
@@ -68955,7 +68955,7 @@ pub mod media_stream_track_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new MediaStreamTrackEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: MediaStreamTrackEventInit<'_>) -> &'static MediaStreamTrackEvent {
+    pub fn new(r#type: &str, event_init_dict: MediaStreamTrackEventInit<'_>) -> &'static MediaStreamTrackEvent {
         unreachable!()
     }
 
@@ -69126,7 +69126,7 @@ impl MimeType {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -69259,7 +69259,7 @@ impl MutationRecord {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -69432,7 +69432,7 @@ pub mod navigate_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new NavigateEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: NavigateEventInit<'_>) -> &'static NavigateEvent {
+    pub fn new(r#type: &str, event_init_dict: NavigateEventInit<'_>) -> &'static NavigateEvent {
         unreachable!()
     }
 
@@ -69803,7 +69803,7 @@ pub mod navigation_current_entry_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new NavigationCurrentEntryChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: NavigationCurrentEntryChangeEventInit<'_>) -> &'static NavigationCurrentEntryChangeEvent {
+    pub fn new(r#type: &str, event_init_dict: NavigationCurrentEntryChangeEventInit<'_>) -> &'static NavigationCurrentEntryChangeEvent {
         unreachable!()
     }
 
@@ -70438,7 +70438,7 @@ pub mod offline_audio_completion_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new OfflineAudioCompletionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: OfflineAudioCompletionEventInit<'_>) -> &'static OfflineAudioCompletionEvent {
+    pub fn new(r#type: &str, event_init_dict: OfflineAudioCompletionEventInit<'_>) -> &'static OfflineAudioCompletionEvent {
         unreachable!()
     }
 
@@ -71777,7 +71777,7 @@ impl OscillatorNode {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -71887,7 +71887,7 @@ pub mod page_reveal_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PageRevealEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static PageRevealEvent {
+    pub fn new(r#type: &str) -> &'static PageRevealEvent {
         unreachable!()
     }
 
@@ -71895,7 +71895,7 @@ pub mod page_reveal_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PageRevealEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PageRevealEventInit<'_>) -> &'static PageRevealEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: PageRevealEventInit<'_>) -> &'static PageRevealEvent {
         unreachable!()
     }
 
@@ -71939,7 +71939,7 @@ pub mod page_swap_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PageSwapEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static PageSwapEvent {
+    pub fn new(r#type: &str) -> &'static PageSwapEvent {
         unreachable!()
     }
 
@@ -71947,7 +71947,7 @@ pub mod page_swap_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PageSwapEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PageSwapEventInit<'_>) -> &'static PageSwapEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: PageSwapEventInit<'_>) -> &'static PageSwapEvent {
         unreachable!()
     }
 
@@ -71999,7 +71999,7 @@ pub mod page_transition_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PageTransitionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static PageTransitionEvent {
+    pub fn new(r#type: &str) -> &'static PageTransitionEvent {
         unreachable!()
     }
 
@@ -72007,7 +72007,7 @@ pub mod page_transition_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PageTransitionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PageTransitionEventInit) -> &'static PageTransitionEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: PageTransitionEventInit) -> &'static PageTransitionEvent {
         unreachable!()
     }
 
@@ -72434,7 +72434,7 @@ pub mod payment_method_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentMethodChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static PaymentMethodChangeEvent {
+    pub fn new(r#type: &str) -> &'static PaymentMethodChangeEvent {
         unreachable!()
     }
 
@@ -72442,7 +72442,7 @@ pub mod payment_method_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentMethodChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentMethodChangeEventInit<'_>) -> &'static PaymentMethodChangeEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: PaymentMethodChangeEventInit<'_>) -> &'static PaymentMethodChangeEvent {
         unreachable!()
     }
 
@@ -72645,7 +72645,7 @@ pub mod payment_request_update_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequestUpdateEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static PaymentRequestUpdateEvent {
+    pub fn new(r#type: &str) -> &'static PaymentRequestUpdateEvent {
         unreachable!()
     }
 
@@ -72653,7 +72653,7 @@ pub mod payment_request_update_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PaymentRequestUpdateEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PaymentRequestUpdateEventInit) -> &'static PaymentRequestUpdateEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: PaymentRequestUpdateEventInit) -> &'static PaymentRequestUpdateEvent {
         unreachable!()
     }
 
@@ -73045,7 +73045,7 @@ impl PerformanceNavigation {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> u16 {
+    pub fn r#type(&self) -> u16 {
         unreachable!()
     }
 
@@ -73161,7 +73161,7 @@ impl PerformanceNavigationTiming {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -73251,7 +73251,7 @@ impl PerformanceObserverEntryList {
     #[cfg_attr(rust_js, rust_js::link_name = "getEntriesByType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_entries_by_type(&self, type_: &str) -> Vec<&'static PerformanceEntry> {
+    pub fn get_entries_by_type(&self, r#type: &str) -> Vec<&'static PerformanceEntry> {
         unreachable!()
     }
 
@@ -73267,7 +73267,7 @@ impl PerformanceObserverEntryList {
     #[cfg_attr(rust_js, rust_js::link_name = "getEntriesByName")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_entries_by_name_with_type(&self, name: &str, type_: &str) -> Vec<&'static PerformanceEntry> {
+    pub fn get_entries_by_name_with_type(&self, name: &str, r#type: &str) -> Vec<&'static PerformanceEntry> {
         unreachable!()
     }
 
@@ -73871,7 +73871,7 @@ pub mod picture_in_picture_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PictureInPictureEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: PictureInPictureEventInit<'_>) -> &'static PictureInPictureEvent {
+    pub fn new(r#type: &str, event_init_dict: PictureInPictureEventInit<'_>) -> &'static PictureInPictureEvent {
         unreachable!()
     }
 
@@ -74094,7 +74094,7 @@ pub mod pop_state_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static PopStateEvent {
+    pub fn new(r#type: &str) -> &'static PopStateEvent {
         unreachable!()
     }
 
@@ -74102,7 +74102,7 @@ pub mod pop_state_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PopStateEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: PopStateEventInit) -> &'static PopStateEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: PopStateEventInit) -> &'static PopStateEvent {
         unreachable!()
     }
 
@@ -74278,7 +74278,7 @@ pub mod progress_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ProgressEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static ProgressEvent {
+    pub fn new(r#type: &str) -> &'static ProgressEvent {
         unreachable!()
     }
 
@@ -74286,7 +74286,7 @@ pub mod progress_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new ProgressEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: ProgressEventInit) -> &'static ProgressEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: ProgressEventInit) -> &'static ProgressEvent {
         unreachable!()
     }
 
@@ -74346,7 +74346,7 @@ pub mod promise_rejection_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new PromiseRejectionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: PromiseRejectionEventInit) -> &'static PromiseRejectionEvent {
+    pub fn new(r#type: &str, event_init_dict: PromiseRejectionEventInit) -> &'static PromiseRejectionEvent {
         unreachable!()
     }
 
@@ -74766,7 +74766,7 @@ pub mod rtcdtmf_tone_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCDTMFToneChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static RTCDTMFToneChangeEvent {
+    pub fn new(r#type: &str) -> &'static RTCDTMFToneChangeEvent {
         unreachable!()
     }
 
@@ -74774,7 +74774,7 @@ pub mod rtcdtmf_tone_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCDTMFToneChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: RTCDTMFToneChangeEventInit<'_>) -> &'static RTCDTMFToneChangeEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: RTCDTMFToneChangeEventInit<'_>) -> &'static RTCDTMFToneChangeEvent {
         unreachable!()
     }
 
@@ -75092,7 +75092,7 @@ pub mod rtc_data_channel_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCDataChannelEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: RTCDataChannelEventInit<'_>) -> &'static RTCDataChannelEvent {
+    pub fn new(r#type: &str, event_init_dict: RTCDataChannelEventInit<'_>) -> &'static RTCDataChannelEvent {
         unreachable!()
     }
 
@@ -75282,7 +75282,7 @@ impl RTCEncodedVideoFrame {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -75416,7 +75416,7 @@ pub mod rtc_error_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCErrorEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: RTCErrorEventInit<'_>) -> &'static RTCErrorEvent {
+    pub fn new(r#type: &str, event_init_dict: RTCErrorEventInit<'_>) -> &'static RTCErrorEvent {
         unreachable!()
     }
 
@@ -75541,7 +75541,7 @@ impl RTCIceCandidate {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> Option<String> {
+    pub fn r#type(&self) -> Option<String> {
         unreachable!()
     }
 
@@ -76259,7 +76259,7 @@ pub mod rtc_peer_connection_ice_error_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceErrorEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: RTCPeerConnectionIceErrorEventInit<'_>) -> &'static RTCPeerConnectionIceErrorEvent {
+    pub fn new(r#type: &str, event_init_dict: RTCPeerConnectionIceErrorEventInit<'_>) -> &'static RTCPeerConnectionIceErrorEvent {
         unreachable!()
     }
 
@@ -76335,7 +76335,7 @@ pub mod rtc_peer_connection_ice_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static RTCPeerConnectionIceEvent {
+    pub fn new(r#type: &str) -> &'static RTCPeerConnectionIceEvent {
         unreachable!()
     }
 
@@ -76343,7 +76343,7 @@ pub mod rtc_peer_connection_ice_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCPeerConnectionIceEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: RTCPeerConnectionIceEventInit<'_>) -> &'static RTCPeerConnectionIceEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: RTCPeerConnectionIceEventInit<'_>) -> &'static RTCPeerConnectionIceEvent {
         unreachable!()
     }
 
@@ -76750,7 +76750,7 @@ impl RTCSessionDescription {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -76855,7 +76855,7 @@ pub mod rtc_track_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new RTCTrackEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: RTCTrackEventInit<'_>) -> &'static RTCTrackEvent {
+    pub fn new(r#type: &str, event_init_dict: RTCTrackEventInit<'_>) -> &'static RTCTrackEvent {
         unreachable!()
     }
 
@@ -78793,7 +78793,7 @@ impl SVGTransform {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> u16 {
+    pub fn r#type(&self) -> u16 {
         unreachable!()
     }
 
@@ -79150,7 +79150,7 @@ impl Scheduler {
     #[cfg_attr(rust_js, rust_js::link_name = "yield")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn yield_(&self) -> Promise<()> {
+    pub fn r#yield(&self) -> Promise<()> {
         unreachable!()
     }
 
@@ -79265,7 +79265,7 @@ impl ScreenOrientation {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -79429,7 +79429,7 @@ pub mod security_policy_violation_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SecurityPolicyViolationEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static SecurityPolicyViolationEvent {
+    pub fn new(r#type: &str) -> &'static SecurityPolicyViolationEvent {
         unreachable!()
     }
 
@@ -79437,7 +79437,7 @@ pub mod security_policy_violation_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SecurityPolicyViolationEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: SecurityPolicyViolationEventInit<'_>) -> &'static SecurityPolicyViolationEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: SecurityPolicyViolationEventInit<'_>) -> &'static SecurityPolicyViolationEvent {
         unreachable!()
     }
 
@@ -79606,7 +79606,7 @@ impl Selection {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -80901,7 +80901,7 @@ impl SourceBuffer {
     #[cfg_attr(rust_js, rust_js::link_name = "changeType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn change_type(&self, type_: &str) {
+    pub fn change_type(&self, r#type: &str) {
         unreachable!()
     }
 
@@ -81028,7 +81028,7 @@ pub mod speech_recognition_error_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionErrorEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: SpeechRecognitionErrorEventInit<'_>) -> &'static SpeechRecognitionErrorEvent {
+    pub fn new(r#type: &str, event_init_dict: SpeechRecognitionErrorEventInit<'_>) -> &'static SpeechRecognitionErrorEvent {
         unreachable!()
     }
 
@@ -81080,7 +81080,7 @@ pub mod speech_recognition_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechRecognitionEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: SpeechRecognitionEventInit<'_>) -> &'static SpeechRecognitionEvent {
+    pub fn new(r#type: &str, event_init_dict: SpeechRecognitionEventInit<'_>) -> &'static SpeechRecognitionEvent {
         unreachable!()
     }
 
@@ -81319,7 +81319,7 @@ pub mod speech_synthesis_error_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisErrorEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: SpeechSynthesisErrorEventInit<'_>) -> &'static SpeechSynthesisErrorEvent {
+    pub fn new(r#type: &str, event_init_dict: SpeechSynthesisErrorEventInit<'_>) -> &'static SpeechSynthesisErrorEvent {
         unreachable!()
     }
 
@@ -81363,7 +81363,7 @@ pub mod speech_synthesis_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new SpeechSynthesisEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, event_init_dict: SpeechSynthesisEventInit<'_>) -> &'static SpeechSynthesisEvent {
+    pub fn new(r#type: &str, event_init_dict: SpeechSynthesisEventInit<'_>) -> &'static SpeechSynthesisEvent {
         unreachable!()
     }
 
@@ -81830,7 +81830,7 @@ pub mod storage_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new StorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static StorageEvent {
+    pub fn new(r#type: &str) -> &'static StorageEvent {
         unreachable!()
     }
 
@@ -81838,7 +81838,7 @@ pub mod storage_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new StorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: StorageEventInit<'_>) -> &'static StorageEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: StorageEventInit<'_>) -> &'static StorageEvent {
         unreachable!()
     }
 
@@ -81896,7 +81896,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event(&self, type_: &str) {
+    pub fn init_storage_event(&self, r#type: &str) {
         unreachable!()
     }
 
@@ -81904,7 +81904,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+    pub fn init_storage_event_with_bubbles(&self, r#type: &str, bubbles: bool) {
         unreachable!()
     }
 
@@ -81912,7 +81912,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+    pub fn init_storage_event_with_bubbles_and_cancelable(&self, r#type: &str, bubbles: bool, cancelable: bool) {
         unreachable!()
     }
 
@@ -81920,7 +81920,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event_with_bubbles_and_cancelable_and_key(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str) {
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key(&self, r#type: &str, bubbles: bool, cancelable: bool, key: &str) {
         unreachable!()
     }
 
@@ -81928,7 +81928,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str) {
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value(&self, r#type: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str) {
         unreachable!()
     }
 
@@ -81936,7 +81936,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str) {
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value(&self, r#type: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str) {
         unreachable!()
     }
 
@@ -81944,7 +81944,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str) {
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url(&self, r#type: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str) {
         unreachable!()
     }
 
@@ -81952,7 +81952,7 @@ impl StorageEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initStorageEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url_and_storage_area(&self, type_: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str, storage_area: &Storage) {
+    pub fn init_storage_event_with_bubbles_and_cancelable_and_key_and_old_value_and_new_value_and_url_and_storage_area(&self, r#type: &str, bubbles: bool, cancelable: bool, key: &str, old_value: &str, new_value: &str, url: &str, storage_area: &Storage) {
         unreachable!()
     }
 
@@ -82149,7 +82149,7 @@ impl StyleSheet {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -82413,7 +82413,7 @@ pub mod task_priority_change_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new TaskPriorityChangeEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str, priority_change_event_init_dict: TaskPriorityChangeEventInit<'_>) -> &'static TaskPriorityChangeEvent {
+    pub fn new(r#type: &str, priority_change_event_init_dict: TaskPriorityChangeEventInit<'_>) -> &'static TaskPriorityChangeEvent {
         unreachable!()
     }
 
@@ -82662,7 +82662,7 @@ impl TextEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_text_event(&self, type_: &str) {
+    pub fn init_text_event(&self, r#type: &str) {
         unreachable!()
     }
 
@@ -82670,7 +82670,7 @@ impl TextEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_text_event_with_bubbles(&self, type_: &str, bubbles: bool) {
+    pub fn init_text_event_with_bubbles(&self, r#type: &str, bubbles: bool) {
         unreachable!()
     }
 
@@ -82678,7 +82678,7 @@ impl TextEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_text_event_with_bubbles_and_cancelable(&self, type_: &str, bubbles: bool, cancelable: bool) {
+    pub fn init_text_event_with_bubbles_and_cancelable(&self, r#type: &str, bubbles: bool, cancelable: bool) {
         unreachable!()
     }
 
@@ -82686,7 +82686,7 @@ impl TextEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_text_event_with_bubbles_and_cancelable_and_view(&self, type_: &str, bubbles: bool, cancelable: bool, view: &Window) {
+    pub fn init_text_event_with_bubbles_and_cancelable_and_view(&self, r#type: &str, bubbles: bool, cancelable: bool, view: &Window) {
         unreachable!()
     }
 
@@ -82694,7 +82694,7 @@ impl TextEvent {
     #[cfg_attr(rust_js, rust_js::link_name = "initTextEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn init_text_event_with_bubbles_and_cancelable_and_view_and_data(&self, type_: &str, bubbles: bool, cancelable: bool, view: &Window, data: &str) {
+    pub fn init_text_event_with_bubbles_and_cancelable_and_view_and_data(&self, r#type: &str, bubbles: bool, cancelable: bool, view: &Window, data: &str) {
         unreachable!()
     }
 
@@ -83259,7 +83259,7 @@ pub mod track_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new TrackEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static TrackEvent {
+    pub fn new(r#type: &str) -> &'static TrackEvent {
         unreachable!()
     }
 
@@ -83267,7 +83267,7 @@ pub mod track_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new TrackEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init_dict(type_: &str, event_init_dict: TrackEventInit<'_>) -> &'static TrackEvent {
+    pub fn new_with_event_init_dict(r#type: &str, event_init_dict: TrackEventInit<'_>) -> &'static TrackEvent {
         unreachable!()
     }
 
@@ -85188,7 +85188,7 @@ impl WakeLock {
     #[cfg_attr(rust_js, rust_js::link_name = "request")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_with_type(&self, type_: &str) -> Promise<&'static WakeLockSentinel> {
+    pub fn request_with_type(&self, r#type: &str) -> Promise<&'static WakeLockSentinel> {
         unreachable!()
     }
 
@@ -85232,7 +85232,7 @@ impl WakeLockSentinel {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> String {
+    pub fn r#type(&self) -> String {
         unreachable!()
     }
 
@@ -87322,7 +87322,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "createShader")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_shader(&self, type_: u32) -> Option<&'static WebGLShader> {
+    pub fn create_shader(&self, r#type: u32) -> Option<&'static WebGLShader> {
         unreachable!()
     }
 
@@ -87450,7 +87450,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "drawElements")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_elements(&self, mode: u32, count: i32, type_: u32, offset: f64) {
+    pub fn draw_elements(&self, mode: u32, count: i32, r#type: u32, offset: f64) {
         unreachable!()
     }
 
@@ -87810,7 +87810,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFunc")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func(&self, func: u32, ref_: i32, mask: u32) {
+    pub fn stencil_func(&self, func: u32, r#ref: i32, mask: u32) {
         unreachable!()
     }
 
@@ -87818,7 +87818,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFuncSeparate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func_separate(&self, face: u32, func: u32, ref_: i32, mask: u32) {
+    pub fn stencil_func_separate(&self, face: u32, func: u32, r#ref: i32, mask: u32) {
         unreachable!()
     }
 
@@ -88018,7 +88018,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribPointer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_pointer(&self, index: u32, size: i32, type_: u32, normalized: bool, stride: i32, offset: f64) {
+    pub fn vertex_attrib_pointer(&self, index: u32, size: i32, r#type: u32, normalized: bool, stride: i32, offset: f64) {
         unreachable!()
     }
 
@@ -88138,7 +88138,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, pbo_offset: f64) {
+    pub fn tex_image3_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, pbo_offset: f64) {
         unreachable!()
     }
 
@@ -88146,7 +88146,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_tex_image_source(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_image3_d_with_tex_image_source(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -88154,7 +88154,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView) {
+    pub fn tex_image3_d_with_array_buffer_view(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -88162,7 +88162,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
+    pub fn tex_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, depth: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -88170,7 +88170,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, pbo_offset: f64) {
+    pub fn tex_sub_image3_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, r#type: u32, pbo_offset: f64) {
         unreachable!()
     }
 
@@ -88178,7 +88178,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d_with_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image3_d_with_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -88186,7 +88186,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView) {
+    pub fn tex_sub_image3_d_with_array_buffer_view(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -88194,7 +88194,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage3D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
+    pub fn tex_sub_image3_d_with_array_buffer_view_and_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, zoffset: i32, width: i32, height: i32, depth: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -88586,7 +88586,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribIPointer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_i_pointer(&self, index: u32, size: i32, type_: u32, stride: i32, offset: f64) {
+    pub fn vertex_attrib_i_pointer(&self, index: u32, size: i32, r#type: u32, stride: i32, offset: f64) {
         unreachable!()
     }
 
@@ -88610,7 +88610,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "drawElementsInstanced")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_elements_instanced(&self, mode: u32, count: i32, type_: u32, offset: f64, instance_count: i32) {
+    pub fn draw_elements_instanced(&self, mode: u32, count: i32, r#type: u32, offset: f64, instance_count: i32) {
         unreachable!()
     }
 
@@ -88618,7 +88618,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "drawRangeElements")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_range_elements(&self, mode: u32, start: u32, end: u32, count: i32, type_: u32, offset: f64) {
+    pub fn draw_range_elements(&self, mode: u32, start: u32, end: u32, count: i32, r#type: u32, offset: f64) {
         unreachable!()
     }
 
@@ -89090,7 +89090,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
+    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -89098,7 +89098,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, internalformat: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, internalformat: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -89106,7 +89106,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
+    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -89114,7 +89114,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -89122,7 +89122,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_f64(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pbo_offset: f64) {
+    pub fn tex_image2_d_with_f64(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, pbo_offset: f64) {
         unreachable!()
     }
 
@@ -89130,7 +89130,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_tex_image_source(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_image2_d_with_tex_image_source(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -89138,7 +89138,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
+    pub fn tex_image2_d_with_src_offset(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -89146,7 +89146,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_f64(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pbo_offset: f64) {
+    pub fn tex_sub_image2_d_with_f64(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, pbo_offset: f64) {
         unreachable!()
     }
 
@@ -89154,7 +89154,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image2_d_with_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -89162,7 +89162,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
+    pub fn tex_sub_image2_d_with_src_offset(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, src_data: impl IntoArrayBufferView, src_offset: f64) {
         unreachable!()
     }
 
@@ -89498,7 +89498,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: impl IntoArrayBufferView) {
+    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, dst_data: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -89506,7 +89506,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels_with_f64(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, offset: f64) {
+    pub fn read_pixels_with_f64(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, offset: f64) {
         unreachable!()
     }
 
@@ -89514,7 +89514,7 @@ impl WebGL2RenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels_with_dst_offset(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, dst_data: impl IntoArrayBufferView, dst_offset: f64) {
+    pub fn read_pixels_with_dst_offset(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, dst_data: impl IntoArrayBufferView, dst_offset: f64) {
         unreachable!()
     }
 
@@ -89537,7 +89537,7 @@ impl WebGLActiveInfo {
     #[cfg_attr(rust_js, rust_js::link_name = "get type")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn type_(&self) -> u32 {
+    pub fn r#type(&self) -> u32 {
         unreachable!()
     }
 
@@ -89575,7 +89575,7 @@ pub mod web_gl_context_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new WebGLContextEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new(type_: &str) -> &'static WebGLContextEvent {
+    pub fn new(r#type: &str) -> &'static WebGLContextEvent {
         unreachable!()
     }
 
@@ -89583,7 +89583,7 @@ pub mod web_gl_context_event {
     #[cfg_attr(rust_js, rust_js::link_name = "new WebGLContextEvent")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn new_with_event_init(type_: &str, event_init: WebGLContextEventInit<'_>) -> &'static WebGLContextEvent {
+    pub fn new_with_event_init(r#type: &str, event_init: WebGLContextEventInit<'_>) -> &'static WebGLContextEvent {
         unreachable!()
     }
 
@@ -90814,7 +90814,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "createShader")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn create_shader(&self, type_: u32) -> Option<&'static WebGLShader> {
+    pub fn create_shader(&self, r#type: u32) -> Option<&'static WebGLShader> {
         unreachable!()
     }
 
@@ -90942,7 +90942,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "drawElements")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn draw_elements(&self, mode: u32, count: i32, type_: u32, offset: f64) {
+    pub fn draw_elements(&self, mode: u32, count: i32, r#type: u32, offset: f64) {
         unreachable!()
     }
 
@@ -91302,7 +91302,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFunc")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func(&self, func: u32, ref_: i32, mask: u32) {
+    pub fn stencil_func(&self, func: u32, r#ref: i32, mask: u32) {
         unreachable!()
     }
 
@@ -91310,7 +91310,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "stencilFuncSeparate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn stencil_func_separate(&self, face: u32, func: u32, ref_: i32, mask: u32) {
+    pub fn stencil_func_separate(&self, face: u32, func: u32, r#ref: i32, mask: u32) {
         unreachable!()
     }
 
@@ -91510,7 +91510,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "vertexAttribPointer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn vertex_attrib_pointer(&self, index: u32, size: i32, type_: u32, normalized: bool, stride: i32, offset: f64) {
+    pub fn vertex_attrib_pointer(&self, index: u32, size: i32, r#type: u32, normalized: bool, stride: i32, offset: f64) {
         unreachable!()
     }
 
@@ -91566,7 +91566,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "readPixels")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
+    pub fn read_pixels(&self, x: i32, y: i32, width: i32, height: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -91574,7 +91574,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
+    pub fn tex_image2_d(&self, target: u32, level: i32, internalformat: i32, width: i32, height: i32, border: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -91582,7 +91582,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, internalformat: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, internalformat: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -91590,7 +91590,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, type_: u32, pixels: impl IntoArrayBufferView) {
+    pub fn tex_sub_image2_d(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, width: i32, height: i32, format: u32, r#type: u32, pixels: impl IntoArrayBufferView) {
         unreachable!()
     }
 
@@ -91598,7 +91598,7 @@ impl WebGLRenderingContext {
     #[cfg_attr(rust_js, rust_js::link_name = "texSubImage2D")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn tex_sub_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, format: u32, type_: u32, source: impl IntoTexImageSource) {
+    pub fn tex_sub_image2_d_with_u32_and_u32_and_tex_image_source(&self, target: u32, level: i32, xoffset: i32, yoffset: i32, format: u32, r#type: u32, source: impl IntoTexImageSource) {
         unreachable!()
     }
 
@@ -92786,7 +92786,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn open_with_async(&self, method: &str, url: &str, async_: bool) {
+    pub fn open_with_async(&self, method: &str, url: &str, r#async: bool) {
         unreachable!()
     }
 
@@ -92794,7 +92794,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn open_with_async_and_username(&self, method: &str, url: &str, async_: bool, username: &str) {
+    pub fn open_with_async_and_username(&self, method: &str, url: &str, r#async: bool, username: &str) {
         unreachable!()
     }
 
@@ -92802,7 +92802,7 @@ impl XMLHttpRequest {
     #[cfg_attr(rust_js, rust_js::link_name = "open")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn open_with_async_and_username_and_password(&self, method: &str, url: &str, async_: bool, username: &str, password: &str) {
+    pub fn open_with_async_and_username_and_password(&self, method: &str, url: &str, r#async: bool, username: &str, password: &str) {
         unreachable!()
     }
 
@@ -93227,7 +93227,7 @@ impl XPathExpression {
     #[cfg_attr(rust_js, rust_js::link_name = "evaluate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn evaluate_with_type(&self, context_node: &Node, type_: u16) -> &'static XPathResult {
+    pub fn evaluate_with_type(&self, context_node: &Node, r#type: u16) -> &'static XPathResult {
         unreachable!()
     }
 
@@ -93235,7 +93235,7 @@ impl XPathExpression {
     #[cfg_attr(rust_js, rust_js::link_name = "evaluate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn evaluate_with_type_and_result(&self, context_node: &Node, type_: u16, result: &XPathResult) -> &'static XPathResult {
+    pub fn evaluate_with_type_and_result(&self, context_node: &Node, r#type: u16, result: &XPathResult) -> &'static XPathResult {
         unreachable!()
     }
 
@@ -94666,7 +94666,7 @@ pub struct MediaDecodingConfiguration {
     pub video: Option<VideoConfiguration>,
     pub audio: Option<AudioConfiguration>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: String,
+    pub r#type: String,
     #[cfg_attr(rust_js, rust_js::name = "keySystemConfiguration")]
     pub key_system_configuration: Option<MediaCapabilitiesKeySystemConfiguration>,
 }
@@ -94742,7 +94742,7 @@ pub struct MediaEncodingConfiguration {
     pub video: Option<VideoConfiguration>,
     pub audio: Option<AudioConfiguration>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: String,
+    pub r#type: String,
 }
 
 /// The `MediaTrackConstraints` dictionary: a JS object with these fields, a `None` one not there.
@@ -94964,14 +94964,14 @@ pub struct PublicKeyCredentialUserEntity {
 /// The `PublicKeyCredentialParameters` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PublicKeyCredentialParameters {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: String,
+    pub r#type: String,
     pub alg: i32,
 }
 
 /// The `PublicKeyCredentialDescriptor` dictionary: a JS object with these fields, a `None` one not there.
 pub struct PublicKeyCredentialDescriptor {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: String,
+    pub r#type: String,
     pub transports: Option<Vec<String>>,
 }
 
@@ -95116,7 +95116,7 @@ pub struct RTCIceServer {
 /// The `RTCSessionDescriptionInit` dictionary: a JS object with these fields, a `None` one not there.
 pub struct RTCSessionDescriptionInit {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: String,
+    pub r#type: String,
     pub sdp: Option<String>,
 }
 
@@ -95235,7 +95235,7 @@ pub struct ReadableStreamReadResult {
 #[derive(Default)]
 pub struct Report {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<String>,
+    pub r#type: Option<String>,
     pub url: Option<String>,
     pub body: Option<Option<ReportBody>>,
 }
@@ -95289,7 +95289,7 @@ pub struct CryptoKeyPair {
 pub struct JsonWebKey {
     pub kty: Option<String>,
     #[cfg_attr(rust_js, rust_js::name = "use")]
-    pub use_: Option<String>,
+    pub r#use: Option<String>,
     pub key_ops: Option<Vec<String>>,
     pub alg: Option<String>,
     pub ext: Option<bool>,
@@ -95606,7 +95606,7 @@ pub struct AudioBufferSourceOptions<'a> {
     pub buffer: Option<&'a AudioBuffer>,
     pub detune: Option<f32>,
     #[cfg_attr(rust_js, rust_js::name = "loop")]
-    pub loop_: Option<bool>,
+    pub r#loop: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "loopEnd")]
     pub loop_end: Option<f64>,
     #[cfg_attr(rust_js, rust_js::name = "loopStart")]
@@ -95692,7 +95692,7 @@ pub struct AudioProcessingEventInit<'a> {
 /// The [`AudioSinkOptions`](https://developer.mozilla.org/docs/Web/API/AudioSinkOptions) dictionary: a JS object of these fields, a `None` one not given.
 pub struct AudioSinkOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+    pub r#type: &'a str,
 }
 
 /// The [`AudioWorkletNodeOptions`](https://developer.mozilla.org/docs/Web/API/AudioWorkletNodeOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -95722,7 +95722,7 @@ pub struct BiquadFilterOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
     pub channel_interpretation: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "Q")]
     pub q: Option<f32>,
     pub detune: Option<f32>,
@@ -95743,7 +95743,7 @@ pub struct BlobEventInit<'a> {
 #[derive(Default)]
 pub struct BlobPropertyBag<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub endings: Option<&'a str>,
 }
 
@@ -95751,7 +95751,7 @@ pub struct BlobPropertyBag<'a> {
 #[derive(Default)]
 pub struct BoxQuadOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "box")]
-    pub box_: Option<&'a str>,
+    pub r#box: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "relativeTo")]
     pub relative_to: Option<GeometryNode<'a>>,
 }
@@ -96260,7 +96260,7 @@ pub struct ElementDefinitionOptions<'a> {
 /// The [`EncodedAudioChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedAudioChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct EncodedAudioChunkInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+    pub r#type: &'a str,
     pub timestamp: f64,
     pub duration: Option<f64>,
     pub data: AllowSharedBufferSource<'a>,
@@ -96277,7 +96277,7 @@ pub struct EncodedAudioChunkMetadata {
 /// The [`EncodedVideoChunkInit`](https://developer.mozilla.org/docs/Web/API/EncodedVideoChunkInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct EncodedVideoChunkInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+    pub r#type: &'a str,
     pub timestamp: f64,
     pub duration: Option<f64>,
     pub data: AllowSharedBufferSource<'a>,
@@ -96331,7 +96331,7 @@ pub struct EventSourceInit {
 #[derive(Default)]
 pub struct FilePropertyBag<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub endings: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "lastModified")]
     pub last_modified: Option<f64>,
@@ -96568,7 +96568,7 @@ pub struct GPUBufferBinding<'a> {
 #[derive(Default)]
 pub struct GPUBufferBindingLayout<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "hasDynamicOffset")]
     pub has_dynamic_offset: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "minBindingSize")]
@@ -96773,7 +96773,7 @@ pub struct GPUProgrammableStage<'a> {
 pub struct GPUQuerySetDescriptor<'a> {
     pub label: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+    pub r#type: &'a str,
     pub count: u32,
 }
 
@@ -96894,7 +96894,7 @@ pub struct GPURequestAdapterOptions<'a> {
 #[derive(Default)]
 pub struct GPUSamplerBindingLayout<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
 }
 
 /// The [`GPUSamplerDescriptor`](https://developer.mozilla.org/docs/Web/API/GPUSamplerDescriptor) dictionary: a JS object of these fields, a `None` one not given.
@@ -97175,7 +97175,7 @@ pub struct ImageDecodeOptions {
 /// The [`ImageDecoderInit`](https://developer.mozilla.org/docs/Web/API/ImageDecoderInit) dictionary: a JS object of these fields, a `None` one not given.
 pub struct ImageDecoderInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+    pub r#type: &'a str,
     pub data: ImageBufferSource<'a>,
     #[cfg_attr(rust_js, rust_js::name = "colorSpaceConversion")]
     pub color_space_conversion: Option<&'a str>,
@@ -97192,7 +97192,7 @@ pub struct ImageDecoderInit<'a> {
 #[derive(Default)]
 pub struct ImageEncodeOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub quality: Option<f64>,
 }
 
@@ -97359,7 +97359,7 @@ pub struct MediaImage<'a> {
     pub src: &'a str,
     pub sizes: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
 }
 
 /// The [`MediaKeyMessageEventInit`](https://developer.mozilla.org/docs/Web/API/MediaKeyMessageEventInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -97705,7 +97705,7 @@ pub struct OscillatorOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "channelInterpretation")]
     pub channel_interpretation: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub frequency: Option<f32>,
     pub detune: Option<f32>,
     #[cfg_attr(rust_js, rust_js::name = "periodicWave")]
@@ -97906,7 +97906,7 @@ pub struct PerformanceObserverInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "entryTypes")]
     pub entry_types: Option<&'a [&'a str]>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub buffered: Option<bool>,
 }
 
@@ -98079,7 +98079,7 @@ pub struct PublicKeyCredentialCreationOptionsJSON<'a> {
 /// The [`PublicKeyCredentialDescriptorJSON`](https://developer.mozilla.org/docs/Web/API/PublicKeyCredentialDescriptorJSON) dictionary: a JS object of these fields, a `None` one not given.
 pub struct PublicKeyCredentialDescriptorJSON<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+    pub r#type: &'a str,
     pub id: &'a str,
     pub transports: Option<&'a [&'a str]>,
 }
@@ -98150,7 +98150,7 @@ pub struct ReadableWritablePair<'a> {
 pub struct RegistrationOptions<'a> {
     pub scope: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "updateViaCache")]
     pub update_via_cache: Option<&'a str>,
 }
@@ -98186,7 +98186,7 @@ pub struct RequestInit<'a> {
 #[derive(Default)]
 pub struct ResizeObserverOptions<'a> {
     #[cfg_attr(rust_js, rust_js::name = "box")]
-    pub box_: Option<&'a str>,
+    pub r#box: Option<&'a str>,
 }
 
 /// The [`ResponseInit`](https://developer.mozilla.org/docs/Web/API/ResponseInit) dictionary: a JS object of these fields, a `None` one not given.
@@ -98281,7 +98281,7 @@ pub struct RTCLocalIceCandidateInit<'a> {
 #[derive(Default)]
 pub struct RTCLocalSessionDescriptionInit<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub sdp: Option<&'a str>,
 }
 
@@ -98420,7 +98420,7 @@ pub struct SerialOutputSignals {
     #[cfg_attr(rust_js, rust_js::name = "requestToSend")]
     pub request_to_send: Option<bool>,
     #[cfg_attr(rust_js, rust_js::name = "break")]
-    pub break_: Option<bool>,
+    pub r#break: Option<bool>,
 }
 
 /// The [`SerialPortFilter`](https://developer.mozilla.org/docs/Web/API/SerialPortFilter) dictionary: a JS object of these fields, a `None` one not given.
@@ -98483,7 +98483,7 @@ pub struct ShareData<'a> {
 pub struct SharedWorkerOptions<'a> {
     pub name: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub credentials: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "extendedLifetime")]
     pub extended_lifetime: Option<bool>,
@@ -99074,7 +99074,7 @@ pub struct WindowPostMessageOptions<'a> {
 pub struct WorkerAndParameters<'a> {
     pub worker: &'a Worker,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
 }
 
 /// The [`WorkerOptions`](https://developer.mozilla.org/docs/Web/API/WorkerOptions) dictionary: a JS object of these fields, a `None` one not given.
@@ -99082,7 +99082,7 @@ pub struct WorkerAndParameters<'a> {
 pub struct WorkerOptions<'a> {
     pub name: Option<&'a str>,
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: Option<&'a str>,
+    pub r#type: Option<&'a str>,
     pub credentials: Option<&'a str>,
 }
 
@@ -99095,7 +99095,7 @@ pub struct WorkletOptions<'a> {
 /// The [`WriteParams`](https://developer.mozilla.org/docs/Web/API/WriteParams) dictionary: a JS object of these fields, a `None` one not given.
 pub struct WriteParams<'a> {
     #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: &'a str,
+    pub r#type: &'a str,
     pub size: Option<f64>,
     pub position: Option<f64>,
     pub data: Option<BufferSourceOrBlobOrStr<'a>>,

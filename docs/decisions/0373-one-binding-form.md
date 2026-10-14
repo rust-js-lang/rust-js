@@ -2,7 +2,9 @@
 
 Status: Accepted. Amends [0021](0021-js-interop.md),
 [0024](0024-web-crate.md), [0028](0028-js-module-imports.md),
-[0039](0039-generic-bindings.md) and [0111](0111-js-types-as-structs.md).
+[0039](0039-generic-bindings.md) and [0111](0111-js-types-as-structs.md). Amended by [0376](0376-keyword-names-are-raw.md): a
+parameter or a field named by a Rust keyword is its raw identifier,
+`r#type`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)): the JS a binding's
 call writes is the same either way; only how it's declared changes.
@@ -24,7 +26,7 @@ job.
 
 - **A binding of a JS function is an ordinary function**, as ADR 0039 has
   it: `#[cfg_attr(rust_js, rust_js::link_name = "new Event")] pub fn
-  new(type_: &str) -> &'static Event { unreachable!() }`. One that was
+  new(r#type: &str) -> &'static Event { unreachable!() }`. One that was
   `unsafe` to call in an `extern` block, as every one not marked `safe`
   is, is an `unsafe fn`.
 - **An `extern` block holds `static`s alone**, a JS global or an import,

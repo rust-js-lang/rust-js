@@ -1,6 +1,6 @@
 // Generate src/lib.rs, the `webapi` crate, from W3C's WebIDL (ADR 0024).
 //
-//   cd web && bun install && bun generate.ts
+//   bun webapi/generate.ts [out]   writes src/lib.rs, or `out`
 //
 // Every rule about what gets in is in this file: which interfaces
 // (INTERFACES), how WebIDL types become Rust (`rustType`), and the names.
@@ -11,6 +11,7 @@ import { readFileSync } from "node:fs";
 
 import idl from "@webref/idl";
 import { typescript } from "./coverage";
+import { identifier, plain, snake, snakeWords } from "../scripts/rust-names";
 import webref from "@webref/idl/package.json" with { type: "json" };
 import webrefEvents from "@webref/events";
 import eventsPackage from "@webref/events/package.json" with { type: "json" };
@@ -300,12 +301,6 @@ for (const i of interfaces.values()) {
 
 // ── Names ───────────────────────────────────────────────────────────────
 
-/** `HTMLInputElement` → `["HTML", "Input", "Element"]`, `innerHTML` → `["inner", "HTML"]`. */
-// "HTML" then a one-letter word (`HTMLIFrameElement`) would read as "HTMLI":
-// split it off first, so its module is `html_iframe_element`.
-const words = (name: string) =>
-  name.replace(/^HTML(?=[A-Z][A-Z])/, "Html").match(/[A-Z]+(?![a-z])|[A-Z]?[a-z0-9]+/g) ?? [name];
-
 /** An interface's name with its namespace, if it has one: `WebAssemblyModule`. */
 const qualified = (name: string) => (interfaces.get(name)?.legacyNamespace ?? "") + name;
 
@@ -315,21 +310,6 @@ const jsName = (i: Interface) => (i.legacyNamespace ? `${i.legacyNamespace}.${i.
 /** Types, as WebIDL and TypeScript's DOM lib name them: `HTMLInputElement`,
  * `DOMRect`; one of a namespace with it, `Module` → `WebAssemblyModule`. */
 const typeName = (name: string) => qualified(name);
-
-const KEYWORDS = new Set(
-  ("as async await box break const continue crate do dyn else enum extern false final fn for gen if impl in " +
-    "let loop macro match mod move mut override priv pub ref return self Self static struct super trait true " +
-    "try type typeof unsafe unsized use virtual where while yield abstract become").split(" "),
-);
-
-/** `getElementById` → `get_element_by_id`. */
-const snakeWords = (name: string) => words(name).map((w) => w.toLowerCase()).join("_");
-
-/** Functions, modules and parameters, with a `_` after a Rust keyword: `type` → `type_`. */
-const snake = (name: string) => {
-  const s = snakeWords(name);
-  return KEYWORDS.has(s) ? `${s}_` : s;
-};
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -773,8 +753,8 @@ function functionsOf(i: Interface): Fn[] {
       if (!type) break;
       words.push(snakeWords(a.name));
       params.push(`${snake(a.name)}: ${type}`);
-      // A keyword's `_` isn't needed before more: `continue_with_key`.
-      forms.push({ name: `${base.replace(/_$/, "")}_with_${[...lead, ...words].join("_and_")}`, params: [...params] });
+      // A keyword's escape isn't needed before more: `continue_with_key`.
+      forms.push({ name: identifier(`${plain(base)}_with_${[...lead, ...words].join("_and_")}`), params: [...params] });
     }
     return forms;
   };
@@ -945,11 +925,11 @@ function functionsOf(i: Interface): Fn[] {
       const lead = !first
         ? []
         : required.flatMap((a, j) =>
-            // A word of a name, `async`, not a parameter's `async_`: `open_with_async_and_username`.
+            // A word of a name, `async`, not a parameter's `r#async`: `open_with_async_and_username`.
             !firstRequired[j] ? [snakeWords(a.name)] : key(firstRequired[j]) !== key(a) ? [suffix(sig.types[j])] : [],
           );
       const name = NAMED[`${i.name}.${m.name}`] ?? snake(m.name);
-      const base = lead.length > 0 ? `${name.replace(/_$/, "")}_with_${lead.join("_and_")}` : name;
+      const base = lead.length > 0 ? identifier(`${plain(name)}_with_${lead.join("_and_")}`) : name;
       for (const v of [requiredForm(base, sig), ...optionalForms(name, lead, sig, m.arguments ?? [])]) {
         const jsName = isStatic ? `${i.name}.${m.name}` : member(m.name);
         fns.push({ name: v.name, jsName, params: isStatic ? v.params : [...self, ...v.params], result: orNull(result, m.idlType!), doc });
@@ -1190,7 +1170,7 @@ function module(name: string, all: Fn[], typed: string[] = [], constants: string
   typed = [...all.map(generic), ...typed];
   line();
   line(`pub mod ${name} {`);
-  // The crate's types, where its functions name one: `supports(type_: &str)`
+  // The crate's types, where its functions name one: `supports(r#type: &str)`
   // names none, nor `supported_content_encodings() -> &'static [String]`,
   // whose `String` is the prelude's, nor `&dyn core::any::Any`, a path, nor
   // `debug<D>(data: D)`, whose `D` is its own.
@@ -1498,7 +1478,7 @@ for (const name of INTERFACES) {
   line(`unsafe impl Defined for ${typeName(name)} {}`);
 }
 
-await Bun.write(new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
+await Bun.write(process.argv[2] ?? new URL("./src/lib.rs", import.meta.url), `${out.join("\n")}\n`);
 const reasons = [...skipped].sort((a, b) => b[1] - a[1]).map(([why, n]) => `${why} ${n}`);
 console.log(`src/lib.rs: ${INTERFACES.length} interfaces, ${NAMESPACES.length} namespaces, ${count} functions, ${unions.size} unions`);
 console.log(`events: ${eventNames.length} names, ${impls} on ${listens.size} targets (${disagreeing} where specs disagree, as \`Event\`); tags: ${tagNames.length}`);

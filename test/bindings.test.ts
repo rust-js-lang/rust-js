@@ -369,8 +369,8 @@ pub fn errors() -> (String, String, f64, f64) {
     (e.name(), e.message(), parse_int_with("42px", 10), parse_int("0x1f"))
 }
 pub fn symbols() -> (bool, Option<String>, Option<String>) {
-    let a = symbol::for_("app");
-    (js::object::is(a, symbol::for_("app")), symbol::key_for(a), symbol::new("local").description())
+    let a = symbol::r#for("app");
+    (js::object::is(a, symbol::r#for("app")), symbol::key_for(a), symbol::new("local").description())
 }
 pub struct State {
     pub n: u32,

@@ -4575,7 +4575,7 @@ impl<T> Default for TimeHTMLAttributes<'_, T> {
 #[cfg_attr(rust_js, rust_js::types = "react#TrackHTMLAttributes<T>")]
 pub struct TrackHTMLAttributes<'a, T = webapi::HTMLTrackElement> {
     /// `default`
-    pub r#default: Option<bool>,
+    pub default: Option<bool>,
     /// `kind`
     pub kind: Option<&'a str>,
     /// `label`
@@ -4593,7 +4593,7 @@ pub struct TrackHTMLAttributes<'a, T = webapi::HTMLTrackElement> {
 impl<T> Default for TrackHTMLAttributes<'_, T> {
     fn default() -> Self {
         Self {
-            r#default: None,
+            default: None,
             kind: None,
             label: None,
             src: None,

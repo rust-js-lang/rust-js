@@ -8,7 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { measure, render } from "../webapi/coverage";
-import { root } from "./support";
+import { generatorOutput, root } from "./support";
 
 const baseline = join(root, "webapi/coverage.txt");
 
@@ -22,3 +22,9 @@ test("the webapi crate binds what it bound of TypeScript's DOM", async () => {
   // And what's new is in the baseline, blessed.
   expect(render(now)).toBe(readFileSync(baseline, "utf8"));
 }, 60_000);
+
+// The webapi crate is what webapi/generate.ts writes of WebIDL (ADR 0024),
+// each name as scripts/rust-names.ts names it (ADR 0376).
+test("the webapi crate is what its generator writes", () => {
+  expect(generatorOutput("webapi/generate.ts")).toBe(readFileSync(join(root, "webapi/src/lib.rs"), "utf8"));
+});

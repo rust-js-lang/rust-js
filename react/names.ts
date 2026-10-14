@@ -1,5 +1,6 @@
-// What react/generate.ts and react/attributes.ts both name Rust's way:
-// each event handler's event, and a JS name as a Rust one.
+// Which event each React handler gets, which react/generate.ts and
+// react/attributes.ts both name. A JS name as a Rust one is
+// scripts/rust-names.ts's.
 
 // Which React event each handler gets, as react.dev's common components
 // page groups them, by @types/react's names. Any other is `SyntheticEvent`,
@@ -25,18 +26,3 @@ const groups: Record<string, string> = {
   UIEvent: "Scroll ScrollEnd",
 };
 for (const [type, names] of Object.entries(groups)) for (const name of names.split(" ")) EVENT_TYPES[`on${name}`] = type;
-
-const KEYWORDS = new Set(
-  "as async await box break const continue crate default do dyn else enum extern false final fn for gen if impl in let loop macro match mod move mut override priv pub ref return self static struct super trait true try type typeof unsafe unsized use virtual where while yield".split(
-    " ",
-  ),
-);
-
-export function snake(name: string): string {
-  const s = name
-    .replace(/[-:]/g, "_")
-    .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
-    .replace(/([A-Z])([A-Z][a-z])/g, "$1_$2")
-    .toLowerCase();
-  return KEYWORDS.has(s) ? `r#${s}` : s;
-}

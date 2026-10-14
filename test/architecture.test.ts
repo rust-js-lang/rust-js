@@ -636,6 +636,22 @@ test("a std type is known by its StdItem", () => {
   }
 });
 
+// A JS name that's a Rust keyword is its raw identifier in every binding,
+// generated or written by hand, `r#type`, which rust-js gives JS as `type`:
+// not `type_` and a `rust_js::name` beside it (ADR 0376). Only the four
+// keywords Rust has no raw identifier of take a `_`, `self_`. And the
+// generators name a JS name one way, scripts/rust-names.ts's.
+test("a binding's keyword name is its raw identifier", () => {
+  const { KEYWORDS } = require("../scripts/rust-names.ts") as { KEYWORDS: Set<string> };
+  const escaped = [...KEYWORDS].filter((k) => !["self", "Self", "super", "crate"].includes(k));
+  const pattern = new RegExp(`\\b(?:${escaped.join("|")})_\\b`);
+  const crates = ["builtins/src", "webapi/src", "react/src", "node/src", "next/src"].flatMap(files).filter((f) => f.endsWith(".rs"));
+  expect(crates.length).toBeGreaterThan(10);
+  expect(crates.filter((file) => pattern.test(read(file)))).toEqual([]);
+  const generators = ["react/generate.ts", "react/attributes.ts", "react/literals.ts", "react/names.ts", "webapi/generate.ts", "builtins/intl.ts", "builtins/typed_arrays.ts"];
+  expect(generators.filter((file) => /KEYWORDS|`r#\$\{|replace\(\/\(\[a-z0-9\]\)\(\[A-Z\]\)/.test(read(file)))).toEqual([]);
+});
+
 test("only recognition spells std's names", () => {
   const strays: string[] = [];
   for (const file of ["src/lower.rs", ...files("src/lower")].filter(f => !f.includes("/recognition") && !f.endsWith("/shortcuts.rs"))) {

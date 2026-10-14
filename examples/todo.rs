@@ -173,7 +173,7 @@ mod tests {
 
     #[cfg_attr(rust_js, rust_js::link_name = "new KeyboardEvent")]
     #[allow(unused_variables)]
-    fn keyboard_event(type_: &str, init: &KeyboardEventInit) -> &'static Event {
+    fn keyboard_event(r#type: &str, init: &KeyboardEventInit) -> &'static Event {
         unreachable!()
     }
 

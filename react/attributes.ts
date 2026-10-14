@@ -10,7 +10,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { open } from "@rust-js/typescript";
-import { EVENT_TYPES, snake } from "./names";
+import { snake } from "../scripts/rust-names";
+import { EVENT_TYPES } from "./names";
 
 type Model = any;
 

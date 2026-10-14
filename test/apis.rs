@@ -12,7 +12,7 @@ use react::dom::{FormStatus, create_portal, flush_sync, use_form_status};
 use react::{js, jsx};
 use react::webapi;
 use react::{
-    Activity, ActivityMode, FragmentInstance, JSX, LazyExoticComponent, Module, Phase, RefObject, CSSProperties, import_module, inner_html, lazy, use_,
+    Activity, ActivityMode, FragmentInstance, JSX, LazyExoticComponent, Module, Phase, RefObject, CSSProperties, import_module, inner_html, lazy, r#use,
     use_action_state, use_deferred_value, use_effect, use_effect_event, use_id, use_imperative_handle,
     use_layout_effect, use_optimistic, use_reducer_with, use_ref, use_state, use_sync_external_store, use_transition,
 };
@@ -57,7 +57,7 @@ fn uploaded() -> Promise<()> {
 
 /// `use` a promise: Suspense shows the fallback until it resolves.
 pub fn Greeting() -> JSX::Element {
-    let text = use_(greeting);
+    let text = r#use(greeting);
     jsx! {
         <p className="greeting">{text}</p>
     }

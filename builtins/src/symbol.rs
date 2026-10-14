@@ -8,7 +8,7 @@ use super::{Defined, JsObject, PropertyKey};
 use core::marker::PhantomData;
 
 /// [`Symbol`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol):
-/// `symbol::new("id")` is a new one, `symbol::for_("id")` the registry's.
+/// `symbol::new("id")` is a new one, `symbol::r#for("id")` the registry's.
 pub struct Symbol(PhantomData<JsObject>);
 
 // A value, never `undefined`, and a property's key.
@@ -58,7 +58,7 @@ unsafe extern "Rust" {
 
     /// [`Symbol.match`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/match).
     #[link_name = "Symbol.match"]
-    pub safe static match_: &'static Symbol;
+    pub safe static r#match: &'static Symbol;
 
     /// [`Symbol.matchAll`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/matchAll).
     #[link_name = "Symbol.matchAll"]
@@ -103,7 +103,7 @@ pub fn new(description: &str) -> &'static Symbol {
 /// [`Symbol.for(key)`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Symbol/for):
 /// the registry's symbol of `key`, the same each time.
 #[cfg_attr(rust_js, rust_js::link_name = "Symbol.for")]
-pub fn for_(key: &str) -> &'static Symbol {
+pub fn r#for(key: &str) -> &'static Symbol {
     unreachable!()
 }
 

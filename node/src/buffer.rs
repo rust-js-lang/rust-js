@@ -958,8 +958,7 @@ impl Buffer {
 /// What [`Buffer::to_json`] gives: `{ type: "Buffer", data }`.
 pub struct BufferJson {
     /// `"Buffer"`.
-    #[cfg_attr(rust_js, rust_js::name = "type")]
-    pub type_: String,
+    pub r#type: String,
     pub data: Vec<u8>,
 }
 
