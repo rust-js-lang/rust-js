@@ -439,6 +439,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0369 A tuple's parts that act are each held, not an array](decisions/0369-tuple-parts-held-each.md)
 - [0370 A loop's exits come first, as a person writes them](decisions/0370-loop-exits-first.md)
 - [0371 Tests and names as a person writes them](decisions/0371-tests-and-names-as-written.md)
+- [0372 A check whose panic drops is written where it's made](decisions/0372-a-check-that-drops.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

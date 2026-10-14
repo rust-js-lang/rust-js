@@ -287,14 +287,6 @@ test("body queries cannot access emission state", () => {
   expect(source).not.toMatch(/\bfn\s+\w+\s*\([^)]*&mut\s+self/);
 });
 
-// What an expression can do that can be seen is a question of the THIR
-// alone (ADRs 0098, 0139): asked by emission, it never reaches into it.
-test("effects analysis cannot access emission state", () => {
-  const source = read("src/lower/effects.rs");
-  expect(source).not.toMatch(/\b(?:FnCx|Dependencies|Evaluation)\b|\bRefCell\s*<|crate::js|runtime::|super::drops\b/);
-  expect(source).not.toMatch(/\bfn\s+\w+\s*\([^)]*&mut\s+self/);
-});
-
 // What a body does with its values that have destructors is found before
 // it's lowered (ADR 0098): the walk reads the function's context, and
 // neither writes JS nor changes what lowering keeps.

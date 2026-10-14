@@ -236,29 +236,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(())
     }
 
-    /// The cleanup a panic of a terminator unwinds to, if it drops
-    /// anything there.
-    pub(super) fn cleans_up(&self, state: &State<'_, 'tcx>, unwind: UnwindAction) -> Option<BasicBlock> {
-        let (UnwindAction::Cleanup(start), Some(drops)) = (unwind, &state.drops) else {
-            return None;
-        };
-        let mut block = start;
-        loop {
-            match state.body.basic_blocks[block].terminator().kind {
-                TerminatorKind::Drop { place, target, .. } => {
-                    if drops.drops(block, place) {
-                        return Some(start);
-                    }
-                    block = target;
-                }
-                TerminatorKind::Goto { target } => block = target,
-                TerminatorKind::UnwindResume | TerminatorKind::UnwindTerminate(_) => return None,
-                // What `mir_unwind` says it doesn't support.
-                _ => return Some(start),
-            }
-        }
-    }
-
     /// The `Drop` that ends `block`, of `place`: what's there of it,
     /// dropped. As a panic unwinds, `cleanup`, its flags aren't read again.
     pub(super) fn mir_drop(
@@ -583,5 +560,32 @@ fn may_throw(stmt: &Stmt) -> bool {
         StmtKind::Assign(target, value) => target.has_effects() || value.has_effects(),
         StmtKind::Let(_, None) => false,
         _ => true,
+    }
+}
+
+/// The cleanup a panic of a terminator unwinds to, if it drops
+/// anything there.
+pub(super) fn cleans_up<'tcx>(
+    body: &mir::Body<'tcx>,
+    drops: Option<&Elaboration<'tcx>>,
+    unwind: UnwindAction,
+) -> Option<BasicBlock> {
+    let (UnwindAction::Cleanup(start), Some(drops)) = (unwind, drops) else {
+        return None;
+    };
+    let mut block = start;
+    loop {
+        match body.basic_blocks[block].terminator().kind {
+            TerminatorKind::Drop { place, target, .. } => {
+                if drops.drops(block, place) {
+                    return Some(start);
+                }
+                block = target;
+            }
+            TerminatorKind::Goto { target } => block = target,
+            TerminatorKind::UnwindResume | TerminatorKind::UnwindTerminate(_) => return None,
+            // What `mir_unwind` says it doesn't support.
+            _ => return Some(start),
+        }
     }
 }

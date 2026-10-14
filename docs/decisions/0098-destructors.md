@@ -478,3 +478,4 @@ tidy's, `unread_made`'s, alone.)
 
 - [0197](0197-moved-before-leaving.md): What's moved before anything can leave isn't its scope's to drop
 - [0199](0199-components-take-no-drops.md): A component takes no drop of its type parameters
+- [0372](0372-a-check-that-drops.md): A check whose panic drops is written where it's made

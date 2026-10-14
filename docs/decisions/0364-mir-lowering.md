@@ -129,3 +129,7 @@ THIR is still read beside each body's MIR: for its shape, the names,
 spans and what a std macro made, by which tidy writes the JS as it was
 written, and for the facts its analyses give. Removing the lowering of
 bodies didn't remove that.
+
+## Amended by
+
+- [0372](0372-a-check-that-drops.md): A check whose panic drops is written where it's made

@@ -476,7 +476,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Some(_) => Vec::new(),
         };
         let named: Vec<(Local, String)> = patterns.iter().flat_map(|(_, _, named)| named.clone()).collect();
-        let mut locals = self.mir_locals(mir_body, &named);
+        let mut locals = self.mir_locals(mir_body, drops.as_ref(), &named);
         // A drop reads what it drops more than once, so it's a variable.
         let dropped: Vec<Local> = drops.iter().flat_map(|drops| drops.read(mir_body)).collect();
         for &local in &dropped {
@@ -1269,7 +1269,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// Each local's name, the user's where it has one, and how it's used.
-    fn mir_locals(&mut self, body: &mir::Body<'tcx>, named: &[(Local, String)]) -> Locals {
+    fn mir_locals(
+        &mut self,
+        body: &mir::Body<'tcx>,
+        drops: Option<&drops::Elaboration<'tcx>>,
+        named: &[(Local, String)],
+    ) -> Locals {
         let n = body.local_decls.len();
         let mut locals = Locals {
             names: IndexVec::from_elem_n(String::new(), n),
@@ -1369,12 +1374,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     count_place(&mut locals, destination, true);
                 }
-                // A check THIR knows passes reads nothing: it's left out; nor
-                // one made where the element is read.
-                TerminatorKind::Assert { msg, target, .. }
-                    if self.known_in_bounds(msg, data.terminator().source_info.span)
-                        || checked_by_division(msg)
-                        || deferred_check(body, msg, *target).is_some() => {}
+                // A check left out, or made where the element is read, reads
+                // nothing here.
+                TerminatorKind::Assert { .. } if self.assert_check(body, drops, data.terminator()).is_some() => {}
                 TerminatorKind::Assert { cond, msg, .. } => {
                     count_operand(&mut locals, cond);
                     for operand in assert_operands(msg) {
@@ -1727,23 +1729,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 }
                 out.extend(chain.unwrap_or_default());
             }
-            TerminatorKind::Assert {
-                cond,
-                expected,
-                msg,
-                target,
-                unwind,
-            } if self.known_in_bounds(msg, span) || checked_by_division(msg) => {
-                // `args[i]` THIR's facts know is in bounds, of `0..args.len()`:
-                // unchecked.
-                let _ = (cond, expected, unwind);
-                out.extend(self.mir_branch(state, block, *target)?);
-            }
-            // A bounds check, where the element's read or written next.
-            TerminatorKind::Assert { msg, target, .. }
-                if let Some((index, write)) = deferred_check(state.body, msg, *target) =>
+            TerminatorKind::Assert { target, .. }
+                if let Some(check) = self.assert_check(state.body, state.drops.as_ref(), terminator) =>
             {
-                state.deferred.insert(index, write);
+                if let Check::Deferred(index, write) = check {
+                    state.deferred.insert(index, write);
+                }
                 out.extend(self.mir_branch(state, block, *target)?);
             }
             TerminatorKind::Assert {
@@ -1800,7 +1791,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 // a `try` whose `catch` drops it: the statement that runs it,
                 // as it may be written where it's used. What's made before
                 // that unwinds elsewhere runs first.
-                let unwind = self.cleans_up(state, *unwind);
+                let unwind = drops::cleans_up(state.body, state.drops.as_ref(), *unwind);
                 if state.unwind != unwind && !self.acting(state).is_empty() {
                     self.flush(state, &mut out)?;
                 }
@@ -2110,6 +2101,66 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             js::ExprKind::Member(..) if context_member => true,
             _ => alike(e),
         }
+    }
+
+    /// How an `Assert`, `terminator`, isn't an `if` that throws: left out,
+    /// as THIR knows it passes or the helper that runs next checks it, or
+    /// made where the element is read. Neither where its panic has something
+    /// to drop as it unwinds: that's the `if`'s. `None`, the `if`.
+    fn assert_check(
+        &self,
+        body: &mir::Body<'tcx>,
+        drops: Option<&drops::Elaboration<'tcx>>,
+        terminator: &mir::Terminator<'tcx>,
+    ) -> Option<Check> {
+        let TerminatorKind::Assert {
+            msg, target, unwind, ..
+        } = &terminator.kind
+        else {
+            return None;
+        };
+        if self.known_in_bounds(msg, terminator.source_info.span) || self.constant_in_bounds(body, msg) {
+            return Some(Check::Unchecked);
+        }
+        if drops::cleans_up(body, drops, *unwind).is_some() {
+            return None;
+        }
+        if checked_by_division(msg) {
+            return Some(Check::Unchecked);
+        }
+        deferred_check(body, msg, *target).map(|(index, write)| Check::Deferred(index, write))
+    }
+
+    /// Whether a bounds check `msg` passes as it's written: a constant index,
+    /// below an array's constant length, `items[2]` of three.
+    fn constant_in_bounds(&self, body: &mir::Body<'tcx>, msg: &mir::AssertMessage<'tcx>) -> bool {
+        let mir::AssertKind::BoundsCheck { len, index } = msg else {
+            return false;
+        };
+        let constant = |operand: &Operand<'tcx>| {
+            let constant = match operand {
+                Operand::Constant(constant) => constant,
+                // A local assigned once, a constant.
+                Operand::Copy(place) | Operand::Move(place) => {
+                    let local = place.as_local()?;
+                    let mut assigned = body
+                        .basic_blocks
+                        .iter()
+                        .flat_map(|data| &data.statements)
+                        .filter_map(|s| match &s.kind {
+                            StatementKind::Assign(assign) if assign.0.as_local() == Some(local) => Some(&assign.1),
+                            _ => None,
+                        });
+                    match (assigned.next(), assigned.next()) {
+                        (Some(Rvalue::Use(Operand::Constant(constant), _)), None) => constant,
+                        _ => return None,
+                    }
+                }
+                _ => return None,
+            };
+            constant.const_.try_to_scalar_int().map(|n| n.to_target_usize(self.tcx))
+        };
+        matches!((constant(index), constant(len)), (Some(index), Some(len)) if index < len)
     }
 
     /// Whether an `Assert` at `span` checks an index THIR's facts know is in
@@ -4952,7 +5003,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Std::Swap => "$exchange",
                 _ => "$take",
             };
-            let call = Expr::call(Expr::var(name), vec![a, b]);
+            let call = Expr::call(Expr::helper(name), vec![a, b]);
             if known == Std::Swap {
                 out.push(StmtKind::Expr(call).at(js_span));
                 return Ok(Value::Expr(Expr::undefined()));
@@ -5167,7 +5218,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 MapOp::OrInsert => "$orInsert",
                 _ => "$orInsertWith",
             };
-            let inserted = Expr::call(Expr::var(name), vec![map.clone(), key.clone(), default]);
+            let inserted = Expr::call(Expr::helper(name), vec![map.clone(), key.clone(), default]);
             if !self.is_cell(output) {
                 return Ok(Value::Expr(inserted));
             }
@@ -5493,7 +5544,6 @@ fn label(block: BasicBlock) -> String {
     format!("bb{}", block.as_usize())
 }
 
-/// Whether `block` does nothing but say it's never reached.
 /// Of a bounds check `msg`, the index whose element `target` reads or
 /// writes first, and whether it writes it: there, `$index(xs, i)` or
 /// `xs[$at(xs, i)]`, the check.
@@ -5655,6 +5705,14 @@ fn expr_bytes(e: &Expr) -> Option<Vec<u8>> {
 
 /// A check of a `%` or `/`, which the division makes itself where it can fail,
 /// `$rem(a, b, min)`, and can't where it's inline, `i % 2`: none.
+/// An `Assert` that isn't an `if` that throws (`assert_check`).
+enum Check {
+    /// Left out: it passes, or what runs next checks it.
+    Unchecked,
+    /// Made where the element, at this index, is read or, `true`, written.
+    Deferred(Local, bool),
+}
+
 fn checked_by_division(msg: &mir::AssertMessage<'_>) -> bool {
     matches!(
         msg,

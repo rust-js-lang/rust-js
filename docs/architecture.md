@@ -231,9 +231,8 @@ and answer. Each is checked to stay that way.
 |---|---|
 | `recognition.rs`, `recognition/` | Which std function or method a call is, a `Std`: `classify` asks what's known by identity, then a trait's method, then a type's own; and std's names and layout, `StdItem`, `cell_value_field`, `deref_target` |
 | `body_queries.rs` | What a body has, found once before it's lowered: `for` loops, the indexes a condition shows in bounds, the callbacks a hook is given, the casts of whole numbers, the statics it reads |
-| `effects.rs` | What evaluating an expression, or calling a closure, can do that can be seen, which the destructors' facts ask |
 | `drops/types.rs` | What dropping a type runs, and what a pattern moves, asked through a `DropQuery`: types, the crate's facts, which type parameters have drops, and the bounds of the dictionaries given, never `FnCx` |
-| `drops/facts.rs` | What a body owns and moves, found before it's lowered, from a `DropQuery` and the body's THIR |
+| `drops/facts.rs` | What's refused of a body's values with destructors, and its momentary borrows, found before it's lowered, from a `DropQuery` and the body's THIR |
 | `analysis.rs`, `analysis/` | What the whole crate is, before any function is lowered: what it refuses, the names its items have in JS, the types it changes in place, its drops' and `Debug`'s needs |
 | `shortcuts.rs` | Nothing of its own: `self.is_map(ty)` for `self.recognition().is_map(ty)`, each question answered in `recognition.rs` |
 | `std_coverage.rs` | How much of std's data structures rust-js knows: each stable method of each in `recognition/registry.rs`, `+` where `classify` knows it, for the ratchet in `docs/std-coverage.txt` (ADR 0314) |

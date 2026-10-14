@@ -43,7 +43,6 @@ mod copies;
 mod declarations;
 mod display;
 mod drops;
-mod effects;
 mod format_args;
 mod format_spec;
 mod items;

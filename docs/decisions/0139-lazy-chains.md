@@ -49,9 +49,10 @@ const kept = v
   a few of std's own methods that run no code of the crate's: `len()`,
   `is_empty()`, `is_some()`, `is_none()`, `is_ok()` and `is_err()`, and
   `clone()`, `to_owned()`, `to_string()` and `as_str()` of numbers and
-  strings. This is the test the destructors' analysis makes of what can't
-  leave early (ADR 0098), now of any body. A constructor, `map(Noisy)`, is
-  pure; any other function, or a type parameter's, isn't.
+  strings. A constructor, `map(Noisy)`, is pure; any other function, or a
+  type parameter's, isn't. (Amended by ADR 0372: the destructors' analysis
+  asked the same test of what can't leave early; MIR's drop elaboration
+  answers that now.)
 - **What can tell** is a later stage that does what can be seen too, one
   that stops early, or, as `rev` does, runs its iterator from the other
   end (`take`, `take_while`, `zip`, `find`, `any`, `all`, `position`,
@@ -107,3 +108,7 @@ const kept = v
   array. (Amended: a chain kept in a variable, and the other side of a
   `zip` or a `chain`, were arrays; and `next()` and `peekable()` of a
   chain took all of it.)
+
+## Amended by
+
+- [0372](0372-a-check-that-drops.md): A check whose panic drops is written where it's made
