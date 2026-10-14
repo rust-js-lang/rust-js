@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { existsSync, watch } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve, sep } from "node:path";
-import { createNativeBuilder, findCompiler, withoutCompiler } from "@rust-js/build/build";
+import { coalesced, createNativeBuilder, findCompiler, withoutCompiler } from "@rust-js/build/build";
 import { writePatch } from "@rust-js/build/patch";
 
 /**
@@ -62,23 +62,12 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   // rust-js reads of its own, but not what Cargo writes.
   const watchers = [];
   if (command === "dev" && compiling) {
-    let pending = false;
-    let active;
-    const drain = async () => {
-      while (pending) {
-        // A save's events, together, are one compile.
-        await new Promise((done) => setTimeout(done, 30));
-        pending = false;
-        if (await compile()) log("rust-js: compiled");
-      }
-    };
+    // A save's events, together, are one compile.
+    const rebuild = coalesced(async () => {
+      if (await compile()) log("rust-js: compiled");
+    }, { after: () => watchOutside() });
     const changed = (file) => {
-      if (!session.reads(file)) return;
-      pending = true;
-      active ??= drain().finally(() => {
-        active = undefined;
-        watchOutside();
-      });
+      if (session.reads(file)) void rebuild(true);
     };
     watchers.push(watch(workspace, { recursive: true }, (_, name) => name && changed(resolve(workspace, name))));
     for (const file of builder.watchFiles) if (existsSync(file)) watchers.push(watch(file, () => changed(file)));

@@ -11,6 +11,35 @@ import { parseCompilerIdentity } from "./manifest.js";
 const checkout = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const defaultCompiler = join(checkout, "target/debug/rust-js");
 
+/**
+ * A rebuild of what a save touched, however many files it was: each change
+ * asks for `items`, and one run at a time, after 30 ms more of a save's
+ * events, gives `run` all asked for since, again while more are asked;
+ * `after`, once none are. Asking returns the run, to wait for it. The one
+ * way a host coalesces its rebuilds, Vite's and Next.js's alike.
+ * @template T
+ * @param {(batch: T[]) => Promise<void>} run
+ * @param {{ after?: () => void, stopped?: () => boolean }} [options]
+ * @returns {(...items: T[]) => Promise<void>}
+ */
+export function coalesced(run, { after = () => {}, stopped = () => false } = {}) {
+  const pending = new Set();
+  let active;
+  const drain = async () => {
+    while (pending.size && !stopped()) {
+      await new Promise((done) => setTimeout(done, 30));
+      const batch = [...pending];
+      pending.clear();
+      await run(batch);
+    }
+    after();
+  };
+  return (...items) => {
+    for (const item of items) pending.add(item);
+    return (active ??= drain().finally(() => { active = undefined; }));
+  };
+}
+
 /** Where rust-js keeps what it makes for an app, outside what it commits:
  * its Cargo builds, and each host's own. */
 export function cacheDirOf(root) {

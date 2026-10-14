@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, join, resolve, sep } from "node:path";
-import { cacheDirOf, createNativeBuilder, findCompiler, withoutCompiler } from "@rust-js/build/build";
+import { cacheDirOf, coalesced, createNativeBuilder, findCompiler, withoutCompiler } from "@rust-js/build/build";
 import { parseManifest } from "@rust-js/build/manifest";
 import { writePatch } from "@rust-js/build/patch";
 
@@ -42,8 +42,6 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
   // A Cargo build's: the package's JS, the manifest Vite is given, the
   // workspace it's of, and its session, which says what a build read.
   let entry, workspaceManifest, workspace, session;
-  let active;
-  const pending = new Set();
   const manifests = new Map();
   const failures = new Map();
   const aliases = new Map();
@@ -120,17 +118,14 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
     reloadIfChanged(old);
   }
 
-  async function drain() {
-    while (pending.size && !closed) {
-      // Let filesystem events from a single save accumulate before spawning.
-      await new Promise(resolve => setTimeout(resolve, 30));
-      const batch = [...pending];
-      pending.clear();
-      for (const crate of batch) {
-        try { await compile(crate); }
-        catch (error) { failures.set(crate, error.message); }
-      }
+  // A save's events, together, are one compile of each crate they touch.
+  const schedule = coalesced(async (batch) => {
+    for (const crate of batch) {
+      try { await compile(crate); }
+      catch (error) { failures.set(crate, error.message); }
     }
+  }, { after: reported, stopped: () => closed });
+  function reported() {
     if (server && !closed) {
       if (failures.size) {
         const message = [...failures.values()].join("\n");
@@ -144,17 +139,12 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
     }
   }
 
-  function schedule(affected) {
-    for (const crate of affected) pending.add(crate);
-    if (!active) active = drain().finally(() => { active = undefined; });
-    return active;
-  }
   function changed(event, path) {
     if (closed) return;
     const file = resolve(path);
     const common = builder?.watchFiles.includes(file);
     if (cargo) {
-      if (session?.reads(file)) void schedule(crates);
+      if (session?.reads(file)) void schedule(...crates);
       return;
     }
     if (!common && !file.endsWith(".rs")) return;
@@ -164,7 +154,7 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
       // manifest. Retry roots under whose source tree the edit occurred.
       return failures.has(crate) || ((event === "add" || !manifests.has(crate)) && file.startsWith(dirname(resolve(root, crate)) + sep));
     });
-    void schedule(affected);
+    void schedule(...affected);
   }
 
   return {
@@ -212,7 +202,7 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
         this.warn(withoutCompiler(rustJs, file));
         return;
       }
-      await schedule(crates);
+      await schedule(...crates);
       if (failures.size) {
         const message = [...failures.values()].join("\n");
         if (server) this.warn(message);
