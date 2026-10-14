@@ -72,6 +72,11 @@ time, valid and deterministic by construction:
   iterators are lazy, each item through every step before the next, and
   `next`, `any`, `all` and `take` stop early, which an array's eager
   `map` and `filter` wouldn't (2026-10-14).
+- Control flow: a bounded `while`, its test read each time round; loops
+  one in another, the outer labeled, left or gone round again from the
+  inner, `break 'l` and `continue 'l`; `loop` as an expression, `break
+  value` where its test holds; and a `match` of an integer by values,
+  `1 | 2`, a range `3..=9`, or a binding with a guard (2026-10-14).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.

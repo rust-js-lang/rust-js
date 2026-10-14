@@ -93,7 +93,13 @@ export type Expr =
   // whose closures may `note`: Rust's iterators are lazy, each item through
   // every step before the next, and an end may stop early, `next()`,
   // `any(..)`, so what's noted, and when, says in which order they run.
-  | { kind: "chain"; ty: Ty; elem: IntTy; source: Expr; rev: boolean; steps: Step[]; end: End };
+  | { kind: "chain"; ty: Ty; elem: IntTy; source: Expr; rev: boolean; steps: Step[]; end: End }
+  // `loop` as an expression, `break value` where its test holds or its
+  // count runs out, its counter `c3` in scope; and a `match` of an integer
+  // whose arms are a value, values `1 | 2`, a range `3..=9`, or a binding
+  // with a guard, `n if n > 4`.
+  | { kind: "loop"; ty: Ty; counter: string; n: number; c: Expr; value: Expr }
+  | { kind: "imatch"; ty: Ty; scrut: Expr; arms: { pat: string; bind?: string; guard?: Expr; value: Expr }[]; other: Expr };
 
 export type Step = { op: "map"; body: Expr } | { op: "filter"; body: Expr } | { op: "take" | "skip"; n: number };
 export type End =
@@ -129,7 +135,13 @@ export type Stmt =
   // it was made, so it's never moved twice nor read after.
   | { kind: "dlet"; name: string; tag: number; bound: boolean }
   | { kind: "dset"; name: string; tag: number }
-  | { kind: "dmove"; name: string; how: "drop" | "take" | "let"; into?: string };
+  | { kind: "dmove"; name: string; how: "drop" | "take" | "let"; into?: string }
+  // A bounded `while`, `let mut w3 = 0; while w3 < n && c { w3 += 1; .. }`,
+  // its test read each time round; and loops one in another, the outer
+  // labeled, left or gone round again from the inner, `break 'l3` and
+  // `continue 'l3`.
+  | { kind: "while"; counter: string; n: number; c: Expr; body: Stmt[] }
+  | { kind: "labeled"; label: string; outer: string; inner: string; n: number; m: number; brk: Expr; cont: Expr; body: Stmt[] };
 
 export type Program = Stmt[];
 
@@ -182,6 +194,28 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
   if (r.chance(0.12)) {
     const chained = chain(r, ty, scope, depth);
     if (chained) return chained;
+  }
+  if (isInt(ty) && r.chance(0.06)) {
+    const counter = `c${r.int(1_000_000)}`;
+    const counted = [...scope, { name: counter, ty: "u32", mutable: false }];
+    return { kind: "loop", ty, counter, n: 1 + r.int(4), c: expr(r, "bool", counted, depth - 1), value: expr(r, ty, counted, depth - 1) };
+  }
+  if (isInt(ty) && r.chance(0.06)) {
+    const t = r.pick(intTypes);
+    const value = () => (literal(r, t) as { value: bigint }).value;
+    const arms = Array.from({ length: 1 + r.int(3) }, () => {
+      const form = r.int(4);
+      if (form === 0) return { pat: `${value()}`, value: expr(r, ty, scope, depth - 1) };
+      if (form === 1) return { pat: `${value()} | ${value()}`, value: expr(r, ty, scope, depth - 1) };
+      if (form === 2) {
+        const [a, b] = [value(), value()];
+        return { pat: `${a < b ? a : b}..=${a < b ? b : a}`, value: expr(r, ty, scope, depth - 1) };
+      }
+      const bind = `n${r.int(1_000_000)}`;
+      const bound = [...scope, { name: bind, ty: t, mutable: false }];
+      return { pat: bind, bind, guard: expr(r, "bool", bound, depth - 1), value: expr(r, ty, bound, depth - 1) };
+    });
+    return { kind: "imatch", ty, scrut: expr(r, t, scope, depth - 1), arms, other: expr(r, ty, scope, depth - 1) };
   }
   if (ty === "u32" && r.chance(0.1)) {
     const held = scope.filter((v) => v.ty === "D");
@@ -435,7 +469,7 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
     const vecs = writable.filter((v) => inside(v.ty, "Vec"));
     const texts = writable.filter((v) => v.ty === "String");
     const maps = writable.filter((v) => v.ty === "Map");
-    const choice = r.int(22);
+    const choice = r.int(24);
     if (choice < 3 || writable.length === 0) {
       const ty = valueType(r);
       const name = `v${counter.n++}`;
@@ -546,6 +580,24 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
         op: r.pick(["=", "+=", "-=", "^="]),
         twice: r.chance(0.3),
       });
+    } else if (choice === 22 && depth > 0) {
+      const name = `w${counter.n++}`;
+      const counted = [...inner, { name, ty: "u32", mutable: false }];
+      stmts.push({ kind: "while", counter: name, n: 1 + r.int(4), c: expr(r, "bool", counted, 2), body: block(r, counted, depth - 1, counter, 1 + r.int(3)) });
+    } else if (choice === 23 && depth > 0) {
+      const label = `l${counter.n++}`, outer = `i${counter.n++}`, nested = `j${counter.n++}`;
+      const counted = [...inner, { name: outer, ty: "u32", mutable: false }, { name: nested, ty: "u32", mutable: false }];
+      stmts.push({
+        kind: "labeled",
+        label,
+        outer,
+        inner: nested,
+        n: 1 + r.int(4),
+        m: 1 + r.int(4),
+        brk: expr(r, "bool", counted, 2),
+        cont: expr(r, "bool", counted, 2),
+        body: block(r, counted, depth - 1, counter, 1 + r.int(3)),
+      });
     } else if (choice === 19) {
       const name = `d${counter.n++}`;
       const bound = r.chance(0.85);
@@ -627,6 +679,16 @@ function show(e: Expr): string {
       return `bump(&mut ${e.name})`;
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
+    case "loop":
+      return `({ let mut ${e.counter} = 0u32; loop { ${e.counter} += 1; if ${e.counter} > id(${e.n}u32) || ${show(e.c)} { break ${show(e.value)}; } } })`;
+    case "imatch": {
+      const t = e.scrut.ty;
+      const arms = e.arms.map((arm) => {
+        const pat = arm.bind ? arm.pat : arm.pat.replace(/-?\d+/g, (n) => `${n}${t}`);
+        return `${pat}${arm.guard ? ` if ${show(arm.guard)}` : ""} => ${show(arm.value)}, `;
+      });
+      return `(match ${show(e.scrut)} { ${arms.join("")}_ => ${show(e.other)} })`;
+    }
     case "chain": {
       const t = e.elem;
       const steps = e.steps.map((step) => {
@@ -820,6 +882,28 @@ function lines(stmts: Stmt[], indent: string): string[] {
         return [`${indent}for (${s.key}, ${s.item}) in ${s.map}.clone() {`, ...nested(s.body), `${indent}}`];
       case "if-let-b":
         return [`${indent}if let E::B(${s.name}) = ${show(s.value)} {`, ...nested(s.then), `${indent}} else {`, ...nested(s.else), `${indent}}`];
+      case "while":
+        return [
+          `${indent}let mut ${s.counter} = 0u32;`,
+          `${indent}while ${s.counter} < id(${s.n}u32) && ${show(s.c)} {`,
+          `${indent}    ${s.counter} += 1;`,
+          ...nested(s.body),
+          `${indent}}`,
+        ];
+      case "labeled":
+        return [
+          `${indent}'${s.label}: for ${s.outer} in 0..id(${s.n}u32) {`,
+          `${indent}    for ${s.inner} in 0..id(${s.m}u32) {`,
+          `${indent}        if ${show(s.brk)} {`,
+          `${indent}            break '${s.label};`,
+          `${indent}        }`,
+          `${indent}        if ${show(s.cont)} {`,
+          `${indent}            continue '${s.label};`,
+          `${indent}        }`,
+          ...lines(s.body, indent + "        "),
+          `${indent}    }`,
+          `${indent}}`,
+        ];
       case "dlet":
         return [s.bound ? `${indent}let mut ${s.name} = D(id(${s.tag}u32));` : `${indent}let _ = D(id(${s.tag}u32));`];
       case "dset":
@@ -901,7 +985,7 @@ function* smaller(program: Program): Generator<Program> {
         yield put(s.else);
         yield* inBlock(s.then, (next) => put([{ ...s, then: next }]));
         yield* inBlock(s.else, (next) => put([{ ...s, else: next }]));
-      } else if (s.kind === "for" || s.kind === "for-each" || s.kind === "for-map") {
+      } else if (s.kind === "for" || s.kind === "for-each" || s.kind === "for-map" || s.kind === "while" || s.kind === "labeled") {
         yield put(s.body);
         yield* inBlock(s.body, (next) => put([{ ...s, body: next }]));
       }
@@ -967,7 +1051,7 @@ export function size(program: Program): number {
     const inner =
       s.kind === "if" || s.kind === "if-let" || s.kind === "if-let-b"
         ? size(s.then) + size(s.else)
-        : s.kind === "for" || s.kind === "for-each" || s.kind === "for-map"
+        : s.kind === "for" || s.kind === "for-each" || s.kind === "for-map" || s.kind === "while" || s.kind === "labeled"
           ? size(s.body)
           : 0;
     return n + 1 + inner;
