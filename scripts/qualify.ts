@@ -14,6 +14,7 @@ import { join, relative, resolve } from "node:path";
 
 import { runSync, stopped } from "../test/child";
 import { crates, reactLibs } from "../tooling/crates.js";
+import { passed, summary } from "./test-summary";
 
 const root = join(import.meta.dir, "..");
 // Settings that would change what the suite checks, left out of every run:
@@ -177,13 +178,12 @@ function suite(name: string, tests: string[], compiler: string, logs: string, en
   const output = `${p.stdout}${p.stderr}`;
   const log = join(logs, `${name}.log`);
   writeFileSync(log, output);
-  const count = (what: string) => Number(new RegExp(String.raw`^ (\d+) ` + what + "$", "m").exec(output)?.[1] ?? 0);
-  const [pass, fail, skip] = [count("pass"), count("fail"), count("skip")];
+  const { pass, fail, skip } = summary(output);
   return {
     name,
     command: ["bun", "test", ...tests],
     compiler,
-    passed: p.code === 0 && !stopped(p, suiteTimeout) && pass > 0 && fail === 0,
+    passed: passed(p.code, !stopped(p, suiteTimeout), output),
     pass,
     fail,
     skip,

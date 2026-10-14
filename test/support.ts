@@ -6,6 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { runSync, stopped } from "./child";
 import { markUsed } from "./native-cache";
 import { reactLibs } from "../tooling/crates.js";
+import { shard } from "../scripts/shard";
 
 export const root = join(import.meta.dir, "..");
 export const target = join(root, "target");
@@ -379,9 +380,9 @@ export function expectSnapshot(
 /** `RUST_JS_CASES=i/n`: the cases of the `i`th of `n` parts, each case in
  * one, for `check:fast`'s processes, which run a file's parts at once; all of
  * them where it isn't set. */
-export function caseShard<T>(cases: T[]): T[] {
+export function caseShard<T extends string>(cases: T[]): T[] {
   const [i, n] = (process.env.RUST_JS_CASES ?? "1/1").split("/").map(Number);
-  return cases.filter((_, k) => k % n === i - 1);
+  return shard(cases, i, n);
 }
 
 /** What isn't a case runs in the first part alone. */

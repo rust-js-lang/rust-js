@@ -22,6 +22,7 @@ import { dirname, join } from "node:path";
 import { run, runSync, stopped, type Exit } from "../test/child";
 import { shard, shardArg } from "./shard";
 import { elapsed, timed } from "./timing";
+import { passed, summary } from "./test-summary";
 
 const root = join(import.meta.dir, "..");
 
@@ -310,7 +311,6 @@ function runtimeOf(compiler: string): string | undefined {
   return written.code !== 0 || stopped(written, buildTimeout) ? undefined : written.stdout;
 }
 
-const count = (output: string, what: string) => Number(new RegExp(String.raw`^ (\d+) ` + what + "$", "m").exec(output)?.[1] ?? 0);
 
 /** What a run of a mutant's tests says of it: `caught` by a test that
  * failed, the runner ending as it does when one does; `survived`, as its
@@ -319,7 +319,7 @@ const count = (output: string, what: string) => Number(new RegExp(String.raw`^ (
  * did, which says nothing of it. */
 export function judge(p: Exit, output: string): "caught" | "survived" | "inconclusive" {
   if (stopped(p, testTimeout)) return "inconclusive";
-  if (p.code === 0) return count(output, "pass") > 0 && count(output, "fail") === 0 ? "survived" : "inconclusive";
+  if (p.code === 0) return passed(p.code, true, output) ? "survived" : "inconclusive";
   // Not only at a line's start: a long diff bun test cuts short doesn't end
   // its last line, and the `(fail)` after it is printed on that line.
   const failed = [...output.matchAll(/\(fail\) (.*)$\n?(  \^ .* timed out\b)?/gm)].filter(
@@ -349,7 +349,8 @@ async function test(tests: string[], compiler: string, snapshots = false): Promi
     }),
   );
   const output = p.stdout + p.stderr;
-  return { passed: p.code === 0 && !stopped(p, testTimeout), ran: count(output, "pass") + count(output, "fail"), output, exit: p };
+  const { pass, fail } = summary(output);
+  return { passed: passed(p.code, !stopped(p, testTimeout), output), ran: pass + fail, output, exit: p };
 }
 
 async function main() {
