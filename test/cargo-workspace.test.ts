@@ -118,6 +118,22 @@ test("a Cargo build of rust-js's crates is done when their JS is, and not before
     .toThrow("`cargo build` asks for what rustc links");
 }, 600_000);
 
+// The app's Prettier config lays its JS out (ADR 0381), so Cargo is told of
+// it, as of the sources: a change to it is a build again.
+test("a Cargo build is done until the app's Prettier config changes", async () => {
+  const dir = fixture("cargo-prettier");
+  writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');
+  mkdirSync(join(dir, "app", "src"), { recursive: true });
+  writeFileSync(join(dir, "app", "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n');
+  writeFileSync(join(dir, "app", "src", "lib.rs"), 'pub fn greeting() -> &\'static str {\n    "hi"\n}\n');
+  writeFileSync(join(dir, ".prettierrc"), "{}\n");
+  const manifest = join(dir, "Cargo.toml");
+  const built = async () => readFileSync((await check(manifest, { packageName: "app" })).js, "utf8");
+  expect(await built()).toContain('return "hi";');
+  writeFileSync(join(dir, ".prettierrc"), '{"singleQuote": true}\n');
+  expect(await built()).toContain("return 'hi';");
+}, 600_000);
+
 /** A workspace of one library, `app`, whose `value` its feature `alternate` changes. */
 function featured(dir: string): string {
   writeFileSync(join(dir, "Cargo.toml"), '[workspace]\nmembers = ["app"]\nresolver = "2"\n');

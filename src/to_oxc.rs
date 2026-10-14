@@ -58,8 +58,7 @@ pub struct Output {
 /// `source_path` is how the map names the Rust file (relative to the map),
 /// and `js_file_name` is the output's file name. `path_of` names a source
 /// the map points into, asked only for those it does; `primary` is the
-/// module's own, which the map names first. `format` is the formatter's
-/// options.
+/// module's own, which the map names first.
 pub fn emit(
     module: &Module,
     sources: &crate::program::Sources,
@@ -67,7 +66,6 @@ pub fn emit(
     primary: Option<usize>,
     source_path: &str,
     js_file_name: &str,
-    format: &crate::settings::Format,
 ) -> Output {
     let rust_source = sources.text.as_str();
     let allocator = Allocator::default();
@@ -137,8 +135,8 @@ pub fn emit(
     let paths: std::collections::HashMap<usize, String> = used.into_iter().map(|i| (i, path_of(i))).collect();
     let map = restore_sources(&map, sources, &paths, primary);
     let map = crate::format::moved_lines(&map, &lines, js_file_name);
-    // Laid out as oxfmt lays it out, with the crate's options (ADR 0117).
-    let (code, map) = crate::format::laid_out(code, map, js_file_name, format);
+    // Laid out as oxfmt lays it out, rust-js's own layout.
+    let (code, map) = crate::format::laid_out(code, map, js_file_name);
     Output { code, map }
 }
 

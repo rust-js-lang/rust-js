@@ -22,16 +22,10 @@ use oxc_ast::AstKind;
 use oxc_ast::ast::{Declaration, Statement};
 use oxc_ast::ast_kind::AstType;
 use oxc_ast_visit::Visit;
-use oxc_formatter::{
-    ArrowParentheses, AttributePosition, BracketSameLine, BracketSpacing, Expand, JsFormatOptions, QuoteProperties,
-    QuoteStyle, Semicolons, TrailingCommas, format, parse_for_format,
-};
-use oxc_formatter_core::{IndentStyle, IndentWidth, LineEnding, LineWidth};
+use oxc_formatter::{Expand, JsFormatOptions, format, parse_for_format};
 use oxc_parser::Parser;
 use oxc_sourcemap::{OwnedSourceMap, SourceMap, SourceMapBuilder};
 use oxc_span::{GetSpan, SourceType};
-
-use crate::settings::{ArrowParens, EndOfLine, Format, ObjectWrap, QuoteProps, TrailingComma};
 
 /// How a JS file of rust-js's is read, by its name: a `.jsx` one as JSX
 /// (ADR 0040), as it was written.
@@ -149,35 +143,38 @@ fn moved(
                 .map(|offset| (offset, t))
         })
         .collect();
-    // Codegen coalesces identical mappings on one line: `return <button>`
-    // may have only the return's mapping. Formatting moves the tag onto a
-    // new line, where that mapping no longer applies. Carry the mapping
-    // active at the original opening tag onto its new position as well.
-    let mut openings = Vec::new();
-    for &(ty, offset) in before {
-        if matches!(ty, AstType::JSXOpeningElement | AstType::JSXOpeningFragment) {
-            let at = tokens.partition_point(|&(old, _)| old <= offset);
-            if let Some(&(old, token)) = at.checked_sub(1).map(|i| &tokens[i])
-                && old != offset
-                && !code[old as usize..offset as usize].contains('\n')
-            {
-                openings.push((offset, token));
-            }
+    // Where `offset`, of the code, is in the text: as far into the node that
+    // starts there, or else the last one before it on the same line.
+    let moved_to = |offset: u32| {
+        let at = pairs.partition_point(|&(old, _)| old <= offset);
+        let &(old, new) = at.checked_sub(1).map(|i| &pairs[i])?;
+        if old != offset && code[old as usize..offset as usize].contains('\n') {
+            return None;
+        }
+        Some(new_lines.position(new + (offset - old)))
+    };
+    // Codegen coalesces identical mappings on one line: `return <button>`,
+    // or `() => setCount((count) => ..)`, may have only the first's. A node
+    // the formatter moves onto another line, where that mapping no longer
+    // applies, is given it at its new place as well.
+    let mut carried = Vec::new();
+    for &(_, offset) in before {
+        let at = tokens.partition_point(|&(old, _)| old <= offset);
+        if let Some(&(old, token)) = at.checked_sub(1).map(|i| &tokens[i])
+            && old != offset
+            && !code[old as usize..offset as usize].contains('\n')
+            && let (Some((from, _)), Some((to, _))) = (moved_to(old), moved_to(offset))
+            && from != to
+        {
+            carried.push((offset, token));
         }
     }
-    tokens.extend(openings);
+    tokens.extend(carried);
     tokens.sort_by_key(|&(offset, _)| offset);
     for (offset, t) in tokens {
-        // The node that starts here, or else the last one before it on the
-        // same line, and as far into it.
-        let at = pairs.partition_point(|&(old, _)| old <= offset);
-        let Some(&(old, new)) = at.checked_sub(1).map(|i| &pairs[i]) else {
+        let Some((line, col)) = moved_to(offset) else {
             continue;
         };
-        if old != offset && code[old as usize..offset as usize].contains('\n') {
-            continue;
-        }
-        let (line, col) = new_lines.position(new + (offset - old));
         out.add_token(
             line,
             col,
@@ -198,80 +195,6 @@ fn options() -> JsFormatOptions {
         expand: Expand::Never,
         ..JsFormatOptions::default()
     }
-}
-
-/// rust-js's options with a crate's over them (ADR 0117), as oxfmt's
-/// `to_oxc_formatter` sets them, or why one can't be.
-pub fn options_of(format: &Format) -> Result<JsFormatOptions, String> {
-    let mut o = options();
-    if let Some(width) = format.print_width {
-        o.line_width =
-            LineWidth::try_from(width).map_err(|_| format!("printWidth = {width} is no width oxfmt takes"))?;
-    }
-    if let Some(width) = format.tab_width {
-        o.indent_width =
-            IndentWidth::try_from(width).map_err(|_| format!("tabWidth = {width} is no width oxfmt takes"))?;
-    }
-    if let Some(tabs) = format.use_tabs {
-        o.indent_style = if tabs { IndentStyle::Tab } else { IndentStyle::Space };
-    }
-    if let Some(end) = format.end_of_line {
-        o.line_ending = match end {
-            EndOfLine::Lf => LineEnding::Lf,
-            EndOfLine::Crlf => LineEnding::Crlf,
-            EndOfLine::Cr => LineEnding::Cr,
-        };
-    }
-    let quote = |single| if single { QuoteStyle::Single } else { QuoteStyle::Double };
-    if let Some(single) = format.single_quote {
-        o.quote_style = quote(single);
-    }
-    if let Some(single) = format.jsx_single_quote {
-        o.jsx_quote_style = quote(single);
-    }
-    if let Some(props) = format.quote_props {
-        o.quote_properties = match props {
-            QuoteProps::AsNeeded => QuoteProperties::AsNeeded,
-            QuoteProps::Consistent => QuoteProperties::Consistent,
-            QuoteProps::Preserve => QuoteProperties::Preserve,
-        };
-    }
-    if let Some(commas) = format.trailing_comma {
-        o.trailing_commas = match commas {
-            TrailingComma::All => TrailingCommas::All,
-            TrailingComma::Es5 => TrailingCommas::Es5,
-            TrailingComma::None => TrailingCommas::None,
-        };
-    }
-    if let Some(semi) = format.semi {
-        o.semicolons = if semi { Semicolons::Always } else { Semicolons::AsNeeded };
-    }
-    if let Some(parens) = format.arrow_parens {
-        o.arrow_parentheses = match parens {
-            ArrowParens::Always => ArrowParentheses::Always,
-            ArrowParens::Avoid => ArrowParentheses::AsNeeded,
-        };
-    }
-    if let Some(spacing) = format.bracket_spacing {
-        o.bracket_spacing = BracketSpacing::from(spacing);
-    }
-    if let Some(same_line) = format.bracket_same_line {
-        o.bracket_same_line = BracketSameLine::from(same_line);
-    }
-    if let Some(each) = format.single_attribute_per_line {
-        o.attribute_position = if each {
-            AttributePosition::Multiline
-        } else {
-            AttributePosition::Auto
-        };
-    }
-    if let Some(wrap) = format.object_wrap {
-        o.expand = match wrap {
-            ObjectWrap::Preserve => Expand::Auto,
-            ObjectWrap::Collapse => Expand::Never,
-        };
-    }
-    Ok(o)
 }
 
 /// A written file's source map, for finding where its JS came from.
@@ -414,16 +337,12 @@ impl<'t> Lines<'t> {
     }
 }
 
-/// `code` laid out as oxfmt lays it out, with the crate's options (ADR 0117),
-/// checked as they were read, and its top-level statements apart as a
-/// person separates them (`spaced`); `map` moved to match.
-pub(crate) fn laid_out(
-    code: String,
-    map: String,
-    js_file_name: &str,
-    format: &crate::settings::Format,
-) -> (String, String) {
-    let options = options_of(format).expect("options checked as they were read");
+/// `code` laid out as oxfmt lays it out, rust-js's own layout, and its
+/// top-level statements apart as a person separates them (`spaced`); `map`
+/// moved to match. The app's Prettier lays it out after, where it has a
+/// config (ADR 0381).
+pub(crate) fn laid_out(code: String, map: String, js_file_name: &str) -> (String, String) {
+    let options = options();
     let unformatted = SourceMap::from_json_string(&map).expect("the map just built");
     let (code, map) = formatted(&code, &unformatted, js_file_name, &options).unwrap_or((code, map));
     spaced(code, map, js_file_name)

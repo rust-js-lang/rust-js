@@ -118,8 +118,8 @@ export const mutations: Mutation[] = [
     name: "declarations-unprinted-silently",
     breaks: "a crate whose declarations TypeScript can't print, for want of @rust-js/typescript, builds without them, and says nothing",
     file: "src/output.rs",
-    find: "            let texts = crate::typescript::print(&self.settings, &models)?;",
-    replace: "            let texts = crate::typescript::print(&self.settings, &models).unwrap_or_default();",
+    find: "                .zip(crate::typescript::print(&self.settings, &models)?)",
+    replace: "                .zip(crate::typescript::print(&self.settings, &models).unwrap_or_default())",
     tests: ["test/declarations.test.ts", "-t", "declarations where @rust-js/typescript isn't say to add it"],
   },
   {
@@ -185,5 +185,13 @@ export const mutations: Mutation[] = [
     find: "        crate::paths::specifier(parent_dir(&self.js_path(from)), to)\n",
     replace: "        crate::paths::specifier(parent_dir(&self.output), to)\n",
     tests: ["test/modules.test.ts", "-t", "a module in a #.path. directory has its JS beside its file"],
+  },
+  {
+    name: "declarations-not-laid-out",
+    breaks: "a crate's `.d.ts` is written as TypeScript's printer lays it out, where the app's Prettier has a config for it, and its format check fails",
+    file: "src/output.rs",
+    find: "                bytes: laid_out.clone().unwrap_or(text).into_bytes(),",
+    replace: "                bytes: text.into_bytes(),",
+    tests: ["test/settings.test.ts", "-t", "declarations are laid out by Prettier"],
   },
 ];

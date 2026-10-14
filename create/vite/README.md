@@ -48,8 +48,8 @@ version that compiled. The browser's source map points at `App.rs`.
   rust-js, `rust-js-check` in `.vscode/settings.json`, which reads inside
   `jsx!`: what's wrong in JSX shows where it is, and what's used only there
   is used. Its own completion and hover still don't look inside `jsx!`.
-- **`Cargo.toml` also sets how the JS is laid out**, by oxfmt's options,
-  `[package.metadata.rust-js.format]` with `printWidth = 120`, say, and can run
-  your own tools on it, a formatter or a linter, in
+- **The JS is laid out by your Prettier**, where it finds a config,
+  `.prettierrc`, as `prettier --check` reads it, and rust-js's own layout
+  where not. `Cargo.toml` can run your own tools on it, a linter say, in
   `[package.metadata.rust-js.hooks]`: what a linter says of `App.jsx` is said
   of the line of `App.rs` it came from.

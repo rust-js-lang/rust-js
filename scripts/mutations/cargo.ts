@@ -82,4 +82,12 @@ export const mutations: Mutation[] = [
     replace: "    if true {\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "app's crate is a program"],
   },
+  {
+    name: "cargo-prettier-config-unrecorded",
+    breaks: "Cargo isn't told of the app's Prettier config, and a change to it leaves the JS laid out as before",
+    file: "src/cargo.rs",
+    find: "    for file in std::iter::once(&exe).chain(read) {",
+    replace: "    for file in std::iter::once(&exe).chain(read.iter().take(0)) {",
+    tests: ["test/cargo-workspace.test.ts", "-t", "Prettier config changes"],
+  },
 ];

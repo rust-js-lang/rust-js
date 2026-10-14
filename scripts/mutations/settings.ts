@@ -1,24 +1,30 @@
 // Mutations of src/settings.rs (ADR 0093).
 import type { Mutation } from "../mutations";
 
-const formats = ["test/settings.test.ts", "-t", "formatter's options|formatter hasn't"];
-
 export const mutations: Mutation[] = [
   {
-    name: "settings-format-unknown-allowed",
-    breaks: "an option oxfmt hasn't, a misspelling, is ignored, and the layout isn't the one asked for",
+    name: "settings-format-table-allowed",
+    breaks: "`[package.metadata.rust-js.format]`, gone, is read as nothing, and its options a second place the layout is said",
     file: "src/settings.rs",
-    find: "#[serde(rename_all = \"camelCase\", deny_unknown_fields)]\npub struct Format {",
-    replace: "#[serde(rename_all = \"camelCase\")]\npub struct Format {",
-    tests: formats,
+    find: "        if settings.format.is_some() {",
+    replace: "        if settings.format.is_some() && false {",
+    tests: ["test/settings.test.ts", "-t", "not Cargo.toml's"],
   },
   {
-    name: "settings-format-snake-case",
-    breaks: "the formatter's options are named as Rust's fields are, not as oxfmt names them",
+    name: "settings-prettier-transform-allowed",
+    breaks: "a transform that runs Prettier is run, a second Prettier after rust-js's own",
     file: "src/settings.rs",
-    find: "#[serde(rename_all = \"camelCase\", deny_unknown_fields)]\npub struct Format {",
-    replace: "#[serde(deny_unknown_fields)]\npub struct Format {",
-    tests: formats,
+    find: ".find(|command| runs_prettier(command))",
+    replace: ".find(|_| false)",
+    tests: ["test/settings.test.ts", "-t", "Prettier as a transform is refused"],
+  },
+  {
+    name: "settings-prettier-by-path",
+    breaks: "a transform runs Prettier only as `prettier`, not by its path, and `node_modules/.bin/prettier` is run",
+    file: "src/settings.rs",
+    find: ".is_some_and(|name| name == \"prettier\")",
+    replace: ".is_some_and(|name| name == \"prettier\" && false)",
+    tests: ["test/settings.test.ts", "-t", "Prettier as a transform is refused"],
   },
   {
     name: "settings-check-failure-a-warning",

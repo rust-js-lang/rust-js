@@ -1,7 +1,9 @@
 # 0207. A crate's `.d.ts` is printed by TypeScript
 
 Status: Accepted. Amends [0196](0196-typescript-declarations.md); uses
-[0206](0206-typescript-module.md).
+[0206](0206-typescript-module.md). Amended by
+[0381](0381-the-apps-prettier-lays-it-out.md): where the app's Prettier has
+a config for a `.d.ts`, it lays it out.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

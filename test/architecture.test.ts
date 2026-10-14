@@ -18,7 +18,7 @@ const layers = {
   owned: ["src/library.rs", "src/reachability.rs", "src/link.rs", "src/names.rs", "src/program.rs", "src/js.rs",
     "src/prepare.rs", "src/prepare/", "src/output.rs", "src/publish.rs", "src/manifest.rs", "src/runtime.rs", "src/settings.rs", "src/hooks.rs",
     "src/paths.rs"],
-  printing: ["src/to_oxc.rs", "src/format.rs", "src/typescript.rs"],
+  printing: ["src/to_oxc.rs", "src/format.rs", "src/typescript.rs", "src/prettier.rs"],
 };
 const layerOf = (file: string) =>
   Object.entries(layers).find(([, paths]) => paths.some(p => p.endsWith("/") ? file.startsWith(p) : file === p))?.[0];
@@ -34,8 +34,9 @@ test("every source module is in a layer", () => {
 // checks below forbid chosen APIs, so an owned module using lowering
 // broke none. Printing's own modules are named where an owned one starts
 // it: `output.rs` prints each module it plans, its JS by oxc and its
-// declarations by TypeScript (ADR 0207), and `hooks.rs` formats what a
-// hook returns.
+// declarations by TypeScript (ADR 0207), and has the app's Prettier lay
+// them out, the map moved to its layout (ADR 0381); `hooks.rs` formats
+// what a hook returns.
 const allowed: Record<string, string[]> = {
   driver: ["driver", "front", "owned", "printing"],
   front: ["front", "owned"],
@@ -43,7 +44,7 @@ const allowed: Record<string, string[]> = {
   printing: ["printing", "owned"],
 };
 const orchestration: Record<string, string[]> = {
-  "src/output.rs": ["src/to_oxc.rs", "src/typescript.rs"],
+  "src/output.rs": ["src/to_oxc.rs", "src/typescript.rs", "src/prettier.rs", "src/format.rs"],
   "src/hooks.rs": ["src/format.rs"],
 };
 // A file's module path, `src/lower/drops/types.rs`'s `lower::drops::types`;

@@ -180,25 +180,21 @@ fn dependencies(flags: &[String]) -> Result<Vec<PathBuf>, String> {
 /// What Cargo is told of a crate rust-js compiled (ADR 0101), each file as
 /// it's published with the JS, or not at all: beside its metadata, where its
 /// manifest is, and those of the libraries it was compiled with, `used`, for
-/// the crates that use it; and Cargo's record of the
-/// sources, as rustc wrote it to `dep_info`'s first path, with rust-js
-/// itself added to the files, or Cargo would have the crate as done when
-/// rust-js had changed.
-pub fn record(
-    manifest: &Path,
-    used: &[PathBuf],
-    metadata: &Path,
-    dep_info: Option<(&Path, &Path)>,
-) -> Result<Vec<(PathBuf, Vec<u8>)>, String> {
+/// the crates that use it. Its record of the sources is `dep_info`'s.
+pub fn record(manifest: &Path, used: &[PathBuf], metadata: &Path) -> Result<Vec<(PathBuf, Vec<u8>)>, String> {
     let mut manifests = Vec::new();
     for manifest in std::iter::once(manifest).chain(used.iter().map(PathBuf::as_path)) {
         let path = std::path::absolute(manifest).map_err(|e| format!("{}: {e}", manifest.display()))?;
         manifests.push(format!("{}\n", path.display()));
     }
-    let mut records = vec![(marker(metadata), manifests.concat().into_bytes())];
-    let Some((written, path)) = dep_info else {
-        return Ok(records);
-    };
+    Ok(vec![(marker(metadata), manifests.concat().into_bytes())])
+}
+
+/// Cargo's record of a crate's sources, as rustc wrote it to `written`,
+/// with what else the build read added to its files: rust-js
+/// itself, or Cargo would have the crate as done when rust-js had changed,
+/// and `read`, the app's Prettier configs (ADR 0381), which lay its JS out.
+pub fn dep_info(written: &Path, read: &[PathBuf]) -> Result<Vec<u8>, String> {
     let exe = std::env::current_exe().map_err(|e| format!("rust-js's own path: {e}"))?;
     let text = std::fs::read_to_string(written).map_err(|e| format!("cannot read the dep-info rustc wrote: {e}"))?;
     // Cargo reads the files of the first `<output>: <files>` line only.
@@ -207,10 +203,11 @@ pub fn record(
         .iter_mut()
         .find(|line| !line.starts_with('#') && line.contains(": "))
         .ok_or("rustc's dep-info lists no sources")?;
-    first.push(' ');
-    first.push_str(&exe.display().to_string().replace(' ', "\\ "));
-    records.push((path.to_path_buf(), (lines.join("\n") + "\n").into_bytes()));
-    Ok(records)
+    for file in std::iter::once(&exe).chain(read) {
+        first.push(' ');
+        first.push_str(&file.display().to_string().replace(' ', "\\ "));
+    }
+    Ok((lines.join("\n") + "\n").into_bytes())
 }
 
 /// Where the manifest of the crate whose metadata is `metadata` is recorded.

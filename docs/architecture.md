@@ -152,12 +152,14 @@ module's `crate::` and `super::` paths and checks them against this table:
 | Driver | `main.rs`, `command.rs`, `cargo.rs` | every layer | |
 | Front end | `lower.rs`, `lower/`, `jsx_syntax.rs`, `jsx_syntax/` | the front end, owned output | publish files; link |
 | Owned output | `js.rs`, `program.rs`, `link.rs`, `reachability.rs`, `names.rs`, `prepare.rs`, `prepare/`, `output.rs`, `publish.rs`, `manifest.rs`, `library.rs`, `runtime.rs`, `settings.rs`, `hooks.rs`, `paths.rs` | owned output | use rustc |
-| Printing | `to_oxc.rs`, `format.rs`, `typescript.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript; a manifest's JSON and the `#[test]` runner's imports and calls are the artifact planner's |
+| Printing | `to_oxc.rs`, `format.rs`, `typescript.rs`, `prettier.rs` | printing, owned output | be bypassed: only they print a module's JS and declarations, by oxc or TypeScript, and lay them out, by oxfmt or the app's Prettier; a manifest's JSON and the `#[test]` runner's imports and calls are the artifact planner's |
 
 Two owned modules start printing, and are named as its exceptions:
 `output.rs` prints each module it plans, its JS by oxc (`to_oxc.rs`) and
-its declarations by TypeScript (`typescript.rs`, ADR 0207), and `hooks.rs`
-formats what a hook returns (`format.rs`). Another exception is a change
+its declarations by TypeScript (`typescript.rs`, ADR 0207), and has the
+app's Prettier lay them out (`prettier.rs`, ADR 0381), the map moved to
+its layout (`format.rs`); `hooks.rs` formats what a hook returns
+(`format.rs`). Another exception is a change
 to this table and its test. Within a layer, no modules use each other in
 a cycle: a helper more than one needs, as `paths.rs`'s, has its own home.
 

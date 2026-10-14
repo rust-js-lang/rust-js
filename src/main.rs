@@ -52,6 +52,7 @@ mod names;
 mod output;
 mod paths;
 mod prepare;
+mod prettier;
 mod program;
 mod publish;
 mod reachability;
@@ -351,10 +352,6 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
     let settings = settings::read(&input, cargo)?;
-    // A width oxfmt can't take fails here, once, not each module after: the
-    // printer's to say, which settings, read before it, doesn't ask.
-    format::options_of(&settings.format)
-        .map_err(|error| format!("`{}`: {error}", settings.dir.join("Cargo.toml").display()))?;
     let mut plan = output::OutputPlan::new(input, output, test, manifest);
     plan.metadata = metadata.clone();
     plan.settings = settings;
@@ -373,16 +370,17 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
     {
         // What Cargo is told of the build, published with it (ADR 0101).
         plan.extra = match &recorded {
-            Some((Some(manifest), Some((_, metadata)))) => cargo::record(
-                manifest,
-                &dependency_paths,
-                metadata,
-                dep_info
-                    .as_ref()
-                    .map(|(staged, path)| (staged.as_path(), path.as_path())),
-            )?,
+            Some((Some(manifest), Some((_, metadata)))) => cargo::record(manifest, &dependency_paths, metadata)?,
             _ => Vec::new(),
         };
+        // Its record of the sources, once the plan knows what else it read.
+        if let (Some((Some(_), Some(_))), Some((written, path))) = (&recorded, &dep_info) {
+            let written = written.clone();
+            plan.dep_info = Some((
+                path.clone(),
+                Box::new(move |read: &[PathBuf]| cargo::dep_info(&written, read)),
+            ));
+        }
         plan.plan(linked, sources)?.publish()?;
     }
     drop(stage);

@@ -1,7 +1,9 @@
 # 0117. A crate's settings for the JS rust-js writes: its formatter's options, and hooks
 
 Status: Accepted. (Amended: the
-same program is the same nodes, each meaning what it did.) Extends
+same program is the same nodes, each meaning what it did.) Amended by
+[0381](0381-the-apps-prettier-lays-it-out.md): the formatter's options are
+gone, the app's Prettier lays the JS out. Extends
 [0065](0065-format-with-oxfmt.md) and [0114](0114-app-cargo-toml.md).
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).

@@ -11,6 +11,11 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Changed
 
+- **The app's Prettier lays out what rust-js writes**, its JS and its
+  `.d.ts`, where it finds a config, as the app's `prettier --check` reads it,
+  so the app's format check passes on them; a change to the config builds
+  again. `[package.metadata.rust-js.format]` is gone: move its options to
+  `.prettierrc` ([ADR 0381](docs/decisions/0381-the-apps-prettier-lays-it-out.md)).
 - **A Next.js app's config compiles its Rust: `withRustJs(nextConfig)`.**
   `next dev`, `next build`, a custom server and react.dev's
   `next-remote-watch` each load it, so an app's scripts stay its own;

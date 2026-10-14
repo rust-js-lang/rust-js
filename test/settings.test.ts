@@ -18,11 +18,14 @@ const rust = `pub fn greet(name: &str) -> String {
 }
 `;
 
-/** `source`, of a crate whose Cargo.toml has `settings`, compiled with `flags`. */
-function build(settings: string, flags: string[] = [], source = rust) {
+/** `source`, of a crate whose Cargo.toml has `settings`, and a `.prettierrc`
+ * of `prettier` and an `.editorconfig` if given, compiled with `flags`. */
+function build(settings: string, flags: string[] = [], source = rust, prettier?: object, editorconfig?: string) {
   const dir = fixture("settings");
   mkdirSync(join(dir, "src"));
   writeFileSync(join(dir, "src", "lib.rs"), source);
+  if (prettier) writeFileSync(join(dir, ".prettierrc"), JSON.stringify(prettier));
+  if (editorconfig) writeFileSync(join(dir, ".editorconfig"), editorconfig);
   writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "set"\nversion = "0.0.0"\nedition = "2024"\n\n${settings}\n`);
   const p = runSync([compiler, join(dir, "src", "lib.rs"), "-o", join(dir, "out", "lib.js"), ...flags], dir, 60_000);
   const js = join(dir, "out", "lib.js");
@@ -111,43 +114,33 @@ pub fn hi() -> &'static str {
 }
 `;
 
-test("the formatter's options are oxfmt's, and the map follows them", () => {
+// The app's own layout (ADR 0381): where Prettier finds a config for a
+// file, as the app's `prettier --check` does, Prettier lays it out, and the
+// map follows it. This checkout has Prettier, and no config of its own.
+test("where Prettier finds a config, it lays the JS out, and the map follows it", () => {
   const signature = "export function total(firstAmount, secondAmount, thirdAmount, fourthAmount, fifthAmount, sixthAmount) {";
-  // 103 columns: past oxfmt's default, 100, and within 120.
-  expect(build("", [], long).js).not.toContain(signature);
-  const wide = build("[package.metadata.rust-js.format]\nprintWidth = 120", [], long);
-  expect(wide.stderr).toBe("");
-  expect(wide.js).toContain(`\n${signature}\n`);
-  const styled = build("[package.metadata.rust-js.format]\ntabWidth = 4\nsingleQuote = true\nsemi = false", [], `${rust}\n${long}`);
+  // 103 columns: past rust-js's own 100, and within 120.
+  const plain = build("", [], long);
+  expect(plain.js).not.toContain(signature);
+  const styled = build("", [], `${rust}\n${long}`, { printWidth: 120, tabWidth: 4, singleQuote: true, semi: false });
+  expect(styled.stderr).toBe("");
+  expect(styled.js).toContain(`\n${signature}\n`);
   expect(styled.js).toContain("\n    const greeting = `Hello, ${name}!`\n");
   expect(styled.js).toContain("\n    return 'hi'\n");
   expect(rustOf(styled.js, styled.map, "greeting =")).toEqual([2, 5]);
 });
 
-test("an option the formatter hasn't, or a value it can't take, fails the build", () => {
-  for (const [option, error] of [
-    ["printWidht = 120", "printWidht"],
-    ["printWidth = 0", "printWidth"],
-    ['trailingComma = "most"', "trailingComma"],
-  ]) {
-    const out = build(`[package.metadata.rust-js.format]\n${option}`);
-    expect([option, out.code]).toEqual([option, 1]);
-    expect(out.stderr).toContain("Cargo.toml");
-    expect(out.stderr).toContain(error);
-  }
-});
-
-// A formatter a team has, Prettier, on JSX, which it lays out otherwise than
-// oxfmt, at its own 80 columns, given lines of 200: it breaks JSX's text,
-// with a `{" "}` oxfmt's lines hadn't, and it's the same program, so it's
-// kept, and the map finds the Rust each probe did before it.
+// Prettier lays JSX out otherwise than oxfmt, here at 40 columns: it
+// breaks JSX's text, with a `{" "}` rust-js's lines hadn't, and it's the
+// same program, so it's kept, and the map finds the Rust each probe did.
 test("Prettier's layout of the app's JSX is kept, and the map still finds the Rust", () => {
   buildReact();
-  const app = (settings: string) => {
+  const app = (prettier?: object) => {
     const dir = fixture("prettier");
     mkdirSync(join(dir, "src"));
     copyFileSync(join(root, "examples", "vite-react", "src", "App.rs"), join(dir, "src", "App.rs"));
-    writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n${settings}\n`);
+    writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n');
+    if (prettier) writeFileSync(join(dir, ".prettierrc"), JSON.stringify(prettier));
     const js = join(dir, "src", "App.jsx");
     const p = runSync(
       [compiler, join(dir, "src", "App.rs"), "-o", js, "--", "-L", target, ...["js", "webapi", "react"].flatMap((name) => ["--extern", `${name}=${join(target, `lib${name}.rmeta`)}`])],
@@ -157,13 +150,45 @@ test("Prettier's layout of the app's JSX is kept, and the map still finds the Ru
     expect(p.code).toBe(0);
     return { stderr: p.stderr, js: readFileSync(js, "utf8"), map: readFileSync(`${js}.map`, "utf8") };
   };
-  const wide = "[package.metadata.rust-js.format]\nprintWidth = 200";
-  const plain = app(wide);
-  expect(plain.js).not.toContain('{" "}');
-  const pretty = app(`${wide}\n\n[package.metadata.rust-js.hooks]\ntransform = [["${join(root, "node_modules", ".bin", "prettier")}", "--stdin-filepath", "{file}"]]`);
+  const plain = app();
+  const pretty = app({ printWidth: 40 });
   expect(pretty.stderr).toBe("");
-  expect(pretty.js).toContain('{" "}');
-  for (const word of ["useState(0)", "setCount((count)", "font-bold text-emerald-500", "Get started", "heroImg}"]) {
+  expect(pretty.js.split('{" "}').length).toBeGreaterThan(plain.js.split('{" "}').length);
+  for (const word of ["useState(0)", "setCount(", "font-bold text-emerald-500", "Get started", "heroImg}"]) {
     expect([word, rustOf(pretty.js, pretty.map, word)]).toEqual([word, rustOf(plain.js, plain.map, word)]);
   }
 }, 300_000);
+
+// Prettier reads `.editorconfig` too, as the app's `prettier --check` does.
+test("Prettier's config is the app's `.editorconfig`'s too", () => {
+  const out = build("", [], rust, {}, "root = true\n\n[*]\nindent_style = space\nindent_size = 4\n");
+  expect(out.stderr).toBe("");
+  expect(out.js).toContain("\n    const greeting = `Hello, ${name}!`;\n");
+});
+
+test("a crate's declarations are laid out by Prettier too", () => {
+  const source = "pub struct Point {\n    pub x: f64,\n}\n\npub fn origin() -> Point {\n    Point { x: 0.0 }\n}\n";
+  const typed = (prettier?: object) => {
+    const out = build("[package.metadata.rust-js]\ndeclarations = true", [], source, prettier);
+    expect(out.stderr).toBe("");
+    return readFileSync(join(out.dir, "out", "lib.d.ts"), "utf8");
+  };
+  // TypeScript's printer's four spaces, and Prettier's two.
+  expect(typed()).toContain("\n    x: number;\n");
+  expect(typed({})).toContain("\n  x: number;\n");
+});
+
+test("the formatter's options are the app's Prettier config's, not Cargo.toml's", () => {
+  const out = build("[package.metadata.rust-js.format]\nprintWidth = 120");
+  expect(out.code).toBe(1);
+  expect(out.stderr).toContain("Cargo.toml");
+  expect(out.stderr).toContain(".prettierrc");
+});
+
+test("Prettier as a transform is refused: rust-js runs the app's Prettier itself", () => {
+  const out = compile(`transform = [["${join(root, "node_modules", ".bin", "prettier")}", "--stdin-filepath", "{file}"]]`);
+  expect(out.code).toBe(1);
+  expect(out.stderr).toContain("Prettier");
+  expect(out.stderr).toContain(".prettierrc");
+});
+

@@ -1,7 +1,7 @@
 //! A crate's settings for the JS rust-js writes (ADR 0117), in its
-//! `Cargo.toml`'s `[package.metadata.rust-js]`: the options of the formatter
-//! it has, as oxfmt names them, and the hooks it runs. What they are to oxc
-//! is `format`'s to say.
+//! `Cargo.toml`'s `[package.metadata.rust-js]`: the hooks it runs, and
+//! whether it has declarations. How the JS is laid out isn't one: the
+//! app's Prettier config says (ADR 0381).
 
 use std::path::PathBuf;
 
@@ -13,7 +13,6 @@ pub use cargo_toml::read;
 /// What a crate's settings are: none, but for a crate that says.
 #[derive(Default)]
 pub struct Settings {
-    pub format: Format,
     pub hooks: Hooks,
     /// `declarations = true`: a `.d.ts` beside each module's JS, for
     /// TypeScript that imports it (ADR 0196).
@@ -21,65 +20,6 @@ pub struct Settings {
     /// Where its `Cargo.toml` is, which its hooks are run in, and what's
     /// said of a file is said from.
     pub dir: PathBuf,
-}
-
-/// `[package.metadata.rust-js.format]`: oxfmt's options, by its names,
-/// Prettier's, over rust-js's own. None, rust-js's layout.
-#[derive(Default, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct Format {
-    pub print_width: Option<u16>,
-    pub tab_width: Option<u8>,
-    pub use_tabs: Option<bool>,
-    pub end_of_line: Option<EndOfLine>,
-    pub single_quote: Option<bool>,
-    pub jsx_single_quote: Option<bool>,
-    pub quote_props: Option<QuoteProps>,
-    pub trailing_comma: Option<TrailingComma>,
-    pub semi: Option<bool>,
-    pub arrow_parens: Option<ArrowParens>,
-    pub bracket_spacing: Option<bool>,
-    pub bracket_same_line: Option<bool>,
-    pub single_attribute_per_line: Option<bool>,
-    pub object_wrap: Option<ObjectWrap>,
-}
-
-#[derive(Deserialize, Clone, Copy)]
-#[serde(rename_all = "lowercase")]
-pub enum EndOfLine {
-    Lf,
-    Crlf,
-    Cr,
-}
-
-#[derive(Deserialize, Clone, Copy)]
-#[serde(rename_all = "kebab-case")]
-pub enum QuoteProps {
-    AsNeeded,
-    Consistent,
-    Preserve,
-}
-
-#[derive(Deserialize, Clone, Copy)]
-#[serde(rename_all = "lowercase")]
-pub enum TrailingComma {
-    All,
-    Es5,
-    None,
-}
-
-#[derive(Deserialize, Clone, Copy)]
-#[serde(rename_all = "lowercase")]
-pub enum ArrowParens {
-    Always,
-    Avoid,
-}
-
-#[derive(Deserialize, Clone, Copy)]
-#[serde(rename_all = "lowercase")]
-pub enum ObjectWrap {
-    Preserve,
-    Collapse,
 }
 
 /// `[package.metadata.rust-js.hooks]`.
@@ -134,18 +74,26 @@ mod cargo_toml {
 
     use serde::Deserialize;
 
-    use super::{Format, Hooks, Settings};
+    use super::{Hooks, Settings};
 
     /// `[package.metadata.rust-js]`, of which these are two tables: ADR
     /// 0116's are others.
     #[derive(Default, Deserialize)]
     struct RustJs {
-        #[serde(default)]
-        format: Format,
+        /// Gone, the formatter's options: the app's Prettier config's.
+        format: Option<toml::Value>,
         #[serde(default)]
         hooks: Hooks,
         #[serde(default)]
         declarations: bool,
+    }
+
+    /// Whether `command`'s program is Prettier's, by its file's name.
+    fn runs_prettier(command: &[String]) -> bool {
+        command
+            .first()
+            .and_then(|program| Path::new(program).file_stem())
+            .is_some_and(|name| name == "prettier")
     }
 
     #[derive(Deserialize)]
@@ -189,8 +137,22 @@ mod cargo_toml {
             .and_then(|package| package.metadata)
             .and_then(|metadata| metadata.rust_js)
             .unwrap_or_default();
+        // How the JS is laid out is the app's Prettier config's, which
+        // its `prettier --check` reads too: one place says (ADR 0381).
+        if settings.format.is_some() {
+            return Err(format!(
+                "`{}`: `[package.metadata.rust-js.format]` is gone: rust-js lays its JS out with the app's Prettier, by its config, `.prettierrc`: move the options there",
+                path.display()
+            ));
+        }
+        if let Some(prettier) = settings.hooks.transform.iter().find(|command| runs_prettier(command)) {
+            return Err(format!(
+                "`{}`: the transform `{}` runs Prettier, which rust-js runs itself, by the app's config, `.prettierrc`, where Prettier finds one: remove it",
+                path.display(),
+                prettier.join(" ")
+            ));
+        }
         Ok(Settings {
-            format: settings.format,
             hooks: settings.hooks,
             declarations: settings.declarations,
             dir,

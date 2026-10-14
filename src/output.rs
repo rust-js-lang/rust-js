@@ -20,24 +20,45 @@ pub struct OutputPlan {
     /// Files of the build tool's published with the JS, as artifacts of this
     /// plan, and no part of the manifest: what Cargo is told (ADR 0101).
     pub extra: Vec<(PathBuf, Vec<u8>)>,
+    /// Cargo's record of the sources (ADR 0101), the driver's to write:
+    /// where it's published, and what writes it, given what else the build
+    /// read (`read`).
+    pub dep_info: Option<(PathBuf, DepInfo)>,
     /// The crate's settings for the JS (ADR 0117).
     pub settings: crate::settings::Settings,
     /// The JS files the plan has, once planned, which a crate's checks read.
     pub written: Vec<PathBuf>,
+    /// What the build read besides the crate, once planned: the app's
+    /// Prettier configs (ADR 0381), which Cargo is told of.
+    pub read: Vec<PathBuf>,
     jsx: HashSet<Vec<String>>,
     /// Each `#[path]` module's file, where its JS goes beside (ADR 0273).
     located: HashMap<Vec<String>, PathBuf>,
 }
 
+/// What writes Cargo's record of a crate's sources, given what else the
+/// build read.
+pub type DepInfo = Box<dyn FnOnce(&[PathBuf]) -> Result<Vec<u8>, String>>;
+
+/// A module's JS, as rust-js lays it out, and where it's written.
+struct Laid {
+    js_file_name: String,
+    js_path: PathBuf,
+    file: PathBuf,
+    printed: to_oxc::Output,
+}
+
 impl OutputPlan {
-    /// Write one `.js` and `.js.map` per module (ADR 0019).
+    /// Write one `.js` and `.js.map` per module (ADR 0019), and the
+    /// configs the app's Prettier read, laying them out (ADR 0381).
     fn generate(
         &self,
         modules: Vec<program::LoweredModule>,
         sources: &program::Sources,
-    ) -> Result<Vec<Artifact>, String> {
+    ) -> Result<(Vec<Artifact>, Vec<PathBuf>), String> {
         let mut artifacts = Vec::new();
         let mut typed = Vec::new();
+        let mut laid = Vec::new();
         // Each source's path is resolved once, and each module's directory:
         // a module's map asks for a path only to the sources it points into
         // (found in review).
@@ -128,21 +149,13 @@ impl OutputPlan {
                 resolved.iter().position(|source| *source == own),
                 &relative_resolved(&dir, &own),
                 &js_file_name,
-                &self.settings.format,
             );
-            // What the crate's transforms make of it (ADR 0117), then where
-            // its map is.
-            let (mut code, map) =
-                crate::hooks::transform(&self.settings, &file, &js_file_name, printed.code, printed.map);
-            code.push_str(&format!("//# sourceMappingURL={js_file_name}.map\n"));
-            let output = to_oxc::Output { code, map };
-            let map_path = PathBuf::from(format!("{}.map", js_path.display()));
-            for (path, text) in [(&js_path, &output.code), (&map_path, &output.map)] {
-                artifacts.push(Artifact {
-                    path: path.clone(),
-                    bytes: text.clone().into_bytes(),
-                });
-            }
+            laid.push(Laid {
+                js_file_name: js_file_name.into_owned(),
+                js_path: js_path.clone(),
+                file,
+                printed,
+            });
             // What it exports, typed, for the TypeScript that imports it (ADR 0196).
             if self.settings.declarations
                 && let Some(mut declarations) = module.declarations
@@ -160,17 +173,68 @@ impl OutputPlan {
             }
         }
         // Printed by TypeScript, all in one session of its (ADR 0207).
+        let mut declared = Vec::new();
         if !typed.is_empty() {
             let (paths, models): (Vec<PathBuf>, Vec<serde_json::Value>) = typed.into_iter().unzip();
-            let texts = crate::typescript::print(&self.settings, &models)?;
-            for (path, text) in paths.into_iter().zip(texts) {
-                artifacts.push(Artifact {
-                    path,
-                    bytes: text.into_bytes(),
-                });
-            }
+            declared = paths
+                .into_iter()
+                .zip(crate::typescript::print(&self.settings, &models)?)
+                .collect();
         }
-        Ok(artifacts)
+        // Laid out by the app's Prettier, each file it has a config for, all
+        // in one session of it (ADR 0381).
+        let mut files = Vec::new();
+        for laid in &laid {
+            files.push((laid.file.clone(), laid.printed.code.as_str()));
+        }
+        for (path, text) in &declared {
+            files.push((absolute(path)?, text.as_str()));
+        }
+        let prettier = crate::prettier::laid_out(&self.settings, &files)?;
+        let (js_texts, types_texts) = prettier.texts.split_at(laid.len());
+        for (laid, text) in laid.into_iter().zip(js_texts) {
+            let Laid {
+                js_file_name,
+                js_path,
+                file,
+                printed: to_oxc::Output { code, map },
+            } = laid;
+            // The same program, its map moved to Prettier's layout, as a
+            // transform's is; or rust-js's, and a warning says why.
+            let (code, map) = match text {
+                Some(text) => match crate::format::transformed(&code, text.clone(), &map, &js_file_name) {
+                    Ok(moved) => moved,
+                    Err(why) => {
+                        eprintln!(
+                            "warning: rust-js: the app's Prettier {why}: `{}` is written as rust-js lays it out",
+                            js_path.display()
+                        );
+                        (code, map)
+                    }
+                },
+                None => (code, map),
+            };
+            // What the crate's transforms make of it (ADR 0117), then where
+            // its map is.
+            let (mut code, map) = crate::hooks::transform(&self.settings, &file, &js_file_name, code, map);
+            code.push_str(&format!("//# sourceMappingURL={js_file_name}.map\n"));
+            let map_path = PathBuf::from(format!("{}.map", js_path.display()));
+            artifacts.push(Artifact {
+                path: js_path,
+                bytes: code.into_bytes(),
+            });
+            artifacts.push(Artifact {
+                path: map_path,
+                bytes: map.into_bytes(),
+            });
+        }
+        for ((path, text), laid_out) in declared.into_iter().zip(types_texts) {
+            artifacts.push(Artifact {
+                path,
+                bytes: laid_out.clone().unwrap_or(text).into_bytes(),
+            });
+        }
+        Ok((artifacts, prettier.configs))
     }
 
     /// In test mode, `<output>.test.js` beside the output: one `test(..)`
@@ -341,8 +405,10 @@ impl OutputPlan {
             manifest,
             metadata: None,
             extra: Vec::new(),
+            dep_info: None,
             settings: crate::settings::Settings::default(),
             written: Vec::new(),
+            read: Vec::new(),
             jsx: HashSet::new(),
             located: HashMap::new(),
         }
@@ -433,6 +499,9 @@ impl OutputPlan {
             planned.push(path.clone());
             extra.push(Artifact { path, bytes });
         }
+        if let Some((path, _)) = &self.dep_info {
+            planned.push(absolute(path)?);
+        }
         let input = absolute(&self.input)?;
         let output = absolute(&self.output)?;
         let manifest_path = self.manifest.as_deref().map(absolute).transpose()?;
@@ -449,7 +518,14 @@ impl OutputPlan {
             }
         }
 
-        let mut artifacts = self.generate(lowered.modules, &lowered.sources)?;
+        let (mut artifacts, configs) = self.generate(lowered.modules, &lowered.sources)?;
+        self.read = configs;
+        if let Some((path, write)) = self.dep_info.take() {
+            extra.push(Artifact {
+                path: absolute(&path)?,
+                bytes: write(&self.read)?,
+            });
+        }
         artifacts.extend(test_artifact);
         artifacts.extend(metadata);
         for artifact in &mut artifacts {

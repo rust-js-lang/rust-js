@@ -27,12 +27,12 @@ export const mutations: Mutation[] = [
     tests: ["test/settings.test.ts", "-t", "is refused, and its input kept"],
   },
   {
-    name: "format-width-ignored",
-    breaks: "a crate's `printWidth` is ignored, and its JS laid out at 100 columns",
+    name: "format-moved-node-uncarried",
+    breaks: "a node a layout moves onto a line of its own, `setCount(`, keeps no mapping, its line pointing nowhere in the Rust",
     file: "src/format.rs",
-    find: "    if let Some(width) = format.print_width {",
-    replace: "    if let Some(width) = format.print_width.filter(|_| false) {",
-    tests: ["test/settings.test.ts", "-t", "formatter's options"],
+    find: "            && from != to\n",
+    replace: "            && false\n",
+    tests: ["test/settings.test.ts", "-t", "Prettier's layout"],
   },
   {
     "name": "format-pairs-layout",
