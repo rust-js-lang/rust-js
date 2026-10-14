@@ -23,8 +23,10 @@ test(`installed packages compile using ${runtime} without the other runtime`, ()
   chmodSync(other, 0o755);
   const run = (args: string[], cwd = root) => {
     // An empty cache of its own, as a new machine has: a warm one hid that an
-    // offline install needed Vite's registry entry.
-    const env = { ...process.env, PATH: `${blocked}:${process.env.PATH}`, BUN_INSTALL_CACHE_DIR: join(root, "bun-cache") };
+    // offline install needed Vite's registry entry. And no compiler but the
+    // installed one, which is what the app's plugin must find.
+    const { RUST_JS_COMPILER: _, ...inherited } = process.env;
+    const env = { ...inherited, PATH: `${blocked}:${process.env.PATH}`, BUN_INSTALL_CACHE_DIR: join(root, "bun-cache") };
     const result = Bun.spawnSync(args, { cwd, stdout: "pipe", stderr: "pipe", env });
     if (result.exitCode !== 0) throw new Error(result.stderr.toString());
     return result.stdout.toString();

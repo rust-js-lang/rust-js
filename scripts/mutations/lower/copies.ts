@@ -85,11 +85,12 @@ export const mutations: Mutation[] = [
   },
   {
     name: "untagged-copy-shared",
-    breaks: "a copy of a `Copy` untagged enum shares its struct, which a change through the first changes",
+    breaks: "a copy of a `Copy` untagged enum is a tagged one's, `{ ...spot, _0: { ...spot._0 } }`, a payload it hasn't",
     file: "src/lower/copies.rs",
     find: "                if self.untagged(ty).is_some() {\n                    return once(place, &|e| {\n",
     replace: "                if false {\n                    return once(place, &|e| {\n",
     tests: ["test/corpus.test.ts", "-t", "untagged_enums"],
+    snapshots: true,
   },
   {
     name: "copy-js-object-unshared",
