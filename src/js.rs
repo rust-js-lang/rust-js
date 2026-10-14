@@ -1794,12 +1794,17 @@ impl Expr {
     }
 }
 
-/// Each name `stmts` read or declare, their closures' and parameters' too.
+/// Each name `stmts` read or declare, their closures', functions' and
+/// parameters' too: what a new name must not be.
 pub fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
     visit_stmts(stmts, &mut |name| {
         names.insert(name.to_string());
     });
-    statement_lists(&mut stmts.to_vec(), &mut |list| {
+    let mut stmts = stmts.to_vec();
+    let params = |params: &[Pattern], names: &mut HashSet<String>| {
+        names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+    };
+    each_block_mut(&mut stmts, &mut |list| {
         for stmt in list.iter() {
             match &stmt.kind {
                 StmtKind::Const(name, _) | StmtKind::Let(name, _) | StmtKind::For { name, .. } => {
@@ -1811,15 +1816,18 @@ pub fn names_in(stmts: &[Stmt], names: &mut HashSet<String>) {
                 StmtKind::TryCatch(_, Some(name), _) => {
                     names.insert(name.clone());
                 }
+                StmtKind::Function(function) => {
+                    names.insert(function.name.clone());
+                    params(&function.params, names);
+                }
                 _ => {}
             }
         }
     });
-    each_expr_mut(&mut stmts.to_vec(), &mut |e| {
-        if let ExprKind::Arrow(params, body) | ExprKind::AsyncArrow(params, body) = &e.kind {
-            names.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
-            names_in(body, names);
-        }
+    each_expr_mut(&mut stmts, &mut |e| match &e.kind {
+        ExprKind::Arrow(ps, _) | ExprKind::AsyncArrow(ps, _) => params(ps, names),
+        ExprKind::Function(function) => params(&function.params, names),
+        _ => {}
     });
 }
 
@@ -1860,5 +1868,24 @@ mod tests {
         let object = Expr::object(vec![Prop::Field("a".into(), Expr::var("t"))]);
         assert!(object.mentions_var("t"));
         assert!(!object.mentions_var("u"));
+    }
+
+    // A new name is none a function declared in a block has, or takes.
+    #[test]
+    fn names_in_finds_functions_and_their_params() {
+        let inner = Function {
+            name: "inner".into(),
+            params: vec![Pattern::Name("x".into())],
+            body: vec![StmtKind::Const("y".into(), Expr::var("x")).at(Span::NONE)],
+            export: false,
+            is_async: false,
+            span: Span::NONE,
+            name_span: Span::NONE,
+        };
+        let mut names = HashSet::new();
+        names_in(&[StmtKind::Function(Box::new(inner)).at(Span::NONE)], &mut names);
+        for name in ["inner", "x", "y"] {
+            assert!(names.contains(name), "{name}");
+        }
     }
 }
