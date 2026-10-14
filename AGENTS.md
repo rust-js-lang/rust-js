@@ -30,8 +30,8 @@ wrong one, and a second thing to keep correct. The rule holds everywhere:
   declare a binding, one option, one flag, one config key for each thing.
 - **What rust-js writes:** one form of output for each construct.
 - **Inside rust-js:** one module, pass, helper, constant or code path for
-  each concept; one place that decides each question; one way a host
-  builds; one list of each set of things.
+  each concept; one way a host builds; one list of each set of things; and
+  one place that answers each question (the next rule).
 
 When you meet two ways, whatever you were doing:
 
@@ -50,6 +50,35 @@ answer. Before adding a form, find the one that does the job and extend
 it. If removing the second way seems out of proportion, stop and ask the
 user; never leave both standing.
 
+## One place answers each question
+
+Every question the code asks has exactly one place that answers it: what a
+value is in JS, whether a function is a binding, whether a check is written,
+where a module's file goes, which old files a build may remove, which crates
+rust-js ships. Every code path that needs the answer asks that place. None
+works it out again, copies its condition, or keeps its own list.
+
+Two answers to one question drift apart, and then two code paths behave
+differently without anyone knowing: each is right alone, and the bug lives
+in the gap. rust-js has had them: whether an `Assert` is written was decided
+both by the count of reads and by the terminator, so a check was counted
+but never made; where a module's JS goes in source was the compiler's rule
+and the hosts' copy of it; a Vite build looked for committed JS where Next's
+didn't.
+
+- **Name the question, give it one owner**: a function whose name is the
+  question, in the module whose concept it is, and route every path through
+  it. The [architecture test](test/architecture.test.ts) holds who may ask.
+- **Across a boundary**, the compiler and a JS host, Rust and TypeScript:
+  the owner reports the answer (a manifest field, a flag, a catalog), and
+  the other side reads it. Where it truly can't, one side's copy is held
+  equal to the other by a test that runs both.
+- **Spot the red flag**: the same condition in two `if`s, a list written
+  twice, a comment that says "as X does" or "mirrors", a value derived in
+  one place and derived again in another. Treat it as two ways to do one
+  job: stop, give the question its one place, route every path through it,
+  hold it with a test, then go on.
+
 ## Principles
 
 - **Each piece understood on its own.** A module owns one responsibility
@@ -57,9 +86,9 @@ user; never leave both standing.
   leaks across, so you can read, change and test it without holding
   every other concept in your head. That's what keeps a change small and
   safe, and the codebase open to people and AI coding agents alike. Where
-  one question is answered in two places, a pass works around what a later
-  phase does, or a module spells another's representation, give the
-  concept one owner and have [the architecture test](test/architecture.test.ts)
+  a pass works around what a later phase does, or a module spells another's
+  representation, give the concept one owner, as each question has one
+  place (above), and have [the architecture test](test/architecture.test.ts)
   hold it.
 - **Keep Rust's checks.** rustc owns types, traits, ownership, borrowing and
   diagnostics. Never bypass them to make a feature compile.
