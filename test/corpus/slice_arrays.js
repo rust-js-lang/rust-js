@@ -20,10 +20,10 @@ export function entry() {
 function main() {
   const v = [1, 2, 3, 4, 5, 6, 7];
   const items = $slice(v, 0, 3);
-  const value$1 = items.length === 3 ? items : undefined;
-  const value = v.length === 3 ? v : undefined;
+  const value = items.length === 3 ? items : undefined;
+  const value$1 = v.length === 3 ? v : undefined;
   console.log(
-    `${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`} ${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`}`,
+    `${value == null ? "None" : `Some([${value.map((item) => String(item)).join(", ")}])`} ${value$1 == null ? "None" : `Some([${value$1.map((item) => String(item)).join(", ")}])`}`,
   );
   for (const [a, b] of $windows(v, 2)) {
     $print(`${Math.imul(a, b)} `);

@@ -32,45 +32,45 @@ function main() {
       `${value == null ? "None" : `Some(${value})`} ${-x & 255} (${value$1[0]}, ${value$1[1]})`,
     );
   }
-  const value$2 = $bigChecked(
+  const value$1 = $bigChecked(
     $bigAbs(-9223372036854775808n),
     -9223372036854775808n,
     9223372036854775807n,
   );
   console.log(
-    `${-9223372036854775808n} ${18446744073709551609n} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${-9223372036854775808n} ${18446744073709551609n} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   console.log(
     `${Math.abs(-2147483648) | 0} ${(Math.abs(-7) << 24) >> 24} ${(Math.abs(-128) << 24) >> 24}`,
   );
-  const value$3 = $overflowing(4, 250 + 10, 0, 255);
-  const value$4 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
-  const value$5 = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
+  const value = $overflowing(4, 250 + 10, 0, 255);
+  const value$2 = $overflowing(4294967295, 5 - 6, 0, 4294967295);
+  const value$3 = $overflowing(Math.imul(2147483647, 2), 2147483647 * 2, -2147483648, 2147483647);
   console.log(
-    `(${value$3[0]}, ${value$3[1]}) (${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]})`,
+    `(${value[0]}, ${value[1]}) (${value$2[0]}, ${value$2[1]}) (${value$3[0]}, ${value$3[1]})`,
   );
-  const value$6 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
-  const value$7 = $overflowing(127, -128 - 1, -128, 127);
-  const value$8 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
+  const value$4 = $overflowing(7, 3 + 4, -2147483648, 2147483647);
+  const value$5 = $overflowing(127, -128 - 1, -128, 127);
+  const value$6 = $overflowing(Math.imul(100000, 100000), 100000 * 100000, -2147483648, 2147483647);
   console.log(
-    `(${value$6[0]}, ${value$6[1]}) (${value$7[0]}, ${value$7[1]}) (${value$8[0]}, ${value$8[1]})`,
+    `(${value$4[0]}, ${value$4[1]}) (${value$5[0]}, ${value$5[1]}) (${value$6[0]}, ${value$6[1]})`,
   );
   const exact = 18446744073709551615n + 1n;
   const exact$1 = -9223372036854775808n * -1n;
-  const value$9 = $overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n);
-  const value$10 = $overflowing(
+  const value$7 = $overflowing(BigInt.asUintN(64, exact), exact, 0n, 18446744073709551615n);
+  const value$8 = $overflowing(
     BigInt.asIntN(64, exact$1),
     exact$1,
     -9223372036854775808n,
     9223372036854775807n,
   );
-  console.log(`(${value$9[0]}, ${value$9[1]}) (${value$10[0]}, ${value$10[1]})`);
-  const value$11 = $checkedRem(7, 2, -2147483648);
-  const value$12 = $checkedRem(7, 0, -2147483648);
-  const value$13 = $checkedRem(-2147483648, -1, -2147483648);
-  const value$14 = $checkedRem(-8, 2, -2147483648);
+  console.log(`(${value$7[0]}, ${value$7[1]}) (${value$8[0]}, ${value$8[1]})`);
+  const value$9 = $checkedRem(7, 2, -2147483648);
+  const value$10 = $checkedRem(7, 0, -2147483648);
+  const value$11 = $checkedRem(-2147483648, -1, -2147483648);
+  const value$12 = $checkedRem(-8, 2, -2147483648);
   console.log(
-    `${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`}`,
+    `${value$9 == null ? "None" : `Some(${value$9})`} ${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`} ${value$12 == null ? "None" : `Some(${value$12})`}`,
   );
   console.log(
     `${$wrappingDiv(-2147483648, -1, -2147483648)} ${$wrappingDiv(-7, 2, -2147483648)} ${$wrappingRem(-2147483648, -1, -2147483648)} ${$wrappingRem(-7, 2, -2147483648)}`,
@@ -79,10 +79,10 @@ function main() {
     `${$wrappingDiv(0, -5, -2147483648)} ${$wrappingRem(9n, 4n)} ${((value) => (value == null ? "None" : `Some(${value})`))($checkedRem(-9223372036854775808n, -1n, -9223372036854775808n))}`,
   );
   const by = 33;
-  const value = 4 < 32 ? (1 << 4) | 0 : undefined;
-  const value$1 = by < 32 ? (1 << by) | 0 : undefined;
+  const value$13 = 4 < 32 ? (1 << 4) | 0 : undefined;
+  const value$14 = by < 32 ? (1 << by) | 0 : undefined;
   console.log(
-    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
+    `${value$13 == null ? "None" : `Some(${value$13})`} ${value$14 == null ? "None" : `Some(${value$14})`} ${(1 << by) | 0} ${255 >>> (9 & 7)}`,
   );
   const value$15 = 2 < 32 ? -16 >> 2 : undefined;
   const value$16 = 64 < 64 ? BigInt.asUintN(64, 1n << 0n) : undefined;

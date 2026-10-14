@@ -29,10 +29,10 @@ function main() {
   console.log(`${value == null ? "None" : `Some(${value})`}`);
   const items = [3, 1, 2];
   const slice = items;
-  const value$2 = slice?.length;
-  const value$1 = slice != null ? slice[0] : undefined;
+  const value$1 = slice?.length;
+  const value$2 = slice != null ? slice[0] : undefined;
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   const boxed = 7;
   console.log(`${boxed == null ? "None" : `Some(${boxed})`}`);

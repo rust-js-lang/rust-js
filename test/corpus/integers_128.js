@@ -55,15 +55,15 @@ function main() {
   );
   console.log(`${big >> 99n} ${BigInt.asUintN(128, big << 27n) >> 100n} ${max % 1000000007n}`);
   console.log(`${min / 7n} ${min % 7n}`);
-  const value$2 = $bigChecked(max + 1n, 0n, 340282366920938463463374607431768211455n);
-  const value$3 = $bigChecked(big * 4n, 0n, 340282366920938463463374607431768211455n);
-  const value$4 = $bigChecked(
+  const value = $bigChecked(max + 1n, 0n, 340282366920938463463374607431768211455n);
+  const value$1 = $bigChecked(big * 4n, 0n, 340282366920938463463374607431768211455n);
+  const value$2 = $bigChecked(
     -top,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
   console.log(
     `${$bigClamp(max + 9n, 0n, 340282366920938463463374607431768211455n)} ${$bigClamp(min - 1n, -170141183460469231731687303715884105728n, 170141183460469231731687303715884105727n)} ${BigInt.asUintN(128, $bigPow(3n, 80, 128))}`,
@@ -76,16 +76,16 @@ function main() {
   );
   console.log(`${big !== 0n && (big & (big - 1n)) === 0n} ${$bigMax(max, big)}`);
   const exact = top + 1n;
-  const value$5 = $overflowing(
+  const value$3 = $overflowing(
     BigInt.asIntN(128, exact),
     exact,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value$6 = 130 < 128 ? BigInt.asUintN(128, big << 2n) : undefined;
-  const value = 100 < 128 ? BigInt.asUintN(128, 1n << 100n) : undefined;
+  const value$4 = 130 < 128 ? BigInt.asUintN(128, big << 2n) : undefined;
+  const value$5 = 100 < 128 ? BigInt.asUintN(128, 1n << 100n) : undefined;
   console.log(
-    `(${value$5[0]}, ${value$5[1]}) ${value$6 == null ? "None" : `Some(${value$6})`} ${value == null ? "None" : `Some(${value})`}`,
+    `(${value$3[0]}, ${value$3[1]}) ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
   );
   console.log(
     `${$rotateBits(BigInt.asUintN(128, big), 30, 128, true)} ${BigInt.asIntN(128, $rotateBits(BigInt.asUintN(128, -2n), 1, 128, false))} ${128 - $bigCountOnes(big, 128)}`,
@@ -116,17 +116,17 @@ function main() {
   );
   console.log(`${small} ${wide}`);
   const result = $tryFromInt(big, 0n, 18446744073709551615n);
-  const value$7 = result.TAG === "Ok" ? result._0 : undefined;
+  const value$6 = result.TAG === "Ok" ? result._0 : undefined;
   const result$1 = $tryFromInt(
     max,
     -170141183460469231731687303715884105728n,
     170141183460469231731687303715884105727n,
   );
-  const value$8 = result$1.TAG === "Ok" ? result$1._0 : undefined;
+  const value$7 = result$1.TAG === "Ok" ? result$1._0 : undefined;
   const result$2 = $tryFromInt(200n, 0, 255);
-  const value$1 = result$2.TAG === "Ok" ? result$2._0 : undefined;
+  const value$8 = result$2.TAG === "Ok" ? result$2._0 : undefined;
   console.log(
-    `${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${value$8})`}`,
   );
   const value$9 = $parseBig(
     "340282366920938463463374607431768211455",

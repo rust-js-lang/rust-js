@@ -65,7 +65,7 @@ function main() {
   const nothing = {};
   const value$5 = $getOrInit(nothing, () => undefined);
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(nothing.value)}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${nothing.value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`}`,
   );
   const value$6 = $onceSet(nothing, 1);
   console.log(
@@ -121,7 +121,7 @@ function main() {
   $getOrInit(copy, () => []);
   console.log(`${$eq(copy, shown)} ${$eq(copy, {})}`);
   console.log(
-    `OnceCell(${unit.value == null ? "<uninit>" : "()"}) ${((value) => `OnceCell(${value == null ? "<uninit>" : ((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`)(nothing.value)}`,
+    `OnceCell(${unit.value == null ? "<uninit>" : "()"}) OnceCell(${nothing.value == null ? "<uninit>" : ((value) => (value == null ? "None" : `Some(${value})`))($someValue(nothing.value))})`,
   );
   console.log(
     `${lock.value == null ? "None" : `Some([${lock.value.map((item) => String(item)).join(", ")}])`}`,

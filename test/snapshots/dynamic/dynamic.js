@@ -287,35 +287,35 @@ export function report() {
   );
   out += `${$jsonValueText($jsonIndex(v, "name"), false)} ${$jsonValueText($jsonIndex($jsonIndex(v, "list"), 1), false)} ${$jsonValueText($jsonIndex($jsonIndex(v, "nested"), "k"), false)} ${$jsonValueText($jsonIndex(v, "missing"), false)}\n`;
   const value$1 = $jsonGet(v, "name");
-  const value$4 = $jsonGet(v, "nope");
-  const value$5 = $jsonGet($jsonIndex(v, "list"), 5);
-  const value$2 = $jsonGet($jsonIndex(v, "list"), 0);
-  out += `${value$1 == null ? "None" : `Some(${$debugJsonValue(value$1)})`} ${value$4 == null ? "None" : `Some(${$debugJsonValue(value$4)})`} ${value$5 == null ? "None" : `Some(${$debugJsonValue(value$5)})`} ${value$2 == null ? "None" : `Some(${$debugJsonValue(value$2)})`}\n`;
-  const value$7 = $jsonValueAs($jsonIndex(v, "name"), "String");
-  const value$8 = $jsonValueAs($jsonIndex(v, "flag"), "Bool");
-  const value$9 = $jsonValueF64($jsonIndex(v, "f"));
-  const value$3 = $jsonValueAs($jsonIndex(v, "list"), "Array")?.length;
-  out += `${value$7 == null ? "None" : `Some(${$debugStr(value$7)})`} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${$debugF64(value$9)})`} ${value$3 == null ? "None" : `Some(${value$3})`}\n`;
+  const value$2 = $jsonGet(v, "nope");
+  const value$3 = $jsonGet($jsonIndex(v, "list"), 5);
+  const value$4 = $jsonGet($jsonIndex(v, "list"), 0);
+  out += `${value$1 == null ? "None" : `Some(${$debugJsonValue(value$1)})`} ${value$2 == null ? "None" : `Some(${$debugJsonValue(value$2)})`} ${value$3 == null ? "None" : `Some(${$debugJsonValue(value$3)})`} ${value$4 == null ? "None" : `Some(${$debugJsonValue(value$4)})`}\n`;
+  const value$5 = $jsonValueAs($jsonIndex(v, "name"), "String");
+  const value$6 = $jsonValueAs($jsonIndex(v, "flag"), "Bool");
+  const value$7 = $jsonValueF64($jsonIndex(v, "f"));
+  const value$8 = $jsonValueAs($jsonIndex(v, "list"), "Array")?.length;
+  out += `${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${$debugF64(value$7)})`} ${value$8 == null ? "None" : `Some(${value$8})`}\n`;
   out += `${$jsonValueEq($jsonIndex(v, "name"), "n", "String")} ${$jsonValueEq($jsonIndex($jsonIndex(v, "list"), 0), 1, "i64")} ${$jsonValueEq($jsonIndex(v, "f"), 2.5, "f64")} ${$jsonValueEq($jsonIndex(v, "flag"), true, "Bool")} ${$jsonValueEq($jsonIndex($jsonIndex(v, "list"), 0), 1, "f64")} ${$jsonValueEq($jsonIndex(v, "f"), 2, "i64")}\n`;
   out += `${v.TAG === "Object"} ${$jsonIndex(v, "list").TAG === "Array"} ${$jsonIndex(v, "missing") === "Null"}\n`;
-  const value$10 = new Map();
-  value$10.set("x", { TAG: "Number", _0: $jsonInt(1) });
-  value$10.set("y", {
+  const value$9 = new Map();
+  value$9.set("x", { TAG: "Number", _0: $jsonInt(1) });
+  value$9.set("y", {
     TAG: "Array",
     _0: [{ TAG: "Number", _0: $jsonInt(1) }, { TAG: "String", _0: "two" }, "Null", $jsonFloat(3.5)],
   });
-  const value$11 = new Map();
-  value$11.set("w", { TAG: "Bool", _0: false });
-  value$10.set("z", { TAG: "Object", _0: value$11 });
-  value$10.set("s", { TAG: "String", _0: "str" });
-  const j = { TAG: "Object", _0: value$10 };
+  const value$10 = new Map();
+  value$10.set("w", { TAG: "Bool", _0: false });
+  value$9.set("z", { TAG: "Object", _0: value$10 });
+  value$9.set("s", { TAG: "String", _0: "str" });
+  const j = { TAG: "Object", _0: value$9 };
   out += `${$jsonValueText(j, false)}\n${$debugJsonValue(j)}\n`;
   const n = 5;
   const name = "abc";
-  const value$12 = new Map();
-  value$12.set("n", { TAG: "Number", _0: $jsonInt(n) });
-  value$12.set("name", { TAG: "String", _0: name });
-  value$12.set(
+  const value$11 = new Map();
+  value$11.set("n", { TAG: "Number", _0: $jsonInt(n) });
+  value$11.set("name", { TAG: "String", _0: name });
+  value$11.set(
     "list",
     $unwrapOk(
       $toJsonValue([1, 2], (value, json) => {
@@ -330,7 +330,7 @@ export function report() {
       $debugJsonError,
     ),
   );
-  value$12.set(
+  value$11.set(
     "opt",
     $unwrapOk(
       $toJsonValue(undefined, (value, json) => {
@@ -344,17 +344,17 @@ export function report() {
       $debugJsonError,
     ),
   );
-  const k = { TAG: "Object", _0: value$12 };
+  const k = { TAG: "Object", _0: value$11 };
   out += `${$jsonValueText(k, false)}\n`;
-  const value$13 = new Map();
-  value$13.set("a", "Null");
+  const value$12 = new Map();
+  value$12.set("a", "Null");
   const e = {
     name: "e",
     data: {
       TAG: "Array",
       _0: [
         { TAG: "Number", _0: $jsonInt(1) },
-        { TAG: "Object", _0: value$13 },
+        { TAG: "Object", _0: value$12 },
       ],
     },
     meta: new Map(),
@@ -372,17 +372,17 @@ export function report() {
   m.set("a", { TAG: "String", _0: "x" });
   m.set("c", { TAG: "Array", _0: [1.5, 2].map((x) => $jsonFloat(x)) });
   const o = { TAG: "Object", _0: m };
-  const value$14 = new Map();
-  value$14.set("a", { TAG: "String", _0: "x" });
-  value$14.set("b", { TAG: "Number", _0: $jsonInt(2) });
-  value$14.set("c", { TAG: "Array", _0: [$jsonFloat(1.5), $jsonFloat(2)] });
-  const arg = $eq(o, { TAG: "Object", _0: value$14 });
+  const value$13 = new Map();
+  value$13.set("a", { TAG: "String", _0: "x" });
+  value$13.set("b", { TAG: "Number", _0: $jsonInt(2) });
+  value$13.set("c", { TAG: "Array", _0: [$jsonFloat(1.5), $jsonFloat(2)] });
+  const arg = $eq(o, { TAG: "Object", _0: value$13 });
   out += `${$jsonValueText(o, false)} ${arg}\n`;
   const tv = $unwrapOk($toJsonValue(e, recordSerialize_serialize), undefined, $debugJsonError);
   out += `${$jsonValueText(tv, false)}\n`;
   out += `${$jsonValueText($jsonFloat(NaN), false)}\n`;
-  const value$6 = $jsonNumberOfF64(1.5);
-  out += `${value$6 == null ? "None" : `Some(${$debugJsonNumber(value$6)})`}\n`;
+  const value$14 = $jsonNumberOfF64(1.5);
+  out += `${value$14 == null ? "None" : `Some(${$debugJsonNumber(value$14)})`}\n`;
   const value$15 = new Map();
   value$15.set("name", { TAG: "String", _0: "a" });
   value$15.set("age", { TAG: "Number", _0: $jsonInt(3) });

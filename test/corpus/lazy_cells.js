@@ -24,10 +24,10 @@ function lookup(name) {
 
 function main() {
   console.log("before");
-  const value$2 = lookup("one");
-  const value$3 = lookup("three");
+  const value = lookup("one");
+  const value$1 = lookup("three");
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`} ${$forceLock(TABLE).size}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${$forceLock(TABLE).size}`,
   );
   console.log(
     `${$forceLock(NAMES).length} [${$forceLock(NAMES)
@@ -41,15 +41,15 @@ function main() {
       return "made";
     },
   };
-  const value = lazy.init === undefined ? lazy.value : undefined;
-  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  const value$2 = lazy.init === undefined ? lazy.value : undefined;
+  console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`);
   console.log(`${$force(lazy)} ${$byteLen($force(lazy))}`);
-  const value$4 = lazy.init === undefined ? lazy.value : undefined;
-  console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`} ${$force(lazy)}`);
+  const value$3 = lazy.init === undefined ? lazy.value : undefined;
+  console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`} ${$force(lazy)}`);
   console.log(`${calls}`);
   const count = { init: () => 40 };
-  const value$1 = count.init === undefined ? count : undefined;
-  console.log(`${value$1 == null ? "None" : `Some(${value$1.value})`}`);
+  const value$4 = count.init === undefined ? count : undefined;
+  console.log(`${value$4 == null ? "None" : `Some(${value$4.value})`}`);
   $force(count);
   count.value = (count.value + 1) | 0;
   $force(count);

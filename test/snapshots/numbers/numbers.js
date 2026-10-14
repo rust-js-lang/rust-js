@@ -171,7 +171,8 @@ export function searches() {
     return value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`;
   });
   const empty = [];
-  return `${found.join(" ")} ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearch(empty, 1))}`;
+  const value = $binarySearch(empty, 1);
+  return `${found.join(" ")} ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}`;
 }
 
 export function zeros(a) {

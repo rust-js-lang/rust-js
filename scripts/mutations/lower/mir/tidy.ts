@@ -127,8 +127,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-constant-objects-block",
     breaks: "a call isn't read in place past an object of constants before it, `const _3 = unquoted(..)`",
     file: "src/lower/mir/tidy.rs",
-    find: "            args.iter().all(past)\n        }\n        _ => e.is_made_of_constants(),\n",
-    replace: "            args.iter().all(past)\n        }\n        _ => e.is_constant(),\n",
+    find: "read_past_calls(result, set, &plain)\n        }\n        _ => e.is_made_of_constants(),\n",
+    replace: "read_past_calls(result, set, &plain)\n        }\n        _ => e.is_constant(),\n",
     tests: ["test/lowering.test.ts","-t","past an object of constants"],
   },
   {
@@ -721,6 +721,15 @@ export const mutations: Mutation[] = [
     find: "        ExprKind::Index(_, index) => plain_root && past(index),\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^const_generic_traits.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "tidy-applied-call-not-past",
+    breaks: "a function called at once on a held value is taken to read what a call may change, and the `Option` formatted after it stays a function called in place",
+    file: "src/lower/mir/tidy.rs",
+    find: "            past(given) && read_past_calls(result, set, &plain)\n",
+    replace: "            false\n",
+    tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
     snapshots: true,
   },
 ];

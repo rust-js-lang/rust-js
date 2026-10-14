@@ -55,8 +55,8 @@ function main() {
     `[${sizes.map((item) => String(item)).join(", ")}] [${roots.map((item) => $debugF64(item)).join(", ")}]`,
   );
   const single = [2].map((n) => Math.fround(Math.sqrt(n)));
-  const value$1 = Math.fround($index(single, 0) * $index(single, 0));
-  const value$2 = $index(single, 0);
-  console.log(`${$displayF32(value$1)} ${Math.fround(value$2 * $index(single, 0)) === 2}`);
+  console.log(
+    `${$displayF32(Math.fround($index(single, 0) * $index(single, 0)))} ${Math.fround($index(single, 0) * $index(single, 0)) === 2}`,
+  );
 }
 //# sourceMappingURL=case.js.map

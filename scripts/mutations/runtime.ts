@@ -19,4 +19,13 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "drop_flag_loops"],
     snapshots: true,
   },
+  {
+    name: "some-value-not-pure",
+    breaks: "taking a level off a nested `Option`, `$someValue(o)`, which only reads, is taken to do something, and the `Option` formatted after one is a function called in place",
+    file: "src/runtime.rs",
+    find: "    \"$someValue\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
+    snapshots: true,
+  },
 ];

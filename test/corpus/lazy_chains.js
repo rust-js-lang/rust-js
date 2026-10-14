@@ -55,11 +55,21 @@ function main() {
     })
     .find((item) => item != null);
   console.log(`${value$2 == null ? "None" : `Some(${value$2})`}`);
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($nextSome($lent([undefined, 1].values().map((x) => (x != null ? noisy("find none", x) : undefined))).filter((x) => x == null)))}`,
+  const value$3 = $nextSome(
+    $lent(
+      [undefined, 1].values().map((x) => (x != null ? noisy("find none", x) : undefined)),
+    ).filter((x) => x == null),
   );
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))($nextSome($lent([1, undefined].values().map((x) => (x != null ? noisy("find some", x) : undefined))).filter((x) => x == null)))}`,
+    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`}`,
+  );
+  const value$4 = $nextSome(
+    $lent(
+      [1, undefined].values().map((x) => (x != null ? noisy("find some", x) : undefined)),
+    ).filter((x) => x == null),
+  );
+  console.log(
+    `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
   );
   for (const x of $lazyTakeWhile(
     v.values().map((x) => noisy("loop", x)),
@@ -90,43 +100,43 @@ function main() {
   }
   const counted = v.values().filter((x) => noisy("counted", x) > 1);
   console.log(`${counted.reduce((n) => n + 1, 0)}`);
-  const value$3 = $slice(v, 0, 2)
+  const value$5 = $slice(v, 0, 2)
     .values()
     .map((x) => noisy("left", x));
   const pairs = Iterator.from(
     $lazyZip(
-      value$3,
+      value$5,
       v.values().map((x) => noisy("right", x)),
     ),
   ).toArray();
   console.log(`[${pairs.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
-  const value$4 = $iter($slice(v, 0, 2));
+  const value$6 = $iter($slice(v, 0, 2));
   const short = Iterator.from(
     $lazyZip(
-      value$4,
+      value$6,
       v.values().map((x) => noisy("other", x)),
     ),
   ).toArray();
   console.log(`[${short.map((item) => `(${item[0]}, ${item[1]})`).join(", ")}]`);
   const back = doubled(v).toArray();
   console.log(`[${back.map((item) => String(item)).join(", ")}]`);
-  const value$5 = $iter($slice(v, 0, 1));
+  const value$7 = $iter($slice(v, 0, 1));
   const joined = Iterator.from(
     $lazyChain(
-      value$5,
+      value$7,
       v.values().map((x) => noisy("joined", x)),
     ),
   )
     .take(2)
     .toArray();
   console.log(`[${joined.map((item) => String(item)).join(", ")}]`);
-  const value$6 = $next(v.values().map((x) => noisy("next", x)));
-  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
-  const stepped = v.values().map((x) => noisy("stepped", x));
-  const value$7 = $next(stepped);
-  console.log(`${value$7 == null ? "None" : `Some(${value$7})`}`);
-  const value$8 = $next(stepped);
+  const value$8 = $next(v.values().map((x) => noisy("next", x)));
   console.log(`${value$8 == null ? "None" : `Some(${value$8})`}`);
+  const stepped = v.values().map((x) => noisy("stepped", x));
+  const value$9 = $next(stepped);
+  console.log(`${value$9 == null ? "None" : `Some(${value$9})`}`);
+  const value$10 = $next(stepped);
+  console.log(`${value$10 == null ? "None" : `Some(${value$10})`}`);
   const doubled$1 = v
     .map((x) => Math.imul(x, 2))
     .filter((x) => x % 4 === 0)

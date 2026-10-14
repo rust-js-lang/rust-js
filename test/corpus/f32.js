@@ -63,17 +63,11 @@ function main() {
   console.log(`${$displayF32($bigToF32(big))} ${$displayF64($bigToF32(big))}`);
   console.log(`${$displayF64(0.10000000149011612)} ${$displayF64(3.4028234663852886e38)}`);
   const x = -2.75;
-  const value = Math.abs(x);
-  const value$1 = Math.floor(x);
-  const value$2 = Math.ceil(x);
-  const value$3 = $round(x);
   console.log(
-    `${$displayF32(value)} ${$displayF32(value$1)} ${$displayF32(value$2)} ${$displayF32(value$3)} ${$displayF32(Math.trunc(x))}`,
+    `${$displayF32(Math.abs(x))} ${$displayF32(Math.floor(x))} ${$displayF32(Math.ceil(x))} ${$displayF32($round(x))} ${$displayF32(Math.trunc(x))}`,
   );
-  const value$4 = $powiF32(Math.fround(1.1), 9);
-  const value$5 = $powiF32(2, -3);
   console.log(
-    `${$displayF32(value$4)} ${$displayF32(value$5)} ${$displayF32(Math.fround(2 ** 10))}`,
+    `${$displayF32($powiF32(Math.fround(1.1), 9))} ${$displayF32($powiF32(2, -3))} ${$displayF32(Math.fround(2 ** 10))}`,
   );
   console.log(
     `${$displayF32($f64Max(1.5, NaN))} ${$displayF32($f64Min(1.5, -3))} ${$displayF32(Math.fround(Math.fround(Math.sqrt(7)) * Math.fround(Math.sqrt(7))))}`,

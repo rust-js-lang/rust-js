@@ -34,9 +34,10 @@ part whose formatting may run the program's code, a `Debug` of the crate's
 or a dictionary's method, each argument that does something is held first,
 in the order given, and the template formats what's held (MIR's
 `formats_out_of_order`). A runtime helper's, a JS global's or a JS method of
-text or an array, `.map(f)`, runs none, its callbacks looked at too. MIR's
-folding already keeps the arguments in the order given, and one read twice
-held.
+text or an array, `.map(f)`, runs none, its callbacks looked at too:
+`Expr::runs_program_code`, over the one list of JS's own calls that
+`Expr::only_reads` asks too. MIR's folding already keeps the arguments in
+the order given; one read twice is held by tidy, below, not again by MIR.
 
 **A value formatting reads more than once, given as it's made, is held
 first, `const value = parse("x");`, and the test reads it**, as a value
@@ -44,9 +45,10 @@ read twice is held everywhere else (MIR tidy's `applied_values`, named by
 `readable_temporaries`).
 
 - **Only where the program's order is kept**: what the statement evaluates
-  before it must read the same after it, `read_past_calls`, not a call
-  whose effect it would precede, `${Counter.get(c)} ${..(Counter.bump(c))}`,
-  nor what a test decides runs.
+  before it must read the same after it, `read_past_calls`, or only read,
+  `Expr::only_reads`, where the value held does nothing itself,
+  `$jsonGet(v, "nope")`; not a call whose effect it would precede,
+  `${Counter.get(c)} ${..(Counter.bump(c))}`, nor what a test decides runs.
 - `read_past_calls` knows more of what reads the same past a call: text
   and numbers made of such, `${a}-${b}`, `String(n)`, a call of the
   runtime's pure helpers, an item of a plain value, `pair[0]`, as its field,
@@ -63,6 +65,10 @@ read twice is held everywhere else (MIR tidy's `applied_values`, named by
   loud)` whose `loud` prints shows its own line first. Formatting that
   prints is rare, and the line is the same.
 
-- 190 of the corpus's 248 are held. The rest follow a call in the same
-  line whose effect the value's would precede, `${Counter.get(c)}
-  ${..(Counter.bump(c))}`, and stay where they are.
+- Of the corpus's 298 functions called in place, 74 are left. They follow
+  a call in the same line whose effect the value's would precede,
+  `${Counter.get(c)} ${..(Counter.bump(c))}`, or sit behind a test, the
+  inner `Option` of an `Option`, and stay where they are.
+- A function called at once reads what its body does, to
+  `read_past_calls`; and a name a callback binds is its own in its body,
+  to `Expr::substitute_in_callbacks`, which no longer gives up on one.

@@ -1613,13 +1613,11 @@ impl Expr {
                 else {
                     return None;
                 };
+                // A name it binds is its own in its body, not the one replaced.
                 let names: Vec<&str> = params.iter().flat_map(Pattern::names).collect();
-                if names.iter().any(|n| with(n).is_some()) {
-                    return None;
-                }
                 let clash = std::cell::Cell::new(false);
                 let inner = |n: &str| {
-                    let replaced = with(n)?;
+                    let replaced = with(n).filter(|_| !names.contains(&n))?;
                     clash.set(clash.get() || replaced.mentions(&names));
                     Some(replaced)
                 };
@@ -1827,6 +1825,86 @@ impl Expr {
             }
             _ => self.has_effects(),
         }
+    }
+
+    /// Whether evaluating this only reads, however much it calls: each call
+    /// a runtime helper's that only reads, `$debugStr(s)`, a JS global's
+    /// conversion, `String(n)`, or a JS method of text or an array that
+    /// changes nothing, `.map(f)`, `.join(", ")`, each callback's body only
+    /// reading too; nothing assigned.
+    pub fn only_reads(&self) -> bool {
+        self.calls_only(&|helper| crate::runtime::is_pure(helper))
+    }
+
+    /// Whether evaluating this may run the program's own code: a function
+    /// of the crate's, a `Debug` of its own, a method of what JS doesn't
+    /// know, a dictionary's. Not a runtime helper's, which runs only what
+    /// it's given, a JS global's, nor a JS method of text or an array,
+    /// though each callback's body is looked at.
+    pub fn runs_program_code(&self) -> bool {
+        !self.calls_only(&|_| true)
+    }
+
+    /// Whether each call in this is a helper's `helper` allows, a JS
+    /// global's, or a JS method of text or an array that changes nothing,
+    /// with each callback's body the same, and nothing assigned: the one
+    /// list of what JS's own calls are, `only_reads`' and
+    /// `runs_program_code`'s.
+    fn calls_only(&self, helper: &dyn Fn(&str) -> bool) -> bool {
+        const METHODS: &[&str] = &[
+            "map",
+            "join",
+            "filter",
+            "slice",
+            "concat",
+            "toString",
+            "toFixed",
+            "padStart",
+            "padEnd",
+            "toUpperCase",
+            "toLowerCase",
+            "entries",
+            "keys",
+            "values",
+            "toArray",
+            "repeat",
+            "trim",
+            "at",
+            "includes",
+            "indexOf",
+            "startsWith",
+            "endsWith",
+            "codePointAt",
+            "charCodeAt",
+        ];
+        const GLOBALS: &[&str] = &["String", "Number", "BigInt", "Math", "JSON", "Array", "Object"];
+        let mut only = true;
+        let mut each = self.clone();
+        each.each_mut(&mut |part| {
+            only &= match &part.kind {
+                ExprKind::Call(callee, _) | ExprKind::OptionalCall(callee, _) => match &callee.kind {
+                    ExprKind::Var(_) if let Some(name) = callee.helper_name() => helper(name),
+                    ExprKind::Var(name) => GLOBALS.contains(&name.as_str()),
+                    ExprKind::Member(of, method) | ExprKind::OptionalMember(of, method) => {
+                        METHODS.contains(&method.as_str())
+                            || matches!(&of.kind, ExprKind::Var(global) if GLOBALS.contains(&global.as_str()))
+                    }
+                    // A callback called at once, its body looked at as each part is.
+                    ExprKind::Arrow(..) => true,
+                    _ => false,
+                },
+                ExprKind::New(..) | ExprKind::Await(_) | ExprKind::Import(_) | ExprKind::Handle(_) => false,
+                ExprKind::Arrow(_, body) => body.iter().all(|stmt| {
+                    matches!(
+                        &stmt.kind,
+                        StmtKind::Return(_) | StmtKind::Expr(_) | StmtKind::Const(..)
+                    )
+                }),
+                ExprKind::AsyncArrow(..) | ExprKind::Function(_) => false,
+                _ => true,
+            };
+        });
+        only
     }
 
     pub fn has_effects(&self) -> bool {

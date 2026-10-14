@@ -413,4 +413,22 @@ export const mutations: Mutation[] = [
     replace: "                Expr::unary(UnaryOp::Not, Expr::bin(op, *a, *b))\n",
     tests: ["test/lowering.test.ts","-t","branches from MIR read"],
   },
+  {
+    name: "js-map-not-only-reading",
+    breaks: "an array's `.map(f)` of a callback that only reads is taken to do something, and a value formatting reads twice after it stays a function called in place",
+    file: "src/js.rs",
+    find: "            \"map\",\n            \"join\",\n",
+    replace: "            \"join\",\n",
+    tests: ["test/corpus.test.ts", "-t", "^slice_arrays.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "js-substitute-shadowed",
+    breaks: "a name a callback binds itself is replaced in its body too, and `{:?}` of an `Option` of an `Option` prints the outer value where the inner is",
+    file: "src/js.rs",
+    find: "with(n).filter(|_| !names.contains(&n))?",
+    replace: "with(n)?",
+    tests: ["test/corpus.test.ts", "-t", "^iter_next_back.rs$"],
+    snapshots: true,
+  },
 ];

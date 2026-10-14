@@ -216,7 +216,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/recognition.rs",
     find: "\"is_err\" if tcx.trait_of_assoc(id).is_none() => {",
     replace: "\"is_err\" if false => {",
-    tests: ["test/corpus.test.ts", "-t", "loop_drops"],
+    tests: ["test/corpus.test.ts", "-t", "^try_lock.rs$"],
     snapshots: true,
   },
   {

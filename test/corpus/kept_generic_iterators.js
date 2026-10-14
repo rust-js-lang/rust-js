@@ -72,7 +72,7 @@ function main() {
   );
   const value$1 = firsts($iter([undefined, 2]));
   console.log(
-    `(${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$1[0])}, ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$1[1])})`,
+    `(${value$1[0] == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1[0]))})`}, ${value$1[1] == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$1[1]))})`})`,
   );
   const value$2 = firsts($iter([]));
   console.log(

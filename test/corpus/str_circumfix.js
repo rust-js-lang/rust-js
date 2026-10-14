@@ -7,21 +7,21 @@ export function entry() {
 }
 
 function main() {
-  const value$1 = $stripCircumfix("bar:hello:foo", "bar:", ":foo");
+  const value = $stripCircumfix("bar:hello:foo", "bar:", ":foo");
+  console.log(`${value == null ? "None" : `Some(${$debugStr(value)})`}`);
+  const value$1 = $stripCircumfix("bar:foo", "foo", "foo");
   console.log(`${value$1 == null ? "None" : `Some(${$debugStr(value$1)})`}`);
-  const value$2 = $stripCircumfix("bar:foo", "foo", "foo");
+  const value$2 = $stripCircumfix("foo:bar;", "foo:", ";");
   console.log(`${value$2 == null ? "None" : `Some(${$debugStr(value$2)})`}`);
-  const value$3 = $stripCircumfix("foo:bar;", "foo:", ";");
+  const value$3 = $stripCircumfix("foo:bar:baz", "foo:bar:", ":bar:baz");
   console.log(`${value$3 == null ? "None" : `Some(${$debugStr(value$3)})`}`);
-  const value$4 = $stripCircumfix("foo:bar:baz", "foo:bar:", ":bar:baz");
+  const value$4 = $stripCircumfix("[]", "[", "]");
   console.log(`${value$4 == null ? "None" : `Some(${$debugStr(value$4)})`}`);
-  const value$5 = $stripCircumfix("[]", "[", "]");
+  const value$5 = $stripCircumfix("[", "[", "[");
   console.log(`${value$5 == null ? "None" : `Some(${$debugStr(value$5)})`}`);
-  const value$6 = $stripCircumfix("[", "[", "[");
-  console.log(`${value$6 == null ? "None" : `Some(${$debugStr(value$6)})`}`);
   const quoted = "«héllo»";
   const s = $stripCircumfix(quoted, "«", "»");
-  const value = s != null ? $byteLen(s) : undefined;
-  console.log(`${value == null ? "None" : `Some(${value})`}`);
+  const value$6 = s != null ? $byteLen(s) : undefined;
+  console.log(`${value$6 == null ? "None" : `Some(${value$6})`}`);
 }
 //# sourceMappingURL=case.js.map

@@ -24,21 +24,21 @@ function main() {
     `[${$strSlice(s, 0, 1)}] [${$strSlice(s, 1, 3)}] [${$strSlice(s, 7)}] [${$strSlice(s, 0, 6)}] [${s}]`,
   );
   console.log(`${first_word(s)}`);
-  const value$3 = $find(s, "ö");
-  const value$4 = $find(s, "wör");
-  const value = $find(s, "z");
+  const value = $find(s, "ö");
+  const value$1 = $find(s, "wör");
+  const value$2 = $find(s, "z");
   console.log(
-    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
   );
-  const value$5 = $rfind(s, "l");
-  const value$1 = $rfind("a🦀b🦀", "🦀");
+  const value$3 = $rfind(s, "l");
+  const value$4 = $rfind("a🦀b🦀", "🦀");
   console.log(
-    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$4 == null ? "None" : `Some(${value$4})`}`,
   );
-  const value$6 = $find("abc", "");
-  const value$2 = $rfind("abc", "");
+  const value$5 = $find("abc", "");
+  const value$6 = $rfind("abc", "");
   console.log(
-    `${value$6 == null ? "None" : `Some(${value$6})`} ${value$2 == null ? "None" : `Some(${value$2})`}`,
+    `${value$5 == null ? "None" : `Some(${value$5})`} ${value$6 == null ? "None" : `Some(${value$6})`}`,
   );
   for (const [i, c] of $charIndices("a日🦀b")) {
     console.log(`${i} ${c}`);

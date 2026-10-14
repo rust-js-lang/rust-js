@@ -36,16 +36,14 @@ function main() {
   );
   const a = 1500n * 1000000n;
   const b = 700n * 1000000n;
-  const value$1 = $durationAdd(a, b);
   const b$1 = 2n * 1000000000n;
-  const value$2 = $durationSub(a, b);
-  const value = a < b$1 ? undefined : a - b$1;
   console.log(
-    `${$debugDuration(value$1)} ${$debugDuration(value$2)} ${value == null ? "None" : `Some(${$debugDuration(value)})`}`,
+    `${$debugDuration($durationAdd(a, b))} ${$debugDuration($durationSub(a, b))} ${((value) => (value == null ? "None" : `Some(${$debugDuration(value)})`))(a < b$1 ? undefined : a - b$1)}`,
   );
-  const value$3 = $durationChecked(18446744073709551615999999999n + $durationNew(0n, 1));
+  const value = $durationChecked(18446744073709551615999999999n + $durationNew(0n, 1));
+  const value$1 = $durationChecked(a + b);
   console.log(
-    `${value$3 == null ? "None" : `Some(${$debugDuration(value$3)})`} ${((value) => (value == null ? "None" : `Some(${$debugDuration(value)})`))($durationChecked(a + b))}`,
+    `${value == null ? "None" : `Some(${$debugDuration(value)})`} ${value$1 == null ? "None" : `Some(${$debugDuration(value$1)})`}`,
   );
   console.log(
     `${a > b} ${a === $durationNew(1n, 500000000)} ${$bigMax(a, b) === a} ${

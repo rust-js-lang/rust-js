@@ -82,13 +82,14 @@ function main() {
   const sent = { value: 3, impl: { type_id: () => "core::option::Option<u16>" } };
   const value$3 =
     sent.impl.type_id() === "core::option::Option<u16>" ? $some(sent.value) : undefined;
-  const value$4 = sent.impl.type_id() === "u16";
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$3)} ${value$4}`,
+    `${value$3 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$3))})`} ${sent.impl.type_id() === "u16"}`,
   );
   const none = { impl: { type_id: () => "core::option::Option<u16>" } };
+  const value$4 =
+    none.impl.type_id() === "core::option::Option<u16>" ? $some(none.value) : undefined;
   console.log(
-    `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(none.impl.type_id() === "core::option::Option<u16>" ? $some(none.value) : undefined)}`,
+    `${value$4 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$4))})`}`,
   );
   const f = {
     value: first,

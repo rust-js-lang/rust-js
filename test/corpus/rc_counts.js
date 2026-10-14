@@ -47,9 +47,9 @@ function main() {
     throw error;
   }
   const strong$1 = a.strong;
-  const value$1 = c.value;
+  const value = c.value;
   try {
-    console.log(`${strong$1} ${(value$1 + b.value) | 0}`);
+    console.log(`${strong$1} ${(value + b.value) | 0}`);
   } catch (error) {
     $rcDrop(c);
     $rcDrop(b);
@@ -137,8 +137,8 @@ function main() {
     $rcDrop(a$1);
     throw error;
   }
-  const value = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
   try {
+    const value = a$1.strong === 1 && a$1.weak === 0 ? a$1 : undefined;
     console.log(`${value == null ? "None" : `Some(${value.value})`}`);
   } catch (error) {
     $rcDrop(shared);
@@ -154,9 +154,9 @@ function main() {
     $rcDrop(a$1);
     throw error;
   }
-  const value$2 = (a$1.value + 1) | 0;
+  const value$1 = (a$1.value + 1) | 0;
   try {
-    console.log(`${value$2}`);
+    console.log(`${value$1}`);
   } catch (error) {
     $rcDrop(shared);
     $weakDrop(weak);
@@ -361,12 +361,12 @@ function main() {
     $weakDrop(weak);
     throw error;
   }
-  const value$3 = { value: { strong: 0, weak: 0 } };
+  const value$2 = { value: { strong: 0, weak: 0 } };
   let tmp$14;
   try {
     tmp$14 = [$rcClone(leaf)];
   } catch (error) {
-    $weakDrop(value$3.value);
+    $weakDrop(value$2.value);
     const dropNode = (node) => {
       $weakDrop(node.parent.value);
       for (const item of node.children.value) {
@@ -378,7 +378,7 @@ function main() {
     throw error;
   }
   const branch = {
-    value: { name: "branch", parent: value$3, children: { value: tmp$14 } },
+    value: { name: "branch", parent: value$2, children: { value: tmp$14 } },
     strong: 1,
     weak: 0,
   };
@@ -569,10 +569,10 @@ function main() {
     $weakDrop(weak);
     throw error;
   }
-  const value$4 = tmp$21.value;
+  const value$3 = tmp$21.value;
   try {
     console.log(
-      `${tmp$20 == null ? "None" : `Some(${$debugStr(tmp$20)})`} ${strong$3} ${weak$1} ${value$4.length}`,
+      `${tmp$20 == null ? "None" : `Some(${$debugStr(tmp$20)})`} ${strong$3} ${weak$1} ${value$3.length}`,
     );
   } catch (error) {
     $unborrow(tmp$21);

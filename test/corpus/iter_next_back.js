@@ -71,23 +71,23 @@ function main() {
       $print(`(${a}, ${b}) `);
       continue;
     }
-    const value$1 = $next(both);
-    console.log(`${value$1 == null ? "None" : `Some(${value$1})`}`);
+    const value = $next(both);
+    console.log(`${value == null ? "None" : `Some(${value})`}`);
     const tree = new Map([
       [1, "a"],
       [2, "b"],
       [3, "c"],
     ]);
-    const value$2 = $nextBack(
+    const value$1 = $nextBack(
       $iter($treeRange(tree, $cmp, false, "BTreeMap", false, undefined, true, 3, false)),
     );
-    const value$3 = $nextBack($iter($sortedEntries(tree, $cmp)));
+    const value$2 = $nextBack($iter($sortedEntries(tree, $cmp)));
     console.log(
-      `${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`} ${value$3 == null ? "None" : `Some((${value$3[0]}, ${$debugStr(value$3[1])}))`}`,
+      `${value$1 == null ? "None" : `Some((${value$1[0]}, ${$debugStr(value$1[1])}))`} ${value$2 == null ? "None" : `Some((${value$2[0]}, ${$debugStr(value$2[1])}))`}`,
     );
     const last = $nextBack($iter(v));
-    const value = last === undefined ? undefined : Math.imul(last, 10);
-    console.log(`${value == null ? "None" : `Some(${value})`}`);
+    const value$3 = last === undefined ? undefined : Math.imul(last, 10);
+    console.log(`${value$3 == null ? "None" : `Some(${value$3})`}`);
     const value$4 = $nextBack($iter(Array.from("héllo")));
     const value$5 = $nextBack($iter("a,b,c".split(",")));
     console.log(
@@ -99,12 +99,12 @@ function main() {
     const value$7 = $nextBackSome(options);
     const value$8 = $nextBackSome(options);
     console.log(
-      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$6)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$7)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$8)}`,
+      `${value$6 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$6))})`} ${value$7 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$7))})`} ${value$8 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$8))})`}`,
     );
     const value$9 = $nextBackSome($iter(maybe));
     const value$10 = $nextBackSome($iter($slice(maybe, 0, 1)));
     console.log(
-      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$9)} ${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$10)}`,
+      `${value$9 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$9))})`} ${value$10 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$10))})`}`,
     );
     const peeked = $iter(maybe);
     $nextBackSome(peeked);
@@ -112,7 +112,7 @@ function main() {
     const value$11 = $peekSome(peeked);
     const value$12 = $rangeInclusiveNextBack({ start: 0, end: 3 });
     console.log(
-      `${((value) => (value == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value))})`))(value$11)} ${value$12 == null ? "None" : `Some(${value$12})`}`,
+      `${value$11 == null ? "None" : `Some(${((value) => (value == null ? "None" : `Some(${value})`))($someValue(value$11))})`} ${value$12 == null ? "None" : `Some(${value$12})`}`,
     );
     const peeking = $iter(v);
     const first = $peek(peeking);

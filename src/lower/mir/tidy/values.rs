@@ -598,9 +598,18 @@ pub(super) fn applied_values(
             | StmtKind::Const(_, e)
             | StmtKind::Let(_, Some(e))
             | StmtKind::Return(Some(e))
-            | StmtKind::Throw(e) => (e, true),
+            | StmtKind::Throw(e) => (
+                e,
+                Before {
+                    past: true,
+                    reads: true,
+                },
+            ),
             StmtKind::Assign(target, e) | StmtKind::Compound(_, target, e) => {
-                let before = read_past_calls(target, set, plain);
+                let before = Before {
+                    past: read_past_calls(target, set, plain),
+                    reads: target.only_reads(),
+                };
                 (e, before)
             }
             _ => {
@@ -624,12 +633,12 @@ pub(super) fn applied_values(
 /// and held as `name`, and the call `body` of it.
 fn first_applied(
     e: &mut Expr,
-    before: &mut bool,
+    before: &mut Before,
     name: &str,
     set: &HashSet<String>,
     plain: &HashSet<String>,
 ) -> Option<Expr> {
-    if !*before {
+    if !before.past && !before.reads {
         return None;
     }
     if let ExprKind::Call(callee, args) = &e.kind
@@ -643,6 +652,9 @@ fn first_applied(
         ] = body.as_slice()
         && let [value] = args.as_slice()
         && !value.reads_same()
+        // Before what's evaluated before it: past what reads the same after
+        // it, or, doing nothing itself, past what only reads.
+        && (before.past || before.reads && !value.has_effects())
         && let Some(read) = result.substitute_in_callbacks(&|n: &str| (n == param).then(|| Expr::var(name)))
     {
         let value = value.clone();
@@ -670,9 +682,17 @@ fn first_applied(
     };
     // What it is, evaluated whole before what's after it.
     if found.is_none() {
-        *before &= read_past_calls(e, set, plain);
+        before.past &= read_past_calls(e, set, plain);
+        before.reads &= e.only_reads();
     }
     found
+}
+
+/// What a statement evaluates before a point in it: whether all of it reads
+/// the same after a call, `read_past_calls`, and whether it only reads.
+pub(super) struct Before {
+    past: bool,
+    reads: bool,
 }
 
 /// A template's value that's a template itself, a function's body put in

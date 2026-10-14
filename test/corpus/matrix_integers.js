@@ -167,10 +167,10 @@ function main() {
       `i16 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$1 - 1) >>> 0, bits$1, (bits$1 + 1) >>> 0]) {
-      const value$2 = s < 16 ? ((a << (s & 15)) << 16) >> 16 : undefined;
-      const value$3 = s < 16 ? a >> (s & 15) : undefined;
+      const value = s < 16 ? ((a << (s & 15)) << 16) >> 16 : undefined;
+      const value$1 = s < 16 ? a >> (s & 15) : undefined;
       console.log(
-        `i16 ${a} shift ${s}: ${((a << (s & 15)) << 16) >> 16} ${a >> (s & 15)} ${value$2 == null ? "None" : `Some(${value$2})`} ${value$3 == null ? "None" : `Some(${value$3})`}`,
+        `i16 ${a} shift ${s}: ${((a << (s & 15)) << 16) >> 16} ${a >> (s & 15)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     const value$18 = Math.sign(a);
@@ -240,10 +240,10 @@ function main() {
       `i32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a >>> 0} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$2 - 1) >>> 0, bits$2, (bits$2 + 1) >>> 0]) {
-      const value$4 = s < 32 ? (a << s) | 0 : undefined;
-      const value$5 = s < 32 ? a >> s : undefined;
+      const value = s < 32 ? (a << s) | 0 : undefined;
+      const value$1 = s < 32 ? a >> s : undefined;
       console.log(
-        `i32 ${a} shift ${s}: ${(a << s) | 0} ${a >> s} ${value$4 == null ? "None" : `Some(${value$4})`} ${value$5 == null ? "None" : `Some(${value$5})`}`,
+        `i32 ${a} shift ${s}: ${(a << s) | 0} ${a >> s} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     const value$18 = Math.sign(a);
@@ -594,10 +594,10 @@ function main() {
       `u8 ${a}: as ${(a << 24) >> 24} ${a} ${a} ${value$13} ${value$14} ${a} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$5 - 1) >>> 0, bits$5, (bits$5 + 1) >>> 0]) {
-      const value$6 = s < 8 ? (a << (s & 7)) & 255 : undefined;
-      const value$7 = s < 8 ? a >>> (s & 7) : undefined;
+      const value = s < 8 ? (a << (s & 7)) & 255 : undefined;
+      const value$1 = s < 8 ? a >>> (s & 7) : undefined;
       console.log(
-        `u8 ${a} shift ${s}: ${(a << (s & 7)) & 255} ${a >>> (s & 7)} ${value$6 == null ? "None" : `Some(${value$6})`} ${value$7 == null ? "None" : `Some(${value$7})`}`,
+        `u8 ${a} shift ${s}: ${(a << (s & 7)) & 255} ${a >>> (s & 7)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     console.log(`u8 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
@@ -659,10 +659,10 @@ function main() {
       `u16 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a} ${value$13} ${value$14} ${a & 255} ${a} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$6 - 1) >>> 0, bits$6, (bits$6 + 1) >>> 0]) {
-      const value$8 = s < 16 ? (a << (s & 15)) & 65535 : undefined;
-      const value$9 = s < 16 ? a >>> (s & 15) : undefined;
+      const value = s < 16 ? (a << (s & 15)) & 65535 : undefined;
+      const value$1 = s < 16 ? a >>> (s & 15) : undefined;
       console.log(
-        `u16 ${a} shift ${s}: ${(a << (s & 15)) & 65535} ${a >>> (s & 15)} ${value$8 == null ? "None" : `Some(${value$8})`} ${value$9 == null ? "None" : `Some(${value$9})`}`,
+        `u16 ${a} shift ${s}: ${(a << (s & 15)) & 65535} ${a >>> (s & 15)} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     console.log(`u16 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);
@@ -725,10 +725,10 @@ function main() {
       `u32 ${a}: as ${(a << 24) >> 24} ${(a << 16) >> 16} ${a | 0} ${value$13} ${value$14} ${a & 255} ${a & 65535} ${a} ${value$15} ${value$16} f32 ${value$17} f64 ${arg$2}`,
     );
     for (const s of [0, 1, (bits$7 - 1) >>> 0, bits$7, (bits$7 + 1) >>> 0]) {
-      const value$10 = s < 32 ? (a << s) >>> 0 : undefined;
-      const value$11 = s < 32 ? a >>> s : undefined;
+      const value = s < 32 ? (a << s) >>> 0 : undefined;
+      const value$1 = s < 32 ? a >>> s : undefined;
       console.log(
-        `u32 ${a} shift ${s}: ${(a << s) >>> 0} ${a >>> s} ${value$10 == null ? "None" : `Some(${value$10})`} ${value$11 == null ? "None" : `Some(${value$11})`}`,
+        `u32 ${a} shift ${s}: ${(a << s) >>> 0} ${a >>> s} ${value == null ? "None" : `Some(${value})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
       );
     }
     console.log(`u32 ${a}: unsigned ${a !== 0 && (a & (a - 1)) === 0}`);

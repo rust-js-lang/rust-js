@@ -547,14 +547,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","a deque's remove"],
   },
   {
-    name: "mir-shown-option-applied",
-    breaks: "MIR's `Option` shown is an arrow called with it, not held first",
-    file: "src/lower/mir/std_calls.rs",
-    find: "                    true => self.spill(\"value\", value, out),\n",
-    replace: "                    true => value,\n",
-    tests: ["test/serde.test.ts","-t","a Value's reads"],
-  },
-  {
     name: "mir-push-str-lost",
     breaks: "`write!` or `push_str` to a `String` from MIR writes nothing",
     file: "src/lower/mir/std_calls.rs",
@@ -590,7 +582,7 @@ export const mutations: Mutation[] = [
     name: "formatting-runs-nothing",
     breaks: "a `Debug` of the crate's isn't taken to run code, so an argument after it is made after it runs",
     file: "src/lower/mir/std_calls.rs",
-    find: "            formatted |= runs_program_code(&part);\n",
+    find: "            formatted |= part.runs_program_code();\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^format_arguments_first.rs$"],
   },

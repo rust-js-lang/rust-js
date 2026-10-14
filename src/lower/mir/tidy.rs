@@ -501,6 +501,23 @@ fn read_past_calls(e: &Expr, set: &HashSet<String>, plain: &HashSet<String>) -> 
         ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {
             args.iter().all(past)
         }
+        // A function called at once, `((value) => ..)(value$1)`: its body,
+        // its parameter what it's given.
+        ExprKind::Call(callee, args)
+            if let ExprKind::Arrow(params, body) = &callee.kind
+                && let [js::Pattern::Name(param)] = params.as_slice()
+                && let [
+                    Stmt {
+                        kind: StmtKind::Return(Some(result)),
+                        ..
+                    },
+                ] = body.as_slice()
+                && let [given] = args.as_slice() =>
+        {
+            let mut plain = plain.clone();
+            plain.remove(param);
+            past(given) && read_past_calls(result, set, &plain)
+        }
         _ => e.is_made_of_constants(),
     }
 }

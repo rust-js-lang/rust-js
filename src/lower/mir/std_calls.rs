@@ -53,16 +53,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     value => self.value_expr(value, span)?,
                 };
-                // An `Option` shown, read twice, `v == null ? "None" : ..`: held
-                // first, where nothing it does moves.
-                let value = match known == Std::FmtDebug
-                    && self.option_of(ty.peel_refs()).is_some()
-                    && !value.reads_same()
-                    && !value.has_effects()
-                {
-                    true => self.spill("value", value, out),
-                    false => value,
-                };
+                // One read twice, `v == null ? "None" : ..`, is held first by
+                // tidy, which sees where nothing it does moves (ADR 0377).
                 return Ok(Some(Value::Fmt(known, ty, value)));
             }
             Std::FmtNew => {
@@ -165,7 +157,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             if reads && formatted {
                 return Ok(true);
             }
-            formatted |= runs_program_code(&part);
+            formatted |= part.runs_program_code();
         }
         Ok(false)
     }
@@ -943,47 +935,4 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => return Ok(None),
         })))
     }
-}
-
-/// Whether formatting `e` may run the program's own code, which may do what
-/// can be seen: a function of the crate's, a `Debug` of its own, or a
-/// method of what JS doesn't know, a dictionary's. Not a runtime helper's,
-/// a JS global's, nor a JS method of text or an array, `.map(f)`, though
-/// what each is given is looked at too: its callback's calls.
-fn runs_program_code(e: &Expr) -> bool {
-    const JS_METHODS: &[&str] = &[
-        "map",
-        "join",
-        "filter",
-        "slice",
-        "concat",
-        "toString",
-        "toFixed",
-        "padStart",
-        "padEnd",
-        "toUpperCase",
-        "toLowerCase",
-        "entries",
-        "keys",
-        "values",
-        "toArray",
-        "repeat",
-        "trim",
-        "at",
-    ];
-    const JS_GLOBALS: &[&str] = &["String", "Number", "Array", "Object", "Math", "JSON", "BigInt"];
-    let mut runs = false;
-    e.clone().each_mut(&mut |part| {
-        if let js::ExprKind::Call(callee, _) | js::ExprKind::New(callee, _) = &part.kind {
-            runs |= match &callee.kind {
-                js::ExprKind::Var(name) => callee.helper_name().is_none() && !JS_GLOBALS.contains(&name.as_str()),
-                js::ExprKind::Member(of, method) => {
-                    !JS_METHODS.contains(&method.as_str())
-                        && !matches!(&of.kind, js::ExprKind::Var(global) if JS_GLOBALS.contains(&global.as_str()))
-                }
-                _ => true,
-            };
-        }
-    });
-    runs
 }

@@ -271,8 +271,9 @@ function main() {
       prices.sort((a, b) => a - b);
       $dedup(prices);
       const value = $binarySearch(prices, 1899);
+      const value$1 = $binarySearch(prices, 2000);
       console.log(
-        `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}, 2000 at ${((result) => (result.TAG === "Ok" ? `Ok(${result._0})` : `Err(${result._0})`))($binarySearch(prices, 2000))}`,
+        `prices: [${prices.map((item) => String(item)).join(", ")}], 1899 at ${value.TAG === "Ok" ? `Ok(${value._0})` : `Err(${value._0})`}, 2000 at ${value$1.TAG === "Ok" ? `Ok(${value$1._0})` : `Err(${value$1._0})`}`,
       );
       const restock = new Map([
         ["KNF-4", 6],
@@ -295,27 +296,27 @@ function main() {
       );
       return;
     }
-    const value = parse_order(text);
-    if (value.TAG === "Ok") {
-      const parsed = value._0;
+    const value$1 = parse_order(text);
+    if (value$1.TAG === "Ok") {
+      const parsed = value$1._0;
       const order = parsed.map(([sku, n]) => [sku, n]);
-      const value$1 = Inventory.place(inventory, order);
-      if (value$1.TAG === "Ok") {
-        const total = value$1._0
+      const value = Inventory.place(inventory, order);
+      if (value.TAG === "Ok") {
+        const total = value._0
           .map((arg0) => linePriced().total_cents(arg0))
           .reduce((a, b) => BigInt.asUintN(64, a + b), 0n);
         totals.push(total);
-        const skus = value$1._0.map((line) => line.sku);
+        const skus = value._0.map((line) => line.sku);
         console.log(
           `placed [${skus.map((item) => $debugStr(item)).join(", ")}] for ${money(total)}`,
         );
       } else {
         console.log(
-          `refused: ${stockErrorDisplay_fmt(value$1._0)} (${stockErrorDebug_fmt(value$1._0)})`,
+          `refused: ${stockErrorDisplay_fmt(value._0)} (${stockErrorDebug_fmt(value._0)})`,
         );
       }
     } else {
-      console.log(`bad order: ${value._0}`);
+      console.log(`bad order: ${value$1._0}`);
     }
   }
 }
