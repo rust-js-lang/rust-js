@@ -534,15 +534,11 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// A std iterator of type `ty` made of `value`, an array or a text, as
-    /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
-    /// clone of it does (ADR 0181); another, the JS iterator of `value`.
     /// Whether std's iterator `ty` is a `$iter` of an array, as
     /// `std_iterator` makes it: an array's own, a string's `chars()`,
     /// `bytes()` or `split`, a `VecDeque`'s, a slice's `iter_mut()`, a
     /// `BTreeMap`'s, its `range()`'s too: one that steps from its back and
-    /// knows its length.
-    /// The one list.
+    /// knows its length. The one list.
     pub(super) fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
         self.array_source(ty).is_some()
             || self.recognition().is_str_chars(ty)
@@ -553,18 +549,18 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_tree_iter(ty)
     }
 
+    /// A std iterator of type `ty` made of `value`, an array or a text, as
+    /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
+    /// clone of it does (ADR 0181); another, the JS iterator of `value`.
     pub(super) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
-        match self.array_source(ty) {
-            Some(_) => match from_iterator(value) {
-                Ok(items) | Err(items) if !is_js_iterator(&items) => self.stepped_items(items),
-                Ok(items) | Err(items) => items,
-            },
-            None if is_js_iterator(&value) => value,
-            // An array made of it, `s.split(",")`'s, or one of those
-            // `steps_an_array` lists, a `VecDeque`'s say: a `$iter` of it,
-            // as of an array's.
-            None if made_array(&value) || self.steps_an_array(ty) => self.stepped_items(value),
-            None => self.js_iterator(value),
+        if is_js_iterator(&value) {
+            value
+        } else if made_array(&value) || self.steps_an_array(ty) {
+            // An array made of it, `s.split(",")`'s, or one `steps_an_array`
+            // lists, a `VecDeque`'s say: a `$iter` of it, as of an array's.
+            self.stepped_items(value)
+        } else {
+            self.js_iterator(value)
         }
     }
 
