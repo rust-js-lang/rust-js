@@ -3,7 +3,7 @@
 // here once, as Rust, not read from TypeScript's declarations: it's the
 // crate's own binding, kept by hand in this file, of eleven classes alike.
 //
-//   bun builtins/typed_arrays.ts
+//   bun builtins/typed_arrays.ts [out]   writes src/typed_arrays.rs, or `out`
 
 const ELEMENTS: [string, string][] = [
   ["Int8Array", "i8"], ["Uint8Array", "u8"], ["Uint8ClampedArray", "u8"], ["Int16Array", "i16"],
@@ -230,4 +230,4 @@ for (const [name, e] of ELEMENTS) {
   line("}");
 }
 
-await Bun.write(new URL("./src/typed_arrays.rs", import.meta.url), `${out.join("\n")}\n`);
+await Bun.write(process.argv[2] ?? new URL("./src/typed_arrays.rs", import.meta.url), `${out.join("\n")}\n`);

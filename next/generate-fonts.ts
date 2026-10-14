@@ -2,8 +2,7 @@
 // own declarations, as `scripts/update-google-fonts.js` generates them
 // (ADR 0359):
 //
-//   bun next/generate-fonts.ts          write it
-//   bun next/generate-fonts.ts --check  exit 1 where it isn't what's written
+//   bun next/generate-fonts.ts [out]   writes src/font/google.rs, or `out`
 //
 // A font's weights, styles, subsets and axes are each one enum of every
 // font's: Next.js's build refuses a value a font hasn't. A static font's
@@ -17,7 +16,7 @@ import { open } from "@rust-js/typescript";
 
 const next = join(import.meta.dir, "../examples/next/node_modules/next");
 const declarations = join(next, "dist/compiled/@next/font/dist/google/index.d.ts");
-const output = join(import.meta.dir, "src/font/google.rs");
+const output = process.argv[2] ?? join(import.meta.dir, "src/font/google.rs");
 const version = (JSON.parse(readFileSync(join(next, "package.json"), "utf8")) as { version: string }).version;
 
 type Type = { kind: string; value?: string; types?: Type[]; args?: Type[]; element?: Type; name?: string };
@@ -161,12 +160,5 @@ pub struct VariableFontWithoutAxes<'a> {
 ${fonts.map(font).join("\n\n")}
 `;
 
-if (process.argv.includes("--check")) {
-  if (readFileSync(output, "utf8") !== rust) {
-    console.error(`${output} isn't what next/generate-fonts.ts writes: run it`);
-    process.exit(1);
-  }
-} else {
-  writeFileSync(output, rust);
-  console.log(`${fonts.length} fonts: ${values.weight.size} weights, ${values.subsets.size} subsets, ${values.axes.size} axes`);
-}
+writeFileSync(output, rust);
+console.log(`${fonts.length} fonts: ${values.weight.size} weights, ${values.subsets.size} subsets, ${values.axes.size} axes`);

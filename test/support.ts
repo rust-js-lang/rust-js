@@ -25,6 +25,17 @@ export function run(cmd: string[], timeout = 600_000, env: Record<string, string
   return p.stdout;
 }
 
+/**
+ * What generator `script` writes, given `args` and then a scratch file to
+ * write to: the one way a generated file is checked against what's
+ * committed, without writing over it.
+ */
+export function generatorOutput(script: string, ...args: string[]): string {
+  const out = join(fixture(`generated-${script.replace(/\W/g, "-")}`), "out");
+  run([process.execPath, script, ...args, out]);
+  return readFileSync(out, "utf8");
+}
+
 let rustcVersion: string | undefined;
 
 /** What a kept native program was built from, beyond its key: each file

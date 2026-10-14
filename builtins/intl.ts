@@ -6,7 +6,7 @@
 // spec, not read from TypeScript's declarations: it's the crate's own
 // binding, kept by hand in this file, of a few hundred names alike.
 //
-//   bun builtins/intl.ts
+//   bun builtins/intl.ts [out]   writes src/intl.rs, or `out`
 
 const page = (path: string) => `https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/${path}`;
 const snake = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
@@ -368,4 +368,4 @@ formatter("Segmenter", "text split into what a locale sees as its letters, words
 ], { options: "SegmenterOptions" });
 
 close();
-await Bun.write(new URL("./src/intl.rs", import.meta.url), `${out.join("\n")}\n`);
+await Bun.write(process.argv[2] ?? new URL("./src/intl.rs", import.meta.url), `${out.join("\n")}\n`);

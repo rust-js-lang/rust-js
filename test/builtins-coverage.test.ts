@@ -8,7 +8,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { measure, render } from "../builtins/coverage";
-import { root } from "./support";
+import { generatorOutput, root } from "./support";
 
 const baseline = join(root, "builtins/coverage.txt");
 
@@ -26,23 +26,11 @@ test("the js crate binds what it bound of TypeScript's ES library", async () => 
 // The typed arrays are one shape over eleven element types, written once in
 // builtins/typed_arrays.ts: what's committed is what it writes.
 test("the typed arrays are what their template writes", () => {
-  const file = join(root, "builtins/src/typed_arrays.rs");
-  const committed = readFileSync(file, "utf8");
-  const p = Bun.spawnSync([process.execPath, join(root, "builtins/typed_arrays.ts")], { cwd: root });
-  expect(p.exitCode).toBe(0);
-  const written = readFileSync(file, "utf8");
-  writeFileSync(file, committed);
-  expect(written).toBe(committed);
+  expect(generatorOutput("builtins/typed_arrays.ts")).toBe(readFileSync(join(root, "builtins/src/typed_arrays.rs"), "utf8"));
 });
 
 // Intl's formatters and their options, written once in builtins/intl.ts:
 // what's committed is what it writes.
 test("Intl is what its template writes", () => {
-  const file = join(root, "builtins/src/intl.rs");
-  const committed = readFileSync(file, "utf8");
-  const p = Bun.spawnSync([process.execPath, join(root, "builtins/intl.ts")], { cwd: root });
-  expect(p.exitCode).toBe(0);
-  const written = readFileSync(file, "utf8");
-  writeFileSync(file, committed);
-  expect(written).toBe(committed);
+  expect(generatorOutput("builtins/intl.ts")).toBe(readFileSync(join(root, "builtins/src/intl.rs"), "utf8"));
 });

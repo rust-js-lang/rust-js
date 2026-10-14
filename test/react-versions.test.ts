@@ -15,7 +15,7 @@ import rustJs from "../vite-plugin/index.js";
 import { latest, releases } from "../react/cfg.js";
 import { bindings } from "../react/coverage";
 import versions from "../react/versions.json" with { type: "json" };
-import { buildCompiler, cargoApp, compiler, fixture, root, run, target } from "./support";
+import { buildCompiler, cargoApp, compiler, fixture, generatorOutput, root, run, target } from "./support";
 
 type Exports = Record<string, Record<string, { since: string; removed?: string }>>;
 const exports = versions.exports as Exports;
@@ -105,23 +105,17 @@ test("every export of the latest React is bound, or left out on purpose", () => 
 });
 
 test("elements.rs is what react/generate.ts makes of versions.json", () => {
-  const out = join(fixture("react-elements"), "elements.rs");
-  run(["bun", "react/generate.ts", "--elements", out]);
-  expect(readFileSync(out, "utf8")).toBe(readFileSync(join(root, "react/src/elements.rs"), "utf8"));
+  expect(generatorOutput("react/generate.ts", "--elements")).toBe(readFileSync(join(root, "react/src/elements.rs"), "utf8"));
 }, 60_000);
 
 // Each element's attributes, as @types/react types them (ADR 0208).
 test("attributes.rs is what react/attributes.ts makes of @types/react", () => {
-  const out = join(fixture("react-attributes"), "attributes.rs");
-  run(["bun", "react/attributes.ts", out]);
-  expect(readFileSync(out, "utf8")).toBe(readFileSync(join(root, "react/src/attributes.rs"), "utf8"));
+  expect(generatorOutput("react/attributes.ts")).toBe(readFileSync(join(root, "react/src/attributes.rs"), "utf8"));
 }, 60_000);
 
 // The strings an attribute of a few takes, which JSX checks a literal against (ADR 0228).
 test("literals.rs is what react/literals.ts makes of @types/react", () => {
-  const out = join(fixture("react-literals"), "literals.rs");
-  run(["bun", "react/literals.ts", out]);
-  expect(readFileSync(out, "utf8")).toBe(readFileSync(join(root, "src/jsx_syntax/literals.rs"), "utf8"));
+  expect(generatorOutput("react/literals.ts")).toBe(readFileSync(join(root, "src/jsx_syntax/literals.rs"), "utf8"));
 }, 60_000);
 
 // A program for React 18.2 can't use what React 19.2 added: it's a compile
