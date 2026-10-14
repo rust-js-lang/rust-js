@@ -17,7 +17,13 @@ use crate::settings::Settings;
 /// stdin, writing what it lays out on its stdout: for each file, its text,
 /// or `null` where Prettier finds no config for it, or where the app has no
 /// Prettier; and the configs it read.
-const LAY_OUT: &str = r#"let prettier;
+const LAY_OUT: &str = r#"// A session that doesn't finish says where it was, not hangs its build.
+let at = "importing prettier";
+setTimeout(() => {
+  process.stderr.write(`no answer in 60 s, ${at}\n`);
+  process.exit(3);
+}, 60_000).unref();
+let prettier;
 try {
   // Prettier 3's API is its module's; Prettier 2's, CommonJS, its `default`.
   const module = await import("prettier");
@@ -25,11 +31,13 @@ try {
 } catch (error) {
   if (error?.code !== "ERR_MODULE_NOT_FOUND" || !String(error.message).includes("'prettier'")) throw error;
 }
+at = "reading the files";
 let input = "";
 for await (const chunk of process.stdin) input += chunk;
 const texts = [];
 const configs = new Set();
 for (const { file, code } of JSON.parse(input)) {
+  at = `laying out ${file}`;
   const config = prettier && (await prettier.resolveConfigFile(file));
   if (!config) {
     texts.push(null);
