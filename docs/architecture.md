@@ -192,7 +192,9 @@ knows (`display::Writing`), what walks of types found (`TypeWalks`), the
 recursive types being cloned (`cloning`), and what's dropped where
 (`drops::DropState`). A body lowered from its MIR has a state of its own
 beside it, `mir::State`: its temporaries, labels, captures, drop flags
-and the places its `&mut`s are to.
+and the places its `&mut`s are to. It's `mir.rs`'s: a module of `mir/`
+touches only the fields the architecture test lists for it, `drops.rs` its
+flags and what's made before one is set, `writer.rs` a writer's string.
 
 State follows three lifetimes:
 

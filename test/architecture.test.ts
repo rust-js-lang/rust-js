@@ -385,6 +385,29 @@ test("each group of a function's state is read and written by its owner", () => 
   expect(strays).toEqual([]);
 });
 
+// MIR's lowering of a body keeps its state in `State`, mir.rs's own: a
+// module of `mir/` that reads or changes a field of it is listed here, with
+// the fields it may (the second review). One unlisted is one whose reader
+// must hold all of mir.rs to know what it changes.
+const mirState: Record<string, string[]> = {
+  "src/lower/mir/drops.rs": ["body", "drops", "flags", "branches", "pending"],
+  "src/lower/mir/writer.rs": ["body", "writer", "builders", "built"],
+  "src/lower/mir/hints.rs": ["locals", "captures"],
+  "src/lower/mir/std_calls.rs": ["body", "locals"],
+};
+test("each module of mir/ reads only the fields of mir.rs's state it's listed for", () => {
+  const mir = read("src/lower/mir.rs");
+  const struct = mir.slice(mir.indexOf("struct State<"), mir.indexOf("\n}\n", mir.indexOf("struct State<")));
+  const fields = [...struct.matchAll(/^    ([a-z_]+):/gm)].map((m) => m[1]);
+  const found: Record<string, string[]> = {};
+  for (const file of files("src/lower/mir")) {
+    const used = fields.filter((field) => new RegExp(`\\bstate\\s*\\.\\s*${field}\\b`).test(read(file)));
+    if (used.length > 0) found[file] = used;
+  }
+  const sorted = (map: Record<string, string[]>) => Object.fromEntries(Object.entries(map).map(([f, u]) => [f, [...u].sort()]).sort());
+  expect(sorted(found)).toEqual(sorted(mirState));
+});
+
 // A JS form rust-js writes for one concept is written by the module that
 // owns it, which the rest ask: a generic iterator as a JS iterator, a
 // stepped one's `$iter`, and the box of a `Some` that looks like `None`.
