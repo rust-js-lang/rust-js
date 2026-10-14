@@ -180,7 +180,7 @@ fn header(module: &Module) -> String {
         let names = clause_of(&mut package.named.iter());
         let names = (!names.is_empty()).then(|| format!("{{ {} }}", names.join(", ")));
         let clause: Vec<String> = package.default.iter().cloned().chain(names).collect();
-        let relative = package.from.starts_with('.');
+        let relative = crate::paths::is_relative_specifier(&package.from);
         if !clause.is_empty() {
             let line = import_line(&clause.join(", "), &package.from);
             named.push((relative, &package.from, line));
@@ -204,7 +204,7 @@ fn header(module: &Module) -> String {
             (None, _) => format!("{{ {} }}", names.join(", ")),
         };
         let line = import_line(&clause, &import.from);
-        named.push((import.from.starts_with('.'), &import.from, line));
+        named.push((crate::paths::is_relative_specifier(&import.from), &import.from, line));
     }
     named.sort_by(|a, b| (a.0, a.1).cmp(&(b.0, b.1)));
     let runtime =

@@ -18,4 +18,12 @@ export const mutations: Mutation[] = [
     replace: "        std::path::absolute(path).map_err(|e| e.to_string())",
     tests: ["test/emission.test.ts", "-t", "an output map symlink cannot overwrite an input source"],
   },
+  {
+    name: "specifier-beside-bare",
+    breaks: "a file beside the module is named bare, `wave.js`, which JS reads as a package",
+    file: "src/paths.rs",
+    find: "    } else {\n        format!(\"./{path}\")\n    }\n",
+    replace: "    } else {\n        path\n    }\n",
+    tests: ["test/snapshots.test.ts", "-t", "imports"],
+  },
 ];

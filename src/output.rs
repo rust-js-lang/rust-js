@@ -315,12 +315,7 @@ impl OutputPlan {
     /// `to`, a file, as module `from`'s file imports it: `./a.js`,
     /// `../../b.js`. The one way a specifier of a file is made.
     fn file_specifier(&self, from: &[String], to: &std::path::Path) -> String {
-        let path = relative(parent_dir(&self.js_path(from)), to);
-        if path.starts_with("../") {
-            path
-        } else {
-            format!("./{path}")
-        }
+        crate::paths::specifier(parent_dir(&self.js_path(from)), to)
     }
 
     /// A relative module `specifier` a binding names, `#[link_name]`'s,
@@ -328,7 +323,7 @@ impl OutputPlan {
     /// file imports it: `./greet.js` is `../greet.js` one down. A package's
     /// name stays as it is.
     fn linked_specifier(&self, from: &[String], specifier: &str) -> String {
-        if !specifier.starts_with("./") && !specifier.starts_with("../") {
+        if !crate::paths::is_relative_specifier(specifier) {
             return specifier.to_string();
         }
         let dir = parent_dir(&self.output);
@@ -583,7 +578,7 @@ fn links(artifacts: &[Artifact], file: &std::path::Path, declarations: bool) -> 
     let code = std::str::from_utf8(&artifact.bytes).map_err(|e| e.to_string())?;
     to_oxc::module_specifiers(code, declarations)?
         .into_iter()
-        .filter(|(_, _, specifier)| specifier.starts_with("./") || specifier.starts_with("../"))
+        .filter(|(_, _, specifier)| crate::paths::is_relative_specifier(specifier))
         .map(|(start, end, specifier)| {
             let file = specifier_file(parent_dir(file), &specifier)?;
             Ok(manifest::Link { start, end, file })

@@ -131,14 +131,7 @@ impl Dependencies {
                     return Err("dependency module is not a fingerprinted artifact".into());
                 }
                 let imported = Imported {
-                    from: {
-                        let relative = crate::paths::relative(parent, &module.file);
-                        if relative.starts_with("../") || relative.starts_with("./") {
-                            relative
-                        } else {
-                            format!("./{relative}")
-                        }
-                    },
+                    from: crate::paths::specifier(parent, &module.file),
                     export: item.export,
                     member: item.member,
                     drops: item.drops,

@@ -33,6 +33,23 @@ pub(crate) fn relative_resolved(from: &Path, to: &Path) -> String {
     relative.to_string_lossy().into_owned()
 }
 
+/// `to` as a JS module in directory `from` imports it: `./util.js`,
+/// `../lib.js`. The one way a specifier of a file is written.
+pub(crate) fn specifier(from: &Path, to: &Path) -> String {
+    let path = relative(from, to);
+    if path.starts_with("../") {
+        path
+    } else {
+        format!("./{path}")
+    }
+}
+
+/// Whether a module specifier names a file, `./util.js`, `../lib.js`, and
+/// not a package, `react`.
+pub(crate) fn is_relative_specifier(specifier: &str) -> bool {
+    specifier.starts_with("./") || specifier.starts_with("../")
+}
+
 /// The file a relative `specifier`, `../util.js`, names from `dir`: each
 /// `.` and `..` of it taken as written, as JS resolves it, then `absolute`.
 pub(crate) fn specifier_file(dir: &Path, specifier: &str) -> Result<PathBuf, String> {
