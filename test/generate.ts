@@ -101,11 +101,13 @@ export type Expr =
   | { kind: "loop"; ty: Ty; counter: string; n: number; c: Expr; value: Expr }
   | { kind: "imatch"; ty: Ty; scrut: Expr; arms: { pat: string; bind?: string; guard?: Expr; value: Expr }[]; other: Expr };
 
-export type Step = { op: "map"; body: Expr } | { op: "filter"; body: Expr } | { op: "take" | "skip"; n: number };
+// A closure's parameters keep the names they were made with, so a chain in
+// another's closure never takes the outer's name for its own.
+export type Step = { op: "map" | "filter"; x: string; body: Expr } | { op: "take" | "skip"; n: number };
 export type End =
   | { op: "collect" | "sum" | "count" | "max" | "min" | "last" | "next" }
-  | { op: "any" | "all"; body: Expr }
-  | { op: "fold"; init: Expr; body: Expr };
+  | { op: "any" | "all"; x: string; body: Expr }
+  | { op: "fold"; init: Expr; x: string; acc: string; body: Expr };
 
 export type Stmt =
   | { kind: "let"; name: string; ty: Ty; value: Expr }
@@ -413,8 +415,7 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
   const closure = (elem: IntTy, result: Ty, acc = false) => {
     const x = `x${r.int(1_000_000)}`, a = `acc${r.int(1_000_000)}`;
     const bound = [...captures, { name: x, ty: elem, mutable: false }, ...(acc ? [{ name: a, ty: elem, mutable: false }] : [])];
-    const body = substitute(expr(r, result, bound, depth - 1), x);
-    return acc ? substitute(body, a, "acc") : body;
+    return { x, acc: a, body: expr(r, result, bound, depth - 1) };
   };
   let elem: IntTy;
   let end: End;
@@ -426,20 +427,29 @@ function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined
     end = { op: r.pick(["max", "min", "last", "next"] as const) };
   } else if (ty === "bool") {
     elem = r.pick(intTypes);
-    end = { op: r.pick(["any", "all"] as const), body: closure(elem, "bool") };
+    const { x, body } = closure(elem, "bool");
+    end = { op: r.pick(["any", "all"] as const), x, body };
   } else if (ty === "u32" && r.chance(0.3)) {
     elem = r.pick(intTypes);
     end = { op: "count" };
   } else if (isInt(ty)) {
     elem = ty;
-    end = r.chance(0.5) ? { op: "sum" } : { op: "fold", init: expr(r, ty, scope, 1), body: closure(ty, ty, true) };
+    if (r.chance(0.5)) {
+      end = { op: "sum" };
+    } else {
+      const init = expr(r, ty, scope, 1);
+      const { x, acc, body } = closure(ty, ty, true);
+      end = { op: "fold", init, x, acc, body };
+    }
   } else {
     return undefined;
   }
   const steps: Step[] = Array.from({ length: r.int(4) }, (): Step => {
     const op = r.pick(["map", "map", "filter", "filter", "take", "skip"] as const);
-    if (op === "map") return { op, body: closure(elem, elem) };
-    if (op === "filter") return { op, body: closure(elem, "bool") };
+    if (op === "map" || op === "filter") {
+      const { x, body } = closure(elem, op === "map" ? elem : "bool");
+      return { op, x, body };
+    }
     return { op, n: r.int(4) };
   });
   return { kind: "chain", ty, elem, source: expr(r, `Vec<${elem}>`, scope, depth - 1), rev: r.chance(0.3), steps, end };
@@ -680,21 +690,18 @@ function show(e: Expr): string {
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
     case "loop":
-      return `({ let mut ${e.counter} = 0u32; loop { ${e.counter} += 1; if ${e.counter} > id(${e.n}u32) || ${show(e.c)} { break ${show(e.value)}; } } })`;
+      return `({ let mut ${e.counter}: u32 = 0; loop { ${e.counter} += 1; if ${e.counter} > id(${e.n}u32) || ${show(e.c)} { break ${show(e.value)}; } } })`;
     case "imatch": {
-      const t = e.scrut.ty;
-      const arms = e.arms.map((arm) => {
-        const pat = arm.bind ? arm.pat : arm.pat.replace(/-?\d+/g, (n) => `${n}${t}`);
-        return `${pat}${arm.guard ? ` if ${show(arm.guard)}` : ""} => ${show(arm.value)}, `;
-      });
+      // A pattern's values are of the scrutinee's type, which says so.
+      const arms = e.arms.map((arm) => `${arm.pat}${arm.guard ? ` if ${show(arm.guard)}` : ""} => ${show(arm.value)}, `);
       return `(match ${show(e.scrut)} { ${arms.join("")}_ => ${show(e.other)} })`;
     }
     case "chain": {
       const t = e.elem;
       const steps = e.steps.map((step) => {
-        if (step.op === "map") return `.map(move |x: ${t}| -> ${t} { ${show(step.body)} })`;
-        if (step.op === "filter") return `.filter(move |&x: &${t}| ${show(step.body)})`;
-        return `.${step.op}(id(${step.n}usize))`;
+        if ("n" in step) return `.${step.op}(id(${step.n}usize))`;
+        if (step.op === "map") return `.map(move |${step.x}: ${t}| -> ${t} { ${show(step.body)} })`;
+        return `.filter(move |&${step.x}: &${t}| ${show(step.body)})`;
       });
       const end = e.end;
       const tail =
@@ -705,9 +712,9 @@ function show(e: Expr): string {
             : end.op === "count"
               ? ".count() as u32"
               : end.op === "any" || end.op === "all"
-                ? `.${end.op}(move |x: ${t}| ${show(end.body)})`
+                ? `.${end.op}(move |${end.x}: ${t}| ${show(end.body)})`
                 : end.op === "fold"
-                  ? `.fold(${show(end.init)}, move |acc: ${t}, x: ${t}| -> ${t} { ${show(end.body)} })`
+                  ? `.fold(${show(end.init)}, move |${end.acc}: ${t}, ${end.x}: ${t}| -> ${t} { ${show(end.body)} })`
                   : `.${end.op}()`;
       return `(${show(e.source)}.into_iter()${e.rev ? ".rev()" : ""}${steps.join("")}${tail})`;
     }
@@ -884,7 +891,7 @@ function lines(stmts: Stmt[], indent: string): string[] {
         return [`${indent}if let E::B(${s.name}) = ${show(s.value)} {`, ...nested(s.then), `${indent}} else {`, ...nested(s.else), `${indent}}`];
       case "while":
         return [
-          `${indent}let mut ${s.counter} = 0u32;`,
+          `${indent}let mut ${s.counter}: u32 = 0;`,
           `${indent}while ${s.counter} < id(${s.n}u32) && ${show(s.c)} {`,
           `${indent}    ${s.counter} += 1;`,
           ...nested(s.body),
