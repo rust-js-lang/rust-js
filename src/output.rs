@@ -60,16 +60,7 @@ impl OutputPlan {
             };
             let imports = specified(&module.imports);
             let reexports = specified(&module.reexports);
-            // A relative module in `#[link_name]` is relative to the root's
-            // file (ADR 0028), so a file in a subdirectory climbs up to it.
-            let dir = &module.path[..module.path.len().saturating_sub(1)];
-            let located = |from: &str| {
-                if self.located.contains_key(&module.path) {
-                    self.relative_specifier(&module.path, &parent_dir(&self.output).join(from), from)
-                } else {
-                    relocate(from, dir)
-                }
-            };
+            let located = |from: &str| self.linked_specifier(&module.path, from);
             let packages = module
                 .packages
                 .into_iter()
@@ -316,45 +307,15 @@ impl OutputPlan {
     }
 
     /// The import specifier, in module `from`'s file, for module `to`'s file:
-    /// `./util.js`, `../lib.js`. Computed from module paths alone, since the
-    /// target file may not have been written yet.
+    /// `./util.js`, `../lib.js`, by where each is written, whether or not
+    /// it has been yet.
     fn specifier(&self, from: &[String], to: &[String]) -> String {
-        if self.located.contains_key(from) || self.located.contains_key(to) {
-            let to_file = self.js_path(to);
-            return self.relative_specifier(from, &to_file, "./");
-        }
-        // A module's file sits in the directory named by all but the last
-        // segment of its path; the root's file is in the top directory.
-        let dir = |path: &[String]| path.len().saturating_sub(1);
-        let (from_dir, to_dir) = (&from[..dir(from)], &to[..dir(to)]);
-        let common = from_dir.iter().zip(to_dir).take_while(|(a, b)| a == b).count();
-        let file = self
-            .js_path(to)
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .into_owned();
-        let mut specifier = if from_dir.len() == common {
-            "./".to_string()
-        } else {
-            "../".repeat(from_dir.len() - common)
-        };
-        for segment in &to_dir[common..] {
-            specifier.push_str(segment);
-            specifier.push('/');
-        }
-        specifier.push_str(&file);
-        specifier
+        self.file_specifier(from, &self.js_path(to))
     }
-}
 
-impl OutputPlan {
-    /// `to`, seen from module `from`'s file: `./a.js`, `../../b.js`, a
-    /// relative `specifier` as written where `to` is no file of the crate's.
-    fn relative_specifier(&self, from: &[String], to: &std::path::Path, specifier: &str) -> String {
-        if !specifier.starts_with("./") && !specifier.starts_with("../") {
-            return specifier.to_string();
-        }
+    /// `to`, a file, as module `from`'s file imports it: `./a.js`,
+    /// `../../b.js`. The one way a specifier of a file is made.
+    fn file_specifier(&self, from: &[String], to: &std::path::Path) -> String {
         let path = relative(parent_dir(&self.js_path(from)), to);
         if path.starts_with("../") {
             path
@@ -362,29 +323,18 @@ impl OutputPlan {
             format!("./{path}")
         }
     }
-}
 
-/// A module specifier, as seen from directory `dir` below the root's file:
-/// `./greet.js` is `../greet.js` one down, and `./inner/wave.js` is
-/// `./wave.js` in `inner`, as a person writes it. Package names stay as they
-/// are.
-fn relocate(specifier: &str, dir: &[String]) -> String {
-    if !specifier.starts_with("./") && !specifier.starts_with("../") {
-        return specifier.to_string();
-    }
-    let parts: Vec<&str> = specifier.split('/').filter(|part| *part != ".").collect();
-    // The file's own name stays: `./inner` seen from `inner` is `../inner`.
-    let common = dir
-        .iter()
-        .zip(&parts[..parts.len() - 1])
-        .take_while(|(d, p)| d == p)
-        .count();
-    let up = "../".repeat(dir.len() - common);
-    let rest = parts[common..].join("/");
-    if up.is_empty() && !rest.starts_with("../") {
-        format!("./{rest}")
-    } else {
-        format!("{up}{rest}")
+    /// A relative module `specifier` a binding names, `#[link_name]`'s,
+    /// which is relative to the root's file (ADR 0028), as module `from`'s
+    /// file imports it: `./greet.js` is `../greet.js` one down. A package's
+    /// name stays as it is.
+    fn linked_specifier(&self, from: &[String], specifier: &str) -> String {
+        if !specifier.starts_with("./") && !specifier.starts_with("../") {
+            return specifier.to_string();
+        }
+        let dir = parent_dir(&self.output);
+        let file = specifier_file(dir, specifier).unwrap_or_else(|_| dir.join(specifier));
+        self.file_specifier(from, &file)
     }
 }
 
