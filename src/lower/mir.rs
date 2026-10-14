@@ -1692,7 +1692,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && let Some(yes) = otherwise
                     && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)
                 {
-                    *test = negate(std::mem::replace(test, Expr::undefined()));
+                    *test = std::mem::replace(test, Expr::undefined()).negated_test();
                     otherwise = Some(std::mem::replace(target, yes));
                 }
                 let mut chain_panics = otherwise.is_some_and(|b| panics(state.body, b));
@@ -4015,7 +4015,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             Value::Branch(tried, tried_ty) => {
                 let failed = self.branch_failed(tried.clone(), *tried_ty);
                 Ok(match value {
-                    0 => negate(failed),
+                    0 => failed.negated_test(),
                     _ => failed,
                 })
             }
@@ -5807,14 +5807,6 @@ fn root_var(place: &Expr) -> Option<&str> {
     }
 }
 
-/// `!test`, of a test that's a `bool`: `!!t` is `t`.
-fn negate(test: Expr) -> Expr {
-    match test.kind {
-        js::ExprKind::Unary(js::UnaryOp::Not, inner) => *inner,
-        _ => Expr::unary(js::UnaryOp::Not, test),
-    }
-}
-
 /// `if (test) { then } else { otherwise }`, written with the branch that
 /// returns or throws first and the other after it, as a person writes an
 /// early exit: the same, as that branch never goes on. Of two that do, the
@@ -5836,7 +5828,7 @@ fn early_exit(
     };
     match otherwise {
         Some(otherwise) if panics == [false, true] => {
-            early_exit(negate(test), otherwise, Some(then), [true, false], span)
+            early_exit(test.negated_test(), otherwise, Some(then), [true, false], span)
         }
         Some(otherwise) if panics == [true, false] || exits(&then) => {
             let mut out = vec![StmtKind::If(test, then, None).at(span)];
@@ -5844,7 +5836,7 @@ fn early_exit(
             out
         }
         Some(otherwise) if exits(&otherwise) => {
-            let mut out = vec![StmtKind::If(negate(test), otherwise, None).at(span)];
+            let mut out = vec![StmtKind::If(test.negated_test(), otherwise, None).at(span)];
             out.extend(then);
             out
         }

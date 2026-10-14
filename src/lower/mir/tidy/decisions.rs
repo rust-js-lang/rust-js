@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
 
-use super::{ends, first_written, names_break, not};
+use super::{ends, first_written, names_break};
 
 /// More leaves than a match a person writes has: a tree of tests that
 /// aren't one.
@@ -230,7 +230,13 @@ fn walk<'s>(
             if let Some(otherwise) = otherwise {
                 no.push(otherwise);
             }
-            walk(no, [tests, vec![not(test.clone())]].concat(), label, leaves, tested)
+            walk(
+                no,
+                [tests, vec![test.clone().negated_test()]].concat(),
+                label,
+                leaves,
+                tested,
+            )
         }
         StmtKind::Break(Some(l)) if l == label => {
             leaves.push(Leaf {
@@ -593,7 +599,7 @@ fn render(subject: &Expr, set: &Set) -> Expr {
     // A number's comparisons are false of `NaN`; one where it passes is
     // `!` of those of the others.
     if set.nan {
-        return not(any(other.pieces.iter().map(|p| p.render(subject)).collect()));
+        return any(other.pieces.iter().map(|p| p.render(subject)).collect()).negated_test();
     }
     let failing = || match set.kind {
         Kind::Num => None,

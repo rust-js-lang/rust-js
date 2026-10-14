@@ -7,7 +7,6 @@ use std::collections::{HashMap, HashSet};
 
 use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends, names_break};
 
-use super::negate;
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};
 
 mod bindings;
@@ -439,7 +438,7 @@ fn written_first(stmts: &mut [Stmt]) {
         {
             rest.pop();
         }
-        *body = vec![StmtKind::If(not(test), rest, Some(then)).at(first.span)];
+        *body = vec![StmtKind::If(test.negated_test(), rest, Some(then)).at(first.span)];
     }
 }
 

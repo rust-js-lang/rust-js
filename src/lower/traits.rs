@@ -1596,7 +1596,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             } else {
                 self.eq_value(a, b, tr.self_ty(), span, out)?
             };
-            return Ok(Some(if negate { super::std_impls::negate(eq) } else { eq }));
+            return Ok(Some(if negate { Expr::unary(js::UnaryOp::Not, eq) } else { eq }));
         }
         // `a < b`, `a.cmp(&b)`, `a.max(b)` (ADR 0057). Of numbers, they're
         // std's operators and `Math.max`, as before.

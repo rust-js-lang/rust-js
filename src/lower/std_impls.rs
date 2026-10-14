@@ -922,14 +922,3 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         Ok(Expr::arrow(vec!["a".into(), "b".into()], body))
     }
 }
-
-/// `!(a == b)`, as JS writes it: `a !== b` for `a === b`.
-pub(super) fn negate(eq: Expr) -> Expr {
-    match eq.kind {
-        js::ExprKind::Binary(Op::Eq, a, b) => Expr::bin(Op::Ne, *a, *b),
-        js::ExprKind::Binary(Op::LooseEq, a, b) => Expr::bin(Op::LooseNe, *a, *b),
-        js::ExprKind::Binary(Op::Ne, a, b) => Expr::bin(Op::Eq, *a, *b),
-        js::ExprKind::Binary(Op::LooseNe, a, b) => Expr::bin(Op::LooseEq, *a, *b),
-        _ => Expr::unary(UnaryOp::Not, eq),
-    }
-}

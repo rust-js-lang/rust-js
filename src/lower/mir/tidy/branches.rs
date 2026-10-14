@@ -286,7 +286,9 @@ pub(super) fn branch_values(
         let span = stmt.span;
         let kind = std::mem::replace(&mut stmt.kind, StmtKind::Break(None));
         stmt.kind = match kind {
-            StmtKind::If(test, then, Some(otherwise)) if then.is_empty() => StmtKind::If(not(test), otherwise, None),
+            StmtKind::If(test, then, Some(otherwise)) if then.is_empty() => {
+                StmtKind::If(test.negated_test(), otherwise, None)
+            }
             // `if (a) { break l; } else if (b) { break l; }`, an or-pattern's
             // tests: `if (a || b) { break l; }`.
             StmtKind::If(a, then, Some(mut otherwise))
@@ -362,7 +364,7 @@ pub(super) fn branch_values(
                     _ => matches!((first_written(then), first_written(otherwise)), (Some(t), Some(o)) if o < t),
                 };
                 let value = match no_first {
-                    true => conditional(not(test.clone()), no.clone(), yes.clone(), booleans),
+                    true => conditional(test.clone().negated_test(), no.clone(), yes.clone(), booleans),
                     false => conditional(test.clone(), yes.clone(), no.clone(), booleans),
                 };
                 StmtKind::Assign(Expr::var(x), value)
@@ -378,7 +380,7 @@ pub(super) fn branch_values(
                     .expect("one");
                 match then.is_empty() {
                     true => StmtKind::If(test, otherwise, None),
-                    false => StmtKind::If(not(test), then, Some(otherwise)),
+                    false => StmtKind::If(test.negated_test(), then, Some(otherwise)),
                 }
             }
             StmtKind::Labeled(label, body) => match chain(&body, &label) {
@@ -449,7 +451,7 @@ pub(super) fn branch_values(
             .expect("one");
         let (span, guard) = (last_if.span, stmts.pop().expect("the return"));
         stmts.pop();
-        stmts.push(StmtKind::If(not(test), vec![guard], None).at(span));
+        stmts.push(StmtKind::If(test.negated_test(), vec![guard], None).at(span));
         stmts.extend(body);
     }
 }
@@ -668,11 +670,14 @@ pub(super) fn negated_bools(e: Expr, booleans: &HashSet<String>) -> Expr {
         }
         ExprKind::Unary(UnaryOp::Not, x) if is_boolean(&x, booleans) => *x,
         ExprKind::Unary(UnaryOp::Not, x) => Expr::unary(UnaryOp::Not, Expr::unary(UnaryOp::Not, *x)),
-        kind => negate(Expr {
-            reads: false,
-            kind,
-            span: e.span,
-        }),
+        kind => Expr::unary(
+            UnaryOp::Not,
+            Expr {
+                reads: false,
+                kind,
+                span: e.span,
+            },
+        ),
     }
 }
 
@@ -697,7 +702,7 @@ pub(super) fn chained_checks(stmts: &mut [Stmt]) {
         let StmtKind::If(test, throw, None) = check.kind else {
             unreachable!("matched")
         };
-        *otherwise = vec![StmtKind::If(not(test), rest, Some(throw)).at(check.span)];
+        *otherwise = vec![StmtKind::If(test.negated_test(), rest, Some(throw)).at(check.span)];
     }
 }
 
@@ -735,7 +740,7 @@ pub(super) fn written_chains(stmts: &mut [Stmt]) {
         let StmtKind::If(test, then, Some(otherwise)) = std::mem::replace(&mut stmt.kind, StmtKind::Break(None)) else {
             unreachable!("matched")
         };
-        stmt.kind = StmtKind::If(not(test), otherwise, Some(then));
+        stmt.kind = StmtKind::If(test.negated_test(), otherwise, Some(then));
     }
 }
 
@@ -819,26 +824,6 @@ pub(super) fn or_all(a: Expr, b: Expr) -> Expr {
     }
 }
 
-/// `!e`, an `if`'s test, as a person writes it: `!!a` is `a`, `!(a === b)`
-/// `a !== b`, and `!(a && b)` `!a || !b`, whose truth is the same.
-pub(super) fn not(e: Expr) -> Expr {
-    match e.kind {
-        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => {
-            let flipped = if op == Op::And { Op::Or } else { Op::And };
-            Expr::bin(flipped, not(*a), not(*b))
-        }
-        ExprKind::Unary(UnaryOp::Not, inner) => *inner,
-        kind => Expr::unary(
-            UnaryOp::Not,
-            Expr {
-                reads: false,
-                kind,
-                span: e.span,
-            },
-        ),
-    }
-}
-
 /// Of `if (b) { x = t; break l; }`, nested: its tests, `x` and `t`.
 pub(super) fn inner_chain(stmts: &[Stmt], label: &str) -> Option<(Vec<Expr>, String, Expr)> {
     match stmts {
@@ -879,7 +864,7 @@ pub(super) fn conditional(test: Expr, yes: Expr, no: Expr, booleans: &HashSet<St
     // `!!a` of a value's `!a`.
     let negate = |test: Expr| match test.kind {
         ExprKind::Binary(Op::And | Op::Or, ..) => negated_bools(test, booleans),
-        _ => negate(test),
+        _ => test.negated_test(),
     };
     match (&yes.kind, &no.kind) {
         (ExprKind::Bool(true), ExprKind::Bool(false)) => truth(test),
@@ -1169,7 +1154,7 @@ pub(super) fn or_tests(stmts: &mut Vec<Stmt>) {
                 && !declared(body).any(|name| declared(rest).any(|n| n == name)))
             .then(|| {
                 let test = (tests.iter())
-                    .map(|t| not((*t).clone()))
+                    .map(|t| (*t).clone().negated_test())
                     .reduce(|a, b| Expr::bin(Op::Or, a, b))
                     .expect("two");
                 (test, body.to_vec())

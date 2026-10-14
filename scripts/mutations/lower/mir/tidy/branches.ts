@@ -6,7 +6,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-empty-then-kept",
     breaks: "`if (c) {} else { s }` stays, not `if (!c) { s }`",
     file: "src/lower/mir/tidy/branches.rs",
-    find: "            StmtKind::If(test, then, Some(otherwise)) if then.is_empty() => StmtKind::If(not(test), otherwise, None),\n",
+    find: "            StmtKind::If(test, then, Some(otherwise)) if then.is_empty() => {\n                StmtKind::If(test.negated_test(), otherwise, None)\n            }\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","branches from MIR read"],
   },
@@ -25,14 +25,6 @@ export const mutations: Mutation[] = [
     find: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label) => {\n",
     replace: "            StmtKind::Labeled(label, body) if let Some((tests, otherwise, then)) = or_chain(&body, &label).filter(|_| false) => {\n",
     tests: ["test/lowering.test.ts","-t","react.dev's Console clears its logs"],
-  },
-  {
-    name: "mir-tidy-not-de-morgan",
-    breaks: "`!(a && b)` of `bool`s stays, not `!a || !b`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "            Expr::bin(flipped, not(*a), not(*b))\n",
-    replace: "            Expr::unary(UnaryOp::Not, Expr::bin(op, *a, *b))\n",
-    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
   },
   {
     name: "mir-tidy-cond-false-kept",
@@ -254,7 +246,7 @@ export const mutations: Mutation[] = [
     "name": "or-branches-reversed",
     "breaks": "`if a || b { x } else { y }` from MIR is `!a && !b ? y : x`",
     "file": "src/lower/mir/tidy/branches.rs",
-    "find": "                    true => conditional(not(test.clone()), no.clone(), yes.clone(), booleans),\n",
+    "find": "                    true => conditional(test.clone().negated_test(), no.clone(), yes.clone(), booleans),\n",
     "replace": "                    true => conditional(test.clone(), yes.clone(), no.clone(), booleans),\n",
     "tests": [
       "test/lowering.test.ts",
@@ -445,13 +437,5 @@ export const mutations: Mutation[] = [
     find: "    let text = |x: &Expr| matches!(x.kind, ExprKind::Str(_));\n",
     replace: "    let text = |_: &Expr| false;\n",
     tests: ["test/snapshots.test.ts", "-t", "lexer"],
-  },
-  {
-    name: "mir-tidy-not-of-booleans-only",
-    breaks: "`!(a !== b && c)` of a test not all `bool`s stays, not `a === b || !c`",
-    file: "src/lower/mir/tidy/branches.rs",
-    find: "fn not(e: Expr) -> Expr {\n    match e.kind {\n        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => {\n",
-    replace: "fn not(e: Expr) -> Expr {\n    match e.kind {\n        ExprKind::Binary(op @ (Op::And | Op::Or), a, b) if is_boolean(&a, &HashSet::new()) && is_boolean(&b, &HashSet::new()) => {\n",
-    tests: ["test/lowering.test.ts", "-t", "De Morgan"],
   },
 ];

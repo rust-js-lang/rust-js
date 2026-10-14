@@ -289,7 +289,7 @@ pub(super) fn while_tests(stmts: &mut Vec<Stmt>, loops: &[(js::Span, bool, Optio
             }
             stmts[i] = StmtKind::While {
                 label,
-                cond: not(test),
+                cond: test.negated_test(),
                 body: body.collect(),
             }
             .at(span);

@@ -64,7 +64,7 @@ pub(super) fn early_breaks(stmts: &mut [Stmt]) {
             unreachable!("matched")
         };
         then.pop();
-        body.push(StmtKind::If(not(test), vec![StmtKind::Break(None).at(span)], None).at(span));
+        body.push(StmtKind::If(test.negated_test(), vec![StmtKind::Break(None).at(span)], None).at(span));
         body.extend(then);
     }
 }
@@ -167,11 +167,11 @@ pub(super) fn early_return(stmt: &mut Stmt) -> Option<Option<Stmt>> {
         then.pop();
     }
     if after {
-        body.push(StmtKind::If(not(test), vec![StmtKind::Break(None).at(span)], None).at(span));
+        body.push(StmtKind::If(test.negated_test(), vec![StmtKind::Break(None).at(span)], None).at(span));
         body.extend(then);
         return Some(Some(exit));
     }
-    body.push(StmtKind::If(not(test), vec![exit], None).at(span));
+    body.push(StmtKind::If(test.negated_test(), vec![exit], None).at(span));
     body.extend(then);
     Some(None)
 }
@@ -199,7 +199,7 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
         then.pop();
         match (then.is_empty(), rest.is_empty()) {
             (true, true) => {}
-            (true, false) => stmts.push(StmtKind::If(not(test), rest, None).at(span)),
+            (true, false) => stmts.push(StmtKind::If(test.negated_test(), rest, None).at(span)),
             (false, true) => stmts.push(StmtKind::If(test, then, None).at(span)),
             (false, false) => stmts.push(StmtKind::If(test, then, Some(rest)).at(span)),
         }
@@ -236,7 +236,7 @@ pub(super) fn tail_returns(stmts: &mut Vec<Stmt>, returns: &[js::Span]) {
                 stmts.push(then.next().expect("the binding"));
                 Expr::bin(Op::LooseEq, Expr::var(b), Expr::null())
             }
-            None => not(test),
+            None => test.negated_test(),
         };
         stmts.push(StmtKind::If(test, otherwise, None).at(span));
         stmts.extend(then);
@@ -320,7 +320,7 @@ pub(super) fn break_test(stmt: &Stmt, label: &str) -> Option<Expr> {
     match otherwise.as_deref() {
         None if breaks(then) => Some(test.clone()),
         None => Some(Expr::bin(Op::And, test.clone(), inner(then)?)),
-        Some(otherwise) if breaks(otherwise) => Some(Expr::bin(Op::Or, not(test.clone()), inner(then)?)),
+        Some(otherwise) if breaks(otherwise) => Some(Expr::bin(Op::Or, test.clone().negated_test(), inner(then)?)),
         Some(_) => None,
     }
 }
@@ -390,7 +390,9 @@ pub(super) fn continued(stmts: &mut [Stmt], guards: &[js::Span]) {
                     else {
                         unreachable!("matched")
                     };
-                    body.push(StmtKind::If(not(test), vec![StmtKind::Continue(None).at(span)], None).at(span));
+                    body.push(
+                        StmtKind::If(test.negated_test(), vec![StmtKind::Continue(None).at(span)], None).at(span),
+                    );
                     body.extend(then);
                 }
                 _ => break,
@@ -608,7 +610,7 @@ pub(super) fn tried_first(stmts: &mut Vec<Stmt>) {
             let count = then.len();
             stmts.splice(
                 i..=i,
-                std::iter::once(StmtKind::If(not(test), otherwise, None).at(span)).chain(then),
+                std::iter::once(StmtKind::If(test.negated_test(), otherwise, None).at(span)).chain(then),
             );
             i += count;
         }
@@ -664,7 +666,7 @@ pub(super) fn written_order_steps(stmts: &mut [Stmt]) {
         if matches!(then.last().map(|l| &l.kind), Some(StmtKind::Continue(None))) {
             then.pop();
         }
-        body.push(StmtKind::If(not(test), rest, None).at(span));
+        body.push(StmtKind::If(test.negated_test(), rest, None).at(span));
         body.extend(then);
     }
 }
@@ -852,7 +854,7 @@ pub(super) fn returned_from_block(stmts: &mut Vec<Stmt>, result: &str) {
                 else {
                     unreachable!("matched")
                 };
-                stmt.kind = StmtKind::If(not(test), otherwise, Some(then));
+                stmt.kind = StmtKind::If(test.negated_test(), otherwise, Some(then));
             }
         }
     });
@@ -999,7 +1001,7 @@ pub(super) fn ending(stmts: &mut Vec<Stmt>, label: &str) {
         .expect("one");
     stmts.push(match (rest.is_empty(), negated) {
         (true, _) => StmtKind::If(test, then, None).at(span),
-        (false, true) => StmtKind::If(not(test), rest, Some(then)).at(span),
+        (false, true) => StmtKind::If(test.negated_test(), rest, Some(then)).at(span),
         (false, false) => StmtKind::If(test, then, Some(rest)).at(span),
     });
 }

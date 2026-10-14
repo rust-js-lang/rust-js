@@ -62,7 +62,7 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-or-pattern-negated",
     breaks: "an or-pattern's arm is `if (a !== x && a !== y) { t } else { s }`, not `if (a === x || a === y) { s }`",
     file: "src/lower/mir/tidy/jumps.rs",
-    find: "        (false, true) => StmtKind::If(not(test), rest, Some(then)).at(span),\n",
+    find: "        (false, true) => StmtKind::If(test.negated_test(), rest, Some(then)).at(span),\n",
     replace: "        (false, true) => StmtKind::If(test, then, Some(rest)).at(span),\n",
     tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
   },
@@ -130,7 +130,7 @@ export const mutations: Mutation[] = [
     "name": "break-test-else-unnegated",
     "breaks": "`if (!m) { .. } else { break l; }` is read as `!m || ..`, breaking where `m` doesn't hold",
     "file": "src/lower/mir/tidy/jumps.rs",
-    "find": "Some(Expr::bin(Op::Or, not(test.clone()), inner(then)?)),\n",
+    "find": "Some(Expr::bin(Op::Or, test.clone().negated_test(), inner(then)?)),\n",
     "replace": "Some(Expr::bin(Op::Or, test.clone(), inner(then)?)),\n",
     "tests": [
       "test/lowering.test.ts",
@@ -142,7 +142,7 @@ export const mutations: Mutation[] = [
     "name": "let-else-return-not-guard",
     "breaks": "a `let .. else`'s return stays the `else` of a block, not a guard first",
     "file": "src/lower/mir/tidy/jumps.rs",
-    "find": "                stmt.kind = StmtKind::If(not(test), otherwise, Some(then));\n",
+    "find": "                stmt.kind = StmtKind::If(test.negated_test(), otherwise, Some(then));\n",
     "replace": "                stmt.kind = StmtKind::If(test, then, Some(otherwise));\n",
     "tests": [
       "test/lowering.test.ts",

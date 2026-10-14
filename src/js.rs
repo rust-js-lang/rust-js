@@ -1179,6 +1179,27 @@ impl Expr {
         Expr::new(ExprKind::Object(props))
     }
 
+    /// The test that holds where this one doesn't, read only for its truth:
+    /// `!a` of `a`, `a` of `!a`, `a !== b` of `a === b`, and of a chain, its
+    /// parts', `!a || b !== c` of `a && b === c`. The one negation of a test.
+    pub fn negated_test(self) -> Expr {
+        match self.kind {
+            ExprKind::Binary(op @ (Op::And | Op::Or), a, b) => {
+                let flipped = if op == Op::And { Op::Or } else { Op::And };
+                Expr::bin(flipped, a.negated_test(), b.negated_test())
+            }
+            ExprKind::Unary(UnaryOp::Not, inner) => *inner,
+            kind => Expr::unary(
+                UnaryOp::Not,
+                Expr {
+                    reads: false,
+                    kind,
+                    span: self.span,
+                },
+            ),
+        }
+    }
+
     pub fn unary(op: UnaryOp, arg: Expr) -> Expr {
         // `!!!a` is `!a`, for every `a`: the inner two make a `bool` of it.
         if let (UnaryOp::Not, ExprKind::Unary(UnaryOp::Not, inner)) = (op, &arg.kind)

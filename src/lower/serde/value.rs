@@ -61,11 +61,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 } else {
                     self.json_value_eq(b, a, other, span)?
                 };
-                Ok(if negate {
-                    crate::lower::std_impls::negate(eq)
-                } else {
-                    eq
-                })
+                Ok(if negate { Expr::unary(js::UnaryOp::Not, eq) } else { eq })
             }
             JsonCall::Convert { to, from, json } => {
                 let x = values.remove(0);

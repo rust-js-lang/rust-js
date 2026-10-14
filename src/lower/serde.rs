@@ -783,7 +783,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             self.write_json(value.clone(), json, *ty, span, &mut body)?;
             if let Some(path) = attrs.skip_serializing_if {
                 let skip = self.skip_test(field.did, &path, value.clone(), *ty, span)?;
-                out.push(StmtKind::If(super::std_impls::negate(skip), body, None).at(js::Span::NONE));
+                out.push(StmtKind::If(Expr::unary(js::UnaryOp::Not, skip), body, None).at(js::Span::NONE));
             } else {
                 out.extend(body);
             }
@@ -878,7 +878,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             match attrs.skip_serializing_if {
                 Some(path) => {
                     let skip = self.skip_test(field.did, &path, value.clone(), *ty, span)?;
-                    out.push(StmtKind::If(super::std_impls::negate(skip), body, None).at(js::Span::NONE));
+                    out.push(StmtKind::If(Expr::unary(js::UnaryOp::Not, skip), body, None).at(js::Span::NONE));
                 }
                 None => out.extend(body),
             }

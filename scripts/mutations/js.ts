@@ -405,4 +405,12 @@ export const mutations: Mutation[] = [
     replace: "        StmtKind::While { label, cond, body } => {\n            false && !breaks(body, label.as_deref())\n",
     tests: ["test/lowering.test.ts","-t","returned after a loop"],
   },
+  {
+    name: "mir-tidy-not-de-morgan",
+    breaks: "`!(a && b)` of `bool`s stays, not `!a || !b`",
+    file: "src/js.rs",
+    find: "                Expr::bin(flipped, a.negated_test(), b.negated_test())\n",
+    replace: "                Expr::unary(UnaryOp::Not, Expr::bin(op, *a, *b))\n",
+    tests: ["test/lowering.test.ts","-t","branches from MIR read"],
+  },
 ];
