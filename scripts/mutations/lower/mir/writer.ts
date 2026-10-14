@@ -42,4 +42,20 @@ export const mutations: Mutation[] = [
     replace: "true => value,",
     tests: ["test/lowering.test.ts","-t","a writer's Debug builder from its MIR is the string its chain writes"],
   },
+  {
+    name: "mir-writer-written-lost",
+    breaks: "MIR's failing writer loses what it wrote before the error",
+    file: "src/lower/mir/writer.rs",
+    find: "        match self.writer_fails() {\n",
+    replace: "        match false {\n",
+    tests: ["test/corpus.test.ts", "-t", "fmt_error"],
+  },
+  {
+    name: "mir-writer-unshaped",
+    breaks: "MIR's writer is `let f = \"\"; f += s; return f`, not `return s`",
+    file: "src/lower/mir/writer.rs",
+    find: "            false => tidy::writer_body(out, name),\n",
+    replace: "            false => {}\n",
+    tests: ["test/lowering.test.ts", "-t", "a writer from its MIR returns the string it writes"],
+  },
 ];

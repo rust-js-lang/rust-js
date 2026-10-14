@@ -1,0 +1,77 @@
+// Mutations of src/lower/mir/hints.rs (ADR 0093).
+import type { Mutation } from "../../../mutations";
+
+export const mutations: Mutation[] = [
+  {
+    name: "mir-booleans-unhinted",
+    breaks: "a `bool` variable isn't known as one, `!!a || b`, not `a || b`",
+    file: "src/lower/mir/hints.rs",
+    find: "        booleans.retain(|name| !others.contains(name));\n",
+    replace: "        booleans.clear();\n",
+    tests: ["test/lowering.test.ts", "-t", "value of two branches is returned"],
+  },
+  {
+    name: "mir-captured-booleans-unknown",
+    breaks: "a closure doesn't know a `bool` it captures as one, `!!force || n > 2`",
+    file: "src/lower/mir/hints.rs",
+    find: "                    match ty.peel_refs().is_bool() {\n",
+    replace: "                    match false {\n",
+    tests: ["test/lowering.test.ts", "-t", "names its .&x. parameter"],
+  },
+  {
+    name: "mir-guard-conditions-unknown",
+    breaks: "a guarded arm's pattern test and its guard stay nested `if`s",
+    file: "src/lower/mir/hints.rs",
+    find: "                        let guard = self.thir[arm].guard?;\n",
+    replace: "                        let guard = self.thir[arm].guard.filter(|_| false)?;\n",
+    tests: ["test/lowering.test.ts", "-t", "a match arm's guard from MIR is one test"],
+  },
+  {
+    name: "while-hint-span-whole",
+    breaks: "a `while` in a closure isn't known as one: its desugared test's span, of another body, isn't the loop's",
+    file: "src/lower/mir/hints.rs",
+    find: "                            && w.span.source_callsite().source_equal(written)\n",
+    replace: "                            && w.span.source_callsite() == written\n",
+    tests: ["test/lowering.test.ts", "-t", "a while in a closure from MIR keeps its test|while"],
+  },
+  {
+    name: "mir-bool-ref-unknown",
+    breaks: "a state's `bool`, a `&bool` local, isn't known as one, `showHint ? hint : undefined`",
+    file: "src/lower/mir/hints.rs",
+    find: "                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),\n",
+    replace: "",
+    tests: ["test/jsx.test.ts"],
+  },
+  {
+    name: "mir-continue-alone-only",
+    breaks: "only an `if` of a `continue` alone is known written so, not one that ends with one",
+    file: "src/lower/mir/hints.rs",
+    find: "let only = match (block.stmts.last(), block.expr) {",
+    replace: "let only = match (block.stmts.last().filter(|_| block.stmts.len() == 1), block.expr) {",
+    tests: ["test/lowering.test.ts", "-t", "continues a loop's ifs end with are kept"],
+  },
+  {
+    name: "mir-let-else-continue-unwritten",
+    breaks: "a `let \u2026 else { continue; }` from MIR isn't one the program wrote: `if (current) { .. }` around the rest, not the guard",
+    file: "src/lower/mir/hints.rs",
+    find: "            .chain(self.let_else_continues())\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "a let-else's written continue"],
+  },
+  {
+    name: "mir-every-loop-valued",
+    breaks: "every MIR loop counts as one a `break` gives a value",
+    file: "src/lower/mir/hints.rs",
+    find: "matches!(e.kind, thir::ExprKind::Loop { .. }) && !e.ty.is_unit() && !e.ty.is_never()",
+    replace: "matches!(e.kind, thir::ExprKind::Loop { .. })",
+    tests: ["test/lowering.test.ts"],
+  },
+  {
+    name: "mir-label-of-scope",
+    breaks: "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
+    file: "src/lower/mir/hints.rs",
+    find: "                        self.strip(value),\n",
+    replace: "                        value,\n",
+    tests: ["test/lowering.test.ts", "-t", "returns in a loop are where"],
+  },
+];

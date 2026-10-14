@@ -851,28 +851,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","let-else from MIR"],
   },
   {
-    name: "mir-booleans-unhinted",
-    breaks: "a `bool` variable isn't known as one, `!!a || b`, not `a || b`",
-    file: "src/lower/mir.rs",
-    find: "        booleans.retain(|name| !others.contains(name));\n",
-    replace: "        booleans.clear();\n",
-    tests: ["test/lowering.test.ts","-t","value of two branches is returned"],
-  },
-  {
     name: "mir-negated-if-flipped",
     breaks: "`if !c { a } else { b }`, which MIR tests as `c`, is `if (c) { b }`, its second branch first",
     file: "src/lower/mir.rs",
     find: "                    && !matches!((written_at(state.body, *target), written_at(state.body, yes)), (Some(no), Some(yes)) if no < yes)\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","keeps its branch first"],
-  },
-  {
-    name: "mir-captured-booleans-unknown",
-    breaks: "a closure doesn't know a `bool` it captures as one, `!!force || n > 2`",
-    file: "src/lower/mir.rs",
-    find: "                    match ty.peel_refs().is_bool() {\n",
-    replace: "                    match false {\n",
-    tests: ["test/lowering.test.ts","-t","names its .&x. parameter"],
   },
   {
     name: "mir-bounds-check-inline",
@@ -1043,30 +1027,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-guard-conditions-unknown",
-    "breaks": "a guarded arm's pattern test and its guard stay nested `if`s",
-    "file": "src/lower/mir.rs",
-    "find": "                        let guard = self.thir[arm].guard?;\n",
-    "replace": "                        let guard = self.thir[arm].guard.filter(|_| false)?;\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a match arm's guard from MIR is one test"
-    ]
-  },
-  {
-    "name": "while-hint-span-whole",
-    "breaks": "a `while` in a closure isn't known as one: its desugared test's span, of another body, isn't the loop's",
-    "file": "src/lower/mir.rs",
-    "find": "                            && w.span.source_callsite().source_equal(written)\n",
-    "replace": "                            && w.span.source_callsite() == written\n",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a while in a closure from MIR keeps its test|while"
-    ]
-  },
-  {
     "name": "let-pattern-deref-unpeeled",
     "breaks": "a `let` pattern through a reference isn't taken apart where it's made",
     "file": "src/lower/mir.rs",
@@ -1213,16 +1173,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "mir-bool-ref-unknown",
-    "breaks": "a state's `bool`, a `&bool` local, isn't known as one, `showHint ? hint : undefined`",
-    "file": "src/lower/mir.rs",
-    "find": "                ty::Ref(_, inner, ty::Mutability::Not) => inner.is_bool(),\n",
-    "replace": "",
-    "tests": [
-      "test/jsx.test.ts"
-    ]
-  },
-  {
     "name": "mir-imports-not-plain",
     "breaks": "an import's member, `HighlightStyle.define`, blocks what's read after it, `const _3 = [..]` held",
     "file": "src/lower/mir.rs",
@@ -1322,18 +1272,6 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "arrays joined are one array of their items"
-    ]
-  },
-  {
-    "name": "mir-continue-alone-only",
-    "breaks": "only an `if` of a `continue` alone is known written so, not one that ends with one",
-    "file": "src/lower/mir.rs",
-    "find": "let only = match (block.stmts.last(), block.expr) {",
-    "replace": "let only = match (block.stmts.last().filter(|_| block.stmts.len() == 1), block.expr) {",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "continues a loop's ifs end with are kept"
     ]
   },
   {
@@ -1624,18 +1562,6 @@ export const mutations: Mutation[] = [
       "test/lowering.test.ts",
       "-t",
       "iter_mut chains from MIR"
-    ]
-  },
-  {
-    "name": "mir-let-else-continue-unwritten",
-    "breaks": "a `let \u2026 else { continue; }` from MIR isn't one the program wrote: `if (current) { .. }` around the rest, not the guard",
-    "file": "src/lower/mir.rs",
-    "find": "            .chain(self.let_else_continues())\n",
-    "replace": "",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "a let-else's written continue"
     ]
   },
   {
@@ -2133,28 +2059,12 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","a division by a named constant"],
   },
   {
-    name: "mir-every-loop-valued",
-    breaks: "every MIR loop counts as one a `break` gives a value",
-    file: "src/lower/mir.rs",
-    find: "matches!(e.kind, thir::ExprKind::Loop { .. }) && !e.ty.is_unit() && !e.ty.is_never()",
-    replace: "matches!(e.kind, thir::ExprKind::Loop { .. })",
-    tests: ["test/lowering.test.ts"],
-  },
-  {
     name: "mir-untagged-into-through-trait-call",
     breaks: "MIR's `into()` an untagged enum calls the crate's `from`, as the trait's call it resolves to",
     file: "src/lower/mir.rs",
     find: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) {\n",
     replace: "        if values.len() == 1 && self.recognition().converts_to_untagged(def_id, generic_args) && values.is_empty() {\n",
     tests: ["test/lowering.test.ts","-t","into an untagged enum is the value"],
-  },
-  {
-    name: "mir-label-of-scope",
-    breaks: "MIR's labeled loop in a scope of its own is named `bbN`, not its label",
-    file: "src/lower/mir.rs",
-    find: "                        self.strip(value),\n",
-    replace: "                        value,\n",
-    tests: ["test/lowering.test.ts","-t","returns in a loop are where"],
   },
   {
     name: "mir-trait-generic-iter-lent",
@@ -2221,14 +2131,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","a variable a function gives is handed over uncopied"],
   },
   {
-    name: "mir-writer-unshaped",
-    breaks: "MIR's writer is `let f = \"\"; f += s; return f`, not `return s`",
-    file: "src/lower/mir.rs",
-    find: "                false => tidy::writer_body(&mut out, name),\n",
-    replace: "                false => {}\n",
-    tests: ["test/lowering.test.ts","-t","a writer from its MIR returns the string it writes"],
-  },
-  {
     name: "mir-derived-params-unnamed",
     breaks: "MIR's derived impl's parameters are `_1`, not `point`",
     file: "src/lower/mir.rs",
@@ -2258,14 +2160,6 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "let thrown = Expr::call(Expr::helper(\"$fmtError\"), Vec::new());",
     replace: "let thrown = Expr::undefined();",
-    tests: ["test/corpus.test.ts","-t","fmt_error"],
-  },
-  {
-    name: "mir-writer-written-lost",
-    breaks: "MIR's failing writer loses what it wrote before the error",
-    file: "src/lower/mir.rs",
-    find: "            match self.writer_fails() {\n",
-    replace: "            match false {\n",
     tests: ["test/corpus.test.ts","-t","fmt_error"],
   },
   {

@@ -5,6 +5,34 @@
 use super::*;
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// A writer's body's end, `name` the string it writes to: one that may
+    /// fail gives what it wrote before, in front of what what it called did
+    /// (ADR 0187), `let f = ""; try { .. } catch (error) { .. } return f;`;
+    /// another, as tidy writes it (`tidy::writer_body`).
+    pub(super) fn writer_epilogue(&mut self, name: &str, out: &mut Vec<Stmt>) {
+        match self.writer_fails() {
+            // One that may fail gives what it wrote before, in front of
+            // what what it called did (ADR 0187): `let f = ""; try { .. }
+            // catch (error) { .. } return f;`.
+            true => {
+                let made = (out.iter()).position(|s| matches!(&s.kind, StmtKind::Let(n, _) if n == name));
+                let mut body = out.split_off(made.map_or(0, |at| at + 1));
+                // Its last `return f`, the one after the `try`.
+                if matches!(body.last().map(|s| &s.kind), Some(StmtKind::Return(Some(r)))
+                    if matches!(&r.kind, js::ExprKind::Var(v) if v == name))
+                {
+                    body.pop();
+                }
+                let error = self.fresh("error");
+                let written = Expr::call(Expr::helper("$fmtWritten"), vec![Expr::var(&error), Expr::var(name)]);
+                let handler = vec![StmtKind::Throw(written).at(js::Span::NONE)];
+                out.push(StmtKind::TryCatch(body, Some(error), handler).at(js::Span::NONE));
+                out.push(StmtKind::Return(Some(Expr::var(name))).at(js::Span::NONE));
+            }
+            false => tidy::writer_body(out, name),
+        }
+    }
+
     /// A call of a writer's: a step of its `Debug` builder, kept till its
     /// `finish`, which writes what it's been given (ADR 0136); or a write to
     /// its `Formatter`, `f += s` (ADR 0054). `None` of another.
