@@ -371,11 +371,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         continue;
                     }
                     let copy = self.clone_fields(place.clone(), fields, span, out)?;
-                    let test = Expr::bin(
-                        Op::Eq,
-                        Expr::member(place.clone(), super::bindings::tag_key(self.tcx, adt.did())),
-                        super::bindings::variant_tag(self.tcx, variant),
-                    );
+                    let index = adt.variant_index_with_id(variant.def_id);
+                    let test = self.variant_test(place.clone(), ty, *adt, index);
                     value = Expr::cond(test, copy, value);
                 }
                 Ok(value)
@@ -845,10 +842,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if !fields.iter().any(|&(_, t)| self.custom_eq(t)) {
                         continue;
                     }
-                    let name = super::bindings::variant_tag(self.tcx, variant);
-                    let key = super::bindings::tag_key(self.tcx, adt.did());
-                    let tag = |x: &Expr| Expr::bin(Op::Eq, Expr::member(x.clone(), key.clone()), name.clone());
-                    let mut same = tag(&b);
+                    let index = adt.variant_index_with_id(variant.def_id);
+                    let tag = |cx: &Self, x: &Expr| cx.variant_test(x.clone(), ty, *adt, index);
+                    let mut same = tag(self, &b);
                     for (field, t) in fields {
                         let field = self.eq_value(
                             self.held(Expr::member(a.clone(), field.clone()), t),
@@ -859,7 +855,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         )?;
                         same = Expr::bin(Op::And, same, field);
                     }
-                    value = Expr::cond(tag(&a), same, value);
+                    value = Expr::cond(tag(self, &a), same, value);
                 }
                 Ok(value)
             }

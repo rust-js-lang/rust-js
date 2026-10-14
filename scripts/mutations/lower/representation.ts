@@ -315,4 +315,28 @@ export const mutations: Mutation[] = [
     replace: "    let _ = tcx;\n    is_fieldless_enum(adt)\n",
     tests: ["test/corpus.test.ts", "-t", "tagged_enum_values"],
   },
+  {
+    name: "tagged-eq-tag",
+    breaks: "`==` of a discriminated union's fields reads `TAG`, which it hasn't",
+    file: "src/lower/representation.rs",
+    find: "                Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),\n",
+    replace: "                Expr::member(subject, \"TAG\"),\n",
+    tests: ["test/lowering.test.ts","-t","discriminated union"],
+  },
+  {
+    name: "mir-untagged-variant-tagged",
+    breaks: "an untagged enum's variant is tested by a tag it has none of",
+    file: "src/lower/representation.rs",
+    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, def, &subject);\n",
+    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            return self.untagged_variant_test(ty, def, &subject);\n",
+    tests: ["test/corpus.test.ts","-t","untagged_enums"],
+  },
+  {
+    name: "mir-otherwise-tag-of-its-own",
+    breaks: "a discriminated union's `otherwise` is tested by a tag of its own, which no object has",
+    file: "src/lower/representation.rs",
+    find: "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id != def.def_id)\n",
+    replace: "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id == def.def_id)\n",
+    tests: ["test/lowering.test.ts","-t","otherwise variant is any other"],
+  },
 ];

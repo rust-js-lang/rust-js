@@ -451,14 +451,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts","-t","slice_pattern_mut_rest"],
   },
   {
-    name: "mir-untagged-variant-tagged",
-    breaks: "an untagged enum's variant is tested by a tag it has none of",
-    file: "src/lower/mir.rs",
-    find: "        if bindings::is_untagged(self.tcx, adt.did()) {\n            let test = self.untagged_variant_test(ty, def, &subject);\n",
-    replace: "        if false && bindings::is_untagged(self.tcx, adt.did()) {\n            let test = self.untagged_variant_test(ty, def, &subject);\n",
-    tests: ["test/corpus.test.ts","-t","untagged_enums"],
-  },
-  {
     name: "mir-element-made-as-const",
     breaks: "an element whose temporary is made before it's used is a `const`, which takes no props",
     file: "src/lower/mir.rs",
@@ -593,14 +585,6 @@ export const mutations: Mutation[] = [
     find: "                    state.named.insert(place.local);\n",
     replace: "",
     tests: ["test/corpus.test.ts","-t","nested_type_chain"],
-  },
-  {
-    name: "mir-otherwise-tag-of-its-own",
-    breaks: "a discriminated union's `otherwise` is tested by a tag of its own, which no object has",
-    file: "src/lower/mir.rs",
-    find: "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id != def.def_id)\n",
-    replace: "            let key = bindings::tag_key(self.tcx, adt.did());\n            let tests = (adt.variants().iter())\n                .filter(|other| other.def_id == def.def_id)\n",
-    tests: ["test/lowering.test.ts","-t","otherwise variant is any other"],
   },
   {
     name: "mir-flattened-read-boxed",

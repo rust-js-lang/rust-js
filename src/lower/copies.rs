@@ -152,11 +152,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                                 props.push(Prop::Field(name.clone(), self.copy(Expr::member(e.clone(), name), t)));
                             }
                         }
-                        let tag = Expr::bin(
-                            Op::Eq,
-                            Expr::member(e.clone(), super::bindings::tag_key(self.tcx, adt.did())),
-                            super::bindings::variant_tag(self.tcx, variant),
-                        );
+                        let tag = self.variant_test(e.clone(), ty, *adt, adt.variant_index_with_id(variant.def_id));
                         value = Expr::cond(tag, Expr::object(props), value);
                     }
                     value

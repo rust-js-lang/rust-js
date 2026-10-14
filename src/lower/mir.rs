@@ -4048,7 +4048,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     );
                     return Err(self.tcx.dcx().span_err(span, message));
                 }
-                Ok(self.variant_test(enum_value.clone(), *enum_ty, *adt, variant))
+                Ok(self.mir_variant_test(enum_value.clone(), *enum_ty, *adt, variant))
             }
             _ => {
                 let subject = self.value_expr(subject.clone(), span)?;
@@ -4090,60 +4090,26 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_fmt_result(ty) || self.recognition().is_io_unit_result(ty)
     }
 
-    /// That `subject` is `variant` of its enum, as a pattern tests it.
-    pub(super) fn variant_test(
+    /// That `subject` is `variant` of its enum, as a pattern tests it
+    /// (`variant_test`): a test function an untagged one's calls,
+    /// `isValidElement(child)`, gives a `bool`, which tidy writes a test of
+    /// as one.
+    pub(super) fn mir_variant_test(
         &mut self,
         subject: Expr,
         ty: Ty<'tcx>,
         adt: ty::AdtDef<'tcx>,
         variant: VariantIdx,
     ) -> Expr {
-        let def = adt.variant(variant);
-        if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
-            let inner = self.option_of(ty).expect("an `Option`");
-            return match self.tcx.is_lang_item(def.def_id, LangItem::OptionSome) {
-                true => self.present(subject, inner),
-                false => self.absent(subject, inner),
-            };
-        }
-        // An untagged enum's variant, told by its value's kind (ADR 0214).
+        let test = self.variant_test(subject, ty, adt, variant);
         if bindings::is_untagged(self.tcx, adt.did()) {
-            let test = self.untagged_variant_test(ty, def, &subject);
-            // A variant's test function it calls, `isValidElement(child)`, gives
-            // a `bool`, which tidy writes a test of as one.
             test.clone().each_mut(&mut |e| {
                 if let Some(path) = tidy::call_path(e) {
                     self.locals.mir.paths.entry(path).or_insert(true);
                 }
             });
-            return test;
         }
-        // A discriminated union's `otherwise`: an object whose tag is none
-        // of the others' (ADR 0284).
-        if bindings::is_tagged_otherwise(self.tcx, adt.did(), def) {
-            let key = bindings::tag_key(self.tcx, adt.did());
-            let tests = (adt.variants().iter())
-                .filter(|other| other.def_id != def.def_id)
-                .map(|other| {
-                    let name = bindings::variant_tag(self.tcx, other);
-                    Expr::bin(Op::Ne, Expr::member(subject.clone(), &key), name)
-                })
-                .reduce(|a, b| Expr::bin(Op::And, a, b));
-            return tests.unwrap_or_else(|| Expr::bool(true));
-        }
-        if let Some(n) = super::recognition::ordering_value(self.tcx, adt.did(), def.name) {
-            return Expr::bin(Op::Eq, subject, Expr::int(n));
-        }
-        let name = bindings::variant_tag(self.tcx, def);
-        let unit = def.fields.is_empty() && bindings::declared_tag(self.tcx, adt.did()).is_none();
-        match unit {
-            true => Expr::bin(Op::Eq, subject, name),
-            false => Expr::bin(
-                Op::Eq,
-                Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),
-                name,
-            ),
-        }
+        test
     }
 
     /// What a failed check says, as Rust's panic does.

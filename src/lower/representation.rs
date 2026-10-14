@@ -3,11 +3,12 @@
 //! object, a box, a handle), a constant's value. When a value is copied is
 //! `copies.rs`'s, and what can be represented `support.rs`'s.
 
-use super::bindings::{field_key, unit_name};
+use super::bindings::{self, field_key, unit_name};
 use super::recognition::{StdItem, cell_value_field, is_std_def};
 use super::{FnCx, R, Shape};
 use crate::js;
 use crate::js::{Expr, Op, Prop};
+use rustc_abi::VariantIdx;
 use rustc_ast::Mutability;
 use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::{CtorKind, DefKind};
@@ -20,6 +21,57 @@ use rustc_span::def_id::{DefId, LocalDefId};
 use rustc_span::{Span, Symbol};
 
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
+    /// That `subject` is `variant` of its enum: the one test of it, what a
+    /// pattern, a clone, `==`, a drop and a codec ask. An `Option`'s
+    /// presence, an untagged one's kind (ADR 0214), a discriminated union's
+    /// `otherwise` (ADR 0284), an `Ordering`'s number, or its tag.
+    pub(in crate::lower) fn variant_test(
+        &self,
+        subject: Expr,
+        ty: Ty<'tcx>,
+        adt: ty::AdtDef<'tcx>,
+        variant: VariantIdx,
+    ) -> Expr {
+        let def = adt.variant(variant);
+        if self.tcx.is_lang_item(adt.did(), LangItem::Option) {
+            let inner = self.option_of(ty).expect("an `Option`");
+            return match self.tcx.is_lang_item(def.def_id, LangItem::OptionSome) {
+                true => self.present(subject, inner),
+                false => self.absent(subject, inner),
+            };
+        }
+        // An untagged enum's variant, told by its value's kind (ADR 0214).
+        if bindings::is_untagged(self.tcx, adt.did()) {
+            return self.untagged_variant_test(ty, def, &subject);
+        }
+        // A discriminated union's `otherwise`: an object whose tag is none
+        // of the others' (ADR 0284).
+        if bindings::is_tagged_otherwise(self.tcx, adt.did(), def) {
+            let key = bindings::tag_key(self.tcx, adt.did());
+            let tests = (adt.variants().iter())
+                .filter(|other| other.def_id != def.def_id)
+                .map(|other| {
+                    let name = bindings::variant_tag(self.tcx, other);
+                    Expr::bin(Op::Ne, Expr::member(subject.clone(), &key), name)
+                })
+                .reduce(|a, b| Expr::bin(Op::And, a, b));
+            return tests.unwrap_or_else(|| Expr::bool(true));
+        }
+        if let Some(n) = super::recognition::ordering_value(self.tcx, adt.did(), def.name) {
+            return Expr::bin(Op::Eq, subject, Expr::int(n));
+        }
+        let name = bindings::variant_tag(self.tcx, def);
+        let unit = def.fields.is_empty() && bindings::declared_tag(self.tcx, adt.did()).is_none();
+        match unit {
+            true => Expr::bin(Op::Eq, subject, name),
+            false => Expr::bin(
+                Op::Eq,
+                Expr::member(subject, bindings::tag_key(self.tcx, adt.did())),
+                name,
+            ),
+        }
+    }
+
     /// What an `Option<T>`'s `T` is in JS: through references, `Box` and `Rc`,
     /// which are the value itself (ADR 0023), but for a counted `Rc`, an
     /// object of its own (ADR 0320).

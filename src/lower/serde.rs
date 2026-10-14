@@ -27,7 +27,6 @@ mod value;
 
 pub(super) use super::recognition::Json;
 
-use super::bindings::variant_name;
 use super::recognition::{SkipPredicate, StdItem, std_item};
 use super::representation::{Num, variant_field};
 use super::{FnCx, R, lower_first};
@@ -696,7 +695,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Some(tag), None, _) => Tagging::Internal(tag.clone()),
             _ => Tagging::External,
         };
-        // Each variant in turn: `if (v === "Dot") .. else if (v.TAG === "Ring") ..`.
+        // Each variant in turn: `if (v === "Dot") .. else if (v.TAG === "Ring") ..`, each
+        // tested as a pattern tests it.
         let mut chain: Option<Vec<Stmt>> = None;
         for variant in adt.variants().iter().rev() {
             let attrs = self.serde_attrs(variant.def_id)?;
@@ -736,12 +736,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             chain = Some(match chain {
                 None => body,
                 Some(rest) => {
-                    let js_name = Expr::str(variant_name(self.tcx, variant));
-                    let test = if variant.fields.is_empty() {
-                        Expr::bin(Op::Eq, value.clone(), js_name)
-                    } else {
-                        Expr::bin(Op::Eq, Expr::member(value.clone(), "TAG"), js_name)
-                    };
+                    // As a pattern tests it, of any representation (ADR 0284).
+                    let index = adt.variant_index_with_id(variant.def_id);
+                    let test = self.variant_test(value.clone(), Ty::new_adt(self.tcx, adt, args), adt, index);
                     vec![StmtKind::If(test, body, Some(rest)).at(js::Span::NONE)]
                 }
             });

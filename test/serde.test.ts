@@ -32,6 +32,15 @@ async function compiled(dir: string) {
 
 const cases = [
   {
+    // Each variant tested as a pattern tests it (ADR 0284): one of an enum
+    // rust-js tags is an object, `{ kind: "On" }`, not its name.
+    name: "an enum rust-js tags as a discriminated union serializes as serde has it",
+    definitions: `#[cfg_attr(rust_js, rust_js::tag = "kind")]
+#[derive(serde::Serialize)]
+pub enum Light { On, Off, Dim { level: u8 } }`,
+    value: '(Light::On, Light::Off, Light::Dim { level: 3 })',
+  },
+  {
     name: "a serde_json error given by ? to a Box<dyn Error> shows as serde_json's",
     definitions: `fn load(text: &str) -> Result<u64, Box<dyn std::error::Error>> {
     let value: serde_json::Value = serde_json::from_str(text)?;
