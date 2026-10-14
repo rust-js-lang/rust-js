@@ -308,11 +308,10 @@ fn tested_constants(body: &mut Vec<Stmt>) {
     let mut candidates = Vec::new();
     js::each_block_mut(body, &mut |stmts| {
         for stmt in stmts.iter() {
-            if let StmtKind::Const(name, value) = &stmt.kind {
-                let mut read = value.clone();
-                if untest(&mut read) {
-                    candidates.push(name.clone());
-                }
+            if let StmtKind::Const(name, value) = &stmt.kind
+                && value.retested().is_some()
+            {
+                candidates.push(name.clone());
             }
         }
     });
@@ -340,8 +339,9 @@ fn tested_constants(body: &mut Vec<Stmt>) {
             for stmt in stmts.iter_mut() {
                 if let StmtKind::Const(declared, value) = &mut stmt.kind
                     && *declared == name
+                    && let Some(tested) = value.retested()
                 {
-                    untest(value);
+                    *value = tested;
                 }
             }
         });
@@ -359,24 +359,6 @@ fn mark_tested(test: &mut Expr, name: &str) {
             mark_tested(b, name);
         }
         _ => {}
-    }
-}
-
-/// `e` read by its truth: `!!a` is `a`, in the parts of `&&` and `||`.
-/// Whether it changed.
-fn untest(e: &mut Expr) -> bool {
-    if let ExprKind::Unary(js::UnaryOp::Not, not) = &e.kind
-        && let ExprKind::Unary(js::UnaryOp::Not, value) = &not.kind
-    {
-        *e = (**value).clone();
-        return true;
-    }
-    match &mut e.kind {
-        ExprKind::Binary(js::Op::And | js::Op::Or, a, b) => {
-            let left = untest(a);
-            untest(b) || left
-        }
-        _ => false,
     }
 }
 

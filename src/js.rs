@@ -1606,22 +1606,35 @@ impl Expr {
     /// of a path, `props.meta`, too, wherever in an `&&` it is: what's
     /// truthy is set.
     pub fn tested(&self) -> Expr {
+        self.as_test(&mut false)
+    }
+
+    /// `tested`, if it's not this as it is.
+    pub fn retested(&self) -> Option<Expr> {
+        let mut changed = false;
+        let tested = self.as_test(&mut changed);
+        changed.then_some(tested)
+    }
+
+    /// `tested`, telling `changed` if it's not this as it is.
+    fn as_test(&self, changed: &mut bool) -> Expr {
         match &self.kind {
             ExprKind::Unary(UnaryOp::Not, inner) if let ExprKind::Unary(UnaryOp::Not, value) = &inner.kind => {
-                value.tested()
+                *changed = true;
+                value.as_test(changed)
             }
             ExprKind::Binary(Op::And, ..) => {
-                fn parts(e: &Expr, out: &mut Vec<Expr>) {
+                fn parts(e: &Expr, out: &mut Vec<Expr>, changed: &mut bool) {
                     match &e.kind {
                         ExprKind::Binary(Op::And, a, b) => {
-                            parts(a, out);
-                            parts(b, out);
+                            parts(a, out, changed);
+                            parts(b, out, changed);
                         }
-                        _ => out.push(e.tested()),
+                        _ => out.push(e.as_test(changed)),
                     }
                 }
                 let mut all = Vec::new();
-                parts(self, &mut all);
+                parts(self, &mut all, changed);
                 let set_and_true = |i: usize| {
                     matches!(&all[i].kind, ExprKind::Binary(Op::LooseNe, x, null)
                         if matches!(null.kind, ExprKind::Null | ExprKind::Undefined)
@@ -1631,6 +1644,7 @@ impl Expr {
                     .filter(|&i| !set_and_true(i))
                     .map(|i| all[i].clone())
                     .collect();
+                *changed |= kept.len() < all.len();
                 let span = self.span;
                 kept.into_iter()
                     .reduce(|a, b| Expr {
@@ -1642,7 +1656,7 @@ impl Expr {
             }
             ExprKind::Binary(op @ Op::Or, a, b) => Expr {
                 reads: false,
-                kind: ExprKind::Binary(*op, Box::new(a.tested()), Box::new(b.tested())),
+                kind: ExprKind::Binary(*op, Box::new(a.as_test(changed)), Box::new(b.as_test(changed))),
                 span: self.span,
             },
             _ => self.clone(),
