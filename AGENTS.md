@@ -25,6 +25,15 @@ corpus and mutations as the net, an ADR that says why.
   need preferences, an agent needs one answer it can't get wrong. Before
   adding a form, find the one that does the job and extend it; where two do
   one job, remove one.
+- **Each piece understood on its own.** A module owns one responsibility
+  and the concepts that job needs, no more, behind a boundary nothing
+  leaks across, so you can read, change and test it without holding
+  every other concept in your head. That's what keeps a change small and
+  safe, and the codebase open to people and AI coding agents alike. Where
+  one question is answered in two places, a pass works around what a later
+  phase does, or a module spells another's representation, give the
+  concept one owner and have [the architecture test](test/architecture.test.ts)
+  hold it.
 - **Keep Rust's checks.** rustc owns types, traits, ownership, borrowing and
   diagnostics. Never bypass them to make a feature compile.
 - **Generated code is a product.** Names, control flow, modules, JSX,
