@@ -31,6 +31,9 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Fixed
 
+- **A private props struct an exported component names is declared in its
+  `.d.ts`**, not exported, where it was `any`
+  ([ADR 0385](docs/decisions/0385-a-private-type-a-declaration-names.md)).
 - **A crate root of `mod`s alone writes no JS**, an app's list of its files;
   and a module of a `js::import!` alone writes its import, which was lost
   ([ADR 0382](docs/decisions/0382-a-module-has-a-file-for-what-it-has.md)).

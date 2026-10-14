@@ -376,4 +376,28 @@ export const mutations: Mutation[] = [
       "test/declarations.test.ts"
     ]
   },
+  {
+    name: "declarations-private-type-any",
+    breaks: "a module's private props struct, which its exported component names, is `any`",
+    file: "src/lower/declarations.rs",
+    find: "                // exported (ADR 0385). Another module's isn't its to declare.\n                if !tcx.visibility(did).is_public() {",
+    replace: "                // exported (ADR 0385). Another module's isn't its to declare.\n                if !tcx.visibility(did).is_public() {\n                    return keyword(\"any\");\n                }\n                if false {",
+    tests: ["test/declarations.test.ts", "-t", "private struct"],
+  },
+  {
+    name: "declarations-private-type-exported",
+    breaks: "a module's private struct is exported from its `.d.ts`, where its Rust doesn't export it",
+    file: "src/lower/declarations.rs",
+    find: "                        };\n                        declared[\"exported\"] = json!(false);\n",
+    replace: "                        };\n",
+    tests: ["test/declarations.test.ts", "-t", "private struct"],
+  },
+  {
+    name: "declarations-unexported-last",
+    breaks: "a type declared but not exported comes after what names it, not before, as TypeScript has it",
+    file: "src/lower/declarations.rs",
+    find: "    items.splice(0..0, out.unexported.into_values().flatten());",
+    replace: "    items.extend(out.unexported.into_values().flatten());",
+    tests: ["test/declarations.test.ts", "-t", "private struct"],
+  },
 ];

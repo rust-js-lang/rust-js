@@ -41,7 +41,7 @@ pub(super) fn module<'tcx>(
         plain_ref_cells,
         imports: BTreeSet::new(),
         module_imports: BTreeSet::new(),
-        foreign: BTreeMap::new(),
+        unexported: BTreeMap::new(),
         erased: HashMap::new(),
     };
     let mut items = Vec::new();
@@ -78,9 +78,12 @@ pub(super) fn module<'tcx>(
         }
         items.push(json!({ "kind": "export-default", "name": fn_name(tcx, def_id) }));
     }
-    // Another crate's untagged enums it names, `js::Json`, each declared here,
-    // not exported: the union of its payloads, named, so it can be recursive.
-    items.extend(out.foreign.into_values().flatten());
+    // What it names that it doesn't export, each declared here, not
+    // exported, before what names it, as TypeScript has it: another crate's
+    // untagged enums, `js::Json`, the union of their payloads, named, so it
+    // can be recursive; and its own private types, as TypeScript declares an
+    // interface an exported function names.
+    items.splice(0..0, out.unexported.into_values().flatten());
     if items.is_empty() && reexports.is_empty() {
         return None;
     }
@@ -185,9 +188,10 @@ struct Declarations<'a, 'tcx> {
     imports: BTreeSet<(String, String)>,
     /// The types of the crate's other modules it names, by their path.
     module_imports: BTreeSet<(Vec<String>, String)>,
-    /// Another crate's untagged enums it names, by name: each one's
-    /// declaration, `None` while it's being made, as a payload names it.
-    foreign: BTreeMap<String, Option<Value>>,
+    /// What it names that it doesn't export, by name: another crate's
+    /// untagged enums, and its own private types. Each one's declaration,
+    /// `None` while it's being made, as a field or a payload names it.
+    unexported: BTreeMap<String, Option<Value>>,
     /// The type parameters of the item being declared that are a type of
     /// TypeScript's, by index: `C: ReactNode`'s `ReactNode`.
     erased: HashMap<u32, Value>,
@@ -757,14 +761,14 @@ impl<'tcx> Declarations<'_, 'tcx> {
                 // this crate's are, the union of its payloads (ADR 0225).
                 if !did.is_local() && adt.is_enum() && is_untagged(tcx, did) {
                     let name = tcx.item_name(did).to_string();
-                    if !self.foreign.contains_key(&name) {
-                        self.foreign.insert(name.clone(), None);
+                    if !self.unexported.contains_key(&name) {
+                        self.unexported.insert(name.clone(), None);
                         let inner = self.erased(did);
                         let outer = std::mem::replace(&mut self.erased, inner);
                         let mut declared = self.enumeration(did);
                         self.erased = outer;
                         declared["exported"] = json!(false);
-                        self.foreign.insert(name.clone(), Some(declared));
+                        self.unexported.insert(name.clone(), Some(declared));
                     }
                     let type_args = self.type_args(did, args);
                     return reference(&name, type_args);
@@ -779,12 +783,39 @@ impl<'tcx> Declarations<'_, 'tcx> {
                     DefKind::Enum => true,
                     _ => false,
                 };
-                if !declared || !tcx.visibility(did).is_public() {
+                if !declared {
                     return keyword("any");
+                }
+                let home = tcx.parent_module_from_def_id(local);
+                // This module's own private type, `struct DiagramGroupProps`,
+                // which its exported function names: declared here, not
+                // exported (ADR 0385). Another module's isn't its to declare.
+                if !tcx.visibility(did).is_public() {
+                    if home != self.module {
+                        return keyword("any");
+                    }
+                    let name = tcx.item_name(did).to_string();
+                    if !self.unexported.contains_key(&name) {
+                        self.unexported.insert(name.clone(), None);
+                        let inner = self.erased(did);
+                        let outer = std::mem::replace(&mut self.erased, inner);
+                        let declared = match tcx.def_kind(did) {
+                            DefKind::Struct => self.structure(did),
+                            _ => Some(self.enumeration(did)),
+                        };
+                        self.erased = outer;
+                        let Some(mut declared) = declared else {
+                            self.unexported.remove(&name);
+                            return keyword("any");
+                        };
+                        declared["exported"] = json!(false);
+                        self.unexported.insert(name.clone(), Some(declared));
+                    }
+                    let type_args = self.type_args(did, args);
+                    return reference(&name, type_args);
                 }
                 // Another module's is imported from its file; one of a module
                 // without one, of types only, has nowhere it's declared.
-                let home = tcx.parent_module_from_def_id(local);
                 if home != self.module {
                     let Some(path) = self.files.get(&home) else {
                         return keyword("any");

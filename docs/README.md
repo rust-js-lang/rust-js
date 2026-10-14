@@ -452,6 +452,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 - [0382 A module has a file for what it has, the root too](decisions/0382-a-module-has-a-file-for-what-it-has.md)
 - [0383 A file's leading comments are its JS's](decisions/0383-a-files-leading-comments-are-its-jss.md)
 - [0384 A ref a prop holds is @types/react's `Ref<T>`, and an element's props `DetailedHTMLProps`](decisions/0384-a-ref-prop-is-reacts-ref.md)
+- [0385 A private type a declaration names is declared, not exported](decisions/0385-a-private-type-a-declaration-names.md)
 - [0050 Snapshots of the generated JS, reviewed as diffs](decisions/0050-snapshots.md)
 - [0026 Tests are Rust's `#[test]`, run by `bun test` in happy-dom](decisions/0026-testing.md)
 - [0027 Real-browser tests: Playwright Test and Vitest's browser mode, on Bun](decisions/0027-real-browser-tests.md)

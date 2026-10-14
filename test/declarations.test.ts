@@ -978,6 +978,30 @@ export function Uses() {
   expect(renderToStaticMarkup(createElement(Plain))).toBe('<svg viewBox="0 0 2 2"><circle r="1"></circle></svg>');
 });
 
+// A module's private props struct, which its exported component names, is
+// declared, not exported, before it, as TypeScript declares react.dev's
+// DiagramGroup's `interface DiagramGroupProps`: not `any` (ADR 0385).
+test("a private struct an exported function names is declared, not exported", () => {
+  buildReact();
+  const dir = fixture("declarations-private-props");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case, private_interfaces)]
+use react::{JSX, ReactNode, jsx};
+
+struct GroupProps<C: ReactNode> {
+    children: C,
+}
+
+pub fn Group<C: ReactNode>(GroupProps { children }: GroupProps<C>) -> JSX::Element {
+    jsx! { <div>{children}</div> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain("interface GroupProps {\n    children: ReactNode;\n}\n\nexport function Group(props: GroupProps): JSX.Element;");
+  expect(declarations).not.toContain("export interface GroupProps");
+});
+
 // React's attributes are of an element, as @types/react's are: react.dev's
 // LoadingOverlay takes `React.HTMLAttributes<HTMLDivElement>`, whose
 // handlers' `currentTarget` is the `<div>` (ADR 0208).
