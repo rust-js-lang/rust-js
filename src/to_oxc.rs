@@ -965,7 +965,7 @@ impl<'a> Cx<'a> {
     }
 
     /// `className="hero"`, `disabled` for `true`, `onClick={f}` or `{...props}`.
-    /// An attribute that's `undefined` (a `None`) is left out, as React would.
+    /// Preparation has left out an attribute that's `undefined` (a `None`).
     fn jsx_attribute(&self, prop: &Prop) -> Option<JSXAttributeItem<'a>> {
         let b = &self.b;
         let (name, value) = match prop {

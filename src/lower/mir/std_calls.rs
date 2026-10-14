@@ -135,9 +135,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                         _ => value,
                     });
                 }
-                if matches!(list.last().map(|e| &e.kind), Some(js::ExprKind::Undefined)) {
-                    list.pop();
-                }
+                // A `None` message, `undefined`, is left out as preparation
+                // leaves out each trailing one.
                 Expr::call(Expr::helper("$assertFailed"), list)
             }
             // A writer of the crate's own: what `write!` and `write_char` give

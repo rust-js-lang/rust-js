@@ -1025,10 +1025,13 @@ mod tests {
         assert!(exports("$shouldPanic") && exports("$testResult"));
     }
 
-    // Each helper said to be pure is one the runtime has.
+    // Each helper said to be pure, never to throw or to name a place is one
+    // the runtime has: a name it hasn't would never match.
     #[test]
-    fn pure_helpers_are_the_runtimes() {
-        let missing: Vec<_> = PURE.iter().filter(|name| !exports(name)).collect();
+    fn helpers_named_are_the_runtimes() {
+        let missing: Vec<_> = (PURE.iter().chain(NEVER_THROW).chain(&["$index"]))
+            .filter(|name| !exports(name))
+            .collect();
         assert!(missing.is_empty(), "{missing:?}");
     }
 }
