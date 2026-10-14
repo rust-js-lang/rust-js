@@ -35,14 +35,6 @@ export const mutations: Mutation[] = [
     tests: ["test/cargo-react.test.ts"],
   },
   {
-    name: "rustc-mode-without-cfg",
-    breaks: "`rust-js --rustc` doesn't set `cfg(rust_js)`, and the binding crates' metadata leaves out every `#[rust_js::link_name]`",
-    file: "src/main.rs",
-    find: "        let ours = [\"rust-js\", \"--cfg=rust_js\", \"--check-cfg=cfg(rust_js)\"].map(String::from);\n",
-    replace: "        let ours = [\"rust-js\", \"--check-cfg=cfg(rust_js)\"].map(String::from);\n",
-    tests: ["test/snapshots.test.ts","-t","counter"],
-  },
-  {
     name: "cargo-app-untracked",
     breaks: "Cargo isn't told what `RUST_JS_APP` was, so the app compiled as a program is fresh when another crate uses it",
     file: "src/main.rs",

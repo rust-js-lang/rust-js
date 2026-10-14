@@ -175,6 +175,13 @@ impl Staged {
     }
 }
 
+/// What tells a program it's compiled by rust-js, `cfg(rust_js)`, declared
+/// so rustc checks it: the crates' attributes of its tool are
+/// `cfg_attr(rust_js, ..)`, which a plain rustc, a user's own `cargo check`,
+/// leaves out (ADR 0113). The one list, of a file's compilation and of a
+/// Cargo crate's alike.
+pub const RUST_JS_CFG: [&str; 2] = ["--cfg=rust_js", "--check-cfg=cfg(rust_js)"];
+
 impl Build {
     /// The arguments rustc is run with, and what of its outputs is staged.
     pub fn rustc_args(&self) -> Result<(Vec<String>, Staged), String> {
@@ -185,14 +192,14 @@ impl Build {
             "--edition=2024".to_string(),
             // What rustc works out for the program, `usize::MAX`, `size_of` and
             // `cfg(target_pointer_width)`, is for a 32-bit `usize`, as rust-js's is
-            // (ADR 0090). `cfg(rust_js)` says it's rust-js.
+            // (ADR 0090).
             format!("--target={TARGET}"),
-            "--cfg=rust_js".to_string(),
             // `#[cfg(browser)]` marks tests that need a real browser (ADR 0027):
             // `-- --cfg browser` turns it on. Declaring any cfg makes rustc check them
             // all, so `test` is declared too, as Cargo does.
-            "--check-cfg=cfg(browser, test, rust_js)".to_string(),
+            "--check-cfg=cfg(browser, test)".to_string(),
         ];
+        args.extend(RUST_JS_CFG.map(String::from));
         if self.test {
             args.push("--test".to_string());
         }

@@ -263,11 +263,8 @@ fn main() -> ExitCode {
             return ExitCode::SUCCESS;
         }
         Ok(command::Command::Rustc(args)) => {
-            // `cfg(rust_js)` says it's rust-js, as it says to a program: the crates'
-            // attributes of its tool are `cfg_attr(rust_js, ..)`, which a plain
-            // rustc, a user's own `cargo check`, leaves out (ADR 0113).
-            let ours = ["rust-js", "--cfg=rust_js", "--check-cfg=cfg(rust_js)"].map(String::from);
-            let rustc_args: Vec<String> = ours.into_iter().chain(args).collect();
+            let ours = std::iter::once("rust-js").chain(command::RUST_JS_CFG).map(String::from);
+            let rustc_args: Vec<String> = ours.chain(args).collect();
             return rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut Syntax));
         }
         // A crate's checks of its JS as a host has it, once Cargo is done (ADR 0117).

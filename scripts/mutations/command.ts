@@ -34,4 +34,12 @@ export const mutations: Mutation[] = [
     replace: "    if false && library && manifest.is_none() {\n",
     tests: ["test/manifest.test.ts", "-t", "refused without its manifest"],
   },
+  {
+    name: "rust-js-cfg-unset",
+    breaks: "rust-js doesn't set `cfg(rust_js)`, and the binding crates' metadata leaves out every `#[rust_js::link_name]`",
+    file: "src/command.rs",
+    find: "pub const RUST_JS_CFG: [&str; 2] = [\"--cfg=rust_js\", \"--check-cfg=cfg(rust_js)\"];\n",
+    replace: "pub const RUST_JS_CFG: [&str; 2] = [\"--check-cfg=cfg(rust_js)\", \"--check-cfg=cfg(rust_js)\"];\n",
+    tests: ["test/snapshots.test.ts", "-t", "counter"],
+  },
 ];
