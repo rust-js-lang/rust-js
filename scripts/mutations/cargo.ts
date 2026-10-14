@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "cargo-rust-js-untracked",
     breaks: "Cargo has a crate as done when rust-js, which made its JS, has changed",
     file: "src/cargo.rs",
-    find: "    first.push(' ');\n",
-    replace: "    first.push(' ');\n    let exe = PathBuf::new();\n",
+    find: "    let exe = std::env::current_exe().map_err(|e| format!(\"rust-js's own path: {e}\"))?;\n",
+    replace: "    let exe = PathBuf::new();\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "done when their JS is"],
   },
   {
