@@ -21,8 +21,11 @@ import { reactLibs } from "../../tooling/crates.js";
 import { target } from "../../tooling/cargo.js";
 
 const rustDir = join(import.meta.dir, "rust");
-const web = "/wasm/web";
-const virtual = `${web}/rust`;
+// The shim's filesystem is the repository's layout: its `/` is the
+// checkout, so a module the crate links outside it, `../compiler-client.js`
+// or `tooling/crates.js`, maps as the crate's own files do.
+const repository = join(import.meta.dir, "../..");
+const virtual = "/wasm/web/rust";
 
 /** The crate's `.rs` files under `dir`, its components/ too, as the shim's directories. */
 function sourcesIn(dir: string): Map<string, Inode> {
@@ -60,7 +63,7 @@ export async function compileRust(job: { manifest?: string } = {}) {
   // What the last build wrote, for the compiler to say what of it this one
   // leaves stale (ADR 0375): its manifest, of the compiler's own paths.
   const published = job.manifest ?? join(cratesDir, "playground-manifest.json");
-  const virtualPath = (path: string) => path.startsWith(import.meta.dir + "/") ? `${web}/${path.slice(import.meta.dir.length + 1)}` : path;
+  const virtualPath = (path: string) => path.startsWith(repository + "/") ? path.slice(repository.length) : path;
   const previous = existsSync(published) ? JSON.stringify(mapManifestPaths(parseManifest(readFileSync(published, "utf8")), virtualPath)) : undefined;
   const out = new PreopenDirectory("/out", new Map(previous ? [["manifest.json", new File(new TextEncoder().encode(previous))]] : []));
   const stderr: string[] = [];
@@ -98,11 +101,9 @@ export async function compileRust(job: { manifest?: string } = {}) {
   const manifest = out.dir.contents.get("manifest.json");
   if (!(manifest instanceof File)) throw new Error("rust-js wrote no manifest");
   const parsed = parseManifest(new TextDecoder().decode(manifest.data));
-  // The shim's /wasm/web is this directory, so a module the crate links,
-  // `../compiler-client.js` beside it, maps as the crate's own files do.
   const localPath = (path: string) => {
-    if (!path.startsWith(web + "/")) throw new Error("Unexpected virtual path: " + path);
-    return join(import.meta.dir, path.slice(web.length + 1));
+    if (!path.startsWith("/")) throw new Error("Unexpected virtual path: " + path);
+    return join(repository, path);
   };
   const mapped = mapManifestPaths(parsed, localPath);
   const virtualFiles = filesIn(crateDir.dir);
