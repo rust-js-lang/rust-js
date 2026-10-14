@@ -11,6 +11,11 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Fixed
 
+- **A dev server compiles once for a save, on macOS too.** macOS reports a
+  compiler that ran as changed, so each compile was the next one's event,
+  twice a second, idle. Now only a compiler replaced since it said what it
+  is builds again
+  ([ADR 0379](docs/decisions/0379-a-compiler-that-ran-is-no-change.md)).
 - **Switching an app's rust-js, up or down, builds its crates again.** Cargo
   had the crates another rust-js built as done, as an installed compiler's
   file is as old as its package says, and the build stopped at

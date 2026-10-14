@@ -11,6 +11,7 @@
 //   lib.js  util.js            ──►    lib.js  util.js           old.js gone, if as written
 
 import { expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
@@ -114,6 +115,36 @@ test("the builder asks a replaced compiler what it is", async () => {
   // A new release, installed while a dev server runs: its runtime isn't.
   compiler("2.0.0");
   expect(await check()).toContain("rust-js 2.0.0 needs @rust-js/runtime 2.0.0, not the installed 1.0.0");
+});
+
+// macOS's `fs.watch` reports a compiler that ran as changed, as one
+// replaced: a dev server that compiled again on each would compile forever,
+// each compile the next one's event. Only a compiler replaced since it said
+// what it is, its size, time or inode another, is a change.
+test("a compiler that ran is no change to it, one replaced is", async () => {
+  const root = fixture("compiler-changed");
+  const runtime = join(root, "node_modules", "@rust-js", "runtime");
+  mkdirSync(runtime, { recursive: true });
+  writeFileSync(join(runtime, "package.json"), JSON.stringify({ name: "@rust-js/runtime", version: "1.0.0" }));
+  const rustJs = join(root, "rust-js");
+  const compiler = (version: string) => {
+    writeFileSync(rustJs, `#!/bin/sh\necho '{"version":"${version}","toolchain":"1.99.0","abi":1}'\n`);
+    chmodSync(rustJs, 0o755);
+  };
+  compiler("1.0.0");
+  const builder = createNativeBuilder({ root, rustJs });
+  // Not yet asked what it is: what it is is news.
+  expect(builder.compilerChanged(rustJs)).toBe(true);
+  await builder.checkCargo({ manifestPath: join(root, "Cargo.toml") }).catch(() => {});
+  expect(builder.compilerChanged(rustJs)).toBe(false);
+  execFileSync(rustJs, ["--version-json"]);
+  expect(builder.compilerChanged(rustJs)).toBe(false);
+  expect(builder.compilerChanged(join(root, "Cargo.toml"))).toBe(false);
+  // Replaced, by a longer one: a change, until it's asked again.
+  compiler("10.0.0");
+  expect(builder.compilerChanged(rustJs)).toBe(true);
+  await builder.checkCargo({ manifestPath: join(root, "Cargo.toml") }).catch(() => {});
+  expect(builder.compilerChanged(rustJs)).toBe(false);
 });
 
 // A manifest of an older compiler's says nothing of where its JS names

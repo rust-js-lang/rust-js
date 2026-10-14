@@ -144,11 +144,14 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
   // replaced, as it may be while a dev server runs, which then checks the
   // runtime and picks the toolchain by the new one's answer.
   let identity;
+  // Its files' sizes, times and inodes: what tells a compiler replaced from
+  // one that ran, which macOS's `fs.watch` reports alike.
+  const compilerKey = () => compilerInputs.map((path) => {
+    const stat = statSync(path, { throwIfNoEntry: false });
+    return stat ? `${stat.size}:${stat.mtimeMs}:${stat.ino}` : "missing";
+  }).join(" ");
   const compilerIdentity = async () => {
-    const key = compilerInputs.map((path) => {
-      const stat = statSync(path, { throwIfNoEntry: false });
-      return stat ? `${stat.size}:${stat.mtimeMs}:${stat.ino}` : "missing";
-    }).join(" ");
+    const key = compilerKey();
     if (identity?.key !== key) {
       identity = { key, value: parseCompilerIdentity(await run(compilerCommand, [...compilerArgs, "--version-json"], root)) };
     }
@@ -160,6 +163,10 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
   const toolchain = async () => (existsSync(rustJs) ? (await compilerIdentity()).toolchain : undefined);
   // What a change to makes a host build again: the compiler.
   const watchFiles = compilerInputs;
+  /** Whether `file` is the compiler, replaced since it last said what it
+   * is: an event on it a host builds again for, where one that only ran
+   * it is none. */
+  const compilerChanged = (file) => watchFiles.includes(file) && compilerKey() !== identity?.key;
   /** A crate's checks of its JS as `files` are, a save's or a build's (ADR
    * 0117): what they say goes to `warn`; one that fails the build throws. */
   const checks = async ({ input, files, save, warn }) => {
@@ -227,7 +234,7 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
           }
           return { ...built, workspace };
         },
-        reads: (file) => watchFiles.includes(file)
+        reads: (file) => compilerChanged(file)
           || (workspace !== undefined && readsCargo(file, { workspace, target: targetDir, manifests })),
         sources: () => manifests.flatMap((manifest) => manifest.sources),
         async committed() {
@@ -238,6 +245,7 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
       };
     },
     watchFiles,
+    compilerChanged,
   };
   return builder;
 }

@@ -680,6 +680,9 @@ test("each Cargo host asks the builder what a build read", () => {
     expect(plugin, file).toContain("createNativeBuilder");
     expect(plugin, file).toContain("cargoSession(");
     expect(plugin, file).not.toContain("readsCargo(");
+    // Whether an event on the compiler is a change is the builder's
+    // `compilerChanged`: one that only ran it is none (ADR 0379).
+    expect(plugin, file).not.toContain("watchFiles.includes(");
     expect(plugin, file).not.toMatch(/Cargo\\\.\(toml\|lock\)|react\/build\.sh|libreact\.rmeta|rust-toolchain\.toml/);
   }
   expect(read("tooling/cargo.js")).toContain("parseManifest(readFileSync(manifest");

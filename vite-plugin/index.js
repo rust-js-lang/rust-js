@@ -142,7 +142,7 @@ export default function rustJs({ cargo, rustJs, compile: custom, crates = [], ca
   function changed(event, path) {
     if (closed) return;
     const file = resolve(path);
-    const common = builder?.watchFiles.includes(file);
+    const common = builder?.compilerChanged(file);
     if (cargo) {
       if (session?.reads(file)) void schedule(...crates);
       return;
