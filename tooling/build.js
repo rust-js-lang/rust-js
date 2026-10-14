@@ -44,7 +44,13 @@ export function findCompiler(root) {
 /** The React the project has installed, whose API the react crate is built
  * with (ADR 0043): what a later React added doesn't compile. `null` without
  * one, which gets the latest's. */
-function installedReact(root) {
+/**
+ * The React release the project at `root` installed, or `null`: the one
+ * answer, of a host's build and the playground's alike.
+ * @param {string} root
+ * @returns {string | null}
+ */
+export function installedReact(root) {
   try {
     const require = createRequire(join(root, "package.json"));
     return JSON.parse(readFileSync(require.resolve("react/package.json"), "utf8")).version;

@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 
 import type { Plugin } from "vite";
+import { installedReact } from "../../tooling/build.js";
 import { reactLibs } from "../../tooling/crates.js";
 
 export const wasmPath = join(import.meta.dir, "../target/wasm32-wasip1/release/rust-js.wasm");
@@ -49,7 +50,8 @@ export function buildReactCrate(dir = cratesDir) {
   if (built.has(dir)) return;
   built.add(dir);
   mkdirSync(dir, { recursive: true });
-  const react = JSON.parse(readFileSync(createRequire(import.meta.path).resolve("react/package.json"), "utf8")).version;
+  const react = installedReact(import.meta.dir);
+  if (!react) throw new Error("the playground's React isn't installed: `bun install`");
   const script = join(import.meta.dir, "../../react/build.sh");
   const p = Bun.spawnSync([script, "-o", join(dir, "libreact.rmeta"), "--react", react, "--target", "wasm32-unknown-unknown"], { stderr: "pipe" });
   if (p.exitCode !== 0) throw new Error(`react/build.sh failed:\n${p.stderr.toString()}`);
