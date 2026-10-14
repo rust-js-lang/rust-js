@@ -502,6 +502,8 @@ architecture audit found the rest.
   edit-to-refresh latency on application-scale workloads (M5.1).
 - **Checks before a commit lands:** the check runs on each push to `main`,
   after it's pushed; nothing refuses a commit that fails it.
-- **Short dispatchers of calls from MIR:** `mir_call` (118 lines),
-  `mir_call_values` (306) and `mir_std_call` (261) are held to their
-  lengths, each lowered as what's left in it goes where its kind is.
+- **Short functions:** `mir_call` (118 lines), `mir_call_values` (301),
+  `mir_std_call` (254), `mir_function` (414), `classify_inherent` (840),
+  `classify_trait_method` (422), `comb_values` (691) and `mir_iter_call`
+  (502) are held to their lengths, which the architecture test holds
+  exactly, each lowered as what's left in it goes where its kind is.

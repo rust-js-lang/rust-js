@@ -348,7 +348,36 @@ const owners: Record<string, string[]> = {
   "self.walks.mutated": ["src/lower/copies.rs"],
   "self.walks.clones": ["src/lower/std_impls.rs"],
   "self.walks.clone_assumed": ["src/lower/std_impls.rs"],
+  "self.codecs": ["src/lower/serde.rs"],
 };
+// The rest of a function's context, which each module may read, and why:
+// what it lowers and where (set entering a body, `bodies.rs`), the names it
+// has given (any module names a local, `fresh`), and what it uses of other
+// crates (`items.rs` notes each, MIR's lowering hands them on).
+const shared: Record<string, string> = {
+  krate: "the crate's facts, read only",
+  tcx: "rustc, read only",
+  typing_env: "the body's typing environment, set entering it",
+  thir: "the body's THIR, set entering it",
+  body_facts: "what's found of the body before it's lowered, set entering it",
+  module: "the module it's in",
+  module_names: "the module's names, read only",
+  item: "the item lowered",
+  body_owner: "the body's owner, set entering it",
+  jsx: "whether it writes JSX",
+  names: "each name given, by `fresh`, kept per body by bodies.rs",
+  locals: "a body's variables; its MIR facts, `locals.mir`, are mir.rs's",
+  dependencies: "what it uses of other crates, noted by items.rs",
+};
+// Each field of `FnCx` is an owner's, or the shared context above: a field
+// added with neither is one nothing says who may change (the second review).
+test("each field of a function's context has an owner, or is its shared context", () => {
+  const lower = read("src/lower.rs");
+  const struct = lower.slice(lower.indexOf("struct FnCx<"), lower.indexOf("\n}\n", lower.indexOf("struct FnCx<")));
+  const fields = [...struct.matchAll(/^    (?:pub\([a-z]+\) )?([a-z_]+):/gm)].map(m => m[1]);
+  const owned = new Set(Object.keys(owners).map(path => path.split(".")[1]));
+  expect(fields.filter(field => !owned.has(field) && !(field in shared))).toEqual([]);
+});
 // `self.given`, matched as `self . given` with any space around each dot,
 // and `self.walks().mutated` as `self.walks.mutated`.
 const statePattern = (state: string) =>
@@ -466,12 +495,19 @@ test("shortcuts to recognition are in shortcuts.rs, and only shorten", () => {
 // not in the dispatcher. Lowering from MIR (ADR 0364) grew it back, its std
 // calls' `mir_std_call` to 942 lines, which the rule, of `classify` alone,
 // didn't see (the third architecture audit): each is held to the length it
-// has, and its cap lowered as it's split, never raised.
+// has, and its cap lowered as it's split, never raised. So is each function
+// too long to read at once (the second review): its cap is its length now,
+// which the test holds exactly, so a split says so here.
 const dispatchers: [string, string, number][] = [
-  ["src/lower/recognition.rs", "    pub(super) fn classify(", 15],
+  ["src/lower/recognition.rs", "    pub(super) fn classify(", 8],
   ["src/lower/mir.rs", "    fn mir_call(", 118],
-  ["src/lower/mir.rs", "    fn mir_call_values(", 306],
-  ["src/lower/mir.rs", "    fn mir_std_call(", 261],
+  ["src/lower/mir.rs", "    fn mir_call_values(", 301],
+  ["src/lower/mir.rs", "    fn mir_std_call(", 254],
+  ["src/lower/mir.rs", "    fn mir_function(", 414],
+  ["src/lower/recognition.rs", "    fn classify_inherent(", 840],
+  ["src/lower/recognition.rs", "    fn classify_trait_method(", 422],
+  ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 691],
+  ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 502],
 ];
 test("the dispatchers of what's called don't grow", () => {
   const length = (file: string, signature: string) => {
@@ -481,7 +517,7 @@ test("the dispatchers of what's called don't grow", () => {
     return lines.findIndex((line, k) => k > start && line === "    }") - start;
   };
   for (const [file, signature, cap] of dispatchers) {
-    expect(length(file, signature), signature).toBeLessThanOrEqual(cap);
+    expect(length(file, signature), signature).toBe(cap);
   }
 });
 
