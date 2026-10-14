@@ -39,6 +39,9 @@ written.**
   plain, as Rust reads them too.
 - **A block comment Rust nests**, `/* a /* b */ c */`, which JS ends at its
   first `*/`, ends them.
+- **A line comment JS would end early**, at a carriage return but a
+  CRLF's, at U+2028 or U+2029, where Rust's goes on, ends them: its rest
+  would be code. rustc's lexer tests have one.
 - A module's `.d.ts` has them too, after the same line.
 - A `/** .. */` license, a TypeScript file's, is `/* .. */` in Rust, where
   `/**` documents the item after it: its JS is `/* .. */`.

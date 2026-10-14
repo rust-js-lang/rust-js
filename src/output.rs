@@ -44,7 +44,7 @@ pub type DepInfo = Box<dyn FnOnce(&[PathBuf]) -> Result<Vec<u8>, String>>;
 /// to its first doc comment, attribute or item: what its JS starts with too
 /// (ADR 0383). A doc comment is its item's or its module's, `///`, `//!`,
 /// `/**` and `/*!`, but `////`, `/***` and `/**/` are plain; a block comment
-/// Rust nests, which JS can't hold, ends them.
+/// Rust nests, or a line comment JS would end early, ends them.
 fn leading_comments(text: &str) -> &str {
     let mut end = 0;
     let mut rest = text;
@@ -57,7 +57,14 @@ fn leading_comments(text: &str) -> &str {
             if doc("///", &["////"]) || trimmed.starts_with("//!") {
                 break;
             }
-            trimmed.find('\n').unwrap_or(trimmed.len())
+            let line = trimmed.find('\n').unwrap_or(trimmed.len());
+            // JS ends a line comment where Rust's goes on, at a carriage
+            // return but a CRLF's, U+2028 or U+2029: its rest would be code.
+            let text = trimmed[..line].strip_suffix('\r').unwrap_or(&trimmed[..line]);
+            if text.contains(['\r', '\u{2028}', '\u{2029}']) {
+                break;
+            }
+            line
         } else if trimmed.starts_with("/*") {
             if doc("/**", &["/***", "/**/"]) || trimmed.starts_with("/*!") {
                 break;

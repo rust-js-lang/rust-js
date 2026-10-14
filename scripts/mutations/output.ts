@@ -226,4 +226,12 @@ export const mutations: Mutation[] = [
     replace: "            if false {",
     tests: ["test/emission.test.ts", "-t", "leading comments"],
   },
+  {
+    name: "output-line-comment-js-ends",
+    breaks: "a line comment with a bare carriage return, which JS ends there, is written, and its rest is code",
+    file: "src/output.rs",
+    find: "            if text.contains(['\\r', '\\u{2028}', '\\u{2029}']) {",
+    replace: "            if false {",
+    tests: ["test/emission.test.ts", "-t", "leading comments"],
+  },
 ];

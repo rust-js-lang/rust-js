@@ -171,6 +171,14 @@ test("a file's leading comments are its JS's", async () => {
   expect(nested).toContain("\n// Kept.\n");
   expect(nested).not.toContain("nested */");
   expect(nested).not.toContain("Not kept");
+  // A line comment JS would end early, at a carriage return, U+2028 or
+  // U+2029, where Rust's goes on, ends them: rustc's lexer tests have one.
+  writeFileSync(join(dir, "crlf.rs"), "// Kept, its line's end CRLF.\r\n// Not kept: a\rbare CR.\npub fn three() -> i32 {\n    3\n}\n");
+  writeFileSync(join(dir, "lib.rs"), readFileSync(join(dir, "lib.rs"), "utf8") + "mod crlf;\n");
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js")]);
+  const crlf = readFileSync(join(dir, "crlf.js"), "utf8");
+  expect(crlf).toContain("// Kept, its line's end CRLF.");
+  expect(crlf).not.toContain("bare CR");
   const documented = readFileSync(join(dir, "documented.js"), "utf8");
   expect(documented).toContain("\n// Kept too.\n");
   expect(documented).not.toContain("item's docs");
