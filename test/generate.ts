@@ -88,7 +88,18 @@ export type Expr =
   // `D(7).0`, a temporary dropped at the end of its statement, and `d3.0`,
   // a `D` held: what's dropped, and when, is printed (ADR 0092).
   | { kind: "dtemp"; ty: Ty; tag: number }
-  | { kind: "dread"; ty: Ty; name: string };
+  | { kind: "dread"; ty: Ty; name: string }
+  // An iterator's chain, `v.into_iter().map(|x| ..).filter(|&x| ..).sum()`,
+  // whose closures may `note`: Rust's iterators are lazy, each item through
+  // every step before the next, and an end may stop early, `next()`,
+  // `any(..)`, so what's noted, and when, says in which order they run.
+  | { kind: "chain"; ty: Ty; elem: IntTy; source: Expr; rev: boolean; steps: Step[]; end: End };
+
+export type Step = { op: "map"; body: Expr } | { op: "filter"; body: Expr } | { op: "take" | "skip"; n: number };
+export type End =
+  | { op: "collect" | "sum" | "count" | "max" | "min" | "last" | "next" }
+  | { op: "any" | "all"; body: Expr }
+  | { op: "fold"; init: Expr; body: Expr };
 
 export type Stmt =
   | { kind: "let"; name: string; ty: Ty; value: Expr }
@@ -168,6 +179,10 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
     return { kind: "write", ty, name: w.name, value: sub(w.ty), result: sub(ty) };
   }
   if (r.chance(0.05)) return { kind: "note", ty, tag: r.int(100), a: sub(ty) };
+  if (r.chance(0.12)) {
+    const chained = chain(r, ty, scope, depth);
+    if (chained) return chained;
+  }
   if (ty === "u32" && r.chance(0.1)) {
     const held = scope.filter((v) => v.ty === "D");
     return held.length > 0 && r.chance(0.5) ? { kind: "dread", ty, name: r.pick(held).name } : { kind: "dtemp", ty, tag: 1000 + r.int(1000) };
@@ -354,6 +369,48 @@ function expr(r: Random, ty: Ty, scope: Scope, depth: number): Expr {
 }
 
 // A value's type for a new variable: mostly integers, and the rest.
+/** An iterator's chain whose end is `ty`, of what's in `scope`, or none
+ * where no end is one: its closures see what's `Copy` of it, and their
+ * own parameters, `x` and a fold's `acc`. */
+function chain(r: Random, ty: Ty, scope: Scope, depth: number): Expr | undefined {
+  if (depth <= 1) return undefined;
+  const vecOf = inside(ty, "Vec"), optionOf = inside(ty, "Option");
+  const captures = scope.filter((v) => isInt(v.ty) || v.ty === "bool").map((v) => ({ ...v, mutable: false }));
+  const closure = (elem: IntTy, result: Ty, acc = false) => {
+    const x = `x${r.int(1_000_000)}`, a = `acc${r.int(1_000_000)}`;
+    const bound = [...captures, { name: x, ty: elem, mutable: false }, ...(acc ? [{ name: a, ty: elem, mutable: false }] : [])];
+    const body = substitute(expr(r, result, bound, depth - 1), x);
+    return acc ? substitute(body, a, "acc") : body;
+  };
+  let elem: IntTy;
+  let end: End;
+  if (vecOf) {
+    elem = vecOf;
+    end = { op: "collect" };
+  } else if (optionOf) {
+    elem = optionOf;
+    end = { op: r.pick(["max", "min", "last", "next"] as const) };
+  } else if (ty === "bool") {
+    elem = r.pick(intTypes);
+    end = { op: r.pick(["any", "all"] as const), body: closure(elem, "bool") };
+  } else if (ty === "u32" && r.chance(0.3)) {
+    elem = r.pick(intTypes);
+    end = { op: "count" };
+  } else if (isInt(ty)) {
+    elem = ty;
+    end = r.chance(0.5) ? { op: "sum" } : { op: "fold", init: expr(r, ty, scope, 1), body: closure(ty, ty, true) };
+  } else {
+    return undefined;
+  }
+  const steps: Step[] = Array.from({ length: r.int(4) }, (): Step => {
+    const op = r.pick(["map", "map", "filter", "filter", "take", "skip"] as const);
+    if (op === "map") return { op, body: closure(elem, elem) };
+    if (op === "filter") return { op, body: closure(elem, "bool") };
+    return { op, n: r.int(4) };
+  });
+  return { kind: "chain", ty, elem, source: expr(r, `Vec<${elem}>`, scope, depth - 1), rev: r.chance(0.3), steps, end };
+}
+
 function valueType(r: Random): Ty {
   const n = r.next();
   if (n < 0.45) return r.pick(intTypes);
@@ -526,13 +583,14 @@ function block(r: Random, scope: Scope, depth: number, counter: { n: number }, s
   return stmts;
 }
 
-// A closure's parameter is `x`, whatever its generated name was.
-function substitute(e: Expr, name: string): Expr {
-  if (e.kind === "var") return e.name === name ? { ...e, name: "x" } : e;
+// A closure's parameter is `x`, whatever its generated name was, or `to`.
+function substitute(e: Expr, name: string, to = "x"): Expr {
+  if (e.kind === "var") return e.name === name ? { ...e, name: to } : e;
   const out: Record<string, unknown> = { ...e };
   for (const [key, value] of Object.entries(e)) {
-    if (value && typeof value === "object" && "kind" in value) out[key] = substitute(value as Expr, name);
-    if (Array.isArray(value)) out[key] = value.map((item) => substitute(item as Expr, name));
+    // An expression, or what holds one, a chain's step.
+    if (Array.isArray(value)) out[key] = value.map((item) => substitute(item as Expr, name, to));
+    else if (value && typeof value === "object") out[key] = substitute(value as Expr, name, to);
   }
   return out as Expr;
 }
@@ -569,6 +627,28 @@ function show(e: Expr): string {
       return `bump(&mut ${e.name})`;
     case "dtemp":
       return `D(id(${e.tag}u32)).0`;
+    case "chain": {
+      const t = e.elem;
+      const steps = e.steps.map((step) => {
+        if (step.op === "map") return `.map(|x: ${t}| -> ${t} { ${show(step.body)} })`;
+        if (step.op === "filter") return `.filter(|&x: &${t}| ${show(step.body)})`;
+        return `.${step.op}(id(${step.n}usize))`;
+      });
+      const end = e.end;
+      const tail =
+        end.op === "collect"
+          ? `.collect::<Vec<${t}>>()`
+          : end.op === "sum"
+            ? `.sum::<${t}>()`
+            : end.op === "count"
+              ? ".count() as u32"
+              : end.op === "any" || end.op === "all"
+                ? `.${end.op}(|x: ${t}| ${show(end.body)})`
+                : end.op === "fold"
+                  ? `.fold(${show(end.init)}, |acc: ${t}, x: ${t}| -> ${t} { ${show(end.body)} })`
+                  : `.${end.op}()`;
+      return `(${show(e.source)}.into_iter()${e.rev ? ".rev()" : ""}${steps.join("")}${tail})`;
+    }
     case "dread":
       return `${e.name}.0`;
     case "bin":

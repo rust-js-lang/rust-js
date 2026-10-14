@@ -65,6 +65,13 @@ time, valid and deterministic by construction:
   a temporary read, `D(7).0`, as its statement ends, a `println!` after it
   prints. Only what a block made does it move, so nothing is moved twice
   or read after (2026-10-14).
+- Iterators' chains, `v.into_iter()`, reversed or not, through up to
+  three of `map`, `filter`, `take` and `skip`, to an end: `collect`,
+  `sum`, `fold`, `count`, `max`, `min`, `last`, `next`, `any` or `all`.
+  Their closures are generated expressions, which may `note`: Rust's
+  iterators are lazy, each item through every step before the next, and
+  `next`, `any`, `all` and `take` stop early, which an array's eager
+  `map` and `filter` wouldn't (2026-10-14).
 - It keeps to what the borrow checker allows: a `Vec` is read through
   `clone()`, never moved, and a closure takes copies, so a later write to
   what it captured doesn't conflict with it.
