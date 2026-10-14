@@ -3,7 +3,7 @@
 // loaded. Each test is a crate of its own, compiled and run.
 
 import { beforeAll, expect, test } from "bun:test";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { buildReact, compiler, fixture, root, run, target } from "./support";
 
@@ -311,6 +311,18 @@ test("js::import! imports a module where it's written, and writes nothing of its
   expect([top.includes('import "./app.css";'), top.includes('import "./direct.css";'), panel.includes('import "./panel.css";')]).toEqual([true, true, true]);
   expect(top).not.toContain("const _");
   expect(panel).not.toContain("app.css");
+});
+
+// A module gets a file for what it has: a root of `mod`s alone, an app's
+// list of its files, has none, and a module of a `js::import!` alone has
+// one, its import (ADR 0382).
+test("a root of modules alone writes no JS, and a module's `js::import!` alone does", () => {
+  const dir = fixture("modules-root");
+  writeFileSync(join(dir, "lib.rs"), "pub mod panel {\n    pub fn f() -> u32 {\n        1\n    }\n}\npub mod styles {\n    js::import!(\"./styles.css\");\n}\n");
+  buildReact();
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.js"), "--", "--extern", `js=${join(target, "libjs.rmeta")}`, "-L", target]);
+  expect([existsSync(join(dir, "lib.js")), existsSync(join(dir, "panel.js"))]).toEqual([false, true]);
+  expect(readFileSync(join(dir, "styles.js"), "utf8")).toContain('import "./styles.css";');
 });
 
 // `js::directive!("use client");` is the module's directive, its first

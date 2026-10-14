@@ -92,11 +92,12 @@ async function run({ app, command, rustJs }) {
   // without rust-js still builds and serves from it, as Vite's does. With
   // rust-js, the Rust is always compiled, and an error never hidden by an
   // old file.
+  // An app's root of `mod`s alone, its list of files, has no JS of its own
+  // (ADR 0382): what's committed is its modules', beside their Rust.
   const compiling = existsSync(compiler);
   if (!compiling) {
-    const file = command === "compile" ? undefined : await session.committed();
-    if (!file) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
-    log(`rust-js: ${withoutCompiler(compiler, file)}`);
+    if (command === "compile") throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
+    log(`rust-js: ${withoutCompiler(compiler, (await session.committed()) ?? "JS beside the Rust")}`);
   } else if (!(await compile()) && command !== "dev") throw new Error("rust-js: the app's Rust doesn't compile");
 
   // What Cargo reads of the crate, its Rust and its manifests, and what

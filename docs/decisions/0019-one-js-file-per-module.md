@@ -2,7 +2,9 @@
 
 Status: Accepted. Supersedes the "functions inside modules" limit of
 [0016](0016-crate-shape.md) and the single output file of
-[0005](0005-input-and-output.md).
+[0005](0005-input-and-output.md). Amended by
+[0382](0382-a-module-has-a-file-for-what-it-has.md): the root, too, has a
+file for what it has.
 
 Case: N, A ([0262](0262-when-rust-and-js-disagree.md)).
 

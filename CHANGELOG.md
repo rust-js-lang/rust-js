@@ -24,6 +24,9 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Fixed
 
+- **A crate root of `mod`s alone writes no JS**, an app's list of its files;
+  and a module of a `js::import!` alone writes its import, which was lost
+  ([ADR 0382](docs/decisions/0382-a-module-has-a-file-for-what-it-has.md)).
 - **A dev server compiles once for a save, on macOS too.** macOS reports a
   compiler that ran as changed, so each compile was the next one's event,
   twice a second, idle. Now only a compiler replaced since it said what it

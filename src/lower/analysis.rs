@@ -32,7 +32,7 @@ use rustc_middle::thir::ExprKind;
 use rustc_middle::ty;
 use rustc_middle::ty::{Ty, TyCtxt, TypeVisitableExt};
 use rustc_span::Symbol;
-use rustc_span::def_id::{CRATE_MOD_ID, DefId, LocalDefId, LocalModId};
+use rustc_span::def_id::{DefId, LocalDefId, LocalModId};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use type_facts::type_fact_params;
 pub(super) use validation::is_thread_local;
@@ -432,21 +432,26 @@ pub(super) fn analyze_crate<'a, 'tcx>(
         .chain(dictionaries.iter().map(|id| id.expect_local()))
         .chain(codecs.iter().map(|id| id.expect_local()))
         .collect();
-    // The modules that get a JS file: the root, then every module with one of
-    // those, in the order the first one appears.
-    let mut modules = vec![CRATE_MOD_ID];
-    let mut seen_modules = HashSet::from([CRATE_MOD_ID]);
+    // The modules that get a JS file: every module with one of those, in the
+    // order the first one appears. The root is no other: a root of `mod`s
+    // alone, an app's list of its files, has none (ADR 0382).
+    let mut modules = Vec::new();
+    let mut seen_modules = HashSet::new();
     for &def_id in &items {
         let module = tcx.parent_module_from_def_id(def_id);
         if seen_modules.insert(module) {
             modules.push(module);
         }
     }
-    // And each that re-exports another's function, `pub use`, a file of
-    // its `export .. from` though it has nothing of its own (ADR 0240).
+    // And each that imports a file for what it does, `js::import!("./app.css")`
+    // (ADR 0110), or re-exports another's function, `pub use`, a file of its
+    // `export .. from` though it has nothing of its own (ADR 0240).
     let mut all_modules = Vec::new();
     tcx.hir_for_each_module(|module| all_modules.push(module));
     for module in all_modules {
+        if bindings::marks(tcx, module, "import").next().is_some() && seen_modules.insert(module) {
+            modules.push(module);
+        }
         let reexports = tcx.hir_module_free_items(module).any(|id| {
             let item = tcx.hir_item(id);
             matches!(item.kind, rustc_hir::ItemKind::Use(path, rustc_hir::UseKind::Single(_))

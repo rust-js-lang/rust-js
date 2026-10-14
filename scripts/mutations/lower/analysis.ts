@@ -127,4 +127,20 @@ export const mutations: Mutation[] = [
     replace: "        body.mir = match (built.is_stolen() || promoted.is_stolen(), false) {\n",
     tests: ["test/corpus.test.ts", "-t", "const_fn_in_patterns"],
   },
+  {
+    name: "analysis-root-always-a-file",
+    breaks: "a crate root of `mod`s alone, an app's list of its files, writes an empty JS file of its own, `src/lib.js`",
+    file: "src/lower/analysis.rs",
+    find: "    let mut modules = Vec::new();\n    let mut seen_modules = HashSet::new();\n",
+    replace: "    let mut modules = vec![rustc_span::def_id::CRATE_MOD_ID];\n    let mut seen_modules = HashSet::from([rustc_span::def_id::CRATE_MOD_ID]);\n",
+    tests: ["test/modules.test.ts", "-t", "a root of modules alone"],
+  },
+  {
+    name: "analysis-import-alone-no-file",
+    breaks: "a module whose only item is a `js::import!` gets no file, and what it imports is lost",
+    file: "src/lower/analysis.rs",
+    find: "        if bindings::marks(tcx, module, \"import\").next().is_some() && seen_modules.insert(module) {",
+    replace: "        if false && seen_modules.insert(module) {",
+    tests: ["test/modules.test.ts", "-t", "a root of modules alone|js::import! imports a module"],
+  },
 ];
