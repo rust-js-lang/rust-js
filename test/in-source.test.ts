@@ -29,6 +29,8 @@ function crate(dir: string, name: string, modules: Record<string, string>, impor
   mkdirSync(join(dir, name, "src"), { recursive: true });
   return {
     library: { name },
+    // Its root's Rust, as a manifest has it, a root of `mod`s alone too.
+    input: join(dir, name, "src", "lib.rs"),
     modules: Object.entries(modules).map(([module, js]) => {
       const source = join(dir, name, "src", `${module === "" ? "lib" : module}.rs`);
       const file = join(dir, "build", name, `${module === "" ? "lib" : module}.js`);

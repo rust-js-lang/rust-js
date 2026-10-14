@@ -4903,20 +4903,30 @@ pub fn App(items: &[&'static str]) -> JSX::Element {
 test("a hyphenated attribute read first is a variable of a JS name", async () => {
   const { dir, args } = compile(`#![allow(non_snake_case)]
 use react::{JSX, jsx};
+fn label(step: u32) -> String {
+    format!("step {step}")
+}
 pub fn App(step: u32, open: bool) -> JSX::Element {
     jsx! { <div data-step={step.to_string()}>{if open { "a" } else { "b" }}</div> }
 }
 pub fn Repeated(step: u32) -> JSX::Element {
     jsx! { <div data-step={step.to_string()}>{ let mut s = String::new(); for _ in 0..step { s.push('x'); } s }</div> }
 }
+pub fn Labelled(step: u32) -> JSX::Element {
+    jsx! { <div data-label={label(step)}>{ let mut s = String::new(); for _ in 0..step { s.push('x'); } s }</div> }
+}
 `);
   run(args);
+  // A call of the crate's own runs before the loop, as written: named as
+  // JS names a variable, \`dataLabel\`.
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain("const dataLabel = label(step);");
   const lib = await import(join(dir, "lib.jsx"));
   expect([renderToStaticMarkup(lib.App(2, true)), renderToStaticMarkup(lib.App(3, false))]).toEqual([
     '<div data-step="2">a</div>',
     '<div data-step="3">b</div>',
   ]);
   expect(renderToStaticMarkup(lib.Repeated(2))).toBe('<div data-step="2">xx</div>');
+  expect(renderToStaticMarkup(lib.Labelled(2))).toBe('<div data-label="step 2">xx</div>');
 });
 
 // ADR 0235: a child shown only where a test holds, `if shown { hint } else
