@@ -31,6 +31,10 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Fixed
 
+- **A loop left by a `break` of a choice compiles.** `loop { if a || b {
+  break if c { 1 } else { 2 }; } }` never finished compiling: rust-js turned
+  its two exits around, and back, without end. Found by a generated program
+  ([ADR 0370](docs/decisions/0370-loop-exits-first.md)).
 - **A private props struct an exported component names is declared in its
   `.d.ts`**, not exported, where it was `any`
   ([ADR 0385](docs/decisions/0385-a-private-type-a-declaration-names.md)).

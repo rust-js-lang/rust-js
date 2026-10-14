@@ -62,3 +62,13 @@ later passes have made more of them that shape, `calculator`'s.
   -)) { break; } ..` and `return { TAG: "Ok", _0: left };` after it.
 - Not yet: `if (!(x < 50))` stays so; tidy doesn't know `x` is no `NaN`,
   which `x >= 50` would need.
+
+## Amendment: an exit each way is an early exit already
+
+A loop whose body ends `if (u) { return 1; } return 2;`, an exit each
+way, was turned `if (!u) { return 2; } return 1;`, and turned back,
+without end: a generated program's compile, seed 40074, `loop { if a || b
+{ break if c { 1 } else { 2 }; } }`, never finished (2026-10-14). An arm
+that's an exit alone, before an exit, is the early exit this makes, and is
+left as it is. `test/corpus/loop_break_choice.rs` runs it against native
+Rust; a mutation turns it again.

@@ -150,6 +150,12 @@ pub(super) fn early_return(stmt: &mut Stmt) -> Option<Option<Stmt>> {
     if !in_else && !goes_on && !then.last().is_some_and(ends) {
         return None;
     }
+    // `if (c) { return 1; } return 2;`, an exit each way: an early return
+    // already, which turned would be `if (!c) { return 2; } return 1;`, and
+    // turned again this, without end (a generated program's, seed 40074).
+    if !in_else && matches!(then.as_slice(), [e] if exits(e)) {
+        return None;
+    }
     let mut tail = body.split_off(at).into_iter();
     let Some(Stmt {
         kind: StmtKind::If(test, mut then, otherwise),

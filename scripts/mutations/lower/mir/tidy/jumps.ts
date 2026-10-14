@@ -279,4 +279,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "loop_exits"],
     snapshots: true,
   },
+  {
+    name: "jumps-exit-each-way-turned",
+    breaks: "a loop's `if (c) { return 1; } return 2;` is turned, and turned back, without end: its compile never finishes",
+    file: "src/lower/mir/tidy/jumps.rs",
+    find: "    if !in_else && matches!(then.as_slice(), [e] if exits(e)) {",
+    replace: "    if false && matches!(then.as_slice(), [e] if exits(e)) {",
+    tests: ["test/corpus.test.ts", "-t", "^loop_break_choice.rs$"],
+  },
 ];
