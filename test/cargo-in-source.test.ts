@@ -4,6 +4,7 @@
 import { beforeAll, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { createNativeBuilder } from "../tooling/build.js";
 import { checkCargo } from "../tooling/cargo.js";
 import { node } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
@@ -152,3 +153,19 @@ const plain = await import(${JSON.stringify(join(src, "plain.js"))});
 console.log(child.twice(), plain.base(), plain.make().n);`;
   expect(run([node ?? "node", "--input-type=module", "--eval", program]).trim()).toBe("2 1 3");
 }, 600_000);
+
+// Without a compiler, a host uses the committed JS of the package's root
+// module, beside its Rust wherever its `[lib] path` says, Next.js's
+// `app/page.rs`: Vite's looked in `src/` alone, and Next.js's had none (the
+// second architecture review).
+test("a Cargo build's committed JS is beside its root module's Rust, wherever that is", async () => {
+  const dir = fixture("cargo-committed");
+  mkdirSync(join(dir, "app"), { recursive: true });
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "app/page.rs"\n');
+  writeFileSync(join(dir, "app", "page.rs"), "pub fn one() -> u32 {\n    1\n}\n");
+  const session = createNativeBuilder({ root: dir, rustJs: join(dir, "no-compiler"), bindings: [] })
+    .cargoSession({ manifestPath: join(dir, "Cargo.toml"), packageName: "app", offline: true });
+  expect(await session.committed()).toBeUndefined();
+  writeFileSync(join(dir, "app", "page.jsx"), "export function one() {\n  return 1;\n}\n");
+  expect(await session.committed()).toBe(join(dir, "app", "page.jsx"));
+});

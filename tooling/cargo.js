@@ -337,10 +337,10 @@ function relinked(bytes, links, to, moved) {
 
 /**
  * The workspace a Cargo manifest is of, a member's or the root's, and where
- * Cargo builds it: what Cargo reads, and what it writes (ADR 0101), and where each of its
- * packages is.
+ * Cargo builds it: what Cargo reads, and what it writes (ADR 0101), where each of its
+ * packages is, and each one's library's root, `src/lib.rs` or its `[lib] path`.
  * @param {{ manifestPath: string, toolchain: string, offline?: boolean }} options
- * @returns {Promise<{ root: string, target: string, packages: Map<string, string> }>}
+ * @returns {Promise<{ root: string, target: string, packages: Map<string, string>, libs: Map<string, string> }>}
  */
 export async function cargoWorkspace({ manifestPath, toolchain, offline = false }) {
   const manifest = resolve(manifestPath);
@@ -350,7 +350,11 @@ export async function cargoWorkspace({ manifestPath, toolchain, offline = false 
   });
   const metadata = JSON.parse(stdout);
   const packages = new Map(metadata.packages.map((pkg) => [pkg.name, dirname(pkg.manifest_path)]));
-  return { root: metadata.workspace_root, target: metadata.target_directory, packages };
+  const libs = new Map(metadata.packages.flatMap((pkg) => {
+    const lib = pkg.targets.find((target) => target.kind.includes("lib"));
+    return lib ? [[pkg.name, lib.src_path]] : [];
+  }));
+  return { root: metadata.workspace_root, target: metadata.target_directory, packages, libs };
 }
 
 /** The package's name in a Cargo package ID: `path+file:///dir#name@1.0`, or `path+file:///dir/name#1.0`. */

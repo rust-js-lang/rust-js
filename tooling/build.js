@@ -231,8 +231,10 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
      * of the workspace its manifest is of, and keeps what it read;
      * `reads(file)` is whether a change to `file` is one to build again for,
      * rust-js's own files, the workspace's Rust and manifests but not what
-     * Cargo writes, or a source the last build read wherever it is; and
-     * `sources()` is each of those, to watch.
+     * Cargo writes, or a source the last build read wherever it is;
+     * `sources()` is each of those, to watch; and `committed()` is the JS of
+     * the package's root module committed beside its Rust (ADR 0041), what
+     * a host uses without a compiler, if there's one.
      * @param {Parameters<typeof checkCargo>[0] & { offline?: boolean }} options
      */
     cargoSession(options) {
@@ -247,6 +249,11 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
         reads: (file) => watchFiles.includes(file)
           || (workspace !== undefined && readsCargo(file, { workspace, target: targetDir, manifests })),
         sources: () => manifests.flatMap((manifest) => manifest.sources),
+        async committed() {
+          const { libs } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline });
+          const lib = libs.get(options.packageName);
+          return lib && [".jsx", ".js"].map((extension) => lib.replace(/\.rs$/, extension)).find(existsSync);
+        },
       };
     },
     watchFiles,

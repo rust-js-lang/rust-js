@@ -199,9 +199,7 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
       // Rust is always compiled, and an error is never hidden by an old file.
       // A Cargo workspace's is beside each crate's Rust (ADR 0041).
       if (cargo && !existsSync(rustJs)) {
-        const { packages } = await builder.cargoWorkspace({ manifestPath: workspaceManifest, offline: cargo.offline });
-        const dir = packages.get(cargo.package);
-        const file = dir && [".jsx", ".js"].map(ext => join(dir, "src", `lib${ext}`)).find(existsSync);
+        const file = await session.committed();
         if (file) {
           entry = file;
           committed.add(file);

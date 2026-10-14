@@ -122,7 +122,10 @@ to the output, anyone can read or patch it without the compiler, and the
 code keeps working without it. For rust-js the last reason matters more,
 since compiling needs this repository's pinned nightly. So when there's no
 rust-js binary, the plugin builds from the committed file with a warning,
-and drops the comment naming its missing map. With rust-js it always
+and drops the comment naming its missing map. (Amended by the second
+architecture review: so does Next.js's, and a Cargo build's committed file
+is its root module's, beside its `[lib] path`, which the builder's Cargo
+session finds for both, not `src/lib.jsx` alone.) With rust-js it always
 compiles, so a stale file never hides an error. ReScript's docs also
 discourage compiling in a bundler's loader, which is why the plugin writes
 real files rather than serving `App.rs` as a module.

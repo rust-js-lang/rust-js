@@ -25,7 +25,6 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   // save rewrites many of target/'s, which it would see as many changes.
   process.env.CARGO_TARGET_DIR ??= join(app, "node_modules/.cache/rust-js/target");
   const compiler = resolve(app, rustJs ?? findCompiler(app));
-  if (!existsSync(compiler)) throw new Error(`rust-js: no compiler at ${compiler}`);
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const manifestPath = join(app, "Cargo.toml");
   const { root: workspace, packages } = await builder.cargoWorkspace({ manifestPath });
@@ -48,14 +47,23 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
     }
   }
 
-  if (!(await compile()) && command !== "dev") return 1;
+  // The JS is committed, as ReScript recommends (ADR 0041), so a checkout
+  // without rust-js still builds and serves from it, as Vite's does. With
+  // rust-js, the Rust is always compiled, and an error never hidden by an
+  // old file.
+  const compiling = existsSync(compiler);
+  if (!compiling) {
+    const file = command === "compile" ? undefined : await session.committed();
+    if (!file) throw new Error(`rust-js: no compiler at ${compiler}`);
+    log(`rust-js: no rust-js at ${compiler}: using the committed ${file}. Install rust-js or build it with cargo build to compile the Rust.`);
+  } else if (!(await compile()) && command !== "dev") return 1;
   // Its Rust's JS alone, which an app's build may read before Next.js runs.
   if (command === "compile") return 0;
 
   // What Cargo reads of the crate, its Rust and its manifests, and what
   // rust-js reads of its own, but not what Cargo writes.
   const watchers = [];
-  if (command === "dev") {
+  if (command === "dev" && compiling) {
     let pending = false;
     let active;
     const drain = async () => {
