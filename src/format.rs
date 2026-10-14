@@ -33,16 +33,25 @@ use oxc_span::{GetSpan, SourceType};
 
 use crate::settings::{ArrowParens, EndOfLine, Format, ObjectWrap, QuoteProps, TrailingComma};
 
+/// How a JS file of rust-js's is read, by its name: a `.jsx` one as JSX
+/// (ADR 0040), as it was written.
+fn source_type(js_file_name: &str) -> SourceType {
+    if js_file_name.ends_with(".jsx") {
+        SourceType::jsx()
+    } else {
+        SourceType::mjs()
+    }
+}
+
 /// `code` as oxfmt formats it, with `options`, and `map`'s mappings moved
 /// to match. `None` if the formatter fails, and the caller keeps what it has.
 pub fn formatted(
     code: &str,
     map: &SourceMap<'_>,
-    jsx: bool,
     js_file_name: &str,
     options: &JsFormatOptions,
 ) -> Option<(String, String)> {
-    let source_type = if jsx { SourceType::jsx() } else { SourceType::mjs() };
+    let source_type = source_type(js_file_name);
     let allocator = Allocator::default();
     let text = format(&allocator, code, source_type, options.clone())
         .ok()?
@@ -59,16 +68,10 @@ pub fn formatted(
 /// moved to it, if it's the same program: the same nodes, in the same order,
 /// but for the ones a formatter adds or takes out, JSX's text and `{" "}`.
 /// `map` is JSON. Otherwise, why not.
-pub fn transformed(
-    code: &str,
-    text: String,
-    map: &str,
-    jsx: bool,
-    js_file_name: &str,
-) -> Result<(String, String), String> {
+pub fn transformed(code: &str, text: String, map: &str, js_file_name: &str) -> Result<(String, String), String> {
     let map = SourceMap::from_json_string(map).map_err(|e| format!("was given a map it can't read: {e}"))?;
     let map = &map;
-    let source_type = if jsx { SourceType::jsx() } else { SourceType::mjs() };
+    let source_type = source_type(js_file_name);
     let allocator = Allocator::default();
     let (before, meant) =
         nodes(&allocator, code, source_type).map_err(|e| format!("was given JS it can't read: {e}"))?;
@@ -422,14 +425,7 @@ pub(crate) fn laid_out(
 ) -> (String, String) {
     let options = options_of(format).expect("options checked as they were read");
     let unformatted = SourceMap::from_json_string(&map).expect("the map just built");
-    let (code, map) = formatted(
-        &code,
-        &unformatted,
-        js_file_name.ends_with(".jsx"),
-        js_file_name,
-        &options,
-    )
-    .unwrap_or((code, map));
+    let (code, map) = formatted(&code, &unformatted, js_file_name, &options).unwrap_or((code, map));
     spaced(code, map, js_file_name)
 }
 
@@ -539,9 +535,8 @@ mod tests {
                     let code = text
                         .rsplit_once("//# sourceMappingURL=")
                         .map_or(text.as_str(), |(code, _)| code);
-                    let source_type = if jsx { SourceType::jsx() } else { SourceType::mjs() };
                     let allocator = Allocator::default();
-                    let again = format(&allocator, code, source_type, options())
+                    let again = format(&allocator, code, source_type(&path.to_string_lossy()), options())
                         .expect("it parses")
                         .print()
                         .expect("it prints")

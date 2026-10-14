@@ -125,7 +125,7 @@ pub fn emit(
     }
     let map = generated.map.expect("a source map, since source_map_path is set");
     // The sources the map points into, and only those, named from here.
-    let source_of = |line: u32| sources.files.partition_point(|file| file.line <= line).checked_sub(1);
+    let source_of = |line: u32| sources.file_at(line);
     let used: std::collections::BTreeSet<usize> = primary
         .into_iter()
         .chain(
@@ -1270,8 +1270,9 @@ fn restore_sources<'a>(
             out.add_token(token.get_dst_line(), token.get_dst_col(), 0, 0, None, None);
             continue;
         }
-        let position = sources.files.partition_point(|file| file.line <= token.get_src_line());
-        let Some(i) = position.checked_sub(1) else { continue };
+        let Some(i) = sources.file_at(token.get_src_line()) else {
+            continue;
+        };
         let id = *ids
             .entry(i)
             .or_insert_with(|| out.set_source_and_content(&paths[&i], &sources.files[i].text));

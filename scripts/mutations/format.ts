@@ -85,8 +85,8 @@ export const mutations: Mutation[] = [
     name: "formatted-map-unmoved",
     breaks: "JS laid out by the formatter is written with the map of the JS before it, so its positions point at other lines and columns of the Rust",
     file: "src/format.rs",
-    find: "    )\n    .unwrap_or((code, map));\n",
-    replace: "    )\n    .map(|(formatted, _)| (formatted, map.clone()))\n    .unwrap_or((code, map));\n",
+    find: "    let (code, map) = formatted(&code, &unformatted, js_file_name, &options).unwrap_or((code, map));\n",
+    replace: "    let (code, map) = formatted(&code, &unformatted, js_file_name, &options)\n        .map(|(formatted, _)| (formatted, map.clone()))\n        .unwrap_or((code, map));\n",
     tests: ["test/traits.test.ts", "test/format.test.ts", "-t", "trait method expressions keep their Rust source locations|maps handlers to the formatted source"],
   },
 ];

@@ -17,7 +17,6 @@ use crate::settings::{Fail, Settings, When};
 pub fn transform(
     settings: &Settings,
     js_path: &Path,
-    jsx: bool,
     js_file_name: &str,
     code: String,
     map: String,
@@ -25,7 +24,7 @@ pub fn transform(
     let (mut code, mut map) = (code, map);
     for command in &settings.hooks.transform {
         let given = run_transform(settings, command, js_path, &code)
-            .and_then(|text| crate::format::transformed(&code, text, &map, jsx, js_file_name));
+            .and_then(|text| crate::format::transformed(&code, text, &map, js_file_name));
         match given {
             Ok((text, moved)) => (code, map) = (text, moved),
             Err(why) => eprintln!(

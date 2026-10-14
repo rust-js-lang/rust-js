@@ -71,6 +71,14 @@ pub struct Sources {
     pub files: Vec<Source>,
 }
 
+impl Sources {
+    /// Which of `files` the arena's `line` is in: the last that starts at or
+    /// before it.
+    pub fn file_at(&self, line: u32) -> Option<usize> {
+        self.files.partition_point(|file| file.line <= line).checked_sub(1)
+    }
+}
+
 /// The linked crate as JS: one module per Rust module, and tests in test mode.
 pub struct Lowered {
     pub library: Option<crate::library::Library>,
@@ -88,7 +96,8 @@ pub struct ImportRequest {
     pub path: Vec<String>,
 }
 
-/// Symbolic module output. Imports and runtime closure are filled by linking.
+/// Symbolic module output. Imports and the helpers it asks for are filled
+/// by linking.
 pub struct UnlinkedModule {
     pub module: LoweredModule,
     pub imports: Vec<ImportRequest>,

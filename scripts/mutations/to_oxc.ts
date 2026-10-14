@@ -222,8 +222,8 @@ export const mutations: Mutation[] = [
     name: "map-other-files-dropped",
     breaks: "a module's JS copied from another file, as a trait's default body, has no mapping into that file: only the module's own Rust is in its map",
     file: "src/to_oxc.rs",
-    find: "        let Some(i) = position.checked_sub(1) else { continue };",
-    replace: "        let Some(i) = position.checked_sub(1).filter(|&i| Some(i) == primary) else { continue };",
+    find: "        let Some(i) = sources.file_at(token.get_src_line()) else {\n",
+    replace: "        let Some(i) = sources.file_at(token.get_src_line()).filter(|&i| Some(i) == primary) else {\n",
     tests: ["test/emission.test.ts", "-t", "copied trait defaults map to their original source file"],
   },
   {
