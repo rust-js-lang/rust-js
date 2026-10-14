@@ -283,4 +283,13 @@ export const mutations: Mutation[] = [
     replace: "            ty::Adt(..) if false && let Some(owns) = self.array_source(ty) => {\n",
     tests: ["test/corpus.test.ts","-t","iterator_clones"],
   },
+  {
+    name: "tagged-enum-eq-generic",
+    breaks: "a tagged enum's fieldless variants are compared by the generic `$eq`, not by their tag",
+    file: "src/lower/std_impls.rs",
+    find: "            && let Some(key) = super::bindings::declared_tag(self.tcx, adt.did())\n        {\n            return Ok(Expr::bin(Op::Eq, Expr::member(a, &key), Expr::member(b, &key)));\n",
+    replace: "            && let Some(key) = super::bindings::declared_tag(self.tcx, adt.did())\n            && false\n        {\n            return Ok(Expr::bin(Op::Eq, Expr::member(a, &key), Expr::member(b, &key)));\n",
+    tests: ["test/corpus.test.ts", "-t", "tagged_enum_values"],
+    snapshots: true,
+  },
 ];

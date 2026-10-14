@@ -996,7 +996,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.is_string_like(ty)
             || Num::of(ty).is_some_and(|n| !n.float())
             || ty.is_bool()
-            || matches!(ty.kind(), ty::Adt(adt, _) if super::is_fieldless_enum(*adt))
+            || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt))
     }
 
     /// One of `IterComb`'s, on `items`: an array, or a JS iterator if `lazy`.

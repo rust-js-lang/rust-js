@@ -5,7 +5,7 @@
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
 use crate::lower::recognition::StdItem;
-use crate::lower::representation::{Num, is_fieldless_enum};
+use crate::lower::representation::{Num, is_string_enum};
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -487,7 +487,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || self.recognition().is_type_id(ty)
             || Num::of(ty).is_some()
             || ty.is_bool()
-            || matches!(ty.kind(), ty::Adt(adt, _) if is_fieldless_enum(*adt))
+            || matches!(ty.kind(), ty::Adt(adt, _) if is_string_enum(self.tcx, *adt))
     }
 
     pub(in crate::lower) fn compares_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {

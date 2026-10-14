@@ -4,7 +4,7 @@
 
 use super::recognition::{StdItem, std_item};
 use super::representation::Num;
-use super::{FnCx, R, Shape, is_fieldless_enum, lower_first};
+use super::{FnCx, R, Shape, lower_first};
 use crate::js::{self, Expr, Op, Prop, Stmt, StmtKind, UnaryOp};
 use rustc_hir as hir;
 use rustc_hir::attrs::lang_items::LangItem;
@@ -605,7 +605,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()
-            || matches!(ty.kind(), ty::Adt(adt, _) if is_fieldless_enum(*adt))
+            || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt))
     }
 
     /// Does `==` on `ty` run code of its own anywhere in it: a hand-written
@@ -712,6 +712,14 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let eq = self.tcx.associated_item_def_ids(self.partial_eq_trait())[0];
             let args = self.args_of(self.partial_eq_trait(), ty);
             return self.impl_call(eq, args, vec![a, b], span);
+        }
+        // A tagged enum's fieldless variant, `{ kind: "On" }` (ADR 0284):
+        // its tag, as the derive compares its variants.
+        if let ty::Adt(adt, _) = ty.kind()
+            && super::representation::is_fieldless_enum(*adt)
+            && let Some(key) = super::bindings::declared_tag(self.tcx, adt.did())
+        {
+            return Ok(Expr::bin(Op::Eq, Expr::member(a, &key), Expr::member(b, &key)));
         }
         // A constant, like a fieldless variant's `"Nothing"`, is a JS
         // primitive: only itself is equal to it. `None` is also `null`.

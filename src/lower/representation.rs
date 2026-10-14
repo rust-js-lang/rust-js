@@ -456,6 +456,14 @@ pub(super) fn is_fieldless_enum(adt: ty::AdtDef<'_>) -> bool {
     adt.is_enum() && adt.variants().iter().all(|v| v.fields.is_empty())
 }
 
+/// Whether an enum's JS value is a string, its variant's name (ADR 0013):
+/// a fieldless one's, but not a tagged one's (ADR 0284), whose variants are
+/// objects, `{ kind: "on" }`. What `===`, `includes` and a `Map`'s keys
+/// compare by: the one answer each asks.
+pub(super) fn is_string_enum(tcx: TyCtxt<'_>, adt: ty::AdtDef<'_>) -> bool {
+    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none()
+}
+
 /// Turn raw constant bits into a JS number literal.
 /// What rustc computed for a `const`, as a value tree (ADR 0031).
 pub(super) fn eval_const<'tcx>(

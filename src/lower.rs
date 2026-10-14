@@ -75,7 +75,7 @@ pub use analysis::{collect_bodies, collect_initializers, collect_mir};
 use bindings::{Export, is_binding};
 pub use pipeline::lower_crate;
 use recognition::{Std, TypeFact};
-use representation::{Num, const_js, eval_const, f32_literal, is_fieldless_enum, static_value};
+use representation::{Num, const_js, eval_const, f32_literal, static_value};
 pub use serde::{SerdeAttributes, attributes as serde_attributes};
 
 use body_queries::strip;

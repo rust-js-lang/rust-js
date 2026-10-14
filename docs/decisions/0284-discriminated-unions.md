@@ -144,3 +144,13 @@ if (status.pending === true) { .. }   // FormStatus::Pending { data, .. }
   enum without a tag is its variants' names, which are strings, and a
   number would be a new rule with no API asking for it.
 - Its `{:?}` is the Rust name, as a renamed variant's is (ADR 0060).
+
+## Amended by
+
+- (Amended by the second architecture review: a fieldless variant of a
+  tagged enum is an object, so whether an enum's JS value is a string is one
+  question, `representation::is_string_enum`, which `==`, `contains`, a
+  map's keys, an untagged union's kinds and an order ask: each took one of a
+  tagged enum for its name, compared by JS's identity, so `Light::On ==
+  Light::On` was `false`. Its `==` is its tag's, `a.kind === b.kind`;
+  `tagged_enum_values` runs it against native Rust.)

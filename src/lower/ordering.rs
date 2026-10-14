@@ -151,7 +151,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ty::Array(item, _) | ty::Slice(item) => self.cmp_items(a, b, *item, partial, span),
             // A fieldless enum: by its discriminants, as the derive compares
             // them, `Low = 1` before `High = 2` however they're declared.
-            ty::Adt(adt, _) if adt.is_enum() && adt.variants().iter().all(|v| v.fields.is_empty()) => {
+            ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt) => {
                 let mut variants = super::discriminants(self.tcx, *adt);
                 variants.sort_by_key(|&(_, value)| value);
                 let names = variants.into_iter().map(|(name, _)| Expr::str(name)).collect();

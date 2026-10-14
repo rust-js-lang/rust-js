@@ -307,4 +307,12 @@ export const mutations: Mutation[] = [
       "range_values"
     ]
   },
+  {
+    name: "tagged-enum-a-string",
+    breaks: "a tagged enum's fieldless variant, an object, is taken for its name, and compared, looked for and kept as a key by JS's identity",
+    file: "src/lower/representation.rs",
+    find: "    is_fieldless_enum(adt) && super::bindings::declared_tag(tcx, adt.did()).is_none()\n",
+    replace: "    let _ = tcx;\n    is_fieldless_enum(adt)\n",
+    tests: ["test/corpus.test.ts", "-t", "tagged_enum_values"],
+  },
 ];
