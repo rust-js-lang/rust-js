@@ -63,7 +63,7 @@ function main() {
     [2, 0.5],
     [1, 1.5],
   ]);
-  Iterator.from($mutValues(ordered, $sortedEntries(ordered, $cmp))).forEach((x) => {
+  $mutValues(ordered, $sortedEntries(ordered, $cmp)).forEach((x) => {
     x.value *= 2;
   });
   for (const [, x] of $mutEntries(ordered, $sortedEntries(ordered, $cmp))) {
@@ -74,9 +74,7 @@ function main() {
     visited.push(k);
     x.value -= 0.5;
   }
-  const halves = Iterator.from($mutValues(ordered, $sortedEntries(ordered, $cmp)))
-    .map((x) => x.value / 2)
-    .toArray();
+  const halves = $mutValues(ordered, $sortedEntries(ordered, $cmp)).map((x) => x.value / 2);
   console.log(
     `{${Array.from($sortedEntries(ordered, $cmp))
       .map(([key, value]) => `${key}: ${$debugF64(value)}`)

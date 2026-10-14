@@ -225,10 +225,18 @@ function main() {
   const value$12 = $treeEnd(set, $cmp, false, true, false);
   const value$13 = $treeEnd(set, $cmp, true, true, false);
   console.log(
-    `${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} [${Iterator.from(
-      $treeRange(set, $cmp, true, "BTreeSet", true, 3, true, 7, false),
+    `${value$12 == null ? "None" : `Some(${value$12})`} ${value$13 == null ? "None" : `Some(${value$13})`} [${$treeRange(
+      set,
+      $cmp,
+      true,
+      "BTreeSet",
+      true,
+      3,
+      true,
+      7,
+      false,
     )
-      .toArray()
+      .slice()
       .map((item) => String(item))
       .join(", ")}]`,
   );

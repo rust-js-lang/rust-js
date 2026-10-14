@@ -2785,21 +2785,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if matches!(std_path(self.tcx, adt.did()).as_str(), "std::option::IntoIter" | "std::iter::Once"))
     }
 
-    /// A B-tree map's `range()` or `range_mut()`: the array of its entries in
-    /// the bounds, `$treeRange`'s (ADR 0325).
-    pub(super) fn is_tree_range(&self, ty: Ty<'tcx>) -> bool {
-        let ty = self.reveal(ty);
-        matches!(ty.kind(), ty::Adt(adt, _) if matches!(std_path(self.tcx, adt.did()).as_str(),
-            "std::collections::btree_map::Range" | "std::collections::btree_map::RangeMut"))
-    }
-
-    /// A B-tree's `iter()`, `keys()` and the like: its items in order, an
-    /// array's (ADR 0059).
+    /// A B-tree's `iter()`, `keys()`, `range()` and the like: its items in
+    /// order, an array's (ADR 0059), `$treeRange`'s of a range (ADR 0325). Not its `extract_if()`, which takes them as it's
+    /// stepped, `$mapExtractIf`'s.
     pub(super) fn is_tree_iter(&self, ty: Ty<'tcx>) -> bool {
         let ty = self.reveal(ty);
         matches!(ty.kind(), ty::Adt(adt, _) if {
             let path = std_path(self.tcx, adt.did());
-            path.starts_with("std::collections::btree_map::") || path.starts_with("std::collections::btree_set::")
+            (path.starts_with("std::collections::btree_map::") || path.starts_with("std::collections::btree_set::"))
+                && !path.ends_with("::ExtractIf")
         })
     }
 

@@ -116,13 +116,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let it = values.into_iter().next().expect("the receiver");
             let boxed = self.option_of(output).is_some_and(|item| self.boxed_payload(item));
-            // A string's `chars()`, a `$iter` of its array (`std_iterator`).
-            let array = self.array_source(iter_ty).is_some()
-                || self.recognition().is_str_chars(iter_ty)
-                || self.recognition().is_str_bytes(iter_ty)
-                || self.recognition().is_slice_iter_mut(iter_ty)
-                || self.recognition().is_tree_iter(iter_ty)
-                || self.is_str_split(iter_ty)
+            let array = self.steps_an_array(iter_ty)
                 // A `Peekable` of an array's, the same `$iter`.
                 || (self.recognition().is_peekable(iter_ty)
                     && matches!(iter_ty.kind(), ty::Adt(_, args)
@@ -550,6 +544,22 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// A std iterator of type `ty` made of `value`, an array or a text, as
     /// MIR steps it: over an array, a `$iter`, which knows where it is, so a
     /// clone of it does (ADR 0181); another, the JS iterator of `value`.
+    /// Whether std's iterator `ty` is a `$iter` of an array, as
+    /// `std_iterator` makes it: an array's own, a string's `chars()`,
+    /// `bytes()` or `split`, a `VecDeque`'s, a slice's `iter_mut()`, a
+    /// `BTreeMap`'s, its `range()`'s too: one that steps from its back and
+    /// knows its length.
+    /// The one list.
+    pub(super) fn steps_an_array(&self, ty: Ty<'tcx>) -> bool {
+        self.array_source(ty).is_some()
+            || self.recognition().is_str_chars(ty)
+            || self.recognition().is_str_bytes(ty)
+            || self.is_str_split(ty)
+            || self.recognition().is_deque_iter(ty)
+            || self.recognition().is_slice_iter_mut(ty)
+            || self.recognition().is_tree_iter(ty)
+    }
+
     pub(super) fn std_iterator(&mut self, value: Expr, ty: Ty<'tcx>) -> Expr {
         match self.array_source(ty) {
             Some(_) => match from_iterator(value) {
@@ -557,16 +567,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(items) | Err(items) => items,
             },
             None if is_js_iterator(&value) => value,
-            // An array made of it, `s.split(",")`'s, or a
-            // `VecDeque`'s or a slice's `iter_mut()`'s, an array: a `$iter`
-            // of it, as of an array's.
-            None if made_array(&value)
-                || self.recognition().is_deque_iter(ty)
-                || self.recognition().is_slice_iter_mut(ty)
-                || self.recognition().is_tree_range(ty) =>
-            {
-                self.stepped_items(value)
-            }
+            // An array made of it, `s.split(",")`'s, or one of those
+            // `steps_an_array` lists, a `VecDeque`'s say: a `$iter` of it,
+            // as of an array's.
+            None if made_array(&value) || self.steps_an_array(ty) => self.stepped_items(value),
             None => self.js_iterator(value),
         }
     }

@@ -9,8 +9,8 @@ export function entry() {
 function show(text, pattern) {
   const value = $replace(text, pattern, "-");
   console.log(
-    `${$debugStr(value)} [${Iterator.from($split(text, pattern))
-      .toArray()
+    `${$debugStr(value)} [${$split(text, pattern)
+      .slice()
       .map((item) => $debugStr(item))
       .join(", ")}]`,
   );

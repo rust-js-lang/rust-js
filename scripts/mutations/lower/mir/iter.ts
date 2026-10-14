@@ -134,9 +134,10 @@ export const mutations: Mutation[] = [
     name: "mir-made-array-iterator-from",
     breaks: "a `split`'s array MIR steps is `Iterator.from(…)`, so its chain stays a JS iterator's",
     file: "src/lower/mir/iter.rs",
-    find: "            None if made_array(&value)\n                || self.recognition().is_deque_iter(ty)\n",
-    replace: "            None if false\n                || self.recognition().is_deque_iter(ty)\n",
-    tests: ["test/lowering.test.ts","-t","string's parts from MIR"],
+    find: "            None if made_array(&value) || self.steps_an_array(ty) => self.stepped_items(value),\n",
+    replace: "            None if self.steps_an_array(ty) => self.stepped_items(value),\n",
+    tests: ["test/corpus.test.ts", "-t", "^boxed_array_iter.rs$"],
+    snapshots: true,
   },
   {
     name: "mir-rev-of-fresh-iter-rest",
@@ -148,7 +149,7 @@ export const mutations: Mutation[] = [
   },
   {
     "name": "deque-iter-generic",
-    "breaks": "a `VecDeque`'s iterator from MIR is `Iterator.from(prev)`, collected `.toArray()`, not `prev.slice()`",
+    "breaks": "a `VecDeque`'s iterator from MIR is `Iterator.from(prev)`, collected `.toArray()`, not `prev.slice()`, and its `next_back()` refused",
     "file": "src/lower/mir/iter.rs",
     "find": " || self.recognition().is_deque_iter(ty)",
     "replace": "",
@@ -210,7 +211,7 @@ export const mutations: Mutation[] = [
     "name": "mir-chars-next-back-refused",
     "breaks": "`next_back()` of a string's `chars()` from MIR is refused as a lazy iterator's",
     "file": "src/lower/mir/iter.rs",
-    "find": "                || self.recognition().is_str_chars(iter_ty)\n",
+    "find": "            || self.recognition().is_str_chars(ty)\n",
     "replace": "",
     "tests": [
       "test/lowering.test.ts",
@@ -258,8 +259,8 @@ export const mutations: Mutation[] = [
     "name": "mir-iter-mut-a-js-iterator",
     "breaks": "a slice's `iter_mut()` from MIR is `Iterator.from(v)`, its chain lazy, `$lent(Iterator.from(v)).find(f)`, not `v.find(f)`",
     "file": "src/lower/mir/iter.rs",
-    "find": "                || self.recognition().is_slice_iter_mut(ty)\n",
-    "replace": "                || false\n",
+    "find": "            || self.recognition().is_slice_iter_mut(ty)\n",
+    "replace": "",
     "tests": [
       "test/lowering.test.ts",
       "-t",
@@ -354,7 +355,7 @@ export const mutations: Mutation[] = [
     "name": "mir-bytes-len-refused",
     "breaks": "`s.bytes().len()` from MIR is refused",
     "file": "src/lower/mir/iter.rs",
-    "find": "                || self.recognition().is_str_bytes(iter_ty)\n",
+    "find": "            || self.recognition().is_str_bytes(ty)\n",
     "replace": "",
     "tests": [
       "test/corpus.test.ts",
@@ -372,18 +373,6 @@ export const mutations: Mutation[] = [
       "test/corpus.test.ts",
       "-t",
       "str_bytes"
-    ]
-  },
-  {
-    "name": "mir-tree-range-a-js-iterator",
-    "breaks": "a B-tree's range from MIR is `Iterator.from(..)`, which can't step from its end",
-    "file": "src/lower/mir/iter.rs",
-    "find": "                || self.recognition().is_slice_iter_mut(ty)\n                || self.recognition().is_tree_range(ty) =>\n",
-    "replace": "                || self.recognition().is_slice_iter_mut(ty) =>\n",
-    "tests": [
-      "test/corpus.test.ts",
-      "-t",
-      "btree_range_mut"
     ]
   },
   {
@@ -455,18 +444,10 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "lazy_chains"],
   },
   {
-    name: "mir-next-back-iter-mut",
-    breaks: "MIR's `next_back()` of a slice's `iter_mut()` kept is refused",
-    file: "src/lower/mir/iter.rs",
-    find: "                || self.recognition().is_slice_iter_mut(iter_ty)\n                || self.recognition().is_tree_iter(iter_ty)\n",
-    replace: "                || self.recognition().is_tree_iter(iter_ty)\n",
-    tests: ["test/corpus.test.ts", "-t", "iter_mut_kept"],
-  },
-  {
     name: "mir-next-back-tree",
     breaks: "MIR's `next_back()` of a B-tree's `iter()` is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                || self.recognition().is_tree_iter(iter_ty)\n",
+    find: "            || self.recognition().is_tree_iter(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
   },
@@ -474,7 +455,7 @@ export const mutations: Mutation[] = [
     name: "mir-next-back-split",
     breaks: "MIR's `next_back()` of a `str::split` is refused",
     file: "src/lower/mir/iter.rs",
-    find: "                || self.is_str_split(iter_ty)\n",
+    find: "            || self.is_str_split(ty)\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "iter_next_back"],
   },

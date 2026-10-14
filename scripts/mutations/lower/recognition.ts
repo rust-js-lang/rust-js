@@ -1265,4 +1265,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "own_trait_by_ref"],
   },
+  {
+    name: "tree-extract-if-an-array",
+    breaks: "a B-tree's `extract_if()`, which takes its entries as it's stepped, is read as an array, `.slice()` of a generator",
+    file: "src/lower/recognition.rs",
+    find: "                && !path.ends_with(\"::ExtractIf\")\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^extract_if.rs$"],
+  },
 ];
