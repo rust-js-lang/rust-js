@@ -4,7 +4,6 @@ use super::{FnCx, R, Shape, camel_case, fn_def, js_ident};
 use crate::js;
 use crate::js::{Expr, Prop, Stmt, StmtKind};
 
-use rustc_hir::attrs::lang_items::LangItem;
 use rustc_hir::def::DefKind;
 use rustc_middle::thir::{self, ExprId, ExprKind};
 use rustc_middle::ty;
@@ -404,15 +403,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     };
                     children = self.spread_children(value, child_ty, out);
                 }
-                // A callback of one call whose JS gives `undefined` anyway
-                // returns it, `onSubmit={() => submit(false)}`: the component
-                // reads what Rust's gives, `undefined` (ADR 0040).
-                Prop::Field(name, mut value)
-                    if js::is_handler_name(&name) && given.get(&name).is_some_and(|&e| self.calls_for_nothing(e)) =>
-                {
-                    js::returning_its_call(&mut value);
-                    attrs.push((written.get(&name).copied(), Prop::Field(name, value)));
-                }
                 other => {
                     let at = match &other {
                         Prop::Field(key, _) | Prop::Getter(key, _) | Prop::Setter(key, _) => written.get(key).copied(),
@@ -480,29 +470,12 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Where each prop `props`, a struct of type `ty`, is given is written,
-    /// by its name: a field's value's place, and a flattened struct's made
-    /// here, each of its own (ADR 0213).
-    /// Whether `e`, a prop's callback, boxed, counted or in `Some`, is a
-    /// closure of one call whose JS gives `undefined` whatever it is: a
-    /// function of the crate's that gives `()`, a closure of its own, or a
-    /// binding that says so, `#[rust_js::returns_undefined]` (ADR 0040).
-    fn calls_for_nothing(&self, e: ExprId) -> bool {
-        let e = self.strip(e);
-        let closure = match self.thir[e].kind {
-            ExprKind::PointerCoercion { source, .. } => return self.calls_for_nothing(source),
-            ExprKind::Adt(ref adt)
-                if self.tcx.is_lang_item(adt.adt_def.did(), LangItem::Option) && adt.fields.len() == 1 =>
-            {
-                return false;
-            }
-            ExprKind::Closure(ref closure) => closure,
-            _ => return false,
-        };
-        self.closure_calls_for_nothing(self.krate.closures[&closure.closure_id])
-    }
-
-    /// `calls_for_nothing`, of a closure's body.
+    /// Whether a closure's body is one call whose JS gives `undefined`
+    /// whatever it is: a function of the crate's that gives `()`, a closure
+    /// of its own, or a binding that says so, `#[rust_js::returns_undefined]`
+    /// (ADR 0040). A component's handler of one, held or written in place,
+    /// returns it, `onSubmit={() => submit(false)}`: it reads what Rust's
+    /// gives, `undefined`.
     pub(super) fn closure_calls_for_nothing(&self, body: &super::Body<'tcx>) -> bool {
         let thir = &body.thir;
         let mut call = super::body_queries::strip(thir, body.expr);
@@ -535,6 +508,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
+    /// Where each prop `props`, a struct of type `ty`, is given is written,
+    /// by its name: a field's value's place, and a flattened struct's made
+    /// here, each of its own (ADR 0213).
     fn written_at(&self, props: ExprId, ty: Ty<'tcx>, written: &mut HashMap<String, BytePos>) {
         let ExprKind::Adt(adt) = &self.thir[super::body_queries::strip(self.thir, props)].kind else {
             return;
