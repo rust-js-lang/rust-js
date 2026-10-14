@@ -5,6 +5,7 @@ import { dirname, join, resolve } from "node:path";
 
 import { runSync, stopped } from "./child";
 import { markUsed } from "./native-cache";
+import { reactLibs } from "../tooling/crates.js";
 
 export const root = join(import.meta.dir, "..");
 export const target = join(root, "target");
@@ -318,7 +319,7 @@ export function buildReact() {
       "react/src", "react/build.sh", "react/cfg.js", "react/versions.json",
       "webapi/src", "webapi/build.sh", "builtins/src", "builtins/build.sh", "rust-toolchain.toml",
     ].map((path) => join(root, path)).concat(compiler);
-    const outputs = ["libreact.rmeta", "libwebapi.rmeta", "libjs.rmeta"].map((name) => join(target, name));
+    const outputs = reactLibs.map((lib) => join(target, `lib${lib}.rmeta`));
     once(join(target, "tests-react", thisRun()), () =>
       unlessUnchanged(join(target, "libreact.stamp"), inputs, outputs, () => run(["react/build.sh", "-o", join(target, "libreact.rmeta")])),
     );

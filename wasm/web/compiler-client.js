@@ -34,7 +34,7 @@ export function compileInWorker(loaded, sources, root, test) {
       worker.postMessage({
         module: loaded.module,
         sysroot: [...loaded.sysroot].map(([name, file]) => [name, file.data]),
-        webapi: loaded.webapiCrate.data, js: loaded.jsCrate.data, react: loaded.reactCrate.data,
+        crates: loaded.crates.map(([name, file]) => [name, file.data]),
         sources, root, test,
       });
     } catch (error) { fail(String(error)); }

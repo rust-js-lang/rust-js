@@ -8,6 +8,7 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
+import { reactLibs } from "../../../tooling/crates.js";
 import {
   $borrow,
   $borrowMut,
@@ -32,18 +33,18 @@ export async function load(stat) {
   const start = performance.now();
   const module = loadCompiler(start, stat);
   const sysroot = loadSysroot(start, stat);
-  const webapiCrate = loadBindingCrate("webapi", start, stat);
-  const jsCrate = loadBindingCrate("js", start, stat);
-  const reactCrate = loadBindingCrate("react", start, stat);
+  const crates = reactLibs.map((name) => [name, loadBindingCrate(name, start, stat)]);
   const packages = loadPackages(start, stat);
   const examples = loadExamples();
   const [modules, styles] = await packages;
+  const crateFiles = [];
+  for (const [name, file] of crates) {
+    crateFiles.push([name, await file]);
+  }
   const loaded = {
     module: await module,
     sysroot: await sysroot,
-    webapiCrate: await webapiCrate,
-    jsCrate: await jsCrate,
-    reactCrate: await reactCrate,
+    crates: crateFiles,
     modules,
     styles,
     examples: await examples,
@@ -197,11 +198,7 @@ export async function compile(loaded, sources, rootFile, test) {
     ),
     new PreopenDirectory(
       "/crates",
-      new Map([
-        ["libwebapi.rmeta", loaded.webapiCrate],
-        ["libjs.rmeta", loaded.jsCrate],
-        ["libreact.rmeta", loaded.reactCrate],
-      ]),
+      new Map(loaded.crates.values().map(([name, file]) => [`lib${name}.rmeta`, file])),
     ),
   ];
   const stem = $stripSuffix(rootFile, ".rs");
@@ -219,18 +216,12 @@ export async function compile(loaded, sources, rootFile, test) {
   if (test) {
     args.push("--cfg=browser");
   }
-  for (const arg of [
-    "--extern",
-    "webapi=/crates/libwebapi.rmeta",
-    "--extern",
-    "js=/crates/libjs.rmeta",
-    "--extern",
-    "react=/crates/libreact.rmeta",
-    "-L",
-    "/crates",
-  ]) {
-    args.push(arg);
+  for (const [name] of loaded.crates) {
+    args.push("--extern");
+    args.push(`${name}=/crates/lib${name}.rmeta`);
   }
+  args.push("-L");
+  args.push("/crates");
   const wasi = new WASI(args, ["RUSTC_ICE=0"], fds, { debug: false });
   const t0 = performance.now();
   const imports = { wasi_snapshot_preview1: wasi.wasiImport };

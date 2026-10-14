@@ -19,26 +19,27 @@ export function ResultFrame({ program, onOutcome }) {
         window,
         "message",
         (e) => {
-          const match = frame.current;
-          const fromFrame = match ? Object.is(e.source, match.contentWindow) : false;
-          let report;
-          const match$1 = readReport(e);
-          if (match$1 && fromFrame && match$1.run == run) {
-            report = match$1;
-          } else {
-            return;
+          const frame$1 = frame.current;
+          const fromFrame = frame$1 && Object.is(e.source, frame$1.contentWindow);
+          const report = readReport(e);
+          if (report && fromFrame) {
+            if (report.run == run) {
+              if (report.height != null && frame.current) {
+                const height = report.height;
+                const frame$1 = frame.current;
+                const style = `height: ${$displayF64($f64Min($f64Max(height, 280), 4000))}px`;
+                frame$1.setAttribute("style", style);
+                return;
+              }
+              const outcome = outcome$1(report);
+              if (outcome != null) {
+                reported = true;
+                told(outcome);
+              }
+              return;
+            }
           }
-          const value = frame.current;
-          if (report.height != null && value) {
-            const style = `height: ${$displayF64($f64Min($f64Max(report.height, 280), 4000))}px`;
-            value.setAttribute("style", style);
-            return;
-          }
-          const outcome = outcome$1(report);
-          if (outcome != null) {
-            reported = true;
-            told(outcome);
-          }
+          return;
         },
         controller,
       );

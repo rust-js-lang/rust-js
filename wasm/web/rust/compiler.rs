@@ -6,8 +6,9 @@
 //   /in/lib.rs, /in/stats.rs, ...   the crate, from the Rust editor
 //   /out/lib.js, /out/stats.js, ... what rust-js writes (plus .js.map files)
 //   /sysroot/...                    the std metadata rustc type-checks against
-//   /crates/libwebapi.rmeta         the webapi crate's metadata (ADR 0024)
-//   /crates/libjs.rmeta             the js crate's, which it uses (ADR 0102)
+//   /crates/libreact.rmeta, ...     each crate a program may use, its
+//                                   metadata: react's, and those it uses,
+//                                   webapi's and js's (ADRs 0024, 0102)
 //
 // Each compile gets a fresh instance of the (compiled once) module: rustc
 // keeps global state, and a failed compile ends in a trap.
@@ -22,6 +23,13 @@ use webapi::{
     Response, WebAssemblyInstance, WebAssemblyMemory, WebAssemblyModule, performance, text_decoder, text_encoder,
     web_assembly, window,
 };
+
+// The crates a program may use, each once, as the site serves them and its
+// build compiles against (ADR 0102).
+unsafe extern "Rust" {
+    #[link_name = "../../../tooling/crates.js#reactLibs"]
+    safe static react_libs: &'static [&'static str];
+}
 
 /// A file in the WASI shim's in-memory filesystem.
 pub struct WasiFile(PhantomData<JsObject>);
@@ -242,9 +250,8 @@ struct ManifestModule {
 pub struct Loaded {
     pub module: &'static WebAssemblyModule,
     pub sysroot: HashMap<String, &'static WasiFile>,
-    pub webapi_crate: &'static WasiFile,
-    pub js_crate: &'static WasiFile,
-    pub react_crate: &'static WasiFile,
+    /// Each crate a program may use, by its library's name, its metadata.
+    pub crates: Vec<(String, &'static WasiFile)>,
     /// What the programs it compiles import of the page's, by specifier:
     /// `@rust-js/runtime` (ADR 0103), and React's modules.
     pub modules: Vec<(String, String)>,
@@ -278,18 +285,20 @@ pub async fn load(stat: Stat) -> Loaded {
     // (ADR 0029). Awaiting them one by one below only collects the results.
     let module = load_compiler(start, stat.clone());
     let sysroot = load_sysroot(start, stat.clone());
-    let webapi_crate = load_binding_crate("webapi", start, stat.clone());
-    let js_crate = load_binding_crate("js", start, stat.clone());
-    let react_crate = load_binding_crate("react", start, stat.clone());
+    let crates: Vec<_> = (react_libs.iter())
+        .map(|name| (name.to_string(), load_binding_crate(name, start, stat.clone())))
+        .collect();
     let packages = load_packages(start, stat.clone());
     let examples = load_examples();
     let (modules, styles) = packages.await;
+    let mut crate_files = Vec::new();
+    for (name, file) in crates {
+        crate_files.push((name, file.await));
+    }
     let loaded = Loaded {
         module: module.await,
         sysroot: sysroot.await,
-        webapi_crate: webapi_crate.await,
-        js_crate: js_crate.await,
-        react_crate: react_crate.await,
+        crates: crate_files,
         modules,
         styles,
         examples: examples.await,
@@ -485,11 +494,9 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
         )),
         preopen_fd(new_preopen(
             "/crates",
-            &HashMap::from([
-                ("libwebapi.rmeta".to_string(), file_inode(loaded.webapi_crate)),
-                ("libjs.rmeta".to_string(), file_inode(loaded.js_crate)),
-                ("libreact.rmeta".to_string(), file_inode(loaded.react_crate)),
-            ]),
+            &(loaded.crates.iter())
+                .map(|(name, file)| (format!("lib{name}.rmeta"), file_inode(file)))
+                .collect(),
         )),
     ];
     let out_file = match root_file.strip_suffix(".rs") {
@@ -519,18 +526,12 @@ pub async fn compile(loaded: &Loaded, sources: &HashMap<String, String>, root_fi
     if test {
         args.push("--cfg=browser".to_string());
     }
-    for arg in [
-        "--extern",
-        "webapi=/crates/libwebapi.rmeta",
-        "--extern",
-        "js=/crates/libjs.rmeta",
-        "--extern",
-        "react=/crates/libreact.rmeta",
-        "-L",
-        "/crates",
-    ] {
-        args.push(arg.to_string());
+    for (name, _) in &loaded.crates {
+        args.push("--extern".to_string());
+        args.push(format!("{name}=/crates/lib{name}.rmeta"));
     }
+    args.push("-L".to_string());
+    args.push("/crates".to_string());
     // RUSTC_ICE=0: don't name a crash-report file after the process id (WASI
     // has none). Without options, the shim logs every call it handles.
     let wasi = new_wasi(

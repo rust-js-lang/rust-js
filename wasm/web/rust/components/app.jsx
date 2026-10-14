@@ -56,15 +56,18 @@ export function App() {
     };
     (async () => {
       const loaded = await load(stat);
-      const match = loaded.examples[0];
-      const first = match ? [match.name, match.root, match.files.slice()] : undefined;
-      if (first && !cancelled) {
-        const texts = await loadExample(first[0], first[2]);
+      const e = loaded.examples[0];
+      const first = e ? [e.name, e.root, e.files.slice()] : undefined;
+      if (first) {
+        const [name, root, files] = first;
         if (!cancelled) {
-          setExample(first[0]);
-          setProject(Project.of(first[1], texts));
-          setLoaded(loaded);
-          setStatus(say("Ready.", "Plain"));
+          const texts = await loadExample(name, files);
+          if (!cancelled) {
+            setExample(name);
+            setProject(Project.of(root, texts));
+            setLoaded(loaded);
+            setStatus(say("Ready.", "Plain"));
+          }
         }
       }
     })();
@@ -73,37 +76,44 @@ export function App() {
     };
   }, []);
   const live = () => source.current?.state;
-  const run = (files, loaded, rootJs, test) => {
+  const run = (compiled, loaded, test) => {
     const n = (runs.current + 1) >>> 0;
     runs.current = n;
-    const match = prepare(files, loaded.modules, loaded.styles, rootJs, test, n);
-    if (match === "Nothing") {
+    const tests = compiled.tests;
+    const value = prepare(
+      compiled.files,
+      loaded.modules,
+      loaded.styles,
+      compiled.root,
+      compiled.main,
+      tests,
+      test,
+      n,
+    );
+    if (value === "Nothing") {
       setProgram(undefined);
-    } else if (match.TAG === "Blocked") {
+    } else if (value.TAG === "Blocked") {
       setProgram(undefined);
-      const names = match._0.map((s) => `"${s}"`);
+      const names = value._0.map((s) => `"${s}"`);
       const names$1 = names.join(", ");
       setStatus((s) => {
         const text = `${s.text} Not run: it imports ${names$1}, which the playground can't load. Bundle it with bun build.`;
         return say(text, "Bad");
       });
     } else {
-      setProgram({ run: n, page: match._0 });
+      setProgram({ run: n, page: value._0 });
     }
   };
   const onCompile = (test) => {
-    let loaded$1;
-    if (loaded) {
-      loaded$1 = loaded;
-    } else {
+    if (!loaded) {
       return;
     }
+    const loaded$1 = loaded;
     if (compiling) {
       return;
     }
     const sources = Project.sources(project, live());
     const root = project.root;
-    const rootJs = jsName(project.root);
     const shown = output.TAG === "Files" ? output.shown : "";
     setStatus(say(test ? "Compiling the tests…" : "Compiling…", "Plain"));
     startTransition(async () => {
@@ -113,12 +123,10 @@ export function App() {
       if (r.ok) {
         const files = Array.from(r.files).map(([path, text]) => [path, text]);
         const count = files.length;
-        const rootJsx = `${rootJs}x`;
-        const rootJs$1 = files.some(([path]) => path === rootJsx) ? rootJsx : rootJs;
-        const shown$1 = files.some(([path]) => path === shown) ? shown : rootJs$1;
+        const shown$1 = files.some(([path]) => path === shown) ? shown : r.root;
         setOutput({ TAG: "Files", files, shown: shown$1 });
         setStatus(say(`Compiled: ${count} JS file${count === 1 ? "" : "s"}.`, "Good"));
-        run(r.files, loaded$1, rootJs$1, test);
+        run(r, loaded$1, test);
       } else {
         setOutput({ TAG: "Diagnostics", _0: r.stderr });
         setProgram(undefined);
@@ -147,7 +155,8 @@ export function App() {
   const onExample = (name) => {
     const chosen = loaded ? loaded.examples.find((e) => e.name === name) : undefined;
     if (chosen) {
-      const [root, files] = [chosen.root, chosen.files.slice()];
+      const { root } = chosen;
+      const files = chosen.files.slice();
       setExample(name);
       (async () => {
         const texts = await loadExample(name, files);
@@ -167,32 +176,33 @@ export function App() {
     }
   };
   const newFile = () => {
-    let answer;
-    const match = window.prompt("New file, e.g. math.rs or geometry/shape.rs:");
-    if (match != null) {
-      answer = match;
-    } else {
+    const answer = window.prompt("New file, e.g. math.rs or geometry/shape.rs:");
+    if (answer == null) {
       return;
     }
     const path = $trim(answer);
-    if (!path) {
-      return;
+    if (path) {
+      const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
+      if (!modulePath.test(path)) {
+        const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
+        setStatus(say(text, "Bad"));
+      } else if (!Project.has(project, path)) {
+        setProject(Project.adding(project, path, live()));
+        const value = $rsplitOnce(path, "/");
+        let file;
+        if (value) {
+          const file$1 = value[1];
+          file = file$1;
+        } else {
+          file = path;
+        }
+        const module = $stripSuffix(file, ".rs") ?? file;
+        const text = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
+        setStatus(say(text, "Plain"));
+      } else {
+        setStatus(say(`${path} already exists.`, "Bad"));
+      }
     }
-    const modulePath = /^([a-z_][a-z0-9_]*\/)*[a-z_][a-z0-9_]*\.rs$/;
-    if (!modulePath.test(path)) {
-      const text = `"${path}" isn't a Rust module file name, like math.rs or geometry/shape.rs.`;
-      setStatus(say(text, "Bad"));
-      return;
-    }
-    if (Project.has(project, path)) {
-      setStatus(say(`${path} already exists.`, "Bad"));
-      return;
-    }
-    setProject(Project.adding(project, path, live()));
-    const file = $rsplitOnce(path, "/")?.[1] ?? path;
-    const module = $stripSuffix(file, ".rs") ?? file;
-    const text$1 = `Created ${path}. Declare it with \`mod ${module};\` in its parent, or rustc won't include it.`;
-    setStatus(say(text$1, "Plain"));
   };
   const openOutput = (path) => {
     if (output.TAG === "Files") {
@@ -201,13 +211,15 @@ export function App() {
     }
   };
   const blank = useMemo(() => sourceState(""), []);
-  const current = Project.currentState(project) ?? blank;
+  const state = Project.currentState(project);
+  const current = state || blank;
   const shownState = useMemo(() => {
     if (output === "Nothing") {
       return outputState("", true);
     }
     if (output.TAG === "Files") {
-      const text = output.files.find(([path]) => path === output.shown)?.[1] ?? "";
+      const value = output.files.find(([path]) => path === output.shown);
+      const text = value ? value[1] : "";
       return outputState(text, true);
     }
     return outputState(output._0, false);
@@ -216,8 +228,20 @@ export function App() {
   const [outputPaths, shown] =
     output.TAG === "Files" ? [output.files.map(([path]) => path), output.shown] : [[], ""];
   const outputTree = useMemo(() => buildTree(outputPaths), [output]);
-  const examples = loaded?.examples ?? [];
+  const examples = loaded ? loaded.examples : [];
   const submit = onCompile;
+  const children =
+    outputTree.length === 0 ? (
+      <li className="flex items-center px-2 py-0.5 text-muted">(none)</li>
+    ) : (
+      <FileTree
+        tree={outputTree}
+        depth={0}
+        first={jsName(project.root)}
+        selected={shown}
+        onOpen={openOutput}
+      />
+    );
   return (
     <>
       <h1 className="mb-1 text-lg font-bold">rust-js playground</h1>
@@ -271,21 +295,7 @@ export function App() {
         <Pane
           title="JavaScript"
           label="JavaScript files"
-          explorer={
-            <ul id="output-files">
-              {outputTree.length === 0 ? (
-                <li className="flex items-center px-2 py-0.5 text-muted">(none)</li>
-              ) : (
-                <FileTree
-                  tree={outputTree}
-                  depth={0}
-                  first={jsName(project.root)}
-                  selected={shown}
-                  onOpen={openOutput}
-                />
-              )}
-            </ul>
-          }
+          explorer={<ul id="output-files">{children}</ul>}
           editor={<Editor state={shownState} />}
         />
       </div>

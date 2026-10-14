@@ -8,7 +8,18 @@ import {
   PreopenDirectory,
   WASI,
 } from "@bjorn3/browser_wasi_shim";
-import { $extend, $rsplitOnce, $stripSuffix, $try, $unwrap } from "@rust-js/runtime";
+import { reactLibs } from "../../../tooling/crates.js";
+import {
+  $borrow,
+  $borrowMut,
+  $extend,
+  $rsplitOnce,
+  $stripPrefix,
+  $stripSuffix,
+  $try,
+  $unborrow,
+  $unwrap,
+} from "@rust-js/runtime";
 
 export function ms(t) {
   return `${t.toFixed(0)} ms`;
@@ -22,18 +33,18 @@ export async function load(stat) {
   const start = performance.now();
   const module = loadCompiler(start, stat);
   const sysroot = loadSysroot(start, stat);
-  const webapiCrate = loadBindingCrate("webapi", start, stat);
-  const jsCrate = loadBindingCrate("js", start, stat);
-  const reactCrate = loadBindingCrate("react", start, stat);
+  const crates = reactLibs.map((name) => [name, loadBindingCrate(name, start, stat)]);
   const packages = loadPackages(start, stat);
   const examples = loadExamples();
   const [modules, styles] = await packages;
+  const crateFiles = [];
+  for (const [name, file] of crates) {
+    crateFiles.push([name, await file]);
+  }
   const loaded = {
     module: await module,
     sysroot: await sysroot,
-    webapiCrate: await webapiCrate,
-    jsCrate: await jsCrate,
-    reactCrate: await reactCrate,
+    crates: crateFiles,
     modules,
     styles,
     examples: await examples,
@@ -119,16 +130,18 @@ function directoryOf(sources) {
   const top = new Map();
   for (const [path, text] of sources) {
     let folder = top;
+    const value = $rsplitOnce(path, "/");
     let name;
-    const match = $rsplitOnce(path, "/");
-    if (match) {
-      for (const part of match[0].split("/")) {
+    if (value) {
+      const folders = value[0];
+      const name$1 = value[1];
+      for (const part of folders.split("/")) {
         if (!folder.has(part)) {
           folder.set(part, new Directory(new Map()));
         }
         folder = $unwrap(folder.get(part), "no entry found for key").contents;
       }
-      name = match[1];
+      name = name$1;
     } else {
       name = path;
     }
@@ -138,13 +151,13 @@ function directoryOf(sources) {
   return top;
 }
 
-function jsFilesIn(folder, prefix, found) {
+function textsIn(folder, prefix, found) {
   for (const [name, entry] of Array.from(folder.contents)) {
     if (entry instanceof Directory) {
-      jsFilesIn(entry, `${prefix}${name}/`, found);
-    } else if (entry instanceof File && (name.endsWith(".js") || name.endsWith(".jsx"))) {
+      textsIn(entry, `${prefix}${name}/`, found);
+    } else if (entry instanceof File) {
       const text = new TextDecoder().decode(entry.data);
-      found.push([prefix + name, text]);
+      found.set(prefix + name, text);
     }
   }
 }
@@ -158,10 +171,24 @@ export async function compile(loaded, sources, rootFile, test) {
   const fds = [
     new OpenFile(new File([])),
     ConsoleStdout.lineBuffered((line) => {
-      stdoutLines.value.push(line);
+      const value = $borrowMut(stdoutLines, true);
+      try {
+        value.value.push(line);
+      } catch (error) {
+        $unborrow(value);
+        throw error;
+      }
+      $unborrow(value);
     }),
     ConsoleStdout.lineBuffered((line) => {
-      stderrLines.value.push(line);
+      const value = $borrowMut(stderrLines, true);
+      try {
+        value.value.push(line);
+      } catch (error) {
+        $unborrow(value);
+        throw error;
+      }
+      $unborrow(value);
     }),
     new PreopenDirectory("/in", directoryOf(sources)),
     outDir,
@@ -171,40 +198,30 @@ export async function compile(loaded, sources, rootFile, test) {
     ),
     new PreopenDirectory(
       "/crates",
-      new Map([
-        ["libwebapi.rmeta", loaded.webapiCrate],
-        ["libjs.rmeta", loaded.jsCrate],
-        ["libreact.rmeta", loaded.reactCrate],
-      ]),
+      new Map(loaded.crates.values().map(([name, file]) => [`lib${name}.rmeta`, file])),
     ),
   ];
-  const match = $stripSuffix(rootFile, ".rs");
-  const outFile = match != null ? `/out/${match}.js` : `/out/${rootFile}`;
+  const stem = $stripSuffix(rootFile, ".rs");
+  const outFile = stem != null ? `/out/${stem}.js` : `/out/${rootFile}`;
   const args = ["rust-js"];
   if (test) {
     args.push("--test");
   }
-  for (const arg of [`/in/${rootFile}`, "-o", outFile]) {
+  for (const arg of [`/in/${rootFile}`, "-o", outFile, "--manifest", "/out/manifest.json"]) {
     args.push(arg);
   }
-  for (const arg$1 of ["--", "--target", "wasm32-unknown-unknown", "--sysroot", "/sysroot"]) {
-    args.push(arg$1);
+  for (const arg of ["--", "--target", "wasm32-unknown-unknown", "--sysroot", "/sysroot"]) {
+    args.push(arg);
   }
   if (test) {
     args.push("--cfg=browser");
   }
-  for (const arg$2 of [
-    "--extern",
-    "webapi=/crates/libwebapi.rmeta",
-    "--extern",
-    "js=/crates/libjs.rmeta",
-    "--extern",
-    "react=/crates/libreact.rmeta",
-    "-L",
-    "/crates",
-  ]) {
-    args.push(arg$2);
+  for (const [name] of loaded.crates) {
+    args.push("--extern");
+    args.push(`${name}=/crates/lib${name}.rmeta`);
   }
+  args.push("-L");
+  args.push("/crates");
   const wasi = new WASI(args, ["RUSTC_ICE=0"], fds, { debug: false });
   const t0 = performance.now();
   const imports = { wasi_snapshot_preview1: wasi.wasiImport };
@@ -213,23 +230,72 @@ export async function compile(loaded, sources, rootFile, test) {
   const started = $try(() => wasi.start(instance));
   const t2 = performance.now();
   const ok = started.TAG === "Ok" && started._0 === 0;
-  const exit =
-    started.TAG === "Ok"
-      ? String(started._0)
-      : `trap (${started._0 instanceof Error ? started._0.message : String(started._0)})`;
-  const files = [];
+  let exit;
+  if (started.TAG === "Ok") {
+    const code = started._0;
+    exit = String(code);
+  } else {
+    const e = started._0;
+    exit = `trap (${e instanceof Error ? e.message : String(e)})`;
+  }
+  const written = new Map();
   if (ok) {
-    jsFilesIn(outDir.dir, "", files);
+    textsIn(outDir.dir, "", written);
+  }
+  const path = (file) => $stripPrefix(file, "/out/") ?? file;
+  const files = new Map();
+  let root = "";
+  let main = false;
+  let tests;
+  const text = written.get("manifest.json");
+  if (text != null) {
+    const manifest = JSON.parse(text);
+    for (const module of manifest.modules) {
+      const file = path(module.file);
+      if (module.module.length === 0) {
+        root = file;
+        main = module.exports.includes("main");
+      }
+      const text = written.get(file);
+      if (text != null) {
+        files.set(file, text);
+      }
+    }
+    if (manifest.tests != null) {
+      const file = path(manifest.tests);
+      const text = written.get(file);
+      if (text != null) {
+        files.set(file, text);
+      }
+      tests = file;
+    }
   }
   const memory = instance.exports.memory.buffer;
+  const value = $borrow(stderr, true);
+  let tmp;
+  let tmp$1;
+  let tmp$2;
+  try {
+    tmp = value.value.join("\n");
+    tmp$1 = t1 - t0;
+    tmp$2 = t2 - t1;
+  } catch (error) {
+    $unborrow(value);
+    throw error;
+  }
+  const memory$1 = memory.byteLength;
+  $unborrow(value);
   return {
     exit,
     ok,
-    files: new Map(files),
-    stderr: stderr.value.join("\n"),
-    instantiate: t1 - t0,
-    run: t2 - t1,
-    memory: memory.byteLength,
+    files,
+    root,
+    main,
+    tests,
+    stderr: tmp,
+    instantiate: tmp$1,
+    run: tmp$2,
+    memory: memory$1,
   };
 }
 //# sourceMappingURL=compiler.js.map
