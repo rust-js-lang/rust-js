@@ -692,8 +692,8 @@ function show(e: Expr): string {
     case "chain": {
       const t = e.elem;
       const steps = e.steps.map((step) => {
-        if (step.op === "map") return `.map(|x: ${t}| -> ${t} { ${show(step.body)} })`;
-        if (step.op === "filter") return `.filter(|&x: &${t}| ${show(step.body)})`;
+        if (step.op === "map") return `.map(move |x: ${t}| -> ${t} { ${show(step.body)} })`;
+        if (step.op === "filter") return `.filter(move |&x: &${t}| ${show(step.body)})`;
         return `.${step.op}(id(${step.n}usize))`;
       });
       const end = e.end;
@@ -705,9 +705,9 @@ function show(e: Expr): string {
             : end.op === "count"
               ? ".count() as u32"
               : end.op === "any" || end.op === "all"
-                ? `.${end.op}(|x: ${t}| ${show(end.body)})`
+                ? `.${end.op}(move |x: ${t}| ${show(end.body)})`
                 : end.op === "fold"
-                  ? `.fold(${show(end.init)}, |acc: ${t}, x: ${t}| -> ${t} { ${show(end.body)} })`
+                  ? `.fold(${show(end.init)}, move |acc: ${t}, x: ${t}| -> ${t} { ${show(end.body)} })`
                   : `.${end.op}()`;
       return `(${show(e.source)}.into_iter()${e.rev ? ".rev()" : ""}${steps.join("")}${tail})`;
     }

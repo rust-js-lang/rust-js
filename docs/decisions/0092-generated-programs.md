@@ -68,7 +68,9 @@ time, valid and deterministic by construction:
 - Iterators' chains, `v.into_iter()`, reversed or not, through up to
   three of `map`, `filter`, `take` and `skip`, to an end: `collect`,
   `sum`, `fold`, `count`, `max`, `min`, `last`, `next`, `any` or `all`.
-  Their closures are generated expressions, which may `note`: Rust's
+  Their closures are `move`, each a copy of what it reads, which a write
+  after it's made doesn't change, as a JS closure's variable would; and
+  generated expressions, which may `note`: Rust's
   iterators are lazy, each item through every step before the next, and
   `next`, `any`, `all` and `take` stop early, which an array's eager
   `map` and `filter` wouldn't (2026-10-14).
