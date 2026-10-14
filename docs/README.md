@@ -89,7 +89,7 @@ Each record says what we decided, why, what we rejected, and what it costs.
 
 - [0001 Reuse rustc's front end](decisions/0001-reuse-rustc-front-end.md)
 - [0002 Generate JS from THIR, not MIR](decisions/0002-generate-from-thir.md) *(superseded by 0364)*
-- [0003 Pin one nightly and link rustc's internals](decisions/0003-pin-nightly-toolchain.md)
+- [0003 Pin one nightly and link rustc's internals](decisions/0003-pin-nightly-toolchain.md) *(amended by 0109: the pin is a stable release)*
 - [0004 Copy THIR before analysis, stop before codegen](decisions/0004-driver-hook.md)
 - [0005 One file in, one ES module out](decisions/0005-input-and-output.md)
 - [0006 Only programs rustc accepts become JS](decisions/0006-errors-and-unsupported-features.md)

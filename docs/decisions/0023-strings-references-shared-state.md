@@ -73,3 +73,7 @@ supported, with its path.
   to a local number needs a place to point at.
 - Growing a `String` (`push_str`), `RefCell`, `Vec` and the rest of std come
   next, the same way: one known item at a time, each with its JS meaning.
+
+## Amended by
+
+- [0288](0288-cell-fields.md): A `Cell` in a field is the property it holds

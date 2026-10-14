@@ -254,7 +254,7 @@ and answer. Each is checked to stay that way.
 | `patterns.rs` | A pattern's JS, a binding's or a parameter's, and its defaults |
 | `loops.rs`, `places.rs` | A `for` over the crate's own `IntoIterator`; a place that's leaked |
 | `mut_refs.rs` | A `&mut` to a value JS can't change in place, given to a call or given back by one: a box, the place, or a std call's items |
-| `drops.rs` | Destructors: scopes, flags, temporaries, and the JS that drops |
+| `drops.rs`, `mir/drops.rs` | Destructors: what each drop runs and the drop functions it's written in (`drops.rs`); where and when a body drops, by rustc's drop elaboration of its MIR, and its flags (`mir/drops.rs`, ADR 0364); a std function lowered in place drops its own in a `try`'s `finally` |
 | `representation.rs` | How each Rust value is represented: its shape, an `Option`'s payload, a cell, a number |
 | `copies.rs` | When a value is copied: where it's read, if something changes one of its kind in place |
 | `support.rs` | What rust-js can represent, and the error where a value it can't is made or bound |

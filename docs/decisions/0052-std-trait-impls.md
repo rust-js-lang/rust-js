@@ -112,3 +112,7 @@ Everything else is shared, as it is today. When a copy is needed:
   pushes to other `Vec<String>`s.
 - `examples/std_traits.rs` is checked against native Rust, including
   clones that would share if they weren't copied.
+
+## Amended by
+
+- [0289](0289-copy-bounds.md): A `Copy` bound takes a copy only where a copy isn't the value

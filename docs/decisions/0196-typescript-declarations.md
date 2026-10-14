@@ -131,3 +131,7 @@ export default Tag;
   Item, value: number) => R`, as TypeScript declares a callback, react.dev's
   toCommaSeparatedList's `renderCallback`. (Amended: it was `unknown`, as
   any `impl Trait` parameter still is.)
+
+## Amended by
+
+- [0236](0236-jsx-element.md): What JSX makes is `JSX::Element`, TypeScript's `JSX.Element`

@@ -107,3 +107,8 @@ react.dev's MDXComponents table holds `pre: CodeBlock`, a memo
 component, `export const MDXComponents = { .., pre: CodeBlock, .. }`.
 It was refused as a constant of a type rust-js can't share. A JSX test
 renders a table's memo; a mutation refuses it again.
+
+## Amended by
+
+- [0270](0270-module-variables.md): A thread-local only read and set is its module's variable
+- [0306](0306-item-order.md): A module's items are where its Rust has them

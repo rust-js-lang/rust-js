@@ -59,3 +59,7 @@ add(&c.count, 5);                             // add({ get value() { return c.co
 
 - Sandpack's `SandpackError` can be a struct with a `Cell` title, made as
   a literal, retitled in place and taken by `ErrorMessage`.
+
+## Amended by
+
+- [0293](0293-cells-read-at-once.md): A `Cell` a `let` takes apart and reads at once is its value

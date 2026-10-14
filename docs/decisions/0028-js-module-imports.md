@@ -143,3 +143,8 @@ EditorState.create(config);
 - Not yet: import attributes (`with { type: "json" }`), exports whose names
   aren't identifiers, and dynamic `import()`. (Amended: `js::import!` of an item
   is dynamic `import()`, ADR 0304.)
+
+## Amended by
+
+- [0202](0202-imports-named-around-importers.md): An import is named in each file that imports it
+- [0305](0305-require.md): A binding marked `require` is read through `require(module)`

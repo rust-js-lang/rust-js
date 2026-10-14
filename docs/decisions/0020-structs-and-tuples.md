@@ -169,3 +169,7 @@ return { x, y };
   `Array.from({ length: N }, () => item.slice())`, so `[[0; 3]; 2]`'s rows
   are two. A generic length, and a value that isn't `Copy`, are rejected.
   33 of rustc's 46 tests that stopped here pass (`array_repeat.rs`).
+
+## Amended by
+
+- [0246](0246-function-parameters-need-no-copy.md): A type parameter of a function needs no copy of its own

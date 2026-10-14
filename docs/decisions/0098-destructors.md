@@ -466,3 +466,15 @@ person writes it. A spread's or a getter's isn't taken apart: it iterates,
 or reads. (Amended: preparation took apart an expression statement of
 one too, which MIR's lowering never writes: a `const` nothing reads is
 tidy's, `unread_made`'s, alone.)
+
+## Amended by
+
+- [0364](0364-mir-lowering.md): Bodies are lowered from their MIR, where
+  what a body drops, and when, is rustc's drop elaboration, which
+  `mir/drops.rs` follows: a call that may panic with something to drop
+  runs in a `try` whose `catch` drops it and throws on, not a scope's
+  `finally`. A std function lowered in place still drops what it owns of
+  its own so (`drops.rs`, `combinators.rs`).
+
+- [0197](0197-moved-before-leaving.md): What's moved before anything can leave isn't its scope's to drop
+- [0199](0199-components-take-no-drops.md): A component takes no drop of its type parameters

@@ -3,7 +3,10 @@
 //! runs is `types`'s, and what a body owns and moves, found before it's
 //! lowered, `facts`'.
 //!
-//! A scope that owns such a value is a `try`, and its drops the `finally`.
+//! Where a body drops what it owns is MIR's drop elaboration's, which
+//! `mir/drops.rs` follows (ADR 0364); this is what each drop runs, the drop
+//! functions it's written in, and the drops a std function lowered in place
+//! makes of its own, `map_or`'s fallback a `try` whose `finally` drops it.
 //! What this can't do yet is an error, found before any JS is written: a
 //! value with a destructor that nothing drops would be a wrong answer.
 

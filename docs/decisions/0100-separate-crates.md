@@ -253,3 +253,7 @@ or a box (ADR 0074). ADR 0099's handles have the same `value`.
   generic impl's drop needs and rust-js doesn't do yet: dropping an
   `Option<T>`, and a `dyn` of a value with a destructor. They had passed
   because their `T` happens to drop nothing.
+
+## Amended by
+
+- [0360](0360-the-app-is-a-program.md): The app's crate is a program: `RUST_JS_APP`, recorded for Cargo

@@ -475,6 +475,25 @@ test("each decision is in the index, a superseded one marked", () => {
   expect(superseded.filter(name => !/\*\([^)]*(?:superseded|replaced)[^)]*\)\*/.test(line(name)))).toEqual([]);
 });
 
+// Each decision says its status, and one an Amends or a Supersedes names
+// says what amended it: seventeen didn't, and 0075 had no status (the
+// second review), so reading one alone missed what changed it.
+test("each decision has a status, and one amended names what amended it", () => {
+  const decisions = readdirSync(join(root, "docs/decisions")).filter(name => /^\d{4}-.*\.md$/.test(name));
+  const text = (name: string) => read(`docs/decisions/${name}`);
+  expect(decisions.filter(name => !/^Status:/m.test(text(name)))).toEqual([]);
+  const byNumber = new Map(decisions.map(name => [name.slice(0, 4), name]));
+  const unlinked: string[] = [];
+  for (const name of decisions) {
+    const status = text(name).match(/^Status:[\s\S]*?(?:\n\n|$)/m)?.[0] ?? "";
+    for (const [, target] of status.matchAll(/(?:Amends|Supersedes|amends|supersedes)\s+\[?(\d{4})/g)) {
+      const amended = byNumber.get(target);
+      if (amended && !text(amended).includes(name.slice(0, 4))) unlinked.push(`${target} by ${name.slice(0, 4)}`);
+    }
+  }
+  expect(unlinked).toEqual([]);
+});
+
 // A question recognition answers is asked of it, or through shortcuts.rs,
 // where each shortcut is one line, so where it's answered is plain. They
 // were in ten modules once, each looking like that module's own.

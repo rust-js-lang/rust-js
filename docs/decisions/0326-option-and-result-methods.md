@@ -83,3 +83,7 @@ where it fills or takes from the `Option`.**
   the refusal. Mutations give the `Rc` for its `value`, unwrap the
   `Result`, and refuse each. `docs/std-coverage.txt`: `Option` 42 of 46,
   `Result` 35 of 36.
+
+## Amended by
+
+- [0348](0348-unwrap-or-default-once.md): `unwrap_or_default()` of a call is its `??`

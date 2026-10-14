@@ -125,3 +125,8 @@ const app = $unwrap(document.getElementById("app"), "the page has an #app");
   it, its arguments too, only where `o` is, as a person writes
   `document.body?.appendChild(a)`. A Rust type's method takes the value as
   an argument, `Node.add(o, x)`, which `?.` can't skip: a test still.
+
+## Amended by
+
+- [0193](0193-some-of-a-unit-variant.md): `Some` of a unit variant is tested as the variant
+- [0298](0298-truthy-options.md): An Option of a value never falsy is tested by its truth
