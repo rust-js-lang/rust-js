@@ -26,28 +26,10 @@ pub fn module(module: &mut js::Module) {
             js::Item::Namespace(_) | js::Item::Function(_) => {}
         }
     }
-    each_list(module, &mut unelsed);
+    js::each_item_block_mut(&mut module.items, &mut unelsed);
     reclaim::module(module);
     compound(module);
     read_together(module);
-}
-
-/// Each list of statements in `module`, its closures' too.
-fn each_list(module: &mut js::Module, each: &mut dyn FnMut(&mut Vec<Stmt>)) {
-    for item in &mut module.items {
-        match item {
-            js::Item::Statements(stmts) => js::each_block_mut(stmts, each),
-            js::Item::Const(constant) => constant.value.each_mut(&mut |e| {
-                if let ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) = &mut e.kind {
-                    js::each_block_mut(body, each);
-                }
-            }),
-            js::Item::Function(_) | js::Item::Namespace(_) => {}
-        }
-        for function in item.functions_mut() {
-            js::each_block_mut(&mut function.body, each);
-        }
-    }
 }
 
 /// An `if` whose branch always leaves has no `else`: what was in it follows,
@@ -150,7 +132,7 @@ fn compound(module: &mut js::Module) {
             }
         }
     };
-    each_list(module, &mut each);
+    js::each_item_block_mut(&mut module.items, &mut each);
 }
 
 /// A function made readable.

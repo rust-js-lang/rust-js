@@ -181,24 +181,35 @@ pub fn returning_its_call(value: &mut Expr) {
 /// a closure's body too, and a function's declared in them, `function
 /// inner() { .. }` (ADR 0308): for a pass that changes them. Each once.
 pub fn each_block_mut(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
-    // `stmts`' own lists, and those of the functions declared in them.
-    fn own(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
-        statement_lists(stmts, &mut |list| {
-            f(list);
-            for stmt in list.iter_mut() {
-                if let StmtKind::Function(function) = &mut stmt.kind {
-                    own(&mut function.body, f);
-                }
-            }
-        });
-    }
-    own(stmts, f);
+    own_blocks(stmts, f);
     // Each closure, however deep, a declared function's too.
-    each_expr_mut(stmts, &mut |e| match &mut e.kind {
-        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => own(body, f),
-        ExprKind::Function(function) => own(&mut function.body, f),
-        _ => {}
+    each_expr_mut(stmts, &mut |e| closure_blocks(e, f));
+}
+
+/// `each_block_mut` of an expression's closures, a constant's value's.
+fn each_block_in_mut(value: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    value.each_mut(&mut |e| closure_blocks(e, f));
+}
+
+/// `stmts`' own lists, and those of the functions declared in them.
+fn own_blocks(stmts: &mut Vec<Stmt>, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    statement_lists(stmts, &mut |list| {
+        f(list);
+        for stmt in list.iter_mut() {
+            if let StmtKind::Function(function) = &mut stmt.kind {
+                own_blocks(&mut function.body, f);
+            }
+        }
     });
+}
+
+/// The lists of `e`, if it's a closure, its own, not its closures'.
+fn closure_blocks(e: &mut Expr, f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    match &mut e.kind {
+        ExprKind::Arrow(_, body) | ExprKind::AsyncArrow(_, body) => own_blocks(body, f),
+        ExprKind::Function(function) => own_blocks(&mut function.body, f),
+        _ => {}
+    }
 }
 
 /// `stmts`, and each list nested in its statements, not in its closures.
@@ -526,6 +537,21 @@ pub fn each_item_expr_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Expr)) {
             Item::Namespace(_) | Item::Function(_) => item
                 .functions_mut()
                 .for_each(|function| each_expr_mut(&mut function.body, f)),
+        }
+    }
+}
+
+/// Each list of statements in `items`, as `each_block_mut` goes: what a
+/// module runs when it's loaded, its functions' and methods' bodies, and
+/// each closure's, a constant's too.
+pub fn each_item_block_mut(items: &mut [Item], f: &mut dyn FnMut(&mut Vec<Stmt>)) {
+    for item in items {
+        match item {
+            Item::Const(constant) => each_block_in_mut(&mut constant.value, f),
+            Item::Statements(stmts) => each_block_mut(stmts, f),
+            Item::Namespace(_) | Item::Function(_) => item
+                .functions_mut()
+                .for_each(|function| each_block_mut(&mut function.body, f)),
         }
     }
 }
@@ -1903,6 +1929,35 @@ mod tests {
             let unset = Expr::new(ExprKind::Binary(Op::LooseEq, Box::new(Expr::var("x")), Box::new(null)));
             assert!(null_test(&unset, false).is_some() && null_test(&unset, true).is_none());
         }
+    }
+
+    // Each list of a module's statements is visited once, a constant's
+    // closures' however deep, and a `function` it holds.
+    #[test]
+    fn each_item_block_once() {
+        let ret = |e: Expr| vec![StmtKind::Return(Some(e)).at(Span::NONE)];
+        let inner = Expr::arrow(vec![], ret(Expr::var("x")));
+        let outer = Expr::arrow(vec![], ret(inner));
+        let function = Function {
+            name: String::new(),
+            params: Vec::new(),
+            body: ret(Expr::var("y")),
+            export: false,
+            is_async: false,
+            span: Span::NONE,
+            name_span: Span::NONE,
+        };
+        let value = Expr::array(vec![outer, Expr::new(ExprKind::Function(Box::new(function)))]);
+        let mut items = vec![Item::Const(Const {
+            name: "c".into(),
+            value,
+            export: false,
+            mutable: false,
+            span: Span::NONE,
+        })];
+        let mut lists = 0;
+        each_item_block_mut(&mut items, &mut |_| lists += 1);
+        assert_eq!(lists, 3);
     }
 
     // A new name is none a function declared in a block has, or takes.
