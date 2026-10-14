@@ -6,8 +6,8 @@ export const mutations: Mutation[] = [
     name: "cargo-record-outside-plan",
     breaks: "what Cargo is told of a crate is written on its own, and a build that fails writing it has changed the JS",
     file: "src/main.rs",
-    find: "                    callbacks.output.extra = extra;\n",
-    replace: "                    for (path, bytes) in &extra {\n                        let _ = std::fs::write(path, bytes);\n                    }\n",
+    find: "            _ => Vec::new(),\n        };\n",
+    replace: "            _ => Vec::new(),\n        };\n        for (path, bytes) in std::mem::take(&mut callbacks.output.extra) {\n            let _ = std::fs::write(path, bytes);\n        }\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "can't record what it made"],
   },
   {
@@ -57,5 +57,13 @@ export const mutations: Mutation[] = [
     find: "        let _ = rustc_interface::util::STACK_SIZE.set(256 * 1024 * 1024);\n",
     replace: "",
     tests: ["test/lowering.test.ts","-t","a long function"],
+  },
+  {
+    name: "stage-kept",
+    breaks: "a build that ends before publishing, refused by its settings, leaves its staging directory beside the metadata",
+    file: "src/main.rs",
+    find: "        if let Some(dir) = &self.0 {\n            let _ = std::fs::remove_dir_all(dir);\n        }\n",
+    replace: "        let _ = &self.0;\n",
+    tests: ["test/crates.test.ts", "-t", "settings refuse|can't be published publishes nothing"],
   },
 ];

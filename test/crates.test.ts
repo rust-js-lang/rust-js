@@ -279,6 +279,17 @@ describe("a library's metadata is published with its JS, or neither is", () => {
     expect(readdirSync(join(dir, "js")).filter((f) => f.startsWith(".rust-js"))).toEqual([]);
   }, 300_000);
 
+  // Staged before the crate's settings are read: a build they refuse
+  // leaves no staging of its own behind (the second architecture review).
+  test("a build its settings refuse leaves nothing staged", () => {
+    const dir = fixture("metadata-settings");
+    const { build } = library(dir);
+    writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "dep"\nversion = "0.0.0"\nedition = "2024"\n[package.metadata.rust-js.format]\nprintWidth = 0\n');
+    mkdirSync(join(dir, "js"), { recursive: true });
+    expect(() => build(join(dir, "js", "libdep.rmeta"))).toThrow();
+    expect(readdirSync(join(dir, "js")).filter((f) => f.startsWith(".rust-js"))).toEqual([]);
+  }, 300_000);
+
   test("JS that can't be published leaves the metadata of its build too", () => {
     const dir = fixture("metadata-readonly-js");
     const { output, build, edit } = library(dir);

@@ -293,26 +293,43 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    let dependencies = match library::Dependencies::load(&build.dependencies, &build.output) {
-        Ok(dependencies) => dependencies,
+    match compile(build) {
+        Ok(exit) => exit,
         Err(error) => {
             eprintln!("rust-js: {error}");
-            return ExitCode::FAILURE;
+            ExitCode::FAILURE
         }
-    };
-    let (rustc_args, staged) = match build.rustc_args() {
-        Ok(args) => args,
-        Err(error) => {
-            eprintln!("rust-js: {error}");
-            return ExitCode::FAILURE;
-        }
-    };
-    if staged.any()
-        && let Err(error) = std::fs::create_dir_all(&staged.dir)
-    {
-        eprintln!("rust-js: cannot stage the metadata: {error}");
-        return ExitCode::FAILURE;
     }
+}
+
+/// The directory rustc's outputs are staged in (`command::Staged`), made
+/// where something is, and removed when it's dropped, however the build ends.
+struct Stage(Option<std::path::PathBuf>);
+
+impl Stage {
+    fn create(staged: &command::Staged) -> Result<Self, String> {
+        if !staged.any() {
+            return Ok(Stage(None));
+        }
+        std::fs::create_dir_all(&staged.dir).map_err(|error| format!("cannot stage the metadata: {error}"))?;
+        Ok(Stage(Some(staged.dir.clone())))
+    }
+}
+
+impl Drop for Stage {
+    fn drop(&mut self) {
+        if let Some(dir) = &self.0 {
+            let _ = std::fs::remove_dir_all(dir);
+        }
+    }
+}
+
+/// A build: rustc run with rust-js's callbacks, then what it made published
+/// and checked. Its error, whichever step's, `main` says.
+fn compile(build: command::Build) -> Result<ExitCode, String> {
+    let dependencies = library::Dependencies::load(&build.dependencies, &build.output)?;
+    let (rustc_args, staged) = build.rustc_args()?;
+    let stage = Stage::create(&staged)?;
     let command::Build {
         input,
         output,
@@ -325,25 +342,13 @@ fn main() -> ExitCode {
         std_coverage,
         ..
     } = build;
-    let command::Staged {
-        dir: stage,
-        metadata,
-        dep_info,
-    } = staged;
+    let command::Staged { metadata, dep_info, .. } = staged;
     let recorded = cargo.then(|| (manifest.clone(), metadata.clone()));
-    let settings = match settings::read(&input, cargo) {
-        Ok(settings) => settings,
-        Err(error) => {
-            eprintln!("rust-js: {error}");
-            return ExitCode::FAILURE;
-        }
-    };
+    let settings = settings::read(&input, cargo)?;
     // A width oxfmt can't take fails here, once, not each module after: the
     // printer's to say, which settings, read before it, doesn't ask.
-    if let Err(error) = format::options_of(&settings.format) {
-        eprintln!("rust-js: `{}`: {error}", settings.dir.join("Cargo.toml").display());
-        return ExitCode::FAILURE;
-    }
+    format::options_of(&settings.format)
+        .map_err(|error| format!("`{}`: {error}", settings.dir.join("Cargo.toml").display()))?;
     let mut plan = output::OutputPlan::new(input, output, test, manifest);
     plan.metadata = metadata.clone();
     plan.settings = settings;
@@ -358,46 +363,28 @@ fn main() -> ExitCode {
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
     // Once rustc has written the metadata: if it couldn't, nothing is published.
-    let published = match callbacks.pending.take() {
-        Some((linked, sources)) if exit == ExitCode::SUCCESS => {
-            // What Cargo is told of the build, published with it (ADR 0101).
-            let extra = match &recorded {
-                Some((Some(manifest), Some((_, metadata)))) => cargo::record(
-                    manifest,
-                    &dependency_paths,
-                    metadata,
-                    dep_info
-                        .as_ref()
-                        .map(|(staged, path)| (staged.as_path(), path.as_path())),
-                ),
-                _ => Ok(Vec::new()),
-            };
-            extra
-                .and_then(|extra| {
-                    callbacks.output.extra = extra;
-                    callbacks.output.plan(linked, sources)
-                })
-                .and_then(|plan| plan.publish())
-        }
-        _ => Ok(()),
-    };
-    if metadata.is_some() || dep_info.is_some() {
-        let _ = std::fs::remove_dir_all(&stage);
+    if let Some((linked, sources)) = callbacks.pending.take()
+        && exit == ExitCode::SUCCESS
+    {
+        // What Cargo is told of the build, published with it (ADR 0101).
+        callbacks.output.extra = match &recorded {
+            Some((Some(manifest), Some((_, metadata)))) => cargo::record(
+                manifest,
+                &dependency_paths,
+                metadata,
+                dep_info
+                    .as_ref()
+                    .map(|(staged, path)| (staged.as_path(), path.as_path())),
+            )?,
+            _ => Vec::new(),
+        };
+        callbacks.output.plan(linked, sources)?.publish()?;
     }
+    drop(stage);
     // Once it's all written, the crate's checks of it. Cargo's build runs
     // rust-js for each crate, so its driver is to run them, once (ADR 0117).
-    let checked = published.and_then(|()| {
-        if exit == ExitCode::SUCCESS && !cargo {
-            hooks::check(&callbacks.output.settings, &callbacks.output.written, save)
-        } else {
-            Ok(())
-        }
-    });
-    match checked {
-        Ok(()) => exit,
-        Err(error) => {
-            eprintln!("rust-js: {error}");
-            ExitCode::FAILURE
-        }
+    if exit == ExitCode::SUCCESS && !cargo {
+        hooks::check(&callbacks.output.settings, &callbacks.output.written, save)?;
     }
+    Ok(exit)
 }
