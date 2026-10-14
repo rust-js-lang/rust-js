@@ -833,4 +833,13 @@ export const mutations: Mutation[] = [
     replace: "                && false;\n",
     tests: ["test/corpus.test.ts", "-t", "generic_associated_types"],
   },
+  {
+    name: "copy-param-given-a-drop",
+    breaks: "a `Copy` type parameter is given a drop function too, which its callers pass for nothing",
+    file: "src/lower/traits.rs",
+    find: "        && !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, param.index, param.name))\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^copy_param_no_drop.rs$"],
+    snapshots: true,
+  },
 ];

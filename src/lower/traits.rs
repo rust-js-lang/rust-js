@@ -144,9 +144,18 @@ pub(super) fn bounds<'tcx>(
     result
 }
 
-/// Might any value have a destructor: has the crate a `Drop` impl of its own,
-/// or a library, whose types might? Where it hasn't, what a caller gives
-/// generic code without a drop function has nothing to drop (ADR 0106).
+/// Whether `param`, of the generics `typing_env` is of, is a type its caller
+/// gives a drop for: one that isn't `Copy` there (ADR 0163). The one test,
+/// of a function's, an impl's or a trait's parameters alike.
+pub(super) fn given_a_drop<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    typing_env: ty::TypingEnv<'tcx>,
+    param: &ty::GenericParamDef,
+) -> bool {
+    matches!(param.kind, ty::GenericParamDefKind::Type { .. })
+        && !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, param.index, param.name))
+}
+
 /// A generic trait method's own type parameters its caller gives a drop for
 /// (ADR 0163): each one the trait declares that isn't `Copy`. Decided by the
 /// trait's declaration, which a caller through a dictionary knows, so it and
@@ -169,11 +178,14 @@ pub(super) fn own_drop_params(tcx: TyCtxt<'_>, method: DefId) -> Vec<u32> {
     types(declared)
         .into_iter()
         .enumerate()
-        .filter(|(_, p)| !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, p.index, p.name)))
+        .filter(|(_, p)| given_a_drop(tcx, typing_env, p))
         .filter_map(|(at, _)| own.get(at).map(|p| p.index))
         .collect()
 }
 
+/// Might any value have a destructor: has the crate a `Drop` impl of its own,
+/// or a library, whose types might? Where it hasn't, what a caller gives
+/// generic code without a drop function has nothing to drop (ADR 0106).
 pub(super) fn may_have_destructors(tcx: TyCtxt<'_>, foreign: &super::library::Foreign<'_, '_>) -> bool {
     let drop_trait = tcx.lang_items().drop_trait();
     drop_trait.is_some_and(|id| tcx.all_local_trait_impls(()).contains_key(&id)) || foreign.any()

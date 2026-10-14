@@ -53,9 +53,7 @@ pub(super) fn drop_params<'tcx>(
             .chain(tcx.associated_item_def_ids(imp).iter().copied())
             .collect();
         for param in &tcx.generics_of(imp).own_params {
-            if let ty::GenericParamDefKind::Type { .. } = param.kind
-                && !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, param.index, param.name))
-            {
+            if crate::lower::traits::given_a_drop(tcx, typing_env, param) {
                 for &id in &owners {
                     given.insert((id, param.index));
                 }
@@ -82,9 +80,7 @@ pub(super) fn drop_params<'tcx>(
         };
         let typing_env = ty::TypingEnv::non_body_analysis(tcx, method);
         for param in &tcx.generics_of(trait_id).own_params {
-            if let ty::GenericParamDefKind::Type { .. } = param.kind
-                && !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, param.index, param.name))
-            {
+            if crate::lower::traits::given_a_drop(tcx, typing_env, param) {
                 given.insert((method, param.index));
             }
         }
@@ -108,9 +104,7 @@ pub(super) fn drop_params<'tcx>(
             let generics = tcx.generics_of(id);
             for index in 0..generics.count() {
                 let param = generics.param_at(index, tcx);
-                if let ty::GenericParamDefKind::Type { .. } = param.kind
-                    && !tcx.type_is_copy_modulo_regions(typing_env, Ty::new_param(tcx, param.index, param.name))
-                {
+                if crate::lower::traits::given_a_drop(tcx, typing_env, param) {
                     given.insert((id, index as u32));
                 }
             }
