@@ -411,45 +411,6 @@ impl<'t> Lines<'t> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::Path;
-
-    /// Every snapshot of generated JS is as oxfmt would leave it: formatting
-    /// it again changes nothing.
-    #[test]
-    fn snapshots_are_formatted() {
-        let mut checked = 0;
-        let mut dirs = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("test/snapshots")];
-        while let Some(dir) = dirs.pop() {
-            for entry in std::fs::read_dir(&dir).expect("the snapshots") {
-                let path = entry.expect("an entry").path();
-                let jsx = path.extension().is_some_and(|e| e == "jsx");
-                if path.is_dir() {
-                    dirs.push(path);
-                } else if jsx || path.extension().is_some_and(|e| e == "js") {
-                    let text = std::fs::read_to_string(&path).expect("a snapshot");
-                    // Up to the source map's comment, which comes after the formatting.
-                    let code = text
-                        .rsplit_once("//# sourceMappingURL=")
-                        .map_or(text.as_str(), |(code, _)| code);
-                    let source_type = if jsx { SourceType::jsx() } else { SourceType::mjs() };
-                    let allocator = Allocator::default();
-                    let again = format(&allocator, code, source_type, options())
-                        .expect("it parses")
-                        .print()
-                        .expect("it prints")
-                        .into_code();
-                    assert_eq!(again, code, "{} changes when formatted again", path.display());
-                    checked += 1;
-                }
-            }
-        }
-        assert!(checked > 20, "only {checked} snapshots found");
-    }
-}
-
 /// `code` laid out as oxfmt lays it out, with the crate's options (ADR 0117),
 /// checked as they were read, and its top-level statements apart as a
 /// person separates them (`spaced`); `map` moved to match.
@@ -553,4 +514,43 @@ pub(crate) fn moved_lines(map: &SourceMap<'_>, lines: &[u32], js_file_name: &str
         );
     }
     out.into_sourcemap().to_json_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    /// Every snapshot of generated JS is as oxfmt would leave it: formatting
+    /// it again changes nothing.
+    #[test]
+    fn snapshots_are_formatted() {
+        let mut checked = 0;
+        let mut dirs = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("test/snapshots")];
+        while let Some(dir) = dirs.pop() {
+            for entry in std::fs::read_dir(&dir).expect("the snapshots") {
+                let path = entry.expect("an entry").path();
+                let jsx = path.extension().is_some_and(|e| e == "jsx");
+                if path.is_dir() {
+                    dirs.push(path);
+                } else if jsx || path.extension().is_some_and(|e| e == "js") {
+                    let text = std::fs::read_to_string(&path).expect("a snapshot");
+                    // Up to the source map's comment, which comes after the formatting.
+                    let code = text
+                        .rsplit_once("//# sourceMappingURL=")
+                        .map_or(text.as_str(), |(code, _)| code);
+                    let source_type = if jsx { SourceType::jsx() } else { SourceType::mjs() };
+                    let allocator = Allocator::default();
+                    let again = format(&allocator, code, source_type, options())
+                        .expect("it parses")
+                        .print()
+                        .expect("it prints")
+                        .into_code();
+                    assert_eq!(again, code, "{} changes when formatted again", path.display());
+                    checked += 1;
+                }
+            }
+        }
+        assert!(checked > 20, "only {checked} snapshots found");
+    }
 }
