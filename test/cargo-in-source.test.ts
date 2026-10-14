@@ -22,7 +22,8 @@ test("a Cargo build's JS in source has each inline module where its file would b
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n');
   writeFileSync(join(src, "lib.rs"), "mod api;\n\npub mod inner {\n    pub fn value() -> u32 {\n        42\n    }\n}\n\npub fn answer() -> u32 {\n    inner::value() + api::nested::one()\n}\n");
   writeFileSync(join(src, "api.rs"), "pub mod nested {\n    pub fn one() -> u32 {\n        1\n    }\n}\n");
-  const { js, files } = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  const built = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  const { js } = built, files = built.files.get("app") ?? [];
   expect(js).toBe(join(src, "lib.js"));
   // `api` has nothing of its own, so no JS: `nested` is still in `src/api/`.
   expect([...files].sort()).toEqual([join(src, "api", "nested.js"), join(src, "inner.js"), join(src, "lib.js")]);
@@ -163,7 +164,7 @@ test("a Cargo build's committed JS is beside its root module's Rust, wherever th
   mkdirSync(join(dir, "app"), { recursive: true });
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "app/page.rs"\n');
   writeFileSync(join(dir, "app", "page.rs"), "pub fn one() -> u32 {\n    1\n}\n");
-  const session = createNativeBuilder({ root: dir, rustJs: join(dir, "no-compiler"), bindings: [] })
+  const session = createNativeBuilder({ root: dir, rustJs: join(dir, "no-compiler") })
     .cargoSession({ manifestPath: join(dir, "Cargo.toml"), packageName: "app", offline: true });
   expect(await session.committed()).toBeUndefined();
   writeFileSync(join(dir, "app", "page.jsx"), "export function one() {\n  return 1;\n}\n");

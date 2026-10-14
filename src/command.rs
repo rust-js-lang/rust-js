@@ -16,8 +16,20 @@ pub(crate) enum Command {
     Rustc(Vec<String>),
     /// `--format-jsx [input.rs]`: the crate's `rsx!`, formatted, on stdout.
     FormatJsx(String),
+    /// `--checks <input.rs> [--hooks save|build] <file.js>..`: the crate's
+    /// checks of its JS as a host has it, which Cargo's build runs none of
+    /// (ADR 0117).
+    Checks(Checks),
     /// A crate, compiled.
     Build(Build),
+}
+
+/// A crate's checks: its root, whose `Cargo.toml` names them, the JS they
+/// read, and whether it's a save's.
+pub(crate) struct Checks {
+    pub input: PathBuf,
+    pub files: Vec<PathBuf>,
+    pub save: bool,
 }
 
 /// A crate's build: its input and output, and what's asked of it.
@@ -51,6 +63,18 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
         Some("--version-json") if args.len() == 1 => return Ok(Command::VersionJson),
         Some("--version") if args.len() == 1 => return Ok(Command::Version),
         Some("--rustc") => return Ok(Command::Rustc(args[1..].to_vec())),
+        Some("--checks") => {
+            let mut rest = args[1..].to_vec();
+            let save = hooks(&mut rest)?;
+            let [input, files @ ..] = rest.as_slice() else {
+                return Err("usage: rust-js --checks <input.rs> [--hooks save|build] <file.js>..".into());
+            };
+            return Ok(Command::Checks(Checks {
+                input: PathBuf::from(input),
+                files: files.iter().map(PathBuf::from).collect(),
+                save,
+            }));
+        }
         Some("--format-jsx") => {
             return match args.as_slice() {
                 [_] => Ok(Command::FormatJsx("-".into())),
@@ -71,11 +95,7 @@ pub(crate) fn parse(args: Vec<String>) -> Result<Command, String> {
     while let Some(path) = valued(&mut ours, "--dependency", "a manifest path")? {
         dependencies.push(PathBuf::from(path));
     }
-    let save = match valued(&mut ours, "--hooks", "`save` or `build`")?.as_deref() {
-        None | Some("build") => false,
-        Some("save") => true,
-        Some(_) => return Err("--hooks requires `save` or `build`".into()),
-    };
+    let save = hooks(&mut ours)?;
     let manifest = valued(&mut ours, "--manifest", "a path")?.map(PathBuf::from);
     let std_coverage = valued(&mut ours, "--std-coverage", "a path")?.map(PathBuf::from);
     let test = ours.first().is_some_and(|a| a == "--test");
@@ -121,6 +141,16 @@ fn valued(args: &mut Vec<String>, name: &str, what: &str) -> Result<Option<Strin
     let value = args.remove(i + 1);
     args.remove(i);
     Ok(Some(value))
+}
+
+/// `--hooks save|build`, taken from `args`: whether the crate's checks are
+/// a save's, not a build's (ADR 0117).
+fn hooks(args: &mut Vec<String>) -> Result<bool, String> {
+    match valued(args, "--hooks", "`save` or `build`")?.as_deref() {
+        None | Some("build") => Ok(false),
+        Some("save") => Ok(true),
+        Some(_) => Err("--hooks requires `save` or `build`".into()),
+    }
 }
 
 /// The target rustc checks programs for (ADR 0090): WebAssembly's, whose
@@ -263,6 +293,28 @@ mod tests {
             Command::Build(build) => Ok(build),
             _ => Err("not a build".into()),
         }
+    }
+
+    #[test]
+    fn checks_are_a_crate_its_files_and_a_save_or_a_build() {
+        let checks = |args: &[&str]| match parse(args.iter().map(|arg| arg.to_string()).collect()) {
+            Ok(Command::Checks(checks)) => Ok((checks.input, checks.files, checks.save)),
+            Ok(_) => Err("not checks".to_string()),
+            Err(error) => Err(error),
+        };
+        assert_eq!(
+            checks(&["--checks", "src/lib.rs", "--hooks", "save", "src/lib.js", "src/api.js"]),
+            Ok((
+                PathBuf::from("src/lib.rs"),
+                vec![PathBuf::from("src/lib.js"), PathBuf::from("src/api.js")],
+                true
+            ))
+        );
+        assert_eq!(
+            checks(&["--checks", "src/lib.rs", "src/lib.js"]),
+            Ok((PathBuf::from("src/lib.rs"), vec![PathBuf::from("src/lib.js")], false))
+        );
+        assert!(checks(&["--checks"]).is_err());
     }
 
     #[test]

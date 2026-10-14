@@ -145,3 +145,7 @@ app of its own now, outside the workspace, as ROADMAP M3.3 has it, and is
 `pilot`.) The Rust crates (`rust-js-react`, `rust-js-webapi`, and
 `rust-js-builtins`, [ADR 0102](0102-js-and-webapi.md)'s) are Cargo's names,
 not npm's.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

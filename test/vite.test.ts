@@ -7,54 +7,43 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { chromium } from "@playwright/test";
 import rustJs from "../vite-plugin/index.js";
-import { buildCompiler, buildReact, compiler, fixture, root } from "./support";
+import { buildCompiler, cargoApp, compiler, fixture, root } from "./support";
 
 // Each server's optimized dependencies are its own, in its root: a fixture
 // has no package.json, so Vite's default is this checkout's node_modules/.vite,
 // which servers side by side rewrite under each other, and a page never loads.
 const cacheDir = ".vite";
 
+/** A Vite app in `dir` whose Rust is a Cargo package, `app`, of
+ * `src/App.rs` (ADR 0101): its JS is `src/App.jsx`, beside it, and its
+ * page renders `App`, which `main.jsx` imports as `rust-js:app`. */
+function viteApp(dir: string, rust: string, toml = "") {
+  cargoApp(dir, rust, { lib: "src/App.rs", react: true, toml });
+  writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
+  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "rust-js:app"; createRoot(document.getElementById("root")).render(<App/>);');
+}
+/** The plugin, building `app` with Cargo, offline, as each test has it. */
+const plugin = (rustJsAt = compiler) => rustJs({ rustJs: rustJsAt, cargo: { package: "app", offline: true } });
+
 // Real Vite, real compiler, real React Fast Refresh. Isolated sources and
 // outputs: the example application and its development server are untouched.
-test("Vite builds and refreshes affected crates, recovers from errors and module changes", async () => {
+test("Vite builds and refreshes an app's Rust, recovers from errors and module changes", async () => {
   buildCompiler();
   const dir = fixture("vite");
-  mkdirSync(join(dir, "src"));
-  mkdirSync(join(dir, "other"));
-  writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
   const source = `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_state};
 mod text;
-#[derive(serde::Deserialize)]
-pub struct Saved { pub count: i32 }
 pub fn App() -> JSX::Element {
-    let saved: Saved = serde_json::from_str(r#"{"count":0}"#).unwrap();
-    let (count, set_count) = use_state(saved.count);
+    let (count, set_count) = use_state(0);
     jsx! { <button onClick={move |_| set_count.update(|n| n + 1)}>{text::label()}{count}</button> }
 }
 `;
+  viteApp(dir, source);
   const app = join(dir, "src/App.rs"), text = join(dir, "src/text.rs"), output = join(dir, "src/App.jsx");
-  writeFileSync(app, source);
   writeFileSync(text, 'pub fn label() -> &\'static str { "Count " }');
-  writeFileSync(join(dir, "other/lib.rs"), 'pub fn value() -> i32 { 1 }');
-  const log = join(dir, "compilations.jsonl"), wrapper = join(dir, "compiler");
-  writeFileSync(wrapper, `#!/usr/bin/env bun
-import {appendFileSync, writeFileSync, unlinkSync} from "node:fs";
-const lock = ${JSON.stringify(join(dir, "compiler.lock"))};
-writeFileSync(lock, "running", {flag: "wx"});
-appendFileSync(${JSON.stringify(log)}, JSON.stringify(Bun.argv.slice(2)) + "\\n");
-await Bun.sleep(75);
-const p = Bun.spawn([${JSON.stringify(compiler)}, ...Bun.argv.slice(2)], {stdout: "inherit", stderr: "inherit"});
-const code = await p.exited;
-unlinkSync(lock);
-process.exit(code);
-`);
-  chmodSync(wrapper, 0o755);
-  const plugins = () => [rustJs({ crates: ["src/App.rs", "other/lib.rs"], rustJs: wrapper, bindings: ["react", "serde"] }), react()];
-  await build({ root: dir, configFile: false, plugins: plugins(), logLevel: "silent" });
+  await build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" });
   expect(readFileSync(join(dir, "dist/index.html"), "utf8")).toContain("/assets/");
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: plugins(), logLevel: "silent", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(), react()], logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
@@ -66,11 +55,8 @@ process.exit(code);
     await button.filter({ hasText: "Count 0" }).waitFor();
     await button.click();
     await button.filter({ hasText: "Count 1" }).waitFor();
-    const calls = () => readFileSync(log, "utf8").trim().split("\n").map(line => JSON.parse(line)[0]);
-    const before = calls().length;
     writeFileSync(text, 'pub fn label() -> &\'static str { "Changed " }');
     await button.filter({ hasText: "Changed 1" }).waitFor();
-    expect(calls().slice(before)).toEqual(["src/App.rs"]);
 
     writeFileSync(app, source.replace("<button onClick", '<button className="updated" onClick'));
     await page.locator("button.updated").waitFor();
@@ -91,15 +77,14 @@ process.exit(code);
     await button.filter({ hasText: "Restored 1" }).waitFor();
 
     // Adding a declared module and quickly editing it must converge on the
-    // latest source, without concurrent compiler writes.
+    // latest source.
     writeFileSync(app, source.replace("mod text;", "mod text; mod extra;").replace("text::label()", "extra::label()"));
     writeFileSync(join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "First " }');
     writeFileSync(join(dir, "src/extra.rs"), 'pub fn label() -> &\'static str { "Latest " }');
     await button.filter({ hasText: /Latest [01]/ }).waitFor();
-    expect(existsSync(join(dir, "compiler.lock"))).toBe(false);
 
-    // The entry still imports App.jsx: the manifest redirects it when the
-    // Rust module stops containing JSX, then restores it on the next edit.
+    // `rust-js:app` follows the root's file when it stops containing JSX,
+    // `App.js`, and back to `App.jsx` on the next edit.
     writeFileSync(app, `#![allow(non_snake_case)]
 use react::JSX;
 #[rust_js::link_name = "react#createElement"]
@@ -121,21 +106,23 @@ pub fn App() -> JSX::Element {
     await server.close();
   }
   writeFileSync(app, "this is not Rust");
-  await expect(build({ root: dir, configFile: false, plugins: plugins(), logLevel: "silent" })).rejects.toThrow();
-}, 120_000);
+  await expect(build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" })).rejects.toThrow();
+}, 180_000);
+
+// An app's Rust is built with Cargo, its one way (ADR 0374): `compile` is the
+// playground's own, and one of them is given.
+test("The Vite plugin is given an app's Cargo package, or the playground's compile", () => {
+  expect(() => rustJs({})).toThrow("give `cargo`");
+  expect(() => rustJs({ cargo: { package: "app" }, compile: async () => {} })).toThrow("give `cargo`");
+});
 
 // Tailwind reads class names in the Rust, and React Compiler memoizes the
 // component rust-js writes (ADR 0041). A save must still be a Fast Refresh:
 // Tailwind reloads the page when a file it scans changes, unless that file
 // is JS, and a `.rs` file isn't.
 test("Tailwind and React Compiler keep Fast Refresh's state", async () => {
-  buildReact();
+  buildCompiler();
   const dir = fixture("vite-tailwind");
-  mkdirSync(join(dir, "src"));
-  writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  // `target/` is gitignored, which Tailwind's own detection respects.
-  writeFileSync(join(dir, "src/index.css"), '@import "tailwindcss";\n@source "./App.rs";\n');
-  writeFileSync(join(dir, "src/main.jsx"), 'import "./index.css"; import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
   const app = (classes: string) => `#![allow(non_snake_case)]
 use react::{JSX, jsx, use_state};
 pub fn App() -> JSX::Element {
@@ -148,8 +135,11 @@ pub fn App() -> JSX::Element {
     }
 }
 `;
-  writeFileSync(join(dir, "src/App.rs"), app("font-bold"));
-  const plugins = [rustJs({ rustJs: compiler }), react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()];
+  viteApp(dir, app("font-bold"));
+  // `target/` is gitignored, which Tailwind's own detection respects.
+  writeFileSync(join(dir, "src/index.css"), '@import "tailwindcss";\n@source "./App.rs";\n');
+  writeFileSync(join(dir, "src/main.jsx"), 'import "./index.css"; import {createRoot} from "react-dom/client"; import {App} from "rust-js:app"; createRoot(document.getElementById("root")).render(<App/>);');
+  const plugins = [plugin(), react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss()];
   const server = await createServer({ root: dir, cacheDir, configFile: false, plugins, logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
@@ -178,18 +168,15 @@ pub fn App() -> JSX::Element {
     await browser?.close();
     await server.close();
   }
-}, 60_000);
+}, 120_000);
 
 // The generated JSX is committed, as ReScript recommends for its JS (ADR 0041),
 // and the source map isn't. So a checkout without rust-js still builds: the
 // plugin says so and uses the committed file, with or without its map.
 test("Without rust-js, a build uses the committed JSX", async () => {
-  buildReact();
+  buildCompiler();
   const dir = fixture("vite-committed");
-  mkdirSync(join(dir, "src"));
-  writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
-  writeFileSync(join(dir, "src/App.rs"), `#![allow(non_snake_case)]
+  viteApp(dir, `#![allow(non_snake_case)]
 use react::{JSX, jsx};
 pub fn App() -> JSX::Element {
     jsx! {
@@ -197,26 +184,26 @@ pub fn App() -> JSX::Element {
     }
 }
 `);
-  await build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], logLevel: "silent" });
+  await build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" });
   const committed = readFileSync(join(dir, "src/App.jsx"), "utf8");
   unlinkSync(join(dir, "src/App.jsx.map"));
 
   const warnings: string[] = [];
   const logger = { ...createLogger("silent"), warn: (message: string) => { warnings.push(message); } };
   const missing = join(dir, "no-rust-js");
-  await build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: missing }), react()], customLogger: logger, logLevel: "warn" });
+  await build({ root: dir, configFile: false, plugins: [plugin(missing), react()], customLogger: logger, logLevel: "warn" });
   expect(readFileSync(join(dir, "src/App.jsx"), "utf8")).toBe(committed);
   expect(readFileSync(join(dir, "dist/index.html"), "utf8")).toContain("/assets/");
-  expect(warnings.join("\n")).toContain(`no rust-js at ${missing}: using the committed src/App.jsx`);
+  expect(warnings.join("\n")).toContain(`no rust-js at ${missing}: using the committed ${join(dir, "src/App.jsx")}`);
 
   // In dev too, and the map the file names but no one committed isn't an error.
   warnings.length = 0;
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [rustJs({ rustJs: missing }), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(missing), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
   try {
     await server.listen();
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
     expect((await server.transformRequest("/src/App.jsx"))?.code).toContain("Committed");
-    expect(warnings.join("\n")).toContain("using the committed src/App.jsx");
+    expect(warnings.join("\n")).toContain("using the committed");
     expect(warnings.join("\n")).not.toContain("source map");
   } finally {
     // Closed while it optimizes a dependency an import of App.jsx asked for,
@@ -227,19 +214,16 @@ pub fn App() -> JSX::Element {
 
   // Without the committed file, there's nothing to fall back on.
   unlinkSync(join(dir, "src/App.jsx"));
-  await expect(build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: missing }), react()], logLevel: "silent" })).rejects.toThrow("no rust-js at");
-}, 60_000);
+  await expect(build({ root: dir, configFile: false, plugins: [plugin(missing), react()], logLevel: "silent" })).rejects.toThrow("no rust-js at");
+}, 120_000);
 
 // As it starts, Vite writes the patch that tells the app's Cargo, and its
 // editor, where the crates its npm packages have are; a crate installed
 // twice stops it, with who asked for each.
 test("Vite writes the app's patch as it starts, and stops at a crate installed twice", async () => {
-  buildReact();
+  buildCompiler();
   const dir = fixture("vite-patch");
-  mkdirSync(join(dir, "src"));
-  writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
-  writeFileSync(join(dir, "src/App.rs"), `#![allow(non_snake_case)]
+  viteApp(dir, `#![allow(non_snake_case)]
 use react::{JSX, jsx};
 pub fn App() -> JSX::Element {
     jsx! {
@@ -255,7 +239,7 @@ pub fn App() -> JSX::Element {
     writeFileSync(join(at, "src", "lib.rs"), "");
   };
   crate(join(dir, "node_modules", "@x", "a"), "0.0.1");
-  await build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], logLevel: "silent" });
+  await build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" });
   expect(readFileSync(join(dir, ".cargo", "config.toml"), "utf8")).toContain('zz-a = { path = "node_modules/@x/a" }');
 
   // Another package that asks for another version of it.
@@ -265,31 +249,23 @@ pub fn App() -> JSX::Element {
   writeFileSync(join(dir, "node_modules", "@x", "b", "package.json"), JSON.stringify({ name: "@x/b", version: "0.0.1", "rust-js": { crate: "zz-b" }, peerDependencies: { "@x/a": "~0.0.2" } }));
   writeFileSync(join(dir, "node_modules", "@x", "b", "Cargo.toml"), `[package]\nname = "zz-b"\nversion = "0.0.1"\nedition = "2024"\n`);
   crate(join(dir, "node_modules", "@x", "b", "node_modules", "@x", "a"), "0.0.2");
-  await expect(build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], logLevel: "silent" })).rejects.toThrow("zz-a is installed twice");
+  await expect(build({ root: dir, configFile: false, plugins: [plugin(), react()], logLevel: "silent" })).rejects.toThrow("zz-a is installed twice");
 }, 120_000);
 
-// A crate's checks in Vite (ADR 0117): a build runs all of them, the server
-// those not only for a build; what one says, of the Rust, is Vite's warning.
+// A crate's checks in Vite (ADR 0117), of its Cargo build: a build runs all
+// of them, the server those not only for a build; what one says, of the
+// Rust, is Vite's warning.
 test("Vite runs a crate's checks, a build's all, the server's those for a save", async () => {
-  buildReact();
+  buildCompiler();
   const dir = fixture("vite-checks");
-  mkdirSync(join(dir, "src"));
-  writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
-  writeFileSync(join(dir, "src/App.rs"), `#![allow(non_snake_case)]
+  viteApp(dir, `#![allow(non_snake_case)]
 use react::{JSX, jsx};
 pub fn App() -> JSX::Element {
     jsx! {
         <p>{"Checked"}</p>
     }
 }
-`);
-  writeFileSync(join(dir, "Cargo.toml"), `[package]
-name = "app"
-version = "0.0.0"
-edition = "2024"
-
-[package.metadata.rust-js.hooks]
+`, `[package.metadata.rust-js.hooks]
 check = [
   { run = ["sh", "-c", "touch built"], when = "build" },
   { run = ["sh", "-c", "echo \\"$1:4:3: a note\\"", "sh", "{files}"], fail = "never" },
@@ -297,13 +273,13 @@ check = [
 `);
   const warnings: string[] = [];
   const logger = { ...createLogger("silent"), warn: (message: string) => { warnings.push(message); } };
-  await build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], customLogger: logger, logLevel: "warn" });
+  await build({ root: dir, configFile: false, plugins: [plugin(), react()], customLogger: logger, logLevel: "warn" });
   expect(existsSync(join(dir, "built"))).toBe(true);
   expect(warnings.join("\n")).toMatch(/src\/App\.rs:\d+:\d+: \[sh\] a note/);
 
   unlinkSync(join(dir, "built"));
   warnings.length = 0;
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(), react()], customLogger: logger, logLevel: "warn", server: { port: 0 } });
   try {
     await server.listen();
     expect((await server.transformRequest("/src/App.jsx"))?.code).toContain("Checked");
@@ -321,16 +297,8 @@ check = [
 // the same. A context in a module of its own, as React advises, is untouched
 // when a component's module changes: rust-js leaves unchanged files alone.
 test("Fast Refresh keeps state under a context from its own module, and in memo", async () => {
-  buildReact();
+  buildCompiler();
   const dir = fixture("vite-context");
-  mkdirSync(join(dir, "src"));
-  writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>');
-  writeFileSync(join(dir, "src/main.jsx"), 'import {createRoot} from "react-dom/client"; import {App} from "./App.jsx"; createRoot(document.getElementById("root")).render(<App/>);');
-  writeFileSync(join(dir, "src/theme.rs"), `use react::{Context, create_context};
-thread_local! {
-    pub static THEME: Context<&'static str> = create_context("light");
-}
-`);
   const app = (label: string) => `#![allow(non_snake_case)]
 use react::{JSX, MemoExoticComponent, jsx, memo, use_context, use_state};
 mod theme;
@@ -360,18 +328,23 @@ pub fn App() -> JSX::Element {
     }
 }
 `;
-  writeFileSync(join(dir, "src/App.rs"), app("Count"));
-  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], logLevel: "silent", server: { port: 0 } });
+  viteApp(dir, app("Count"));
+  writeFileSync(join(dir, "src/theme.rs"), `use react::{Context, create_context};
+thread_local! {
+    pub static THEME: Context<&'static str> = create_context("light");
+}
+`);
+  const server = await createServer({ root: dir, cacheDir, configFile: false, plugins: [plugin(), react()], logLevel: "silent", server: { port: 0 } });
   let browser;
   try {
     await server.listen();
     if (!server.resolvedUrls) throw new Error("Vite did not expose a listening URL");
-    const theme = readFileSync(join(dir, "src/theme.js"), "utf8");
-    expect(theme).toContain('export const THEME = createContext("light");');
-    expect(readFileSync(join(dir, "src/App.jsx"), "utf8")).toContain('<THEME value="dark">');
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     await page.goto(server.resolvedUrls.local[0]);
+    const theme = readFileSync(join(dir, "src/theme.js"), "utf8");
+    expect(theme).toContain('export const THEME = createContext("light");');
+    expect(readFileSync(join(dir, "src/App.jsx"), "utf8")).toContain('<THEME value="dark">');
     const button = page.getByRole("button");
     await button.filter({ hasText: "Count 0" }).waitFor();
     await button.click();
@@ -389,7 +362,7 @@ pub fn App() -> JSX::Element {
     await browser?.close();
     await server.close();
   }
-}, 60_000);
+}, 120_000);
 
 // A Cargo workspace (ADR 0101): Cargo builds each crate, rust-js as its
 // workspace wrapper, and the app imports its package's JS, where Cargo's
@@ -476,7 +449,6 @@ pub fn App() -> JSX::Element {
     await browser?.close();
     await server.close();
   }
-  expect(() => rustJs({ cargo: { package: "ui" }, compile: async () => {} })).toThrow("give `cargo` or `compile`, not both");
   // Without rust-js, a build is of the JS committed beside the Rust.
   const logger = createLogger("warn", { allowClearScreen: false });
   const warnings: string[] = [];

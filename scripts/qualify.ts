@@ -13,6 +13,7 @@ import { cpus, release, tmpdir, totalmem } from "node:os";
 import { join, relative, resolve } from "node:path";
 
 import { runSync, stopped } from "../test/child";
+import { crates, reactLibs } from "../tooling/crates.js";
 
 const root = join(import.meta.dir, "..");
 // Settings that would change what the suite checks, left out of every run:
@@ -67,13 +68,15 @@ export function checksums(dir: string): string[] {
 
 const text = (cmd: string[], cwd = root) => runSync(cmd, cwd, 60_000).stdout.trim();
 
-// The distribution's packages, by the tarball each is installed from.
+// The distribution's packages, by the tarball each is installed from: the
+// tooling, the compiler, the runtime, and React's crate and those it uses,
+// which an app's Cargo builds with (ADR 0118).
 const packages: [string, string][] = [
   ["@rust-js/build", "build.tgz"],
   ["@rust-js/vite-plugin", "vite-plugin.tgz"],
-  ["@rust-js/resources", "resources.tgz"],
   ["@rust-js/native", "native.tgz"],
   ["@rust-js/runtime", "runtime.tgz"],
+  ...crates.filter(({ lib }) => reactLibs.includes(lib)).map(({ npm, dir }): [string, string] => [npm, `${dir}.tgz`]),
 ];
 
 /** Every file under `dir`, by its path from there. */
@@ -87,7 +90,7 @@ function files(dir: string): string[] {
 const hash = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex");
 
 /** A Vite app, outside the checkout, built with the distribution's plugin,
- * tooling, resources and compiler, from its tarballs alone, each installed
+ * tooling, crates and compiler, from its tarballs alone, each installed
  * file the tarball's, and Vite and React from the registry, at the versions
  * this checkout locks. */
 export function viteApp(dist: string, logs: string): Suite {
@@ -102,8 +105,12 @@ export function viteApp(dist: string, logs: string): Suite {
     writeFileSync(join(app, "package.json"), JSON.stringify({ private: true, type: "module", dependencies, overrides: { "@rust-js/build": join(dist, "build.tgz") } }));
     writeFileSync(
       join(app, "vite.config.js"),
-      'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\nimport rustJs from "@rust-js/vite-plugin";\n\nexport default defineConfig({ plugins: [rustJs({ crates: ["src/App.rs"], bindings: ["react"] }), react()] });\n',
+      'import { defineConfig } from "vite";\nimport react from "@vitejs/plugin-react";\nimport rustJs from "@rust-js/vite-plugin";\n\nexport default defineConfig({ plugins: [rustJs({ cargo: { package: "app", offline: true } }), react()] });\n',
     );
+    // Its Rust, a Cargo package (ADR 0101), React's crate named by version:
+    // the plugin's patch tells Cargo it's in node_modules.
+    const reactVersion = (Bun.TOML.parse(readFileSync(join(root, "react", "Cargo.toml"), "utf8")) as { package: { version: string } }).package.version;
+    writeFileSync(join(app, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n\n[dependencies]\nreact = { package = "rust-js-react", version = "~${reactVersion}" }\n\n[workspace]\n`);
     writeFileSync(join(app, "index.html"), '<div id="root"></div><script type="module" src="/src/main.jsx"></script>\n');
     mkdirSync(join(app, "src"));
     writeFileSync(join(app, "src", "main.jsx"), 'import { createRoot } from "react-dom/client";\nimport { App } from "./App.jsx";\n\ncreateRoot(document.getElementById("root")).render(<App />);\n');
@@ -216,7 +223,6 @@ async function main() {
         dependencies: {
           "@rust-js/build": dependency("build.tgz"),
           "@rust-js/vite-plugin": dependency("vite-plugin.tgz"),
-          "@rust-js/resources": dependency("resources.tgz"),
           "@rust-js/native": dependency("native.tgz"),
           "@rust-js/runtime": dependency("runtime.tgz"),
         },

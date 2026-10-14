@@ -1,6 +1,6 @@
 # 0117. A crate's settings for the JS rust-js writes: its formatter's options, and hooks
 
-Status: Accepted, but for checks in Cargo's build, to come. (Amended: the
+Status: Accepted. (Amended: the
 same program is the same nodes, each meaning what it did.) Extends
 [0065](0065-format-with-oxfmt.md) and [0114](0114-app-cargo-toml.md).
 
@@ -88,7 +88,9 @@ With neither, rust-js writes what it wrote before: oxfmt's layout.
   wrote, one argument each, in the crate's directory. It changes nothing.
   - **In a crate compiled alone**, rust-js runs them when it's done.
   - **In Cargo's build** (ADR 0101), which runs rust-js for each crate, its
-    driver is to run them, once Cargo is done. Until it does, it runs none.
+    driver is to run them, once Cargo is done: the builder's Cargo session
+    does, of each of the workspace's crates' JS as served (amended by ADR
+    0374).
 - **What it says of the JS is said of the Rust**: a line of its output that
   names a file the build wrote, at a line and column, is moved through
   that file's source map to the Rust it came from, and named for the tool:
@@ -169,5 +171,7 @@ With neither, rust-js writes what it wrote before: oxfmt's layout.
   depends on their versions and settings, as any formatted code's does.
 - **rust-js reads `Cargo.toml` with the `toml` crate**, natively only; the
   formatter's option types are `oxc_formatter_core`'s, of the same tag.
-- **Still to come**: checks in Cargo's build, by its driver, once Cargo is
-  done.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

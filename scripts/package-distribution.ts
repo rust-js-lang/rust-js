@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { parseCompilerIdentity } from "../tooling/manifest.js";
+import { crates } from "../tooling/crates.js";
 
 const root = resolve(import.meta.dir, "..");
 const [compilerPath, destination, ...extra] = Bun.argv.slice(2);
@@ -31,9 +32,10 @@ try {
   for (const [directory, file] of [["tooling", "build.tgz"], ["vite-plugin", "vite-plugin.tgz"], ["next-plugin", "next-plugin.tgz"], ["runtime", "runtime.tgz"]]) {
     run([process.execPath, "pm", "pack", "--ignore-scripts", "--filename", join(staging, file)], join(root, directory));
   }
-  run([process.execPath, "scripts/package-resources.ts", join(staging, "resources.tgz")]);
   run([process.execPath, "scripts/package-compiler.ts", compiler, join(staging, "native.tgz")]);
-  const files = ["build.tgz", "vite-plugin.tgz", "next-plugin.tgz", "runtime.tgz", "resources.tgz", "native.tgz"];
+  // The crates an app's Cargo builds with, as npm has them (ADR 0118).
+  run([process.execPath, "scripts/package-npm-crates.ts", staging]);
+  const files = ["build.tgz", "vite-plugin.tgz", "next-plugin.tgz", "runtime.tgz", "native.tgz", ...crates.map(({ dir }) => `${dir}.tgz`)];
   const sha256 = (file: string) => createHash("sha256").update(readFileSync(join(staging, file))).digest("hex");
   const artifacts = files.map(file => ({ file, sha256: sha256(file) }));
   writeFileSync(join(staging, "distribution.json"), JSON.stringify({

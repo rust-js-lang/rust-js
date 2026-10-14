@@ -66,4 +66,12 @@ export const mutations: Mutation[] = [
     replace: "        let _ = &self.0;\n",
     tests: ["test/crates.test.ts", "-t", "settings refuse|can't be published publishes nothing"],
   },
+  {
+    name: "checks-always-a-build",
+    breaks: "a dev server's save runs a crate's checks only for a build too, as Cargo's build has them",
+    file: "src/main.rs",
+    find: "                .and_then(|settings| hooks::check(&settings, &checks.files, checks.save));\n",
+    replace: "                .and_then(|settings| hooks::check(&settings, &checks.files, false));\n",
+    tests: ["test/vite.test.ts", "-t", "crate's checks"],
+  },
 ];

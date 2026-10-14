@@ -142,12 +142,13 @@ export async function planCargoLibraries({ manifestPath, toolchain, target, pack
  * project commits it (`writeInSource`), and `js` and `crates` are those;
  * `routes` are directories where a file is a route, which get no
  * declarations.
- * `files` is every module's JS, where it's served from.
- * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, routes?: string[] }} options
+ * `files` is each crate's modules' JS, by its name, where it's served from.
+ * `targetDir` is where Cargo builds, its own `target/` without one.
+ * @param {{ manifestPath: string, toolchain: string, compiler: string, packageName?: string, features?: string[], noDefaultFeatures?: boolean, offline?: boolean, react?: string, inSource?: boolean, routes?: string[], targetDir?: string }} options
  * `manifests` is each crate's, validated, as the compiler wrote it.
- * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: string[] }>}
+ * @returns {Promise<{ js: string, crates: Map<string, { js: string, manifest: string }>, manifests: Map<string, any>, files: Map<string, string[]> }>}
  */
-export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, routes = [] }) {
+export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, routes = [], targetDir }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
   const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
@@ -155,7 +156,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
   if (offline) args.push("--offline");
-  const env = cargoEnv(compiler, react, appOf(manifest, packageName));
+  const env = { ...cargoEnv(compiler, react, appOf(manifest, packageName)), ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
   const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     const messages = String(error.stdout ?? "").split("\n").filter(Boolean).map(line => JSON.parse(line));
     const rendered = messages.filter(m => m.reason === "compiler-message").map(m => m.message.rendered).join("");
@@ -194,10 +195,12 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   // program's, has no library to say it (ADR 0360).
   const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
   const manifests = [...validated].map(([crate, manifest]) => ({ crate, ...manifest }));
-  if (!inSource) return { js, crates, manifests: validated, files: manifests.flatMap(({ modules }) => modules.map((module) => module.file)) };
+  // Each crate's modules' JS, where it's served from.
+  const served = (where) => new Map(manifests.map(({ crate, modules }) => [crate, modules.map((module) => where(module.file))]));
+  if (!inSource) return { js, crates, manifests: validated, files: served((file) => file) };
   const moved = writeInSource(manifests, ledger, routes);
   for (const entry of crates.values()) entry.js = moved.get(entry.js);
-  return { js: moved.get(js), crates, manifests: validated, files: [...moved.values()] };
+  return { js: moved.get(js), crates, manifests: validated, files: served((file) => moved.get(file)) };
 }
 
 /**
@@ -339,13 +342,15 @@ function relinked(bytes, links, to, moved) {
  * The workspace a Cargo manifest is of, a member's or the root's, and where
  * Cargo builds it: what Cargo reads, and what it writes (ADR 0101), where each of its
  * packages is, and each one's library's root, `src/lib.rs` or its `[lib] path`.
- * @param {{ manifestPath: string, toolchain: string, offline?: boolean }} options
+ * @param {{ manifestPath: string, toolchain?: string, offline?: boolean, targetDir?: string }} options
  * @returns {Promise<{ root: string, target: string, packages: Map<string, string>, libs: Map<string, string> }>}
  */
-export async function cargoWorkspace({ manifestPath, toolchain, offline = false }) {
+export async function cargoWorkspace({ manifestPath, toolchain, offline = false, targetDir }) {
   const manifest = resolve(manifestPath);
-  const args = [`+${toolchain}`, "metadata", "--no-deps", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
-  const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
+  // Cargo's own Rust, without a pin: a workspace's metadata is the same.
+  const args = [...(toolchain ? [`+${toolchain}`] : []), "metadata", "--no-deps", "--format-version=1", "--manifest-path", manifest, ...(offline ? ["--offline"] : [])];
+  const env = { ...process.env, ...(targetDir ? { CARGO_TARGET_DIR: targetDir } : {}) };
+  const { stdout } = await execute("cargo", args, { cwd: dirname(manifest), env, maxBuffer: 64 * 1024 * 1024 }).catch((error) => {
     throw new Error(`cargo metadata failed:\n${error.stderr ?? error.message}`);
   });
   const metadata = JSON.parse(stdout);

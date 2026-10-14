@@ -107,11 +107,13 @@ test("the builder asks a replaced compiler what it is", async () => {
     chmodSync(rustJs, 0o755);
   };
   compiler("1.0.0");
-  const builder = createNativeBuilder({ root, rustJs, bindings: [] });
-  await builder.prepare();
+  const builder = createNativeBuilder({ root, rustJs });
+  // Its runtime is installed: what fails is Cargo's, of no manifest.
+  const check = () => builder.checkCargo({ manifestPath: join(root, "Cargo.toml") }).then(() => "built", (error: Error) => error.message);
+  expect(await check()).not.toContain("@rust-js/runtime");
   // A new release, installed while a dev server runs: its runtime isn't.
   compiler("2.0.0");
-  await expect(builder.prepare()).rejects.toThrow("rust-js 2.0.0 needs @rust-js/runtime 2.0.0, not the installed 1.0.0");
+  expect(await check()).toContain("rust-js 2.0.0 needs @rust-js/runtime 2.0.0, not the installed 1.0.0");
 });
 
 // A manifest of an older compiler's says nothing of where its JS names

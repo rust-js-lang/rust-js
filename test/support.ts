@@ -226,6 +226,19 @@ function alive(pid: number): boolean {
 export function buildWebapi() {
   buildReact();
 }
+/** A Cargo package, `app`, its own workspace, in `dir`: `rust` at `lib`,
+ * and React's crate by path where it uses it, as a host builds an app's
+ * Rust (ADR 0101). `toml` is more of its `Cargo.toml`. What `checkCargo`
+ * and a Cargo session are given of it. */
+export function cargoApp(dir: string, rust: string, { lib = "src/lib.rs", react = false, toml = "" } = {}) {
+  mkdirSync(dirname(join(dir, lib)), { recursive: true });
+  writeFileSync(join(dir, lib), rust);
+  const path = lib === "src/lib.rs" ? "" : `\n[lib]\npath = "${lib}"\n`;
+  const dependencies = react ? `react = { package = "rust-js-react", path = ${JSON.stringify(join(root, "react"))} }\n` : "";
+  writeFileSync(join(dir, "Cargo.toml"), `[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n${path}\n[dependencies]\n${dependencies}${toml ? `\n${toml}` : ""}\n[workspace]\n`);
+  return { manifestPath: join(dir, "Cargo.toml"), packageName: "app", offline: true };
+}
+
 /** `@rust-js/runtime`, installed in an app outside the checkout, as a package
  * manager installs it: what its JS imports (ADR 0103). */
 export function installRuntime(app: string) {

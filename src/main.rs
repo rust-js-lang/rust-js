@@ -270,6 +270,18 @@ fn main() -> ExitCode {
             let rustc_args: Vec<String> = ours.into_iter().chain(args).collect();
             return rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut Syntax));
         }
+        // A crate's checks of its JS as a host has it, once Cargo is done (ADR 0117).
+        Ok(command::Command::Checks(checks)) => {
+            let checked = settings::read(&checks.input, false)
+                .and_then(|settings| hooks::check(&settings, &checks.files, checks.save));
+            return match checked {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(error) => {
+                    eprintln!("error: rust-js: {error}");
+                    ExitCode::FAILURE
+                }
+            };
+        }
         Ok(command::Command::FormatJsx(input)) => {
             let mut formatter = jsx_syntax::formatting::Formatter::default();
             let args = vec![

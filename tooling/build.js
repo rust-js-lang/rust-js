@@ -1,48 +1,29 @@
 // Native build preparation. Hosts provide scheduling and consume manifests.
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, utimesSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargoWorkspace, checkCargo, editorCheck, readsCargo, target } from "./cargo.js";
-import { resourceInputs } from "./resources.js";
+import { cargoWorkspace, checkCargo, editorCheck, readsCargo } from "./cargo.js";
 import { parseCompilerIdentity } from "./manifest.js";
-import { reactLibs } from "./crates.js";
 
-/**
- * Drop what `parent` caches under other keys than `keep`, `depth` folders
- * down, that no build used for `days`: a compiler or React upgraded leaves
- * the last key's behind. A folder left empty goes too. `now` is in seconds.
- */
-export function pruneUnused(parent, keep, depth = 1, now = Date.now() / 1000, days = 7) {
-  if (!existsSync(parent)) return;
-  for (const name of readdirSync(parent)) {
-    const path = join(parent, name);
-    if (path === keep) continue;
-    if (depth > 1) {
-      pruneUnused(path, keep, depth - 1, now, days);
-      if (readdirSync(path).length === 0) rmSync(path, { recursive: true, force: true });
-    } else if (now - statSync(path).mtimeMs / 1000 > days * 24 * 60 * 60) {
-      rmSync(path, { recursive: true, force: true });
-    }
-  }
-}
-
-/** Mark `path` used now, so `pruneUnused` keeps it. */
-function markUsed(path) {
-  const now = new Date();
-  utimesSync(path, now, now);
-}
-
-export const defaultResources = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-export const defaultCompiler = join(defaultResources, "target/debug/rust-js");
+/** This checkout, where a compiler built from it is. */
+const checkout = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+export const defaultCompiler = join(checkout, "target/debug/rust-js");
 
 /** Where rust-js keeps what it makes for an app, outside what it commits:
- * its Cargo builds, its crates' metadata and each host's manifests. */
+ * its Cargo builds, and each host's own. */
 export function cacheDirOf(root) {
   return join(root, "node_modules/.cache/rust-js");
+}
+
+/** What a host says without a compiler at `rustJs` (ADR 0041): that it
+ * builds from `committed`, the JS committed beside the Rust, or, with none,
+ * that it can't. */
+export function withoutCompiler(rustJs, committed) {
+  return committed
+    ? `no rust-js at ${rustJs}: using the committed ${committed}. Install rust-js or build it with cargo build to compile the Rust.`
+    : `no rust-js at ${rustJs}: install rust-js or build it with cargo build to compile the Rust`;
 }
 
 export function findCompiler(root) {
@@ -51,15 +32,6 @@ export function findCompiler(root) {
   catch (error) {
     if (error.code !== "MODULE_NOT_FOUND") throw error;
     return defaultCompiler;
-  }
-}
-
-function installedResources(root) {
-  const require = createRequire(join(root, "package.json"));
-  try { return dirname(require.resolve("@rust-js/resources/package.json")); }
-  catch (error) {
-    if (error.code !== "MODULE_NOT_FOUND") throw error;
-    return defaultResources;
   }
 }
 
@@ -112,8 +84,12 @@ function run(command, args, cwd, env = {}, warn) {
   });
 }
 
-export function createNativeBuilder({ root, rustJs = findCompiler(root), resources = installedResources(root), cacheDir = cacheDirOf(root), rustcFlags = [], bindings = ["react"], externs = {} }) {
-  const repo = resources;
+/**
+ * What a host builds an app's Rust with (ADR 0101): `rustJs`, the compiler,
+ * and Cargo, which checks each crate with it.
+ * @param {{ root: string, rustJs?: string }} options
+ */
+export function createNativeBuilder({ root, rustJs = findCompiler(root) }) {
   const compilerPath = existsSync(rustJs) ? realpathSync(rustJs) : rustJs;
   const compilerInputs = [...new Set([rustJs, compilerPath])];
   const nativePackage = join(dirname(compilerPath), "../package.json");
@@ -123,8 +99,6 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
   }
   const compilerCommand = packaged ? process.execPath : rustJs;
   const compilerArgs = packaged ? [compilerPath] : [];
-  const metadataInputs = resourceInputs(bindings).map(p => join(repo, p));
-  const pinned = () => readFileSync(join(repo, "rust-toolchain.toml"), "utf8").match(/^channel\s*=\s*"([^"]+)"/m)?.[1];
   // What the compiler says it is, `--version-json`: asked again when it's
   // replaced, as it may be while a dev server runs, which then checks the
   // runtime and picks the toolchain by the new one's answer.
@@ -139,88 +113,33 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
     }
     return identity.value;
   };
-
-  // Each recipe uses the pinned resources and a content-keyed cache directory.
-  async function prepare() {
-    if (!existsSync(rustJs)) throw new Error(`no rust-js at ${rustJs}: configure rustJs with an installed compiler or build it with cargo build`);
-    checkRuntime(root, (await compilerIdentity()).version);
-    const react = bindings.includes("react") ? installedReact(root) : null;
-    if (!bindings.length) return { flags: [], react };
-    const packagePath = join(repo, "package.json");
-    if (existsSync(packagePath)) {
-      const resourcePackage = JSON.parse(await readFile(packagePath, "utf8"));
-      if (resourcePackage.name === "@rust-js/resources") {
-        const identity = await compilerIdentity();
-        const pin = (await readFile(join(repo, "rust-toolchain.toml"), "utf8")).match(/^channel\s*=\s*"([^"]+)"/m)?.[1];
-        if (resourcePackage.version !== identity.version || pin !== identity.toolchain) {
-          throw new Error(`Incompatible rust-js resources: compiler ${identity.version} (${identity.toolchain}), resources ${resourcePackage.version} (${pin ?? "missing Rust pin"}). Install matching compiler and resources.`);
-        }
-      }
-    }
-    const hash = createHash("sha256").update(JSON.stringify({ resources: resolve(resources), react, bindings, rustcFlags }));
-    for (const path of compilerInputs) hash.update(await readFile(path));
-    for (const path of metadataInputs) hash.update(await readFile(path));
-    const key = hash.digest("hex");
-    const flags = [];
-    if (bindings.includes("react")) {
-      const metadata = join(cacheDir, "react", react ?? "latest", key);
-      const stamp = join(metadata, "complete");
-      if (!existsSync(stamp) || reactLibs.some(lib => !existsSync(join(metadata, `lib${lib}.rmeta`)))) {
-        await mkdir(metadata, { recursive: true });
-        // The binding crates are this compiler's to compile (ADR 0112).
-        await run(join(repo, "react/build.sh"), ["-o", join(metadata, "libreact.rmeta"), ...(react ? ["--react", react] : [])], repo, { RUST_JS_COMPILER: compilerPath });
-        await writeFile(stamp, key);
-      }
-      markUsed(metadata);
-      pruneUnused(join(cacheDir, "react"), metadata, 2);
-      // React's crates, each a program's to name (ADR 0102): `use js::spawn`.
-      for (const lib of reactLibs) flags.push("--extern", `${lib}=${join(metadata, `lib${lib}.rmeta`)}`);
-      flags.push("-L", metadata);
-    }
-    if (bindings.includes("serde")) {
-      const toolchain = readFileSync(join(repo, "rust-toolchain.toml"), "utf8").match(/^channel\s*=\s*"([^"]+)"/m)?.[1];
-      if (!toolchain) throw new Error("Binding resources must declare a pinned Rust toolchain");
-      // Cargo's structured output handles hashed filenames and paths with spaces.
-      // Run Cargo even on reuse: it checks that every dependency is still fresh.
-      // For rust-js's target (ADR 0090); serde_derive, a procedural macro, runs on the host.
-      const output = await run("cargo", [`+${toolchain}`, "build", "--locked", "--message-format=json",
-        "--target", target,
-        "--manifest-path", join(repo, "serde/Cargo.toml"), "--target-dir", join(cacheDir, "serde", key)], repo);
-      markUsed(join(cacheDir, "serde", key));
-      pruneUnused(join(cacheDir, "serde"), join(cacheDir, "serde", key));
-      const artifacts = output.split("\n").filter(Boolean).map(line => JSON.parse(line))
-        .filter(message => message.reason === "compiler-artifact");
-      // Where the target's libraries are, and where the host's macro is.
-      const directories = new Set(artifacts
-        .filter(message => message.target.kind.some(kind => kind === "lib" || kind === "rlib" || kind === "proc-macro"))
-        .flatMap(message => message.filenames.map(file => dirname(file))));
-      for (const name of ["serde", "serde_json"]) {
-        const artifact = artifacts.find(message => message.target.name === name && message.target.kind.includes("lib"));
-        const file = artifact?.filenames.find(file => file.endsWith(".rmeta"))
-          ?? artifact?.filenames.find(file => file.endsWith(".rlib"));
-        if (!file || !existsSync(file)) throw new Error(`Cargo produced no ${name} metadata`);
-        flags.push("--extern", `${name}=${file}`);
-      }
-      // Sorted: Cargo reports what it builds as each finishes, and one build's
-      // flags must be the next's.
-      for (const directory of [...directories].sort()) flags.push("-L", `dependency=${directory}`);
-    }
-    return { flags, react };
-  }
-
   // The Rust a Cargo build runs: the compiler's, as it says it was built
-  // with, as an app in Cargo mode has no resources; without a compiler, the
-  // resources' pin, for the committed JS's fallback.
-  const toolchain = async () => (existsSync(rustJs) ? (await compilerIdentity()).toolchain : pinned());
+  // with; without a compiler, Cargo's own, which says where a workspace is
+  // for the committed JS's fallback.
+  const toolchain = async () => (existsSync(rustJs) ? (await compilerIdentity()).toolchain : undefined);
+  // What a change to makes a host build again: the compiler.
+  const watchFiles = compilerInputs;
+  /** A crate's checks of its JS as `files` are, a save's or a build's (ADR
+   * 0117): what they say goes to `warn`; one that fails the build throws. */
+  const checks = async ({ input, files, save, warn }) => {
+    await run(compilerCommand, [...compilerArgs, "--checks", input, "--hooks", save ? "save" : "build", ...files], root, {}, warn);
+  };
 
-  const watchFiles = [...metadataInputs, ...(bindings.length ? [join(repo, "package.json")] : []), ...compilerInputs, ...Object.values(externs)];
   const builder = {
     /** A Cargo workspace's check (ADR 0101), with the compiler's toolchain,
      * this compiler, and the React the project has installed. */
     async checkCargo(options) {
       const identity = await compilerIdentity();
       checkRuntime(root, identity.version);
-      return checkCargo({ ...options, toolchain: identity.toolchain, compiler: rustJs, react: installedReact(root) ?? undefined });
+      const react = installedReact(root) ?? undefined;
+      try {
+        return await checkCargo({ ...options, toolchain: identity.toolchain, compiler: rustJs, react });
+      } catch (error) {
+        if (react && error.message.includes("configured out")) {
+          error.message += `\nnote: this project has React ${react}; an item gated \`react = "X.Y"\` needs React X.Y or later\n`;
+        }
+        throw error;
+      }
     },
     /** The check an editor runs (ADR 0222), as `checkCargo`'s, its
      * messages printed as they come; no JS in source, and no runtime needed. */
@@ -233,23 +152,35 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
     },
     /**
      * A Cargo build a host runs again as what it reads changes (ADR 0101),
-     * Vite's plugin's and Next.js's: `build()` is `checkCargo` of `options`,
-     * of the workspace its manifest is of, and keeps what it read;
+     * Vite's plugin's and Next.js's: `build({ save, warn })` is `checkCargo`
+     * of `options`, of the workspace its manifest is of, then each of the
+     * workspace's crates' checks of its JS, a save's or a build's (ADR 0117),
+     * what they say given to `warn`; and it keeps what it read.
      * `reads(file)` is whether a change to `file` is one to build again for,
-     * rust-js's own files, the workspace's Rust and manifests but not what
-     * Cargo writes, or a source the last build read wherever it is;
-     * `sources()` is each of those, to watch; and `committed()` is the JS of
-     * the package's root module committed beside its Rust (ADR 0041), what
-     * a host uses without a compiler, if there's one.
+     * the compiler, the workspace's Rust and manifests but not what Cargo
+     * writes, or a source the last build read wherever it is; `sources()`
+     * is each of those, to watch; and `committed()` is the JS of the
+     * package's root module committed beside its Rust (ADR 0041), what a
+     * host uses without a compiler, if there's one.
      * @param {Omit<Parameters<typeof checkCargo>[0], "toolchain" | "compiler" | "react">} options
      */
-    cargoSession(options) {
+    cargoSession(given) {
+      // What Cargo writes is out of what a host's bundler watches: Vite's
+      // Tailwind, which takes a file of `target/` for a new one to scan, and
+      // reloads the page, and Turbopack, which takes each for a change.
+      const options = { ...given, targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(root), "target") };
       let workspace, targetDir, manifests = [];
       return {
-        async build() {
-          ({ root: workspace, target: targetDir } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline }));
+        /** @param {{ save?: boolean, warn?: (message: string) => void }} [run] */
+        async build({ save = false, warn } = {}) {
+          ({ root: workspace, target: targetDir } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline, targetDir: options.targetDir }));
           const built = await builder.checkCargo(options);
           manifests = [...built.manifests.values()];
+          for (const [crate, manifest] of built.manifests) {
+            if (manifest.input.startsWith(workspace + sep)) {
+              await checks({ input: manifest.input, files: built.files.get(crate) ?? [], save, warn });
+            }
+          }
           return { ...built, workspace };
         },
         reads: (file) => watchFiles.includes(file)
@@ -263,22 +194,6 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
       };
     },
     watchFiles,
-    prepare,
-    /** `save` runs the crate's checks a save runs, not those only for a
-     * build (ADR 0117); `warn` is given what rust-js warns of as it succeeds. */
-    async compile({ crate, output, manifest, save = false, warn = undefined }) {
-      const { flags, react } = await prepare();
-      try {
-        await run(compilerCommand, [...compilerArgs, crate, "-o", output, "--manifest", manifest, "--hooks", save ? "save" : "build",
-          "--", ...flags,
-          ...Object.entries(externs).flatMap(([name, file]) => ["--extern", `${name}=${file}`, "-L", dirname(file)]), ...rustcFlags], root, {}, warn);
-      } catch (error) {
-        if (react && error.message.includes("configured out")) {
-          error.message += `\nnote: this project has React ${react}; an item gated \`react = "X.Y"\` needs React X.Y or later\n`;
-        }
-        throw error;
-      }
-    },
   };
   return builder;
 }

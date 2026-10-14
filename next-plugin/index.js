@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { existsSync, watch } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve, sep } from "node:path";
-import { cacheDirOf, createNativeBuilder, findCompiler } from "@rust-js/build/build";
+import { createNativeBuilder, findCompiler, withoutCompiler } from "@rust-js/build/build";
 import { writePatch } from "@rust-js/build/patch";
 
 /**
@@ -20,10 +20,6 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   // The app's Cargo, and its editor, find the crates its npm packages have
   // by a patch, which an install's `postinstall` writes, and again here.
   writePatch(app);
-  // What Cargo writes is out of what Turbopack watches: it watches the app's
-  // files, all but node_modules' and .next's, and a `cargo check` on every
-  // save rewrites many of target/'s, which it would see as many changes.
-  process.env.CARGO_TARGET_DIR ??= join(cacheDirOf(app), "target");
   const compiler = resolve(app, rustJs ?? findCompiler(app));
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const manifestPath = join(app, "Cargo.toml");
@@ -39,7 +35,9 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   const session = builder.cargoSession({ manifestPath, packageName, inSource: true, routes: [join(app, "pages"), join(app, "src/pages")] });
   async function compile() {
     try {
-      await session.build();
+      // The dev server's builds are a save's, whose checks are those not
+      // only for a build (ADR 0117); what they say is the log's.
+      await session.build({ save: command === "dev", warn: (message) => log(message.trimEnd()) });
       return true;
     } catch (error) {
       log(error instanceof Error ? error.message : String(error));
@@ -54,8 +52,8 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   const compiling = existsSync(compiler);
   if (!compiling) {
     const file = command === "compile" ? undefined : await session.committed();
-    if (!file) throw new Error(`rust-js: no compiler at ${compiler}`);
-    log(`rust-js: no rust-js at ${compiler}: using the committed ${file}. Install rust-js or build it with cargo build to compile the Rust.`);
+    if (!file) throw new Error(`rust-js: ${withoutCompiler(compiler)}`);
+    log(`rust-js: ${withoutCompiler(compiler, file)}`);
   } else if (!(await compile()) && command !== "dev") return 1;
   // Its Rust's JS alone, which an app's build may read before Next.js runs.
   if (command === "compile") return 0;

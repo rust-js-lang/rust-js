@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, copyFileSync, appendFileSync, existsSync, utimesSync } from "node:fs";
+import { mkdtempSync, realpathSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseManifest, mapManifestPaths, parseCompilerIdentity } from "../tooling/manifest.js";
-import { createNativeBuilder, pruneUnused } from "../tooling/build.js";
-import { buildCompiler, compiler, fixture, installRuntime, root as repository, run } from "./support";
+import { createNativeBuilder } from "../tooling/build.js";
+import { buildCompiler, cargoApp, compiler, fixture, installRuntime, run } from "./support";
 
 const manifest = {
   version: 1, input: "/virtual/lib.rs", output: "/virtual/lib.js",
@@ -93,145 +93,65 @@ test("virtual path mapping preserves JSON escaping and unrelated values", () => 
   expect(reread.note).toBe(value.note);
 });
 
-test("native build adapter compiles an independent application and preserves output on failure", async () => {
+// An app's Rust is built with Cargo, its one way (ADR 0101): the compiler's
+// identity in what it wrote, and a build that fails leaves the last one's JS.
+test("the builder builds an app's Cargo package, and a failed build leaves its JS", async () => {
   buildCompiler();
   const root = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-independent-")));
   installRuntime(root);
   try {
-    const source = join(root, "lib.rs");
-    const output = join(root, "lib.js");
-    const manifestPath = join(root, "manifest.json");
-    writeFileSync(source, "pub fn answer() -> u32 { 42 }");
-    const builder = createNativeBuilder({ root, rustJs: compiler, bindings: [] });
-    await builder.compile({ crate: source, output, manifest: manifestPath });
-    const result = parseManifest(readFileSync(manifestPath, "utf8"));
+    const options = cargoApp(root, "pub fn answer() -> u32 {\n    42\n}\n");
+    const builder = createNativeBuilder({ root, rustJs: compiler });
+    const built = await builder.checkCargo(options);
+    const result = built.manifests.get("app");
     const version = Bun.spawnSync([compiler, "--version-json"], { stdout: "pipe", stderr: "pipe" });
     expect(version.exitCode).toBe(0);
     expect(parseCompilerIdentity(version.stdout.toString())).toEqual(result.compiler);
-    expect(result.sources).toContain(source);
-    expect((await import(output)).answer()).toBe(42);
-    const previous = readFileSync(output, "utf8");
-    writeFileSync(source, "pub fn broken(");
-    await expect(builder.compile({ crate: source, output, manifest: manifestPath })).rejects.toThrow();
-    expect(readFileSync(output, "utf8")).toBe(previous);
+    expect(result.sources).toContain(join(root, "src", "lib.rs"));
+    expect((await import(built.js)).answer()).toBe(42);
+    const previous = readFileSync(built.js, "utf8");
+    writeFileSync(join(root, "src", "lib.rs"), "pub fn broken(");
+    await expect(builder.checkCargo(options)).rejects.toThrow();
+    expect(readFileSync(built.js, "utf8")).toBe(previous);
   } finally { rmSync(root, { recursive: true, force: true }); }
 }, 600_000);
 
 // The JS a compiler writes imports helpers of its own release (ADR 0103):
 // an app without @rust-js/runtime, or with another version's, is refused
-// before anything's compiled, as the resources of another version are.
-test("the build adapter refuses an app without the compiler's @rust-js/runtime", async () => {
+// before anything's compiled.
+test("the builder refuses an app without the compiler's @rust-js/runtime", async () => {
   buildCompiler();
   const root = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-runtime-version-")));
   try {
-    const source = join(root, "lib.rs");
-    writeFileSync(source, "pub fn answer() -> u32 { 42 }");
-    const job = { crate: source, output: join(root, "lib.js"), manifest: join(root, "manifest.json") };
-    const builder = () => createNativeBuilder({ root, rustJs: compiler, bindings: [] });
+    const options = cargoApp(root, "pub fn answer() -> u32 {\n    42\n}\n");
+    const builder = () => createNativeBuilder({ root, rustJs: compiler });
     const version = parseCompilerIdentity(Bun.spawnSync([compiler, "--version-json"], { stdout: "pipe" }).stdout.toString()).version;
-    await expect(builder().compile(job)).rejects.toThrow(`imports @rust-js/runtime ${version}: install it`);
+    await expect(builder().checkCargo(options)).rejects.toThrow(`imports @rust-js/runtime ${version}: install it`);
     mkdirSync(join(root, "node_modules", "@rust-js", "runtime"), { recursive: true });
     writeFileSync(join(root, "node_modules", "@rust-js", "runtime", "package.json"), '{ "name": "@rust-js/runtime", "version": "999.0.0", "exports": { "./package.json": "./package.json" } }\n');
-    await expect(builder().compile(job)).rejects.toThrow(`needs @rust-js/runtime ${version}, not the installed 999.0.0`);
+    await expect(builder().checkCargo(options)).rejects.toThrow(`needs @rust-js/runtime ${version}, not the installed 999.0.0`);
     rmSync(join(root, "node_modules"), { recursive: true });
     installRuntime(root);
-    await builder().compile(job);
-    expect((await import(job.output)).answer()).toBe(42);
+    const built = await builder().checkCargo(options);
+    expect((await import(built.js)).answer()).toBe(42);
   } finally { rmSync(root, { recursive: true, force: true }); }
 }, 600_000);
 
-test("build adapter prepares Serde for an independent app, reuses metadata, and rebuilds source edits", async () => {
-  buildCompiler();
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "rust-js serde app ")));
-  installRuntime(root);
-  try {
-    const source = join(root, "lib.rs");
-    const output = join(root, "lib.js");
-    const manifestPath = join(root, "manifest.json");
-    const resources = join(root, "resources");
-    mkdirSync(join(resources, "serde/src"), { recursive: true });
-    for (const file of ["rust-toolchain.toml", "serde/Cargo.toml", "serde/Cargo.lock", "serde/src/lib.rs"]) {
-      copyFileSync(join(repository, file), join(resources, file));
-    }
-    const options = { root, resources, rustJs: compiler, bindings: ["serde"], cacheDir: join(root, "cache with spaces") };
-    const program = (offset: number) => `
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct Message { pub count: u32 }
-pub fn roundtrip(text: &str) -> String {
-    let mut message: Message = serde_json::from_str(text).unwrap();
-    message.count += ${offset};
-    serde_json::to_string(&message).unwrap()
-}`;
-    writeFileSync(source, program(1));
-    const builder = createNativeBuilder(options);
-    const prepared = await builder.prepare();
-    expect(prepared.flags.some(flag => flag.startsWith("serde="))).toBe(true);
-    // Where serde's libraries are, in an order of their own: Cargo reports
-    // what it builds as each finishes, and the flags compare equal to the
-    // next build's, of nothing, in its order. Found flaky in review.
-    const directories = prepared.flags.filter((flag) => flag.startsWith("dependency="));
-    expect(directories.length).toBeGreaterThan(1);
-    expect(directories).toEqual([...directories].sort());
-    expect(builder.watchFiles.some(file => file.endsWith("serde/Cargo.lock"))).toBe(true);
-    await builder.compile({ crate: source, output, manifest: manifestPath });
-    expect((await import(output)).roundtrip('{"count":41}')).toBe('{"count":42}');
-    // A new host process has no in-memory cache. Cargo must report the same artifacts.
-    const reused = createNativeBuilder(options);
-    expect((await reused.prepare()).flags).toEqual(prepared.flags);
-    appendFileSync(join(resources, "serde/src/lib.rs"), "\n// Changed binding resource.\n");
-    expect((await reused.prepare()).flags).not.toEqual(prepared.flags);
-    writeFileSync(source, program(2));
-    await reused.compile({ crate: source, output, manifest: manifestPath });
-    expect((await import(output + "?updated")).roundtrip('{"count":41}')).toBe('{"count":43}');
-    const previous = readFileSync(output, "utf8");
-    writeFileSync(source, program(2).replace("message.count += 2", 'message.count += "bad"'));
-    await expect(reused.compile({ crate: source, output, manifest: manifestPath })).rejects.toThrow();
-    expect(readFileSync(output, "utf8")).toBe(previous);
-  } finally { rmSync(root, { recursive: true, force: true }); }
-}, 600_000);
-
-// An app in Cargo mode (ADR 0101) installs no `@rust-js/resources`: its
-// Cargo builds run the Rust the compiler says it was built with, its
-// `--version-json`, where they read the resources' pin. Without one, the
-// resources found from `@rust-js/build` are a directory that has none.
-test("the build adapter's Cargo builds run the compiler's Rust, without resources", async () => {
+// An app's Cargo builds run the Rust the compiler says it was built with,
+// its `--version-json`.
+test("the builder's Cargo builds run the compiler's Rust", async () => {
   buildCompiler();
   const root = realpathSync(mkdtempSync(join(tmpdir(), "rust-js-cargo-app-")));
   try {
-    const resources = join(root, "no-resources");
-    mkdirSync(resources);
-    mkdirSync(join(root, "src"));
-    writeFileSync(join(root, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[workspace]\n');
-    writeFileSync(join(root, "src", "lib.rs"), "pub fn answer() -> i32 {\n    42\n}\n");
+    const options = cargoApp(root, "pub fn answer() -> i32 {\n    42\n}\n");
     installRuntime(root);
-    const builder = createNativeBuilder({ root, rustJs: compiler, resources, bindings: [] });
-    const manifestPath = join(root, "Cargo.toml");
-    const { packages } = await builder.cargoWorkspace({ manifestPath, offline: true });
+    const builder = createNativeBuilder({ root, rustJs: compiler });
+    const { packages } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: true });
     expect([...packages.keys()]).toEqual(["app"]);
-    const built = await builder.checkCargo({ manifestPath, packageName: "app", offline: true });
+    const built = await builder.checkCargo(options);
     expect(readFileSync(built.js, "utf8")).toContain("export function answer() {\n  return 42;\n}");
   } finally { rmSync(root, { recursive: true, force: true }); }
 }, 600_000);
-
-// A build's cache of React's crates and Serde's is keyed by what made it, the
-// compiler among them: an upgrade leaves the last key's behind. What no build
-// used for a week goes, a React version's folder too once it's empty; what's
-// in use, and the key the build uses, stay.
-test("the build adapter drops what other keys cached that no build used for a week", () => {
-  const cache = fixture("keyed-cache");
-  const now = Date.now() / 1000;
-  const day = 24 * 60 * 60;
-  const kept = (path: string, age: number) => {
-    mkdirSync(join(cache, path), { recursive: true });
-    utimesSync(join(cache, path), now - age * day, now - age * day);
-  };
-  kept("react/19.3.0/current", 30);
-  kept("react/19.3.0/recent", 2);
-  kept("react/19.3.0/old", 8);
-  kept("react/18.2.0/old", 9);
-  pruneUnused(join(cache, "react"), join(cache, "react/19.3.0/current"), 2, now);
-  expect(["react/19.3.0/current", "react/19.3.0/recent", "react/19.3.0/old", "react/18.2.0"].map((p) => existsSync(join(cache, p)))).toEqual([true, true, false, false]);
-});
 
 // ADR 0101: a module's `links` are where its JS and its declarations name
 // another module's file, by the compiler's parse of what it printed: each

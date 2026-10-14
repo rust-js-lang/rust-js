@@ -46,3 +46,7 @@ it uses, `js`, `webapi` and `react`, by path. It's for an editor and a
   placeholder that doesn't look inside the markup (ADR 0113), so a variable
   or static used only there warns, `count` in the app, and a name inside it
   goes to no definition. The tests allow those warnings alone.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

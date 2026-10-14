@@ -15,7 +15,7 @@ import rustJs from "../vite-plugin/index.js";
 import { latest, releases } from "../react/cfg.js";
 import { bindings } from "../react/coverage";
 import versions from "../react/versions.json" with { type: "json" };
-import { buildCompiler, compiler, fixture, root, run, target } from "./support";
+import { buildCompiler, cargoApp, compiler, fixture, root, run, target } from "./support";
 
 type Exports = Record<string, Record<string, { since: string; removed?: string }>>;
 const exports = versions.exports as Exports;
@@ -157,11 +157,10 @@ test("React 18.2's crate rejects React 19.2's API at compile time", () => {
 test("The Vite plugin builds for the React a project has installed", async () => {
   buildCompiler();
   const dir = fixture("vite-react-18");
-  mkdirSync(join(dir, "src"));
   mkdirSync(join(dir, "node_modules", "react"), { recursive: true });
   writeFileSync(join(dir, "node_modules", "react", "package.json"), '{ "name": "react", "version": "18.2.0" }\n');
+  cargoApp(dir, usesUseEffectEvent, { lib: "src/App.rs", react: true });
   writeFileSync(join(dir, "index.html"), '<div id="root"></div><script type="module" src="/src/App.jsx"></script>');
-  writeFileSync(join(dir, "src/App.rs"), usesUseEffectEvent);
-  const attempt = build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler }), react()], logLevel: "silent" });
+  const attempt = build({ root: dir, configFile: false, plugins: [rustJs({ rustJs: compiler, cargo: { package: "app", offline: true } }), react()], logLevel: "silent" });
   await expect(attempt).rejects.toThrow("this project has React 18.2.0");
 }, 120_000);

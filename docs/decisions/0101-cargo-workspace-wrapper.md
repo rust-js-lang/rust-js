@@ -223,3 +223,7 @@ copies, and without rust-js, builds from them, as it does a committed
   crates with rust-js too is a decision of its own.
 - **Every workspace library exports what its consumers can reach,** the
   app too (ADR 0100): its JS is a library's.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

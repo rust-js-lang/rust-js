@@ -6,7 +6,6 @@ import { beforeAll, expect, test } from "bun:test";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { cfgFlags } from "../react/cfg.js";
-import { bindingInputs } from "../tooling/resources.js";
 import { buildCompiler, buildReact, compiler, fixture, root, run, target } from "./support";
 import { cargo, check } from "./crates";
 
@@ -63,9 +62,12 @@ test("a component of a Cargo workspace using the react crate is the JS it is out
 // app's `node_modules`, are inside its workspace, whose members they are.
 test("the bindings installed inside a Cargo workspace are rustc's to check, as outside it", async () => {
   const dir = fixture("cargo-react-inside");
-  const resources = join(dir, "node_modules", "@rust-js/resources");
-  for (const file of bindingInputs.react) cpSync(join(root, file), join(resources, file));
-  const manifest = withReact(dir, counter, join(resources, "react"));
+  // React's crate, and the crates it uses beside it, as they're checked in.
+  const installed = join(dir, "node_modules", "@rust-js", "crates");
+  for (const crate of ["react", "webapi", "builtins"]) {
+    for (const file of run(["git", "ls-files", crate]).trim().split("\n")) cpSync(join(root, file), join(installed, file));
+  }
+  const manifest = withReact(dir, counter, join(installed, "react"));
   const { js } = await check(manifest, { packageName: "ui" });
   expect(body(js)).toContain('import { useState } from "react";');
   // A check of the whole workspace too, the bindings with it.

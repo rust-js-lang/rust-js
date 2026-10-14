@@ -56,3 +56,7 @@ which crates.io refuses, and it's built with rustc's own libraries, which
 - **Still to come**: publishing them; an app's `Cargo.toml` naming them by
   version, not `@rust-js/resources`' path; and rust-js refusing a binding
   crate of another version than its own, whose attributes it may not read.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

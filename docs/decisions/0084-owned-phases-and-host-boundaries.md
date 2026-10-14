@@ -273,3 +273,7 @@ guards and native comparisons for same-named user types.
 `cargo clippy --locked -- -D warnings`, `cargo test --locked`, documentation
 link checks and `git diff --check` also passed. Generated JavaScript snapshots
 remain unchanged. Hosted CI was not run.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

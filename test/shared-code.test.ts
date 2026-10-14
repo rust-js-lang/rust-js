@@ -2,7 +2,6 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, realpathSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createNativeBuilder } from "../tooling/build.js";
 import { parseManifest } from "../tooling/manifest.js";
 import { buildCompiler, buildSerde, compiler, installRuntime, root as repository, run } from "./support";
 
@@ -52,9 +51,9 @@ fn main() {
     println!("{}", model::handle(&std::env::args().nth(1).unwrap()));
 }
 `);
-    const builder = createNativeBuilder({ root, rustJs: compiler, bindings: ["serde"] });
     // The client's serde is built for rust-js's target (ADR 0090); the
     // server's, for the machine it runs on, as its own Cargo build would.
+    const clientFlags = buildSerde("rmeta");
     const nativeFlags = buildSerde("rlib");
     const pin = (Bun.TOML.parse(readFileSync(join(repository, "rust-toolchain.toml"), "utf8")) as { toolchain: { channel: string } }).toolchain.channel;
     // Fresh processes also reload imported model modules after the shared edit.
@@ -64,7 +63,7 @@ fn main() {
     ]));
     for (const limit of [10, 3]) {
       writeFileSync(model, definitions(limit));
-      await builder.compile({ crate: client, output, manifest });
+      run([compiler, client, "-o", output, "--manifest", manifest, "--", ...clientFlags]);
       run(["rustc", `+${pin}`, "--edition=2024", "--crate-name", "server", server, "-o", binary, ...nativeFlags]);
       expect(parseManifest(readFileSync(manifest, "utf8")).sources).toContain(model);
       for (const count of [0, 3, 5, 10, 11]) {

@@ -97,3 +97,7 @@ npm create @rust-js@latest my-app      # with Node.js
   which ADR 0120 publishes. The app's `package.json` names `@rust-js/runtime`,
   `@rust-js/vite-plugin`, and the compiler, `@rust-js/native`, and its
   resources, `@rust-js/resources`, its own: `@rust-js/build` brings neither.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way

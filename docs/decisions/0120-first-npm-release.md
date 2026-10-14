@@ -73,3 +73,7 @@ built on the host it's for. Its one user develops on macOS, on Apple silicon.
 - **Each release's notes are [CHANGELOG.md](../../CHANGELOG.md)'s**, from
   0.0.3: what's new, which programs gave a wrong answer and now give Rust's,
   what may now be refused, and how an app upgrades and rolls back.
+
+## Amended by
+
+- [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way
