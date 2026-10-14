@@ -13,8 +13,7 @@ const mainConst$2 = undefined;
 function main() {
   let s = mainConst;
   s += "a";
-  const arg = $byteLen(mainConst$1);
-  console.log(`${s} ${arg}`);
+  console.log(`${s} ${$byteLen(mainConst$1)}`);
   const slot = [1, 2];
   console.log(`(${slot[0]}, ${slot[1]})`);
 }

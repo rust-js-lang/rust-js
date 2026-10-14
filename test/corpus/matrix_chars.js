@@ -93,9 +93,8 @@ function main() {
     const value$27 = c.codePointAt(0) & 255;
     const value$28 = String.fromCharCode(c.codePointAt(0) & 255);
     const value$29 = $fromU32((c.codePointAt(0) + 1) >>> 0);
-    const arg$1 = $byteLen(c);
     console.log(
-      `${$debugStr(c, "'")}: case ${$debugStr(value$18)} ${$debugStr(value$19)} ${$debugStr(value$20, "'")} ${$debugStr(value$21, "'")} digit ${value$22 == null ? "None" : `Some(${value$22})`} ${value$23 == null ? "None" : `Some(${value$23})`} ${value$24 == null ? "None" : `Some(${value$24})`} len ${value$25} ${c.length} as ${value$26} ${value$27} ${$debugStr(value$28, "'")} ${value$29 == null ? "None" : `Some(${$debugStr(value$29, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${arg$1}`,
+      `${$debugStr(c, "'")}: case ${$debugStr(value$18)} ${$debugStr(value$19)} ${$debugStr(value$20, "'")} ${$debugStr(value$21, "'")} digit ${value$22 == null ? "None" : `Some(${value$22})`} ${value$23 == null ? "None" : `Some(${value$23})`} ${value$24 == null ? "None" : `Some(${value$24})`} len ${value$25} ${c.length} as ${value$26} ${value$27} ${$debugStr(value$28, "'")} ${value$29 == null ? "None" : `Some(${$debugStr(value$29, "'")})`} fmt [${$pad(c, 4, ">")}] [${$pad(c, 3, "<")}] ${$byteLen(c)}`,
     );
     for (const d of CHARS) {
       const value = $cmp(c, d);

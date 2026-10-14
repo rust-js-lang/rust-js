@@ -18,8 +18,7 @@ export function entry() {
 function show(bytes) {
   const value = $fromUtf8(bytes);
   if (value.TAG === "Ok") {
-    const arg = $byteLen(value._0);
-    console.log(`ok ${$debugStr(value._0)} ${arg}`);
+    console.log(`ok ${$debugStr(value._0)} ${$byteLen(value._0)}`);
   } else {
     console.log(
       `err ${$utf8ErrorMessage(value._0)} | ${$debugUtf8Error(value._0)} | ${value._0.valid_up_to} ${value._0.error_len == null ? "None" : `Some(${value._0.error_len})`}`,

@@ -27,8 +27,7 @@ function main() {
   );
   const quoted = "«héllo»";
   const s = $stripCircumfix(quoted, "«", "»");
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))(s != null ? $byteLen(s) : undefined)}`,
-  );
+  const value = s != null ? $byteLen(s) : undefined;
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
 }
 //# sourceMappingURL=case.js.map

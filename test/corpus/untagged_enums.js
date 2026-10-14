@@ -70,8 +70,7 @@ function namePartialEq_eq(name, other) {
 function describe(value) {
   if (typeof value !== "number") {
     if (typeof value === "string") {
-      const arg = $byteLen(value);
-      return `text ${value} of ${arg}`;
+      return `text ${value} of ${$byteLen(value)}`;
     }
     if (typeof value === "bigint") {
       return `big ${BigInt.asIntN(64, value * 2n)}`;

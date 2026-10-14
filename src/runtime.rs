@@ -304,9 +304,15 @@ fn declared(source: &str) -> impl Iterator<Item = &str> {
 }
 
 /// The helpers that only read what they're given and make a value of it,
-/// or its text, `$jsonIndex(v, "a")`, `$debugStr(s)`: a call of one does
-/// what its arguments do, and nothing else.
+/// or its text, `$jsonIndex(v, "a")`, `$debugStr(s)`, or compute one,
+/// `$f64Max(a, b)`: a call of one does what its arguments do, and nothing
+/// else.
 const PURE: &[&str] = &[
+    "$find",
+    "$rfind",
+    "$byteLen",
+    "$f64Max",
+    "$f64Min",
     "$jsonInt",
     "$jsonFloat",
     "$jsonNumberOfF64",

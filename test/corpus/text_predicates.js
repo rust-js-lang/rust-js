@@ -71,12 +71,9 @@ function main() {
   );
   const edges = $range(0, 7).map((i) => $charBoundary(name, i) !== undefined);
   console.log(`[${edges.map((item) => String(item)).join(", ")}]`);
-  const value$12 = $byteLen("a");
-  const value$13 = $byteLen("ë");
-  const value$14 = $byteLen("😀");
-  console.log(`${value$12} ${value$13} ${value$14} ${"😀".length}`);
-  const value$15 = String.fromCharCode(65);
-  console.log(`${value$15} ${String.fromCharCode(233)}`);
+  console.log(`${$byteLen("a")} ${$byteLen("ë")} ${$byteLen("😀")} ${"😀".length}`);
+  const value$12 = String.fromCharCode(65);
+  console.log(`${value$12} ${String.fromCharCode(233)}`);
   const letters = ["h", "é", "!"].join("");
   const joined = ["ab", "cd"].join("");
   console.log(`${letters} ${joined}`);

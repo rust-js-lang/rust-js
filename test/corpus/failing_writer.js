@@ -20,8 +20,7 @@ function fullWrite_write_str(full, s) {
   if ($byteLen(s) > full[0]) {
     return $fmtError();
   }
-  const value = $byteLen(s);
-  full[0] = (full[0] - value) >>> 0;
+  full[0] = (full[0] - $byteLen(s)) >>> 0;
   return;
 }
 

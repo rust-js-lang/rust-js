@@ -320,18 +320,6 @@ export const mutations: Mutation[] = [
     ]
   },
   {
-    "name": "does-reading-helper",
-    "breaks": "a closure reading a string with `$find` counts as doing something, its chain lazy",
-    "file": "src/lower/iterators.rs",
-    "find": "js::ExprKind::Var(helper) => HELPERS.contains(&helper.as_str()),",
-    "replace": "js::ExprKind::Var(helper) => helper.is_empty(),",
-    "tests": [
-      "test/lowering.test.ts",
-      "-t",
-      "iterator chains from MIR are array methods"
-    ]
-  },
-  {
     "name": "reads-by-name-alone",
     "breaks": "a call is judged to only read by its method's name alone: the crate's own `at`, `P.at(p)`, which prints, runs for every item before the next stage",
     "file": "src/lower/iterators.rs",
@@ -371,7 +359,7 @@ export const mutations: Mutation[] = [
     name: "does-f64-max-given-acts",
     breaks: "`$f64Max` given as it is acts, so a chain it folds stays lazy",
     file: "src/lower/iterators.rs",
-    find: "        js::ExprKind::Var(helper) => !HELPERS.contains(&helper.as_str()),\n",
+    find: "        js::ExprKind::Var(_) => !f.helper_name().is_some_and(crate::runtime::is_pure),\n",
     replace: "",
     tests: ["test/traits.test.ts","-t","MIR dictionaries are explicit"],
   },

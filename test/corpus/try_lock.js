@@ -267,10 +267,9 @@ function main() {
     $unborrow(w);
     throw error;
   }
-  const value$6 = $byteLen(w.value);
   try {
     console.log(
-      `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${value$6}`,
+      `${e === "WouldBlock" ? "try_lock failed because the operation would block" : "poisoned lock: another task failed inside"} ${e === "WouldBlock" ? '"WouldBlock"' : '"Poisoned(..)"'} ${$byteLen(w.value)}`,
     );
   } catch (error) {
     if (e.TAG === "Poisoned") {
@@ -288,13 +287,13 @@ function main() {
     throw error;
   }
   $unborrow(w);
-  const value$7 = $lockRead(l, true);
+  const value$6 = $lockRead(l, true);
   try {
-    console.log(`${value$7.value}`);
+    console.log(`${value$6.value}`);
   } catch (error) {
-    $unborrow(value$7);
+    $unborrow(value$6);
     throw error;
   }
-  $unborrow(value$7);
+  $unborrow(value$6);
 }
 //# sourceMappingURL=case.js.map

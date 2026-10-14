@@ -980,18 +980,16 @@ fn counts(f: &Expr) -> bool {
 /// arrow whose statements only make and give back what does nothing.
 pub(super) fn does(f: &Expr) -> bool {
     // A `str`'s or a slice's methods that only read it, `s.startsWith(t)`,
-    // as Rust's types tell (`Expr::read`), not a crate's own `at`, `P.at(p)`; and
-    // the runtime's that only read, `$find(s, t)`, or compute, `$f64Max(a, b)`:
-    // their operands'; and such a helper given as it is.
+    // as Rust's types tell (`Expr::read`), not a crate's own `at`, `P.at(p)`:
+    // their operands', as `has_effects` says of the runtime's pure helpers,
+    // `$find(s, t)`; and such a helper given as it is.
     const READS: &[&str] = &["startsWith", "endsWith", "includes", "toUpperCase", "toLowerCase", "at"];
-    const HELPERS: &[&str] = &["$find", "$rfind", "$byteLen", "$f64Max", "$f64Min"];
     fn acts(e: &Expr) -> bool {
         let mut e = e.clone();
         e.each_mut(&mut |part| {
             if let js::ExprKind::Call(callee, args) = &part.kind {
                 let reads = match &callee.kind {
                     js::ExprKind::Member(_, name) => part.reads && READS.contains(&name.as_str()),
-                    js::ExprKind::Var(helper) => HELPERS.contains(&helper.as_str()),
                     _ => false,
                 };
                 if reads {
@@ -1020,7 +1018,7 @@ pub(super) fn does(f: &Expr) -> bool {
     }
     match &f.kind {
         js::ExprKind::Arrow(_, body) => body_does(body),
-        js::ExprKind::Var(helper) => !HELPERS.contains(&helper.as_str()),
+        js::ExprKind::Var(_) => !f.helper_name().is_some_and(crate::runtime::is_pure),
         _ => true,
     }
 }

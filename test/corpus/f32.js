@@ -76,13 +76,11 @@ function main() {
   console.log(
     `${$displayF32(value$5)} ${$displayF32(value$6)} ${$displayF32(Math.fround(2 ** 10))}`,
   );
-  const value$7 = $f64Max(1.5, NaN);
-  const value$8 = $f64Min(1.5, -3);
   console.log(
-    `${$displayF32(value$7)} ${$displayF32(value$8)} ${$displayF32(Math.fround(Math.fround(Math.sqrt(7)) * Math.fround(Math.sqrt(7))))}`,
+    `${$displayF32($f64Max(1.5, NaN))} ${$displayF32($f64Min(1.5, -3))} ${$displayF32(Math.fround(Math.fround(Math.sqrt(7)) * Math.fround(Math.sqrt(7))))}`,
   );
-  const value$9 = Number.isNaN(NaN);
-  console.log(`${value$9} ${Math.abs(Math.fround(1 / 0)) === Infinity}`);
+  const value$7 = Number.isNaN(NaN);
+  console.log(`${value$7} ${Math.abs(Math.fround(1 / 0)) === Infinity}`);
   const readings = [
     { celsius: Math.fround(21.7) },
     { celsius: Math.fround(-3.2) },
@@ -90,16 +88,16 @@ function main() {
   ];
   console.log(`${readingDebug_fmt($index(readings, 0))}`);
   const temps = readings.map((r) => r.celsius);
-  const value$10 = temps.reduce((a, b) => Math.fround(a + b), -0);
+  const value$8 = temps.reduce((a, b) => Math.fround(a + b), -0);
   console.log(
-    `${$displayF32(value$10)} ${$displayF32(temps.reduce((a, b) => Math.fround(a * b), 1))}`,
+    `${$displayF32(value$8)} ${$displayF32(temps.reduce((a, b) => Math.fround(a * b), 1))}`,
   );
   const sorted = temps.slice();
   sorted.sort((a, b) => $unwrap($partialCmp(a, b)));
   console.log(`[${sorted.map((item) => $debugF32(item)).join(", ")}]`);
-  const value$11 = total(temps, 0, { add: (a, b) => Math.fround(a + b) });
+  const value$9 = total(temps, 0, { add: (a, b) => Math.fround(a + b) });
   console.log(
-    `${$displayF32(value$11)} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,
+    `${$displayF32(value$9)} ${$displayF64(total([0.1, 0.2], 0, { add: (a, b) => a + b }))}`,
   );
 }
 //# sourceMappingURL=case.js.map

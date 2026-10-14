@@ -13,8 +13,7 @@ function main() {
   ];
   console.log(`${$escapeAscii(bytes)}`);
   const escaped = $escapeAscii([97, 10, 98]);
-  const arg = $byteLen(escaped);
-  console.log(`${escaped} ${arg}`);
+  console.log(`${escaped} ${$byteLen(escaped)}`);
   console.log(`[${$escapeAscii([])}]`);
   const mixed = [111, 107, 255, 104, 195, 169, 226, 130, 32, 101, 110, 100, 240, 159];
   for (const chunk of $utf8Chunks(mixed)) {
@@ -26,7 +25,7 @@ function main() {
     .map((c) => c.valid)
     .toArray()
     .join("");
-  const arg$1 = Iterator.from($utf8Chunks([])).reduce((n) => n + 1, 0);
-  console.log(`${text} ${arg$1}`);
+  const arg = Iterator.from($utf8Chunks([])).reduce((n) => n + 1, 0);
+  console.log(`${text} ${arg}`);
 }
 //# sourceMappingURL=case.js.map

@@ -125,11 +125,10 @@ function main() {
       const value$7 = $find(a, b);
       const value$8 = $stripPrefix(a, b);
       const value$9 = $stripSuffix(a, b);
-      const arg = $byteLen(a + b);
       console.log(
         `${$debugStr(a)} ${$debugStr(b)}: ${value} ${value$1} ${value$2} ${
           ["Less", "Equal", "Greater"][value$3 + 1]
-        } ${value$4} ${value$5} ${a === b} ${value$6} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8)})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`} ${arg}`,
+        } ${value$4} ${value$5} ${a === b} ${value$6} ${value$7 == null ? "None" : `Some(${value$7})`} ${value$8 == null ? "None" : `Some(${$debugStr(value$8)})`} ${value$9 == null ? "None" : `Some(${$debugStr(value$9)})`} ${$byteLen(a + b)}`,
       );
     }
   }

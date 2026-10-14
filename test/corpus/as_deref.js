@@ -24,17 +24,16 @@ function greet(name) {
 function main() {
   const owned = "ann";
   const none = undefined;
-  const value$1 = greet(owned);
-  console.log(`${value$1} ${greet(none)}`);
-  console.log(
-    `${((value) => (value == null ? "None" : `Some(${value})`))(owned != null ? $byteLen(owned) : undefined)}`,
-  );
+  const value$2 = greet(owned);
+  console.log(`${value$2} ${greet(none)}`);
+  const value = owned != null ? $byteLen(owned) : undefined;
+  console.log(`${value == null ? "None" : `Some(${value})`}`);
   const items = [3, 1, 2];
   const slice = items;
-  const value$2 = slice?.length;
-  const value = slice != null ? slice[0] : undefined;
+  const value$3 = slice?.length;
+  const value$1 = slice != null ? slice[0] : undefined;
   console.log(
-    `${value$2 == null ? "None" : `Some(${value$2})`} ${value == null ? "None" : `Some(${value})`}`,
+    `${value$3 == null ? "None" : `Some(${value$3})`} ${value$1 == null ? "None" : `Some(${value$1})`}`,
   );
   const boxed = 7;
   console.log(`${boxed == null ? "None" : `Some(${boxed})`}`);

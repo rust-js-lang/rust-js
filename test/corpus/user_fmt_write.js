@@ -18,8 +18,7 @@ export function collectorWrite() {
 
 function collectorWrite_write_str(collector, s) {
   collector.text += s;
-  const value = $byteLen(s);
-  collector.bytes = (collector.bytes + value) >>> 0;
+  collector.bytes = (collector.bytes + $byteLen(s)) >>> 0;
   return;
 }
 
