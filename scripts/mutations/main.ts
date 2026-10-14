@@ -7,7 +7,7 @@ export const mutations: Mutation[] = [
     breaks: "what Cargo is told of a crate is written on its own, and a build that fails writing it has changed the JS",
     file: "src/main.rs",
     find: "            _ => Vec::new(),\n        };\n",
-    replace: "            _ => Vec::new(),\n        };\n        for (path, bytes) in std::mem::take(&mut callbacks.output.extra) {\n            let _ = std::fs::write(path, bytes);\n        }\n",
+    replace: "            _ => Vec::new(),\n        };\n        for (path, bytes) in std::mem::take(&mut plan.extra) {\n            let _ = std::fs::write(path, bytes);\n        }\n",
     tests: ["test/cargo-workspace.test.ts", "-t", "can't record what it made"],
   },
   {

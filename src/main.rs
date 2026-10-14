@@ -99,15 +99,15 @@ fn stable_crate_id(compiler: &Compiler, krate: &rustc_ast::Crate) -> StableCrate
 static RUSTC_TOOLS: OnceLock<for<'tcx> fn(TyCtxt<'tcx>, ()) -> RegisteredTools> = OnceLock::new();
 
 struct RustJs {
-    output: output::OutputPlan,
     dependencies: library::Dependencies,
     export_library: bool,
     /// `--emit=metadata` among rustc's flags: rustc goes on to write the
     /// crate's metadata, for the crates that use it (ADR 0100).
     metadata: bool,
-    /// What's planned and published once rustc has written the metadata too:
-    /// a library's JS and its metadata are one build's, or neither is.
-    pending: Option<(link::Linked, Vec<PathBuf>)>,
+    /// What's lowered, and the sources it was of, planned and published once
+    /// rustc is done, and has written the metadata too: a library's JS and
+    /// its metadata are one build's, or neither is.
+    lowered: Option<(link::Linked, Vec<PathBuf>)>,
     /// `--std-coverage <file>`: where to write how much of std's data
     /// structures rust-js lowers (ADR 0314).
     std_coverage: Option<PathBuf>,
@@ -214,11 +214,7 @@ impl Callbacks for RustJs {
                 .filter_map(|file| file.name.clone().into_local_path())
                 .chain(self.dependencies.inputs.iter().cloned())
                 .collect();
-            if self.metadata {
-                self.pending = Some((linked, sources));
-            } else if let Err(err) = self.output.plan(linked, sources).and_then(|plan| plan.publish()) {
-                tcx.dcx().err(format!("rust-js: {err}"));
-            }
+            self.lowered = Some((linked, sources));
         }
 
         // We never want rustc's own codegen, only, for a library, the metadata
@@ -295,8 +291,9 @@ fn main() -> ExitCode {
     };
     match compile(build) {
         Ok(exit) => exit,
+        // As rustc says its errors, which a build's are among.
         Err(error) => {
-            eprintln!("rust-js: {error}");
+            eprintln!("error: rust-js: {error}");
             ExitCode::FAILURE
         }
     }
@@ -356,18 +353,17 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
         dependencies,
         export_library,
         metadata: metadata.is_some(),
-        pending: None,
+        lowered: None,
         std_coverage,
-        output: plan,
         cargo,
     };
     let exit = rustc_driver::catch_with_exit_code(|| rustc_driver::run_compiler(&rustc_args, &mut callbacks));
     // Once rustc has written the metadata: if it couldn't, nothing is published.
-    if let Some((linked, sources)) = callbacks.pending.take()
+    if let Some((linked, sources)) = callbacks.lowered.take()
         && exit == ExitCode::SUCCESS
     {
         // What Cargo is told of the build, published with it (ADR 0101).
-        callbacks.output.extra = match &recorded {
+        plan.extra = match &recorded {
             Some((Some(manifest), Some((_, metadata)))) => cargo::record(
                 manifest,
                 &dependency_paths,
@@ -378,13 +374,13 @@ fn compile(build: command::Build) -> Result<ExitCode, String> {
             )?,
             _ => Vec::new(),
         };
-        callbacks.output.plan(linked, sources)?.publish()?;
+        plan.plan(linked, sources)?.publish()?;
     }
     drop(stage);
     // Once it's all written, the crate's checks of it. Cargo's build runs
     // rust-js for each crate, so its driver is to run them, once (ADR 0117).
     if exit == ExitCode::SUCCESS && !cargo {
-        hooks::check(&callbacks.output.settings, &callbacks.output.written, save)?;
+        hooks::check(&plan.settings, &plan.written, save)?;
     }
     Ok(exit)
 }
