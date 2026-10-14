@@ -1,9 +1,10 @@
 # next: Next.js for rust-js
 
 Write a Next.js app's routes and components in Rust. rust-js compiles each
-to the JSX you'd write beside it, `app/page.rs` to `app/page.jsx`, and
-`rust-js-next`, `@rust-js/next-plugin`'s, runs it beside `next dev` and
-before `next build` ([ADR 0192](../docs/decisions/0192-next.md)):
+to the JSX you'd write beside it, `app/page.rs` to `app/page.jsx`, as
+`next dev` and `next build` load the app's config, `withRustJs(nextConfig)`
+from `@rust-js/next-plugin` ([ADR 0192](../docs/decisions/0192-next.md),
+[0380](../docs/decisions/0380-with-rust-js.md)):
 
 ```rust
 #![allow(non_snake_case)]

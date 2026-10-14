@@ -9,6 +9,14 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ## Unreleased
 
+### Changed
+
+- **A Next.js app's config compiles its Rust: `withRustJs(nextConfig)`.**
+  `next dev`, `next build`, a custom server and react.dev's
+  `next-remote-watch` each load it, so an app's scripts stay its own;
+  `rust-js-next dev` and `build` are gone, and `rust-js-next compile`
+  writes the JS alone ([ADR 0380](docs/decisions/0380-with-rust-js.md)).
+
 ### Fixed
 
 - **A dev server compiles once for a save, on macOS too.** macOS reports a

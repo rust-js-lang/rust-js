@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// `rust-js-next dev|build [next's arguments]`: an app's scripts, in
-// place of `next dev` and `next build` (ADR 0192); `rust-js-next compile`,
-// its Rust's JS alone, for what its build reads first.
-import { run } from "./index.js";
+// `rust-js-next compile`: an app's Rust's JS, written beside it, for what
+// reads it before Next.js runs. `next dev` and `next build` compile it
+// themselves, through the app's config, `withRustJs` (ADR 0380).
+import { compile } from "./index.js";
 
 const [command, ...args] = process.argv.slice(2);
-if (!["dev", "build", "compile"].includes(command)) {
-  process.stderr.write("usage: rust-js-next dev|build [next's arguments] | compile\n");
+if (command !== "compile" || args.length > 0) {
+  process.stderr.write("usage: rust-js-next compile\n`next dev` and `next build` compile an app's Rust through its config: `withRustJs(nextConfig)`\n");
   process.exit(2);
 }
 try {
-  process.exit(await run({ app: process.cwd(), command, args }));
+  await compile({ app: process.cwd() });
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : error}\n`);
   process.exit(1);

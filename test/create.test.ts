@@ -86,7 +86,7 @@ test("--template next makes the Next.js example's app, named for its directory",
   const manifest = JSON.parse(readFileSync(join(app, "package.json"), "utf8"));
   const crate = (dir: string) => readFileSync(join(root, dir, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
   expect(manifest.name).toBe("my-site");
-  expect(manifest.scripts).toMatchObject({ dev: "rust-js-next dev", build: "rust-js-next build", postinstall: "rust-js-patch" });
+  expect(manifest.scripts).toMatchObject({ dev: "next dev", build: "next build", postinstall: "rust-js-patch" });
   expect(manifest.dependencies).toMatchObject({ "@rust-js/next": crate("next"), "@rust-js/react": crate("react"), "@rust-js/webapi": crate("webapi"), "@rust-js/builtins": crate("builtins") });
   expect(manifest.devDependencies["@rust-js/next-plugin"]).toBe(version);
   expect(readFileSync(join(app, ".vscode/settings.json"), "utf8")).toContain("rust-js-check");

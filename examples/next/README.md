@@ -12,13 +12,15 @@ bun run build    # or npm run build: .next/
 ```
 
 ```
-save page.rs ─► rust-js-next: cargo check with rust-js ─► page.jsx ─► Turbopack ─► Fast Refresh keeps state
+save page.rs ─► withRustJs: cargo check with rust-js ─► page.jsx ─► Turbopack ─► Fast Refresh keeps state
 ```
 
-`rust-js-next dev` and `rust-js-next build` are `next dev` and `next build`,
-the app's Rust compiled first, and again on each save. A compile error is
-rustc's, in the terminal, and the page keeps running the last version that
-compiled; `rust-js-next build` stops at one.
+`next dev` and `next build` compile the app's Rust first, and `next dev`
+again on each save, through its config, `withRustJs(nextConfig)` in
+`next.config.mjs`. A compile error is rustc's, in the terminal, and the
+page keeps running the last version that compiled; `next build` stops at
+one. `rust-js-next compile` writes the JS alone, for what reads it before
+Next.js runs.
 
 - **A Rust route is a page as Next.js finds one**: `app/about/page.rs`, a
   module of the crate, `mod about { pub mod page; }` in `app/page.rs`, is
@@ -37,7 +39,7 @@ compiled; `rust-js-next build` stops at one.
   says that release isn't installed, install it as `bun create @rust-js`
   said to: `rustup toolchain install <release> --profile minimal --target
   wasm32-unknown-unknown`, about 500 MB, once.
-- **The app is a Cargo package**, `Cargo.toml`, which `rust-js-next` builds
+- **The app is a Cargo package**, `Cargo.toml`, which `withRustJs` builds
   with Cargo, and your editor's rust-analyzer checks. Its crates, `next`,
   `react` and `js`, are npm packages, named in `Cargo.toml` by version:
   `rust-js-patch`, the app's `postinstall`, tells Cargo they're in

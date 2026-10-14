@@ -40,7 +40,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "        if c == '-' {\n            result.push('_');\n        } else if c.is_ascii_uppercase() {\n",
     replace: "        if c.is_ascii_uppercase() {\n",
-    tests: ["test/next.test.ts", "-t", "rust-js-next build"],
+    tests: ["test/next.test.ts", "-t", "next build builds"],
   },
   {
     name: "component-props-literal",
@@ -168,7 +168,7 @@ export const mutations: Mutation[] = [
     file: "src/jsx_syntax/parser.rs",
     find: "                \"MemoExoticComponent\" | \"LazyExoticComponent\" | \"ForwardRefExoticComponent\" | \"ComponentValue\" => {",
     replace: "                \"MemoExoticComponent\" | \"LazyExoticComponent\" | \"ForwardRefExoticComponent\" => {",
-    tests: ["test/next.test.ts", "-t", "rust-js-next build"],
+    tests: ["test/next.test.ts", "-t", "next build builds"],
   },
   {
     name: "held-component-static-props",

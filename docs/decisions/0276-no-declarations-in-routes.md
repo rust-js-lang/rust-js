@@ -16,7 +16,7 @@ as react.dev's errors page found.
 ## Decision
 
 **A module in a directory of routes gets no `.d.ts`.** `checkCargo`'s
-`routes` names them, and `rust-js-next` gives a Next.js app's `pages/` and
+`routes` names them, and the Next.js plugin gives a Next.js app's `pages/` and
 `src/pages/`. Its JS is written as any module's is.
 
 ## Why

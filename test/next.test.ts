@@ -817,8 +817,11 @@ pub fn Counter() -> JSX::Element {
 }
 
 
+// `next dev` and `next build`, as the app's scripts run them, its config
+// compiling its Rust (ADR 0380); `rust-js-next compile`, its JS alone.
 function command(dir: string, args: string[]) {
-  return spawn(process.execPath, [bin, ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
+  const program = args[0] === "compile" ? bin : join(dir, "node_modules/next/dist/bin/next");
+  return spawn(process.execPath, [program, ...args], { cwd: dir, env: { ...process.env, RUST_JS_COMPILER: compiler, NEXT_TELEMETRY_DISABLED: "1" } });
 }
 
 function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | null; output: string }> {
@@ -828,7 +831,7 @@ function finished(child: ReturnType<typeof spawn>): Promise<{ code: number | nul
   return new Promise((done) => child.on("exit", (code) => done({ code, output })));
 }
 
-test("rust-js-next build builds a Next.js app whose routes and components are Rust", async () => {
+test("next build builds a Next.js app whose routes and components are Rust, its config compiling them", async () => {
   buildCompiler();
   const dir = app("next-build");
   const { code, output } = await finished(command(dir, ["build"]));
@@ -999,7 +1002,7 @@ test("rust-js-next build builds a Next.js app whose routes and components are Ru
   // A Rust error is the build's, rustc's message, and no Next.js build.
   writeFileSync(join(dir, "app/counter.rs"), counter("Count ") + "pub fn broken(");
   const failed = await finished(command(dir, ["build"]));
-  expect([failed.code, failed.output.includes("error"), failed.output.includes("Next.js 16")]).toEqual([1, true, false]);
+  expect([failed.code, failed.output.includes("unclosed delimiter"), failed.output.includes("Creating an optimized production build")]).toEqual([1, true, false]);
 }, 300_000);
 
 // `rust-js-next compile` writes the app's JS and runs no Next.js, for what an
@@ -1012,6 +1015,32 @@ test("rust-js-next compile writes the app's JS alone", async () => {
   expect([code, existsSync(join(dir, "app/page.jsx")), existsSync(join(dir, ".next"))]).toEqual([0, true, false]);
 }, 300_000);
 
+// The config Next.js reads is the app's own, an object or Next.js's
+// function of the phase. Its Rust is compiled developing and building
+// only: `next start` compiles nothing, so an app with no Cargo.toml starts.
+test("withRustJs gives Next.js the app's config, and compiles only to develop and build", async () => {
+  const dir = fixture("with-rust-js");
+  mkdirSync(join(dir, "node_modules"));
+  symlinkSync(realpathSync(join(example, "node_modules/next")), join(dir, "node_modules/next"));
+  writeFileSync(join(dir, "package.json"), "{}");
+  const { withRustJs } = await import(join(root, "next-plugin/index.js"));
+  const cwd = process.cwd();
+  process.chdir(dir);
+  try {
+    expect(await withRustJs({ reactStrictMode: true })("phase-production-server", {})).toEqual({ reactStrictMode: true });
+    const config = withRustJs((phase: string, { defaultConfig }: { defaultConfig: object }) => ({ phase, defaultConfig }));
+    expect(await config("phase-production-server", { defaultConfig: { a: 1 } })).toEqual({ phase: "phase-production-server", defaultConfig: { a: 1 } });
+    // Building, it compiles: here, of no Cargo.toml, the error is Cargo's.
+    await expect(withRustJs({})("phase-production-build", {})).rejects.toThrow("Cargo.toml");
+    // Next.js loads its config twice in a build: one compile, both loads'.
+    const [first, second] = await Promise.allSettled([withRustJs({})("phase-production-build", {}), withRustJs({})("phase-production-build", {})]);
+    expect(first.status).toBe("rejected");
+    expect((first as PromiseRejectedResult).reason).toBe((second as PromiseRejectedResult).reason);
+  } finally {
+    process.chdir(cwd);
+  }
+});
+
 // What's committed is what rust-js writes now, as the pilot's is: a change
 // to the compiler is committed with the example's JS it changes.
 test("the example's committed JS is what rust-js writes from its Rust", async () => {
@@ -1023,7 +1052,7 @@ test("the example's committed JS is what rust-js writes from its Rust", async ()
   expect(generated(dir)).toEqual(generated(example));
 }, 300_000);
 
-test("rust-js-next dev serves Rust routes, refreshes a save in place, and recovers from an error", async () => {
+test("next dev serves Rust routes, refreshes a save in place, and recovers from an error, its config compiling them", async () => {
   buildCompiler();
   const dir = app("next-dev");
   const port = 3200 + Math.floor(Math.random() * 500);

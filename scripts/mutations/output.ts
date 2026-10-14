@@ -176,7 +176,7 @@ export const mutations: Mutation[] = [
     file: "src/output.rs",
     find: "            if own == module.path || module.located {\n",
     replace: "            if own == module.path {\n",
-    tests: ["test/next.test.ts", "-t", "rust-js-next build builds"],
+    tests: ["test/next.test.ts", "-t", "next build builds"],
   },
   {
     name: "specifier-from-root",
