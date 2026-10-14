@@ -16,17 +16,17 @@ pub struct Compiler {
 
 impl Compiler {
     pub fn current() -> Self {
-        let value = |text: &str, key: &str| {
-            text.lines()
-                .find_map(|line| line.strip_prefix(key))
-                .expect("version is declared in the checked-in configuration")
-                .trim()
-                .trim_matches('"')
-                .to_owned()
-        };
+        let toolchain = include_str!("../rust-toolchain.toml")
+            .lines()
+            .find_map(|line| line.strip_prefix("channel = "))
+            .expect("the toolchain is pinned in the checked-in configuration")
+            .trim()
+            .trim_matches('"')
+            .to_owned();
         Self {
-            version: value(include_str!("../Cargo.toml"), "version = "),
-            toolchain: value(include_str!("../rust-toolchain.toml"), "channel = "),
+            // Cargo's, as the runtime's module says it.
+            version: env!("CARGO_PKG_VERSION").to_owned(),
+            toolchain,
             abi: ABI_VERSION,
         }
     }

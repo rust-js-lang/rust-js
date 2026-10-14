@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "hyphenated-prop-field",
     breaks: "a component's `aria-label` is the field `r#aria-label`, which Rust can't parse",
     file: "src/jsx_syntax/parser.rs",
-    find: "gives JS's name again (ADR 0200).\n                    let field = snake(&attr).replace('-', \"_\");",
-    replace: "gives JS's name again (ADR 0200).\n                    let field = snake(&attr);",
+    find: "        if c == '-' {\n            result.push('_');\n        } else if c.is_ascii_uppercase() {\n",
+    replace: "        if c.is_ascii_uppercase() {\n",
     tests: ["test/next.test.ts", "-t", "rust-js-next build"],
   },
   {

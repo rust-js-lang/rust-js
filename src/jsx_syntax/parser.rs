@@ -514,7 +514,7 @@ impl Jsx<'_> {
                 }
                 let mut given = Vec::new();
                 for (attr, value, at) in attrs {
-                    let field = snake(&attr).replace('-', "_");
+                    let field = snake(&attr);
                     given.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
                     given.extend(value.iter().cloned());
                     given.extend(template(self.sess, ",".into(), at).iter().cloned());
@@ -537,7 +537,7 @@ impl Jsx<'_> {
                 for (attr, value, at) in attrs {
                     // `aria-label` is a field a Rust struct can have, `aria_label`,
                     // which `rust_js::name` gives JS's name again (ADR 0200).
-                    let field = snake(&attr).replace('-', "_");
+                    let field = snake(&attr);
                     fields.extend(template(self.sess, format!("r#{field}:"), at).iter().cloned());
                     fields.extend(value.iter().cloned());
                     fields.extend(template(self.sess, ",".into(), at).iter().cloned());
@@ -586,13 +586,16 @@ impl Jsx<'_> {
     }
 }
 
+/// A JS name as the bindings generator names it in Rust, `react/names.ts`'s
+/// `snake`: `aria-label` is `aria_label`; HTML stays one word, while
+/// innerHTML and HTMLInput become inner_html and html_input.
 fn snake(name: &str) -> String {
     let mut result = String::new();
     let chars: Vec<char> = name.chars().collect();
     for (i, &c) in chars.iter().enumerate() {
-        if c.is_ascii_uppercase() {
-            // Match the bindings generator: HTML stays one word, while
-            // innerHTML and HTMLInput become inner_html and html_input.
+        if c == '-' {
+            result.push('_');
+        } else if c.is_ascii_uppercase() {
             let previous = i.checked_sub(1).map(|i| chars[i]);
             let next = chars.get(i + 1);
             if previous.is_some_and(|c| c.is_ascii_lowercase() || c.is_ascii_digit())

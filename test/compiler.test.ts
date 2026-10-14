@@ -1134,7 +1134,7 @@ test("the lexer's JS steps through its source with $next and $peek", async () =>
   const js = await Bun.file(join(target, "lexer.js")).text();
   expect(js).toContain("return { chars: $iter(Array.from(src)), line: 1 };");
   expect(js).toContain("const c = $peek(lexer.chars);");
-  expect(js).toContain('} else if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {');
+  expect(js).toContain('if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {');
   expect(js).toContain("const it = $iter(v);");
   expect(js).toContain("const rest = it.toArray();");
   expect(js).toContain("return c.toUpperCase() + $restStr(chars);");

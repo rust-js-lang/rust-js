@@ -1,7 +1,7 @@
 //! rust-js's command line: what it's asked to do, and the arguments rustc is
 //! run with to do it. `main` runs it; nothing here runs rustc.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// What a call of rust-js asks for.
 pub(crate) enum Command {
@@ -229,11 +229,7 @@ impl Build {
     fn stage(&self, args: &mut Vec<String>) -> Result<Staged, String> {
         // Named only when something is staged: WASI, the playground's, has no
         // process id to name it by.
-        let beside = self
-            .output
-            .parent()
-            .filter(|dir| !dir.as_os_str().is_empty())
-            .unwrap_or(Path::new("."));
+        let beside = crate::paths::parent_dir(&self.output);
         let dir = || beside.join(format!(".rust-js-metadata-{}", std::process::id()));
         let mut staged = Staged {
             dir: PathBuf::new(),
