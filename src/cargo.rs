@@ -11,6 +11,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use crate::command::TARGET;
 use crate::manifest::Compiler;
 
 /// What running rust-js as it was run comes to.
@@ -20,9 +21,6 @@ pub enum Invocation {
     /// rustc was run as Cargo asked, and ended so.
     Rustc(ExitCode),
 }
-
-/// rust-js's target (ADR 0090): what a crate Cargo checks for it is built for.
-const TARGET: &str = "wasm32-unknown-unknown";
 
 /// The package the tooling builds as the app, a program no crate uses
 /// (ADR 0360).

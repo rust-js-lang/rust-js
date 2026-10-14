@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargoWorkspace, checkCargo, editorCheck, readsCargo } from "./cargo.js";
+import { cargoWorkspace, checkCargo, editorCheck, readsCargo, target } from "./cargo.js";
 import { resourceInputs } from "./resources.js";
 import { parseCompilerIdentity } from "./manifest.js";
 import { reactLibs } from "./crates.js";
@@ -178,7 +178,7 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
       // Run Cargo even on reuse: it checks that every dependency is still fresh.
       // For rust-js's target (ADR 0090); serde_derive, a procedural macro, runs on the host.
       const output = await run("cargo", [`+${toolchain}`, "build", "--locked", "--message-format=json",
-        "--target", "wasm32-unknown-unknown",
+        "--target", target,
         "--manifest-path", join(repo, "serde/Cargo.toml"), "--target-dir", join(cacheDir, "serde", key)], repo);
       markUsed(join(cacheDir, "serde", key));
       pruneUnused(join(cacheDir, "serde"), join(cacheDir, "serde", key));
@@ -236,16 +236,16 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
      * @param {Parameters<typeof checkCargo>[0] & { offline?: boolean }} options
      */
     cargoSession(options) {
-      let workspace, target, manifests = [];
+      let workspace, targetDir, manifests = [];
       return {
         async build() {
-          ({ root: workspace, target } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline }));
+          ({ root: workspace, target: targetDir } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline }));
           const built = await builder.checkCargo(options);
           manifests = [...built.manifests.values()];
           return { ...built, workspace };
         },
         reads: (file) => watchFiles.includes(file)
-          || (workspace !== undefined && readsCargo(file, { workspace, target, manifests })),
+          || (workspace !== undefined && readsCargo(file, { workspace, target: targetDir, manifests })),
         sources: () => manifests.flatMap((manifest) => manifest.sources),
       };
     },

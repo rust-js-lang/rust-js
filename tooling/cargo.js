@@ -11,6 +11,9 @@ import { promisify } from "node:util";
 import { parseManifest } from "./manifest.js";
 import { commit, fingerprint } from "./publish.js";
 
+/** rust-js's target (ADR 0090), which Cargo checks its crates for: the compiler's `TARGET`. */
+export const target = "wasm32-unknown-unknown";
+
 const execute = promisify(execFile);
 
 /** Cargo's environment of a check through rust-js: the workspace's
@@ -46,7 +49,7 @@ function appOf(manifest, packageName) {
 export function editorCheck({ manifestPath, toolchain, compiler, react, targetDir }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
-  const args = [`+${toolchain}`, "check", "--message-format=json", "--target", "wasm32-unknown-unknown", "--manifest-path", manifest];
+  const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
   const env = { ...cargoEnv(compiler, react, appOf(manifest)), CARGO_TARGET_DIR: targetDir };
   return new Promise((done, failed) => {
     spawn("cargo", args, { cwd: dirname(manifest), env, stdio: ["ignore", "inherit", "inherit"] })
@@ -147,7 +150,7 @@ export async function planCargoLibraries({ manifestPath, toolchain, target, pack
 export async function checkCargo({ manifestPath, toolchain, compiler, packageName, features = [], noDefaultFeatures = false, offline = false, react, inSource = false, routes = [] }) {
   if (!exactToolchain(toolchain)) throw new Error("Cargo builds require an exact toolchain pin");
   const manifest = resolve(manifestPath);
-  const args = [`+${toolchain}`, "check", "--message-format=json", "--target", "wasm32-unknown-unknown", "--manifest-path", manifest];
+  const args = [`+${toolchain}`, "check", "--message-format=json", "--target", target, "--manifest-path", manifest];
   if (packageName) args.push("-p", packageName);
   if (features.length) args.push("--features", features.join(","));
   if (noDefaultFeatures) args.push("--no-default-features");
@@ -178,7 +181,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
     if (changed) {
       const name = packageNameOf(message.package_id);
       throw new Error(`${changed.file} isn't what rust-js wrote for Cargo's build of ${name}, which has it as done: `
-        + `\`cargo clean -p ${name} --target wasm32-unknown-unknown\` to build it again`);
+        + `\`cargo clean -p ${name} --target ${target}\` to build it again`);
     }
     // The crate root's module: `lib.jsx` when it has JSX (ADR 0075).
     ledger ??= join(dirname(dirname(marker)), "rust-js-in-source.json");
@@ -253,7 +256,7 @@ export function writeInSource(manifests, ledger, routes = []) {
       // where it names another's, and Cargo has its build as done.
       if (in_source == null || links === undefined) {
         throw new Error(`${file} was built by an older rust-js, whose manifest doesn't say where its JS goes in source: `
-          + "`cargo clean --target wasm32-unknown-unknown` to build it again");
+          + `\`cargo clean --target ${target}\` to build it again`);
       }
       moved.set(file, in_source);
     }

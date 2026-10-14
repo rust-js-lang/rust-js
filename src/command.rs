@@ -124,8 +124,9 @@ fn valued(args: &mut Vec<String>, name: &str, what: &str) -> Result<Option<Strin
 }
 
 /// The target rustc checks programs for (ADR 0090): WebAssembly's, whose
-/// `usize` is 32 bits, as a JS one is here (ADR 0025). Nothing is made for it.
-const TARGET: &str = "wasm32-unknown-unknown";
+/// `usize` is 32 bits, as a JS one is here (ADR 0025). Nothing is made for
+/// it. A crate Cargo checks for it is one rust-js compiles (`cargo.rs`).
+pub(crate) const TARGET: &str = "wasm32-unknown-unknown";
 
 /// What rustc writes beside the JS, staged in a directory of its own and
 /// published with it, as artifacts of the same plan (ADR 0100): each is
