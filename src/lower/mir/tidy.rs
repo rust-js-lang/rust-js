@@ -5,7 +5,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp};
+use crate::js::{self, Expr, ExprKind, Op, Stmt, StmtKind, UnaryOp, breaks, ends, names_break};
 
 use super::negate;
 use crate::lower::iterators::{self, eager_chains, eager_spreads, iterated};

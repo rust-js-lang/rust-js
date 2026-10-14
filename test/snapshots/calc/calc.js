@@ -65,29 +65,31 @@ export function to_rpn(tokens) {
     bb49: {
       if (t.TAG === "Num") {
         out.push(t);
-      } else if (t.TAG === "Op") {
-        while (true) {
-          const value = stack.at(-1);
-          if (value != null && value.TAG === "Op") {
-            if (prec(value._0) >= prec(t._0)) {
-              out.push($unwrap(stack.pop()));
-              continue;
-            }
-          }
-          stack.push(t);
-          break bb49;
-        }
-      } else if (t === "LParen") {
-        stack.push("LParen");
       } else {
-        while (true) {
-          const top = stack.pop();
-          if (top == null) {
+        if (t.TAG === "Op") {
+          while (true) {
+            const value = stack.at(-1);
+            if (value != null && value.TAG === "Op") {
+              if (prec(value._0) >= prec(t._0)) {
+                out.push($unwrap(stack.pop()));
+                continue;
+              }
+            }
+            stack.push(t);
             break bb49;
           }
-          if (top === "LParen") {
-            break bb49;
-          } else {
+        }
+        if (t === "LParen") {
+          stack.push("LParen");
+        } else {
+          while (true) {
+            const top = stack.pop();
+            if (top == null) {
+              break bb49;
+            }
+            if (top === "LParen") {
+              break bb49;
+            }
             out.push(top);
           }
         }
@@ -116,7 +118,8 @@ export function eval$(src) {
     if (t.TAG === "Num") {
       st.push(t._0);
       continue;
-    } else if (t.TAG === "Op") {
+    }
+    if (t.TAG === "Op") {
       const option = st.pop();
       const result$1 = option != null ? { TAG: "Ok", _0: option } : { TAG: "Err", _0: "underflow" };
       if (result$1.TAG !== "Err") {
@@ -140,9 +143,8 @@ export function eval$(src) {
           }
           st.push(tmp);
           continue;
-        } else {
-          result = result$2;
         }
+        result = result$2;
       } else {
         result = result$1;
       }

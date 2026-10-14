@@ -110,9 +110,8 @@ export function labeled(n) {
       }
       if (Math.imul(i, j) >>> 0 > 20) {
         break outer;
-      } else {
-        found = (found + 1) >>> 0;
       }
+      found = (found + 1) >>> 0;
     }
   }
   return found;

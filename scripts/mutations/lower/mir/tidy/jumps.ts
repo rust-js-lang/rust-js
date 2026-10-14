@@ -43,14 +43,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts","-t","strings from MIR is the"],
   },
   {
-    name: "mir-tidy-endless-loop-goes-on",
-    breaks: "what follows a `while (true)` no `break` leaves is kept, `return args; return result;`",
-    file: "src/lower/mir/tidy/jumps.rs",
-    find: "        StmtKind::While { label, cond, body } => {\n            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n",
-    replace: "        StmtKind::While { label, cond, body } => {\n            false && !breaks(body, label.as_deref())\n",
-    tests: ["test/lowering.test.ts","-t","returned after a loop"],
-  },
-  {
     name: "mir-tidy-branch-ends-kept",
     breaks: "a `match`'s arms stay labeled blocks, `bb1: { if (c) { s; break bb1; } t }`",
     file: "src/lower/mir/tidy/jumps.rs",

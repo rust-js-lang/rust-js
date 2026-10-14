@@ -95,9 +95,8 @@ export const Store = {
             have.value = (have.value - e.qty) >>> 0;
             store.revenue += e.qty * e.price;
             break bb36;
-          } else {
-            return { TAG: "Err", _0: `unknown item ${e.item}` };
           }
+          return { TAG: "Err", _0: `unknown item ${e.item}` };
         }
         store.log.push(`audit at ${$toFixed(store.revenue, 2)}`);
       }

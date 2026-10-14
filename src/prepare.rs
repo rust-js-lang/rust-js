@@ -32,29 +32,20 @@ pub fn module(module: &mut js::Module) {
     read_together(module);
 }
 
-/// An `if` whose branch always leaves has no `else`: what was in it follows,
-/// as JS writes it, `if (c) { return a; } return b;` (ADR 0237). Before its
+/// An `if` whose branch never goes on, `js::ends`', by a `return`, a
+/// `throw`, a `break` or a `continue`, has no `else`: what was in it
+/// follows, as JS writes it, `if (c) { return a; } return b;` (ADR 0237). Before its
 /// locals are named, which then see the block they're in.
 fn unelsed(stmts: &mut Vec<Stmt>) {
     let mut i = 0;
     while i < stmts.len() {
         if let StmtKind::If(_, then, els @ Some(_)) = &mut stmts[i].kind
-            && leaves(then)
+            && then.last().is_some_and(js::ends)
         {
             let els = els.take().expect("matched");
             stmts.splice(i + 1..i + 1, els);
         }
         i += 1;
-    }
-}
-
-/// Does running `stmts` always leave, by a `return` or a `throw` last, or an
-/// `if` both of whose branches do?
-fn leaves(stmts: &[Stmt]) -> bool {
-    match stmts.last().map(|s| &s.kind) {
-        Some(StmtKind::Return(_) | StmtKind::Throw(_)) => true,
-        Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),
-        _ => false,
     }
 }
 

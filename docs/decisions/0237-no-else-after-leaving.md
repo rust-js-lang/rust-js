@@ -58,3 +58,10 @@ return child;
 
 - **An `else` of nothing is no `else`**: one of only comments in Rust,
   which rust-js doesn't carry, as react.dev's _app has, is left out.
+- **A branch that ends by a `break` or a `continue` has no `else`
+  either**, nor one whose last statement is a `while (true)` nothing
+  breaks: `if (item === undefined) { break; } const cell = item;`, as a
+  person writes a loop. Whether a statement goes on to what follows is
+  `js::ends`' answer, the one MIR's tidy pass asks too; preparation had
+  its own, which knew only `return` and `throw` (the second architecture
+  review).

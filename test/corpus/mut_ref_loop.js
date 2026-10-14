@@ -43,11 +43,10 @@ function main() {
   for (const n of $mutItems(v)) {
     if (n.value % 2 === 0) {
       continue;
-    } else {
-      n.value = Math.imul(n.value, 10);
-      if (!(n.value > 20)) {
-        continue;
-      }
+    }
+    n.value = Math.imul(n.value, 10);
+    if (!(n.value > 20)) {
+      continue;
     }
     break;
   }

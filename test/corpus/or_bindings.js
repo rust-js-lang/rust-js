@@ -109,17 +109,15 @@ function main() {
             if (!(r$1 > 1)) {
               r$2 = o._0;
               break bb84;
-            } else {
-              r = o._0;
             }
+            r = o._0;
           } else if (o.TAG === "Sphere") {
             r$1 = o._0;
             if (!(r$1 > 1)) {
               r$2 = o._0;
               break bb84;
-            } else {
-              r = o._0;
             }
+            r = o._0;
           } else {
             break bb66;
           }

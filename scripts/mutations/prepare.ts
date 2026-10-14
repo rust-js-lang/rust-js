@@ -331,8 +331,8 @@ export const mutations: Mutation[] = [
     "name": "else-after-return-kept",
     "breaks": "`if (c) { return a; } else { return b; }` keeps its `else`, which JS writes as `return b;` after it",
     "file": "src/prepare.rs",
-    "find": "            && leaves(then)\n        {\n            let els = els.take()",
-    "replace": "            && false && leaves(then)\n        {\n            let els = els.take()",
+    "find": "            && then.last().is_some_and(js::ends)\n        {\n            let els = els.take()",
+    "replace": "            && false\n        {\n            let els = els.take()",
     "tests": ["test/snapshots.test.ts"],
     "snapshots": true
   },
@@ -340,18 +340,9 @@ export const mutations: Mutation[] = [
     "name": "else-dropped-of-any-branch",
     "breaks": "an `else` of a branch that doesn't leave is run after it too: `total += n; total -= n`",
     "file": "src/prepare.rs",
-    "find": "            && leaves(then)\n        {\n            let els = els.take()",
-    "replace": "            && (true || leaves(then))\n        {\n            let els = els.take()",
+    "find": "            && then.last().is_some_and(js::ends)\n        {\n            let els = els.take()",
+    "replace": "            && true\n        {\n            let els = els.take()",
     "tests": ["test/lowering.test.ts", "-t", "branches from MIR read as a person writes them"]
-  },
-  {
-    name: "inner-if-leaving-unseen",
-    breaks: "a branch that leaves by an inner `if` both of whose branches return keeps its `else`",
-    file: "src/prepare.rs",
-    find: "Some(StmtKind::If(_, then, Some(els))) => leaves(then) && leaves(els),",
-    replace: "Some(StmtKind::If(_, _, Some(_))) => false,",
-    tests: ["test/corpus.test.ts", "-t", "^std_errors_boxed.rs$"],
-    snapshots: true,
   },
   {
     "name": "same-test-and-value-conditional",

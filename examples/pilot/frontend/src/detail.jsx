@@ -15,7 +15,8 @@ export function ContactPage({ id }) {
         if (value.TAG === "Err") {
           if (value._0 === "Aborted") {
             break bb40;
-          } else if (value._0.TAG === "Refused") {
+          }
+          if (value._0.TAG === "Refused") {
             if (value._0._0 === 404) {
               setLoaded({ TAG: "Failed", _0: `There's no contact ${id}.` });
               break bb40;

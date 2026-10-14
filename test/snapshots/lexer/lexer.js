@@ -76,7 +76,8 @@ export const Lexer = {
                 if (c < "A" || c > "Z") {
                   if (c === "_") {
                     break bb20;
-                  } else if (c === '"') {
+                  }
+                  if (c === '"') {
                     s = "";
                     while (true) {
                       const ch = $next(lexer.chars);
@@ -86,11 +87,11 @@ export const Lexer = {
                       if (ch === '"') {
                         out.push({ TAG: "Str", _0: s });
                         break bb67;
-                      } else {
-                        s += ch;
                       }
+                      s += ch;
                     }
-                  } else if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
+                  }
+                  if (c === "/" && $nextIf(lexer.chars, (item) => item === "/") != null) {
                     while (true) {
                       if ($nextIf(lexer.chars, (c) => c !== "\n") == null) {
                         break bb67;

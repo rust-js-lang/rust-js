@@ -698,146 +698,145 @@ function main() {
           throw error;
         }
       }
+    }
+    const h = tmp;
+    if (typeof h === "number") {
+      try {
+        console.log(`quiet ${h}`);
+      } catch (error) {
+        for (const item of held) {
+          if (Array.isArray(item)) {
+            noisyDrop_drop(item);
+          }
+          if (typeof item === "object" && !Array.isArray(item)) {
+            noisyDrop_drop(item.first);
+            noisyDrop_drop(item.second);
+          }
+        }
+        if (typeof both === "object" && !Array.isArray(both)) {
+          if (both$0$first$live) {
+            noisyDrop_drop(both.first);
+          }
+          if (both$0$live) {
+            noisyDrop_drop(both.second);
+          }
+        } else {
+          if (Array.isArray(both)) {
+            noisyDrop_drop(both);
+          }
+          if (typeof both === "object" && !Array.isArray(both)) {
+            noisyDrop_drop(both.first);
+            noisyDrop_drop(both.second);
+          }
+        }
+        noisyDrop_drop(other$1);
+        if (Array.isArray(pair.held)) {
+          noisyDrop_drop(pair.held);
+        }
+        if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
+          noisyDrop_drop(pair.held.first);
+          noisyDrop_drop(pair.held.second);
+        }
+        if (Array.isArray(lone)) {
+          noisyDrop_drop(lone);
+        }
+        if (typeof lone === "object" && !Array.isArray(lone)) {
+          noisyDrop_drop(lone.first);
+          noisyDrop_drop(lone.second);
+        }
+        throw error;
+      }
+    } else if (Array.isArray(h)) {
+      try {
+        console.log(`loud ${h[0]}`);
+      } catch (error) {
+        for (const item of held) {
+          if (Array.isArray(item)) {
+            noisyDrop_drop(item);
+          }
+          if (typeof item === "object" && !Array.isArray(item)) {
+            noisyDrop_drop(item.first);
+            noisyDrop_drop(item.second);
+          }
+        }
+        if (typeof both === "object" && !Array.isArray(both)) {
+          if (both$0$first$live) {
+            noisyDrop_drop(both.first);
+          }
+          if (both$0$live) {
+            noisyDrop_drop(both.second);
+          }
+        } else {
+          if (Array.isArray(both)) {
+            noisyDrop_drop(both);
+          }
+          if (typeof both === "object" && !Array.isArray(both)) {
+            noisyDrop_drop(both.first);
+            noisyDrop_drop(both.second);
+          }
+        }
+        noisyDrop_drop(other$1);
+        if (Array.isArray(pair.held)) {
+          noisyDrop_drop(pair.held);
+        }
+        if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
+          noisyDrop_drop(pair.held.first);
+          noisyDrop_drop(pair.held.second);
+        }
+        if (Array.isArray(lone)) {
+          noisyDrop_drop(lone);
+        }
+        if (typeof lone === "object" && !Array.isArray(lone)) {
+          noisyDrop_drop(lone.first);
+          noisyDrop_drop(lone.second);
+        }
+        throw error;
+      }
     } else {
-      const h = tmp;
-      if (typeof h === "number") {
-        try {
-          console.log(`quiet ${h}`);
-        } catch (error) {
-          for (const item of held) {
-            if (Array.isArray(item)) {
-              noisyDrop_drop(item);
-            }
-            if (typeof item === "object" && !Array.isArray(item)) {
-              noisyDrop_drop(item.first);
-              noisyDrop_drop(item.second);
-            }
+      try {
+        console.log(`both ${h.first[0]} ${h.second[0]}`);
+      } catch (error) {
+        for (const item of held) {
+          if (Array.isArray(item)) {
+            noisyDrop_drop(item);
+          }
+          if (typeof item === "object" && !Array.isArray(item)) {
+            noisyDrop_drop(item.first);
+            noisyDrop_drop(item.second);
+          }
+        }
+        if (typeof both === "object" && !Array.isArray(both)) {
+          if (both$0$first$live) {
+            noisyDrop_drop(both.first);
+          }
+          if (both$0$live) {
+            noisyDrop_drop(both.second);
+          }
+        } else {
+          if (Array.isArray(both)) {
+            noisyDrop_drop(both);
           }
           if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$first$live) {
-              noisyDrop_drop(both.first);
-            }
-            if (both$0$live) {
-              noisyDrop_drop(both.second);
-            }
-          } else {
-            if (Array.isArray(both)) {
-              noisyDrop_drop(both);
-            }
-            if (typeof both === "object" && !Array.isArray(both)) {
-              noisyDrop_drop(both.first);
-              noisyDrop_drop(both.second);
-            }
+            noisyDrop_drop(both.first);
+            noisyDrop_drop(both.second);
           }
-          noisyDrop_drop(other$1);
-          if (Array.isArray(pair.held)) {
-            noisyDrop_drop(pair.held);
-          }
-          if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-            noisyDrop_drop(pair.held.first);
-            noisyDrop_drop(pair.held.second);
-          }
-          if (Array.isArray(lone)) {
-            noisyDrop_drop(lone);
-          }
-          if (typeof lone === "object" && !Array.isArray(lone)) {
-            noisyDrop_drop(lone.first);
-            noisyDrop_drop(lone.second);
-          }
-          throw error;
         }
-      } else if (Array.isArray(h)) {
-        try {
-          console.log(`loud ${h[0]}`);
-        } catch (error) {
-          for (const item of held) {
-            if (Array.isArray(item)) {
-              noisyDrop_drop(item);
-            }
-            if (typeof item === "object" && !Array.isArray(item)) {
-              noisyDrop_drop(item.first);
-              noisyDrop_drop(item.second);
-            }
-          }
-          if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$first$live) {
-              noisyDrop_drop(both.first);
-            }
-            if (both$0$live) {
-              noisyDrop_drop(both.second);
-            }
-          } else {
-            if (Array.isArray(both)) {
-              noisyDrop_drop(both);
-            }
-            if (typeof both === "object" && !Array.isArray(both)) {
-              noisyDrop_drop(both.first);
-              noisyDrop_drop(both.second);
-            }
-          }
-          noisyDrop_drop(other$1);
-          if (Array.isArray(pair.held)) {
-            noisyDrop_drop(pair.held);
-          }
-          if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-            noisyDrop_drop(pair.held.first);
-            noisyDrop_drop(pair.held.second);
-          }
-          if (Array.isArray(lone)) {
-            noisyDrop_drop(lone);
-          }
-          if (typeof lone === "object" && !Array.isArray(lone)) {
-            noisyDrop_drop(lone.first);
-            noisyDrop_drop(lone.second);
-          }
-          throw error;
+        noisyDrop_drop(other$1);
+        if (Array.isArray(pair.held)) {
+          noisyDrop_drop(pair.held);
         }
-      } else {
-        try {
-          console.log(`both ${h.first[0]} ${h.second[0]}`);
-        } catch (error) {
-          for (const item of held) {
-            if (Array.isArray(item)) {
-              noisyDrop_drop(item);
-            }
-            if (typeof item === "object" && !Array.isArray(item)) {
-              noisyDrop_drop(item.first);
-              noisyDrop_drop(item.second);
-            }
-          }
-          if (typeof both === "object" && !Array.isArray(both)) {
-            if (both$0$first$live) {
-              noisyDrop_drop(both.first);
-            }
-            if (both$0$live) {
-              noisyDrop_drop(both.second);
-            }
-          } else {
-            if (Array.isArray(both)) {
-              noisyDrop_drop(both);
-            }
-            if (typeof both === "object" && !Array.isArray(both)) {
-              noisyDrop_drop(both.first);
-              noisyDrop_drop(both.second);
-            }
-          }
-          noisyDrop_drop(other$1);
-          if (Array.isArray(pair.held)) {
-            noisyDrop_drop(pair.held);
-          }
-          if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
-            noisyDrop_drop(pair.held.first);
-            noisyDrop_drop(pair.held.second);
-          }
-          if (Array.isArray(lone)) {
-            noisyDrop_drop(lone);
-          }
-          if (typeof lone === "object" && !Array.isArray(lone)) {
-            noisyDrop_drop(lone.first);
-            noisyDrop_drop(lone.second);
-          }
-          throw error;
+        if (typeof pair.held === "object" && !Array.isArray(pair.held)) {
+          noisyDrop_drop(pair.held.first);
+          noisyDrop_drop(pair.held.second);
         }
+        if (Array.isArray(lone)) {
+          noisyDrop_drop(lone);
+        }
+        if (typeof lone === "object" && !Array.isArray(lone)) {
+          noisyDrop_drop(lone.first);
+          noisyDrop_drop(lone.second);
+        }
+        throw error;
       }
     }
   }

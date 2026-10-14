@@ -218,7 +218,8 @@ const Parser = {
           if (other.TAG === "Num") {
             result = { TAG: "Ok", _0: { TAG: "Num", _0: other._0 } };
             break bb114;
-          } else if (other.TAG === "Ident") {
+          }
+          if (other.TAG === "Ident") {
             const value = Parser.peek(parser);
             bb85: {
               if (value === "LParen") {
@@ -239,10 +240,9 @@ const Parser = {
                             if (result$1.TAG !== "Err") {
                               value.push(result$1._0);
                               continue;
-                            } else {
-                              result = result$1;
-                              break;
                             }
+                            result = result$1;
+                            break;
                           }
                           break bb69;
                         }
@@ -256,25 +256,24 @@ const Parser = {
                   if (result$1.TAG !== "Err") {
                     result = { TAG: "Ok", _0: { TAG: "Call", _0: other._0, _1: args } };
                     break bb85;
-                  } else {
-                    result = result$1;
                   }
+                  result = result$1;
                 }
                 break bb133;
               }
               result = { TAG: "Ok", _0: { TAG: "Var", _0: other._0 } };
             }
             break bb114;
-          } else if (other.TAG === "Op") {
+          }
+          if (other.TAG === "Op") {
             if (other._0 === "-") {
               const result$1 = Parser.unary(parser);
               if (result$1.TAG !== "Err") {
                 result = { TAG: "Ok", _0: { TAG: "Neg", _0: result$1._0 } };
                 break bb114;
-              } else {
-                result = result$1;
-                break bb133;
               }
+              result = result$1;
+              break bb133;
             }
           } else if (other === "LParen") {
             const result$1 = Parser.expr(parser);
@@ -284,9 +283,8 @@ const Parser = {
               if (result$2.TAG !== "Err") {
                 result = { TAG: "Ok", _0: inner };
                 break bb114;
-              } else {
-                result = result$2;
               }
+              result = result$2;
             } else {
               result = result$1;
             }
@@ -356,9 +354,8 @@ const Calculator = {
                 tmp = $powf(a, b);
               }
               break bb92;
-            } else {
-              result = result$2;
             }
+            result = result$2;
           } else {
             result = result$1;
           }

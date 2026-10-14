@@ -71,14 +71,14 @@ function main() {
       if (n != null) {
         if (n % 2 === 0) {
           continue;
-        } else if (n <= 9) {
+        }
+        if (n <= 9) {
           sum = (sum + n) | 0;
           if (sum > 100) {
             total = -1;
             break bb62;
-          } else {
-            continue;
           }
+          continue;
         }
       }
       total = sum;

@@ -142,9 +142,8 @@ function valueDisplay_fmt(value) {
       }
       f += `${$debugStr(k)}:${valueDisplay_fmt(x)}`;
     }
-  } else {
-    return "null";
   }
+  return "null";
 }
 
 function price(v) {

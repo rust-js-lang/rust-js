@@ -388,4 +388,21 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/lowering.test.ts", "-t", "nothing sets again is a const"],
   },
+  {
+    name: "inner-if-leaving-unseen",
+    breaks: "a branch that leaves by an inner `if` both of whose branches return keeps its `else`",
+    file: "src/js.rs",
+    find: "        StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^std_errors_boxed.rs$"],
+    snapshots: true,
+  },
+  {
+    name: "mir-tidy-endless-loop-goes-on",
+    breaks: "what follows a `while (true)` no `break` leaves is kept, `return args; return result;`",
+    file: "src/js.rs",
+    find: "        StmtKind::While { label, cond, body } => {\n            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())\n",
+    replace: "        StmtKind::While { label, cond, body } => {\n            false && !breaks(body, label.as_deref())\n",
+    tests: ["test/lowering.test.ts","-t","returned after a loop"],
+  },
 ];

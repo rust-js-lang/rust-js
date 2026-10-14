@@ -315,10 +315,9 @@ function main() {
         }
         if (tmp == null) {
           continue bb71;
-        } else {
-          const item = tmp;
-          total = (total + item) & 255;
         }
+        const item = tmp;
+        total = (total + item) & 255;
       }
     }
     const arg = lists.map(count).reduce((a, b) => (a + b) >>> 0, 0);

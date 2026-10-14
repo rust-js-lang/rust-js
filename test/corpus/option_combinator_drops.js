@@ -134,10 +134,9 @@ function parse_pair(a, b, both, BNamed, dropB) {
         if (tmp$2.TAG !== "Err") {
           pair = [_0, $some(tmp$2._0)];
           break bb38;
-        } else {
-          result = tmp$2;
-          dropB?.(_0);
         }
+        result = tmp$2;
+        dropB?.(_0);
       } else {
         result = result$1;
       }
@@ -1783,162 +1782,161 @@ function main() {
         tmp$0$1$live = false;
         tmp$0$0$live = false;
       }
-    } else {
-      const flag = tmp;
-      try {
-        tmp$26 = parse_flag(flag, dNamed());
-      } catch (error) {
-        if (err.TAG === "Ok") {
-          dDrop_drop(err._0);
-        }
-        if (ok.TAG === "Ok") {
-          dDrop_drop(ok._0);
-        }
-        dDrop_drop(read);
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      tmp$0$live = true;
-      if (tmp$26.TAG === "Ok") {
-        tmp$0$live = false;
-        try {
-          console.log(`flag ${tmp$26._0[0]}`);
-        } catch (error) {
-          dDrop_drop(tmp$26._0);
-          if (tmp$26.TAG === "Ok") {
-          }
-          if (err.TAG === "Ok") {
-            dDrop_drop(err._0);
-          }
-          if (ok.TAG === "Ok") {
-            dDrop_drop(ok._0);
-          }
-          dDrop_drop(read);
-          if (nothing.TAG === "One") {
-            dDrop_drop(nothing._0);
-          }
-          if (one.TAG === "One") {
-            dDrop_drop(one._0);
-          }
-          if (closure != null) {
-            dDrop_drop(closure);
-          }
-          if (dropped != null) {
-            dDrop_drop(dropped);
-          }
-          if (kept != null) {
-            dDrop_drop(kept);
-          }
-          throw error;
-        }
-        try {
-          dDrop_drop(tmp$26._0);
-        } catch (error) {
-          if (tmp$26.TAG === "Ok") {
-          }
-          if (err.TAG === "Ok") {
-            dDrop_drop(err._0);
-          }
-          if (ok.TAG === "Ok") {
-            dDrop_drop(ok._0);
-          }
-          dDrop_drop(read);
-          if (nothing.TAG === "One") {
-            dDrop_drop(nothing._0);
-          }
-          if (one.TAG === "One") {
-            dDrop_drop(one._0);
-          }
-          if (closure != null) {
-            dDrop_drop(closure);
-          }
-          if (dropped != null) {
-            dDrop_drop(dropped);
-          }
-          if (kept != null) {
-            dDrop_drop(kept);
-          }
-          throw error;
-        }
-      } else {
-        try {
-          console.log(`${tmp$26._0}`);
-        } catch (error) {
-          if (tmp$26.TAG === "Ok") {
-            dDrop_drop(tmp$26._0);
-          }
-          if (err.TAG === "Ok") {
-            dDrop_drop(err._0);
-          }
-          if (ok.TAG === "Ok") {
-            dDrop_drop(ok._0);
-          }
-          dDrop_drop(read);
-          if (nothing.TAG === "One") {
-            dDrop_drop(nothing._0);
-          }
-          if (one.TAG === "One") {
-            dDrop_drop(one._0);
-          }
-          if (closure != null) {
-            dDrop_drop(closure);
-          }
-          if (dropped != null) {
-            dDrop_drop(dropped);
-          }
-          if (kept != null) {
-            dDrop_drop(kept);
-          }
-          throw error;
-        }
-      }
-      try {
-        if (tmp$26.TAG === "Ok") {
-          if (tmp$0$live) {
-            dDrop_drop(tmp$26._0);
-          }
-        }
-      } catch (error) {
-        if (err.TAG === "Ok") {
-          dDrop_drop(err._0);
-        }
-        if (ok.TAG === "Ok") {
-          dDrop_drop(ok._0);
-        }
-        dDrop_drop(read);
-        if (nothing.TAG === "One") {
-          dDrop_drop(nothing._0);
-        }
-        if (one.TAG === "One") {
-          dDrop_drop(one._0);
-        }
-        if (closure != null) {
-          dDrop_drop(closure);
-        }
-        if (dropped != null) {
-          dDrop_drop(dropped);
-        }
-        if (kept != null) {
-          dDrop_drop(kept);
-        }
-        throw error;
-      }
-      tmp$0$live = false;
     }
+    const flag = tmp;
+    try {
+      tmp$26 = parse_flag(flag, dNamed());
+    } catch (error) {
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+    tmp$0$live = true;
+    if (tmp$26.TAG === "Ok") {
+      tmp$0$live = false;
+      try {
+        console.log(`flag ${tmp$26._0[0]}`);
+      } catch (error) {
+        dDrop_drop(tmp$26._0);
+        if (tmp$26.TAG === "Ok") {
+        }
+        if (err.TAG === "Ok") {
+          dDrop_drop(err._0);
+        }
+        if (ok.TAG === "Ok") {
+          dDrop_drop(ok._0);
+        }
+        dDrop_drop(read);
+        if (nothing.TAG === "One") {
+          dDrop_drop(nothing._0);
+        }
+        if (one.TAG === "One") {
+          dDrop_drop(one._0);
+        }
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+        if (dropped != null) {
+          dDrop_drop(dropped);
+        }
+        if (kept != null) {
+          dDrop_drop(kept);
+        }
+        throw error;
+      }
+      try {
+        dDrop_drop(tmp$26._0);
+      } catch (error) {
+        if (tmp$26.TAG === "Ok") {
+        }
+        if (err.TAG === "Ok") {
+          dDrop_drop(err._0);
+        }
+        if (ok.TAG === "Ok") {
+          dDrop_drop(ok._0);
+        }
+        dDrop_drop(read);
+        if (nothing.TAG === "One") {
+          dDrop_drop(nothing._0);
+        }
+        if (one.TAG === "One") {
+          dDrop_drop(one._0);
+        }
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+        if (dropped != null) {
+          dDrop_drop(dropped);
+        }
+        if (kept != null) {
+          dDrop_drop(kept);
+        }
+        throw error;
+      }
+    } else {
+      try {
+        console.log(`${tmp$26._0}`);
+      } catch (error) {
+        if (tmp$26.TAG === "Ok") {
+          dDrop_drop(tmp$26._0);
+        }
+        if (err.TAG === "Ok") {
+          dDrop_drop(err._0);
+        }
+        if (ok.TAG === "Ok") {
+          dDrop_drop(ok._0);
+        }
+        dDrop_drop(read);
+        if (nothing.TAG === "One") {
+          dDrop_drop(nothing._0);
+        }
+        if (one.TAG === "One") {
+          dDrop_drop(one._0);
+        }
+        if (closure != null) {
+          dDrop_drop(closure);
+        }
+        if (dropped != null) {
+          dDrop_drop(dropped);
+        }
+        if (kept != null) {
+          dDrop_drop(kept);
+        }
+        throw error;
+      }
+    }
+    try {
+      if (tmp$26.TAG === "Ok") {
+        if (tmp$0$live) {
+          dDrop_drop(tmp$26._0);
+        }
+      }
+    } catch (error) {
+      if (err.TAG === "Ok") {
+        dDrop_drop(err._0);
+      }
+      if (ok.TAG === "Ok") {
+        dDrop_drop(ok._0);
+      }
+      dDrop_drop(read);
+      if (nothing.TAG === "One") {
+        dDrop_drop(nothing._0);
+      }
+      if (one.TAG === "One") {
+        dDrop_drop(one._0);
+      }
+      if (closure != null) {
+        dDrop_drop(closure);
+      }
+      if (dropped != null) {
+        dDrop_drop(dropped);
+      }
+      if (kept != null) {
+        dDrop_drop(kept);
+      }
+      throw error;
+    }
+    tmp$0$live = false;
   }
 }
 //# sourceMappingURL=case.js.map

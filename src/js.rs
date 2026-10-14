@@ -393,6 +393,49 @@ pub fn visit_stmts<'a>(stmts: &'a [Stmt], read: &mut dyn FnMut(&'a str)) {
     }
 }
 
+/// Whether running `stmt` never goes on to what follows it.
+pub fn ends(stmt: &Stmt) -> bool {
+    match &stmt.kind {
+        StmtKind::Return(_) | StmtKind::Throw(_) | StmtKind::Break(_) | StmtKind::Continue(_) => true,
+        StmtKind::If(_, then, Some(otherwise)) => then.last().is_some_and(ends) && otherwise.last().is_some_and(ends),
+        StmtKind::While { label, cond, body } => {
+            matches!(cond.kind, ExprKind::Bool(true)) && !breaks(body, label.as_deref())
+        }
+        _ => false,
+    }
+}
+
+/// Whether a `break` in `stmts` leaves the loop they're the body of, labeled
+/// `label`: one of no label not inside a loop of their own, or of its label.
+pub fn breaks(stmts: &[Stmt], label: Option<&str>) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(None) => true,
+        StmtKind::Break(Some(l)) => Some(l.as_str()) == label,
+        StmtKind::If(_, a, b) => breaks(a, label) || b.as_deref().is_some_and(|b| breaks(b, label)),
+        StmtKind::Labeled(_, body) => breaks(body, label),
+        // In a loop of its own, one that names it.
+        StmtKind::While { body, .. } | StmtKind::ForOf { body, .. } | StmtKind::For { body, .. } => {
+            label.is_some_and(|l| names_break(body, l))
+        }
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => breaks(a, label) || breaks(b, label),
+        _ => false,
+    })
+}
+
+/// Whether a `break` in `stmts`, however deep, names `label`.
+pub fn names_break(stmts: &[Stmt], label: &str) -> bool {
+    stmts.iter().any(|stmt| match &stmt.kind {
+        StmtKind::Break(Some(l)) => l == label,
+        StmtKind::If(_, a, b) => names_break(a, label) || b.as_deref().is_some_and(|b| names_break(b, label)),
+        StmtKind::While { body, .. }
+        | StmtKind::ForOf { body, .. }
+        | StmtKind::For { body, .. }
+        | StmtKind::Labeled(_, body) => names_break(body, label),
+        StmtKind::Try(a, b) | StmtKind::TryCatch(a, _, b) => names_break(a, label) || names_break(b, label),
+        _ => false,
+    })
+}
+
 /// A module's item.
 pub enum Item {
     /// A type's methods, before what's made when it's loaded calls them.

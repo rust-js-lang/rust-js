@@ -213,13 +213,11 @@ function main() {
             }
             $print(c);
           }
-        } else {
-          $print(`${n} `);
         }
+        $print(`${n} `);
       }
-    } else {
-      $print(`${row} `);
     }
+    $print(`${row} `);
   }
 }
 
