@@ -1,7 +1,7 @@
 # The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts
-# exports: 242 of 242 (100.0%)
-# not bound by design (x): 90, class components, TypeScript's own, old names or Electron's
-# react 181 of 181
+# exports: 243 of 243 (100.0%)
+# not bound by design (x): 89, class components, TypeScript's own, old names or Electron's
+# react 182 of 182
 + type react#AbstractView
 + react#act
 + type react#ActionDispatch
@@ -75,7 +75,7 @@ x type react#CustomComponentPropsWithRef
 + type react#DelHTMLAttributes
 + type react#DependencyList
 x type react#DeprecatedLifecycle
-x type react#DetailedHTMLProps
++ type react#DetailedHTMLProps
 x type react#DetailedReactHTMLElement
 + type react#DetailsHTMLAttributes
 + type react#DialogHTMLAttributes

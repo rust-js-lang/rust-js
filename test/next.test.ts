@@ -635,7 +635,7 @@ pub fn Preconnect() -> JSX::Element {
 // Its classes made before its children, as JSX makes them.
 pub fn Linked() -> JSX::Element {
     let anchor = use_ref::<Option<&'static HTMLAnchorElement>>(None);
-    jsx! { <Link href="/" ref={Some(anchor)} title={Some("Home")} className={Some(classes(true))} passHref={Some(true)}>{label(true)}</Link> }
+    jsx! { <Link href="/" ref={Some(anchor.into())} title={Some("Home")} className={Some(classes(true))} passHref={Some(true)}>{label(true)}</Link> }
 }
 
 // A link loaded ahead as Next.js chooses, that stays where it is when told

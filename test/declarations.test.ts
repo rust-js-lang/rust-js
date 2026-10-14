@@ -883,6 +883,55 @@ export const wrong = <ButtonLink href="/a" hrefLang={1}>Go</ButtonLink>;
   expect(renderToStaticMarkup(createElement(ButtonLink, { href: "/a", download: "f", className: "c" }))).toBe('<a href="/a" class="c" download="f"></a>');
 });
 
+// An element's props, @types/react's `DetailedHTMLProps`, flattened: react.dev's
+// ExternalLink, whose TypeScript callers give it a ref, an object or a
+// callback, of its `<a>`, and not of another element (ADR 0384).
+test("props that flatten DetailedHTMLProps take a ref as TypeScript types it", async () => {
+  buildReact();
+  const dir = fixture("declarations-detailed");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::attributes::AnchorHTMLAttributes;
+use react::webapi::HTMLAnchorElement;
+use react::{DetailedHTMLProps, JSX, ReactNode, jsx};
+
+pub struct ExternalLinkProps<'a, C: ReactNode> {
+    pub target: Option<&'a str>,
+    pub children: Option<C>,
+    #[rust_js::flatten]
+    pub props: DetailedHTMLProps<AnchorHTMLAttributes<'a>, HTMLAnchorElement>,
+}
+
+pub fn ExternalLink<C: ReactNode>(ExternalLinkProps { target, children, props }: ExternalLinkProps<'_, C>) -> JSX::Element {
+    jsx! { <a target={target.unwrap_or("_blank")} rel="noopener" {...props}>{children}</a> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  const declarations = readFileSync(join(dir, "lib.d.ts"), "utf8");
+  expect(declarations).toContain('import type { AnchorHTMLAttributes, DetailedHTMLProps, JSX, ReactNode } from "react";');
+  expect(declarations).toContain('export interface ExternalLinkProps extends Omit<DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>, "target"> {');
+  writeFileSync(join(dir, "use.tsx"), `import { useRef } from "react";
+import { ExternalLink } from "./lib.jsx";
+export function Uses() {
+  const anchor = useRef<HTMLAnchorElement>(null);
+  const div = useRef<HTMLDivElement>(null);
+  return <>
+    <ExternalLink href="/a" ref={anchor}>A</ExternalLink>
+    <ExternalLink href="/b" ref={(element) => { element?.focus(); }} aria-label="B">B</ExternalLink>
+    <ExternalLink href="/c" ref={div}>C</ExternalLink>
+  </>;
+}
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.length, errors.join("\n")).toBe(1);
+  expect(errors[0]).toContain("use.tsx(9,");
+});
+
 // React's attributes are of an element, as @types/react's are: react.dev's
 // LoadingOverlay takes `React.HTMLAttributes<HTMLDivElement>`, whose
 // handlers' `currentTarget` is the `<div>` (ADR 0208).

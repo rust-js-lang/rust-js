@@ -6,7 +6,7 @@ use core::marker::PhantomData;
 use js::JsObject;
 use react::attributes::AnchorHTMLAttributes;
 use react::webapi::HTMLAnchorElement;
-use react::{JSX, ReactNode, RefObject};
+use react::{JSX, ReactNode, Ref};
 
 /// `<Link href="/about" {..Default::default()}>{"About"}</Link>`.
 #[cfg_attr(rust_js, rust_js::link_name = "next/link#default")]
@@ -59,8 +59,9 @@ pub struct LinkProps<'a, C> {
     /// Send `href` to its child, as a child that isn't an `<a>` needs: `false`.
     #[cfg_attr(rust_js, rust_js::name = "passHref")]
     pub pass_href: Option<bool>,
-    /// Its `<a>`, as React's `RefAttributes<HTMLAnchorElement>` holds it.
-    pub r#ref: Option<RefObject<Option<&'static HTMLAnchorElement>>>,
+    /// Its `<a>`, as React's `RefAttributes<HTMLAnchorElement>` holds it: a
+    /// [`RefObject`](react::RefObject) or a callback, `Some(anchor.into())`.
+    pub r#ref: Option<Ref<&'static HTMLAnchorElement>>,
     /// The `<a>`'s classes.
     #[cfg_attr(rust_js, rust_js::name = "className")]
     pub class_name: Option<&'a str>,

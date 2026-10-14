@@ -555,7 +555,7 @@ impl<T> Element<T> {
     /// A ref to its element, or to one its element extends: a `<button>`'s
     /// holds an `HTMLButtonElement`, or an `Element` (ADR 0224).
     #[cfg_attr(rust_js, rust_js::link_name = "prop ref")]
-    pub fn r#ref<U: 'static, M>(self, value: impl Ref<&'static U, M>) -> Element<T>
+    pub fn r#ref<U: 'static, M>(self, value: impl IntoRef<&'static U, M>) -> Element<T>
     where
         T: webapi::IsA<U>,
     {
@@ -613,21 +613,66 @@ impl ActionResult<SyncAction> for () {}
 #[cfg(react = "19.0")]
 impl<F: Future<Output = ()>> ActionResult<AsyncAction> for F {}
 
-/// A JSX ref, @types/react's `Ref<T>`: a [`RefObject`] or a [`RefCallback`],
-/// any `Fn(Option<H>)`. React calls a callback on attach and detach; from
-/// React 19, its returned cleanup runs on detach. The marker only
-/// distinguishes types.
+/// What a ref is given as, an element's `ref` or [`use_imperative_handle`]'s:
+/// a [`RefObject`], a callback, any `Fn(Option<H>)`, or a [`Ref`] a prop
+/// holds. React calls a callback on attach and detach; from React 19, its
+/// returned cleanup runs on detach. The marker only distinguishes types.
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not a `Ref` of `{H}`",
-    label = "a `RefObject<Option<{H}>>` or an `Fn(Option<{H}>)` is"
+    message = "`{Self}` is not a ref of `{H}`",
+    label = "a `RefObject<Option<{H}>>`, an `Fn(Option<{H}>)` or a `Ref<{H}>` is"
 )]
-pub trait Ref<H, M> {}
+pub trait IntoRef<H, M> {}
 #[doc(hidden)]
 pub struct ObjectRef;
 #[doc(hidden)]
 pub struct CallbackRef<C>(PhantomData<C>);
-impl<H> Ref<H, ObjectRef> for RefObject<Option<H>> {}
-impl<H: 'static, C: Cleanup, F: Fn(Option<H>) -> C + 'static> Ref<H, CallbackRef<C>> for F {}
+#[doc(hidden)]
+pub struct HeldRef;
+impl<H> IntoRef<H, ObjectRef> for RefObject<Option<H>> {}
+impl<H: 'static, C: Cleanup, F: Fn(Option<H>) -> C + 'static> IntoRef<H, CallbackRef<C>> for F {}
+impl<H> IntoRef<H, HeldRef> for Ref<H> {}
+
+/// @types/react's `Ref<T>`, a ref a prop holds, `ref?: Ref<T>`: a
+/// [`RefObject`] or a callback, each the value itself in JS (ADR 0214),
+/// and given as either, `ref={Some(anchor.into())}` (ADR 0384).
+#[cfg_attr(rust_js, rust_js::untagged)]
+#[cfg_attr(rust_js, rust_js::types = "react#Ref<T>")]
+pub enum Ref<T: 'static> {
+    Object(RefObject<Option<T>>),
+    Callback(RefCallback<T>),
+}
+
+impl<T> From<RefObject<Option<T>>> for Ref<T> {
+    fn from(object: RefObject<Option<T>>) -> Self {
+        Ref::Object(object)
+    }
+}
+
+impl<T, F: Fn(Option<T>) + 'static> From<F> for Ref<T> {
+    fn from(callback: F) -> Self {
+        Ref::Callback(Box::new(callback))
+    }
+}
+
+/// @types/react's `DetailedHTMLProps<E, T>`, what an element takes: its
+/// attributes, `E`, and a ref to it, a `T`, as an `<a>`'s are
+/// `DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>`.
+/// A component's props flatten it, as they do `E` alone (ADR 0204, 0384).
+#[cfg_attr(rust_js, rust_js::types = "react#DetailedHTMLProps<E, T>")]
+pub struct DetailedHTMLProps<E, T: 'static> {
+    pub r#ref: Option<Ref<&'static T>>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub attributes: E,
+}
+
+impl<E: Default, T> Default for DetailedHTMLProps<E, T> {
+    fn default() -> Self {
+        DetailedHTMLProps {
+            r#ref: None,
+            attributes: E::default(),
+        }
+    }
+}
 
 /// @types/react's `RefCallback<T>`, a callback [`Ref`] a prop holds: given
 /// the element, or `None` when it's gone, and returning nothing, or a
@@ -877,7 +922,7 @@ pub fn create_ref<T>() -> RefObject<Option<T>> {
 /// [`useImperativeHandle`](https://react.dev/reference/react/useImperativeHandle):
 /// what a parent's ref to this component gets, made by `create`.
 #[cfg_attr(rust_js, rust_js::link_name = "react#useImperativeHandle")]
-pub fn use_imperative_handle<H, M>(r: impl Ref<H, M>, create: impl Fn() -> H + 'static, deps: impl DependencyList) {
+pub fn use_imperative_handle<H, M>(r: impl IntoRef<H, M>, create: impl Fn() -> H + 'static, deps: impl DependencyList) {
     unreachable!()
 }
 
@@ -1300,7 +1345,7 @@ built_in! {
     Fragment(FragmentProps) = keyed_fragment "Fragment" {
         /// Its [`FragmentInstance`]: its children's DOM nodes as one.
         #[cfg(react = "19.3")]
-        r#ref<M>: impl Ref<&'static FragmentInstance, M> = "ref";
+        r#ref<M>: impl IntoRef<&'static FragmentInstance, M> = "ref";
     }
 }
 
@@ -1517,7 +1562,7 @@ built_in! {
         on_exit<C: Cleanup>: impl Fn(&ViewTransitionInstance, &Vec<String>) -> C + 'static = "onExit";
         on_share<C: Cleanup>: impl Fn(&ViewTransitionInstance, &Vec<String>) -> C + 'static = "onShare";
         on_update<C: Cleanup>: impl Fn(&ViewTransitionInstance, &Vec<String>) -> C + 'static = "onUpdate";
-        r#ref<M>: impl Ref<&'static ViewTransitionInstance, M> = "ref";
+        r#ref<M>: impl IntoRef<&'static ViewTransitionInstance, M> = "ref";
     }
 }
 
@@ -1730,7 +1775,7 @@ handle! {
 
 #[doc(hidden)]
 pub struct ForwardedRefMarker;
-impl<H> Ref<H, ForwardedRefMarker> for ForwardedRef<H> {}
+impl<H> IntoRef<H, ForwardedRefMarker> for ForwardedRef<H> {}
 
 pub struct Forwarded;
 
@@ -1749,7 +1794,7 @@ impl<P> ComponentType<P, Made> for &'static LocalKey<ComponentValue<P>> {}
 /// Check the handle type of a forwarded JSX ref without emitting a runtime call.
 #[doc(hidden)]
 #[cfg_attr(rust_js, rust_js::link_name = "this")]
-pub fn checked_ref<H, M, R: Ref<H, M>>(this: R) -> R {
+pub fn checked_ref<H, M, R: IntoRef<H, M>>(this: R) -> R {
     unreachable!()
 }
 

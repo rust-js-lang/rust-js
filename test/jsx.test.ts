@@ -1837,7 +1837,7 @@ pub fn Ordinary(reference: RefObject<Option<&'static webapi::Element>>) -> JSX::
   writeFileSync(file, source.replace('pub fn App(reference: RefObject<Option<&\'static webapi::Element>>)', 'pub fn App(reference: RefObject<Option<i32>>)'));
   const invalid = Bun.spawnSync(args, { cwd: dir });
   expect(invalid.exitCode).not.toBe(0);
-  expect(invalid.stderr.toString()).toContain('is not a `Ref` of');
+  expect(invalid.stderr.toString()).toContain('is not a ref of');
   expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toBe(output);
 });
 
@@ -1871,14 +1871,69 @@ pub fn Counter(CounterProps { reducer, effect, later }: CounterProps) -> JSX::El
   expect(renderToStaticMarkup(createElement(Counter, { reducer: (s: number, a: number) => s + a, effect: () => {} }))).toBe("<p>1</p>");
 });
 
-// A ref is @types/react's `Ref<T>`, a `RefObject` or a `RefCallback`, which a
-// component's own prop takes, `impl Ref<&HTMLDivElement, M>`, and passes to
-// its element as it is; one of another element is an error that says so.
+// A component's props as an element's, @types/react's
+// `DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>`,
+// flattened: its `ref` a `Ref`, an object or a callback, each given as
+// itself, `.into()`, and spread on to its `<a>` with the rest (ADR 0384).
+test("a component's props flatten DetailedHTMLProps, its ref an object or a callback", async () => {
+  const source = `#![allow(non_snake_case)]
+use react::attributes::AnchorHTMLAttributes;
+use react::webapi::HTMLAnchorElement;
+use react::{DetailedHTMLProps, JSX, ReactNode, jsx, use_ref};
+pub struct ExternalLinkProps<'a, C: ReactNode> {
+    pub target: Option<&'a str>,
+    pub children: Option<C>,
+    #[rust_js::flatten]
+    pub props: DetailedHTMLProps<AnchorHTMLAttributes<'a>, HTMLAnchorElement>,
+}
+pub fn ExternalLink<C: ReactNode>(ExternalLinkProps { target, children, props }: ExternalLinkProps<'_, C>) -> JSX::Element {
+    jsx! { <a target={target.unwrap_or("_blank")} rel="noopener" {...props}>{children}</a> }
+}
+pub fn ByObject() -> JSX::Element {
+    let anchor = use_ref::<Option<&'static HTMLAnchorElement>>(None);
+    jsx! {
+        <ExternalLink
+            target={None}
+            props={DetailedHTMLProps {
+                r#ref: Some(anchor.into()),
+                attributes: AnchorHTMLAttributes { href: Some("/a"), ..Default::default() },
+            }}>
+            {Some("A")}
+        </ExternalLink>
+    }
+}
+pub fn ByCallback() -> JSX::Element {
+    jsx! {
+        <ExternalLink
+            target={None}
+            props={DetailedHTMLProps {
+                r#ref: Some((|_anchor: Option<&'static HTMLAnchorElement>| {}).into()),
+                attributes: AnchorHTMLAttributes { href: Some("/b"), ..Default::default() },
+            }}>
+            {Some("B")}
+        </ExternalLink>
+    }
+}
+`;
+  const { dir, args } = compile(source);
+  run(args);
+  const jsx = readFileSync(join(dir, "lib.jsx"), "utf8");
+  expect(jsx).toContain("export function ExternalLink({ target, children, ...props }) {");
+  expect(jsx).toContain('<ExternalLink ref={anchor} href="/a">');
+  expect(jsx).toContain('<ExternalLink ref={(_anchor) => {}} href="/b">');
+  const { ByObject, ByCallback } = await import(join(dir, "lib.jsx"));
+  expect(renderToStaticMarkup(createElement(ByObject))).toBe('<a target="_blank" rel="noopener" href="/a">A</a>');
+  expect(renderToStaticMarkup(createElement(ByCallback))).toBe('<a target="_blank" rel="noopener" href="/b">B</a>');
+});
+
+// A ref is given as a `RefObject` or a `RefCallback`, which a component's
+// own prop takes, `impl IntoRef<&HTMLDivElement, M>`, and passes to its
+// element as it is; one of another element is an error that says so.
 test("JSX refs are @types/react's Ref and RefCallback", async () => {
   const source = `#![allow(non_snake_case)]
 use react::webapi::{HTMLDivElement, HTMLElement};
-use react::{JSX, Ref, RefCallback, RefObject, jsx};
-pub fn Panel<M>(target: impl Ref<&'static HTMLDivElement, M>) -> JSX::Element {
+use react::{IntoRef, JSX, RefCallback, RefObject, jsx};
+pub fn Panel<M>(target: impl IntoRef<&'static HTMLDivElement, M>) -> JSX::Element {
     jsx! { <div ref={target} /> }
 }
 pub fn ByObject(target: RefObject<Option<&'static HTMLDivElement>>) -> JSX::Element {
@@ -1895,7 +1950,7 @@ pub fn ByCallback(target: RefCallback<&'static HTMLElement>) -> JSX::Element {
   expect(jsx).toContain("return <section ref={target} />;");
   writeFileSync(join(dir, "lib.rs"), source.replace("RefObject<Option<&'static HTMLDivElement>>", "RefObject<Option<&'static HTMLElement>>"));
   const wrong = Bun.spawnSync(args, { cwd: dir });
-  expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a `Ref` of `&'static react::webapi::HTMLDivElement`")], wrong.stderr.toString()).toEqual([false, true]);
+  expect([wrong.exitCode === 0, wrong.stderr.toString().includes("is not a ref of `&'static react::webapi::HTMLDivElement`")], wrong.stderr.toString()).toEqual([false, true]);
 });
 
 // Grammar cases live together so their complete output is easy to review.

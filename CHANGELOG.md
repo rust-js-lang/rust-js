@@ -11,6 +11,11 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Changed
 
+- **`react::Ref<T>` is @types/react's `Ref<T>`**, a ref a prop holds, an
+  object or a callback, and `react::DetailedHTMLProps<E, T>` an element's
+  props, its `ref` too, which a component's props flatten. The trait of
+  what JSX's `ref` takes is `IntoRef`; next/link's `ref` is a `Ref`,
+  `Some(anchor.into())` ([ADR 0384](docs/decisions/0384-a-ref-prop-is-reacts-ref.md)).
 - **A file's leading comments are its JS's**, a license's, after rust-js's
   own line ([ADR 0383](docs/decisions/0383-a-files-leading-comments-are-its-jss.md)).
 - **The app's Prettier lays out what rust-js writes**, its JS and its

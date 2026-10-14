@@ -2,7 +2,9 @@
 
 Status: Accepted. Renames what [0041](0041-react.md), [0043](0043-react-versions.md),
 [0208](0208-react-attributes.md), [0224](0224-typed-intrinsic-elements.md) and
-[0226](0226-react-children.md) named.
+[0226](0226-react-children.md) named. Amended by
+[0384](0384-a-ref-prop-is-reacts-ref.md): `Ref<T>` is the type a prop holds,
+and the trait of what JSX's `ref` takes `IntoRef`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 

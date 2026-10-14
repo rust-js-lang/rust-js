@@ -1,6 +1,8 @@
 # 0253. next/link takes a ref and passHref
 
-Status: Accepted. Extends [0192](0192-next.md).
+Status: Accepted. Extends [0192](0192-next.md). Amended by
+[0384](0384-a-ref-prop-is-reacts-ref.md): its `ref` is a `Ref`, an object or
+a callback, given `Some(anchor.into())`.
 
 Case: N ([0262](0262-when-rust-and-js-disagree.md)).
 
@@ -23,7 +25,7 @@ crate's `LinkProps` had neither.
 ref, each `None` unless given.**
 
 ```rust
-jsx! { <Link href="/" ref={Some(anchor)} passHref={Some(true)}>{"Home"}</Link> }
+jsx! { <Link href="/" ref={Some(anchor.into())} passHref={Some(true)}>{"Home"}</Link> }
 ```
 
 ```jsx
