@@ -4833,9 +4833,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // `cmp::max(a, b)` of what isn't a number:
         // `Ord::max(a, b)`'s (ADR 0136).
         if known.is_none()
-            && let Some(name) = self.recognition().cmp_extreme(def_id)
+            && let Some(max) = super::recognition::cmp_extreme(tcx, def_id)
         {
-            let method = trait_method(tcx, std_item(tcx, StdItem::Ord), name);
+            let method = trait_method(tcx, std_item(tcx, StdItem::Ord), if max { "max" } else { "min" });
             let exprs = (values.iter().cloned())
                 .map(|v| self.value_expr(v, span))
                 .collect::<R<Vec<_>>>()?;

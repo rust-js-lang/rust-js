@@ -1221,8 +1221,8 @@ export const mutations: Mutation[] = [
     name: "cmp-max-unknown",
     breaks: "`cmp::max(a, b)` of what isn't a number is refused",
     file: "src/lower/recognition.rs",
-    find: "            \"std::cmp::max\" | \"core::cmp::max\" => Some(\"max\"),",
-    replace: "            \"std::cmp::max\" | \"core::cmp::max\" => None,",
+    find: "        \"std::cmp::max\" => Some(true),\n",
+    replace: "        \"std::cmp::max\" => None,\n",
     tests: ["test/corpus.test.ts","-t","std_methods"],
   },
   {
@@ -1272,5 +1272,13 @@ export const mutations: Mutation[] = [
     find: "                && !path.ends_with(\"::ExtractIf\")\n",
     replace: "",
     tests: ["test/corpus.test.ts", "-t", "^extract_if.rs$"],
+  },
+  {
+    name: "formatter-method-unknown",
+    breaks: "a `Formatter`'s own methods, `f.width()`, `f.pad(s)`, aren't known as its",
+    file: "src/lower/recognition.rs",
+    find: "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Formatter))\n",
+    replace: "            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Vec))\n",
+    tests: ["test/corpus.test.ts", "-t", "^formatter_(asked|queries).rs$"],
   },
 ];

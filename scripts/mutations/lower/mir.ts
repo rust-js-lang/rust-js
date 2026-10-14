@@ -1606,8 +1606,8 @@ export const mutations: Mutation[] = [
     "name": "mir-cmp-max-refused",
     "breaks": "`cmp::max(a, b)` of what isn't a number is refused from MIR, not `Ord::max(a, b)`'s",
     "file": "src/lower/mir.rs",
-    "find": "        if known.is_none()\n            && let Some(name) = self.recognition().cmp_extreme(def_id)\n",
-    "replace": "        if false\n            && let Some(name) = self.recognition().cmp_extreme(def_id)\n",
+    "find": "        if known.is_none()\n            && let Some(max) = super::recognition::cmp_extreme(tcx, def_id)\n",
+    "replace": "        if false\n            && let Some(max) = super::recognition::cmp_extreme(tcx, def_id)\n",
     "tests": [
       "test/corpus.test.ts",
       "-t",

@@ -592,12 +592,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         }
         // `cmp::max(a, b)` of numbers is `a.max(b)`'s (ADR 0136); of anything
         // else, the call is lowered as `Ord::max`'s.
-        if tcx.crate_name(def_id.krate) == sym::core
-            && let Some(max) = match std_path(tcx, def_id).as_str() {
-                "std::cmp::max" => Some(true),
-                "std::cmp::min" => Some(false),
-                _ => None,
-            }
+        if let Some(max) = cmp_extreme(tcx, def_id)
             && self_ty.and_then(Num::of).is_some_and(|num| !num.float())
         {
             return Some(Some(Std::MaxOf(max)));
@@ -2589,15 +2584,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .expect("std has `Display`")
     }
     pub(super) fn is_fmt_result(&self, ty: Ty<'tcx>) -> bool {
-        let fmt = self.tcx.associated_item_def_ids(self.display_trait())[0];
-        let result = self.tcx.fn_sig(fmt).skip_binder().skip_binder().output();
-        self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(result)
+        is_fmt_result_type(self.tcx, ty)
     }
     /// Is `ty` a `fmt::Error`, a `fmt::Result`'s `Err` (ADR 0187)?
     pub(super) fn is_fmt_error(&self, ty: Ty<'tcx>) -> bool {
-        let fmt = self.tcx.associated_item_def_ids(self.display_trait())[0];
-        let result = self.tcx.fn_sig(fmt).skip_binder().skip_binder().output();
-        matches!(result.kind(), ty::Adt(_, args) if self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(args.type_at(1)))
+        matches!(fmt_result(self.tcx).map(|result| *result.kind()), Some(ty::Adt(_, args))
+            if self.tcx.erase_and_anonymize_regions(ty) == self.tcx.erase_and_anonymize_regions(args.type_at(1)))
     }
     pub(super) fn formatter_param(&self, def_id: DefId) -> Option<usize> {
         let sig = self.tcx.fn_sig(def_id).skip_binder().skip_binder();
@@ -2811,14 +2803,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// `cmp::max`'s name, `"max"`, or `cmp::min`'s, `"min"`: of what isn't a
     /// number, `Ord`'s method of that name's call (ADR 0136).
-    pub(super) fn cmp_extreme(&self, def_id: DefId) -> Option<&'static str> {
-        match self.tcx.def_path_str(def_id).as_str() {
-            "std::cmp::max" | "core::cmp::max" => Some("max"),
-            "std::cmp::min" | "core::cmp::min" => Some("min"),
-            _ => None,
-        }
-    }
-
     /// A `Result`.
     pub(super) fn is_result(&self, ty: Ty<'tcx>) -> bool {
         self.is_std_type(ty, StdItem::Result)
@@ -4115,12 +4099,27 @@ pub(crate) fn bound_by_any(tcx: TyCtxt<'_>, owner: DefId, index: u32) -> bool {
 
 /// Is `ty` a `fmt::Result` (ADR 0054)?
 pub(crate) fn is_fmt_result_type<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> bool {
-    let Some(display) = tcx.get_diagnostic_item(Symbol::intern("Display")) else {
-        return false;
-    };
+    fmt_result(tcx).is_some_and(|result| tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(result))
+}
+
+/// `fmt::Result`, what `Display::fmt` gives, if std's `Display` is loaded.
+fn fmt_result(tcx: TyCtxt<'_>) -> Option<Ty<'_>> {
+    let display = tcx.get_diagnostic_item(Symbol::intern("Display"))?;
     let fmt = tcx.associated_item_def_ids(display)[0];
-    let result = tcx.fn_sig(fmt).skip_binder().skip_binder().output();
-    tcx.erase_and_anonymize_regions(ty) == tcx.erase_and_anonymize_regions(result)
+    Some(tcx.fn_sig(fmt).skip_binder().skip_binder().output())
+}
+
+/// `cmp::max`, `Some(true)`, or `cmp::min`, `Some(false)`: `core`'s, which
+/// `std` re-exports.
+pub(crate) fn cmp_extreme(tcx: TyCtxt<'_>, def_id: DefId) -> Option<bool> {
+    if tcx.crate_name(def_id.krate) != sym::core {
+        return None;
+    }
+    match std_path(tcx, def_id).as_str() {
+        "std::cmp::max" => Some(true),
+        "std::cmp::min" => Some(false),
+        _ => None,
+    }
 }
 
 /// Is `variant` a `Result`'s `Err`?
@@ -4301,9 +4300,17 @@ pub(super) fn makes_debug_builder(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
     name.as_str().starts_with("debug_") && !name.as_str().ends_with("_finish")
 }
 
+/// Whether `def_id` is a method of std's `Formatter`, its own.
+fn is_formatter_method(tcx: TyCtxt<'_>, def_id: DefId) -> bool {
+    tcx.inherent_impl_of_assoc(def_id).is_some_and(|imp| {
+        matches!(tcx.type_of(imp).skip_binder().kind(),
+            ty::Adt(adt, _) if is_std_def(tcx, adt.did(), StdItem::Formatter))
+    })
+}
+
 /// The question `def_id` asks of a `Formatter`: `f.width()` and the like.
 pub(super) fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<FormatterQuery> {
-    if !std_path(tcx, def_id).starts_with("std::fmt::Formatter") {
+    if !is_formatter_method(tcx, def_id) {
         return None;
     }
     Some(match tcx.item_name(def_id).as_str() {
@@ -4642,7 +4649,7 @@ pub(crate) fn is_debug_argument(tcx: TyCtxt<'_>, id: DefId) -> bool {
 
 /// `f.pad(s)` of a `Formatter` (ADR 0143).
 pub(crate) fn is_formatter_pad(tcx: TyCtxt<'_>, id: DefId) -> bool {
-    tcx.item_name(id).as_str() == "pad" && std_path(tcx, id).starts_with("std::fmt::Formatter")
+    tcx.item_name(id).as_str() == "pad" && is_formatter_method(tcx, id)
 }
 
 /// A std function that runs no code of the crate's (ADR 0069).
