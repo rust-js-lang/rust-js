@@ -78,8 +78,8 @@ export const mutations: Mutation[] = [
     name: "extern-fn-declared-accepted",
     breaks: "a function in an `extern` block, a second form of a binding, is accepted where it's declared (ADR 0373)",
     file: "src/lower/analysis/validation.rs",
-    find: "            DefKind::Fn if tcx.is_foreign_item(def_id) => {\n",
-    replace: "            DefKind::Fn if false && tcx.is_foreign_item(def_id) => {\n",
+    find: "                if tcx.is_foreign_item(def_id)\n                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>\n",
+    replace: "                if false && tcx.is_foreign_item(def_id)\n                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>\n",
     tests: ["test/diagnostics.test.ts", "-t", "a function in an extern block"],
   },
   {
