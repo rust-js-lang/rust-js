@@ -1,7 +1,7 @@
 # The react crate against @types/react and @types/react-dom: bun test test/react-coverage.test.ts
-# exports: 243 of 243 (100.0%)
-# not bound by design (x): 89, class components, TypeScript's own, old names or Electron's
-# react 182 of 182
+# exports: 244 of 244 (100.0%)
+# not bound by design (x): 88, class components, TypeScript's own, old names or Electron's
+# react 183 of 183
 + type react#AbstractView
 + react#act
 + type react#ActionDispatch
@@ -217,7 +217,7 @@ x type react#StaticLifecycle
 + type react#SVGAttributes
 x type react#SVGElementType
 + type react#SVGLineElementAttributes
-x type react#SVGProps
++ type react#SVGProps
 + type react#SVGTextElementAttributes
 + type react#SyntheticEvent
 + type react#TableHTMLAttributes

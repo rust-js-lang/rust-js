@@ -49,7 +49,7 @@ const UNBOUND: Record<string, string> = Object.fromEntries(
       "JSX.ElementChildrenAttribute", "JSX.IntrinsicAttributes", "JSX.IntrinsicElements", "JSX.LibraryManagedAttributes",
       "AnyActionArg", "DispatchWithoutAction", "ReducerWithoutAction", "ReducerState", "FC", "FunctionComponent", "ExoticComponent",
       "ProviderExoticComponent", "FunctionComponentElement", "ReactComponentElement", "DOMElement", "DetailedReactHTMLElement",
-      "ReactHTMLElement", "ReactSVGElement", "HTMLProps", "SVGProps", "AllHTMLAttributes", "AriaAttributes",
+      "ReactHTMLElement", "ReactSVGElement", "HTMLProps", "AllHTMLAttributes", "AriaAttributes",
       "DOMAttributes", "Attributes", "RefAttributes", "HTMLElementType", "SVGElementType", "ReactPromise", "FulfilledReactPromise",
       "PendingReactPromise", "RejectedReactPromise", "UntrackedReactPromise", "RendererUsable", "createElement",
       // The base `SyntheticEvent` extends, of any targets.

@@ -932,6 +932,52 @@ export function Uses() {
   expect(errors[0]).toContain("use.tsx(9,");
 });
 
+// An SVG element's props, @types/react's `SVGProps`, as a component's whole
+// props: react.dev's Logo, spread on to its `<svg>` (ADR 0384).
+test("props that are SVGProps are typed as TypeScript types them", async () => {
+  buildReact();
+  const dir = fixture("declarations-svg-props");
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.0.0"\nedition = "2024"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
+  writeFileSync(join(dir, "lib.rs"), `#![allow(non_snake_case)]
+use react::webapi::SVGSVGElement;
+use react::{JSX, SVGProps, jsx};
+
+pub fn Logo(props: SVGProps<'_, SVGSVGElement>) -> JSX::Element {
+    jsx! { <svg viewBox="0 0 2 2" {...props}><circle r="1" /></svg> }
+}
+
+pub fn Plain() -> JSX::Element {
+    jsx! { <Logo {..Default::default()} /> }
+}
+`);
+  run([compiler, join(dir, "lib.rs"), "-o", join(dir, "lib.jsx"), "--", "--extern", `react=${join(target, "libreact.rmeta")}`, "-L", target]);
+  expect(readFileSync(join(dir, "lib.jsx"), "utf8")).toContain('<svg viewBox="0 0 2 2" {...props}>');
+  expect(readFileSync(join(dir, "lib.d.ts"), "utf8")).toContain("export function Logo(props: SVGProps<SVGSVGElement>): JSX.Element;");
+  writeFileSync(join(dir, "use.tsx"), `import { useRef } from "react";
+import { Logo } from "./lib.jsx";
+export function Uses() {
+  const svg = useRef<SVGSVGElement>(null);
+  const div = useRef<HTMLDivElement>(null);
+  return <>
+    <Logo className="w-8" ref={svg} />
+    <Logo ref={div} />
+  </>;
+}
+`);
+  writeFileSync(join(dir, "tsconfig.json"), JSON.stringify({
+    compilerOptions: { jsx: "react-jsx", strict: true, noEmit: true, module: "esnext", moduleResolution: "bundler", allowJs: true, skipLibCheck: false, typeRoots: [join(root, "node_modules/@types")] },
+    files: ["use.tsx"],
+  }));
+  const checked = Bun.spawnSync([process.execPath, join(root, "node_modules/typescript/bin/tsc"), "-p", join(dir, "tsconfig.json")], { cwd: dir });
+  const errors = checked.stdout.toString().split("\n").filter((line) => line.includes("error TS"));
+  expect(errors.length, errors.join("\n")).toBe(1);
+  expect(errors[0]).toContain("use.tsx(8,");
+  const { Plain } = await import(join(dir, "lib.jsx"));
+  const { createElement } = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  expect(renderToStaticMarkup(createElement(Plain))).toBe('<svg viewBox="0 0 2 2"><circle r="1"></circle></svg>');
+});
+
 // React's attributes are of an element, as @types/react's are: react.dev's
 // LoadingOverlay takes `React.HTMLAttributes<HTMLDivElement>`, whose
 // handlers' `currentTarget` is the `<div>` (ADR 0208).

@@ -674,6 +674,26 @@ impl<E: Default, T> Default for DetailedHTMLProps<E, T> {
     }
 }
 
+/// @types/react's `SVGProps<T>`, what an SVG element takes: its
+/// attributes, `SVGAttributes<T>`, and a ref to it, a `T`, as an `<svg>`'s
+/// are `SVGProps<SVGSVGElement>`. A component takes it as its props, or
+/// flattens it, as it does `DetailedHTMLProps` (ADR 0384).
+#[cfg_attr(rust_js, rust_js::types = "react#SVGProps<T>")]
+pub struct SVGProps<'a, T: 'static = webapi::SVGElement> {
+    pub r#ref: Option<Ref<&'static T>>,
+    #[cfg_attr(rust_js, rust_js::flatten)]
+    pub attributes: attributes::SVGAttributes<'a, T>,
+}
+
+impl<T> Default for SVGProps<'_, T> {
+    fn default() -> Self {
+        SVGProps {
+            r#ref: None,
+            attributes: Default::default(),
+        }
+    }
+}
+
 /// @types/react's `RefCallback<T>`, a callback [`Ref`] a prop holds: given
 /// the element, or `None` when it's gone, and returning nothing, or a
 /// cleanup, `C`, which React 19 runs when it's gone.

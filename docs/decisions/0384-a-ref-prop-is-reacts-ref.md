@@ -47,6 +47,9 @@ pub struct ExternalLinkProps<'a, C: ReactNode> {
   `Omit<DetailedHTMLProps<AnchorHTMLAttributes<HTMLAnchorElement>, HTMLAnchorElement>, ..>`,
   so a TypeScript caller's ref of its `<a>` is checked, and one of
   another element refused.
+- **`react::SVGProps<T>` is @types/react's too**, an SVG element's props,
+  `SVGAttributes<T>` and its `ref`: react.dev's Logo takes it whole,
+  `props: SVGProps<'_, SVGSVGElement>`, and spreads it on to its `<svg>`.
 - **Given from Rust**, `ref={Some(anchor.into())}`, or a callback's
   `.into()`: `<ExternalLink ref={anchor} href="/a">` in JS, as written.
 - **next/link's `ref` is a `Ref`**: a callback too, `Some(anchor.into())`.
