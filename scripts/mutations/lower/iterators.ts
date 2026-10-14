@@ -411,8 +411,8 @@ export const mutations: Mutation[] = [
     "name": "mir-range-inclusive-lazy",
     "breaks": "`(1..=n).collect()` from MIR stays `$iterator(\u2026, $rangeInclusiveNext).toArray()`, not `$range(1, n + 1)`",
     "file": "src/lower/iterators.rs",
-    "find": "        \"$rangeInclusiveNext\" => (true, false),\n",
-    "replace": "",
+    "find": "    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]\n",
+    "replace": "    let (inclusive, back) = [(false, false), (false, true), (true, true)]\n",
     "tests": [
       "test/lowering.test.ts",
       "-t",

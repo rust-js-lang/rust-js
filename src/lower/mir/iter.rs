@@ -122,11 +122,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && matches!(iter_ty.kind(), ty::Adt(_, args)
                         if args.types().next().is_some_and(|inner| self.array_source(inner).is_some())));
             return Ok(Some(match (std_method, self.range_kind(iter_ty)) {
-                (Some(IterMethod::NextBack), Some(RangeKind::Exclusive)) => {
-                    Expr::call_helper("$rangeNextBack", vec![it])
-                }
-                (Some(IterMethod::NextBack), Some(RangeKind::Inclusive)) => {
-                    Expr::call_helper("$rangeInclusiveNextBack", vec![it])
+                (Some(IterMethod::NextBack), Some(kind)) if let Some(step) = kind.step(true) => {
+                    Expr::call_helper(step, vec![it])
                 }
                 // A map of an array's items, `v.iter().map(f)`: its source's
                 // last item, mapped, as Rust's `Map::next_back` maps that one
@@ -198,12 +195,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             }
             let range = self.range_kind(iter_ty);
             return Ok(Some(match (std_method, range) {
-                (Some(IterMethod::Rev), Some(RangeKind::Exclusive)) => {
-                    self.stepped_by(receiver, Expr::helper("$rangeNextBack"))
-                }
-                (Some(IterMethod::Rev), Some(RangeKind::Inclusive)) => {
-                    let next_back = Expr::helper("$rangeInclusiveNextBack");
-                    self.stepped_by(receiver, next_back)
+                (Some(IterMethod::Rev), Some(kind)) if let Some(step) = kind.step(true) => {
+                    self.stepped_by(receiver, Expr::helper(step))
                 }
                 (_, Some(_)) => {
                     return Err(self.unsupported(span, &format!("`{name}` of a `{iter_ty}`, from its MIR")));
@@ -314,10 +307,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         if std_method == Some(IterMethod::Next) {
             let item = self.option_of(output).expect("`next` gives an `Option`");
             return Ok(Some(match self.range_kind(iter_ty) {
-                Some(RangeKind::Exclusive) => Expr::call_helper("$rangeNext", vec![receiver]),
-                Some(RangeKind::From) => Expr::call_helper("$rangeFromNext", vec![receiver]),
-                Some(RangeKind::Inclusive) => Expr::call_helper("$rangeInclusiveNext", vec![receiver]),
-                Some(_) => return Ok(None),
+                Some(kind) => match kind.step(false) {
+                    Some(step) => Expr::call_helper(step, vec![receiver]),
+                    None => return Ok(None),
+                },
                 None if self.boxed_payload(item) => Expr::call_helper("$nextSome", vec![receiver]),
                 None => Expr::call_helper("$next", vec![receiver]),
             }));
@@ -526,10 +519,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         // The crate's own behind an `impl Iterator` too.
         let ty = self.reveal(ty);
         match self.range_kind(ty) {
-            Some(RangeKind::Exclusive) => Ok(self.stepped_by(value, Expr::helper("$rangeNext"))),
-            Some(RangeKind::From) => Ok(self.stepped_by(value, Expr::helper("$rangeFromNext"))),
-            Some(RangeKind::Inclusive) => Ok(self.stepped_by(value, Expr::helper("$rangeInclusiveNext"))),
-            Some(_) => Err(self.unsupported(span, "iterating this range, from its MIR")),
+            Some(kind) => match kind.step(false) {
+                Some(step) => Ok(self.stepped_by(value, Expr::helper(step))),
+                None => Err(self.unsupported(span, "iterating this range, from its MIR")),
+            },
             None if self.is_user_iterator(ty) => {
                 let trait_id = std_item(self.tcx, StdItem::Iterator);
                 self.user_iterator(value, ty, trait_id, "next", span)

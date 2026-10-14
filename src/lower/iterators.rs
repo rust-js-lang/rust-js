@@ -7,6 +7,7 @@ use super::combinators::IterSource;
 use super::fn_def;
 use super::recognition::{StdItem, std_item, trait_method};
 use super::representation::Num;
+use super::std_types::range::RangeKind;
 use super::{FnCx, R, Std};
 use crate::js;
 use crate::js::{Expr, Op, Stmt, StmtKind};
@@ -1132,13 +1133,16 @@ pub(super) fn stepped_range(e: &Expr) -> Option<SteppedRange<'_>> {
     let [js::Prop::Field(s, start), js::Prop::Field(f, end)] = &bounds[..] else {
         return None;
     };
-    let (inclusive, back) = match next {
-        "$rangeNext" => (false, false),
-        "$rangeNextBack" => (false, true),
-        "$rangeInclusiveNext" => (true, false),
-        "$rangeInclusiveNextBack" => (true, true),
-        _ => return None,
-    };
+    let (inclusive, back) = [(false, false), (false, true), (true, false), (true, true)]
+        .into_iter()
+        .find(|&(inclusive, back)| {
+            let kind = if inclusive {
+                RangeKind::Inclusive
+            } else {
+                RangeKind::Exclusive
+            };
+            kind.step(back) == Some(next)
+        })?;
     (iterator == "$iterator" && (s.as_str(), f.as_str()) == ("start", "end")).then_some(SteppedRange {
         start,
         end,

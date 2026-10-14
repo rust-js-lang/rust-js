@@ -74,4 +74,20 @@ export const mutations: Mutation[] = [
     replace: "            Some(_) | None => Expr::bin(Op::Add, range.end.clone(), Expr::int(1)),\n",
     tests: ["test/lowering.test.ts", "-t", "a range mapped and collected"],
   },
+  {
+    name: "range-steps-back-forward",
+    breaks: "`(1..4).rev()` and `range.next_back()` step the range from its start",
+    file: "src/lower/std_types/range.rs",
+    find: "            (RangeKind::Exclusive, true) => \"$rangeNextBack\",\n",
+    replace: "            (RangeKind::Exclusive, true) => \"$rangeNext\",\n",
+    tests: ["test/corpus.test.ts", "-t", "iterator_back_ends"],
+  },
+  {
+    name: "inclusive-range-back-refused",
+    breaks: "`(250..=255u8).rev()` and an inclusive range's `next_back()` are refused",
+    file: "src/lower/std_types/range.rs",
+    find: "            (RangeKind::Inclusive, true) => \"$rangeInclusiveNextBack\",\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "byte_ascii|range_inclusive_next_back"],
+  },
 ];

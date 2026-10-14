@@ -37,6 +37,22 @@ impl RangeKind {
         }
     }
 
+    /// The runtime's helper that steps a range of this kind from its
+    /// start, or, `back`, its end: `$rangeNext`, `$rangeInclusiveNextBack`.
+    /// `None` of one JS doesn't step, or a `RangeFrom` from its end, which
+    /// it hasn't. The one table, which `stepped_by` and `next()` ask, and
+    /// `stepped_range` reads back.
+    pub(in crate::lower) fn step(self, back: bool) -> Option<&'static str> {
+        Some(match (self, back) {
+            (RangeKind::Exclusive, false) => "$rangeNext",
+            (RangeKind::Exclusive, true) => "$rangeNextBack",
+            (RangeKind::Inclusive, false) => "$rangeInclusiveNext",
+            (RangeKind::Inclusive, true) => "$rangeInclusiveNextBack",
+            (RangeKind::From, false) => "$rangeFromNext",
+            _ => return None,
+        })
+    }
+
     /// What `{:?}` shows between its bounds.
     fn dots(self) -> &'static str {
         match self {
@@ -253,10 +269,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
             }
             let range = values.into_iter().next().expect("the range");
-            let name = match (op, kind) {
-                (RangeOp::Next, RangeKind::From) => "$rangeFromNext",
-                (RangeOp::Next, _) => "$rangeNext",
-                _ => "$rangeNextBack",
+            let Some(name) = kind.step(op == RangeOp::NextBack) else {
+                return Err(self.unsupported(span, &format!("stepping through a `{range_ty}`")));
             };
             return Ok(Expr::call(Expr::helper(name), vec![range]));
         }
