@@ -1100,7 +1100,7 @@ pub fn guard(a: u32, s: &str) -> bool {
   expect(js).not.toContain("2 === 0");
   expect(js).toContain('  if (home || index) {\n    toc = false;\n  } else if (section === "blog") {\n');
   // A branch of `false`, `&&`: as MIR has it, tighter than an `if`.
-  if ("mir.js" === "mir.js") expect(js).toContain('return a > 1 && s === "x";');
+  expect(js).toContain('return a > 1 && s === "x";');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.both(2, 3), lib.either(0, 1), lib.named("x"), lib.named(undefined), lib.sign(-1), lib.odd(3), lib.flags(false, false, "blog")]).toEqual([true, false, true, false, "-", true, [false, false]]);
 });
@@ -1206,8 +1206,8 @@ pub fn label(q: &Q) -> String {
   // A part read where it's used isn't one a pattern names.
   expect(js).toContain("  const dir = q.dir;\n  return join(q.name, ");
   // Of an array made for them, each part itself.
-  if ("mir.js" === "mir.js") expect(js).toContain("  const first = 1;\n  const last = 4;\n");
-  if ("mir.js" === "mir.js") expect(js).toContain("  const x = pair(n)[1];\n  const y = (n + 1) >>> 0;\n");
+  expect(js).toContain("  const first = 1;\n  const last = 4;\n");
+  expect(js).toContain("  const x = pair(n)[1];\n  const y = (n + 1) >>> 0;\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.split(2), lib.both([2, 3]), lib.fields({ a: 1, b: 2 }), lib.ends(), lib.made(2)]).toEqual([6, 8, 3, 14, 9]);
 });
@@ -1385,8 +1385,8 @@ pub fn copied(mut items: Vec<u32>) -> (Vec<u32>, Vec<u32>) {
   expect(js).toContain("words.map((s) => $byteLen(s))");
   expect(js).toContain("  return $windows(v, 2).map(");
   expect(js).toContain("  return $zip(a, b).map(");
-  if ("mir.js" === "mir.js") expect(js).toMatch(/return lines\s*\.filter\(/);
-  if ("mir.js" === "mir.js") expect(js).toMatch(/return xs\s*\.map\(/);
+  expect(js).toMatch(/return lines\s*\.filter\(/);
+  expect(js).toMatch(/return xs\s*\.map\(/);
   const lib = await import(join(dir, "mir.js"));
   expect([lib.top([2, 7, 3]), lib.top([])]).toEqual([7, 0]);
   expect([lib.last_two([1, 2, 3]), lib.last_two([1])]).toEqual([[3, 2], [1]]);
@@ -1614,7 +1614,7 @@ pub fn zero(a: u64, b: u64) -> bool {
 `);
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
-  if ("mir.js" === "mir.js") expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
+  expect(js).toContain("  const moved = { a: 5, c: 6 };\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.moved(), lib.second("ab"), lib.first_of([4, 5]), lib.zero(5n, 5n), lib.zero(4n, 5n)]).toEqual([12, 98, 4, true, false]);
 });
@@ -1857,7 +1857,7 @@ pub fn first_id(items: &[Title]) -> u32 {
   expect(js).toContain("    throw new Error(`${kind} is missing a title`);\n  }\n");
   expect(js).toContain('  const hash = path.split("#")[1] ?? "";\n');
   expect(js).toContain("  const first = items[0];\n");
-  if ("mir.js" === "mir.js") {
+  {
     expect(js).toContain('  const first = parts[0];\n  if (first == null || typeof first !== "object") {\n    return 0;\n  }\n');
   }
   // A \`vec!\` a branch gives back, its box made, then filled: the array.
@@ -8589,9 +8589,7 @@ test("a guarded binding of an Option's string is its truth", async () => {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   // MIR's one value, as react.dev's original writes it.
   expect(js).toContain(
-    "mir.js" === "mir.js"
-      ? 'export function title(errorCode) {\n  return errorCode ? `Minified React error #${errorCode}` : "Minified Error Decoder";\n}'
-      : 'export function title(errorCode) {\n  if (errorCode) {\n    return `Minified React error #${errorCode}`;\n  }\n',
+    'export function title(errorCode) {\n  return errorCode ? `Minified React error #${errorCode}` : "Minified Error Decoder";\n}',
   );
   const lib = await import(join(dir, "mir.js"));
   expect([lib.title("1"), lib.title(""), lib.title(undefined)]).toEqual(["Minified React error #1", "Minified Error Decoder", "Minified Error Decoder"]);
@@ -8829,7 +8827,7 @@ pub fn rolled(prev: &[f64], more: &[f64]) -> usize {
   expect(js).toContain("  const newLogs = more.filter((x) => x > 1).map((x) => Math.imul(x, 2) >>> 0);\n");
   // Not of `Math.random()`, which does something: lazy, the array's own
   // iterator.
-  if ("mir.js" === "mir.js") expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
+  expect(js).toContain("  const rolled = more.values().map((x) => x + Math.random());\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.joined([1], [1, 2, 3]), lib.rolled([1], [2])]).toEqual([[1, 4, 6], 2]);
 });
@@ -10434,18 +10432,18 @@ pub fn odd_to_five() -> Vec<u32> {
   run([compiler, join(dir, "lib.rs"), "-o", join(dir, "mir.js")]);
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain("return $range(0, n).map((i) => Math.imul(i, i) >>> 0);");
-  if ("mir.js" === "mir.js") expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
-  if ("mir.js" === "mir.js") expect(js).toContain("return $range(0, n).toReversed();");
-  if ("mir.js" === "mir.js") expect(js).toContain("return $range(1, n + 1);");
-  if ("mir.js" === "mir.js") expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
-  if ("mir.js" === "mir.js") expect(js).toContain("return $range(1, 4).map(");
-  if ("mir.js" === "mir.js") expect(js).toContain("return $lazyRange(1, 6)\n");
+  expect(js).toContain('return $range(1, n + 1)\n    .toReversed()\n    .map((k) => "*".repeat(k));');
+  expect(js).toContain("return $range(0, n).toReversed();");
+  expect(js).toContain("return $range(1, n + 1);");
+  expect(js).toContain("return $lazyRange(0, n)\n    .filter(");
+  expect(js).toContain("return $range(1, 4).map(");
+  expect(js).toContain("return $lazyRange(1, 6)\n");
   const lib = await import(join(dir, "mir.js"));
   expect([lib.squares(4), lib.wide(3n)]).toEqual([[0, 1, 4, 9], [0n, 2n, 4n]]);
   expect([lib.stars(3), lib.stars(0), lib.down(3), lib.upto(3), lib.upto(0)]).toEqual([["***", "**", "*"], [], [2, 1, 0], [1, 2, 3], []]);
   expect(lib.odd_squares(6)).toEqual([1, 9, 25]);
   expect([lib.doubled(), lib.odd_to_five()]).toEqual([[2, 4, 6], [1, 3, 5]]);
-  if ("mir.js" === "mir.js") expect(lib.few()).toEqual([0, 2, 4]);
+  expect(lib.few()).toEqual([0, 2, 4]);
 });
 
 // A closure that calls only a method named as a slice's that only reads,
@@ -10484,7 +10482,7 @@ pub fn a_names(names: Vec<String>) -> usize {
   }
   expect(logs).toEqual(["at", "f2", "at", "f3", "ab", "ac"]);
   // A \`str\`'s \`starts_with\` only reads: the array's own \`filter\`.
-  if ("mir.js" === "mir.js") expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
+  expect(readFileSync(join(dir, "mir.js"), "utf8")).toContain(`names\n    .filter((n) => n.startsWith("a"))\n`);
 });
 
 // A handle's value read or written in place, `Cell::set` of `&self.n`, is
@@ -10916,7 +10914,7 @@ pub fn counted(n: u32) -> String {
   const js = readFileSync(join(dir, "mir.js"), "utf8");
   expect(js).toContain('return ["h", "é", "!"].join("");');
   // A JS iterator has no \`join\` but Bun's: its items, an array's.
-  if ("mir.js" === "mir.js") expect(js).toContain('return Iterator.from(items).toArray().join("");');
+  expect(js).toContain('return Iterator.from(items).toArray().join("");');
   const lib = await import(join(dir, "mir.js"));
   expect([lib.letters(), lib.backwards("axbc"), lib.counted(4)]).toEqual(["hé!", "cba", "0123"]);
 });
