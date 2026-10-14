@@ -5,7 +5,6 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { createNativeBuilder, findCompiler } from "@rust-js/build/build";
-import { readsCargo } from "@rust-js/build/cargo";
 import { parseManifest } from "@rust-js/build/manifest";
 import { writePatch } from "@rust-js/build/patch";
 
@@ -38,9 +37,9 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
   if (cargo && custom) throw new Error("rust-js: give `cargo` or `compile`, not both");
   if (cargo) crates = [cargo.package];
   let root, server, builder, logger, closed = false;
-  // A Cargo build's: the package's JS, the manifest Vite is given, and the
-  // workspace it's of, what Cargo reads, and its target, what it writes.
-  let entry, workspaceManifest, workspace, targetDir;
+  // A Cargo build's: the package's JS, the manifest Vite is given, the
+  // workspace it's of, and its session, which says what a build read.
+  let entry, workspaceManifest, workspace, session;
   let active;
   const pending = new Set();
   const manifests = new Map();
@@ -58,13 +57,9 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
   async function compileCargo() {
     const old = JSON.stringify([...manifests.values()].flatMap(m => m.artifacts.map(a => a.file)).sort());
     // A member's manifest is of the workspace its siblings are of too.
-    ({ root: workspace, target: targetDir } = await builder.cargoWorkspace({ manifestPath: workspaceManifest, offline: cargo.offline }));
+    const built = await session.build();
+    workspace = built.workspace;
     server?.watcher.add(workspace);
-    const built = await builder.checkCargo({
-      manifestPath: workspaceManifest, packageName: cargo.package,
-      features: cargo.features, noDefaultFeatures: cargo.noDefaultFeatures, offline: cargo.offline,
-      inSource: cargo.inSource ?? true,
-    });
     manifests.clear();
     for (const [name, manifest] of built.manifests) manifests.set(name, manifest);
     entry = built.js;
@@ -154,7 +149,7 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
     const file = resolve(path);
     const common = builder?.watchFiles.includes(file);
     if (cargo) {
-      if (common || readsCargo(file, { workspace, target: targetDir, manifests: manifests.values() })) void schedule(crates);
+      if (session?.reads(file)) void schedule(crates);
       return;
     }
     if (!common && !file.endsWith(".rs")) return;
@@ -180,6 +175,11 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
       if (!custom) {
         rustJs = resolve(root, rustJs ?? findCompiler(root));
         builder = createNativeBuilder({ root, rustJs, resources, rustcFlags, cacheDir, bindings, externs });
+        session = cargo && builder.cargoSession({
+          manifestPath: workspaceManifest, packageName: cargo.package,
+          features: cargo.features, noDefaultFeatures: cargo.noDefaultFeatures, offline: cargo.offline,
+          inSource: cargo.inSource ?? true,
+        });
       }
     },
     async buildStart() {

@@ -6,7 +6,7 @@ import { createRequire } from "node:module";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { cargoWorkspace, checkCargo, editorCheck } from "./cargo.js";
+import { cargoWorkspace, checkCargo, editorCheck, readsCargo } from "./cargo.js";
 import { resourceInputs } from "./resources.js";
 import { parseCompilerIdentity } from "./manifest.js";
 import { reactLibs } from "./crates.js";
@@ -207,7 +207,8 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
   // resources' pin, for the committed JS's fallback.
   const toolchain = async () => (existsSync(rustJs) ? (await compilerIdentity()).toolchain : pinned());
 
-  return {
+  const watchFiles = [...metadataInputs, ...(bindings.length ? [join(repo, "package.json")] : []), ...compilerInputs, ...Object.values(externs)];
+  const builder = {
     /** A Cargo workspace's check (ADR 0101), with the compiler's toolchain,
      * this compiler, and the React the project has installed. */
     async checkCargo(options) {
@@ -224,7 +225,31 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
     async cargoWorkspace(options) {
       return cargoWorkspace({ ...options, toolchain: await toolchain() });
     },
-    watchFiles: [...metadataInputs, ...(bindings.length ? [join(repo, "package.json")] : []), ...compilerInputs, ...Object.values(externs)],
+    /**
+     * A Cargo build a host runs again as what it reads changes (ADR 0101),
+     * Vite's plugin's and Next.js's: `build()` is `checkCargo` of `options`,
+     * of the workspace its manifest is of, and keeps what it read;
+     * `reads(file)` is whether a change to `file` is one to build again for,
+     * rust-js's own files, the workspace's Rust and manifests but not what
+     * Cargo writes, or a source the last build read wherever it is; and
+     * `sources()` is each of those, to watch.
+     * @param {Parameters<typeof checkCargo>[0] & { offline?: boolean }} options
+     */
+    cargoSession(options) {
+      let workspace, target, manifests = [];
+      return {
+        async build() {
+          ({ root: workspace, target } = await builder.cargoWorkspace({ manifestPath: options.manifestPath, offline: options.offline }));
+          const built = await builder.checkCargo(options);
+          manifests = [...built.manifests.values()];
+          return { ...built, workspace };
+        },
+        reads: (file) => watchFiles.includes(file)
+          || (workspace !== undefined && readsCargo(file, { workspace, target, manifests })),
+        sources: () => manifests.flatMap((manifest) => manifest.sources),
+      };
+    },
+    watchFiles,
     prepare,
     /** `save` runs the crate's checks a save runs, not those only for a
      * build (ADR 0117); `warn` is given what rust-js warns of as it succeeds. */
@@ -242,4 +267,5 @@ export function createNativeBuilder({ root, rustJs = findCompiler(root), resourc
       }
     },
   };
+  return builder;
 }

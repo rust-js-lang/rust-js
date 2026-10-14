@@ -7,7 +7,6 @@ import { existsSync, watch } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve, sep } from "node:path";
 import { createNativeBuilder, findCompiler } from "@rust-js/build/build";
-import { readsCargo } from "@rust-js/build/cargo";
 import { writePatch } from "@rust-js/build/patch";
 
 /**
@@ -29,21 +28,19 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   if (!existsSync(compiler)) throw new Error(`rust-js: no compiler at ${compiler}`);
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const manifestPath = join(app, "Cargo.toml");
-  const { root: workspace, target, packages } = await builder.cargoWorkspace({ manifestPath });
+  const { root: workspace, packages } = await builder.cargoWorkspace({ manifestPath });
   const [packageName, ...others] = packages.keys();
   if (others.length) throw new Error(`rust-js: ${manifestPath} has several packages; the app's Rust is one`);
 
   // One `cargo check` of the whole crate, which writes each module's JS
   // beside its Rust (ADR 0041), or an error, rustc's. Its manifests say
-  // what it read, a source outside the workspace too.
-  let manifests = [];
+  // what it read, a source outside the workspace too. A Pages Router
+  // route's directory gets no declarations, which Turbopack would take as
+  // routes (ADR 0276).
+  const session = builder.cargoSession({ manifestPath, packageName, inSource: true, routes: [join(app, "pages"), join(app, "src/pages")] });
   async function compile() {
     try {
-      // A Pages Router route's directory gets no declarations, which
-      // Turbopack would take as routes (ADR 0276).
-      const routes = [join(app, "pages"), join(app, "src/pages")];
-      const built = await builder.checkCargo({ manifestPath, packageName, inSource: true, routes });
-      manifests = [...built.manifests.values()];
+      await session.build();
       return true;
     } catch (error) {
       log(error instanceof Error ? error.message : String(error));
@@ -70,7 +67,7 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
       }
     };
     const changed = (file) => {
-      if (!builder.watchFiles.includes(file) && !readsCargo(file, { workspace, target, manifests })) return;
+      if (!session.reads(file)) return;
       pending = true;
       active ??= drain().finally(() => {
         active = undefined;
@@ -83,7 +80,7 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
     // or a file an `include_str!` reads, as the last build has them.
     const outside = new Set();
     const watchOutside = () => {
-      for (const file of manifests.flatMap((manifest) => manifest.sources)) {
+      for (const file of session.sources()) {
         if (file.startsWith(workspace + sep) || outside.has(file) || !existsSync(file)) continue;
         outside.add(file);
         watchers.push(watch(file, () => changed(file)));
