@@ -162,7 +162,7 @@ pub(super) fn js_name(tcx: TyCtxt<'_>, def_id: DefId) -> String {
 /// one can't. An `extern` block is for a `static`, which has no body.
 pub(super) fn extern_fn_refused(tcx: TyCtxt<'_>, def_id: DefId) -> String {
     format!(
-        "rust-js binds a JS function as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = {:?})] fn {}(..) {{ unreachable!() }}`, not in an `extern` block (ADR 0373)",
+        "rust-js: a JS function is bound as an ordinary function, `#[cfg_attr(rust_js, rust_js::link_name = {:?})] fn {}(..) {{ unreachable!() }}`, not in an `extern` block (ADR 0373)",
         js_name(tcx, def_id),
         tcx.item_name(def_id),
     )

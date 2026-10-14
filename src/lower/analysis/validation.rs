@@ -24,9 +24,14 @@ pub(super) fn reject_unsupported(
     let mut valid = true;
     for def_id in tcx.hir_crate_items(()).definitions() {
         let what = match tcx.def_kind(def_id) {
-            // A function in an `extern` block: a binding of one is an
-            // ordinary function, the one form (ADR 0039).
-            DefKind::Fn if tcx.is_foreign_item(def_id) => {
+            // A function in an `extern "Rust"` block, where a JS function
+            // was bound: a binding of one is an ordinary function, the one
+            // form (ADR 0373). One of C's, which JS has none of, is refused
+            // where it's called.
+            DefKind::Fn
+                if tcx.is_foreign_item(def_id)
+                    && tcx.fn_sig(def_id).skip_binder().abi() == rustc_abi::ExternAbi::Rust =>
+            {
                 let refused = super::super::bindings::extern_fn_refused(tcx, def_id.to_def_id());
                 tcx.dcx().span_err(tcx.def_span(def_id), refused);
                 valid = false;
@@ -39,7 +44,7 @@ pub(super) fn reject_unsupported(
                 tcx.dcx().span_err(
                     tcx.def_span(def_id),
                     format!(
-                        "rust-js declares a JS type as a struct of a `JsObject`, `pub struct {name}(PhantomData<js::JsObject>);`, not an `extern` type (ADR 0373)"
+                        "rust-js: a JS type is declared as a struct of a `JsObject`, `pub struct {name}(PhantomData<js::JsObject>);`, not an `extern` type (ADR 0373)"
                     ),
                 );
                 valid = false;

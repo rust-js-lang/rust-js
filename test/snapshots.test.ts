@@ -52,7 +52,7 @@ const cases: [string, string, Crate[]][] = [
   ["throws", "test/throws.rs", ["web"]],
   ["builtins", "test/builtins.rs", ["web"]],
   ["async", "test/async.rs", ["web"]],
-  ["imports", "test/imports/lib.rs", []],
+  ["imports", "test/imports/lib.rs", ["web"]],
   ["components", "test/components.rs", ["react"]],
   ["apis", "test/apis.rs", ["react"]],
   // The playground's own Rust (ADR 0044). test/playground.test.ts checks that
