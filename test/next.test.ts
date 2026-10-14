@@ -424,7 +424,7 @@ use next::{RouterTransitionStartEvent, RouterTransitionType};
 
 pub fn onRouterTransitionStart(url: &str, navigation_type: RouterTransitionType, event: Option<&RouterTransitionStartEvent>) {
     if navigation_type == RouterTransitionType::Push && event.is_some() {
-        let _ = url.len();
+        println!("{url}");
     }
 }
 `;
