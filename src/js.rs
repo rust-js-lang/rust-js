@@ -1581,27 +1581,13 @@ impl Expr {
         })
     }
 
-    /// Does this name the variable `name` anywhere in it?
+    /// Does this name the variable `name` anywhere in it, a template's, an
+    /// object's, JSX's or a closure's part too: `visit_vars`' answer, the one
+    /// walk of what an expression reads.
     pub fn mentions_var(&self, name: &str) -> bool {
-        match &self.kind {
-            ExprKind::Var(n) => n == name,
-            ExprKind::Member(a, _)
-            | ExprKind::OptionalMember(a, _)
-            | ExprKind::Unary(_, a)
-            | ExprKind::Await(a)
-            | ExprKind::Spread(a)
-            | ExprKind::Handle(a)
-            | ExprKind::DropArgument(_, _, a) => a.mentions_var(name),
-            ExprKind::Index(a, b) | ExprKind::Binary(_, a, b) | ExprKind::Pair(a, b) => {
-                a.mentions_var(name) || b.mentions_var(name)
-            }
-            ExprKind::Cond(a, b, c) => a.mentions_var(name) || b.mentions_var(name) || c.mentions_var(name),
-            ExprKind::Call(f, args) | ExprKind::OptionalCall(f, args) | ExprKind::New(f, args) => {
-                f.mentions_var(name) || args.iter().any(|a| a.mentions_var(name))
-            }
-            ExprKind::Array(items) => items.iter().any(|a| a.mentions_var(name)),
-            _ => false,
-        }
+        let mut found = false;
+        self.visit_vars(&mut |var| found |= var == name);
+        found
     }
 
     /// Could this read one of `names`? Only a path of them, `a.b`, or a
@@ -1863,5 +1849,16 @@ mod tests {
         let import = Expr::new(ExprKind::Import(ImportFrom::Module(vec!["a".into()])));
         assert!(module_of(import).unprintable().is_some());
         assert_eq!(module_of(Expr::var("x")).unprintable(), None);
+    }
+
+    // What an expression reads is one walk's answer: a template's, an
+    // object's part too, which `t = `${t}x`` reads `t` in.
+    #[test]
+    fn mentions_var_finds_every_read() {
+        let template = Expr::template(vec![String::new(), "x".into()], vec![Expr::var("t")]);
+        assert!(template.mentions_var("t"));
+        let object = Expr::object(vec![Prop::Field("a".into(), Expr::var("t"))]);
+        assert!(object.mentions_var("t"));
+        assert!(!object.mentions_var("u"));
     }
 }
