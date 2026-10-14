@@ -1,4 +1,5 @@
-//! Read, borrow and write places. Prepared targets lower each operand once.
+//! A place leaked, `Box::leak` and its kin (`leaked`): what it's given
+//! is the value, kept for good.
 
 use super::FnCx;
 use crate::js::{self, Expr};

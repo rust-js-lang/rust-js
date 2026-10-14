@@ -475,6 +475,20 @@ test("each decision is in the index, a superseded one marked", () => {
   expect(superseded.filter(name => !/\*\([^)]*(?:superseded|replaced)[^)]*\)\*/.test(line(name)))).toEqual([]);
 });
 
+// Each module of the front end is in the architecture, by its name or its
+// folder's, so what it's for is written where a reader looks first:
+// `calls.rs` was in no table (the second review).
+test("each module of the front end is in the architecture", () => {
+  const doc = read("docs/architecture.md");
+  const named = (name: string) => doc.includes("`" + name + "`");
+  const missing = files("src/lower").filter(file => {
+    const rel = file.slice("src/lower/".length);
+    const dir = rel.includes("/") ? rel.slice(0, rel.lastIndexOf("/") + 1) : null;
+    return !(named(rel) || named(file) || (dir !== null && (named(dir) || named(`src/lower/${dir}`))));
+  });
+  expect(missing).toEqual([]);
+});
+
 // Each decision says its status, and one an Amends or a Supersedes names
 // says what amended it: seventeen didn't, and 0075 had no status (the
 // second review), so reading one alone missed what changed it.

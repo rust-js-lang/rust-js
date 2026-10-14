@@ -222,7 +222,7 @@ which any module may ask of `is_lang_item`; a std item known by its name, a
 diagnostic item or a symbol, `sym::Target`, is recognition's alone, as a
 rule holds.
 
-Its modules come in four kinds.
+Its modules come in two kinds.
 
 **Questions, which emit nothing.** They read THIR, MIR's facts and types,
 and answer. Each is checked to stay that way.
@@ -253,6 +253,7 @@ and answer. Each is checked to stay that way.
 | `bodies.rs` | Entering and leaving a body inside the one being lowered, a closure's or a copied default's |
 | `patterns.rs` | A pattern's JS, a binding's or a parameter's, and its defaults |
 | `loops.rs`, `places.rs` | A `for` over the crate's own `IntoIterator`; a place that's leaked |
+| `calls.rs` | What calls share: `Call`, a call made; `apply`, calling a function value; `catching`, a JS call that may throw made a `Result` (ADR 0035); `given_to_js`; `ptr_eq_refused` |
 | `mut_refs.rs` | A `&mut` to a value JS can't change in place, given to a call or given back by one: a box, the place, or a std call's items |
 | `drops.rs`, `mir/drops.rs` | Destructors: what each drop runs and the drop functions it's written in (`drops.rs`); where and when a body drops, by rustc's drop elaboration of its MIR, and its flags (`mir/drops.rs`, ADR 0364); a std function lowered in place drops its own in a `try`'s `finally` |
 | `representation.rs` | How each Rust value is represented: its shape, an `Option`'s payload, a cell, a number |

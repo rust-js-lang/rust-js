@@ -1,4 +1,8 @@
-//! Calls to local functions, JavaScript bindings, closures and standard operations.
+//! A call and what calls share: `Call`, a call made, `apply`, calling a
+//! function value with what's given, `catching`, a JS call that may throw
+//! made a `Result` (ADR 0035), `given_to_js`, a value made what JS takes,
+//! and `ptr_eq_refused`. Which call it is, MIR's lowering says
+//! (`mir/calls.rs`, `mir/std_calls.rs`).
 
 use super::recognition::Catching;
 

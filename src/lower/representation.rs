@@ -1,4 +1,7 @@
-//! Rust value representations, copying, and supported-type validation.
+//! How each Rust value is represented in JS: its shape, a number's kind and
+//! literal, an `Option`'s payload, a cell, what a `&mut` to it is (an
+//! object, a box, a handle), a constant's value. When a value is copied is
+//! `copies.rs`'s, and what can be represented `support.rs`'s.
 
 use super::bindings::{field_key, unit_name};
 use super::recognition::{StdItem, cell_value_field, is_std_def};

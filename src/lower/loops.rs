@@ -1,4 +1,6 @@
-//! Loop lowering and labels: preserve control flow and iteration order.
+//! A `for` over the crate's own `IntoIterator` (`user_into_iter`): its
+//! `into_iter`, then a JS iterator of it. Loops themselves are MIR's,
+//! made `for` and `while` by tidy (`mir/tidy/loops.rs`).
 
 use super::recognition::{StdItem, std_item, trait_method};
 
