@@ -77,12 +77,4 @@ export const mutations: Mutation[] = [
       "own function named as a global"
     ]
   },
-  {
-    name: "mir-tidy-param-module-name-reused",
-    breaks: "MIR's closure parameter takes a name of the module's",
-    file: "src/prepare/reclaim.rs",
-    find: "                if named.contains(base) || module.contains(base) {\n",
-    replace: "                if named.contains(base) {\n",
-    tests: ["test/link.test.ts","-t","module-load statements"],
-  },
 ];

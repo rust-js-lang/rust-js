@@ -13,7 +13,6 @@ mod reclaim;
 /// A closure's parameter given its name back, preparation's, which a body
 /// lowered from its MIR asks before it's linked, as an import's alias is
 /// chosen around it.
-pub(crate) use reclaim::unsuffixed_params;
 mod scopes;
 
 pub fn module(module: &mut js::Module) {
@@ -165,7 +164,7 @@ fn prepared(function: &mut js::Function) {
             shadows(body, Some(&own));
         }
     });
-    constants(&mut function.body);
+    js::constants(&mut function.body);
     tested_constants(&mut function.body);
     unread(&mut function.body);
     js::each_block_mut(&mut function.body, &mut |stmts| imported(stmts));
@@ -533,34 +532,6 @@ fn coalescing(stmt: &Stmt) -> Option<StmtKind> {
     ))
 }
 
-/// `let list = [];` that nothing sets again, only changes in place, is
-/// `const list = [];`, as JS writes it (ADR 0278). A variable a `&mut`'s
-/// handle sets is set.
-pub(crate) fn constants(body: &mut Vec<Stmt>) {
-    let mut set = HashSet::new();
-    js::each_block_mut(body, &mut |stmts| {
-        for stmt in stmts.iter() {
-            if let StmtKind::Assign(target, _) = &stmt.kind {
-                set.extend(root(target));
-            }
-        }
-    });
-    js::each_expr_mut(body, &mut |e| {
-        if let ExprKind::Handle(place) | ExprKind::Pair(place, _) = &e.kind {
-            set.extend(root(place));
-        }
-    });
-    js::each_block_mut(body, &mut |stmts| {
-        for stmt in stmts.iter_mut() {
-            if let StmtKind::Let(name, Some(value)) = &stmt.kind
-                && !set.contains(name)
-            {
-                stmt.kind = StmtKind::Const(name.clone(), value.clone());
-            }
-        }
-    });
-}
-
 /// A `const` nothing reads, of a value whose making calls nothing and reads
 /// only variables, is no statement: `const lock = { value: 1 };`. Not one
 /// of a property, which a binding's getter may be, `el.offsetWidth`, that
@@ -576,14 +547,6 @@ fn unread(body: &mut Vec<Stmt>) {
                 if !read.contains(name) && value.reads_only_vars())
         });
     });
-}
-
-/// The variable a place is, `x`: `x.a = 1` sets none.
-fn root(place: &Expr) -> Option<String> {
-    match &place.kind {
-        ExprKind::Var(name) => Some(name.clone()),
-        _ => None,
-    }
 }
 
 /// `const n$1 = n;`, Rust's `let n = n;`, a variable shadowed by its own

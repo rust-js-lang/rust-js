@@ -190,6 +190,17 @@ test("modules don't use each other in a cycle", () => {
 
 // Any mention of a rustc crate, `use rustc_middle as m;` too, whose
 // paths, `m::ty`, name no `rustc_` (found in the third architecture audit).
+// The front end runs before linking, preparation and publication: of the
+// owned output it uses the tree, names, the program, libraries and the
+// reachability graph, never a later phase (the second review: tidy called
+// preparation's `constants`, and MIR's lowering its `unsuffixed_params`).
+test("the front end uses no phase after it", () => {
+  const later = /crate::(prepare|link|output|publish|manifest|settings|hooks|paths)\b/;
+  const strays = ["src/lower.rs", ...files("src/lower"), "src/jsx_syntax.rs", ...files("src/jsx_syntax")]
+    .filter(file => later.test(read(file)));
+  expect(strays).toEqual([]);
+});
+
 test("owned compiler output and downstream phases do not depend on rustc", () => {
   for (const file of sources.filter(file => layerOf(file) === "owned" || layerOf(file) === "printing")) {
     expect(read(file), file).not.toMatch(/\brustc_\w+/);

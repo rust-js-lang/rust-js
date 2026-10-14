@@ -372,4 +372,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "dyn_generic|slice_patterns"],
     snapshots: true,
   },
+  {
+    name: "set-let-made-const",
+    breaks: "a `let` set again is a `const`, which JS refuses to set",
+    file: "src/js.rs",
+    find: "                set.extend(var_of(target));\n",
+    replace: "",
+    tests: ["test/lowering.test.ts", "-t", "nothing sets again is a const"],
+  },
 ];

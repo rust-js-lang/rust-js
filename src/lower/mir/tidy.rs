@@ -1764,6 +1764,41 @@ fn assigns(stmts: &[Stmt], name: &str) -> bool {
     assigned
 }
 
+/// An arrow's parameter its function's names made unique, `(value$1) =>
+/// f(value$1)`, is the name it was made of where the arrow names nothing
+/// else so, `(value) => f(value)`, as JS's arrows shadow: once nothing's
+/// left to name. Not a name of the module's, which a closure's parameters
+/// stay apart from.
+pub(super) fn unsuffixed_params(body: &mut [Stmt], module: &HashSet<String>) {
+    js::each_expr_mut(body, &mut |e| {
+        let (ExprKind::Arrow(params, inner) | ExprKind::AsyncArrow(params, inner)) = &mut e.kind else {
+            return;
+        };
+        for i in 0..params.len() {
+            for k in 0..params[i].names().len() {
+                let name = params[i].names()[k].to_string();
+                let Some((base, _)) = crate::names::apart(&name) else {
+                    continue;
+                };
+                let mut named = HashSet::new();
+                js::names_in(inner, &mut named);
+                named.extend(params.iter().flat_map(|p| p.names()).map(str::to_string));
+                if named.contains(base) || module.contains(base) {
+                    continue;
+                }
+                js::each_expr_mut(inner, &mut |e| {
+                    if let ExprKind::Var(v) = &mut e.kind
+                        && *v == name
+                    {
+                        *v = base.to_string();
+                    }
+                });
+                *params[i].names_mut().swap_remove(k) = base.to_string();
+            }
+        }
+    });
+}
+
 /// A temporary MIR made, by its local's index, `_5`: the one spelling of
 /// one, which `is_temporary` knows, and no name the program gives has
 /// (`user_name`).
@@ -4536,7 +4571,7 @@ fn declarations(body: &mut Vec<Stmt>) {
             assign.kind = StmtKind::Let(name, Some(value));
         }
     });
-    crate::prepare::constants(body);
+    js::constants(body);
 }
 
 /// The variables `body` assigns, and each a handle is on, which its

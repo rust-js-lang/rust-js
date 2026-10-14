@@ -115,23 +115,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "shadowed by its own value"],
   },
   {
-    name: "lets-kept",
-    breaks: "`let list = []` that nothing sets again stays a `let`",
-    file: "src/prepare.rs",
-    find: "    constants(&mut function.body);\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
-    snapshots: true,
-  },
-  {
-    name: "set-let-made-const",
-    breaks: "a `let` set again is a `const`, which JS refuses to set",
-    file: "src/prepare.rs",
-    find: "                set.extend(root(target));\n",
-    replace: "",
-    tests: ["test/lowering.test.ts", "-t", "nothing sets again is a const"],
-  },
-  {
     name: "empty-else-kept",
     breaks: "an `else` of nothing is `else {}`",
     file: "src/prepare.rs",
@@ -418,5 +401,14 @@ export const mutations: Mutation[] = [
     "replace": "",
     "tests": ["test/corpus.test.ts", "-t", "handle_named_value"],
     "snapshots": true
+  },
+  {
+    name: "lets-kept",
+    breaks: "`let list = []` that nothing sets again stays a `let`",
+    file: "src/prepare.rs",
+    find: "    js::constants(&mut function.body);\n",
+    replace: "",
+    tests: ["test/corpus.test.ts", "-t", "^cell_deque_char_methods.rs$"],
+    snapshots: true,
   },
 ];

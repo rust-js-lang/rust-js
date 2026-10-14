@@ -2360,8 +2360,8 @@ export const mutations: Mutation[] = [
     name: "mir-params-suffixed",
     breaks: "MIR's closure parameter keeps the suffix its function's names gave it",
     file: "src/lower/mir.rs",
-    find: "        crate::prepare::unsuffixed_params(&mut out, self.module_names);\n",
+    find: "        tidy::unsuffixed_params(&mut out, self.module_names);\n",
     replace: "",
-    tests: ["test/link.test.ts","-t","module-load statements"],
+    tests: ["test/link.test.ts", "-t", "module-load statements"],
   },
 ];

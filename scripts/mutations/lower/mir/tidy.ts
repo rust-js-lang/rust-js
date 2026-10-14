@@ -2183,4 +2183,12 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "temporary_shaped_names"],
     snapshots: true,
   },
+  {
+    name: "mir-tidy-param-module-name-reused",
+    breaks: "MIR's closure parameter takes a name of the module's",
+    file: "src/lower/mir/tidy.rs",
+    find: "                if named.contains(base) || module.contains(base) {\n",
+    replace: "                if named.contains(base) {\n",
+    tests: ["test/link.test.ts", "-t", "module-load statements"],
+  },
 ];
