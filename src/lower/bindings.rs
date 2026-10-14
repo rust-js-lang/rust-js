@@ -664,15 +664,12 @@ pub(super) fn is_element_builder(tcx: TyCtxt<'_>, def: DefId) -> bool {
     }
 }
 
-/// Whether `def` is what an element is to a plain rustc, `Element::__jsx`,
-/// a `jsx!` rust-js didn't expand: one written by a path to it,
-/// `react::jsx!`, where it's found by the name it's imported as.
+/// `#[rust_js::unexpanded_jsx]`: what an element is to a plain rustc,
+/// `Element::__jsx`, a `jsx!` rust-js didn't expand: one written by a path
+/// to it, `react::jsx!`, where it's found by the name it's imported as.
 pub(super) fn is_unexpanded_jsx(tcx: TyCtxt<'_>, def: DefId) -> bool {
-    tcx.item_name(def).as_str() == "__jsx"
-        && tcx.inherent_impl_of_assoc(def).is_some_and(|imp| {
-            matches!(tcx.type_of(imp).skip_binder().kind(), ty::Adt(adt, _)
-                if tcx.get_attrs_by_path(adt.did(), &[Symbol::intern("rust_js"), Symbol::intern("jsx_element")]).next().is_some())
-        })
+    let path = [Symbol::intern("rust_js"), Symbol::intern("unexpanded_jsx")];
+    tcx.get_attrs_by_path(def, &path).next().is_some()
 }
 
 /// Whether `id` is react's `ReactNode`, what React renders as a child: a

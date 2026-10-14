@@ -522,8 +522,10 @@ pub fn inner_html(html: impl Value) -> InnerHtml {
 #[doc(hidden)]
 impl Element {
     /// What `jsx!` is to a plain rustc, which doesn't compile JSX: named so
-    /// no prop is, as a prop is a method.
+    /// no prop is, as a prop is a method. To rust-js, a `jsx!` it didn't
+    /// expand, which it refuses.
     #[doc(hidden)]
+    #[cfg_attr(rust_js, rust_js::unexpanded_jsx)]
     pub fn __jsx() -> Element {
         unreachable!()
     }
