@@ -164,30 +164,13 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
         if bound == name {
             break;
         }
-        let key = |e: &Expr| match &e.kind {
-            ExprKind::Member(of, key) if matches!(&of.kind, ExprKind::Var(v) if v == name) => Some(key.clone()),
-            _ => None,
+        // One step in, `name[0]` or `name.b`, as `part_read` reads one.
+        let Some((mut steps, default)) = part_read(value, name).filter(|(steps, _)| steps.len() == 1) else {
+            break;
         };
-        let (part, default) = match &value.kind {
-            ExprKind::Index(of, index)
-                if matches!(&of.kind, ExprKind::Var(v) if v == name)
-                    && let ExprKind::Num(k) = index.kind
-                    && k >= 0.0
-                    && k.fract() == 0.0 =>
-            {
-                (Ok(k as usize), None)
-            }
-            ExprKind::Member(..) if let Some(key) = key(value) => (Err(key), None),
-            // A field with a default, `o.k === undefined ? d : o.k`.
-            ExprKind::Cond(test, default, read)
-                if let ExprKind::Binary(Op::Eq, tested, undefined) = &test.kind
-                    && matches!(undefined.kind, ExprKind::Undefined)
-                    && let Some(k) = key(read)
-                    && key(tested).is_some_and(|t| t == k) =>
-            {
-                (Err(k), Some((**default).clone()))
-            }
-            _ => break,
+        let part = match steps.pop().expect("one step") {
+            Step::At(k) => Ok(k),
+            Step::Key(k) => Err(k),
         };
         // One part read again, `const a = x[0]; const b = x[0];`: two names
         // a pattern can't give it, so it's where they end.
@@ -202,18 +185,19 @@ pub(super) fn parts(stmts: &[Stmt], name: &str) -> Vec<Part> {
 /// The variable `value` reads a part of, as `parts` reads one: `o[0]`,
 /// `o.k`, or `o.k === undefined ? d : o.k`.
 pub(super) fn part_of(value: &Expr) -> Option<&str> {
-    let of = match &value.kind {
-        ExprKind::Index(of, _) | ExprKind::Member(of, _) => of,
-        ExprKind::Cond(_, _, read) => match &read.kind {
-            ExprKind::Member(of, _) => of,
-            _ => return None,
-        },
-        _ => return None,
+    let read = match &value.kind {
+        ExprKind::Cond(_, _, read) => read,
+        _ => value,
     };
-    match &of.kind {
-        ExprKind::Var(v) => Some(v),
-        _ => None,
-    }
+    let (ExprKind::Index(of, _) | ExprKind::Member(of, _)) = &read.kind else {
+        return None;
+    };
+    let ExprKind::Var(v) = &of.kind else {
+        return None;
+    };
+    part_read(value, v)
+        .is_some_and(|(steps, _)| steps.len() == 1)
+        .then_some(v.as_str())
 }
 
 /// What takes `parts` apart, `[a, , c]` of indices, `{ a, b: c }` of keys:
@@ -325,6 +309,26 @@ pub(super) fn path(e: &Expr, name: &str) -> Option<Vec<Step>> {
     Some(steps)
 }
 
+/// The part of `name` that `value` reads, however deep: the steps to it,
+/// `_2[1].name`'s, and a field's default, `o.k === undefined ? d : o.k`'s.
+/// The one reading of a part, `parts`', `part_of`'s and `nested_parts`'.
+pub(super) fn part_read(value: &Expr, name: &str) -> Option<(Vec<Step>, Option<Expr>)> {
+    match &value.kind {
+        ExprKind::Cond(test, default, read)
+            if let ExprKind::Binary(Op::Eq, tested, undefined) = &test.kind
+                && matches!(undefined.kind, ExprKind::Undefined)
+                && let Some(steps) = path(read, name)
+                && matches!(steps.last(), Some(Step::Key(_)))
+                && path(tested, name).as_ref() == Some(&steps) =>
+        {
+            Some((steps, Some((**default).clone())))
+        }
+        _ => path(value, name)
+            .filter(|steps| !steps.is_empty())
+            .map(|steps| (steps, None)),
+    }
+}
+
 /// The parts of `name` the first of `stmts` read, as `parts` finds them,
 /// however deep, `const name = _2[1].name;`, each a path, its variable,
 /// and a field's default.
@@ -337,21 +341,8 @@ pub(super) fn nested_parts(stmts: &[Stmt], name: &str) -> Vec<(Vec<Step>, String
         if bound == name {
             break;
         }
-        let (steps, default) = match &value.kind {
-            // A field with a default, `o.k === undefined ? d : o.k`.
-            ExprKind::Cond(test, default, read)
-                if let ExprKind::Binary(Op::Eq, tested, undefined) = &test.kind
-                    && matches!(undefined.kind, ExprKind::Undefined)
-                    && let Some(steps) = path(read, name)
-                    && matches!(steps.last(), Some(Step::Key(_)))
-                    && path(tested, name).as_ref() == Some(&steps) =>
-            {
-                (steps, Some((**default).clone()))
-            }
-            _ => match path(value, name) {
-                Some(steps) if !steps.is_empty() => (steps, None),
-                _ => break,
-            },
+        let Some((steps, default)) = part_read(value, name) else {
+            break;
         };
         parts.push((steps, bound.clone(), default));
     }

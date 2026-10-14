@@ -38,8 +38,8 @@ export const mutations: Mutation[] = [
     name: "mir-tidy-default-part-unstarted",
     breaks: "parts read with a default don't start a pattern, `const className = p.k === undefined ? d : p.k;` stays",
     file: "src/lower/mir/tidy/destructuring.rs",
-    find: "        ExprKind::Cond(_, _, read) => match &read.kind {\n",
-    replace: "        ExprKind::Cond(_, _, read) if false => match &read.kind {\n",
+    find: "        ExprKind::Cond(_, _, read) => read,\n",
+    replace: "        ExprKind::Cond(_, _, read) if false => read,\n",
     tests: ["test/lowering.test.ts","-t","props field's default is read"],
   },
   {
