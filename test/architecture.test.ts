@@ -576,7 +576,7 @@ const dispatchers: [string, string, number][] = [
   ["src/lower/mir.rs", "    fn mir_call_values(", 301],
   ["src/lower/mir.rs", "    fn mir_std_call(", 254],
   ["src/lower/mir.rs", "    fn mir_function(", 409],
-  ["src/lower/recognition.rs", "    fn classify_inherent(", 840],
+  ["src/lower/recognition.rs", "    fn classify_inherent(", 851],
   ["src/lower/recognition.rs", "    fn classify_trait_method(", 422],
   ["src/lower/combinators.rs", "    pub(in crate::lower) fn comb_values(", 689],
   ["src/lower/mir/iter.rs", "    pub(in crate::lower) fn mir_iter_call(", 489],
@@ -626,6 +626,16 @@ const identity: [string, RegExp][] = [
   // binding's attribute's, `link_name`, is the crate's.
   ["a std name by rustc's symbol", /\bsym::(?!name\b|link_name\b)\w+/],
 ];
+// A std type is known one way, by its `StdItem`, `is_std_type(ty,
+// StdItem::Mutex)`, not also by a diagnostic item's name, `Symbol::intern(
+// "Mutex")`, which no list checks (the second architecture review: both
+// were, five lists of cells among them).
+test("a std type is known by its StdItem", () => {
+  for (const file of ["src/lower.rs", ...files("src/lower")]) {
+    expect(read(file), file).not.toMatch(/fn is_std_adt|is_diagnostic_item\(Symbol::intern\("[A-Z]\w*"\), adt/);
+  }
+});
+
 test("only recognition spells std's names", () => {
   const strays: string[] = [];
   for (const file of ["src/lower.rs", ...files("src/lower")].filter(f => !f.includes("/recognition") && !f.endsWith("/shortcuts.rs"))) {

@@ -1087,11 +1087,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         // `VecDeque::from(v)` is a copy of `v`, which may be a clone that
         // was never made (ADR 0052); `BinaryHeap::from(v)` puts one in heap order.
         if tcx.is_diagnostic_item(sym::From, trait_)
-            && (self.is_std_adt(ty, Symbol::intern("VecDeque")) || self.is_std_adt(ty, Symbol::intern("LinkedList")))
+            && (self.is_std_type(ty, StdItem::VecDeque) || self.is_std_type(ty, StdItem::LinkedList))
         {
             return Some(Std::ToVec);
         }
-        if tcx.is_diagnostic_item(sym::From, trait_) && self.is_std_adt(ty, Symbol::intern("BinaryHeap")) {
+        if tcx.is_diagnostic_item(sym::From, trait_) && self.is_std_type(ty, StdItem::BinaryHeap) {
             return Some(Std::Heap(HeapOp::From));
         }
         // `String::from_iter(items)` is `items.collect()` into a `String`.
@@ -1111,12 +1111,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             if self.is_map(to) {
                 return Some(Std::Map(MapOp::From { set: self.is_set(to) }));
             }
-            if self.is_std_adt(to, Symbol::intern("BinaryHeap")) {
+            if self.is_std_type(to, StdItem::BinaryHeap) {
                 return Some(Std::Heap(HeapOp::From));
             }
-            if self.is_std_adt(to, Symbol::intern("VecDeque"))
-                || self.is_std_adt(to, Symbol::intern("LinkedList"))
-                || (self.is_std_adt(to, sym::Vec) && ty.is_array())
+            if self.is_std_type(to, StdItem::VecDeque)
+                || self.is_std_type(to, StdItem::LinkedList)
+                || (self.is_std_type(to, StdItem::Vec) && ty.is_array())
             {
                 return Some(Std::ToVec);
             }
@@ -1148,7 +1148,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 && to_ty.is_box()
                 && (boxed.type_at(0) == from_ty
                     || matches!((boxed.type_at(0).kind(), from_ty.kind()), (ty::Slice(item), ty::Adt(_, vec))
-                        if self.is_std_adt(from_ty, sym::Vec) && vec.type_at(0) == *item))
+                        if self.is_std_type(from_ty, StdItem::Vec) && vec.type_at(0) == *item))
             {
                 return Some(Std::Same);
             }
@@ -1201,13 +1201,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .type_of(tcx.inherent_impl_of_assoc(def_id)?)
             .instantiate_identity()
             .skip_normalization();
-        let adt = |name: &str| self.is_std_adt(owner, Symbol::intern(name));
+        let adt = |item: StdItem| self.is_std_type(owner, item);
         let string = self.is_lang_adt(owner, LangItem::String);
         let option = self.is_lang_adt(owner, LangItem::Option);
         let range = self.range_kind(owner);
-        let result = self.is_std_adt(owner, sym::Result);
+        let result = self.is_std_type(owner, StdItem::Result);
         let ordering = self.is_lang_adt(owner, LangItem::OrderingEnum);
-        let local_key = adt("LocalKey");
+        let local_key = adt(StdItem::LocalKey);
         let once = self.is_std_type(owner, StdItem::OnceCell);
         let rc = rc_pointee(tcx, owner).is_some();
         let weak = weak_pointee(tcx, owner).is_some();
@@ -1215,11 +1215,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let cow = self.is_cow(owner);
         let arguments = self.is_lang_adt(owner, LangItem::FormatArguments);
         let argument = self.is_lang_adt(owner, LangItem::FormatArgument);
-        let map = adt("HashMap") || adt("BTreeMap") || self.is_json_map(owner);
-        let set = adt("HashSet") || adt("BTreeSet");
+        let map = adt(StdItem::HashMap) || adt(StdItem::BTreeMap) || self.is_json_map(owner);
+        let set = adt(StdItem::HashSet) || adt(StdItem::BTreeSet);
         // std's own maps, not serde_json's (ADR 0325).
-        let std_map = adt("HashMap") || adt("BTreeMap");
-        let entry = adt("HashMapEntry") || adt("BTreeEntry");
+        let std_map = adt(StdItem::HashMap) || adt(StdItem::BTreeMap);
+        let entry = adt(StdItem::HashMapEntry) || adt(StdItem::BTreeEntry);
         // A map's `OccupiedEntry`, `[m, key]` (ADR 0345).
         let occupied = self.is_occupied_entry(owner);
         let vacant = self.is_vacant_entry(owner);
@@ -1247,12 +1247,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }));
         }
         // A `LinkedList` is an array as a deque is (ADR 0316).
-        let (deque, heap) = (adt("VecDeque") || adt("LinkedList"), adt("BinaryHeap"));
+        let (deque, heap) = (
+            adt(StdItem::VecDeque) || adt(StdItem::LinkedList),
+            adt(StdItem::BinaryHeap),
+        );
         // Theirs first: `push` and `pop` keep a heap's order, and a deque's
         // `remove` is an `Option` (ADR 0068).
         let peekable = self.is_peekable(owner);
         let chars = self.is_str_chars(owner);
-        let slice_iter = adt("SliceIter")
+        let slice_iter = adt(StdItem::SliceIter)
             || matches!(owner.kind(), ty::Adt(it, _) if std_path(tcx, it.did()) == "std::vec::IntoIter");
         let own = match name.as_str() {
             "send" if self.channel_end(owner) == Some(ChannelEnd::Sender) => Some(Std::Channel(ChannelOp::Send)),
@@ -1277,12 +1280,12 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "peek_mut" if heap => Some(Std::Heap(HeapOp::PeekMut)),
             "as_slice" if heap => Some(Std::Same),
             "remove" if deque => Some(Std::DequeRemove),
-            "extract_if" if adt("Vec") || adt("LinkedList") => {
-                Some(Std::Slice(SliceOp::ExtractIf { range: adt("Vec") }))
-            }
+            "extract_if" if adt(StdItem::Vec) || adt(StdItem::LinkedList) => Some(Std::Slice(SliceOp::ExtractIf {
+                range: adt(StdItem::Vec),
+            })),
             // A `VecDeque`'s `insert`, checked with its own message, and the
             // `_mut` ones' `&mut` to what they put in (ADR 0333).
-            "insert" | "insert_mut" if adt("VecDeque") => Some(Std::Slice(SliceOp::DequeInsert {
+            "insert" | "insert_mut" if adt(StdItem::VecDeque) => Some(Std::Slice(SliceOp::DequeInsert {
                 mutable: name.as_str() == "insert_mut",
             })),
             "push_back_mut" if deque => Some(Std::Slice(SliceOp::PushMut { at: false })),
@@ -1295,13 +1298,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "back" | "back_mut" if deque => Some(Std::SliceLast),
             "make_contiguous" if deque => Some(Std::Same),
             // A JS array has no capacity: asking for some does nothing (ADR 0315).
-            "with_capacity" if adt("Vec") => Some(Std::VecNew),
+            "with_capacity" if adt(StdItem::Vec) => Some(Std::VecNew),
             "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit"
-                if adt("Vec") || deque || heap || map || set =>
+                if adt(StdItem::Vec) || deque || heap || map || set =>
             {
                 Some(Std::Nothing)
             }
-            "into_boxed_slice" if adt("Vec") => Some(Std::Same),
+            "into_boxed_slice" if adt(StdItem::Vec) => Some(Std::Same),
             // A JS string has no capacity either (ADR 0322).
             "reserve" | "reserve_exact" | "shrink_to" | "shrink_to_fit" if string => Some(Std::Nothing),
             // A `Box<str>` is its string, and a `Box<[T]>` its array.
@@ -1310,13 +1313,13 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "as_bytes" | "into_bytes" if string => Some(Std::Text(TextOp::Bytes)),
             "into_string" if owner.is_str() => Some(Std::Same),
             "into_vec" if owner.is_slice() => Some(Std::Same),
-            "into_flattened" if adt("Vec") => Some(Std::Comb(Comb::Concat)),
-            "splice" if adt("Vec") => Some(Std::Text(TextOp::Splice)),
-            "extend_from_within" if adt("Vec") => Some(Std::Text(TextOp::ExtendFromWithin)),
+            "into_flattened" if adt(StdItem::Vec) => Some(Std::Comb(Comb::Concat)),
+            "splice" if adt(StdItem::Vec) => Some(Std::Text(TextOp::Splice)),
+            "extend_from_within" if adt(StdItem::Vec) => Some(Std::Text(TextOp::ExtendFromWithin)),
             // A `Vec` is its array, and the whole of it the same array: what's
             // written through `as_mut_slice()` is the `Vec`'s. An array's is it too.
-            "as_slice" | "as_mut_slice" if adt("Vec") || owner.is_array() => Some(Std::Same),
-            "drain" if adt("Vec") || deque => Some(Std::Text(TextOp::Drain)),
+            "as_slice" | "as_mut_slice" if adt(StdItem::Vec) || owner.is_array() => Some(Std::Same),
+            "drain" if adt(StdItem::Vec) || deque => Some(Std::Text(TextOp::Drain)),
             "iter" | "iter_mut" if deque || heap => Some(Std::Same),
             "new" | "with_capacity" if deque || heap => Some(Std::VecNew),
             "len" if deque || heap => Some(Std::Len),
@@ -1340,8 +1343,8 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             name.as_str(),
             option,
             result,
-            adt("Vec") || deque,
-            adt("Vec") || deque || owner.is_slice(),
+            adt(StdItem::Vec) || deque,
+            adt(StdItem::Vec) || deque || owner.is_slice(),
         )
         .or_else(|| methods::boolean(name.as_str(), owner.is_bool()))
         {
@@ -1397,7 +1400,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "keys" if map => Std::Map(MapOp::Iter(Part::Keys)),
             "values" | "values_mut" if map => Std::Map(MapOp::Iter(Part::Values)),
             "entry" if map => Std::Map(MapOp::Entry),
-            "first_entry" | "last_entry" if adt("BTreeMap") => Std::Map(MapOp::EndEntry {
+            "first_entry" | "last_entry" if adt(StdItem::BTreeMap) => Std::Map(MapOp::EndEntry {
                 last: name.as_str() == "last_entry",
             }),
             "key" if occupied || vacant => Std::Map(MapOp::EntryKey),
@@ -1425,7 +1428,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "new_upper_exp" if argument => Std::FmtExp(true),
             "new_pointer" if argument => Std::FmtPointer,
             "from_usize" if argument => Std::FmtUsize,
-            "new" if adt("Rc") || adt("Arc") => Std::Same,
+            "new" if adt(StdItem::Rc) || adt(StdItem::Arc) => Std::Same,
             // What only a counted one answers (ADR 0320).
             "strong_count" if rc => Std::Rc(RcOp::StrongCount),
             "weak_count" if rc => Std::Rc(RcOp::WeakCount),
@@ -1443,7 +1446,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "weak_count" if weak => Std::Rc(RcOp::WeakWeakCount),
             // Kept for good, a `&'static` of it: in JS, which frees nothing
             // itself, the value itself.
-            "leak" if adt("Vec") => Std::Same,
+            "leak" if adt(StdItem::Vec) => Std::Same,
             "leak" if string || owner.is_box() => Std::Leak,
             // A `dyn Any`'s downcasts, by its type's key (ADR 0331).
             "is" if self.is_dyn_any(owner) => Std::Any(AnyOp::Is),
@@ -1487,28 +1490,36 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "as_ref" | "into_ref" if self.pinned(owner).is_some() => Std::Pin(PinOp::Ref),
             "set" if self.pinned(owner).is_some() => Std::Pin(PinOp::Set),
             "map_unchecked" | "map_unchecked_mut" if self.pinned(owner).is_some() => Std::Pin(PinOp::Map),
-            "new" if adt("Cell") || adt("RefCell") || adt("Atomic") || adt("Mutex") || adt("RwLock") => Std::CellNew,
+            "new"
+                if adt(StdItem::Cell)
+                    || adt(StdItem::RefCell)
+                    || adt(StdItem::Atomic)
+                    || adt(StdItem::Mutex)
+                    || adt(StdItem::RwLock) =>
+            {
+                Std::CellNew
+            }
             // On one thread a lock is never contested by another: always `Ok`
             // (ADR 0025), but locked again while held, a deadlock (ADR 0328).
-            "lock" if adt("Mutex") => Std::Borrow {
+            "lock" if adt(StdItem::Mutex) => Std::Borrow {
                 mutable: true,
                 lock: true,
             },
-            "read" | "write" if adt("RwLock") => Std::Borrow {
+            "read" | "write" if adt(StdItem::RwLock) => Std::Borrow {
                 mutable: name.as_str() == "write",
                 lock: true,
             },
-            "into_inner" | "get_mut" if adt("Mutex") || adt("RwLock") => Std::Lock,
-            "get" if adt("Cell") => Std::CellGet,
-            "get_mut" if adt("Cell") || adt("RefCell") => Std::CellGetMut,
-            "swap" if adt("Cell") || adt("RefCell") => Std::CellSwap,
-            "update" if adt("Cell") => Std::CellUpdate,
-            "is_poisoned" if adt("Mutex") || adt("RwLock") => Std::NotPoisoned,
-            "clear_poison" if adt("Mutex") || adt("RwLock") => Std::Nothing,
+            "into_inner" | "get_mut" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Lock,
+            "get" if adt(StdItem::Cell) => Std::CellGet,
+            "get_mut" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellGetMut,
+            "swap" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellSwap,
+            "update" if adt(StdItem::Cell) => Std::CellUpdate,
+            "is_poisoned" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::NotPoisoned,
+            "clear_poison" if adt(StdItem::Mutex) || adt(StdItem::RwLock) => Std::Nothing,
             "each_ref" | "each_mut" if owner.is_array() => Std::Same,
             "swap_remove_back" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: false }),
             "swap_remove_front" if deque => Std::Slice(SliceOp::DequeSwapRemove { front: true }),
-            "retain_mut" if adt("Vec") || deque => Std::Slice(SliceOp::RetainMut),
+            "retain_mut" if adt(StdItem::Vec) || deque => Std::Slice(SliceOp::RetainMut),
             "pop_front_if" if deque => Std::Slice(SliceOp::PopFrontIf),
             "partition_point" if deque => Std::Slice(SliceOp::PartitionPoint),
             "range" if deque => Std::Text(TextOp::Slice),
@@ -1531,37 +1542,37 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                     upper: name.as_str() == "make_ascii_uppercase",
                 })
             }
-            "set" if adt("Cell") => Std::CellSet,
-            "replace" if adt("Cell") || adt("RefCell") => Std::CellReplace,
-            "take" if adt("Cell") || adt("RefCell") => Std::CellTake,
-            "replace_with" if adt("RefCell") => Std::CellReplaceWith,
-            "borrow" | "borrow_mut" if adt("RefCell") => Std::Borrow {
+            "set" if adt(StdItem::Cell) => Std::CellSet,
+            "replace" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellReplace,
+            "take" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellTake,
+            "replace_with" if adt(StdItem::RefCell) => Std::CellReplaceWith,
+            "borrow" | "borrow_mut" if adt(StdItem::RefCell) => Std::Borrow {
                 mutable: name.as_str() == "borrow_mut",
                 lock: false,
             },
-            "try_lock" if adt("Mutex") => Std::TryBorrow {
+            "try_lock" if adt(StdItem::Mutex) => Std::TryBorrow {
                 mutable: true,
                 lock: true,
             },
-            "try_read" | "try_write" if adt("RwLock") => Std::TryBorrow {
+            "try_read" | "try_write" if adt(StdItem::RwLock) => Std::TryBorrow {
                 mutable: name.as_str() == "try_write",
                 lock: true,
             },
-            "try_borrow" | "try_borrow_mut" if adt("RefCell") => Std::TryBorrow {
+            "try_borrow" | "try_borrow_mut" if adt(StdItem::RefCell) => Std::TryBorrow {
                 lock: false,
                 mutable: name.as_str() == "try_borrow_mut",
             },
-            "load" | "into_inner" if adt("Atomic") => Std::AtomicLoad,
-            "store" if adt("Atomic") => Std::AtomicStore,
-            "swap" if adt("Atomic") => Std::AtomicSwap,
-            "fetch_add" if adt("Atomic") => Std::AtomicFetch(BinOp::Add),
-            "fetch_sub" if adt("Atomic") => Std::AtomicFetch(BinOp::Sub),
-            "fetch_and" if adt("Atomic") => Std::AtomicFetch(BinOp::BitAnd),
-            "fetch_or" if adt("Atomic") => Std::AtomicFetch(BinOp::BitOr),
-            "fetch_xor" if adt("Atomic") => Std::AtomicFetch(BinOp::BitXor),
-            "fetch_max" if adt("Atomic") => Std::AtomicFetchMax(true),
-            "fetch_min" if adt("Atomic") => Std::AtomicFetchMax(false),
-            "compare_exchange" | "compare_exchange_weak" if adt("Atomic") => Std::AtomicCompareExchange,
+            "load" | "into_inner" if adt(StdItem::Atomic) => Std::AtomicLoad,
+            "store" if adt(StdItem::Atomic) => Std::AtomicStore,
+            "swap" if adt(StdItem::Atomic) => Std::AtomicSwap,
+            "fetch_add" if adt(StdItem::Atomic) => Std::AtomicFetch(BinOp::Add),
+            "fetch_sub" if adt(StdItem::Atomic) => Std::AtomicFetch(BinOp::Sub),
+            "fetch_and" if adt(StdItem::Atomic) => Std::AtomicFetch(BinOp::BitAnd),
+            "fetch_or" if adt(StdItem::Atomic) => Std::AtomicFetch(BinOp::BitOr),
+            "fetch_xor" if adt(StdItem::Atomic) => Std::AtomicFetch(BinOp::BitXor),
+            "fetch_max" if adt(StdItem::Atomic) => Std::AtomicFetchMax(true),
+            "fetch_min" if adt(StdItem::Atomic) => Std::AtomicFetchMax(false),
+            "compare_exchange" | "compare_exchange_weak" if adt(StdItem::Atomic) => Std::AtomicCompareExchange,
             "new" if once => Std::Once(OnceOp::New),
             "get" | "into_inner" if once => Std::Once(OnceOp::Get),
             "get_mut" if once => Std::Once(OnceOp::GetMut),
@@ -1575,18 +1586,18 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "force_mut" if lazy => Std::Lazy(LazyOp::ForceMut),
             "get" if lazy => Std::Lazy(LazyOp::Get),
             "get_mut" if lazy => Std::Lazy(LazyOp::GetMut),
-            "new" if adt("Vec") => Std::VecNew,
-            "push" if adt("Vec") => Std::Push,
-            "push_mut" if adt("Vec") => Std::Slice(SliceOp::PushMut { at: false }),
-            "insert_mut" if adt("Vec") => Std::Slice(SliceOp::PushMut { at: true }),
+            "new" if adt(StdItem::Vec) => Std::VecNew,
+            "push" if adt(StdItem::Vec) => Std::Push,
+            "push_mut" if adt(StdItem::Vec) => Std::Slice(SliceOp::PushMut { at: false }),
+            "insert_mut" if adt(StdItem::Vec) => Std::Slice(SliceOp::PushMut { at: true }),
             // JS's `pop()` gives `undefined` when empty: `None` (ADR 0030).
-            "pop" if adt("Vec") => Std::Method("pop"),
-            "len" if adt("Vec") || owner.is_slice() => Std::Len,
+            "pop" if adt(StdItem::Vec) => Std::Method("pop"),
+            "len" if adt(StdItem::Vec) || owner.is_slice() => Std::Len,
             // A string counts its UTF-8 bytes, as Rust's does (ADR 0138).
             "len" if owner.is_str() || string => Std::Text(TextOp::ByteLen),
             "char_indices" if owner.is_str() => Std::Text(TextOp::CharIndices),
-            "clear" if adt("Vec") => Std::Clear,
-            "retain" if adt("Vec") => Std::Retain,
+            "clear" if adt(StdItem::Vec) => Std::Clear,
+            "retain" if adt(StdItem::Vec) => Std::Retain,
             "iter" | "iter_mut" if owner.is_slice() => Std::Same,
             "new" if string => Std::StringNew,
             "with_capacity" if string => Std::StringWithCapacity,
@@ -1752,7 +1763,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             }
             "join" | "connect" if owner.is_slice() => Std::JoinItems,
             "push_str" | "push" if string => Std::PushStr,
-            "is_empty" if adt("Vec") || owner.is_slice() || owner.is_str() || string => Std::IsEmpty,
+            "is_empty" if adt(StdItem::Vec) || owner.is_slice() || owner.is_str() || string => Std::IsEmpty,
             "lock" if self.stream(owner).is_some() => Std::Stream(StreamOp::Nothing),
             "contains" if range.is_some() => Std::Range(RangeOp::Contains),
             "start" if range == Some(RangeKind::Inclusive) => Std::Range(RangeOp::Bound("start")),
@@ -1775,7 +1786,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
                 if (option || result)
                     && self_ty.is_some_and(|t| {
                         self.is_lang_adt(t, LangItem::String)
-                            || self.is_std_adt(t, sym::Vec)
+                            || self.is_std_type(t, StdItem::Vec)
                             || t.is_box()
                             || t.is_ref()
                     }) =>
@@ -1789,11 +1800,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             "as_deref" if option || result => Std::Comb(Comb::AsDeref),
             // A reference is the value (ADR 0023): what's in the `Result` is.
             "as_ref" if result => Std::Same,
-            "into_inner" if adt("Cell") || adt("RefCell") => Std::CellGet,
+            "into_inner" if adt(StdItem::Cell) || adt(StdItem::RefCell) => Std::CellGet,
             "to_ascii_lowercase" if owner.is_str() => Std::AsciiCase { upper: false },
             "to_ascii_uppercase" if owner.is_str() => Std::AsciiCase { upper: true },
             "eq_ignore_ascii_case" if owner.is_str() || owner.is_char() => Std::AsciiEq,
-            "append" if adt("Vec") || adt("VecDeque") || adt("LinkedList") => Std::Append,
+            "append" if adt(StdItem::Vec) || adt(StdItem::VecDeque) || adt(StdItem::LinkedList) => Std::Append,
             "is_some" if option => Std::IsSome,
             "unwrap_unchecked" if option => Std::UnwrapUnchecked,
             "take" if option => Std::OptionTake,
@@ -2055,7 +2066,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `io::Result<()>`, which a write gives: always `Ok`, as nothing rust-js
     /// writes to fails (ADR 0132), and so nothing, as a `fmt::Result` is.
     pub(super) fn is_io_unit_result(&self, ty: Ty<'tcx>) -> bool {
-        matches!(ty.kind(), ty::Adt(_, args) if self.is_std_adt(ty, sym::Result)
+        matches!(ty.kind(), ty::Adt(_, args) if self.is_std_type(ty, StdItem::Result)
             && args.type_at(0).is_unit()
             && self.is_io_error(args.type_at(1)))
     }
@@ -2085,19 +2096,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         matches!(ty.kind(), ty::Adt(adt, _) if is_std_def(self.tcx, adt.did(), item))
     }
 
-    pub(super) fn is_std_adt(&self, ty: Ty<'tcx>, name: Symbol) -> bool {
-        matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_diagnostic_item(name, adt.did()))
-    }
-
     pub(super) fn is_lang_adt(&self, ty: Ty<'tcx>, item: LangItem) -> bool {
         matches!(ty.kind(), ty::Adt(adt, _) if self.tcx.is_lang_item(adt.did(), item))
     }
 
     pub(super) fn is_vec_like(&self, ty: Ty<'tcx>) -> bool {
-        self.is_std_adt(ty, sym::Vec)
-            || ["VecDeque", "BinaryHeap", "LinkedList"]
+        self.is_std_type(ty, StdItem::Vec)
+            || [StdItem::VecDeque, StdItem::BinaryHeap, StdItem::LinkedList]
                 .into_iter()
-                .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+                .any(|item| self.is_std_type(ty, item))
     }
 
     /// `std::str::Chars`, what a string's `chars()` gives.
@@ -2146,9 +2153,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(super) fn is_map(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
-        ["HashMap", "HashSet", "BTreeMap", "BTreeSet"]
+        [StdItem::HashMap, StdItem::HashSet, StdItem::BTreeMap, StdItem::BTreeSet]
             .into_iter()
-            .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+            .any(|item| self.is_std_type(ty, item))
             || self.is_json_map(ty)
     }
 
@@ -2164,7 +2171,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     pub(super) fn is_set(&self, ty: Ty<'tcx>) -> bool {
         let ty = ty.peel_refs();
-        self.is_std_adt(ty, Symbol::intern("HashSet")) || self.is_std_adt(ty, Symbol::intern("BTreeSet"))
+        self.is_std_type(ty, StdItem::HashSet) || self.is_std_type(ty, StdItem::BTreeSet)
     }
 
     pub(super) fn is_peekable(&self, ty: Ty<'tcx>) -> bool {
@@ -2502,7 +2509,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             None => {}
         }
         if let ty::Adt(_, args) = from.kind()
-            && self.is_std_adt(from, sym::Vec)
+            && self.is_std_type(from, StdItem::Vec)
         {
             return Some(JsonConversion::Vector(args.type_at(0)));
         }
@@ -2564,17 +2571,17 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             && args
                 .types()
                 .next()
-                .is_some_and(|this| self.is_std_adt(this, Symbol::intern("Formatter")))
+                .is_some_and(|this| self.is_std_type(this, StdItem::Formatter))
     }
 
     /// A `Formatter`, whose text is a string in JS (ADR 0054).
     pub(super) fn is_formatter_type(&self, ty: Ty<'tcx>) -> bool {
-        self.is_std_adt(ty, Symbol::intern("Formatter"))
+        self.is_std_type(ty, StdItem::Formatter)
     }
 
     fn is_formatter(&self, ty: Ty<'tcx>) -> bool {
         matches!(ty.kind(), ty::Ref(_, inner, Mutability::Mut)
-            if self.is_std_adt(*inner, Symbol::intern("Formatter")))
+            if self.is_std_type(*inner, StdItem::Formatter))
     }
     pub(super) fn display_trait(&self) -> DefId {
         self.tcx
@@ -2607,7 +2614,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let owner = tcx
             .inherent_impl_of_assoc(def_id)
             .map(|imp| tcx.type_of(imp).instantiate_identity().skip_normalization());
-        let on_formatter = owner.is_some_and(|t| self.is_std_adt(t, Symbol::intern("Formatter")));
+        let on_formatter = owner.is_some_and(|t| self.is_std_type(t, StdItem::Formatter));
         match tcx.item_name(def_id).as_str() {
             "write_fmt" | "write_str" | "write_char" if on_formatter || is_trait("FmtWrite") => WriteCall::Text,
             "pad" if on_formatter => WriteCall::Pad,
@@ -2683,9 +2690,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// `std::num::Wrapping<T>`'s `T`: a number in a `[x]` (ADR 0175).
     pub(super) fn wrapping_of(&self, ty: Ty<'tcx>) -> Option<Ty<'tcx>> {
         match ty.kind() {
-            ty::Adt(adt, args) if self.tcx.is_diagnostic_item(Symbol::intern("Wrapping"), adt.did()) => {
-                Some(args.type_at(0))
-            }
+            ty::Adt(_, args) if self.is_std_type(ty, StdItem::Wrapping) => Some(args.type_at(0)),
             _ => None,
         }
     }
@@ -2742,7 +2747,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || borrowed.is_str() && self.is_lang_adt(owned, LangItem::String)
             // `Path` and `PathBuf`, `OsStr` and `OsString`: text (ADR 0173).
             || self.is_path_like(borrowed) && self.is_path_like(owned)
-            || matches!(borrowed.kind(), ty::Slice(item) if self.is_std_adt(owned, sym::Vec)
+            || matches!(borrowed.kind(), ty::Slice(item) if self.is_std_type(owned, StdItem::Vec)
                 && matches!(owned.kind(), ty::Adt(_, vec) if vec.type_at(0) == *item));
         same.then_some((borrowed, owned))
     }
@@ -2816,7 +2821,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A `Result`.
     pub(super) fn is_result(&self, ty: Ty<'tcx>) -> bool {
-        self.is_std_adt(ty, sym::Result)
+        self.is_std_type(ty, StdItem::Result)
     }
 
     /// `FromIterator`, the trait `collect` makes what it collects with.
@@ -3096,9 +3101,15 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             || self.is_lang_adt(ty, LangItem::String)
             || self.is_rc(ty)
             || self.is_guard(ty)
-            || ["Cell", "RefCell", "Atomic", "Mutex", "RwLock"]
-                .into_iter()
-                .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+            || [
+                StdItem::Cell,
+                StdItem::RefCell,
+                StdItem::Atomic,
+                StdItem::Mutex,
+                StdItem::RwLock,
+            ]
+            .into_iter()
+            .any(|item| self.is_std_type(ty, item))
             || self.is_std_type(ty, StdItem::OnceCell)
             || self.is_std_type(ty, StdItem::LazyCell)
             || weak_pointee(self.tcx, ty).is_some()
@@ -3108,7 +3119,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// An `Rc`, or an `Arc`, which on one thread is one: the value it
     /// points at, shared (ADR 0023).
     pub(super) fn is_rc(&self, ty: Ty<'tcx>) -> bool {
-        self.is_std_adt(ty, sym::Rc) || self.is_std_adt(ty, sym::Arc)
+        self.is_std_type(ty, StdItem::Rc) || self.is_std_type(ty, StdItem::Arc)
     }
 
     /// Is std's `Borrow<to>` of a `from` the same JS value (ADR 0167): a
@@ -3125,7 +3136,7 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
         let (from, to) = (pointee(from), pointee(to));
         from == to
             || (self.is_string_like(from) && to.is_str())
-            || ((from.is_array() || self.is_std_adt(from, sym::Vec)) && to.is_slice())
+            || ((from.is_array() || self.is_std_type(from, StdItem::Vec)) && to.is_slice())
     }
 
     /// A type whose `Borrow` is the crate's that a std function takes as
@@ -3165,14 +3176,14 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
     /// A guard of a `RefCell` or a lock: what it guards (ADR 0025).
     pub(super) fn is_guard(&self, ty: Ty<'tcx>) -> bool {
         [
-            "RefCellRef",
-            "RefCellRefMut",
-            "MutexGuard",
-            "RwLockReadGuard",
-            "RwLockWriteGuard",
+            StdItem::RefCellRef,
+            StdItem::RefCellRefMut,
+            StdItem::MutexGuard,
+            StdItem::RwLockReadGuard,
+            StdItem::RwLockWriteGuard,
         ]
         .into_iter()
-        .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+        .any(|item| self.is_std_type(ty, item))
     }
 
     /// Whether calling `def_id`, of `args`, may run code of the crate's, or
@@ -3242,9 +3253,9 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
 
     /// A `RefCell`, a `Mutex` or an `RwLock`: what a guard borrows (ADR 0328).
     pub(super) fn is_borrowed_cell(&self, ty: Ty<'tcx>) -> bool {
-        ["RefCell", "Mutex", "RwLock"]
+        [StdItem::RefCell, StdItem::Mutex, StdItem::RwLock]
             .into_iter()
-            .any(|name| self.is_std_adt(ty, Symbol::intern(name)))
+            .any(|item| self.is_std_type(ty, item))
     }
 
     /// A type made of std's types alone, and no cell: no impl of the crate's
@@ -3439,11 +3450,11 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .tcx
             .try_normalize_erasing_regions(self.typing_env, ty::Unnormalized::new_wip(output))
             .unwrap_or(output);
-        if self.is_std_adt(output, sym::Result) {
+        if self.is_std_type(output, StdItem::Result) {
             Catching::Result
         } else if matches!(output.kind(), ty::Adt(adt, args) if self.is_js_object(output)
             && self.tcx.item_name(adt.did()).as_str() == "Promise"
-            && args.types().next().is_some_and(|t| self.is_std_adt(t, sym::Result)))
+            && args.types().next().is_some_and(|t| self.is_std_type(t, StdItem::Result)))
         {
             Catching::PromiseResult
         } else {
@@ -4312,14 +4323,16 @@ pub(super) fn formatter_query(tcx: TyCtxt<'_>, def_id: DefId) -> Option<Formatte
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum StdItem {
     Any,
+    Arc,
     ArrayIntoIter,
     AsRef,
     Atomic,
+    BinaryHeap,
     Borrow,
+    BoxNew,
+    BTreeEntry,
     BTreeMap,
     BTreeSet,
-    BinaryHeap,
-    BoxNew,
     Cell,
     Debug,
     Default,
@@ -4327,26 +4340,40 @@ pub(crate) enum StdItem {
     Eq,
     Error,
     FmtWrite,
+    Formatter,
     From,
     Hash,
+    HashMap,
+    HashMapEntry,
+    HashSet,
     Into,
     IntoIterator,
     Iterator,
+    /// `LazyCell` or `LazyLock`, which have no diagnostic items, as `OnceCell`.
+    LazyCell,
+    LinkedList,
     LocalKey,
     MaybeUninit,
+    Mutex,
+    MutexGuard,
     /// `OnceCell` or `OnceLock`, which have no diagnostic items.
     OnceCell,
-    /// `LazyCell` or `LazyLock`, which have none either.
-    LazyCell,
     Ord,
     PhantomData,
+    Rc,
     RefCell,
+    RefCellRef,
+    RefCellRefMut,
     Result,
+    RwLock,
+    RwLockReadGuard,
+    RwLockWriteGuard,
     SliceIter,
     ToString,
     TryFrom,
     Vec,
     VecDeque,
+    Wrapping,
 }
 
 impl StdItem {
@@ -4354,14 +4381,16 @@ impl StdItem {
     fn name(self) -> Symbol {
         match self {
             StdItem::Any => Symbol::intern("Any"),
+            StdItem::Arc => sym::Arc,
             StdItem::ArrayIntoIter => Symbol::intern("ArrayIntoIter"),
             StdItem::AsRef => sym::AsRef,
             StdItem::Atomic => Symbol::intern("Atomic"),
+            StdItem::BinaryHeap => Symbol::intern("BinaryHeap"),
             StdItem::Borrow => Symbol::intern("Borrow"),
+            StdItem::BoxNew => Symbol::intern("box_new"),
+            StdItem::BTreeEntry => Symbol::intern("BTreeEntry"),
             StdItem::BTreeMap => Symbol::intern("BTreeMap"),
             StdItem::BTreeSet => Symbol::intern("BTreeSet"),
-            StdItem::BinaryHeap => Symbol::intern("BinaryHeap"),
-            StdItem::BoxNew => Symbol::intern("box_new"),
             StdItem::Cell => Symbol::intern("Cell"),
             StdItem::Debug => Symbol::intern("Debug"),
             StdItem::Default => Symbol::intern("Default"),
@@ -4369,24 +4398,38 @@ impl StdItem {
             StdItem::Eq => sym::Eq,
             StdItem::Error => Symbol::intern("Error"),
             StdItem::FmtWrite => Symbol::intern("FmtWrite"),
+            StdItem::Formatter => Symbol::intern("Formatter"),
             StdItem::From => sym::From,
             StdItem::Hash => sym::Hash,
+            StdItem::HashMap => sym::HashMap,
+            StdItem::HashMapEntry => Symbol::intern("HashMapEntry"),
+            StdItem::HashSet => sym::HashSet,
             StdItem::Into => sym::Into,
             StdItem::IntoIterator => sym::IntoIterator,
             StdItem::Iterator => sym::Iterator,
+            StdItem::LazyCell => Symbol::intern("LazyCell"),
+            StdItem::LinkedList => Symbol::intern("LinkedList"),
             StdItem::LocalKey => Symbol::intern("LocalKey"),
             StdItem::MaybeUninit => Symbol::intern("MaybeUninit"),
+            StdItem::Mutex => Symbol::intern("Mutex"),
+            StdItem::MutexGuard => Symbol::intern("MutexGuard"),
             StdItem::OnceCell => Symbol::intern("OnceCell"),
-            StdItem::LazyCell => Symbol::intern("LazyCell"),
             StdItem::Ord => sym::Ord,
             StdItem::PhantomData => Symbol::intern("PhantomData"),
+            StdItem::Rc => sym::Rc,
             StdItem::RefCell => Symbol::intern("RefCell"),
+            StdItem::RefCellRef => Symbol::intern("RefCellRef"),
+            StdItem::RefCellRefMut => Symbol::intern("RefCellRefMut"),
             StdItem::Result => sym::Result,
+            StdItem::RwLock => Symbol::intern("RwLock"),
+            StdItem::RwLockReadGuard => Symbol::intern("RwLockReadGuard"),
+            StdItem::RwLockWriteGuard => Symbol::intern("RwLockWriteGuard"),
             StdItem::SliceIter => Symbol::intern("SliceIter"),
             StdItem::ToString => Symbol::intern("ToString"),
             StdItem::TryFrom => sym::TryFrom,
             StdItem::Vec => sym::Vec,
             StdItem::VecDeque => Symbol::intern("VecDeque"),
+            StdItem::Wrapping => Symbol::intern("Wrapping"),
         }
     }
 }
