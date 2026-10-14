@@ -133,3 +133,14 @@ bodies didn't remove that.
 ## Amended by
 
 - [0372](0372-a-check-that-drops.md): A check whose panic drops is written where it's made
+
+## Amendment: what several cases test is made once
+
+A `match` of a call's value, `match note(15, x) { 1 => .., 2 => .., _
+=> .. }`, called it once per arm it tested: MIR folds the call into its
+`switchInt`'s one use, and the switch is a test of each case. A
+generated program found it, seed 50147 (2026-10-14). What more than one
+case tests, and does something as it's made, is held first, `const n =
+note(15, x);`, as Rust makes it once; one that only reads, `i % 3`, is
+read by each test, as before. `test/corpus/match_call_once.rs` runs it
+against native Rust; a mutation calls it again.

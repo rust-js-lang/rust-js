@@ -1637,11 +1637,24 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 );
             }
             TerminatorKind::SwitchInt { discr, targets } => {
-                let subject = self.mir_operand(state, discr, &mut out)?;
+                let mut subject = self.mir_operand(state, discr, &mut out)?;
                 self.flush(state, &mut out)?;
                 let ty = discr.ty(&state.body.local_decls, self.tcx);
                 // The cases, those that can't be reached left out.
                 let reached = |b: BasicBlock| !is_unreachable(state.body, b);
+                // What more than one case tests, and does something as it's
+                // made, is made once, as Rust makes it: a call's value,
+                // `match note(1, x) { 1 => .., 2 => .., _ => .. }`, held
+                // first, not called by each case's test (a generated
+                // program's, seed 50147). One that only reads, `i % 3`, is
+                // read by each.
+                if targets.iter().filter(|&(_, target)| reached(target)).count() > 1
+                    && let Value::Expr(made) | Value::Discriminant(made, _) = &mut subject
+                    && made.has_effects()
+                {
+                    let value = std::mem::replace(made, Expr::undefined());
+                    *made = self.spill("_$", value, &mut out);
+                }
                 let mut cases: Vec<(Expr, BasicBlock)> = Vec::new();
                 let mut always = None;
                 for (value, target) in targets.iter() {

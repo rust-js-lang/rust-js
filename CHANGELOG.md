@@ -31,6 +31,10 @@ at its version ([ADR 0116](docs/decisions/0116-binding-versions.md)).
 
 ### Fixed
 
+- **A `match` of a call's value calls it once.** With three arms or more,
+  `match note(x) { 1 => .., 2 => .., _ => .. }` called `note` once per arm
+  it tested. Found by a generated program
+  ([ADR 0364](docs/decisions/0364-mir-lowering.md)).
 - **A loop left by a `break` of a choice compiles.** `loop { if a || b {
   break if c { 1 } else { 2 }; } }` never finished compiling: rust-js turned
   its two exits around, and back, without end. Found by a generated program

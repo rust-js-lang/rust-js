@@ -2250,4 +2250,12 @@ export const mutations: Mutation[] = [
     replace: "",
     tests: ["test/link.test.ts", "-t", "module-load statements"],
   },
+  {
+    name: "mir-switch-subject-made-each-test",
+    breaks: "a `match` of a call's value calls it once per arm it tests, `match note(1, x) { 1 => .., 2 => .., _ => .. }`",
+    file: "src/lower/mir.rs",
+    find: "                    && made.has_effects()\n                {",
+    replace: "                    && made.has_effects()\n                    && false\n                {",
+    tests: ["test/corpus.test.ts", "-t", "^match_call_once.rs$"],
+  },
 ];
