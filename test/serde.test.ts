@@ -80,6 +80,19 @@ pub fn text(log: &mut String) -> &'static str {
     }`,
   },
   {
+    name: "renaming rules of variants, and a struct's tag, agree",
+    definitions: `#[derive(serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Event { TextMessage, ImageSent }
+#[derive(serde::Serialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum Level { LowPriority }
+#[derive(serde::Serialize)]
+#[serde(tag = "kind")]
+pub struct Tagged { pub n: u32 }`,
+    value: "(Event::TextMessage, Event::ImageSent, Level::LowPriority, Tagged { n: 1 })",
+  },
+  {
     name: "ordinary renamed structs and optional fields agree (control)",
     definitions: `#[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]

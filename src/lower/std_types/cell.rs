@@ -94,7 +94,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     (true, false) => "$lockRead",
                     (true, true) => "$lock",
                 };
-                let guard = Expr::call(Expr::var(name), vec![arg(), Expr::bool(true)]);
+                let guard = Expr::call(Expr::helper(name), vec![arg(), Expr::bool(true)]);
                 if lock { Self::ok(guard) } else { guard }
             }
             Std::TryBorrow { mutable, lock } => {
@@ -226,7 +226,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     }
                     false => "$withBorrow",
                 };
-                Expr::call(Expr::var(name), given)
+                Expr::call(Expr::helper(name), given)
             }
             _ => return Ok(None),
         }))

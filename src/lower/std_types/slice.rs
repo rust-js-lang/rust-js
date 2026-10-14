@@ -268,7 +268,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             list.push(Expr::bool(true));
         }
         let name = if select { "$selectNthUnstable" } else { "$sortUnstable" };
-        Expr::call(Expr::var(name), list)
+        Expr::call(Expr::helper(name), list)
     }
 
     /// `value` where it's read more than once: a variable, or a `const`.
@@ -420,7 +420,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (Some(_), true) => "$sliceSplitOffEndMut",
         };
         let split = match mutable {
-            false => Expr::call(Expr::var(name), list),
+            false => Expr::call(Expr::helper(name), list),
             true => self.view_call(name, list),
         };
         self.spill("split", split, out)

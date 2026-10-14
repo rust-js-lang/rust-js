@@ -148,7 +148,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     _ => end.clone(),
                 };
                 let name = if num.big() { "$bigRange" } else { "$range" };
-                Expr::call(Expr::var(name), vec![start.clone(), end])
+                Expr::call(Expr::helper(name), vec![start.clone(), end])
             }
             (RangeKind::From, [start]) => Expr::call(Expr::helper("$lazyRange"), vec![start.clone()]),
             _ => return Err(self.unsupported(span, &format!("iterating over `{ty}`"))),
@@ -258,7 +258,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 (RangeOp::Next, _) => "$rangeNext",
                 _ => "$rangeNextBack",
             };
-            return Ok(Expr::call(Expr::var(name), vec![range]));
+            return Ok(Expr::call(Expr::helper(name), vec![range]));
         }
         let range = values.into_iter().next().expect("the range");
         let parts = self.range_parts(range, kind, out);

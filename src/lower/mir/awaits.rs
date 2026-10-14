@@ -9,7 +9,7 @@
 //! ```
 //!
 //! In JS that's one `await x`: the call gives `_y` and goes on to the
-//! `Ready` block, and the loop, which nothing reaches then, goes.
+//! `Ready` block. The loop is left as it is: nothing reaches it then.
 
 use std::collections::HashSet;
 
@@ -39,7 +39,7 @@ pub(in crate::lower) fn awaits<'tcx>(tcx: TyCtxt<'tcx>, body: &mut mir::Body<'tc
         if !into_future {
             continue;
         }
-        let Some((loop_blocks, ready)) = polled(tcx, body, *after) else {
+        let Some(ready) = polled(tcx, body, *after) else {
             continue;
         };
         // What's awaited: what `Ready` holds, where it's read, or nothing.
@@ -70,19 +70,14 @@ pub(in crate::lower) fn awaits<'tcx>(tcx: TyCtxt<'tcx>, body: &mut mir::Body<'tc
             *given = destination;
             *target = Some(ready);
         }
-        for dead in loop_blocks {
-            let data = &mut body.basic_blocks_mut()[dead];
-            data.statements.clear();
-            data.terminator_mut().kind = TerminatorKind::Unreachable;
-        }
         awaits.insert(block);
     }
     awaits
 }
 
-/// From `start`, the loop that polls what `into_future` made: its blocks,
-/// and the block its `Ready` goes to, past the switch on what `poll` gave.
-fn polled<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, start: BasicBlock) -> Option<(Vec<BasicBlock>, BasicBlock)> {
+/// From `start`, the loop that polls what `into_future` made: the block its
+/// `Ready` goes to, past the switch on what `poll` gave.
+fn polled<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, start: BasicBlock) -> Option<BasicBlock> {
     let mut seen = vec![start];
     let mut at = 0;
     while let Some(&block) = seen.get(at) {
@@ -106,10 +101,9 @@ fn polled<'tcx>(tcx: TyCtxt<'tcx>, body: &mir::Body<'tcx>, start: BasicBlock) ->
             while let TerminatorKind::FalseEdge { real_target, .. } = body.basic_blocks[ready].terminator().kind
                 && body.basic_blocks[ready].statements.is_empty()
             {
-                seen.push(ready);
                 ready = real_target;
             }
-            return Some((seen, ready));
+            return Some(ready);
         }
         for next in successors(body, block) {
             if !seen.contains(&next) {

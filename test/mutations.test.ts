@@ -20,6 +20,27 @@ test("every mutation applies to the compiler as it is, once", () => {
   }
 });
 
+// A source file of any length has bugs its tests must catch: each of more
+// than 80 lines has mutations, or says here why it needs none (the second
+// architecture review: ten had none, and two of them held dead code and a
+// bug no test could see).
+const unmutated: Record<string, string> = {
+  "src/program.rs": "the types the phases hand each other, with no behavior of their own",
+  "src/lower/shortcuts.rs": "one-line forwards to recognition, whose mutations hold the answers",
+  "src/jsx_syntax/literals.rs": "generated from @types/react; react-versions.test.ts holds it equal to its generator",
+};
+
+test("every source file of more than 80 lines has mutations, or says why it needs none", () => {
+  const mutated = new Set(mutations.map((m) => m.file));
+  const bare = [...new Bun.Glob("src/**/*.rs").scanSync(root)]
+    .filter((file) => readFileSync(join(root, file), "utf8").split("\n").length > 80)
+    .filter((file) => !mutated.has(file) && !(file in unmutated));
+  expect(bare.sort()).toEqual([]);
+  for (const file of Object.keys(unmutated)) {
+    expect([file, existsSync(join(root, file)), mutated.has(file)]).toEqual([file, true, false]);
+  }
+});
+
 // So code that moves takes its mutations with it, to the list of where it went.
 test("each source file's mutations are in its own list", () => {
   for (const list of lists) {

@@ -142,7 +142,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (false, true) => "$KeyMap",
             (true, true) => "$KeySet",
         };
-        Expr::var(name)
+        Expr::helper(name)
     }
 
     /// What a call makes: a map or a set of what its key is, as its type

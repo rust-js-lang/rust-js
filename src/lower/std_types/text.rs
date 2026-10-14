@@ -205,7 +205,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             (true, false) => "$trimStart",
             _ => "$trimEnd",
         };
-        Expr::call(Expr::var(name), vec![s])
+        Expr::call(Expr::helper(name), vec![s])
     }
 
     /// `edit` of a string whose text is `current`, of what it's `given`:
@@ -488,7 +488,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::CharFromByte => Expr::call(Expr::member(Expr::var("String"), "fromCharCode"), vec![arg()]),
             TextOp::Find(last) => {
                 let name = if last { "$rfind" } else { "$find" };
-                Expr::call(Expr::var(name), vec![arg(), arg()])
+                Expr::call(Expr::helper(name), vec![arg(), arg()])
             }
             TextOp::CharIndices => Expr::call(Expr::helper("$charIndices"), vec![arg()]),
             TextOp::Slice
@@ -524,7 +524,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             let (lo, hi) = num.range();
             // A 64-bit one is read as a BigInt, exactly (ADR 0086).
             let name = if num.big() { "$parseBig" } else { "$parseInt" };
-            let parsed = Expr::call(Expr::var(name), vec![text, num.literal(lo), num.literal(hi as i128)]);
+            let parsed = Expr::call(Expr::helper(name), vec![text, num.literal(lo), num.literal(hi as i128)]);
             // A `NonZero`'s, an error of `0` (ADR 0177).
             if crate::lower::recognition::is_non_zero_ty(target) {
                 let zero = Expr::str("number would be zero for non-zero type");
@@ -644,7 +644,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             TextOp::StrGetMut => "$strGetMut",
             _ => "$strPart",
         };
-        Expr::call(Expr::var(name), list)
+        Expr::call(Expr::helper(name), list)
     }
 
     /// `range_bounds`'s, of a range's value, a `range_ty`.
@@ -710,7 +710,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     && !matches!(&rest[0].kind, js::ExprKind::Str(s) if !s.is_empty());
                 if may_be_empty {
                     let helper = if name == "split" { "$split" } else { "$replace" };
-                    return Ok(Some(Expr::call(Expr::var(helper), [vec![this], rest].concat())));
+                    return Ok(Some(Expr::call(Expr::helper(helper), [vec![this], rest].concat())));
                 }
                 if matches!(name, "replaceAll" | "replace") {
                     rest[1] = replacement(rest[1].clone());
@@ -724,7 +724,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     Std::SplitOnce => "$splitOnce",
                     _ => "$rsplitOnce",
                 };
-                Expr::call(Expr::var(name), vec![arg(), arg()])
+                Expr::call(Expr::helper(name), vec![arg(), arg()])
             }
             Std::StripCircumfix => Expr::call(Expr::helper("$stripCircumfix"), vec![arg(), arg(), arg()]),
             Std::Chars => Expr::call(Expr::member(Expr::var("Array"), "from"), vec![arg()]),

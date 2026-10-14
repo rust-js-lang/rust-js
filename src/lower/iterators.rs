@@ -431,7 +431,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 if boxed {
                     list.push(Expr::bool(true));
                 }
-                Expr::call(Expr::var(name), list)
+                Expr::call(Expr::helper(name), list)
             }
             _ => return Ok(None),
         }))

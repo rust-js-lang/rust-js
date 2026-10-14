@@ -80,7 +80,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             HeapOp::PeekMut => "$peekMut",
             HeapOp::Drain | HeapOp::PeekTop { .. } | HeapOp::PeekPop => unreachable!("lowered above"),
         };
-        Ok(Expr::call(Expr::var(name), values))
+        Ok(Expr::call(Expr::helper(name), values))
     }
 
     /// A heap of `item`s: `pop` gives `undefined` for `None`, so an item

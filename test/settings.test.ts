@@ -81,11 +81,13 @@ test("what a check says of the JS is said of the Rust, and the rest as it is", (
 });
 
 test("a check that fails fails the build, if it says so", () => {
-  const check = (fail: string) => compile(`check = [{ run = ["sh", "-c", "echo \\"$1:4:9: bad\\"; exit 1", "sh", "{files}"], fail = "${fail}" }]`);
-  const failing = check("build");
+  const check = (fail: string) => compile(`check = [{ run = ["sh", "-c", "echo \\"$1:4:9: bad\\"; exit 1", "sh", "{files}"]${fail} }]`);
+  const failing = check(`, fail = "build"`);
   expect(failing.code).not.toBe(0);
   expect(failing.stderr).toContain("src/lib.rs:2:5: [sh] bad");
-  expect(check("never").code).toBe(0);
+  expect(check(`, fail = "never"`).code).toBe(0);
+  // Unless it says otherwise, a check's failure is the build's.
+  expect(check("").code).not.toBe(0);
 });
 
 test("a check run only in a build isn't run for a save", () => {
@@ -95,6 +97,9 @@ test("a check run only in a build isn't run for a save", () => {
   expect(existsSync(join(saved.dir, "ran"))).toBe(false);
   const built = compile(hooks);
   expect(existsSync(join(built.dir, "ran"))).toBe(true);
+  // Unless it says otherwise, a check runs for a save too.
+  const always = compile(`check = [{ run = ["sh", "-c", "touch ran"] }]`, ["--hooks", "save"]);
+  expect(existsSync(join(always.dir, "ran"))).toBe(true);
 });
 
 const long = `pub fn total(first_amount: f64, second_amount: f64, third_amount: f64, fourth_amount: f64, fifth_amount: f64, sixth_amount: f64) -> f64 {

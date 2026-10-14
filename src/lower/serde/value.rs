@@ -28,7 +28,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         match operation {
             JsonCall::ToValue(ty) => {
                 let value = values.remove(0);
-                self.use_value();
                 // Of a string, a number, a `bool` or `()`, it can't fail: `Ok` of it.
                 if self.is_string_like(ty) || ty.is_bool() || ty.is_unit() || Num::of(ty).is_some() {
                     let value = if ty.is_char() {
@@ -50,13 +49,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             JsonCall::FromValue(ty) => {
                 let value = values.remove(0);
                 let reader = self.json_reader(ty, span)?;
-                self.use_value();
                 Ok(Expr::call(Expr::helper("$fromJsonValue"), vec![value, reader]))
             }
-            JsonCall::Index => {
-                self.use_value();
-                Ok(Expr::call(Expr::helper("$jsonIndex"), values))
-            }
+            JsonCall::Index => Ok(Expr::call(Expr::helper("$jsonIndex"), values)),
             JsonCall::Equal {
                 other,
                 value_first,
@@ -79,7 +74,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 Ok(match json {
                     Json::Value => self.json_value_from(x, from, span)?,
                     Json::Number if Num::of(from.peel_refs()).is_some_and(|n| !n.float()) => {
-                        self.use_value();
                         Expr::call(Expr::helper("$jsonInt"), vec![x])
                     }
                     _ => return Err(self.unsupported(span, &format!("`{to}::from` of `{from}`"))),
@@ -90,36 +84,31 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    fn use_value(&mut self) {}
-
     /// `$jsonValueWrite` and `$jsonNumberWrite`: what writes a `Value` or a
     /// `Number`, `(value, json) => ..`.
-    pub(in crate::lower) fn json_value_writer(&mut self, ty: Ty<'tcx>) -> Option<Expr> {
+    pub(in crate::lower) fn json_value_writer(&self, ty: Ty<'tcx>) -> Option<Expr> {
         let name = match self.json_type(ty)? {
             Json::Value => "$jsonValueWrite",
             Json::Number => "$jsonNumberWrite",
             Json::Map => return None,
         };
-        self.use_value();
-        Some(Expr::var(name))
+        Some(Expr::helper(name))
     }
 
     /// `clone()` of a `Value` or a `Map`: a copy of its arrays and maps.
-    pub(in crate::lower) fn json_value_clone(&mut self, value: Expr, ty: Ty<'tcx>) -> Option<Expr> {
+    pub(in crate::lower) fn json_value_clone(&self, value: Expr, ty: Ty<'tcx>) -> Option<Expr> {
         let name = match self.json_type(ty)? {
             Json::Value => "$jsonValueClone",
             Json::Map => "$jsonMapClone",
             Json::Number => return None,
         };
-        self.use_value();
-        Some(Expr::call(Expr::var(name), vec![value]))
+        Some(Expr::call(Expr::helper(name), vec![value]))
     }
 
     /// `{}` of a `Value` (its compact JSON, or with `{:#}`, its pretty) or a
     /// `Number`.
-    pub(in crate::lower) fn json_value_display(&mut self, value: Expr, ty: Ty<'tcx>, pretty: bool) -> Option<Expr> {
+    pub(in crate::lower) fn json_value_display(&self, value: Expr, ty: Ty<'tcx>, pretty: bool) -> Option<Expr> {
         let json = self.json_type(ty)?;
-        self.use_value();
         Some(match json {
             Json::Value => Expr::call(Expr::helper("$jsonValueText"), vec![value, Expr::bool(pretty)]),
             Json::Number => Expr::call(Expr::helper("$jsonNumberText"), vec![value]),
@@ -129,9 +118,8 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `{:?}` of a `Value` or a `Number`, as serde_json writes one:
     /// `Object {"a": Number(1)}`.
-    pub(in crate::lower) fn json_value_debug(&mut self, value: Expr, ty: Ty<'tcx>, pretty: &Pretty) -> Option<Expr> {
+    pub(in crate::lower) fn json_value_debug(&self, value: Expr, ty: Ty<'tcx>, pretty: &Pretty) -> Option<Expr> {
         let json = self.json_type(ty)?;
-        self.use_value();
         Some(match json {
             // Pretty as `{:#?}` asks (ADR 0137).
             Json::Value if matches!(pretty, Pretty::Plain) => Expr::call(Expr::helper("$debugJsonValue"), vec![value]),
@@ -142,8 +130,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     }
 
     /// A method of `Value` or `Number`, as serde_json's does it.
-    fn json_value_method(&mut self, method: JsonMethod, mut values: Vec<Expr>, span: Span) -> R<Expr> {
-        self.use_value();
+    fn json_value_method(&self, method: JsonMethod, mut values: Vec<Expr>, span: Span) -> R<Expr> {
         // `Number::from_f64(x)`: `None` unless it's finite.
         match method {
             JsonMethod::NumberFromF64 => return Ok(Expr::call(Expr::helper("$jsonNumberOfF64"), values)),
@@ -153,9 +140,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             _ => {}
         }
         let receiver = values.remove(0);
-        let call = |helper: &str, mut args: Vec<Expr>| {
+        let call = |helper: &'static str, mut args: Vec<Expr>| {
             args.insert(0, receiver.clone());
-            Expr::call(Expr::var(helper), args)
+            Expr::call(Expr::helper(helper), args)
         };
         Ok(match method {
             JsonMethod::NumberAsF64 => call("$jsonNumberF64", Vec::new()),
@@ -183,7 +170,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
     /// `Value::from(x)` and `x.into()`: `x`, as serde_json's `From` impls
     /// make a `Value` of it.
     pub(in crate::lower) fn json_value_from(&mut self, value: Expr, from: Ty<'tcx>, span: Span) -> R<Expr> {
-        self.use_value();
         let from = from.peel_refs();
         let variant = |tag: &str, value: Expr| {
             Expr::object(vec![
@@ -220,14 +206,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     /// `value == x` of a `Value` and a string, a number or a `bool`, as
     /// serde_json's `PartialEq` impls compare them.
-    pub(in crate::lower) fn json_value_eq(
-        &mut self,
-        value: Expr,
-        other: Expr,
-        other_ty: Ty<'tcx>,
-        span: Span,
-    ) -> R<Expr> {
-        self.use_value();
+    pub(in crate::lower) fn json_value_eq(&self, value: Expr, other: Expr, other_ty: Ty<'tcx>, span: Span) -> R<Expr> {
         let other_ty = other_ty.peel_refs();
         let kind = self
             .recognition()

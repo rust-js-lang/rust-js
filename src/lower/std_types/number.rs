@@ -872,7 +872,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if num.signed() {
                         args.push(Expr::int(num.range().0));
                     }
-                    Expr::call(Expr::var(name), args)
+                    Expr::call(Expr::helper(name), args)
                 };
                 // The remainder of in-range integers is already in range, but a
                 // signed one can be JS's `-0`, `-2 % 2`, which `| 0` makes
@@ -931,7 +931,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                     if num.signed() {
                         args.push(Expr::bigint(num.range().0));
                     }
-                    Expr::call(Expr::var(name), args)
+                    Expr::call(Expr::helper(name), args)
                 }
             }
             // Of two in range, in range.
@@ -1073,7 +1073,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 let (lo, hi) = target.range();
                 let name = if target.big() { "$f64ToBig" } else { "$f64ToInt" };
                 Ok(Expr::call(
-                    Expr::var(name),
+                    Expr::helper(name),
                     vec![v, target.literal(lo), target.literal(hi as i128)],
                 ))
             }

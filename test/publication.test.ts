@@ -7,10 +7,11 @@
 //                                          ──►  X removed, or kept?
 
 import { beforeAll, expect, test } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { commit, fingerprint, publishArtifacts } from "../tooling/publish.js";
+import { runSync } from "./child";
 import { buildCompiler, compiler, fixture, run } from "./support";
 
 beforeAll(buildCompiler, 600_000);
@@ -116,6 +117,34 @@ console.log(missing);`], { stdout: "pipe" });
   writeFileSync(stop, "");
   for (let chunk; !(chunk = await reader.read()).done;) said += new TextDecoder().decode(chunk.value);
   expect([readFileSync(file, "utf8"), Number(said.replace("looking", "").trim())]).toEqual(["2000", 0]);
+});
+
+// A file whose bytes this build would write again is left as it is: a
+// bundler watching it reloads only what changed (ADR 0041). One module
+// changes; the other module's file, and its time, are as they were.
+test("native: a file this build writes unchanged is left alone", () => {
+  const dir = fixture("publication-unchanged");
+  const input = join(dir, "lib.rs"), output = join(dir, "lib.js"), manifest = join(dir, "manifest.json");
+  writeFileSync(input, "pub mod kept { pub fn value() -> u32 { 1 } } pub fn ready() -> u32 { 1 }");
+  run([compiler, input, "-o", output, "--manifest", manifest]);
+  const kept = join(dir, "kept.js");
+  const written = statSync(kept).mtimeMs;
+  Bun.sleepSync(20);
+  writeFileSync(input, "pub mod kept { pub fn value() -> u32 { 1 } } pub fn ready() -> u32 { 2 }");
+  run([compiler, input, "-o", output, "--manifest", manifest]);
+  expect([statSync(kept).mtimeMs, readFileSync(output, "utf8").includes("2")]).toEqual([written, true]);
+});
+
+// An older build's manifest of another version says what it wrote in a
+// form this one can't read: the build is refused, and removes nothing by it.
+test("native: an older build's manifest of another version is refused", () => {
+  const dir = fixture("publication-version");
+  const input = join(dir, "lib.rs"), output = join(dir, "lib.js"), manifest = join(dir, "manifest.json");
+  writeFileSync(input, "pub fn ready() -> u32 { 1 }");
+  run([compiler, input, "-o", output, "--manifest", manifest]);
+  writeFileSync(manifest, JSON.stringify({ ...JSON.parse(readFileSync(manifest, "utf8")), version: 2 }));
+  const refused = runSync([compiler, input, "-o", output, "--manifest", manifest], dir, 60_000);
+  expect([refused.code, refused.stderr.includes("unsupported manifest version 2")]).toEqual([1, true]);
 });
 
 // Turning declarations off must leave the same owned output as a clean build,

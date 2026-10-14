@@ -24,6 +24,6 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             ChannelOp::Recv => ("$recv", 1),
             ChannelOp::TryRecv => ("$tryRecv", 1),
         };
-        Ok(Some(Expr::call(Expr::var(helper), values.take(count).collect())))
+        Ok(Some(Expr::call(Expr::helper(helper), values.take(count).collect())))
     }
 }
