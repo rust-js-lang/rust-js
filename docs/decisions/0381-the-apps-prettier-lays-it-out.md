@@ -31,6 +31,8 @@ stands, oxfmt's.**
   `resolveConfig(file, { editorconfig: true })`, so a JSON, YAML or JS
   config, a `package.json`'s `prettier`, its `overrides` and the app's
   `.editorconfig` are read as Prettier reads them, nothing of it copied.
+- **Prettier 2's too**, react.dev's: CommonJS, whose API an import finds
+  as its module's `default`, where Prettier 3's is its module's.
 - **A config, not Prettier installed, decides**: an app relying on
   Prettier's defaults has one, `{}` in `.prettierrc`. rust-js's own
   checkout has Prettier and no config, and its corpus keeps rust-js's

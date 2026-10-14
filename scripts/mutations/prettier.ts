@@ -27,4 +27,12 @@ export const mutations: Mutation[] = [
     replace: "{ editorconfig: false }",
     tests: ["test/settings.test.ts", "-t", "editorconfig"],
   },
+  {
+    name: "prettier-commonjs-unread",
+    breaks: "Prettier 2's API, CommonJS, its module's `default`, is looked for by name, and an app on Prettier 2, react.dev, fails its build",
+    file: "src/prettier.rs",
+    find: "  prettier = typeof module.format === \"function\" ? module : module.default;",
+    replace: "  prettier = module;",
+    tests: ["test/settings.test.ts", "-t", "CommonJS Prettier"],
+  },
 ];

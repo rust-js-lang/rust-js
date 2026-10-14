@@ -19,7 +19,9 @@ use crate::settings::Settings;
 /// Prettier; and the configs it read.
 const LAY_OUT: &str = r#"let prettier;
 try {
-  prettier = await import("prettier");
+  // Prettier 3's API is its module's; Prettier 2's, CommonJS, its `default`.
+  const module = await import("prettier");
+  prettier = typeof module.format === "function" ? module : module.default;
 } catch (error) {
   if (error?.code !== "ERR_MODULE_NOT_FOUND" || !String(error.message).includes("'prettier'")) throw error;
 }

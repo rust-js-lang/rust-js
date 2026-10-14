@@ -19,9 +19,11 @@ const rust = `pub fn greet(name: &str) -> String {
 `;
 
 /** `source`, of a crate whose Cargo.toml has `settings`, and a `.prettierrc`
- * of `prettier` and an `.editorconfig` if given, compiled with `flags`. */
-function build(settings: string, flags: string[] = [], source = rust, prettier?: object, editorconfig?: string) {
+ * of `prettier` and an `.editorconfig` if given, its directory `setUp`,
+ * compiled with `flags`. */
+function build(settings: string, flags: string[] = [], source = rust, prettier?: object, editorconfig?: string, setUp?: (dir: string) => void) {
   const dir = fixture("settings");
+  setUp?.(dir);
   mkdirSync(join(dir, "src"));
   writeFileSync(join(dir, "src", "lib.rs"), source);
   if (prettier) writeFileSync(join(dir, ".prettierrc"), JSON.stringify(prettier));
@@ -158,6 +160,19 @@ test("Prettier's layout of the app's JSX is kept, and the map still finds the Ru
     expect([word, rustOf(pretty.js, pretty.map, word)]).toEqual([word, rustOf(plain.js, plain.map, word)]);
   }
 }, 300_000);
+
+// Prettier 2, react.dev's, is CommonJS: imported, its API is the module's
+// `default`. A CommonJS `prettier` of the fixture's own, Prettier 3's
+// CommonJS build, stands for it.
+test("a CommonJS Prettier, as Prettier 2 is, lays the JS out too", () => {
+  const out = build("", [], `${rust}\n${long}`, { singleQuote: true }, undefined, (dir) => {
+    mkdirSync(join(dir, "node_modules", "prettier"), { recursive: true });
+    writeFileSync(join(dir, "node_modules", "prettier", "package.json"), JSON.stringify({ name: "prettier", main: "index.js" }));
+    writeFileSync(join(dir, "node_modules", "prettier", "index.js"), `module.exports = require(${JSON.stringify(join(root, "node_modules", "prettier", "index.cjs"))});\n`);
+  });
+  expect(out.stderr).toBe("");
+  expect(out.js).toContain("\n  return 'hi';\n");
+});
 
 // Prettier reads `.editorconfig` too, as the app's `prettier --check` does.
 test("Prettier's config is the app's `.editorconfig`'s too", () => {
