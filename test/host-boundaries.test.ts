@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fingerprint, publishArtifacts } from "../tooling/publish.js";
@@ -13,18 +13,23 @@ test("WASI host removes only unchanged owned artifacts and validates before publ
     const path = join(dir, "manifest.json");
     const handwritten = join(dir, "handwritten.js");
     writeFileSync(handwritten, "preserve");
-    const publish = (values: Record<string, string>) => {
+    // What's stale, the compiler says (ADR 0375): each as it was written.
+    const publish = (values: Record<string, string>, stale: Record<string, string> = {}) => {
       const files = new Map(Object.entries(values).map(([name, text]) => [join(dir, name), Buffer.from(text)]));
       const manifest = { version: 1, input: join(dir, "lib.rs"), output: join(dir, "lib.js"), sources: [], modules: [],
-        artifacts: [...files].map(([file, bytes]) => ({ file, hash: fingerprint(bytes) })) };
+        artifacts: [...files].map(([file, bytes]) => ({ file, hash: fingerprint(bytes) })),
+        stale: Object.entries(stale).map(([name, text]) => ({ file: join(dir, name), hash: fingerprint(Buffer.from(text)) })) };
       publishArtifacts(path, manifest, files);
       return manifest;
     };
     publish({ "lib.js": "one", "stale.js": "stale", "edited.js": "original" });
     writeFileSync(join(dir, "edited.js"), "user edit");
-    const manifest = publish({ "lib.js": "two" });
+    // A link to what this build writes, which a WASI compiler can't see is one.
+    symlinkSync(join(dir, "lib.js"), join(dir, "alias.js"));
+    const manifest = publish({ "lib.js": "two" }, { "stale.js": "stale", "edited.js": "original", "alias.js": "two" });
     expect(existsSync(join(dir, "stale.js"))).toBe(false);
     expect(readFileSync(join(dir, "edited.js"), "utf8")).toBe("user edit");
+    expect(existsSync(join(dir, "alias.js"))).toBe(true);
     expect(readFileSync(handwritten, "utf8")).toBe("preserve");
     expect(() => publishArtifacts(path, manifest, new Map())).toThrow("Missing");
     expect(readFileSync(join(dir, "lib.js"), "utf8")).toBe("two");

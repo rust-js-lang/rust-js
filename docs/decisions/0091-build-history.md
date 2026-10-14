@@ -55,3 +55,7 @@ an older one are the same bytes ([research](../research/compiler-testing.md)).
   or a declaration they edited, stays. `test/publication.test.ts` holds the
   native compiler and the WASI host to it. (Amended: they were left behind,
   and the next manifest no longer listed them, so nothing would remove them.)
+
+## Amended by
+
+- [0375](0375-the-compiler-says-what-is-stale.md): What a build leaves stale is the compiler's to say

@@ -57,6 +57,7 @@ export function parseManifest(text) {
         && links(module.links) && links(module.type_links))
       || !Array.isArray(result.artifacts) || !result.artifacts.every(artifact => object(artifact)
         && path(artifact.file) && typeof artifact.hash === "string" && /^[0-9a-f]{16}$/.test(artifact.hash))
+      || (result.stale !== undefined && !(Array.isArray(result.stale) && result.stale.every(fingerprint)))
       || (result.tests !== undefined && !path(result.tests))) {
     throw new Error("Invalid rust-js manifest: expected absolute paths, modules and fingerprinted artifacts");
   }
@@ -88,6 +89,7 @@ export function mapManifestPaths(manifest, map) {
       ...(module.type_links === undefined ? {} : { type_links: module.type_links.map(link => ({ ...link, file: map(link.file) })) }),
     })),
     artifacts: manifest.artifacts.map(artifact => ({ ...artifact, file: map(artifact.file) })),
+    ...(manifest.stale === undefined ? {} : { stale: manifest.stale.map(old => ({ ...old, file: map(old.file) })) }),
     ...(manifest.library === undefined ? {} : { library: {
       ...manifest.library, inputs: manifest.library.inputs.map(input => ({ ...input, file: map(input.file) })),
     } }),

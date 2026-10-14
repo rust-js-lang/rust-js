@@ -427,9 +427,12 @@ sequenceDiagram
 ```
 
 Each host keeps the same split: what's stale is the plan's to decide, and
-the publisher's to remove. Natively, `output.rs` decides and `publish.rs`
-removes; the WASI host's `publishArtifacts` decides by the native rules,
-from the manifest, and its `commit` removes; and a Cargo build's copies
+the publisher's to remove, each still as written. `output.rs` decides, for
+both compilers: natively, `publish.rs` removes; a WASI compiler, given the
+older manifest by its host, says what's stale in the manifest it hands it,
+and the host's `publishArtifacts` removes them but for a link to what's
+written, which the compiler can't see
+([ADR 0375](decisions/0375-the-compiler-says-what-is-stale.md)); and a Cargo build's copies
 beside each module's Rust are decided by `writeInSource`, from a ledger of
 what they are in place of a manifest, and published by the same `commit`
 ([ADR 0101](decisions/0101-cargo-workspace-wrapper.md)).

@@ -84,6 +84,11 @@ for (const c of cases) {
 
   test(`WASI host: ${c.name} is ${c.kept ? "kept" : "removed"}`, () => {
     const { input, output, manifest, file, helper } = setUp(c, "host");
+    // What of the older build's this one may remove is the compiler's to
+    // say (ADR 0375), as the native cases have it: one it removes, or one
+    // it would but for an edit since.
+    const [older] = JSON.parse(readFileSync(manifest, "utf8")).artifacts;
+    const stale = !c.kept || c.edited ? [older] : [];
     const lib = Buffer.from("export function answer() { return 42; }\n");
     const next = {
       version: 1,
@@ -92,6 +97,7 @@ for (const c of cases) {
       sources: c.read ? [input, helper] : [input],
       modules: [],
       artifacts: [{ file: output, hash: fingerprint(lib) }],
+      stale,
     };
     publishArtifacts(manifest, next, new Map([[output, lib]]));
     expect(existsSync(file)).toBe(c.kept);

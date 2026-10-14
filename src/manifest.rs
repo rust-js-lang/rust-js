@@ -45,6 +45,15 @@ pub struct Manifest {
     pub sources: Vec<PathBuf>,
     pub modules: Vec<Module>,
     pub artifacts: Vec<Artifact>,
+    /// What an older build wrote, by its manifest, that this one may remove
+    /// (ADR 0091), each as it was written: a generated file in the output's
+    /// directory that this build neither writes nor reads. A WASI compiler's
+    /// host publishes, and is told this, to remove each still as written and
+    /// not, on the disk it has, a file this build reads or writes by another
+    /// name, which the compiler can't see (ADR 0375). What's published has
+    /// none: a build over an older one leaves what a build from nothing does.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub stale: Vec<Artifact>,
     /// Its `#[test]` functions' runner, `<output>.test.js`, of a build with
     /// `--test` (ADR 0026): what a host runs them by.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -91,7 +100,7 @@ pub struct Link {
     pub file: PathBuf,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Artifact {
     pub file: PathBuf,
     pub hash: String,

@@ -548,9 +548,11 @@ impl OutputPlan {
                         && !sources.contains(&old)
                         && !paths.contains(&old)
                         && old != input
-                        && std::fs::read(&old).is_ok_and(|bytes| fingerprint(&bytes) == file.hash)
                     {
-                        stale.push(old);
+                        stale.push(manifest::Artifact {
+                            file: old,
+                            hash: file.hash,
+                        });
                     }
                 }
             }
@@ -569,6 +571,12 @@ impl OutputPlan {
                         hash: fingerprint(&a.bytes),
                     })
                     .collect(),
+                // The publisher's, where it isn't the compiler: a WASI host's.
+                stale: if cfg!(target_os = "wasi") {
+                    stale.clone()
+                } else {
+                    Vec::new()
+                },
                 tests,
             };
             // What Cargo is told of the build, then the manifest, last: a
@@ -608,7 +616,7 @@ fn exports(module: &program::LoweredModule) -> Vec<String> {
 /// after every name and content has been validated: its fields are its own.
 pub(crate) struct ArtifactPlan {
     artifacts: Vec<Artifact>,
-    stale: Vec<PathBuf>,
+    stale: Vec<manifest::Artifact>,
 }
 
 impl ArtifactPlan {

@@ -171,14 +171,6 @@ export const mutations: Mutation[] = [
     tests: ["test/emission.test.ts", "-t", "root and child output collisions leave no partial artifacts"],
   },
   {
-    name: "edited-artifact-removed",
-    breaks: "a file the compiler wrote, and the user has since edited, is removed as stale when a later build writes another",
-    file: "src/output.rs",
-    find: "                        && std::fs::read(&old).is_ok_and(|bytes| fingerprint(&bytes) == file.hash)\n",
-    replace: "",
-    tests: ["test/emission.test.ts", "-t", "manifest owns artifacts and records even modules that emit no code"],
-  },
-  {
     name: "import-of-jsx-names-js",
     breaks: "an import of a module with JSX names its `.js` file, `./view.js`, which isn't there: it's `view.jsx`",
     file: "src/output.rs",

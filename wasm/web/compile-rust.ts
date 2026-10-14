@@ -9,7 +9,7 @@
 //                        crate's it uses (ADR 0024)
 //   /out/manifest.json   what it read and wrote (ADR 0042)
 
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { ConsoleStdout, Directory, File, type Inode, OpenFile, PreopenDirectory, WASI } from "@bjorn3/browser_wasi_shim";
@@ -62,7 +62,12 @@ export async function compileRust(job: { manifest?: string } = {}) {
   );
   const dir = (entries: Record<string, Inode>) => new Directory(new Map(Object.entries(entries)));
   const crateDir = new PreopenDirectory(virtual, sources);
-  const out = new PreopenDirectory("/out", new Map());
+  // What the last build wrote, for the compiler to say what of it this one
+  // leaves stale (ADR 0375): its manifest, of the compiler's own paths.
+  const published = job.manifest ?? join(cratesDir, "playground-manifest.json");
+  const virtualPath = (path: string) => path.startsWith(import.meta.dir + "/") ? `${web}/${path.slice(import.meta.dir.length + 1)}` : path;
+  const previous = existsSync(published) ? JSON.stringify(mapManifestPaths(parseManifest(readFileSync(published, "utf8")), virtualPath)) : undefined;
+  const out = new PreopenDirectory("/out", new Map(previous ? [["manifest.json", new File(new TextEncoder().encode(previous))]] : []));
   const stderr: string[] = [];
   const fds = [
     new OpenFile(new File([])), // stdin
@@ -112,7 +117,7 @@ export async function compileRust(job: { manifest?: string } = {}) {
     if (!data) throw new Error("Missing WASI artifact: " + artifact.file);
     outputs.set(localPath(artifact.file), data);
   }
-  publishArtifacts(job.manifest ?? join(cratesDir, "playground-manifest.json"), mapped, outputs);
+  publishArtifacts(published, mapped, outputs);
 }
 
 // `bun compile-rust.ts` on its own.

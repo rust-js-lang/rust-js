@@ -277,3 +277,4 @@ remain unchanged. Hosted CI was not run.
 ## Amended by
 
 - [0374](0374-cargo-the-one-build.md): An app's Rust is built with Cargo, its one way
+- [0375](0375-the-compiler-says-what-is-stale.md): What a build leaves stale is the compiler's to say

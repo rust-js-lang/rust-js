@@ -1,6 +1,6 @@
 // Host publication for a successful WASI build. The manifest is committed last.
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { basename, dirname, extname, join, resolve, sep } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { parseManifest } from "./manifest.js";
 
@@ -19,21 +19,16 @@ function real(path) {
   return parent === resolve(path) ? parent : join(real(parent), basename(path));
 }
 
-// What an older build wrote that this one may remove, by the native
-// compiler's rules (src/output.rs): a generated file, in the output's
-// directory, that this build neither writes nor reads, still as it was
-// written. Anything else, a person's file or a source, is left alone.
-function staleArtifacts(previous, manifest, writes) {
-  const outputDir = real(dirname(manifest.output));
+// What an older build wrote that this one may remove is the compiler's to
+// say, its manifest's `stale` (ADR 0375). Of each, what only the disk shows,
+// which a WASI compiler can't see: that it's still as written, and not a
+// file this build reads or writes by another name, a link to one.
+function staleArtifacts(manifest, writes) {
   const kept = new Set([manifest.input, ...manifest.sources, ...writes.keys()].map(real));
-  return (previous?.artifacts ?? []).filter(({ file, hash }) => {
-    if (!existsSync(file)) return false;
-    const path = real(file);
-    return ([".js", ".jsx", ".map"].includes(extname(path)) || path.endsWith(".d.ts"))
-      && path.startsWith(outputDir + sep)
-      && !kept.has(path)
-      && fingerprint(readFileSync(path)) === hash;
-  }).map(({ file }) => ({ file: real(file) }));
+  return (manifest.stale ?? []).filter(({ file, hash }) => existsSync(file)
+    && !kept.has(real(file))
+    && fingerprint(readFileSync(real(file))) === hash)
+    .map(({ file }) => real(file));
 }
 
 export function publishArtifacts(manifestPath, manifest, files) {
@@ -43,14 +38,13 @@ export function publishArtifacts(manifestPath, manifest, files) {
     if (!bytes || fingerprint(bytes) !== artifact.hash) throw new Error(`Missing or inconsistent artifact: ${artifact.file}`);
   }
   if (files.size !== manifest.artifacts.length) throw new Error("Unexpected artifacts outside manifest");
-  const previous = existsSync(manifestPath) ? parseManifest(readFileSync(manifestPath, "utf8")) : undefined;
-  if (previous && (previous.input !== manifest.input || previous.output !== manifest.output)) {
-    throw new Error("Manifest belongs to a different compilation");
-  }
+  // Whether the older manifest at `manifestPath` is this compilation's is
+  // the compiler's to say, which a host gives it to (ADR 0375).
   const writes = new Map(files);
-  writes.set(manifestPath, Buffer.from(JSON.stringify(manifest, null, 2) + "\n"));
-  const stale = staleArtifacts(previous, manifest, writes);
-  commit(writes, stale.map(({ file }) => file), manifestPath);
+  // What's stale is told the publisher, and isn't what the build wrote.
+  const { stale: _, ...published } = manifest;
+  writes.set(manifestPath, Buffer.from(JSON.stringify(published, null, 2) + "\n"));
+  commit(writes, staleArtifacts(manifest, writes), manifestPath);
 }
 
 /**
