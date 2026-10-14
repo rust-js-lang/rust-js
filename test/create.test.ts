@@ -7,10 +7,10 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSy
 import { join, relative } from "node:path";
 import { runSync } from "./child";
 import { fixture, root, run } from "./support";
+import { channel } from "../scripts/toolchain.ts";
 
 const pkg = JSON.parse(readFileSync(join(root, "create", "package.json"), "utf8"));
 const version = readFileSync(join(root, "Cargo.toml"), "utf8").match(/^version = "([^"]+)"/m)![1];
-const pin = readFileSync(join(root, "rust-toolchain.toml"), "utf8").match(/^channel\s*=\s*"([^"]+)"/m)![1];
 
 /** @rust-js/create as a registry would give it: packed, then unpacked. */
 function packed(): string {
@@ -36,8 +36,8 @@ function files(dir: string): string[] {
 
 // Released with the compiler, so the app it makes names that release's
 // packages, and the Rust it says to install is the compiler's.
-test("@rust-js/create is the compiler's version, and says its Rust pin", () => {
-  expect([pkg.name, pkg.version, pkg.rustJs.toolchain]).toEqual(["@rust-js/create", version, pin]);
+test("@rust-js/create is the compiler's version, and says its Rust channel", () => {
+  expect([pkg.name, pkg.version, pkg.rustJs.toolchain]).toEqual(["@rust-js/create", version, channel]);
 });
 
 test("a packed @rust-js/create makes the vite-react example's app, named for its directory", () => {
@@ -65,7 +65,7 @@ test("a packed @rust-js/create makes the vite-react example's app, named for its
   expect(manifest.devDependencies["@rust-js/native"]).toBe(version);
   expect(JSON.stringify(manifest)).not.toContain("workspace:");
   // What to run next, the Rust it needs first.
-  expect(made.stdout).toContain(`rustup toolchain install ${pin} --profile minimal --target wasm32-unknown-unknown
+  expect(made.stdout).toContain(`rustup toolchain install ${channel} --profile minimal --target wasm32-unknown-unknown
 `);
   expect(made.stdout).toContain("cd my-app");
   expect(made.stdout).toContain("bun install");
@@ -168,10 +168,10 @@ test("@rust-js/create says the commands of the package manager that ran it", () 
   expect(next(undefined, "node")).toBe("cd app\n  npm install\n  npm run dev");
 });
 
-// What its README says to install is what it prints, at this pin.
+// What its README says to install is what it prints, at this channel.
 test("@rust-js/create's README says to install the Rust it prints", () => {
   const readme = readFileSync(join(root, "create", "README.md"), "utf8");
-  expect(readme).toContain(`rustup toolchain install ${pin} --profile minimal --target wasm32-unknown-unknown`);
+  expect(readme).toContain(`rustup toolchain install ${channel} --profile minimal --target wasm32-unknown-unknown`);
 });
 
 test("--local makes the app install a distribution's packages", () => {

@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
 import { planCargoLibraries } from "../tooling/cargo.js";
 import { parseManifest } from "../tooling/manifest.js";
+import { channel } from "../scripts/toolchain.ts";
 
 beforeAll(buildCompiler, 600_000);
-const pin = readFileSync(join(root, "rust-toolchain.toml"), "utf8").match(/channel = "([^"]+)"/)![1];
 // What rust-js checks programs for (ADR 0090), so what their dependencies are built for.
 const target = "wasm32-unknown-unknown";
 
@@ -24,8 +24,8 @@ test("a real Cargo dependency links functions and function values into JS", asyn
   writeFileSync(join(dir, "app/src/lib.rs"), 'pub mod nested { pub mod inner { pub fn run() -> u32 { let increment = model::increment; if model::positive(1) { increment(40) + 1 } else { 0 } } } }\npub fn run() -> u32 { nested::inner::run() }\n');
   writeFileSync(join(dir, "app/src/main.rs"), 'fn main() { println!("{}", app::run()); }');
   const manifestPath = join(dir, "app/Cargo.toml");
-  run(["cargo", `+${pin}`, "generate-lockfile", "--offline", "--manifest-path", manifestPath]);
-  const graph = await planCargoLibraries({ manifestPath, toolchain: pin, target });
+  run(["cargo", `+${channel}`, "generate-lockfile", "--offline", "--manifest-path", manifestPath]);
+  const graph = await planCargoLibraries({ manifestPath, toolchain: channel, target });
   expect(graph.libraries.map(p => p.name)).toEqual(["shared", "app"]);
   const libraryManifest = join(dir, "js/shared/manifest.json");
   const metadata = join(dir, "js/shared/libshared.rmeta");
@@ -35,7 +35,7 @@ test("a real Cargo dependency links functions and function values into JS", asyn
   const command = [compiler, join(dir, "app/src/lib.rs"), "-o", output, "--manifest", manifest, "--dependency", libraryManifest, "--", "--crate-name", "app", "--extern", `model=${metadata}`];
   library();
   run(command);
-  const native = () => Number(run(["cargo", `+${pin}`, "run", "--frozen", "--quiet", "--manifest-path", manifestPath]));
+  const native = () => Number(run(["cargo", `+${channel}`, "run", "--frozen", "--quiet", "--manifest-path", manifestPath]));
   const javascript = () => Number(run([process.execPath, "--eval", `const m = await import(${JSON.stringify(output)}); console.log(m.run());`]));
   expect(javascript()).toBe(native());
   expect(javascript()).toBe(42);

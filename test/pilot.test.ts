@@ -13,9 +13,9 @@ import { build, createServer, type ViteDevServer } from "vite";
 import { checkCargo } from "../tooling/cargo.js";
 import { runSync } from "./child";
 import { buildCompiler, buildSerde, compiler, fixture, root, run } from "./support";
+import { channel } from "../scripts/toolchain.ts";
 
 const checkout = join(root, "examples", "pilot");
-const pin = readFileSync(join(root, "rust-toolchain.toml"), "utf8").match(/channel = "([^"]+)"/)![1];
 
 // The pilot, copied under `target/`, where its build writes its JS beside
 // its Rust (ADR 0041): never into the checkout, whatever compiler a test is
@@ -89,7 +89,7 @@ beforeAll(async () => {
   // pilot's lockfile has too: its build is offline.
   buildSerde();
   // In the pilot, whose `.cargo/config.toml` is the patch.
-  const built = runSync(["cargo", `+${pin}`, "build", "--offline", "--quiet", "-p", "server"], pilot, 600_000);
+  const built = runSync(["cargo", `+${channel}`, "build", "--offline", "--quiet", "-p", "server"], pilot, 600_000);
   if (built.code !== 0) throw new Error(`the server's build failed:\n${built.stderr}`);
   [api, address] = await startServer();
   process.env.PILOT_API = address;
@@ -157,7 +157,7 @@ test("the pilot's committed JS is what rust-js writes from its Rust", async () =
   expect(committed.size).toBeGreaterThan(0);
   // Built here, as Vite's plugin builds it, so a build that fails fails this.
   const react = JSON.parse(readFileSync(join(pilot, "node_modules", "react", "package.json"), "utf8")).version;
-  await checkCargo({ manifestPath: join(pilot, "Cargo.toml"), toolchain: pin, compiler, packageName: "frontend", offline: true, react, inSource: true });
+  await checkCargo({ manifestPath: join(pilot, "Cargo.toml"), toolchain: channel, compiler, packageName: "frontend", offline: true, react, inSource: true });
   expect(writtenJs(pilot)).toEqual(committed);
 }, 600_000);
 

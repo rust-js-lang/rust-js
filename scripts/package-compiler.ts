@@ -3,6 +3,7 @@ import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, 
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { parseCompilerIdentity } from "../tooling/manifest.js";
+import { channel } from "./toolchain.ts";
 
 const root = resolve(import.meta.dir, "..");
 const [compilerPath, destination, ...extra] = Bun.argv.slice(2);
@@ -17,7 +18,7 @@ const run = (args: string[], cwd: string) => {
 };
 const identity = parseCompilerIdentity(run([compiler, "--version-json"], root));
 const version = (Bun.TOML.parse(readFileSync(join(root, "Cargo.toml"), "utf8")) as { package: { version: string } }).package.version;
-const toolchain = (Bun.TOML.parse(readFileSync(join(root, "rust-toolchain.toml"), "utf8")) as { toolchain: { channel: string } }).toolchain.channel;
+const toolchain = channel;
 if (identity.version !== version || identity.toolchain !== toolchain) throw new Error("Compiler does not match this checkout's version and Rust pin");
 // The native binary, not a launcher: one packaged as the compiler would start
 // itself, again and again.

@@ -8,10 +8,11 @@ import { dirname, join, relative } from "node:path";
 
 import type { Plugin } from "vite";
 import { installedReact } from "../../tooling/build.js";
+import { target } from "../../tooling/cargo.js";
 import { reactLibs } from "../../tooling/crates.js";
 
 export const wasmPath = join(import.meta.dir, "../target/wasm32-wasip1/release/rust-js.wasm");
-export const sysrootDir = join(import.meta.dir, "../sysroot/lib/rustlib/wasm32-unknown-unknown/lib");
+export const sysrootDir = join(import.meta.dir, `../sysroot/lib/rustlib/${target}/lib`);
 const examplesDir = join(import.meta.dir, "../../examples");
 
 // The crates rustc loads to type-check a program against `std`. Found by
@@ -53,7 +54,7 @@ export function buildReactCrate(dir = cratesDir) {
   const react = installedReact(import.meta.dir);
   if (!react) throw new Error("the playground's React isn't installed: `bun install`");
   const script = join(import.meta.dir, "../../react/build.sh");
-  const p = Bun.spawnSync([script, "-o", join(dir, "libreact.rmeta"), "--react", react, "--target", "wasm32-unknown-unknown"], { stderr: "pipe" });
+  const p = Bun.spawnSync([script, "-o", join(dir, "libreact.rmeta"), "--react", react, "--target", target], { stderr: "pipe" });
   if (p.exitCode !== 0) throw new Error(`react/build.sh failed:\n${p.stderr.toString()}`);
 }
 

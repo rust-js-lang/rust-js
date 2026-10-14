@@ -4,8 +4,10 @@ import { resolve } from "node:path";
 
 const root = resolve(import.meta.dir, "..");
 const config = Bun.TOML.parse(readFileSync(resolve(root, "rust-toolchain.toml"), "utf8")) as { toolchain?: { channel?: unknown } };
-const channel = config.toolchain?.channel;
-if (typeof channel !== "string" || !channel) throw new Error("rust-toolchain.toml must declare a channel");
+const pinned = config.toolchain?.channel;
+if (typeof pinned !== "string" || !pinned) throw new Error("rust-toolchain.toml must declare a channel");
+/** The pinned toolchain, `rust-toolchain.toml`'s channel: what each script reads it as. */
+export const channel: string = pinned;
 
 function run(args: string[]): string {
   const result = Bun.spawnSync(args, { cwd: root, stdout: "pipe", stderr: "pipe" });
@@ -13,7 +15,7 @@ function run(args: string[]): string {
   return result.stdout.toString().trim();
 }
 
-try {
+if (import.meta.main) try {
   const [command, path, ...extra] = Bun.argv.slice(2);
   if (extra.length || (command !== "check-source" && path)) throw new Error("Unexpected toolchain arguments");
   if (command === "channel") {

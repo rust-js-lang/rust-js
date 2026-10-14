@@ -8,7 +8,7 @@ import { createNativeBuilder } from "../tooling/build.js";
 import { checkCargo } from "../tooling/cargo.js";
 import { node } from "./programs";
 import { buildCompiler, compiler, fixture, root, run } from "./support";
-import { pin } from "./crates";
+import { channel } from "../scripts/toolchain.ts";
 
 beforeAll(buildCompiler, 600_000);
 
@@ -22,7 +22,7 @@ test("a Cargo build's JS in source has each inline module where its file would b
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n');
   writeFileSync(join(src, "lib.rs"), "mod api;\n\npub mod inner {\n    pub fn value() -> u32 {\n        42\n    }\n}\n\npub fn answer() -> u32 {\n    inner::value() + api::nested::one()\n}\n");
   writeFileSync(join(src, "api.rs"), "pub mod nested {\n    pub fn one() -> u32 {\n        1\n    }\n}\n");
-  const built = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  const built = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
   const { js } = built, files = built.files.get("app") ?? [];
   expect(js).toBe(join(src, "lib.js"));
   // `api` has nothing of its own, so no JS: `nested` is still in `src/api/`.
@@ -41,7 +41,7 @@ test("a Cargo build's JS in source names its own map, for a root of another name
   mkdirSync(src, { recursive: true });
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n');
   writeFileSync(join(src, "App.rs"), "pub fn answer() -> u32 {\n    42\n}\n");
-  const { js } = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  const { js } = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
   expect(js).toBe(join(src, "App.js"));
   expect(readFileSync(js, "utf8")).toEndWith("//# sourceMappingURL=App.js.map\n");
   expect(JSON.parse(readFileSync(`${js}.map`, "utf8")).file).toBe("App.js");
@@ -56,7 +56,7 @@ test("a Cargo build's JS in source refuses two modules for one file", async () =
   mkdirSync(src, { recursive: true });
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/root.rs"\n');
   writeFileSync(join(src, "root.rs"), "pub mod root {\n    pub fn value() -> u32 {\n        42\n    }\n}\n\npub fn answer() -> u32 {\n    root::value()\n}\n");
-  const inSource = () => checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  const inSource = () => checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
   await expect(inSource()).rejects.toThrow(/the crate root and module `root` would both be .*src\/root\.js/);
   expect(existsSync(join(src, "root.js"))).toBe(false);
 }, 600_000);
@@ -73,7 +73,7 @@ test("a Cargo build's JS in source refuses two crates' modules for one file", as
     const answer = name === "alpha" ? "helper::n() + beta::answer()" : "helper::n()";
     writeFileSync(join(dir, "sources", `${name}.rs`), `mod helper {\n    pub fn n() -> u32 {\n        1\n    }\n}\n\npub fn answer() -> u32 {\n    ${answer}\n}\n`);
   }
-  const inSource = () => checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "alpha", inSource: true });
+  const inSource = () => checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "alpha", inSource: true });
   await expect(inSource()).rejects.toThrow(/crate `(alpha|beta)`'s module `helper` and crate `(alpha|beta)`'s module `helper` would both be .*sources\/helper\.js/);
   expect(readdirSync(join(dir, "sources")).sort()).toEqual(["alpha.rs", "beta.rs"]);
 }, 600_000);
@@ -94,7 +94,7 @@ test("a Cargo build's JS in source is beside each module's Rust, and follows the
   mkdirSync(join(app, "nested"));
   writeFileSync(join(app, "nested", "mod.rs"), "pub fn one() -> u32 {\n    1\n}\n");
   const manifest = join(dir, "Cargo.toml");
-  const inSource = () => checkCargo({ manifestPath: manifest, toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  const inSource = () => checkCargo({ manifestPath: manifest, toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
   const { js } = await inSource();
   expect(js).toBe(join(app, "lib.js"));
   expect(readFileSync(js, "utf8")).toContain('from "../../shared/src/lib.js"');
@@ -124,7 +124,7 @@ test("a Cargo build's declarations in source are beside each module's JS", async
   writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/App.rs"\n\n[package.metadata.rust-js]\ndeclarations = true\n');
   writeFileSync(join(src, "App.rs"), "mod util;\n\npub fn answer(n: u32) -> u32 {\n    util::twice(n)\n}\n");
   writeFileSync(join(src, "util.rs"), "pub fn twice(n: u32) -> u32 {\n    n * 2\n}\n");
-  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
   expect(readdirSync(src).filter((file) => file.endsWith(".d.ts")).sort()).toEqual(["App.d.ts", "util.d.ts"]);
   expect(readFileSync(join(src, "App.d.ts"), "utf8")).toContain("export function answer(n: number): number;");
 }, 600_000);
@@ -141,7 +141,7 @@ test("a Cargo build's JS in source names each module's copy, wherever it names i
   writeFileSync(join(src, "App.rs"), "pub mod child;\npub mod plain;\n\npub struct Value {\n    pub n: u32,\n}\n\npub fn base() -> u32 {\n    1\n}\n");
   writeFileSync(join(src, "child.rs"), '#[cfg_attr(rust_js, rust_js::directive = "use client")]\nconst _: () = ();\n\npub fn twice() -> u32 {\n    crate::base() * 2\n}\n');
   writeFileSync(join(src, "plain.rs"), "pub use crate::base;\n\npub fn make() -> crate::Value {\n    crate::Value { n: 3 }\n}\n");
-  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: pin, compiler, offline: true, packageName: "app", inSource: true });
+  await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
   const child = readFileSync(join(src, "child.js"), "utf8");
   const plain = readFileSync(join(src, "plain.js"), "utf8");
   const types = readFileSync(join(src, "plain.d.ts"), "utf8");

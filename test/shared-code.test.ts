@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseManifest } from "../tooling/manifest.js";
 import { buildCompiler, buildSerde, compiler, installRuntime, root as repository, run } from "./support";
+import { channel } from "../scripts/toolchain.ts";
 
 test("independent native and JS clients share models, validation, and source edits", async () => {
   buildCompiler();
@@ -55,7 +56,6 @@ fn main() {
     // server's, for the machine it runs on, as its own Cargo build would.
     const clientFlags = buildSerde("rmeta");
     const nativeFlags = buildSerde("rlib");
-    const pin = (Bun.TOML.parse(readFileSync(join(repository, "rust-toolchain.toml"), "utf8")) as { toolchain: { channel: string } }).toolchain.channel;
     // Fresh processes also reload imported model modules after the shared edit.
     const callClient = (method: string, value: string | number) => JSON.parse(run([
       process.execPath, "-e",
@@ -64,7 +64,7 @@ fn main() {
     for (const limit of [10, 3]) {
       writeFileSync(model, definitions(limit));
       run([compiler, client, "-o", output, "--manifest", manifest, "--", ...clientFlags]);
-      run(["rustc", `+${pin}`, "--edition=2024", "--crate-name", "server", server, "-o", binary, ...nativeFlags]);
+      run(["rustc", `+${channel}`, "--edition=2024", "--crate-name", "server", server, "-o", binary, ...nativeFlags]);
       expect(parseManifest(readFileSync(manifest, "utf8")).sources).toContain(model);
       for (const count of [0, 3, 5, 10, 11]) {
         const request = callClient("request", count);
