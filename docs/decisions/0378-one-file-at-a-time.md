@@ -96,30 +96,22 @@ the names JS gives: `pub fn format_date` is `formatDate`, as ADR 0376's one
 naming rule reads a JS name back. `import {ExternalLink} from
 'components/ExternalLink'` resolves, type-checks and renders as before.
 
-**A Rust file importing a TS one** writes what it would for a Rust one,
-the TS module named in the root as a Rust one is, by its file:
-
-```rust
-#[path = "components/Button.tsx"]
-pub mod button;
-```
-
-```rust
-use crate::button::Button;
-```
-
-rust-js binds each TS module a Rust file imports from TypeScript's own
-types of it, the reverse of what `.d.ts` writes, and nobody writes a
-binding of the app's code. A type Rust can't hold as TypeScript types it is
-an error at the import, never a guess narrower or looser. When the TS
-changes, rustc checks the Rust against it; when its file moves to Rust, its
-Rust importers don't notice: the root's line says `Button.rs`.
+**A Rust file importing a TS one** binds it by hand, as TypeScript's
+world binds a JS library with a `.d.ts` it writes: the one binding form
+(ADR 0373), the TS file's exports as Rust declares them, kept in the app
+beside the Rust that uses them. Nothing generates a binding from
+TypeScript's types (decided 2026-10-14): what TypeScript says has no one
+Rust for it, and a binding is a person's, or an agent's, claim, kept
+right as it's used. When the TS file moves to Rust, its binding goes, and
+its Rust importers `use` the module.
 
 **A package** is imported by its name, `use react::use_state;`, bound by
-rust-js's own crate where it has one, React's and Next.js's, and from the
-package's types where not. **A file that isn't code**, a CSS module, an
-image or JSON, is a module typed as Next.js types it: a CSS module's class
-names, an image's `StaticImageData`.
+rust-js's own crate where it has one, React's and Next.js's, and else by
+its binding in `rust-js-lang/bindings`, each written and kept by hand as
+DefinitelyTyped's `@types` are (ADR 0119): `classnames`'s is one.
+**A file that isn't code**, a CSS module, an image or JSON, is bound as
+Next.js types it: a CSS module's class names, an image's
+`StaticImageData`.
 
 ### 4. The JS is committed; only who writes Rust needs Rust
 
@@ -184,9 +176,8 @@ also `Cargo.toml`, `src/lib.rs`, the two links and the line in
 ## Consequences
 
 - **What goes**, each a second way once this is delivered: `rust-js-next`
-  and its scripts; the `declarations` key; `js::camel_case!()`; a
-  hand-written binding of the app's own modules, and its root-relative
-  path; `[package.metadata.rust-js.format]`, a second copy of the app's
+  and its scripts; the `declarations` key; `js::camel_case!()`; a binding's
+  root-relative path, where its file's is what a person writes; `[package.metadata.rust-js.format]`, a second copy of the app's
   Prettier config.
 - **Later, not now**: one `rust-js` package on npm in place of the links;
   the compiler for Linux, Intel Macs and Windows; the toolchain fetched by
