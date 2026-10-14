@@ -971,17 +971,9 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
     }
 
-    /// Is `==` on `ty` JS's `===`?
+    /// Does `includes` find a `ty` as `==` does, `js_eq`'s SameValueZero?
     pub(super) fn eq_is_identity(&self, ty: Ty<'tcx>) -> bool {
-        // A `&mut` to one is a cell, an object (ADR 0099): not by identity.
-        if self.has_cell_layer(ty) {
-            return false;
-        }
-        let ty = ty.peel_refs();
-        self.is_string_like(ty)
-            || Num::of(ty).is_some_and(|n| !n.float())
-            || ty.is_bool()
-            || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt))
+        self.js_eq(ty) == Some(super::std_impls::JsEq::SameValue)
     }
 
     /// One of `IterComb`'s, on `items`: an array, or a JS iterator if `lazy`.

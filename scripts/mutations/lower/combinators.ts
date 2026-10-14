@@ -19,14 +19,6 @@ export const mutations: Mutation[] = [
     tests: ["test/lowering.test.ts", "-t", "unwrap_or_default of a call"],
   },
   {
-    name: "contains-by-identity",
-    breaks: "`refs.contains(&&mut 2)` is `includes`, which compares the cells by identity",
-    file: "src/lower/combinators.rs",
-    find: "        // A `&mut` to one is a cell, an object (ADR 0099): not by identity.\n        if self.has_cell_layer(ty) {",
-    replace: "        // A `&mut` to one is a cell, an object (ADR 0099): not by identity.\n        if false && self.has_cell_layer(ty) {",
-    tests: ["test/corpus.test.ts", "-t", "mut_ref_compare"],
-  },
-  {
     name: "lazy-chain-concat",
     breaks: "`[1, 2].into_iter().chain(repeat(0))` is `concat`, which adds the JS iterator as one item",
     file: "src/lower/combinators.rs",

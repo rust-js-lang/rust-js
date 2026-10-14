@@ -2009,9 +2009,6 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             // `includes` compares strings and numbers by value, as `==` does,
             // but objects by identity: only for those.
             // A `&mut` to one is a cell, an object (ADR 0099): not by identity.
-            "contains" if owner.is_slice() && self_ty.is_some_and(|t| self.compares_by_value(t)) => {
-                Std::Method("includes")
-            }
             // Of items compared by their own `==` where it isn't JS's `===`
             // (ADR 0336).
             "starts_with" | "ends_with" if owner.is_slice() => Std::Text(TextOp::SliceStartsWith {
@@ -2228,22 +2225,19 @@ impl<'a, 'tcx> Recognition<'a, 'tcx> {
             .find(|&id| is_other_fmt_trait(self.tcx, id) && self.tcx.item_name(id).as_str() == name)
     }
 
-    /// Does JS's `===` compare a `ty` as `==` does: a number, a string or a
-    /// `bool`. A `&mut` to one is a cell, an object (ADR 0099): not by value.
     /// Can no two `ty` items that `Ord` calls equal be told apart? Of
-    /// numbers, `bool`s, `char`s and text, and tuples and arrays of them.
+    /// numbers, `bool`s, `char`s and text, and tuples and arrays of them; not
+    /// through a `&mut`, a cell, an object (ADR 0099).
     fn ties_unseen(&self, ty: Ty<'tcx>) -> bool {
         match ty.kind() {
             ty::Tuple(items) => items.iter().all(|item| self.ties_unseen(item)),
             ty::Array(item, _) => self.ties_unseen(*item),
-            _ => self.compares_by_value(ty) || ty.is_char(),
+            _ => {
+                !ty.walk()
+                    .any(|part| matches!(part.as_type().map(|p| *p.kind()), Some(ty::Ref(_, _, Mutability::Mut))))
+                    && (self.is_string_like(ty) || Num::of(ty).is_some() || ty.is_bool() || ty.is_char())
+            }
         }
-    }
-
-    fn compares_by_value(&self, ty: Ty<'tcx>) -> bool {
-        !ty.walk()
-            .any(|part| matches!(part.as_type().map(|p| *p.kind()), Some(ty::Ref(_, _, Mutability::Mut))))
-            && (self.is_string_like(ty) || Num::of(ty).is_some() || ty.is_bool())
     }
 
     pub(super) fn double_ended_iterator(&self) -> Option<DefId> {

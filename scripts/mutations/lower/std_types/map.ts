@@ -43,15 +43,6 @@ export const mutations: Mutation[] = [
     tests: ["test/corpus.test.ts", "-t", "map_set_methods"],
   },
   {
-    name: "type-id-key-by-value",
-    breaks: "a `TypeId` key is found by value, a `$KeyMap`, not as a string",
-    file: "src/lower/std_types/map.rs",
-    find: "            || self.recognition().is_type_id(ty)\n",
-    replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^dyn_any.rs"],
-    snapshots: true,
-  },
-  {
     name: "tree-extract-checked",
     breaks: "a B-tree's `extract_if` of a range that ends before it starts panics",
     file: "src/lower/std_types/map.rs",

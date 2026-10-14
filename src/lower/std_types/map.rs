@@ -5,7 +5,7 @@
 use crate::js::{self, Expr, Op, Stmt, StmtKind};
 
 use crate::lower::recognition::StdItem;
-use crate::lower::representation::{Num, is_string_enum};
+use crate::lower::representation::Num;
 use crate::lower::std_types::range::RangeKind;
 use crate::lower::{FnCx, R};
 use rustc_hir::attrs::lang_items::LangItem;
@@ -482,12 +482,10 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
             })
     }
 
+    /// A key a JS `Map` holds as it is, a primitive `js_eq` compares, not
+    /// `()`.
     pub(in crate::lower) fn is_primitive_key(&self, ty: Ty<'tcx>) -> bool {
-        self.is_string_like(ty)
-            || self.recognition().is_type_id(ty)
-            || Num::of(ty).is_some()
-            || ty.is_bool()
-            || matches!(ty.kind(), ty::Adt(adt, _) if is_string_enum(self.tcx, *adt))
+        !ty.is_unit() && self.js_eq(ty).is_some()
     }
 
     pub(in crate::lower) fn compares_by_value(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
@@ -497,9 +495,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         seen.push(ty);
         match ty.kind() {
-            _ if Num::of(ty).is_some_and(Num::float) => false,
-            _ if ty.is_unit() => true,
-            _ if self.is_primitive_key(ty) => !self.has_user_impl(self.partial_eq_trait(), ty),
+            _ if let Some(eq) = self.js_eq(ty) => eq == crate::lower::std_impls::JsEq::SameValue,
             ty::Tuple(parts) => parts.iter().all(|t| self.compares_by_value(t, seen)),
             ty::Array(item, _) | ty::Slice(item) => self.compares_by_value(*item, seen),
             ty::Adt(_, args) if self.is_lang_adt(ty, LangItem::Option) || ty.is_box() || self.is_vec_like(ty) => {

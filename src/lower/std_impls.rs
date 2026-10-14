@@ -14,6 +14,13 @@ use rustc_middle::ty::{self, Ty, TypeVisitableExt};
 use rustc_span::def_id::DefId;
 use rustc_span::{Span, Symbol};
 
+/// How JS compares a value as Rust's `==` does (`FnCx::js_eq`): by `===`
+/// only, a float's; or by SameValueZero too, `includes`' and a `Map`'s.
+#[derive(Clone, Copy, PartialEq)]
+pub(super) enum JsEq {
+    Strict,
+    SameValue,
+}
 impl<'a, 'tcx> FnCx<'a, 'tcx> {
     pub(super) fn clone_trait(&self) -> DefId {
         self.tcx.require_lang_item(LangItem::Clone, rustc_span::DUMMY_SP)
@@ -585,24 +592,32 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         self.tcx.require_lang_item(LangItem::PartialEq, rustc_span::DUMMY_SP)
     }
 
-    /// Is `==` on `ty` JS's `===`: strings, numbers, `bool`s, `()` and
-    /// fieldless enums, all JS primitives?
-    fn is_primitive_eq(&self, ty: Ty<'tcx>) -> bool {
+    /// How JS's own comparison of a `ty` agrees with Rust's `==`, if it
+    /// does: of a JS primitive, a string, a number, a `bool`, `()`, a
+    /// fieldless enum of no `eq` of the crate's, `===` does; and
+    /// SameValueZero, `includes`' and a `Map`'s, does too but of a float,
+    /// whose `NaN` it finds where `==` doesn't. The one answer, which `==`,
+    /// `contains` and a map's keys ask.
+    pub(super) fn js_eq(&self, ty: Ty<'tcx>) -> Option<JsEq> {
         // A `&mut` to a number is a cell, an object (ADR 0099).
         if self.has_cell_layer(ty) {
-            return false;
+            return None;
         }
         let ty = ty.peel_refs();
         // A parse error is its message, which tells its kind, as its derived
-        // `==` compares (ADR 0063).
-        self.is_string_like(ty)
+        // `==` compares (ADR 0063); a `TypeId` its type's key (ADR 0331).
+        let primitive = self.is_string_like(ty)
             || self.is_parse_error(ty)
-            // A `TypeId` is its type's key (ADR 0331).
             || self.recognition().is_type_id(ty)
             || Num::of(ty).is_some()
             || ty.is_bool()
             || ty.is_unit()
-            || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt))
+            || matches!(ty.kind(), ty::Adt(adt, _) if super::representation::is_string_enum(self.tcx, *adt)
+                && !self.has_user_impl(self.partial_eq_trait(), ty));
+        primitive.then(|| match Num::of(ty).is_some_and(Num::float) {
+            true => JsEq::Strict,
+            false => JsEq::SameValue,
+        })
     }
 
     /// Does `==` on `ty` run code of its own anywhere in it: a hand-written
@@ -614,7 +629,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
 
     fn custom_eq_in(&self, ty: Ty<'tcx>, seen: &mut Vec<Ty<'tcx>>) -> bool {
         let ty = ty.peel_refs();
-        if seen.contains(&ty) || self.is_primitive_eq(ty) {
+        if seen.contains(&ty) || self.js_eq(ty).is_some() {
             return false;
         }
         seen.push(ty);
@@ -667,7 +682,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
                 _ => {}
             }
         }
-        if self.is_primitive_eq(ty) {
+        if self.js_eq(ty).is_some() {
             return Ok(Expr::bin(Op::Eq, a, b));
         }
         // A type of a type parameter whose `PartialEq` a bound gives, a
@@ -727,7 +742,7 @@ impl<'a, 'tcx> FnCx<'a, 'tcx> {
         }
         if let Some(inner) = self.option_of(ty) {
             // `==`, so that `null` and `undefined` are both `None`.
-            if self.is_primitive_eq(inner) {
+            if self.js_eq(inner).is_some() {
                 return Ok(Expr::bin(Op::LooseEq, a, b));
             }
         }

@@ -1009,8 +1009,8 @@ export const mutations: Mutation[] = [
     name: "ties-always-unseen",
     breaks: "an unstable sort of a type's own `Ord` is JS's stable sort",
     file: "src/lower/recognition.rs",
-    find: "            _ => self.compares_by_value(ty) || ty.is_char(),",
-    replace: "            _ => true,",
+    find: "            _ => {\n                !ty.walk()\n",
+    replace: "            _ => true || {\n                !ty.walk()\n",
     tests: ["test/corpus.test.ts","-t","sort_unstable_ties"],
   },
   {
