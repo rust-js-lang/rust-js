@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
 import { dirname, extname, join, resolve, sep } from "node:path";
-import { createNativeBuilder, findCompiler } from "@rust-js/build/build";
+import { cacheDirOf, createNativeBuilder, findCompiler } from "@rust-js/build/build";
 import { parseManifest } from "@rust-js/build/manifest";
 import { writePatch } from "@rust-js/build/patch";
 
@@ -50,7 +50,7 @@ export default function rustJs({ crates = ["src/App.rs"], rustJs, compile: custo
   const generated = new Set();
   // Committed files used without rust-js, whose maps may not be committed.
   const committed = new Set();
-  const manifestPath = crate => join(cacheDir ?? join(root, "node_modules/.cache/rust-js"), "vite", createHash("sha256").update(resolve(root, crate)).digest("hex") + ".json");
+  const manifestPath = crate => join(cacheDir ?? cacheDirOf(root), "vite", createHash("sha256").update(resolve(root, crate)).digest("hex") + ".json");
 
   // Every crate Cargo built, or found done: each is a manifest here, and
   // every edit is one `cargo check`, which rebuilds what it changed.

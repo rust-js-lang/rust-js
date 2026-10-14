@@ -39,6 +39,12 @@ function markUsed(path) {
 export const defaultResources = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const defaultCompiler = join(defaultResources, "target/debug/rust-js");
 
+/** Where rust-js keeps what it makes for an app, outside what it commits:
+ * its Cargo builds, its crates' metadata and each host's manifests. */
+export function cacheDirOf(root) {
+  return join(root, "node_modules/.cache/rust-js");
+}
+
 export function findCompiler(root) {
   const require = createRequire(join(root, "package.json"));
   try { return join(dirname(require.resolve("@rust-js/native/package.json")), "bin/rust-js"); }
@@ -106,7 +112,7 @@ function run(command, args, cwd, env = {}, warn) {
   });
 }
 
-export function createNativeBuilder({ root, rustJs = findCompiler(root), resources = installedResources(root), cacheDir = join(root, "node_modules/.cache/rust-js"), rustcFlags = [], bindings = ["react"], externs = {} }) {
+export function createNativeBuilder({ root, rustJs = findCompiler(root), resources = installedResources(root), cacheDir = cacheDirOf(root), rustcFlags = [], bindings = ["react"], externs = {} }) {
   const repo = resources;
   const compilerPath = existsSync(rustJs) ? realpathSync(rustJs) : rustJs;
   const compilerInputs = [...new Set([rustJs, compilerPath])];

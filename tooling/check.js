@@ -7,7 +7,7 @@
 //
 //   rust-js-check [app-dir]
 import { join, resolve } from "node:path";
-import { createNativeBuilder, findCompiler } from "./build.js";
+import { cacheDirOf, createNativeBuilder, findCompiler } from "./build.js";
 import { writePatch } from "./patch.js";
 
 const app = resolve(process.argv[2] ?? ".");
@@ -18,7 +18,7 @@ try {
   process.exitCode = await builder.editorCheck({
     manifestPath: join(app, "Cargo.toml"),
     // Not the dev server's, whose Turbopack or Vite doesn't watch it either.
-    targetDir: process.env.CARGO_TARGET_DIR ?? join(app, "node_modules/.cache/rust-js/editor"),
+    targetDir: process.env.CARGO_TARGET_DIR ?? join(cacheDirOf(app), "editor"),
   });
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : error}\n`);

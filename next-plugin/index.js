@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { existsSync, watch } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve, sep } from "node:path";
-import { createNativeBuilder, findCompiler } from "@rust-js/build/build";
+import { cacheDirOf, createNativeBuilder, findCompiler } from "@rust-js/build/build";
 import { writePatch } from "@rust-js/build/patch";
 
 /**
@@ -23,7 +23,7 @@ export async function run({ app, command, args, rustJs, log = (line) => process.
   // What Cargo writes is out of what Turbopack watches: it watches the app's
   // files, all but node_modules' and .next's, and a `cargo check` on every
   // save rewrites many of target/'s, which it would see as many changes.
-  process.env.CARGO_TARGET_DIR ??= join(app, "node_modules/.cache/rust-js/target");
+  process.env.CARGO_TARGET_DIR ??= join(cacheDirOf(app), "target");
   const compiler = resolve(app, rustJs ?? findCompiler(app));
   const builder = createNativeBuilder({ root: app, rustJs: compiler });
   const manifestPath = join(app, "Cargo.toml");

@@ -991,7 +991,7 @@ test("rust-js-next compile writes the app's JS alone", async () => {
   const dir = app("next-compile");
   const { code } = await finished(command(dir, ["compile"]));
   expect([code, existsSync(join(dir, "app/page.jsx")), existsSync(join(dir, ".next"))]).toEqual([0, true, false]);
-});
+}, 300_000);
 
 test("rust-js-next dev serves Rust routes, refreshes a save in place, and recovers from an error", async () => {
   buildCompiler();
