@@ -170,3 +170,20 @@ test("a Cargo build's committed JS is beside its root module's Rust, wherever th
   writeFileSync(join(dir, "app", "page.jsx"), "export function one() {\n  return 1;\n}\n");
   expect(await session.committed()).toBe(join(dir, "app", "page.jsx"));
 });
+
+// An app's root is its list of files, `#[path = ..] pub mod external_link;`,
+// and writes no JS of its own (ADR 0382): its modules' JS is written beside
+// their Rust, and the build has no root JS to give.
+test("a Cargo build of a root of `mod`s alone writes its modules' JS, and none of the root's", async () => {
+  const dir = fixture("cargo-in-source-list");
+  mkdirSync(join(dir, "src", "components"), { recursive: true });
+  writeFileSync(join(dir, "Cargo.toml"), '[package]\nname = "app"\nversion = "0.1.0"\nedition = "2024"\n\n[lib]\npath = "src/lib.rs"\n');
+  writeFileSync(join(dir, "src", "lib.rs"), '#[path = "components/Answer.rs"]\npub mod answer;\n');
+  writeFileSync(join(dir, "src", "components", "Answer.rs"), "pub fn answer() -> u32 {\n    42\n}\n");
+  const built = await checkCargo({ manifestPath: join(dir, "Cargo.toml"), toolchain: channel, compiler, offline: true, packageName: "app", inSource: true });
+  expect(built.js).toBeUndefined();
+  expect(built.files.get("app")).toContain(join(dir, "src", "components", "Answer.js"));
+  expect(existsSync(join(dir, "src", "lib.js"))).toBe(false);
+  const answer = join(dir, "src", "components", "Answer.js");
+  expect(run([node ?? "node", "--input-type=module", "--eval", `console.log((await import(${JSON.stringify(answer)})).answer());`]).trim()).toBe("42");
+}, 600_000);

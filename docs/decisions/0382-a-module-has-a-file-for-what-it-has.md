@@ -22,6 +22,9 @@ wrote no file, its import lost without a word.
 re-export or a default. The root is no other: a root of `mod`s alone
 writes none.**
 
+- A Cargo build's root is its manifest's `input`, and its JS, a host's
+  entry, none for a root of `mod`s alone: the host found the root among
+  the modules with a file, and failed where there was none.
 - The Vite plugin's entry is a root that has its `App`, so it has its file.
 - Without a compiler, the Next.js plugin builds the JS committed beside
   the Rust, the root's or, for a root of `mod`s alone, its modules', and

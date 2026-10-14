@@ -161,6 +161,7 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
   });
   const crates = new Map();
   let js;
+  let compiled = false;
   // What's written in source, and how, beside Cargo's builds: `cargo clean`
   // forgets it, and then nothing in source is taken as this build's.
   let ledger;
@@ -181,13 +182,17 @@ export async function checkCargo({ manifestPath, toolchain, compiler, packageNam
       throw new Error(`${changed.file} isn't what rust-js wrote for Cargo's build of ${name}, which has it as done: `
         + `\`cargo clean -p ${name} --target ${target}\` to build it again`);
     }
-    // The crate root's module: `lib.jsx` when it has JSX (ADR 0075).
+    // The crate root's module: `lib.jsx` when it has JSX (ADR 0075); none
+    // for a root of `mod`s alone, an app's list of its files (ADR 0382).
     ledger ??= join(dirname(dirname(marker)), "rust-js-in-source.json");
-    const entry = { js: built.modules.find(module => module.module.length === 0).file, manifest: library };
+    const entry = { js: built.modules.find(module => module.module.length === 0)?.file, manifest: library };
     crates.set(message.target.name, entry);
-    if (packageName ? packageNameOf(message.package_id) === packageName : message.manifest_path === manifest) js = entry.js;
+    if (packageName ? packageNameOf(message.package_id) === packageName : message.manifest_path === manifest) {
+      compiled = true;
+      js = entry.js;
+    }
   }
-  if (!js) throw new Error(`rust-js compiled no library of ${packageName ?? manifest}`);
+  if (!compiled) throw new Error(`rust-js compiled no library of ${packageName ?? manifest}`);
   // Each with its crate's name, as Cargo has it: the app's manifest, a
   // program's, has no library to say it (ADR 0360).
   const validated = new Map([...crates].map(([crate, { manifest }]) => [crate, parseManifest(readFileSync(manifest, "utf8"))]));
@@ -271,7 +276,7 @@ export function writeInSource(manifests, ledger, routes = []) {
   // Every file's bytes, each crate's, before any is written: a read or a
   // map that fails, fails here.
   const writes = new Map();
-  const crates = manifests.map(({ modules }) => {
+  const crates = manifests.map(({ input, modules }) => {
     const files = [];
     for (const { file, map, types, links, type_links } of modules) {
       const to = moved.get(file);
@@ -294,7 +299,7 @@ export function writeInSource(manifests, ledger, routes = []) {
         files.push(`${to}.map`);
       }
     }
-    return { root: dirname(modules.find((module) => module.module.length === 0).source), files };
+    return { root: dirname(input), files };
   });
   // What this build wrote before beside each of its crates' Rust, by the
   // ledger, that it doesn't now: gone, if no one has changed it since.
