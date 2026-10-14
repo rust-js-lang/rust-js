@@ -693,7 +693,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        ExprKind::Template(_, values, _) => values.iter().all(past),\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^option_result_methods.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^format_args_order.rs$"],
     snapshots: true,
   },
   {
@@ -711,7 +711,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir/tidy.rs",
     find: "        ExprKind::Call(callee, args) if callee.helper_name().is_some_and(crate::runtime::is_pure) => {\n            args.iter().all(past)\n        }\n",
     replace: "",
-    tests: ["test/corpus.test.ts", "-t", "^option_result_methods.rs$"],
+    tests: ["test/corpus.test.ts", "-t", "^text_edits.rs$"],
     snapshots: true,
   },
   {
