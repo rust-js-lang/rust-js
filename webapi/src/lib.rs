@@ -817,14 +817,6 @@ impl Text {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/assignedSlot)
-    #[cfg_attr(rust_js, rust_js::link_name = "get assignedSlot")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn assigned_slot(&self) -> Option<&'static HTMLSlotElement> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/getBoxQuads)
     #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -886,6 +878,14 @@ impl Text {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn convert_point_from_node_with_options(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Text/assignedSlot)
+    #[cfg_attr(rust_js, rust_js::link_name = "get assignedSlot")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn assigned_slot(&self) -> Option<&'static HTMLSlotElement> {
         unreachable!()
     }
 
@@ -958,101 +958,219 @@ pub mod element {
 }
 
 impl Element {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestFullscreen)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestFullscreen")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_fullscreen(&self) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestFullscreen)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestFullscreen")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_fullscreen_with_options(&self, options: FullscreenOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onfullscreenchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onfullscreenchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenerror)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onfullscreenerror(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenerror)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenerror")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onfullscreenerror(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestPointerLock)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestPointerLock")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_pointer_lock(&self) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestPointerLock)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestPointerLock")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_pointer_lock_with_options(&self, options: PointerLockOptions) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setPointerCapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "setPointerCapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_pointer_capture(&self, pointer_id: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/releasePointerCapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "releasePointerCapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn release_pointer_capture(&self, pointer_id: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/hasPointerCapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "hasPointerCapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn has_pointer_capture(&self, pointer_id: i32) -> bool {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/computedStyleMap)
     #[cfg_attr(rust_js, rust_js::link_name = "computedStyleMap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn computed_style_map(&self) -> &'static StylePropertyMapReadOnly {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getClientRects)
+    #[cfg_attr(rust_js, rust_js::link_name = "getClientRects")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_client_rects(&self) -> &'static DOMRectList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoundingClientRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBoundingClientRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_bounding_client_rect(&self) -> &'static DOMRect {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/checkVisibility)
+    #[cfg_attr(rust_js, rust_js::link_name = "checkVisibility")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn check_visibility(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/checkVisibility)
+    #[cfg_attr(rust_js, rust_js::link_name = "checkVisibility")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn check_visibility_with_options(&self, options: CheckVisibilityOptions) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_into_view(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_into_view_with_arg(&self, arg: impl IntoBoolOrScrollIntoViewOptions) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTop)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollTop")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_top(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTop)
+    #[cfg_attr(rust_js, rust_js::link_name = "set scrollTop")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_scroll_top(&self, value: f64) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollLeft)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollLeft")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_left(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollLeft)
+    #[cfg_attr(rust_js, rust_js::link_name = "set scrollLeft")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_scroll_left(&self, value: f64) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollWidth)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollWidth")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_width(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollHeight)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollHeight")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_height(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientTop)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clientTop")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn client_top(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientLeft)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clientLeft")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn client_left(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientWidth)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clientWidth")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn client_width(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientHeight)
+    #[cfg_attr(rust_js, rust_js::link_name = "get clientHeight")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn client_height(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/currentCSSZoom)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentCSSZoom")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_css_zoom(&self) -> f64 {
         unreachable!()
     }
 
@@ -1376,6 +1494,56 @@ impl Element {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestFullscreen)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestFullscreen")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_fullscreen(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestFullscreen)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestFullscreen")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_fullscreen_with_options(&self, options: FullscreenOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onfullscreenchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onfullscreenchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onfullscreenerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/onfullscreenerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onfullscreenerror(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setHTML)
     #[cfg_attr(rust_js, rust_js::link_name = "setHTML")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -1448,211 +1616,243 @@ impl Element {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getClientRects)
-    #[cfg_attr(rust_js, rust_js::link_name = "getClientRects")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/setPointerCapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "setPointerCapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_client_rects(&self) -> &'static DOMRectList {
+    pub fn set_pointer_capture(&self, pointer_id: i32) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoundingClientRect)
-    #[cfg_attr(rust_js, rust_js::link_name = "getBoundingClientRect")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/releasePointerCapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "releasePointerCapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_bounding_client_rect(&self) -> &'static DOMRect {
+    pub fn release_pointer_capture(&self, pointer_id: i32) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/checkVisibility)
-    #[cfg_attr(rust_js, rust_js::link_name = "checkVisibility")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/hasPointerCapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "hasPointerCapture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn check_visibility(&self) -> bool {
+    pub fn has_pointer_capture(&self, pointer_id: i32) -> bool {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/checkVisibility)
-    #[cfg_attr(rust_js, rust_js::link_name = "checkVisibility")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestPointerLock)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestPointerLock")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn check_visibility_with_options(&self, options: CheckVisibilityOptions) -> bool {
+    pub fn request_pointer_lock(&self) -> Promise<()> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/requestPointerLock)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestPointerLock")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_into_view(&self) -> Promise<()> {
+    pub fn request_pointer_lock_with_options(&self, options: PointerLockOptions) -> Promise<()> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollIntoView)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollIntoView")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoxQuads)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_into_view_with_arg(&self, arg: impl IntoBoolOrScrollIntoViewOptions) -> Promise<()> {
+    pub fn get_box_quads(&self) -> Vec<&'static DOMQuad> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoxQuads)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll(&self) -> Promise<()> {
+    pub fn get_box_quads_with_options(&self, options: BoxQuadOptions<'_>) -> Vec<&'static DOMQuad> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertQuadFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+    pub fn convert_quad_from_node(&self, quad: DOMQuadInit, from: impl IntoGeometryNode) -> &'static DOMQuad {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertQuadFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn convert_quad_from_node_with_options(&self, quad: DOMQuadInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertRectFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_to(&self) -> Promise<()> {
+    pub fn convert_rect_from_node(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode) -> &'static DOMQuad {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertRectFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_to_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+    pub fn convert_rect_from_node_with_options(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertPointFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_to_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn convert_point_from_node(&self, point: DOMPointInit, from: impl IntoGeometryNode) -> &'static DOMPoint {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertPointFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_by(&self) -> Promise<()> {
+    pub fn convert_point_from_node_with_options(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMPoint {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/children)
+    #[cfg_attr(rust_js, rust_js::link_name = "get children")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_by_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+    pub fn children(&self) -> &'static HTMLCollection {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/firstElementChild)
+    #[cfg_attr(rust_js, rust_js::link_name = "get firstElementChild")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_by_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+    pub fn first_element_child(&self) -> Option<&'static Element> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTop)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollTop")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/lastElementChild)
+    #[cfg_attr(rust_js, rust_js::link_name = "get lastElementChild")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_top(&self) -> f64 {
+    pub fn last_element_child(&self) -> Option<&'static Element> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollTop)
-    #[cfg_attr(rust_js, rust_js::link_name = "set scrollTop")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/childElementCount)
+    #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scroll_top(&self, value: f64) {
+    pub fn child_element_count(&self) -> u32 {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollLeft)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollLeft")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prepend)
+    #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_left(&self) -> f64 {
+    pub fn prepend(&self, nodes: impl IntoNodeOrStr) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollLeft)
-    #[cfg_attr(rust_js, rust_js::link_name = "set scrollLeft")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/append)
+    #[cfg_attr(rust_js, rust_js::link_name = "append")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_scroll_left(&self, value: f64) {
+    pub fn append(&self, nodes: impl IntoNodeOrStr) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollWidth)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollWidth")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceChildren)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_width(&self) -> i32 {
+    pub fn replace_children(&self, nodes: impl IntoNodeOrStr) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/scrollHeight)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollHeight")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/moveBefore)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scroll_height(&self) -> i32 {
+    pub fn move_before(&self, node: &Node, child: &Node) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientTop)
-    #[cfg_attr(rust_js, rust_js::link_name = "get clientTop")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/querySelector)
+    #[cfg_attr(rust_js, rust_js::link_name = "querySelector")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_top(&self) -> i32 {
+    pub fn query_selector(&self, selectors: &str) -> Option<&'static Element> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientLeft)
-    #[cfg_attr(rust_js, rust_js::link_name = "get clientLeft")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/querySelectorAll)
+    #[cfg_attr(rust_js, rust_js::link_name = "querySelectorAll")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_left(&self) -> i32 {
+    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList<Element> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientWidth)
-    #[cfg_attr(rust_js, rust_js::link_name = "get clientWidth")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/previousElementSibling)
+    #[cfg_attr(rust_js, rust_js::link_name = "get previousElementSibling")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_width(&self) -> i32 {
+    pub fn previous_element_sibling(&self) -> Option<&'static Element> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/clientHeight)
-    #[cfg_attr(rust_js, rust_js::link_name = "get clientHeight")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/nextElementSibling)
+    #[cfg_attr(rust_js, rust_js::link_name = "get nextElementSibling")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn client_height(&self) -> i32 {
+    pub fn next_element_sibling(&self) -> Option<&'static Element> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/currentCSSZoom)
-    #[cfg_attr(rust_js, rust_js::link_name = "get currentCSSZoom")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/before)
+    #[cfg_attr(rust_js, rust_js::link_name = "before")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn current_css_zoom(&self) -> f64 {
+    pub fn before(&self, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/after)
+    #[cfg_attr(rust_js, rust_js::link_name = "after")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn after(&self, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWith)
+    #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn replace_with(&self, nodes: impl IntoNodeOrStr) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/remove)
+    #[cfg_attr(rust_js, rust_js::link_name = "remove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn remove(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/assignedSlot)
+    #[cfg_attr(rust_js, rust_js::link_name = "get assignedSlot")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn assigned_slot(&self) -> Option<&'static HTMLSlotElement> {
         unreachable!()
     }
 
@@ -2520,206 +2720,6 @@ impl Element {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/children)
-    #[cfg_attr(rust_js, rust_js::link_name = "get children")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn children(&self) -> &'static HTMLCollection {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/firstElementChild)
-    #[cfg_attr(rust_js, rust_js::link_name = "get firstElementChild")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn first_element_child(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/lastElementChild)
-    #[cfg_attr(rust_js, rust_js::link_name = "get lastElementChild")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn last_element_child(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/childElementCount)
-    #[cfg_attr(rust_js, rust_js::link_name = "get childElementCount")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn child_element_count(&self) -> u32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/prepend)
-    #[cfg_attr(rust_js, rust_js::link_name = "prepend")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn prepend(&self, nodes: impl IntoNodeOrStr) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/append)
-    #[cfg_attr(rust_js, rust_js::link_name = "append")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn append(&self, nodes: impl IntoNodeOrStr) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceChildren)
-    #[cfg_attr(rust_js, rust_js::link_name = "replaceChildren")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn replace_children(&self, nodes: impl IntoNodeOrStr) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/moveBefore)
-    #[cfg_attr(rust_js, rust_js::link_name = "moveBefore")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn move_before(&self, node: &Node, child: &Node) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/querySelector)
-    #[cfg_attr(rust_js, rust_js::link_name = "querySelector")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn query_selector(&self, selectors: &str) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/querySelectorAll)
-    #[cfg_attr(rust_js, rust_js::link_name = "querySelectorAll")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn query_selector_all(&self, selectors: &str) -> &'static NodeList<Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/previousElementSibling)
-    #[cfg_attr(rust_js, rust_js::link_name = "get previousElementSibling")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn previous_element_sibling(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/nextElementSibling)
-    #[cfg_attr(rust_js, rust_js::link_name = "get nextElementSibling")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn next_element_sibling(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/before)
-    #[cfg_attr(rust_js, rust_js::link_name = "before")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn before(&self, nodes: impl IntoNodeOrStr) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/after)
-    #[cfg_attr(rust_js, rust_js::link_name = "after")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn after(&self, nodes: impl IntoNodeOrStr) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/replaceWith)
-    #[cfg_attr(rust_js, rust_js::link_name = "replaceWith")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn replace_with(&self, nodes: impl IntoNodeOrStr) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/remove)
-    #[cfg_attr(rust_js, rust_js::link_name = "remove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn remove(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/assignedSlot)
-    #[cfg_attr(rust_js, rust_js::link_name = "get assignedSlot")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn assigned_slot(&self) -> Option<&'static HTMLSlotElement> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoxQuads)
-    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_box_quads(&self) -> Vec<&'static DOMQuad> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/getBoxQuads)
-    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_box_quads_with_options(&self, options: BoxQuadOptions<'_>) -> Vec<&'static DOMQuad> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertQuadFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn convert_quad_from_node(&self, quad: DOMQuadInit, from: impl IntoGeometryNode) -> &'static DOMQuad {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertQuadFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn convert_quad_from_node_with_options(&self, quad: DOMQuadInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertRectFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn convert_rect_from_node(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode) -> &'static DOMQuad {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertRectFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn convert_rect_from_node_with_options(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertPointFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn convert_point_from_node(&self, point: DOMPointInit, from: impl IntoGeometryNode) -> &'static DOMPoint {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Element/convertPointFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn convert_point_from_node_with_options(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMPoint {
-        unreachable!()
-    }
-
 }
 
 /// [`Document`](https://developer.mozilla.org/docs/Web/API/Document)
@@ -2788,167 +2788,75 @@ pub mod document {
 }
 
 impl Document {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fragmentDirective)
-    #[cfg_attr(rust_js, rust_js::link_name = "get fragmentDirective")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn fragment_directive(&self) -> &'static FragmentDirective {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreenEnabled)
-    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenEnabled")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn fullscreen_enabled(&self) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreen)
-    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreen")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn fullscreen(&self) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitFullscreen)
-    #[cfg_attr(rust_js, rust_js::link_name = "exitFullscreen")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn exit_fullscreen(&self) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onfullscreenchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onfullscreenchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenerror)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onfullscreenerror(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenerror)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenerror")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onfullscreenerror(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getSelection)
-    #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_selection(&self) -> Option<&'static Selection> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/timeline)
-    #[cfg_attr(rust_js, rust_js::link_name = "get timeline")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn timeline(&self) -> &'static DocumentTimeline {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pictureInPictureEnabled)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureEnabled")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn picture_in_picture_enabled(&self) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitPictureInPicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "exitPictureInPicture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn exit_picture_in_picture(&self) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerlockchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerlockchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerlockchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockerror)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockerror")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerlockerror(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockerror)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerlockerror")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerlockerror(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitPointerLock)
-    #[cfg_attr(rust_js, rust_js::link_name = "exitPointerLock")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn exit_pointer_lock(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/hasStorageAccess)
-    #[cfg_attr(rust_js, rust_js::link_name = "hasStorageAccess")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn has_storage_access(&self) -> Promise<bool> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/requestStorageAccess)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestStorageAccess")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_storage_access(&self) -> Promise<()> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/rootElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get rootElement")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn root_element(&self) -> Option<&'static SVGSVGElement> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition)
+    #[cfg_attr(rust_js, rust_js::link_name = "startViewTransition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn start_view_transition(&self) -> &'static ViewTransition {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition)
+    #[cfg_attr(rust_js, rust_js::link_name = "startViewTransition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn start_view_transition_with_callback_options(&self, callback_options: impl IntoListenerOrStartViewTransitionOptions) -> &'static ViewTransition {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/activeViewTransition)
+    #[cfg_attr(rust_js, rust_js::link_name = "get activeViewTransition")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn active_view_transition(&self) -> Option<&'static ViewTransition> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/elementFromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "elementFromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn element_from_point(&self, x: f64, y: f64) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/elementsFromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "elementsFromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn elements_from_point(&self, x: f64, y: f64) -> Vec<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/caretPositionFromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "caretPositionFromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn caret_position_from_point(&self, x: f64, y: f64) -> Option<&'static CaretPosition> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/caretPositionFromPoint)
+    #[cfg_attr(rust_js, rust_js::link_name = "caretPositionFromPoint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn caret_position_from_point_with_options(&self, x: f64, y: f64, options: CaretPositionFromPointOptions<'_>) -> Option<&'static CaretPosition> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/scrollingElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollingElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scrolling_element(&self) -> Option<&'static Element> {
         unreachable!()
     }
 
@@ -3216,27 +3124,61 @@ impl Document {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition)
-    #[cfg_attr(rust_js, rust_js::link_name = "startViewTransition")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreenEnabled)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenEnabled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn start_view_transition(&self) -> &'static ViewTransition {
+    pub fn fullscreen_enabled(&self) -> bool {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/startViewTransition)
-    #[cfg_attr(rust_js, rust_js::link_name = "startViewTransition")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreen)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreen")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn start_view_transition_with_callback_options(&self, callback_options: impl IntoListenerOrStartViewTransitionOptions) -> &'static ViewTransition {
+    pub fn fullscreen(&self) -> bool {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/activeViewTransition)
-    #[cfg_attr(rust_js, rust_js::link_name = "get activeViewTransition")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitFullscreen)
+    #[cfg_attr(rust_js, rust_js::link_name = "exitFullscreen")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn active_view_transition(&self) -> Option<&'static ViewTransition> {
+    pub fn exit_fullscreen(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onfullscreenchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onfullscreenchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onfullscreenerror")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onfullscreenerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onfullscreenerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onfullscreenerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onfullscreenerror(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -3754,43 +3696,101 @@ impl Document {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/elementFromPoint)
-    #[cfg_attr(rust_js, rust_js::link_name = "elementFromPoint")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pictureInPictureEnabled)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureEnabled")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn element_from_point(&self, x: f64, y: f64) -> Option<&'static Element> {
+    pub fn picture_in_picture_enabled(&self) -> bool {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/elementsFromPoint)
-    #[cfg_attr(rust_js, rust_js::link_name = "elementsFromPoint")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitPictureInPicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "exitPictureInPicture")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn elements_from_point(&self, x: f64, y: f64) -> Vec<&'static Element> {
+    pub fn exit_picture_in_picture(&self) -> Promise<()> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/caretPositionFromPoint)
-    #[cfg_attr(rust_js, rust_js::link_name = "caretPositionFromPoint")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockchange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn caret_position_from_point(&self, x: f64, y: f64) -> Option<&'static CaretPosition> {
+    pub fn onpointerlockchange(&self) -> Option<&'static JsObject> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/caretPositionFromPoint)
-    #[cfg_attr(rust_js, rust_js::link_name = "caretPositionFromPoint")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerlockchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn caret_position_from_point_with_options(&self, x: f64, y: f64, options: CaretPositionFromPointOptions<'_>) -> Option<&'static CaretPosition> {
+    pub fn set_onpointerlockchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/scrollingElement)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollingElement")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerlockerror")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scrolling_element(&self) -> Option<&'static Element> {
+    pub fn onpointerlockerror(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerlockerror)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerlockerror")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerlockerror(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/exitPointerLock)
+    #[cfg_attr(rust_js, rust_js::link_name = "exitPointerLock")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn exit_pointer_lock(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fragmentDirective)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fragmentDirective")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fragment_directive(&self) -> &'static FragmentDirective {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getSelection)
+    #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_selection(&self) -> Option<&'static Selection> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/hasStorageAccess)
+    #[cfg_attr(rust_js, rust_js::link_name = "hasStorageAccess")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn has_storage_access(&self) -> Promise<bool> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/requestStorageAccess)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestStorageAccess")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_storage_access(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/timeline)
+    #[cfg_attr(rust_js, rust_js::link_name = "get timeline")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn timeline(&self) -> &'static DocumentTimeline {
         unreachable!()
     }
 
@@ -3802,43 +3802,75 @@ impl Document {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_box_quads(&self) -> Vec<&'static DOMQuad> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_box_quads_with_options(&self, options: BoxQuadOptions<'_>) -> Vec<&'static DOMQuad> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertQuadFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn convert_quad_from_node(&self, quad: DOMQuadInit, from: impl IntoGeometryNode) -> &'static DOMQuad {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertQuadFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn convert_quad_from_node_with_options(&self, quad: DOMQuadInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertRectFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn convert_rect_from_node(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode) -> &'static DOMQuad {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertRectFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn convert_rect_from_node_with_options(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertPointFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn convert_point_from_node(&self, point: DOMPointInit, from: impl IntoGeometryNode) -> &'static DOMPoint {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertPointFromNode)
+    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn convert_point_from_node_with_options(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMPoint {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getElementById)
     #[cfg_attr(rust_js, rust_js::link_name = "getElementById")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_element_by_id(&self, element_id: &str) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreenElement)
-    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenElement")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn fullscreen_element(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getAnimations)
-    #[cfg_attr(rust_js, rust_js::link_name = "getAnimations")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_animations(&self) -> Vec<&'static Animation> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pictureInPictureElement)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureElement")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn picture_in_picture_element(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pointerLockElement)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pointerLockElement")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn pointer_lock_element(&self) -> Option<&'static Element> {
         unreachable!()
     }
 
@@ -3874,11 +3906,43 @@ impl Document {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/fullscreenElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fullscreen_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/activeElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get activeElement")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pictureInPictureElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn picture_in_picture_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/pointerLockElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pointerLockElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pointer_lock_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getAnimations)
+    #[cfg_attr(rust_js, rust_js::link_name = "getAnimations")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_animations(&self) -> Vec<&'static Animation> {
         unreachable!()
     }
 
@@ -3983,40 +4047,6 @@ impl Document {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn evaluate(&self, expression: &str, context_node: &Node) -> &'static XPathResult {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -4153,261 +4183,6 @@ impl Document {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_ontransitioncancel(&self, value: Option<Box<dyn FnMut(&TransitionEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
         unreachable!()
     }
 
@@ -5703,67 +5478,292 @@ impl Document {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
-    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_box_quads(&self) -> Vec<&'static DOMQuad> {
+    pub fn onpointerover(&self) -> Option<&'static JsObject> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/getBoxQuads)
-    #[cfg_attr(rust_js, rust_js::link_name = "getBoxQuads")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn get_box_quads_with_options(&self, options: BoxQuadOptions<'_>) -> Vec<&'static DOMQuad> {
+    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertQuadFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_quad_from_node(&self, quad: DOMQuadInit, from: impl IntoGeometryNode) -> &'static DOMQuad {
+    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertQuadFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertQuadFromNode")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_quad_from_node_with_options(&self, quad: DOMQuadInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
+    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertRectFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_rect_from_node(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode) -> &'static DOMQuad {
+    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertRectFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertRectFromNode")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_rect_from_node_with_options(&self, rect: &DOMRectReadOnly, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMQuad {
+    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertPointFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_point_from_node(&self, point: DOMPointInit, from: impl IntoGeometryNode) -> &'static DOMPoint {
+    pub fn onpointermove(&self) -> Option<&'static JsObject> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/convertPointFromNode)
-    #[cfg_attr(rust_js, rust_js::link_name = "convertPointFromNode")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn convert_point_from_node_with_options(&self, point: DOMPointInit, from: impl IntoGeometryNode, options: ConvertCoordinateOptions<'_>) -> &'static DOMPoint {
+    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Document/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
         unreachable!()
     }
 
@@ -6340,6 +6340,54 @@ pub mod html_element {
 }
 
 impl HTMLElement {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/scrollParent)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollParent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_parent(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetParent)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetParent")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_parent(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetTop)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetTop")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_top(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetLeft)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetLeft")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_left(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetWidth)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetWidth")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_width(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetHeight)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetHeight")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_height(&self) -> i32 {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/title)
     #[cfg_attr(rust_js, rust_js::link_name = "get title")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -6676,62 +6724,6 @@ impl HTMLElement {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/scrollParent)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollParent")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_parent(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetParent)
-    #[cfg_attr(rust_js, rust_js::link_name = "get offsetParent")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn offset_parent(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetTop)
-    #[cfg_attr(rust_js, rust_js::link_name = "get offsetTop")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn offset_top(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetLeft)
-    #[cfg_attr(rust_js, rust_js::link_name = "get offsetLeft")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn offset_left(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetWidth)
-    #[cfg_attr(rust_js, rust_js::link_name = "get offsetWidth")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn offset_width(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/offsetHeight)
-    #[cfg_attr(rust_js, rust_js::link_name = "get offsetHeight")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn offset_height(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/style)
-    #[cfg_attr(rust_js, rust_js::link_name = "get style")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn style(&self) -> &'static CSSStyleProperties {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/attributeStyleMap)
     #[cfg_attr(rust_js, rust_js::link_name = "get attributeStyleMap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -6740,37 +6732,11 @@ impl HTMLElement {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/style)
+    #[cfg_attr(rust_js, rust_js::link_name = "get style")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+    pub fn style(&self) -> &'static CSSStyleProperties {
         unreachable!()
     }
 
@@ -6907,261 +6873,6 @@ impl HTMLElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_ontransitioncancel(&self, value: Option<Box<dyn FnMut(&TransitionEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
         unreachable!()
     }
 
@@ -8457,6 +8168,295 @@ impl HTMLElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLElement/contentEditable)
     #[cfg_attr(rust_js, rust_js::link_name = "get contentEditable")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -9697,6 +9697,22 @@ pub mod html_image_element {
 }
 
 impl HTMLImageElement {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/x)
+    #[cfg_attr(rust_js, rust_js::link_name = "get x")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn x(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/y)
+    #[cfg_attr(rust_js, rust_js::link_name = "get y")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn y(&self) -> i32 {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/alt)
     #[cfg_attr(rust_js, rust_js::link_name = "get alt")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -10073,22 +10089,6 @@ impl HTMLImageElement {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/x)
-    #[cfg_attr(rust_js, rust_js::link_name = "get x")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn x(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLImageElement/y)
-    #[cfg_attr(rust_js, rust_js::link_name = "get y")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn y(&self) -> i32 {
-        unreachable!()
-    }
-
 }
 
 /// [`HTMLInputElement`](https://developer.mozilla.org/docs/Web/API/HTMLInputElement)
@@ -10117,22 +10117,6 @@ pub mod html_input_element {
 }
 
 impl HTMLInputElement {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/capture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get capture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn capture(&self) -> String {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/capture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set capture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_capture(&self, value: &str) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/webkitdirectory)
     #[cfg_attr(rust_js, rust_js::link_name = "get webkitdirectory")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -10970,6 +10954,22 @@ impl HTMLInputElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_use_map(&self, value: &str) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/capture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get capture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn capture(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLInputElement/capture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set capture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_capture(&self, value: &str) {
         unreachable!()
     }
 
@@ -14563,6 +14563,40 @@ impl HTMLBodyElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/onafterprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -14866,40 +14900,6 @@ impl HTMLBodyElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onunload(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLBodyElement/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -16068,80 +16068,6 @@ pub mod html_video_element {
 }
 
 impl HTMLVideoElement {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/requestPictureInPicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestPictureInPicture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_picture_in_picture(&self) -> Promise<&'static PictureInPictureWindow> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onenterpictureinpicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onenterpictureinpicture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onenterpictureinpicture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onenterpictureinpicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onenterpictureinpicture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onenterpictureinpicture(&self, value: Option<Box<dyn FnMut(&PictureInPictureEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onleavepictureinpicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onleavepictureinpicture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onleavepictureinpicture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onleavepictureinpicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onleavepictureinpicture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onleavepictureinpicture(&self, value: Option<Box<dyn FnMut(&PictureInPictureEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/disablePictureInPicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get disablePictureInPicture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn disable_picture_in_picture(&self) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/disablePictureInPicture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set disablePictureInPicture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_disable_picture_in_picture(&self, value: bool) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestVideoFrameCallback")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_video_frame_callback(&self, callback: Box<dyn FnMut(f64, VideoFrameCallbackMetadata)>) -> u32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/cancelVideoFrameCallback)
-    #[cfg_attr(rust_js, rust_js::link_name = "cancelVideoFrameCallback")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn cancel_video_frame_callback(&self, handle: u32) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/width)
     #[cfg_attr(rust_js, rust_js::link_name = "get width")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -16227,6 +16153,80 @@ impl HTMLVideoElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_video_playback_quality(&self) -> &'static VideoPlaybackQuality {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/requestPictureInPicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestPictureInPicture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_picture_in_picture(&self) -> Promise<&'static PictureInPictureWindow> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onenterpictureinpicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onenterpictureinpicture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onenterpictureinpicture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onenterpictureinpicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onenterpictureinpicture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onenterpictureinpicture(&self, value: Option<Box<dyn FnMut(&PictureInPictureEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onleavepictureinpicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onleavepictureinpicture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onleavepictureinpicture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/onleavepictureinpicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onleavepictureinpicture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onleavepictureinpicture(&self, value: Option<Box<dyn FnMut(&PictureInPictureEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/disablePictureInPicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get disablePictureInPicture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn disable_picture_in_picture(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/disablePictureInPicture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set disablePictureInPicture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_disable_picture_in_picture(&self, value: bool) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestVideoFrameCallback")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_video_frame_callback(&self, callback: Box<dyn FnMut(f64, VideoFrameCallbackMetadata)>) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLVideoElement/cancelVideoFrameCallback)
+    #[cfg_attr(rust_js, rust_js::link_name = "cancelVideoFrameCallback")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn cancel_video_frame_callback(&self, handle: u32) {
         unreachable!()
     }
 
@@ -16459,30 +16459,6 @@ impl HTMLMediaElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_sink_id(&self, sink_id: &str) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/remote)
-    #[cfg_attr(rust_js, rust_js::link_name = "get remote")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn remote(&self) -> &'static RemotePlayback {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/disableRemotePlayback)
-    #[cfg_attr(rust_js, rust_js::link_name = "get disableRemotePlayback")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn disable_remote_playback(&self) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/disableRemotePlayback)
-    #[cfg_attr(rust_js, rust_js::link_name = "set disableRemotePlayback")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_disable_remote_playback(&self, value: bool) {
         unreachable!()
     }
 
@@ -16949,6 +16925,30 @@ impl HTMLMediaElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn capture_stream(&self) -> &'static MediaStream {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/remote)
+    #[cfg_attr(rust_js, rust_js::link_name = "get remote")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn remote(&self) -> &'static RemotePlayback {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/disableRemotePlayback)
+    #[cfg_attr(rust_js, rust_js::link_name = "get disableRemotePlayback")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn disable_remote_playback(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLMediaElement/disableRemotePlayback)
+    #[cfg_attr(rust_js, rust_js::link_name = "set disableRemotePlayback")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_disable_remote_playback(&self, value: bool) {
         unreachable!()
     }
 
@@ -18709,62 +18709,28 @@ pub mod window {
 }
 
 impl Window {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientation)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientation")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/orientation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get orientation")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn ondeviceorientation(&self) -> Option<&'static JsObject> {
+    pub fn orientation(&self) -> i16 {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientation)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ondeviceorientation")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onorientationchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onorientationchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onorientationchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onorientationchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onorientationchange")]
     #[cfg_attr(rust_js, rust_js::nullable(value))]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_ondeviceorientation(&self, value: Option<Box<dyn FnMut(&DeviceOrientationEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientationabsolute)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientationabsolute")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ondeviceorientationabsolute(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientationabsolute)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ondeviceorientationabsolute")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ondeviceorientationabsolute(&self, value: Option<Box<dyn FnMut(&DeviceOrientationEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondevicemotion)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ondevicemotion")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ondevicemotion(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondevicemotion)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ondevicemotion")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ondevicemotion(&self, value: Option<Box<dyn FnMut(&DeviceMotionEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
-    #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_selection(&self) -> Option<&'static Selection> {
+    pub fn set_onorientationchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -18792,11 +18758,235 @@ impl Window {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/speechSynthesis)
-    #[cfg_attr(rust_js, rust_js::link_name = "get speechSynthesis")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/matchMedia)
+    #[cfg_attr(rust_js, rust_js::link_name = "matchMedia")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn speech_synthesis(&self) -> &'static SpeechSynthesis {
+    pub fn match_media(&self, query: &str) -> &'static MediaQueryList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screen)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screen")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen(&self) -> &'static Screen {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/visualViewport)
+    #[cfg_attr(rust_js, rust_js::link_name = "get visualViewport")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn visual_viewport(&self) -> Option<&'static VisualViewport> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn move_to(&self, x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn move_by(&self, x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "resizeTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn resize_to(&self, width: i32, height: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "resizeBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn resize_by(&self, x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerWidth)
+    #[cfg_attr(rust_js, rust_js::link_name = "get innerWidth")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn inner_width(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerHeight)
+    #[cfg_attr(rust_js, rust_js::link_name = "get innerHeight")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn inner_height(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pageXOffset)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageXOffset")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn page_x_offset(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scrollY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_y(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pageYOffset)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageYOffset")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn page_y_offset(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by(&self) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_x(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenLeft)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenLeft")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_left(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_y(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenTop)
+    #[cfg_attr(rust_js, rust_js::link_name = "get screenTop")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn screen_top(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerWidth)
+    #[cfg_attr(rust_js, rust_js::link_name = "get outerWidth")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn outer_width(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerHeight)
+    #[cfg_attr(rust_js, rust_js::link_name = "get outerHeight")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn outer_height(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/devicePixelRatio)
+    #[cfg_attr(rust_js, rust_js::link_name = "get devicePixelRatio")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn device_pixel_ratio(&self) -> f64 {
         unreachable!()
     }
 
@@ -18813,31 +19003,6 @@ impl Window {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn event(&self) -> Option<&'static Event> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/orientation)
-    #[cfg_attr(rust_js, rust_js::link_name = "get orientation")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn orientation(&self) -> i16 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onorientationchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onorientationchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onorientationchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onorientationchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onorientationchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onorientationchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -19241,6 +19406,57 @@ impl Window {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ondeviceorientation(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientation)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ondeviceorientation")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ondeviceorientation(&self, value: Option<Box<dyn FnMut(&DeviceOrientationEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientationabsolute)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ondeviceorientationabsolute")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ondeviceorientationabsolute(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondeviceorientationabsolute)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ondeviceorientationabsolute")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ondeviceorientationabsolute(&self, value: Option<Box<dyn FnMut(&DeviceOrientationEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondevicemotion)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ondevicemotion")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ondevicemotion(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ondevicemotion)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ondevicemotion")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ondevicemotion(&self, value: Option<Box<dyn FnMut(&DeviceMotionEvent)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/requestIdleCallback)
     #[cfg_attr(rust_js, rust_js::link_name = "requestIdleCallback")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -19265,277 +19481,19 @@ impl Window {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/matchMedia)
-    #[cfg_attr(rust_js, rust_js::link_name = "matchMedia")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
+    #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn match_media(&self, query: &str) -> &'static MediaQueryList {
+    pub fn get_selection(&self) -> Option<&'static Selection> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screen)
-    #[cfg_attr(rust_js, rust_js::link_name = "get screen")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/speechSynthesis)
+    #[cfg_attr(rust_js, rust_js::link_name = "get speechSynthesis")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn screen(&self) -> &'static Screen {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/visualViewport)
-    #[cfg_attr(rust_js, rust_js::link_name = "get visualViewport")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn visual_viewport(&self) -> Option<&'static VisualViewport> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn move_to(&self, x: i32, y: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "moveBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn move_by(&self, x: i32, y: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "resizeTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn resize_to(&self, width: i32, height: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "resizeBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn resize_by(&self, x: i32, y: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerWidth)
-    #[cfg_attr(rust_js, rust_js::link_name = "get innerWidth")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn inner_width(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/innerHeight)
-    #[cfg_attr(rust_js, rust_js::link_name = "get innerHeight")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn inner_height(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollX)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollX")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_x(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pageXOffset)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pageXOffset")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn page_x_offset(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollY)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scrollY")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_y(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pageYOffset)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pageYOffset")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn page_y_offset(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll(&self) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_to(&self) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_to_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_to_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_by(&self) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_by_with_options(&self, options: ScrollToOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_by_with_x_and_y(&self, x: f64, y: f64) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenX)
-    #[cfg_attr(rust_js, rust_js::link_name = "get screenX")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn screen_x(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenLeft)
-    #[cfg_attr(rust_js, rust_js::link_name = "get screenLeft")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn screen_left(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenY)
-    #[cfg_attr(rust_js, rust_js::link_name = "get screenY")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn screen_y(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/screenTop)
-    #[cfg_attr(rust_js, rust_js::link_name = "get screenTop")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn screen_top(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerWidth)
-    #[cfg_attr(rust_js, rust_js::link_name = "get outerWidth")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn outer_width(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/outerHeight)
-    #[cfg_attr(rust_js, rust_js::link_name = "get outerHeight")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn outer_height(&self) -> i32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/devicePixelRatio)
-    #[cfg_attr(rust_js, rust_js::link_name = "get devicePixelRatio")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn device_pixel_ratio(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pushManager)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pushManager")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn push_manager(&self) -> &'static PushManager {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+    pub fn speech_synthesis(&self) -> &'static SpeechSynthesis {
         unreachable!()
     }
 
@@ -19672,261 +19630,6 @@ impl Window {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_ontransitioncancel(&self, value: Option<Box<dyn FnMut(&TransitionEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
         unreachable!()
     }
 
@@ -21222,6 +20925,329 @@ impl Window {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&GamepadEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&GamepadEvent)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/onafterprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -21528,61 +21554,11 @@ impl Window {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&GamepadEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&GamepadEvent)>>) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/indexedDB)
     #[cfg_attr(rust_js, rust_js::link_name = "get indexedDB")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn indexed_db(&self) -> &'static IDBFactory {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/performance)
-    #[cfg_attr(rust_js, rust_js::link_name = "get performance")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn performance(&self) -> &'static Performance {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/caches)
-    #[cfg_attr(rust_js, rust_js::link_name = "get caches")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn caches(&self) -> &'static CacheStorage {
         unreachable!()
     }
 
@@ -21602,11 +21578,11 @@ impl Window {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scheduler)
-    #[cfg_attr(rust_js, rust_js::link_name = "get scheduler")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/performance)
+    #[cfg_attr(rust_js, rust_js::link_name = "get performance")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn scheduler(&self) -> &'static Scheduler {
+    pub fn performance(&self) -> &'static Performance {
         unreachable!()
     }
 
@@ -21770,6 +21746,22 @@ impl Window {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scheduler)
+    #[cfg_attr(rust_js, rust_js::link_name = "get scheduler")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scheduler(&self) -> &'static Scheduler {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/caches)
+    #[cfg_attr(rust_js, rust_js::link_name = "get caches")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn caches(&self) -> &'static CacheStorage {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/crypto)
     #[cfg_attr(rust_js, rust_js::link_name = "get crypto")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -21807,6 +21799,14 @@ impl Window {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn local_storage(&self) -> &'static Storage {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/pushManager)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pushManager")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn push_manager(&self) -> &'static PushManager {
         unreachable!()
     }
 
@@ -22615,6 +22615,22 @@ pub mod performance {
 }
 
 impl Performance {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/eventCounts)
+    #[cfg_attr(rust_js, rust_js::link_name = "get eventCounts")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn event_counts(&self) -> &'static EventCounts {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/interactionCount)
+    #[cfg_attr(rust_js, rust_js::link_name = "get interactionCount")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn interaction_count(&self) -> f64 {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/now)
     #[cfg_attr(rust_js, rust_js::link_name = "now")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -22636,22 +22652,6 @@ impl Performance {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn to_json(&self) -> &'static JsObject {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/eventCounts)
-    #[cfg_attr(rust_js, rust_js::link_name = "get eventCounts")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn event_counts(&self) -> &'static EventCounts {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Performance/interactionCount)
-    #[cfg_attr(rust_js, rust_js::link_name = "get interactionCount")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn interaction_count(&self) -> f64 {
         unreachable!()
     }
 
@@ -23012,19 +23012,51 @@ pub mod mouse_event {
 }
 
 impl MouseEvent {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementX)
-    #[cfg_attr(rust_js, rust_js::link_name = "get movementX")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn movement_x(&self) -> f64 {
+    pub fn page_x(&self) -> f64 {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementY)
-    #[cfg_attr(rust_js, rust_js::link_name = "get movementY")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pageY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn movement_y(&self) -> f64 {
+    pub fn page_y(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/x)
+    #[cfg_attr(rust_js, rust_js::link_name = "get x")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/y)
+    #[cfg_attr(rust_js, rust_js::link_name = "get y")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn y(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetX")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_x(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get offsetY")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn offset_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -23260,51 +23292,19 @@ impl MouseEvent {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageX)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pageX")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementX)
+    #[cfg_attr(rust_js, rust_js::link_name = "get movementX")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn page_x(&self) -> f64 {
+    pub fn movement_x(&self) -> f64 {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/pageY)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pageY")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/movementY)
+    #[cfg_attr(rust_js, rust_js::link_name = "get movementY")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn page_y(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/x)
-    #[cfg_attr(rust_js, rust_js::link_name = "get x")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn x(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/y)
-    #[cfg_attr(rust_js, rust_js::link_name = "get y")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn y(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetX)
-    #[cfg_attr(rust_js, rust_js::link_name = "get offsetX")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn offset_x(&self) -> f64 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MouseEvent/offsetY)
-    #[cfg_attr(rust_js, rust_js::link_name = "get offsetY")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn offset_y(&self) -> f64 {
+    pub fn movement_y(&self) -> f64 {
         unreachable!()
     }
 
@@ -23584,6 +23584,22 @@ pub mod input_event {
 }
 
 impl InputEvent {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/dataTransfer)
+    #[cfg_attr(rust_js, rust_js::link_name = "get dataTransfer")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn data_transfer(&self) -> Option<&'static DataTransfer> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/getTargetRanges)
+    #[cfg_attr(rust_js, rust_js::link_name = "getTargetRanges")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_target_ranges(&self) -> Vec<&'static StaticRange> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/data)
     #[cfg_attr(rust_js, rust_js::link_name = "get data")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -23605,22 +23621,6 @@ impl InputEvent {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn input_type(&self) -> String {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/dataTransfer)
-    #[cfg_attr(rust_js, rust_js::link_name = "get dataTransfer")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn data_transfer(&self) -> Option<&'static DataTransfer> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/InputEvent/getTargetRanges)
-    #[cfg_attr(rust_js, rust_js::link_name = "getTargetRanges")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_target_ranges(&self) -> Vec<&'static StaticRange> {
         unreachable!()
     }
 
@@ -35029,14 +35029,6 @@ pub mod file {
 }
 
 impl File {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/File/webkitRelativePath)
-    #[cfg_attr(rust_js, rust_js::link_name = "get webkitRelativePath")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn webkit_relative_path(&self) -> String {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/File/name)
     #[cfg_attr(rust_js, rust_js::link_name = "get name")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -35050,6 +35042,14 @@ impl File {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn last_modified(&self) -> f64 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/File/webkitRelativePath)
+    #[cfg_attr(rust_js, rust_js::link_name = "get webkitRelativePath")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn webkit_relative_path(&self) -> String {
         unreachable!()
     }
 
@@ -35351,6 +35351,54 @@ impl Navigator {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/credentials)
+    #[cfg_attr(rust_js, rust_js::link_name = "get credentials")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn credentials(&self) -> &'static CredentialsContainer {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMediaKeySystemAccess)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestMediaKeySystemAccess")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn request_media_key_system_access(&self, key_system: &str, supported_configurations: &[MediaKeySystemConfiguration]) -> Promise<&'static MediaKeySystemAccess> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/getGamepads)
+    #[cfg_attr(rust_js, rust_js::link_name = "getGamepads")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_gamepads(&self) -> Vec<Option<&'static Gamepad>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/geolocation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get geolocation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn geolocation(&self) -> &'static Geolocation {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/userActivation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get userActivation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn user_activation(&self) -> &'static UserActivation {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/login)
+    #[cfg_attr(rust_js, rust_js::link_name = "get login")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn login(&self) -> &'static NavigatorLogin {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/mediaCapabilities)
     #[cfg_attr(rust_js, rust_js::link_name = "get mediaCapabilities")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -35359,11 +35407,19 @@ impl Navigator {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/serial)
-    #[cfg_attr(rust_js, rust_js::link_name = "get serial")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/mediaDevices)
+    #[cfg_attr(rust_js, rust_js::link_name = "get mediaDevices")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn serial(&self) -> &'static Serial {
+    pub fn media_devices(&self) -> &'static MediaDevices {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/mediaSession)
+    #[cfg_attr(rust_js, rust_js::link_name = "get mediaSession")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn media_session(&self) -> &'static MediaSession {
         unreachable!()
     }
 
@@ -35375,27 +35431,43 @@ impl Navigator {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMIDIAccess)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestMIDIAccess")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_midi_access(&self) -> Promise<&'static MIDIAccess> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMIDIAccess)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestMIDIAccess")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn request_midi_access_with_options(&self, options: MIDIOptions) -> Promise<&'static MIDIAccess> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/maxTouchPoints)
     #[cfg_attr(rust_js, rust_js::link_name = "get maxTouchPoints")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn max_touch_points(&self) -> i32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/wakeLock)
+    #[cfg_attr(rust_js, rust_js::link_name = "get wakeLock")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn wake_lock(&self) -> &'static WakeLock {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/serial)
+    #[cfg_attr(rust_js, rust_js::link_name = "get serial")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn serial(&self) -> &'static Serial {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/serviceWorker)
+    #[cfg_attr(rust_js, rust_js::link_name = "get serviceWorker")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn service_worker(&self) -> &'static ServiceWorkerContainer {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/vibrate)
+    #[cfg_attr(rust_js, rust_js::link_name = "vibrate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn vibrate(&self, pattern: impl IntoVibratePattern) -> bool {
         unreachable!()
     }
 
@@ -35431,123 +35503,43 @@ impl Navigator {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/credentials)
-    #[cfg_attr(rust_js, rust_js::link_name = "get credentials")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMIDIAccess)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestMIDIAccess")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn credentials(&self) -> &'static CredentialsContainer {
+    pub fn request_midi_access(&self) -> Promise<&'static MIDIAccess> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/wakeLock)
-    #[cfg_attr(rust_js, rust_js::link_name = "get wakeLock")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMIDIAccess)
+    #[cfg_attr(rust_js, rust_js::link_name = "requestMIDIAccess")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn wake_lock(&self) -> &'static WakeLock {
+    pub fn request_midi_access_with_options(&self, options: MIDIOptions) -> Promise<&'static MIDIAccess> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/requestMediaKeySystemAccess)
-    #[cfg_attr(rust_js, rust_js::link_name = "requestMediaKeySystemAccess")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/setAppBadge)
+    #[cfg_attr(rust_js, rust_js::link_name = "setAppBadge")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn request_media_key_system_access(&self, key_system: &str, supported_configurations: &[MediaKeySystemConfiguration]) -> Promise<&'static MediaKeySystemAccess> {
+    pub fn set_app_badge(&self) -> Promise<()> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/serviceWorker)
-    #[cfg_attr(rust_js, rust_js::link_name = "get serviceWorker")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/setAppBadge)
+    #[cfg_attr(rust_js, rust_js::link_name = "setAppBadge")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn service_worker(&self) -> &'static ServiceWorkerContainer {
+    pub fn set_app_badge_with_contents(&self, contents: f64) -> Promise<()> {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/userActivation)
-    #[cfg_attr(rust_js, rust_js::link_name = "get userActivation")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/clearAppBadge)
+    #[cfg_attr(rust_js, rust_js::link_name = "clearAppBadge")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn user_activation(&self) -> &'static UserActivation {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/geolocation)
-    #[cfg_attr(rust_js, rust_js::link_name = "get geolocation")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn geolocation(&self) -> &'static Geolocation {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/login)
-    #[cfg_attr(rust_js, rust_js::link_name = "get login")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn login(&self) -> &'static NavigatorLogin {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/mediaSession)
-    #[cfg_attr(rust_js, rust_js::link_name = "get mediaSession")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn media_session(&self) -> &'static MediaSession {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/vibrate)
-    #[cfg_attr(rust_js, rust_js::link_name = "vibrate")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn vibrate(&self, pattern: impl IntoVibratePattern) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/getGamepads)
-    #[cfg_attr(rust_js, rust_js::link_name = "getGamepads")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_gamepads(&self) -> Vec<Option<&'static Gamepad>> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/mediaDevices)
-    #[cfg_attr(rust_js, rust_js::link_name = "get mediaDevices")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn media_devices(&self) -> &'static MediaDevices {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/locks)
-    #[cfg_attr(rust_js, rust_js::link_name = "get locks")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn locks(&self) -> &'static LockManager {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/gpu)
-    #[cfg_attr(rust_js, rust_js::link_name = "get gpu")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn gpu(&self) -> &'static GPU {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/webdriver)
-    #[cfg_attr(rust_js, rust_js::link_name = "get webdriver")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn webdriver(&self) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/storage)
-    #[cfg_attr(rust_js, rust_js::link_name = "get storage")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn storage(&self) -> &'static StorageManager {
+    pub fn clear_app_badge(&self) -> Promise<()> {
         unreachable!()
     }
 
@@ -35727,27 +35719,35 @@ impl Navigator {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/setAppBadge)
-    #[cfg_attr(rust_js, rust_js::link_name = "setAppBadge")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/storage)
+    #[cfg_attr(rust_js, rust_js::link_name = "get storage")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_app_badge(&self) -> Promise<()> {
+    pub fn storage(&self) -> &'static StorageManager {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/setAppBadge)
-    #[cfg_attr(rust_js, rust_js::link_name = "setAppBadge")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/locks)
+    #[cfg_attr(rust_js, rust_js::link_name = "get locks")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn set_app_badge_with_contents(&self, contents: f64) -> Promise<()> {
+    pub fn locks(&self) -> &'static LockManager {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/clearAppBadge)
-    #[cfg_attr(rust_js, rust_js::link_name = "clearAppBadge")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/webdriver)
+    #[cfg_attr(rust_js, rust_js::link_name = "get webdriver")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn clear_app_badge(&self) -> Promise<()> {
+    pub fn webdriver(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Navigator/gpu)
+    #[cfg_attr(rust_js, rust_js::link_name = "get gpu")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn gpu(&self) -> &'static GPU {
         unreachable!()
     }
 
@@ -35913,56 +35913,6 @@ impl SVGElement {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/style)
-    #[cfg_attr(rust_js, rust_js::link_name = "get style")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn style(&self) -> &'static CSSStyleProperties {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/attributeStyleMap)
-    #[cfg_attr(rust_js, rust_js::link_name = "get attributeStyleMap")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn attribute_style_map(&self) -> &'static StylePropertyMap {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onanimationstart)
     #[cfg_attr(rust_js, rust_js::link_name = "get onanimationstart")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -36096,261 +36046,6 @@ impl SVGElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_ontransitioncancel(&self, value: Option<Box<dyn FnMut(&TransitionEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
         unreachable!()
     }
 
@@ -37646,6 +37341,295 @@ impl SVGElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/dataset)
     #[cfg_attr(rust_js, rust_js::link_name = "get dataset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -37723,6 +37707,22 @@ impl SVGElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn blur(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/attributeStyleMap)
+    #[cfg_attr(rust_js, rust_js::link_name = "get attributeStyleMap")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn attribute_style_map(&self) -> &'static StylePropertyMap {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGElement/style)
+    #[cfg_attr(rust_js, rust_js::link_name = "get style")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn style(&self) -> &'static CSSStyleProperties {
         unreachable!()
     }
 
@@ -37922,46 +37922,6 @@ pub mod svgsvg_element {
 }
 
 impl SVGSVGElement {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/pauseAnimations)
-    #[cfg_attr(rust_js, rust_js::link_name = "pauseAnimations")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn pause_animations(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/unpauseAnimations)
-    #[cfg_attr(rust_js, rust_js::link_name = "unpauseAnimations")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn unpause_animations(&self) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/animationsPaused)
-    #[cfg_attr(rust_js, rust_js::link_name = "animationsPaused")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn animations_paused(&self) -> bool {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getCurrentTime)
-    #[cfg_attr(rust_js, rust_js::link_name = "getCurrentTime")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_current_time(&self) -> f32 {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/setCurrentTime)
-    #[cfg_attr(rust_js, rust_js::link_name = "setCurrentTime")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_current_time(&self, seconds: f32) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/x)
     #[cfg_attr(rust_js, rust_js::link_name = "get x")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -38170,6 +38130,46 @@ impl SVGSVGElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/pauseAnimations)
+    #[cfg_attr(rust_js, rust_js::link_name = "pauseAnimations")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pause_animations(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/unpauseAnimations)
+    #[cfg_attr(rust_js, rust_js::link_name = "unpauseAnimations")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn unpause_animations(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/animationsPaused)
+    #[cfg_attr(rust_js, rust_js::link_name = "animationsPaused")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn animations_paused(&self) -> bool {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/getCurrentTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "getCurrentTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_current_time(&self) -> f32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/setCurrentTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "setCurrentTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_current_time(&self, seconds: f32) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/viewBox)
     #[cfg_attr(rust_js, rust_js::link_name = "get viewBox")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -38183,6 +38183,40 @@ impl SVGSVGElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn preserve_aspect_ratio(&self) -> &'static SVGAnimatedPreserveAspectRatio {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -38489,40 +38523,6 @@ impl SVGSVGElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onunload(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/SVGSVGElement/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -43707,46 +43707,6 @@ pub mod animation {
 }
 
 impl Animation {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/startTime)
-    #[cfg_attr(rust_js, rust_js::link_name = "get startTime")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn start_time(&self) -> Option<CSSNumberish<'static>> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/startTime)
-    #[cfg_attr(rust_js, rust_js::link_name = "set startTime")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_start_time(&self, value: impl IntoCSSNumberish) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/currentTime)
-    #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/currentTime)
-    #[cfg_attr(rust_js, rust_js::link_name = "set currentTime")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_current_time(&self, value: impl IntoCSSNumberish) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/overallProgress)
-    #[cfg_attr(rust_js, rust_js::link_name = "get overallProgress")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn overall_progress(&self) -> Option<f64> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/id)
     #[cfg_attr(rust_js, rust_js::link_name = "get id")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -43963,6 +43923,46 @@ impl Animation {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn commit_styles(&self) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/startTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get startTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn start_time(&self) -> Option<CSSNumberish<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/startTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "set startTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_start_time(&self, value: impl IntoCSSNumberish) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/currentTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "get currentTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn current_time(&self) -> Option<CSSNumberish<'static>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/currentTime)
+    #[cfg_attr(rust_js, rust_js::link_name = "set currentTime")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_current_time(&self, value: impl IntoCSSNumberish) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Animation/overallProgress)
+    #[cfg_attr(rust_js, rust_js::link_name = "get overallProgress")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn overall_progress(&self) -> Option<f64> {
         unreachable!()
     }
 
@@ -49280,17 +49280,20 @@ pub struct CSSRule(PhantomData<JsObject>);
 
 pub mod css_rule {
 
-    /// `CSSRule.SUPPORTS_RULE`
-    pub const SUPPORTS_RULE: u16 = 12;
-
     /// `CSSRule.KEYFRAMES_RULE`
     pub const KEYFRAMES_RULE: u16 = 7;
 
     /// `CSSRule.KEYFRAME_RULE`
     pub const KEYFRAME_RULE: u16 = 8;
 
+    /// `CSSRule.SUPPORTS_RULE`
+    pub const SUPPORTS_RULE: u16 = 12;
+
     /// `CSSRule.COUNTER_STYLE_RULE`
     pub const COUNTER_STYLE_RULE: u16 = 11;
+
+    /// `CSSRule.FONT_FEATURE_VALUES_RULE`
+    pub const FONT_FEATURE_VALUES_RULE: u16 = 14;
 
     /// `CSSRule.STYLE_RULE`
     pub const STYLE_RULE: u16 = 1;
@@ -49315,9 +49318,6 @@ pub mod css_rule {
 
     /// `CSSRule.NAMESPACE_RULE`
     pub const NAMESPACE_RULE: u16 = 10;
-
-    /// `CSSRule.FONT_FEATURE_VALUES_RULE`
-    pub const FONT_FEATURE_VALUES_RULE: u16 = 14;
 }
 
 impl CSSRule {
@@ -49757,6 +49757,14 @@ pub mod css_style_rule {
 }
 
 impl CSSStyleRule {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleRule/styleMap)
+    #[cfg_attr(rust_js, rust_js::link_name = "get styleMap")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn style_map(&self) -> &'static StylePropertyMap {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleRule/selectorText)
     #[cfg_attr(rust_js, rust_js::link_name = "get selectorText")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -49778,14 +49786,6 @@ impl CSSStyleRule {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn style(&self) -> &'static CSSStyleProperties {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/CSSStyleRule/styleMap)
-    #[cfg_attr(rust_js, rust_js::link_name = "get styleMap")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn style_map(&self) -> &'static StylePropertyMap {
         unreachable!()
     }
 
@@ -61769,6 +61769,40 @@ impl HTMLFrameSetElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/onafterprint)
     #[cfg_attr(rust_js, rust_js::link_name = "get onafterprint")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -62072,40 +62106,6 @@ impl HTMLFrameSetElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onunload(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepadconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepadconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepadconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepadconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepadconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongamepaddisconnected")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongamepaddisconnected(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/HTMLFrameSetElement/ongamepaddisconnected)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongamepaddisconnected")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongamepaddisconnected(&self, value: Option<Box<dyn FnMut(&Event)>>) {
         unreachable!()
     }
 
@@ -64626,22 +64626,6 @@ pub mod keyframe_effect {
 }
 
 impl KeyframeEffect {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/iterationComposite)
-    #[cfg_attr(rust_js, rust_js::link_name = "get iterationComposite")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn iteration_composite(&self) -> String {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/iterationComposite)
-    #[cfg_attr(rust_js, rust_js::link_name = "set iterationComposite")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_iteration_composite(&self, value: &str) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/target)
     #[cfg_attr(rust_js, rust_js::link_name = "get target")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -64703,6 +64687,22 @@ impl KeyframeEffect {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_keyframes(&self, keyframes: &dyn core::any::Any) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/iterationComposite)
+    #[cfg_attr(rust_js, rust_js::link_name = "get iterationComposite")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn iteration_composite(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/KeyframeEffect/iterationComposite)
+    #[cfg_attr(rust_js, rust_js::link_name = "set iterationComposite")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_iteration_composite(&self, value: &str) {
         unreachable!()
     }
 
@@ -65385,14 +65385,6 @@ pub mod math_ml_element {
 }
 
 impl MathMLElement {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/style)
-    #[cfg_attr(rust_js, rust_js::link_name = "get style")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn style(&self) -> &'static CSSStyleProperties {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/attributeStyleMap)
     #[cfg_attr(rust_js, rust_js::link_name = "get attributeStyleMap")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -65401,37 +65393,11 @@ impl MathMLElement {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/style)
+    #[cfg_attr(rust_js, rust_js::link_name = "get style")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn onselectstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectionchange)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+    pub fn style(&self) -> &'static CSSStyleProperties {
         unreachable!()
     }
 
@@ -65568,261 +65534,6 @@ impl MathMLElement {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_ontransitioncancel(&self, value: Option<Box<dyn FnMut(&TransitionEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerover(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerover)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerenter)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerdown)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointermove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointermove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerrawupdate)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerup(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerup)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointercancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerout(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerout)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerleave)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ongotpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onlostpointercapture)
-    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchstart)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchend(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchend)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchmove)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchcancel)
-    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
-    #[cfg_attr(rust_js, rust_js::nullable(value))]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
         unreachable!()
     }
 
@@ -67118,6 +66829,295 @@ impl MathMLElement {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerover")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerover(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerover)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerover")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerover(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerenter")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerenter(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerenter)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerenter")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerenter(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerdown")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerdown(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerdown)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerdown")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerdown(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointermove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointermove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointermove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointermove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointermove(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerrawupdate")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerrawupdate(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerrawupdate)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerrawupdate")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerrawupdate(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerup")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerup(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerup)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerup")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerup(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointercancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointercancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointercancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointercancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointercancel(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerout")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerout(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerout)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerout")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerout(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onpointerleave")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onpointerleave(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onpointerleave)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onpointerleave")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onpointerleave(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ongotpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ongotpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ongotpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ongotpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ongotpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onlostpointercapture")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onlostpointercapture(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onlostpointercapture)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onlostpointercapture")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onlostpointercapture(&self, value: Option<Box<dyn FnMut(&PointerEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectstart(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "get onselectionchange")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn onselectionchange(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/onselectionchange)
+    #[cfg_attr(rust_js, rust_js::link_name = "set onselectionchange")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_onselectionchange(&self, value: Option<Box<dyn FnMut(&Event)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchstart")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchstart(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchstart)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchstart")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchstart(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchend")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchend(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchend)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchend")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchend(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchmove")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchmove(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchmove)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchmove")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchmove(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "get ontouchcancel")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn ontouchcancel(&self) -> Option<&'static JsObject> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/ontouchcancel)
+    #[cfg_attr(rust_js, rust_js::link_name = "set ontouchcancel")]
+    #[cfg_attr(rust_js, rust_js::nullable(value))]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_ontouchcancel(&self, value: Option<Box<dyn FnMut(&TouchEvent)>>) {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MathMLElement/dataset)
     #[cfg_attr(rust_js, rust_js::link_name = "get dataset")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -67296,22 +67296,6 @@ pub mod media_devices {
 }
 
 impl MediaDevices {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getDisplayMedia)
-    #[cfg_attr(rust_js, rust_js::link_name = "getDisplayMedia")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_display_media(&self) -> Promise<&'static MediaStream> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getDisplayMedia)
-    #[cfg_attr(rust_js, rust_js::link_name = "getDisplayMedia")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_display_media_with_options(&self, options: DisplayMediaStreamOptions<'_>) -> Promise<&'static MediaStream> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/ondevicechange)
     #[cfg_attr(rust_js, rust_js::link_name = "get ondevicechange")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -67358,6 +67342,22 @@ impl MediaDevices {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_user_media_with_constraints(&self, constraints: MediaStreamConstraints) -> Promise<&'static MediaStream> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getDisplayMedia)
+    #[cfg_attr(rust_js, rust_js::link_name = "getDisplayMedia")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_display_media(&self) -> Promise<&'static MediaStream> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaDevices/getDisplayMedia)
+    #[cfg_attr(rust_js, rust_js::link_name = "getDisplayMedia")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_display_media_with_options(&self, options: DisplayMediaStreamOptions<'_>) -> Promise<&'static MediaStream> {
         unreachable!()
     }
 
@@ -68754,22 +68754,6 @@ pub mod media_stream_track {
 }
 
 impl MediaStreamTrack {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/contentHint)
-    #[cfg_attr(rust_js, rust_js::link_name = "get contentHint")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn content_hint(&self) -> String {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/contentHint)
-    #[cfg_attr(rust_js, rust_js::link_name = "set contentHint")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn set_content_hint(&self, value: &str) {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/kind)
     #[cfg_attr(rust_js, rust_js::link_name = "get kind")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -68930,6 +68914,22 @@ impl MediaStreamTrack {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn apply_constraints_with_constraints(&self, constraints: MediaTrackConstraints) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/contentHint)
+    #[cfg_attr(rust_js, rust_js::link_name = "get contentHint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn content_hint(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/MediaStreamTrack/contentHint)
+    #[cfg_attr(rust_js, rust_js::link_name = "set contentHint")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn set_content_hint(&self, value: &str) {
         unreachable!()
     }
 
@@ -73343,14 +73343,6 @@ pub mod performance_resource_timing {
 }
 
 impl PerformanceResourceTiming {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/serverTiming)
-    #[cfg_attr(rust_js, rust_js::link_name = "get serverTiming")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn server_timing(&self) -> &'static [&'static PerformanceServerTiming] {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/initiatorType)
     #[cfg_attr(rust_js, rust_js::link_name = "get initiatorType")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -73524,6 +73516,14 @@ impl PerformanceResourceTiming {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn content_type(&self) -> String {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/PerformanceResourceTiming/serverTiming)
+    #[cfg_attr(rust_js, rust_js::link_name = "get serverTiming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn server_timing(&self) -> &'static [&'static PerformanceServerTiming] {
         unreachable!()
     }
 
@@ -77001,6 +77001,22 @@ pub mod range {
 }
 
 impl Range {
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/getClientRects)
+    #[cfg_attr(rust_js, rust_js::link_name = "getClientRects")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_client_rects(&self) -> &'static DOMRectList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/getBoundingClientRect)
+    #[cfg_attr(rust_js, rust_js::link_name = "getBoundingClientRect")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_bounding_client_rect(&self) -> &'static DOMRect {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/commonAncestorContainer)
     #[cfg_attr(rust_js, rust_js::link_name = "get commonAncestorContainer")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -77190,22 +77206,6 @@ impl Range {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn create_contextual_fragment(&self, string: &str) -> &'static DocumentFragment {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/getClientRects)
-    #[cfg_attr(rust_js, rust_js::link_name = "getClientRects")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_client_rects(&self) -> &'static DOMRectList {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Range/getBoundingClientRect)
-    #[cfg_attr(rust_js, rust_js::link_name = "getBoundingClientRect")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_bounding_client_rect(&self) -> &'static DOMRect {
         unreachable!()
     }
 
@@ -79161,14 +79161,6 @@ impl Scheduler {
 pub struct Screen(PhantomData<JsObject>);
 
 impl Screen {
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/orientation)
-    #[cfg_attr(rust_js, rust_js::link_name = "get orientation")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn orientation(&self) -> &'static ScreenOrientation {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/availWidth)
     #[cfg_attr(rust_js, rust_js::link_name = "get availWidth")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -79214,6 +79206,14 @@ impl Screen {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn pixel_depth(&self) -> u32 {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Screen/orientation)
+    #[cfg_attr(rust_js, rust_js::link_name = "get orientation")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn orientation(&self) -> &'static ScreenOrientation {
         unreachable!()
     }
 
@@ -80277,6 +80277,38 @@ impl ServiceWorkerRegistration {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/showNotification)
+    #[cfg_attr(rust_js, rust_js::link_name = "showNotification")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn show_notification(&self, title: &str) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/showNotification)
+    #[cfg_attr(rust_js, rust_js::link_name = "showNotification")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn show_notification_with_options(&self, title: &str, options: NotificationOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/getNotifications)
+    #[cfg_attr(rust_js, rust_js::link_name = "getNotifications")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_notifications(&self) -> Promise<Vec<&'static Notification>> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/getNotifications)
+    #[cfg_attr(rust_js, rust_js::link_name = "getNotifications")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_notifications_with_filter(&self, filter: GetNotificationOptions<'_>) -> Promise<Vec<&'static Notification>> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/installing)
     #[cfg_attr(rust_js, rust_js::link_name = "get installing")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -80355,38 +80387,6 @@ impl ServiceWorkerRegistration {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn set_onupdatefound(&self, value: Option<Box<dyn FnMut(&Event)>>) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/showNotification)
-    #[cfg_attr(rust_js, rust_js::link_name = "showNotification")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn show_notification(&self, title: &str) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/showNotification)
-    #[cfg_attr(rust_js, rust_js::link_name = "showNotification")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn show_notification_with_options(&self, title: &str, options: NotificationOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/getNotifications)
-    #[cfg_attr(rust_js, rust_js::link_name = "getNotifications")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_notifications(&self) -> Promise<Vec<&'static Notification>> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ServiceWorkerRegistration/getNotifications)
-    #[cfg_attr(rust_js, rust_js::link_name = "getNotifications")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_notifications_with_filter(&self, filter: GetNotificationOptions<'_>) -> Promise<Vec<&'static Notification>> {
         unreachable!()
     }
 
@@ -80547,38 +80547,6 @@ impl ShadowRoot {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/fullscreenElement)
-    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenElement")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn fullscreen_element(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/getAnimations)
-    #[cfg_attr(rust_js, rust_js::link_name = "getAnimations")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_animations(&self) -> Vec<&'static Animation> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/pictureInPictureElement)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureElement")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn picture_in_picture_element(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/pointerLockElement)
-    #[cfg_attr(rust_js, rust_js::link_name = "get pointerLockElement")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn pointer_lock_element(&self) -> Option<&'static Element> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/styleSheets)
     #[cfg_attr(rust_js, rust_js::link_name = "get styleSheets")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -80611,11 +80579,43 @@ impl ShadowRoot {
         unreachable!()
     }
 
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/fullscreenElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get fullscreenElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn fullscreen_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
     /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/activeElement)
     #[cfg_attr(rust_js, rust_js::link_name = "get activeElement")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn active_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/pictureInPictureElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pictureInPictureElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn picture_in_picture_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/pointerLockElement)
+    #[cfg_attr(rust_js, rust_js::link_name = "get pointerLockElement")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn pointer_lock_element(&self) -> Option<&'static Element> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/ShadowRoot/getAnimations)
+    #[cfg_attr(rust_js, rust_js::link_name = "getAnimations")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn get_animations(&self) -> Vec<&'static Animation> {
         unreachable!()
     }
 
@@ -93441,46 +93441,6 @@ impl XSLTProcessor {
 pub mod web_assembly {
     use super::*;
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn compile_streaming(source: Promise<&'static Response>) -> Promise<&'static WebAssemblyModule> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn compile_streaming_with_options(source: Promise<&'static Response>, options: WebAssemblyCompileOptions<'_>) -> Promise<&'static WebAssemblyModule> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn instantiate_streaming(source: Promise<&'static Response>) -> Promise<WebAssemblyInstantiatedSource> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn instantiate_streaming_with_import_object(source: Promise<&'static Response>, import_object: &dyn core::any::Any) -> Promise<WebAssemblyInstantiatedSource> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
-    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn instantiate_streaming_with_import_object_and_options(source: Promise<&'static Response>, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/validate)
     #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.validate")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -93550,6 +93510,46 @@ pub mod web_assembly {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn instantiate_with_web_assembly_module_and_import_object(module_object: &WebAssemblyModule, import_object: &dyn core::any::Any) -> Promise<&'static WebAssemblyInstance> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn compile_streaming(source: Promise<&'static Response>) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/compileStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.compileStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn compile_streaming_with_options(source: Promise<&'static Response>, options: WebAssemblyCompileOptions<'_>) -> Promise<&'static WebAssemblyModule> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_streaming(source: Promise<&'static Response>) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_streaming_with_import_object(source: Promise<&'static Response>, import_object: &dyn core::any::Any) -> Promise<WebAssemblyInstantiatedSource> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/WebAssembly/instantiateStreaming)
+    #[cfg_attr(rust_js, rust_js::link_name = "WebAssembly.instantiateStreaming")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn instantiate_streaming_with_import_object_and_options(source: Promise<&'static Response>, import_object: &dyn core::any::Any, options: WebAssemblyCompileOptions<'_>) -> Promise<WebAssemblyInstantiatedSource> {
         unreachable!()
     }
 }
@@ -93890,14 +93890,6 @@ pub mod global {
 pub mod window_global {
     use super::*;
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
-    #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn get_selection() -> Option<&'static Selection> {
-        unreachable!()
-    }
-
     /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getComputedStyle)
     #[cfg_attr(rust_js, rust_js::link_name = "getComputedStyle")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
@@ -93911,6 +93903,118 @@ pub mod window_global {
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
     pub fn get_computed_style_with_pseudo_elt(elt: &Element, pseudo_elt: &str) -> &'static CSSStyleProperties {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/matchMedia)
+    #[cfg_attr(rust_js, rust_js::link_name = "matchMedia")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn match_media(query: &str) -> &'static MediaQueryList {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn move_to(x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "moveBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn move_by(x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "resizeTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn resize_to(width: i32, height: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "resizeBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn resize_by(x: i32, y: i32) {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll() -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
+    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to() -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_to_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by() -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
+        unreachable!()
+    }
+
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
+    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
+    // rust-js writes its JS: the body never runs, nor reads a parameter.
+    #[allow(unused_variables)]
+    pub fn scroll_by_with_x_and_y(x: f64, y: f64) -> Promise<()> {
         unreachable!()
     }
 
@@ -94106,115 +94210,11 @@ pub mod window_global {
         unreachable!()
     }
 
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/matchMedia)
-    #[cfg_attr(rust_js, rust_js::link_name = "matchMedia")]
+    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/getSelection)
+    #[cfg_attr(rust_js, rust_js::link_name = "getSelection")]
     // rust-js writes its JS: the body never runs, nor reads a parameter.
     #[allow(unused_variables)]
-    pub fn match_media(query: &str) -> &'static MediaQueryList {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "moveTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn move_to(x: i32, y: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/moveBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "moveBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn move_by(x: i32, y: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "resizeTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn resize_to(width: i32, height: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/resizeBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "resizeBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn resize_by(x: i32, y: i32) {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll() -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scroll)
-    #[cfg_attr(rust_js, rust_js::link_name = "scroll")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_with_x_and_y(x: f64, y: f64) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_to() -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_to_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollTo)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollTo")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_to_with_x_and_y(x: f64, y: f64) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_by() -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_by_with_options(options: ScrollToOptions<'_>) -> Promise<()> {
-        unreachable!()
-    }
-
-    /// [MDN](https://developer.mozilla.org/docs/Web/API/Window/scrollBy)
-    #[cfg_attr(rust_js, rust_js::link_name = "scrollBy")]
-    // rust-js writes its JS: the body never runs, nor reads a parameter.
-    #[allow(unused_variables)]
-    pub fn scroll_by_with_x_and_y(x: f64, y: f64) -> Promise<()> {
+    pub fn get_selection() -> Option<&'static Selection> {
         unreachable!()
     }
 
@@ -94745,6 +94745,40 @@ pub struct MediaEncodingConfiguration {
     pub r#type: String,
 }
 
+/// The `MediaTrackSupportedConstraints` dictionary: a JS object with these fields, a `None` one not there.
+#[derive(Default)]
+pub struct MediaTrackSupportedConstraints {
+    pub width: Option<bool>,
+    pub height: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "aspectRatio")]
+    pub aspect_ratio: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "frameRate")]
+    pub frame_rate: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "facingMode")]
+    pub facing_mode: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "resizeMode")]
+    pub resize_mode: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
+    pub sample_rate: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
+    pub sample_size: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "echoCancellation")]
+    pub echo_cancellation: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
+    pub auto_gain_control: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
+    pub noise_suppression: Option<bool>,
+    pub latency: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
+    pub channel_count: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "deviceId")]
+    pub device_id: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "groupId")]
+    pub group_id: Option<bool>,
+    #[cfg_attr(rust_js, rust_js::name = "backgroundBlur")]
+    pub background_blur: Option<bool>,
+}
+
 /// The `MediaTrackConstraints` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct MediaTrackConstraints {
@@ -94793,40 +94827,6 @@ pub struct ConstrainBooleanParameters {
 /// The `MediaTrackConstraintSet` dictionary: a JS object with these fields, a `None` one not there.
 #[derive(Default)]
 pub struct MediaTrackConstraintSet {
-}
-
-/// The `MediaTrackSupportedConstraints` dictionary: a JS object with these fields, a `None` one not there.
-#[derive(Default)]
-pub struct MediaTrackSupportedConstraints {
-    pub width: Option<bool>,
-    pub height: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "aspectRatio")]
-    pub aspect_ratio: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "frameRate")]
-    pub frame_rate: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "facingMode")]
-    pub facing_mode: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "resizeMode")]
-    pub resize_mode: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "sampleRate")]
-    pub sample_rate: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "sampleSize")]
-    pub sample_size: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "echoCancellation")]
-    pub echo_cancellation: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "autoGainControl")]
-    pub auto_gain_control: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "noiseSuppression")]
-    pub noise_suppression: Option<bool>,
-    pub latency: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "channelCount")]
-    pub channel_count: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "deviceId")]
-    pub device_id: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "groupId")]
-    pub group_id: Option<bool>,
-    #[cfg_attr(rust_js, rust_js::name = "backgroundBlur")]
-    pub background_blur: Option<bool>,
 }
 
 /// The `MediaTrackSettings` dictionary: a JS object with these fields, a `None` one not there.

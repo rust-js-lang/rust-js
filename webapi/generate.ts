@@ -12,6 +12,12 @@ import { readFileSync } from "node:fs";
 import idl from "@webref/idl";
 import { typescript } from "./coverage";
 import { identifier, plain, snake, snakeWords } from "../scripts/rust-names";
+
+/** A record of each spec's, by its name, in order: what @webref lists in
+ * the order its directory reads, which differs by filesystem, so the crate
+ * would be another on another machine. */
+const bySpec = <T>(record: Record<string, T>): Record<string, T> =>
+  Object.fromEntries(Object.keys(record).sort().map((spec) => [spec, record[spec]]));
 import webref from "@webref/idl/package.json" with { type: "json" };
 import webrefEvents from "@webref/events";
 import eventsPackage from "@webref/events/package.json" with { type: "json" };
@@ -90,7 +96,7 @@ const INTERFACES = [
 // And every other class TypeScript's DOM has (`@types/web`), from whichever
 // spec WebIDL has it in (ADR 0281).
 const typescriptDom = await typescript();
-const defined = new Set(Object.values(await idl.parseAll() as Record<string, { type: string; name: string; partial?: boolean }[]>)
+const defined = new Set(Object.values(bySpec(await idl.parseAll() as Record<string, { type: string; name: string; partial?: boolean }[]>))
   .flat().filter((d) => d.type === "interface" && !d.partial).map((d) => d.name));
 INTERFACES.push(...[...typescriptDom.keys()].filter((name) => defined.has(name) && !INTERFACES.includes(name)).sort());
 const known = new Set(INTERFACES);
@@ -158,7 +164,7 @@ type Def = {
   extAttrs?: { name: string; rhs?: { value: string } }[];
 };
 
-const all = await idl.parseAll() as Record<string, Def[]>;
+const all = bySpec(await idl.parseAll() as Record<string, Def[]>);
 const anyClassHas = new Set([...typescriptDom.values()].flatMap((c) => [...c.members]));
 // Every spec's: what the specs above have, as they have it, and of the
 // others' members those TypeScript's DOM has, not one it leaves out as
@@ -1033,7 +1039,7 @@ const eventNames = [...new Set([...listens.values()].flatMap((m) => [...m.keys()
 // bound. Not SVG's nor MathML's, nor an obsolete one.
 type WebrefElements = { elements: { name: string; interface?: string; obsolete?: boolean }[] };
 const tagElements = new Map<string, string>();
-for (const spec of Object.values(await webrefElements.listAll()) as WebrefElements[]) {
+for (const spec of Object.values(bySpec(await webrefElements.listAll() as Record<string, WebrefElements>))) {
   for (const el of spec.elements) {
     if (!el.interface || el.obsolete || tagElements.has(el.name)) continue;
     const lineage: string[] = [];
@@ -1046,7 +1052,7 @@ const tagNames = [...tagElements.keys()].sort();
 // made by `createElementNS` of SVG's namespace, where `createElement`
 // would make an `HTMLUnknownElement`, so not `Tag`'s.
 const svgTagElements = new Map<string, string>();
-for (const spec of Object.values(await webrefElements.listAll()) as WebrefElements[]) {
+for (const spec of Object.values(bySpec(await webrefElements.listAll() as Record<string, WebrefElements>))) {
   for (const el of spec.elements) {
     if (!el.interface || el.obsolete || svgTagElements.has(el.name)) continue;
     const lineage: string[] = [];
