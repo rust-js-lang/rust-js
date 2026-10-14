@@ -1,0 +1,10 @@
+{
+  "vite": {
+    "made": "a Vite and React app, its component src/App.rs, in Rust",
+    "example": "examples/vite-react"
+  },
+  "next": {
+    "made": "a Next.js app, its page app/page.rs, in Rust",
+    "example": "examples/next"
+  }
+}

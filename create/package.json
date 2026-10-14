@@ -12,7 +12,8 @@
   "bin": "index.js",
   "files": [
     "index.js",
-    "templates"
+    "templates",
+    "templates.json"
   ],
   "rustJs": {
     "toolchain": "1.99.0"

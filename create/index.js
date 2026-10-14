@@ -16,21 +16,20 @@ function fail(message) {
   process.exit(1);
 }
 
-// What each template is, as its app says once it's made.
-const templates = {
-  vite: { made: "a Vite and React app, its component src/App.rs, in Rust" },
-  next: { made: "a Next.js app, its page app/page.rs, in Rust" },
-};
+// What each template is, as its app says once it's made: the one list,
+// which its packing reads too, of each example it's made of.
+const templates = JSON.parse(readFileSync(join(here, "templates.json"), "utf8"));
+const names = Object.keys(templates);
 
 const args = process.argv.slice(2);
 const chosen = args.indexOf("--template");
 const template = chosen >= 0 ? args.splice(chosen, 2)[1] : "vite";
-if (!Object.hasOwn(templates, template)) fail(`--template is ${Object.keys(templates).join(" or ")}`);
+if (!Object.hasOwn(templates, template)) fail(`--template is ${names.join(" or ")}`);
 const at = args.indexOf("--local");
 const local = at >= 0 ? args.splice(at, 2)[1] : undefined;
 if (at >= 0 && !local) fail("--local needs a distribution, the directory `bun run pack:distribution` makes");
 const [directory, ...extra] = args;
-if (!directory || extra.length) fail("usage: bun create @rust-js@latest <directory> [--template vite|next] [--local <distribution>]");
+if (!directory || extra.length) fail(`usage: bun create @rust-js@latest <directory> [--template ${names.join("|")}] [--local <distribution>]`);
 
 // A distribution is for one host, and one compiler: this one's.
 const dist = local && resolve(local);

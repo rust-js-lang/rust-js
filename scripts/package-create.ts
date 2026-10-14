@@ -21,17 +21,15 @@ const pkg = JSON.parse(readFileSync(join(root, "create/package.json"), "utf8"));
 if (pkg.version !== version) throw new Error(`@rust-js/create ${pkg.version} does not match compiler ${version}`);
 const staging = mkdtempSync(join(tmpdir(), "rust-js-create-"));
 try {
-  for (const file of ["index.js", "package.json", "README.md"]) copyFileSync(join(root, "create", file), join(staging, file));
+  for (const file of ["index.js", "package.json", "README.md", "templates.json"]) copyFileSync(join(root, "create", file), join(staging, file));
   // Each template: an example's files as git has them, so nothing building
   // it made goes with it, with its overrides', `create/<template>`, in place
   // of the example's own. The crates the example has by path, from this
   // checkout, are an app's npm packages, each at its crate's version, named
   // in its Cargo.toml by version: its `postinstall`, rust-js-patch, tells
   // Cargo where they are. Each crate a crate it names uses is a package too.
-  const templates = [
-    { name: "vite", example: "examples/vite-react" },
-    { name: "next", example: "examples/next" },
-  ];
+  const templates = Object.entries(JSON.parse(readFileSync(join(root, "create/templates.json"), "utf8")) as Record<string, { example: string }>)
+    .map(([name, { example }]) => ({ name, example }));
   const cargo = (dir: string) =>
     Bun.TOML.parse(readFileSync(join(root, dir, "Cargo.toml"), "utf8")) as { package: { version: string }; dependencies?: Record<string, { package?: string }> };
   const crateVersion = (dir: string) => cargo(dir).package.version;
