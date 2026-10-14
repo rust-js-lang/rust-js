@@ -11,7 +11,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
-use crate::command::TARGET;
+use crate::command::{TARGET, flag_values};
 use crate::manifest::Compiler;
 
 /// What running rust-js as it was run comes to.
@@ -50,7 +50,7 @@ pub fn translate(args: Vec<String>) -> Invocation {
             return Invocation::Rustc(ExitCode::FAILURE);
         }
     };
-    let library = values(&flags, "--crate-type").any(|kind| kind == "lib" || kind == "rlib");
+    let library = flag_values(&flags, "--crate-type").any(|kind| kind == "lib" || kind == "rlib");
     let probe = flags
         .iter()
         .any(|flag| flag == "-" || flag == "-vV" || flag.starts_with("--print"));
@@ -59,7 +59,7 @@ pub fn translate(args: Vec<String>) -> Invocation {
     // `node_modules`, they're in its workspace. rustc is rust-js's `--rustc`,
     // with its tool known, as the tooling runs Cargo (ADR 0112).
     let bindings = std::env::var("CARGO_PKG_NAME").is_ok_and(|name| BINDINGS.contains(&name.as_str()));
-    if probe || bindings || !library || values(&flags, "--target").next().as_deref() != Some(TARGET) {
+    if probe || bindings || !library || flag_values(&flags, "--target").next().as_deref() != Some(TARGET) {
         return rustc_itself(&rustc, given);
     }
     match compile(&flags) {
@@ -73,7 +73,7 @@ pub fn translate(args: Vec<String>) -> Invocation {
 
 /// rust-js's arguments for a library Cargo checks for its target.
 fn compile(flags: &[String]) -> Result<Vec<String>, String> {
-    let name = values(flags, "--crate-name")
+    let name = flag_values(flags, "--crate-name")
         .next()
         .ok_or("Cargo gave no --crate-name")?;
     let source = flags
@@ -81,11 +81,15 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
         .find(|flag| flag.ends_with(".rs"))
         .ok_or("Cargo gave no source file")?
         .clone();
-    let out_dir = PathBuf::from(values(flags, "--out-dir").next().ok_or("Cargo gave no --out-dir")?);
-    let extra = values(flags, "-C")
+    let out_dir = PathBuf::from(
+        flag_values(flags, "--out-dir")
+            .next()
+            .ok_or("Cargo gave no --out-dir")?,
+    );
+    let extra = flag_values(flags, "-C")
         .find_map(|option| option.strip_prefix("extra-filename=").map(str::to_string))
         .unwrap_or_default();
-    let emitted: Vec<String> = values(flags, "--emit")
+    let emitted: Vec<String> = flag_values(flags, "--emit")
         .flat_map(|kinds| kinds.split(',').map(str::to_string).collect::<Vec<_>>())
         .collect();
     // What `cargo build` asks for, rustc links. Only a check's crates are
@@ -157,7 +161,7 @@ fn compile(flags: &[String]) -> Result<Vec<String>, String> {
 /// it and a manifest gone is refused: a crate that uses it would be compiled
 /// as if it were rustc's.
 fn dependencies(flags: &[String]) -> Result<Vec<PathBuf>, String> {
-    let mut found: Vec<PathBuf> = values(flags, "--extern")
+    let mut found: Vec<PathBuf> = flag_values(flags, "--extern")
         .filter_map(|given| Some(PathBuf::from(given.split_once('=')?.1)))
         .filter_map(|metadata| std::fs::read_to_string(marker(&metadata)).ok())
         .flat_map(|recorded| recorded.lines().map(PathBuf::from).collect::<Vec<_>>())
@@ -212,17 +216,6 @@ pub fn record(
 /// Where the manifest of the crate whose metadata is `metadata` is recorded.
 fn marker(metadata: &Path) -> PathBuf {
     metadata.with_extension("rust-js")
-}
-
-/// Each value of `flag`, given as `--flag value` or `--flag=value`.
-fn values<'a>(flags: &'a [String], flag: &'a str) -> impl Iterator<Item = String> + 'a {
-    flags.iter().enumerate().filter_map(move |(i, given)| {
-        if given == flag {
-            flags.get(i + 1).cloned()
-        } else {
-            given.strip_prefix(flag)?.strip_prefix('=').map(str::to_string)
-        }
-    })
 }
 
 /// Cargo's flags, with each `@file` it wrote for a long command read in.

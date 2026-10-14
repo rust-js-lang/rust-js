@@ -175,6 +175,18 @@ impl Staged {
     }
 }
 
+/// Each value of `flag` in `flags`, a rustc command's or Cargo's, given as
+/// `--flag value` or `--flag=value`: the one reading of either spelling.
+pub fn flag_values<'a>(flags: &'a [String], flag: &'a str) -> impl Iterator<Item = String> + 'a {
+    flags.iter().enumerate().filter_map(move |(i, given)| {
+        if given == flag {
+            flags.get(i + 1).cloned()
+        } else {
+            given.strip_prefix(flag)?.strip_prefix('=').map(str::to_string)
+        }
+    })
+}
+
 /// What tells a program it's compiled by rust-js, `cfg(rust_js)`, declared
 /// so rustc checks it: the crates' attributes of its tool are
 /// `cfg_attr(rust_js, ..)`, which a plain rustc, a user's own `cargo check`,
@@ -204,18 +216,10 @@ impl Build {
             args.push("--test".to_string());
         }
         // An edition or a target after `--` is the one: rustc takes only one.
-        if self
-            .rustc
-            .iter()
-            .any(|arg| arg == "--edition" || arg.starts_with("--edition="))
-        {
+        if flag_values(&self.rustc, "--edition").next().is_some() {
             args.retain(|arg| arg != "--edition=2024");
         }
-        if self
-            .rustc
-            .iter()
-            .any(|arg| arg == "--target" || arg.starts_with("--target="))
-        {
+        if flag_values(&self.rustc, "--target").next().is_some() {
             args.retain(|arg| !arg.starts_with("--target="));
         }
         args.extend(self.rustc.iter().cloned());

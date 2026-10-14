@@ -42,4 +42,12 @@ export const mutations: Mutation[] = [
     replace: "pub const RUST_JS_CFG: [&str; 2] = [\"--check-cfg=cfg(rust_js)\", \"--check-cfg=cfg(rust_js)\"];\n",
     tests: ["test/snapshots.test.ts", "-t", "counter"],
   },
+  {
+    name: "flag-value-apart-unread",
+    breaks: "a flag's value given apart, Cargo's `--out-dir target/..`, is no value, and `rust-js --rustc` can't find where Cargo writes",
+    file: "src/command.rs",
+    find: "            flags.get(i + 1).cloned()\n",
+    replace: "            None\n",
+    tests: ["test/cargo-react.test.ts"],
+  },
 ];
