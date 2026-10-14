@@ -16,7 +16,7 @@ export const mutations: Mutation[] = [
     file: "src/lower/mir.rs",
     find: "                    true => Expr::unary(js::UnaryOp::Not, cond),\n",
     replace: "                    true => cond,\n",
-    tests: ["test/corpus.test.ts", "-t", "bitwise_operators"],
+    tests: ["test/corpus.test.ts", "-t", "drop_index_panic|drop_operand_leaves"],
   },
   {
     name: "mir-folded-call-uncaught",

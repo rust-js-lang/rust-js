@@ -25,8 +25,7 @@ function main() {
     [0, 0],
     [0, 0],
   ];
-  const items = $index(rows, 1);
-  items[0] = 3;
+  $index(rows, 1)[0] = 3;
   console.log(
     `[${rows.map((item) => `[${item.map((item) => String(item)).join(", ")}]`).join(", ")}]`,
   );
